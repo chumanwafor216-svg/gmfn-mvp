@@ -1,0 +1,43 @@
+﻿version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: gmfn
+      POSTGRES_USER: gmfn
+      POSTGRES_PASSWORD: gmfn
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db/init:/docker-entrypoint-initdb.d
+
+  api:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    command: >
+      sh -c "
+      pip install fastapi uvicorn psycopg2-binary &&
+      uvicorn main:app --host 0.0.0.0 --port 8000
+      "
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  web:
+    image: node:18
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    command: >
+      sh -c "
+      npm install -g serve &&
+      serve -l 5173 .
+      "
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
