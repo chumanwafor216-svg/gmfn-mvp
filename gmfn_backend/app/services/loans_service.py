@@ -82,6 +82,9 @@ from sqlalchemy.orm import Session
 
 ALLOWED_GUARANTOR_STATUSES = {"pending", "approved", "declined"}
 
+ALLOWED_GUARANTOR_STATUSES = {"pending", "approved", "rejected"}  # match tests
+
+
 def update_loan_guarantor_status(
     db: Session,
     *,
@@ -100,28 +103,26 @@ def update_loan_guarantor_status(
     if guarantor.clan_id != clan_id:
         raise HTTPException(status_code=403, detail="Not allowed")
 
-        guarantor.status = status
+    guarantor.status = status
 
-        if status in ("approved", "declined"):
-            guarantor.responded_at = datetime.now(timezone.utc)
+    if status in ("approved", "rejected"):
+        guarantor.responded_at = datetime.now(timezone.utc)
 
-        # Auto-approve loan when enough guarantors are approved
-        if status == "approved":
-            # Lock the loan row to avoid races if multiple guarantors approve at once
-            loan = db.execute(
-                select(Loan).where(Loan.id == guarantor.loan_id).with_for_update()
-            ).scalar_one_or_none()
+    # Auto-approve loan when enough guarantors are approved
+    if status == "approved":
+        loan = db.execute(
+            select(Loan).where(Loan.id == guarantor.loan_id).with_for_update()
+        ).scalar_one_or_none()
 
-            if loan and loan.status == "pending":
-                approved_count = count_approved_guarantors(db, loan_id=loan.id)
+        if loan and loan.status == "pending":
+            approved_count = count_approved_guarantors(db, loan_id=loan.id)
+            required = loan.guarantors_required or 0
 
-                # ✅ Your rule: None => 0, meaning auto-approve is allowed immediately
-                required = loan.guarantors_required or 0
+            if approved_count >= required:
+                loan.status = "approved"
+                loan.decision_by_user_id = decided_by_user_id
+                loan.decision_at = datetime.now(timezone.utc)
 
-                if approved_count >= required:
-                    loan.status = "approved"
-                    loan.decision_by_user_id = decided_by_user_id
-                    loan.decision_at = datetime.now(timezone.utc)
-
+    db.commit()
     db.refresh(guarantor)
     return guarantor

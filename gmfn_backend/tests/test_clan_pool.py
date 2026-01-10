@@ -1,7 +1,11 @@
 from fastapi.testclient import TestClient
 
 
-def test_patch_member_pool_balance_admin_ok_contract(client: TestClient, override_clan_ctx_admin):
+def test_patch_member_pool_balance_admin_ok_contract(
+    client: TestClient,
+    override_clan_ctx_admin,
+    seed_clan_admin_membership,
+):
     clan_id = 1
     user_id = 1
     payload = {"pool_balance": 20000}
@@ -17,7 +21,11 @@ def test_patch_member_pool_balance_admin_ok_contract(client: TestClient, overrid
     assert float(data["pool_balance"]) == 20000.0
 
 
-def test_patch_member_pool_balance_non_admin_forbidden_contract(client: TestClient, override_clan_ctx_member):
+def test_patch_member_pool_balance_non_admin_forbidden_contract(
+    client: TestClient,
+    override_clan_ctx_member,
+    seed_clan_admin_membership,
+):
     clan_id = 1
     user_id = 1
     payload = {"pool_balance": 20000}
@@ -32,7 +40,10 @@ def test_patch_member_pool_balance_non_admin_forbidden_contract(client: TestClie
     assert "Clan admin" in data["detail"]
 
 
-def test_patch_member_pool_balance_membership_not_found_contract(client: TestClient, override_clan_ctx_admin):
+def test_patch_member_pool_balance_membership_not_found_contract(
+    client: TestClient,
+    override_clan_ctx_admin,
+):
     clan_id = 1
     missing_user_id = 999999
     payload = {"pool_balance": 20000}

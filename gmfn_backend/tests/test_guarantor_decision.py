@@ -1,7 +1,14 @@
 from fastapi.testclient import TestClient
 
 
-def test_patch_loan_guarantor_status_ok_contract(client: TestClient, override_current_user):
+def test_patch_loan_guarantor_status_ok_contract(
+    client: TestClient,
+    override_current_user,
+    override_clan_ctx_admin,
+    seed_clan_admin_membership,
+    seed_loan,
+    seed_loan_guarantor,  # âœ… add this
+):
     loan_id = 1
     guarantor_id = 1
     payload = {"status": "pending"}
@@ -16,8 +23,15 @@ def test_patch_loan_guarantor_status_ok_contract(client: TestClient, override_cu
     assert isinstance(data["status"], str)
     assert data["status"] in {"pending", "approved", "rejected"}
 
-    # Contract: if these keys exist, ensure type sanity (don’t require them)
-    for key in ("id", "loan_id", "clan_id", "guarantor_user_id", "pledge_amount", "responded_at"):
+    # Optional fields: type sanity only
+    for key in (
+        "id",
+        "loan_id",
+        "clan_id",
+        "guarantor_user_id",
+        "pledge_amount",
+        "responded_at",
+    ):
         if key in data:
             if key in ("id", "loan_id", "clan_id", "guarantor_user_id"):
                 assert isinstance(data[key], int)
@@ -27,7 +41,14 @@ def test_patch_loan_guarantor_status_ok_contract(client: TestClient, override_cu
                 assert isinstance(data[key], (str, type(None)))
 
 
-def test_patch_loan_guarantor_status_invalid_value_contract(client: TestClient, override_current_user):
+def test_patch_loan_guarantor_status_invalid_value_contract(
+    client: TestClient,
+    override_current_user,
+    override_clan_ctx_admin,
+    seed_clan_admin_membership,
+    seed_loan,
+    seed_loan_guarantor,
+):
     loan_id = 1
     guarantor_id = 1
     payload = {"status": "not-a-real-status"}
@@ -39,7 +60,13 @@ def test_patch_loan_guarantor_status_invalid_value_contract(client: TestClient, 
     assert "detail" in data
 
 
-def test_patch_loan_guarantor_status_not_found_contract(client: TestClient, override_current_user):
+def test_patch_loan_guarantor_status_not_found_contract(
+    client: TestClient,
+    override_current_user,
+    override_clan_ctx_admin,
+    seed_clan_admin_membership,
+    seed_loan,
+):
     loan_id = 1
     missing_guarantor_id = 999999
     payload = {"status": "pending"}
