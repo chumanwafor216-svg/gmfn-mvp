@@ -22,19 +22,33 @@ if db_path.exists():
         pass
 
 from app.main import app
-from app.core.clan_auth import get_current_clan_membership
+from app.core import clan_auth
 from app.db.database import engine
 
 
 class Obj:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
+@pytest.fixture(autouse=True)
+def _clean_db_between_tests(_apply_migrations):
+
+    """
+    Ensure test isolation: wipe mutable tables before each test.
+    """
+    with engine.begin() as conn:
+        conn.execute(text("DELETE FROM loan_guarantors"))
+        conn.execute(text("DELETE FROM loans"))
+        conn.execute(text("DELETE FROM clan_memberships"))
+        conn.execute(text("DELETE FROM clans"))
+        conn.execute(text("DELETE FROM users"))
+    yield 
 
 
 @pytest.fixture(scope="session", autouse=True)
 def _apply_migrations():
     """
     Create schema for tests by running Alembic upgrade head on a fresh SQLite DB.
+    Uses injected connection (requires alembic/env.py to honor config.attributes['connection']).
     """
     alembic_cfg = Config(str(backend_root / "alembic.ini"))
     alembic_cfg.set_main_option("script_location", str(backend_root / "alembic"))
@@ -52,43 +66,51 @@ def client():
         yield c
 
 
+# ------------------------------------------------------------
+# Seed fixtures
+# ------------------------------------------------------------
 @pytest.fixture()
 def seed_clan_admin_membership():
-    """
-    Seed clan=1 and admin membership for user=1.
-    """
     with engine.begin() as conn:
-        conn.execute(
-            text("""
+        conn.execute(text("""
             INSERT OR IGNORE INTO users (id, email, hashed_password, role)
             VALUES (1, 'pytest@example.com', 'hashed', 'admin')
-            """)
-        )
-
-        conn.execute(
-            text("""
+        """))
+        conn.execute(text("""
             INSERT OR IGNORE INTO clans (id, name)
             VALUES (1, 'Test Clan')
-            """)
-        )
-
-        conn.execute(
-            text("""
-            INSERT OR IGNORE INTO clan_memberships (id, clan_id, user_id, role)
-            VALUES (1, 1, 1, 'admin')
-            """)
-        )
+        """))
+        conn.execute(text("""
+            INSERT OR IGNORE INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+            VALUES (1, 1, 1, 'admin', 0)
+        """))
     yield
 
+@pytest.fixture()
+def seed_clan_member_membership():
+    with engine.begin() as conn:
+        conn.execute(text("""
+            INSERT OR IGNORE INTO users (id, email, hashed_password, role)
+            VALUES (1, 'pytest@example.com', 'hashed', 'user')
+        """))
+        conn.execute(text("""
+            INSERT OR IGNORE INTO clans (id, name)
+            VALUES (1, 'Test Clan')
+        """))
+        conn.execute(text("""
+            INSERT OR IGNORE INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+            VALUES (1, 1, 1, 'member', 0)
+        """))
+    yield
 
 @pytest.fixture()
 def seed_loan():
     """
-    Seed loan id=1 for guarantor decision tests.
+    Seed loan id=1. This fixture assumes user=1 and clan=1 already exist
+    (provided by seed_clan_admin_membership or seed_clan_member_membership).
     """
     with engine.begin() as conn:
-        conn.execute(
-            text("""
+        conn.execute(text("""
             INSERT OR IGNORE INTO loans (
                 id,
                 borrower_user_id,
@@ -107,15 +129,17 @@ def seed_loan():
                 1,
                 1
             )
-            """)
-        )
+        """))
     yield
-
-
 @pytest.fixture()
-def seed_loan_guarantor():
+def seed_loan_guarantor(seed_clan_admin_membership, seed_loan):
     """
-    Seed loan_guarantors row id=1 so the OK guarantor PATCH can succeed.
+    Seed loan_guarantors row id=1 so guarantor decision PATCH tests can succeed.
+    Requires:
+    - user=1 exists
+    - clan=1 exists
+    - membership (clan_id=1, user_id=1) exists
+    - loan id=1 exists
     """
     with engine.begin() as conn:
         conn.execute(
@@ -128,10 +152,19 @@ def seed_loan_guarantor():
         )
     yield
 
+@pytest.fixture()
+def seed_user2_non_member():
+    with engine.begin() as conn:
+        conn.execute(text("""
+            INSERT OR IGNORE INTO users (id, email, hashed_password, role)
+            VALUES (2, 'user2@example.com', 'hashed', 'user')
+        """))
+    yield
 
-# -------------------------------------------------------------------
-# Clan context overrides
-# -------------------------------------------------------------------
+
+# ------------------------------------------------------------
+# Dependency overrides (clan context)
+# ------------------------------------------------------------
 @pytest.fixture()
 def override_clan_ctx_admin():
     def fake_clan_ctx():
@@ -140,9 +173,9 @@ def override_clan_ctx_admin():
         current_user = Obj(id=1, email="pytest@example.com")
         return clan, membership, current_user
 
-    app.dependency_overrides[get_current_clan_membership] = fake_clan_ctx
+    app.dependency_overrides[clan_auth.get_current_clan_membership] = fake_clan_ctx
     yield
-    app.dependency_overrides.pop(get_current_clan_membership, None)
+    app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)
 
 
 @pytest.fixture()
@@ -153,14 +186,14 @@ def override_clan_ctx_member():
         current_user = Obj(id=1, email="pytest@example.com")
         return clan, membership, current_user
 
-    app.dependency_overrides[get_current_clan_membership] = fake_clan_ctx
+    app.dependency_overrides[clan_auth.get_current_clan_membership] = fake_clan_ctx
     yield
-    app.dependency_overrides.pop(get_current_clan_membership, None)
+    app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)
 
 
-# -------------------------------------------------------------------
-# Current-user overrides (auth-protected routes)
-# -------------------------------------------------------------------
+# ------------------------------------------------------------
+# Current-user override (auth-protected routes)
+# ------------------------------------------------------------
 @pytest.fixture()
 def override_current_user():
     def fake_current_user():
@@ -191,4 +224,5 @@ def override_current_user():
             fn = getattr(mod, fn_name)
             app.dependency_overrides.pop(fn, None)
         except Exception:
-            pass
+            pass 
+

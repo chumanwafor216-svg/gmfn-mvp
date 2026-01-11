@@ -10,3 +10,6 @@ api_router.include_router(health_router, tags=["health"])
 api_router.include_router(auth_router)
 api_router.include_router(loans_router)  
 api_router.include_router(clans_router)
+from app.routers import loans
+
+api_router.include_router(loans.router, tags=["loans"])
