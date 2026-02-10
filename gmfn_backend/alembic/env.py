@@ -2,9 +2,9 @@ from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
 from alembic import context
-
-from app.db.database import Base
+from app.db.base import Base
 from app.db import models  # noqa: F401  (ensure models are registered)
+import os
 
 # Alembic Config object
 config = context.config
@@ -19,7 +19,8 @@ target_metadata = Base.metadata
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
-    url = config.get_main_option("sqlalchemy.url")
+    url = os.getenv("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
+
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -35,9 +36,15 @@ def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
     If a connection is injected via config.attributes['connection'],
-    use it. Otherwise create an engine from alembic.ini.
+    use it. Otherwise create an engine from alembic.ini (overridden by env if provided).
     """
+    # If a test injected a connection, use it
     connection = config.attributes.get("connection", None)
+
+    # Prefer env var DATABASE_URL if present (Docker / deploy)
+    db_url = os.getenv("DATABASE_URL")
+    if db_url:
+        config.set_main_option("sqlalchemy.url", db_url)
 
     if connection is not None:
         context.configure(
@@ -66,4 +73,4 @@ def run_migrations_online() -> None:
 if context.is_offline_mode():
     run_migrations_offline()
 else:
-    run_migrations_online()
+    run_migrations_online() 

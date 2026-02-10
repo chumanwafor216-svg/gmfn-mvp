@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict
-
+from .clan_roles import ClanRoleUpdate 
 
 class UserCreate(BaseModel):
     email: str = Field(..., min_length=3)

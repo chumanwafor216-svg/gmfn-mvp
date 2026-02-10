@@ -11,7 +11,7 @@ def test_patch_loan_guarantor_status_ok_contract(
 ):
     loan_id = 1
     guarantor_id = 1
-    payload = {"status": "pending"}
+    payload = {"status": "approved"}  # ✅ decision endpoint allows approved/declined only
 
     r = client.patch(f"/loans/{loan_id}/guarantors/{guarantor_id}", json=payload)
     assert r.status_code == 200, r.text
@@ -21,7 +21,7 @@ def test_patch_loan_guarantor_status_ok_contract(
     # Contract: must have status as string
     assert "status" in data
     assert isinstance(data["status"], str)
-    assert data["status"] in {"pending", "approved", "rejected"}
+    assert data["status"] in {"approved", "declined"}
 
     # Optional fields: type sanity only
     for key in (
@@ -69,10 +69,10 @@ def test_patch_loan_guarantor_status_not_found_contract(
 ):
     loan_id = 1
     missing_guarantor_id = 999999
-    payload = {"status": "pending"}
+    payload = {"status": "approved"}
 
     r = client.patch(f"/loans/{loan_id}/guarantors/{missing_guarantor_id}", json=payload)
-    assert r.status_code == 404, r.text
+    assert r.status_code == 404, r.text  # ✅ missing guarantor should be 404
 
     data = r.json()
     assert "detail" in data

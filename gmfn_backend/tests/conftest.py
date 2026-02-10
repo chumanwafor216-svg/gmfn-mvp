@@ -1,3 +1,9 @@
+import sys
+from pathlib import Path
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT_DIR))
+
 import os
 from pathlib import Path
 
@@ -6,6 +12,7 @@ from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
 from sqlalchemy import text
+from app.main import app
 
 # ------------------------------------------------------------
 # Stable SQLite test database

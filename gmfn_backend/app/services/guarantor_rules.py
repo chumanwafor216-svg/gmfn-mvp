@@ -4,7 +4,11 @@ from fastapi import HTTPException
 from app.db.models import ClanMembership
 
 
-def require_clan_member(db: Session, clan_id: int, user_id: int) -> None:
+def require_clan_member(db: Session, clan_id: int, user_id: int) -> ClanMembership:
+    """
+    Ensures the user is a member of the clan.
+    Returns the ClanMembership row (useful for checking pool balance, role, etc.).
+    """
     membership = (
         db.query(ClanMembership)
         .filter(
@@ -19,3 +23,5 @@ def require_clan_member(db: Session, clan_id: int, user_id: int) -> None:
             status_code=400,
             detail="Guarantor must be a clan member",
         )
+
+    return membership

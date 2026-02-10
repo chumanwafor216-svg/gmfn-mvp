@@ -1,11 +1,19 @@
 ﻿from fastapi import FastAPI
+
 from app.api.router import api_router
-from app.core.logging import setup_logging
+from app.db.database import Base, engine
 
-def create_app() -> FastAPI:
-    setup_logging()
-    app = FastAPI(title="GMFN MVP API", version="1.0.0")
-    app.include_router(api_router)
-    return app
+# IMPORTANT: ensure models are imported so SQLAlchemy sees them
+import app.db.models  # noqa: F401
 
-app = create_app()
+
+app = FastAPI(title="GMFN MVP API")
+app.include_router(api_router)
+
+
+# NOTE (MVP only):
+# This creates tables automatically at startup.
+# In production you should rely on Alembic migrations instead.
+@app.on_event("startup")
+def on_startup() -> None:
+    Base.metadata.create_all(bind=engine)

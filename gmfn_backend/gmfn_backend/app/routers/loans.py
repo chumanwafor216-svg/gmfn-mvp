@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+# app/routers/loans.py
+"""
+Legacy compatibility router.
 
-from app.db.database import get_db
-from app.db.models import Loan, LoanGuarantor
-from app.schemas.loan_guarantors import LoanGuarantorCreate, LoanGuarantorOut
-from app.core.clan_auth import get_current_clan_membership
+Some older code imports `app.routers.loans.router`.
+We forward to the real router at `app.api.routes.loans`.
+This file must stay tiny (no DB Session params), to avoid FastAPI/Pydantic issues.
+"""
 
-router = APIRouter()
+from app.api.routes.loans import router  # noqa: F401 
