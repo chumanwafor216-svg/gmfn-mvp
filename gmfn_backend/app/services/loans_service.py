@@ -14,9 +14,12 @@ from app.db.models import Loan, LoanGuarantor, ClanMembership
 from app.services.guarantor_rules import require_clan_member
 from app.services.trust_events_services import log_trust_event
 from app.core.trust_event_types import TrustEventType
-from app.services.loan_approval import approve_loan  # ✅ important: ensures approved loans are fully initialized
+from app.services.loan_approval import approve_loan  # ✅ strict finalization (fees, remaining_amount, etc.)
 
 ALLOWED_GUARANTOR_STATUSES = {"pending", "approved", "declined", "no_response", "expired"}
+
+# ✅ New: loans may remain "incomplete" while borrower decides next step (add guarantor or cancel)
+ACTIVE_LOAN_STATUSES_FOR_GUARANTORS = {"pending", "incomplete"}
 
 
 def _to_decimal(x) -> Decimal:
@@ -26,7 +29,7 @@ def _to_decimal(x) -> Decimal:
 def _loan_required_gap(loan: Loan) -> Decimal:
     """
     The amount guarantors must cover.
-    Prefer Loan.guarantee_gap if present (recommended future column).
+    Prefer Loan.guarantee_gap if present (recommended column).
     Fallback: full loan amount (safe but less GMFN-correct).
     """
     gg = getattr(loan, "guarantee_gap", None)
@@ -38,7 +41,10 @@ def _loan_required_gap(loan: Loan) -> Decimal:
 def _sum_approved_locked(db: Session, *, loan_id: int) -> Decimal:
     raw = (
         db.query(func.coalesce(func.sum(LoanGuarantor.locked_amount), 0))
-        .filter(LoanGuarantor.loan_id == loan_id, LoanGuarantor.status == "approved")
+        .filter(
+            LoanGuarantor.loan_id == loan_id,
+            LoanGuarantor.status == "approved",
+        )
         .scalar()
         or 0
     )
@@ -65,7 +71,8 @@ def add_loan_guarantor(
     if int(loan.clan_id) != int(clan_id):
         raise HTTPException(status_code=403, detail="Not allowed")
 
-    if (loan.status or "").lower() != "pending":
+    # ✅ NEW: allow adding guarantors while loan is pending OR incomplete (decision window)
+    if (loan.status or "").lower() not in ACTIVE_LOAN_STATUSES_FOR_GUARANTORS:
         raise HTTPException(status_code=400, detail=f"Cannot add guarantors when loan status is '{loan.status}'")
 
     if int(loan.borrower_user_id) == int(guarantor_user_id):
@@ -76,7 +83,7 @@ def add_loan_guarantor(
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid pledge_amount")
 
-    # ✅ Freeze-grade rule: pending loans require real pledges (prevents 0-pledge approvals)
+    # ✅ Freeze-grade rule: require real pledges (prevents 0-pledge approvals)
     if pledge <= 0:
         raise HTTPException(status_code=400, detail="pledge_amount must be > 0")
 
@@ -188,7 +195,8 @@ def update_loan_guarantor_status(
     if not loan:
         raise HTTPException(status_code=404, detail="Loan not found")
 
-    if (loan.status or "").lower() != "pending":
+    # ✅ NEW: allow decisions while loan is pending OR incomplete
+    if (loan.status or "").lower() not in ACTIVE_LOAN_STATUSES_FOR_GUARANTORS:
         raise HTTPException(status_code=400, detail=f"Cannot decide guarantor when loan status is '{loan.status}'")
 
     # Default values for meta (safe for declined)
@@ -245,7 +253,7 @@ def update_loan_guarantor_status(
         TrustEventType.GUARANTOR_APPROVED if status == "approved" else TrustEventType.GUARANTOR_DECLINED
     )
 
-        # ✅ TrustEvent meta: strings only (no float drift)
+    # ✅ TrustEvent meta: strings only (no float drift)
     log_trust_event(
         db,
         event_type=event_type,
@@ -277,36 +285,23 @@ def update_loan_guarantor_status(
 # =========================
 # LOAN AUTO-DECISION
 # =========================
-def _loan_required_gap(loan: Loan) -> Decimal:
-    gap = Decimal(str(getattr(loan, "guarantee_gap", 0) or 0))
-    return gap
-
-
-def _sum_approved_locked(db: Session, *, loan_id: int) -> Decimal:
-    raw = (
-        db.query(func.coalesce(func.sum(LoanGuarantor.locked_amount), 0))
-        .filter(
-            LoanGuarantor.loan_id == loan_id,
-            LoanGuarantor.status == "approved",
-        )
-        .scalar()
-        or 0
-    )
-    return Decimal(str(raw))
-
-
 def evaluate_loan_after_guarantor_change(db: Session, *, loan_id: int) -> Loan:
     """
-    Freeze-grade auto-decision:
-    - Requires approved guarantor count >= guarantors_required
-    - Requires locked coverage (sum locked) >= required gap
-    - Uses approve_loan() so approved loans ALWAYS get fees + remaining_amount set correctly
+    GMFN decision policy (Chuma):
+    - Must meet BOTH:
+        (1) quorum: approved_count >= guarantors_required
+        (2) coverage: sum(locked_amount of approved guarantors) >= guarantee_gap
+    - If not complete:
+        -> status becomes "incomplete" (NOT declined)
+        -> app should prompt: "Continue? Add another guarantor (suggestions) or cancel."
+        -> later: auto-cancel after 2 minutes (handled elsewhere / endpoint)
     """
     loan = db.get(Loan, loan_id)
     if not loan:
         raise HTTPException(status_code=404, detail="Loan not found")
 
-    if (loan.status or "").lower() != "pending":
+    # Only act on loans that are still in-progress
+    if (loan.status or "").lower() not in ACTIVE_LOAN_STATUSES_FOR_GUARANTORS:
         return loan
 
     required_count = int(loan.guarantors_required or 0)
@@ -341,6 +336,7 @@ def evaluate_loan_after_guarantor_change(db: Session, *, loan_id: int) -> Loan:
     required_gap = _loan_required_gap(loan)
     coverage = _sum_approved_locked(db, loan_id=loan_id)
 
+    # ✅ COMPLETE → approve strictly via approve_loan()
     if approved >= required_count and coverage >= required_gap:
         approve_loan(
             db=db,
@@ -371,13 +367,15 @@ def evaluate_loan_after_guarantor_change(db: Session, *, loan_id: int) -> Loan:
         db.refresh(loan)
         return loan
 
-    if approved + pending < required_count:
-        loan.status = "declined"
-        loan.decision_at = datetime.now(timezone.utc)
+    # ✅ NOT COMPLETE YET → mark incomplete IF there is any activity (any guarantors exist)
+    # This ensures the borrower sees the "continue or cancel" prompt.
+    if (loan.status or "").lower() != "incomplete":
+        loan.status = "incomplete"
+        loan.decision_at = datetime.now(timezone.utc)  # used as "incomplete_since" marker for MVP
 
         log_trust_event(
             db,
-            event_type=TrustEventType.LOAN_AUTO_REJECTED,
+            event_type=TrustEventType.LOAN_INCOMPLETE,
             clan_id=int(loan.clan_id),
             loan_id=int(loan.id),
             guarantor_id=None,
@@ -392,11 +390,75 @@ def evaluate_loan_after_guarantor_change(db: Session, *, loan_id: int) -> Loan:
                 "required_gap": str(required_gap),
                 "coverage": str(coverage),
                 "system": True,
-                "reason": "not_enough_possible_approvals",
+                "reason": "incomplete_quorum_or_coverage",
+                "prompt": "Continue? Add another guarantor (see suggestions) or cancel.",
+                "auto_cancel_seconds": 120,
             },
         )
+
         db.commit()
         db.refresh(loan)
-        return loan
 
     return loan
+# =========================
+# CANCEL + UNLOCK
+# =========================
+def cancel_loan(db: Session, *, loan_id: int, clan_id: int, actor_user_id: int) -> Loan:
+    """
+    Cancels a pending/incomplete loan and releases locked guarantor funds.
+    Matches Chuma's policy:
+      - borrower can cancel politely
+      - system can auto-cancel after ~2 minutes
+      - cancellation releases locks (no permanent punishment for incompleteness)
+    """
+    loan = db.get(Loan, loan_id)
+    if not loan:
+        raise HTTPException(status_code=404, detail="Loan not found")
+
+    if int(loan.clan_id) != int(clan_id):
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    if (loan.status or "").lower() not in {"pending", "incomplete"}:
+        raise HTTPException(status_code=400, detail=f"Cannot cancel loan when status is '{loan.status}'")
+
+    guarantors = (
+        db.query(LoanGuarantor)
+        .filter(LoanGuarantor.loan_id == loan_id, LoanGuarantor.clan_id == clan_id)
+        .all()
+    )
+
+    for g in guarantors:
+        if bool(getattr(g, "is_locked", False)):
+            locked = _to_decimal(getattr(g, "locked_amount", 0) or 0)
+            if locked > 0:
+                g.released_amount = _to_decimal(getattr(g, "released_amount", 0) or 0) + locked
+                g.locked_amount = Decimal("0")
+            g.is_locked = False
+
+        # Optional: close pending guarantors as expired
+        if g.status == "pending":
+            g.status = "expired"
+            g.responded_at = datetime.now(timezone.utc)
+
+    loan.status = "cancelled"
+    loan.decision_at = datetime.now(timezone.utc)
+
+    cancelled_event_type = getattr(TrustEventType, "LOAN_CANCELLED", TrustEventType.LOAN_AUTO_REJECTED)
+
+    log_trust_event(
+        db,
+        event_type=cancelled_event_type,
+        clan_id=int(loan.clan_id),
+        loan_id=int(loan.id),
+        guarantor_id=None,
+        actor_user_id=int(actor_user_id),
+        subject_user_id=int(loan.borrower_user_id),
+        meta={
+            "system": False,
+            "reason": "cancelled",
+        },
+    )
+
+    db.commit()
+    db.refresh(loan)
+    return loan 

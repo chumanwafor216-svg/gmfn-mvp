@@ -31,6 +31,7 @@ from app.services.guarantor_suggestions_service import suggest_guarantors_for_lo
 from app.services.loan_approval import approve_loan
 from app.services.loans_service import (
     add_loan_guarantor,
+    cancel_loan,
     count_approved_guarantors,
     list_loan_guarantors,
     update_loan_guarantor_status,
@@ -358,7 +359,22 @@ def create_loan_guarantor(
     )
 
     return guarantor
+@router.post("/{loan_id}/cancel")
+def cancel_loan_route(
+    loan_id: int,
+    db: Session = Depends(get_db),
+    clan_ctx: tuple = Depends(get_current_clan_membership),
+):
+    clan, _membership, current_user = clan_ctx
 
+    loan = cancel_loan(
+        db,
+        loan_id=int(loan_id),
+        clan_id=int(clan.id),
+        actor_user_id=_uid(current_user),
+    )
+
+    return {"ok": True, "loan_id": int(loan.id), "status": loan.status}
 
 @router.get("/{loan_id}/guarantors", response_model=LoanGuarantorsListResponse)
 def get_loan_guarantors(

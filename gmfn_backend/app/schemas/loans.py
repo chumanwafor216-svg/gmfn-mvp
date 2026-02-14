@@ -2,9 +2,20 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any, Optional, Literal
 
 from pydantic import BaseModel, Field
+
+
+# ✅ Central allowed loan statuses (MVP lifecycle)
+LoanStatus = Literal[
+    "pending",
+    "incomplete",  # needs borrower action: add guarantor or cancel
+    "approved",
+    "cancelled",   # borrower/system cancelled; locks released
+    "rejected",    # admin rejected
+    "declined",    # explicit decline (e.g., guarantor/admin rejection), not incompleteness
+]
 
 
 # -------------------------
@@ -18,7 +29,8 @@ class LoanCreate(BaseModel):
 
 
 class LoanUpdate(BaseModel):
-    status: str
+    # ✅ restrict to known statuses to prevent accidental bad states
+    status: LoanStatus
 
 
 class LoanOut(BaseModel):
@@ -29,7 +41,7 @@ class LoanOut(BaseModel):
     amount: Decimal
     currency: str
 
-    status: str
+    status: LoanStatus
 
     decision_by_user_id: Optional[int] = None
     decision_at: Optional[datetime] = None
@@ -68,7 +80,7 @@ class LoanGuarantorCreate(BaseModel):
 
 
 class LoanGuarantorUpdate(BaseModel):
-    status: str
+    status: Literal["approved", "declined"]  # ✅ only decisions allowed here
     reason: Optional[str] = None
     note: Optional[str] = None
 
@@ -98,24 +110,27 @@ class LoanGuarantorsListResponse(BaseModel):
 
 
 # -------------------------
-# Loan Summary (already used)
+# Loan Summary
 # -------------------------
 
 class LoanSummaryOut(BaseModel):
     id: int
     clan_id: int
     borrower_user_id: int
-    status: str
-    amount: float
+    status: LoanStatus
+
+    # ✅ Decimal-safe (no float drift)
+    amount: Decimal
     currency: str
 
-    service_fee: float
-    net_disbursed_amount: float
-    guarantor_pool: float
-    platform_revenue: float
+    service_fee: Decimal
+    net_disbursed_amount: Decimal
+    guarantor_pool: Decimal
+    platform_revenue: Decimal
 
-    paid_total: float
-    remaining_amount: float
+    paid_total: Decimal
+    remaining_amount: Decimal
+
     repaid_at: Optional[datetime] = None
     due_at: Optional[datetime] = None
 
@@ -128,8 +143,7 @@ class LoanSummaryOut(BaseModel):
 
 
 # -------------------------
-# Repayments list response imports your other module,
-# but keep compatibility with your current routers.
+# Repayments list response
 # -------------------------
 
 class RepaymentsListResponse(BaseModel):

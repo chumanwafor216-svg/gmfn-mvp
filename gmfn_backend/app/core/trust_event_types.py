@@ -17,6 +17,11 @@ class TrustEventType(StrEnum):
     LOAN_AUTO_APPROVED = "LOAN_AUTO_APPROVED"
     LOAN_AUTO_APPROVED_BY_GUARANTORS = "LOAN_AUTO_APPROVED_BY_GUARANTORS"
     LOAN_AUTO_REJECTED = "LOAN_AUTO_REJECTED"
+
+    # ✅ NEW: lifecycle states aligned with GMFN philosophy
+    LOAN_INCOMPLETE = "LOAN_INCOMPLETE"      # quorum/coverage not yet complete
+    LOAN_CANCELLED = "LOAN_CANCELLED"        # borrower/system cancelled incomplete loan
+
     LOAN_REPAID = "LOAN_REPAID"
 
     # =========================
