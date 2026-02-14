@@ -20,7 +20,13 @@ from app.core.clan_auth import (
 from app.core.dev_guard import require_dev_mode  # ✅ DEV MODE GUARD
 from app.db.database import get_db
 from app.db.models import Clan, ClanMembership, User
-
+# ✅ ClanInvite-based invites (single source of truth)
+from app.services.invites_service import (
+    create_clan_invite,
+    join_clan_by_invite_code,
+    frontend_join_link,
+    api_join_link,
+)
 router = APIRouter(prefix="/clans", tags=["clans"])
 
 
@@ -120,7 +126,6 @@ def _is_last_admin(db: Session, *, clan_id: int) -> bool:
 
 
 def _normalize_invite_days(days: Optional[int]) -> int:
-    # default 7, min 1, max 30
     if days is None:
         return 7
     if days < 1:
@@ -131,7 +136,6 @@ def _normalize_invite_days(days: Optional[int]) -> int:
 
 
 def _normalize_invite_max_uses(max_uses: Optional[int]) -> Optional[int]:
-    # None = unlimited, min 1, max 100
     if max_uses is None:
         return None
     if max_uses < 1:
@@ -142,10 +146,6 @@ def _normalize_invite_max_uses(max_uses: Optional[int]) -> Optional[int]:
 
 
 def _ensure_invite_expiry(db: Session, clan: Clan, *, days: Optional[int] = None) -> Clan:
-    """
-    Ensure clan has invite_code + timestamps.
-    If missing, create them.
-    """
     now = datetime.now(timezone.utc)
     days = _normalize_invite_days(days)
     changed = False
@@ -162,7 +162,6 @@ def _ensure_invite_expiry(db: Session, clan: Clan, *, days: Optional[int] = None
         clan.invite_expires_at = now + timedelta(days=days)
         changed = True
 
-    # ensure uses exists
     if getattr(clan, "invite_uses", None) is None:
         clan.invite_uses = 0
         changed = True
@@ -174,8 +173,20 @@ def _ensure_invite_expiry(db: Session, clan: Clan, *, days: Optional[int] = None
     return clan
 
 
+def _utc_aware(dt: Optional[datetime]) -> Optional[datetime]:
+    """
+    SQLite sometimes returns timezone-naive datetimes even when DateTime(timezone=True) is used.
+    Normalize to UTC-aware so comparisons don't crash.
+    """
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
 def _is_invite_expired(clan: Clan) -> bool:
-    expires_at = getattr(clan, "invite_expires_at", None)
+    expires_at = _utc_aware(getattr(clan, "invite_expires_at", None))
     if expires_at is None:
         return False
     return expires_at < datetime.now(timezone.utc)
@@ -215,8 +226,7 @@ def select_clan(
     if not clan:
         raise HTTPException(status_code=404, detail="Clan not found")
 
-    role = "admin" if (current_user.role or "").lower() == "admin" else "user"
-    membership = ensure_membership(db=db, clan=clan, user=current_user, role=role)
+    membership = ensure_membership(db=db, clan=clan, user=current_user, role="admin")
 
     return {
         "ok": True,
@@ -233,6 +243,7 @@ def select_clan(
 @router.post("/{clan_id}/invite", response_model=dict[str, Any])
 def create_invite(
     clan_id: int,
+    request: Request,
     days: Optional[int] = None,
     max_uses: Optional[int] = None,
     db: Session = Depends(get_db),
@@ -242,27 +253,32 @@ def create_invite(
     if int(clan.id) != int(clan_id):
         raise HTTPException(status_code=403, detail="Not allowed")
 
-    clan = _ensure_invite_expiry(db, clan, days=days)
+    days_n = _normalize_invite_days(days)
+    max_uses_n = _normalize_invite_max_uses(max_uses)
 
-    max_uses_norm = _normalize_invite_max_uses(max_uses)
-    if max_uses is not None:
-        clan.invite_max_uses = max_uses_norm
-        if clan.invite_uses is None:
-            clan.invite_uses = 0
-        db.commit()
-        db.refresh(clan)
+    now = datetime.now(timezone.utc)
+    expires_at = now + timedelta(days=days_n)
+
+    inv = create_clan_invite(
+        db,
+        clan_id=int(clan_id),
+        created_by_user=current_user,
+        expires_at=expires_at,
+        max_uses=max_uses_n,
+    )
 
     return {
-        "clan_id": int(clan.id),
-        "invite_code": clan.invite_code,
-        "invite_created_at": clan.invite_created_at,
-        "invite_expires_at": clan.invite_expires_at,
-        "invite_max_uses": clan.invite_max_uses,
-        "invite_uses": int(getattr(clan, "invite_uses", 0) or 0),
-        "invite_text": f"Join my GMFN clan '{clan.name}' using invite code: {clan.invite_code}",
+        "clan_id": int(clan_id),
+        "code": inv.code,
+        "created_at": inv.created_at,
+        "expires_at": inv.expires_at,
+        "is_active": bool(inv.is_active),
+        "uses": int(inv.uses or 0),
+        "max_uses": inv.max_uses,
+        "share_link": frontend_join_link(inv.code),
+        "api_link": api_join_link(request, inv.code),
+        "invite_text": f"Join my GMFN clan '{clan.name}' using invite code: {inv.code}",
     }
-
-
 @router.get("/{clan_id}/invite-link", response_model=dict[str, Any])
 def get_invite_link(
     clan_id: int,
@@ -326,7 +342,7 @@ def join_landing_page(
     else:
         clan_name = getattr(clan, "name", "—")
 
-        expires_at = getattr(clan, "invite_expires_at", None)
+        expires_at = _utc_aware(getattr(clan, "invite_expires_at", None))
         if expires_at is None:
             expires_text = "No expiry"
         else:
@@ -465,7 +481,6 @@ def get_invite_settings(
     if int(clan.id) != int(clan_id):
         raise HTTPException(status_code=403, detail="Not allowed")
 
-    # Ensure fields exist
     clan = _ensure_invite_expiry(db, clan, days=None)
 
     return {
@@ -501,17 +516,12 @@ def update_invite_settings(
 
     now = datetime.now(timezone.utc)
 
-    # Ensure invite exists
     clan = _ensure_invite_expiry(db, clan, days=days_n)
 
-    # Apply settings
     clan.invite_max_uses = max_uses_n
-
-    # Update expiry window from "now" (admin intent)
     clan.invite_created_at = now
     clan.invite_expires_at = now + timedelta(days=days_n)
 
-    # Optional rotate (new code + reset uses)
     if payload.rotate:
         clan.invite_code = secrets.token_urlsafe(16)
         clan.invite_uses = 0
@@ -530,64 +540,23 @@ def update_invite_settings(
     }
 
 
+# ----------------------------
+# Join by invite (THIS is the one that increments invite_uses)
+# ----------------------------
 @router.post("/join-by-invite", status_code=201, response_model=dict[str, Any])
 def join_by_invite(
     payload: JoinByInviteIn,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    clan = db.query(Clan).filter(Clan.invite_code == payload.invite_code).first()
-    if not clan:
-        raise HTTPException(status_code=404, detail="Invalid invite code")
-
-    if _is_invite_expired(clan):
-        raise HTTPException(status_code=400, detail="Invite code expired. Ask admin for a new invite.")
-
-    uses = int(getattr(clan, "invite_uses", 0) or 0)
-    max_uses = getattr(clan, "invite_max_uses", None)
-    if max_uses is not None and uses >= int(max_uses):
-        raise HTTPException(
-            status_code=400,
-            detail="Invite code has reached its usage limit. Ask admin for a new invite.",
-        )
-
-    exists = (
-        db.query(ClanMembership)
-        .filter(ClanMembership.clan_id == clan.id, ClanMembership.user_id == current_user.id)
-        .first()
-    )
-    if exists:
-        raise HTTPException(status_code=409, detail="Already a member of this clan")
-
-    m = ClanMembership(
-        clan_id=clan.id,
-        user_id=current_user.id,
-        role="user",
-        personal_pool_balance=Decimal("0"),
-    )
-    db.add(m)
-
-    # increment uses
-    clan.invite_uses = uses + 1
-
-    db.commit()
-    db.refresh(m)
-    db.refresh(clan)
-
-    return {
-        "ok": True,
-        "clan_id": int(clan.id),
-        "membership_id": int(m.id),
-        "role": m.role,
-        "invite_uses": int(getattr(clan, "invite_uses", 0) or 0),
-        "invite_max_uses": clan.invite_max_uses,
-    }
-
+    code = (payload.invite_code or "").strip()
+    out = join_clan_by_invite_code(db, code=code, user=current_user)
+    return {"ok": True, **out}
 
 # ----------------------------
 # Clan lifecycle routes
 # ----------------------------
-@router.post("", status_code=201, response_model=ClanOut)
+@router.post("/", status_code=201, response_model=ClanOut)  # ✅ FIXED: was ""
 def create_clan(
     payload: ClanCreateIn,
     db: Session = Depends(get_db),

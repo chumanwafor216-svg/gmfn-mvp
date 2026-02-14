@@ -7,7 +7,7 @@ from app.db.database import Base, engine
 import app.db.models  # noqa: F401
 
 
-app = FastAPI(title="GMFN MVP API")
+app = FastAPI(debug=True)
 app.include_router(api_router)
 
 

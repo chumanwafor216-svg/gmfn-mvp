@@ -3,45 +3,41 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from decimal import Decimal
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.db.database import get_db
 from app.core.auth import get_current_user
 from app.core.clan_auth import get_current_clan_membership
+from app.db.database import get_db
+from app.db.models import ClanMembership, Loan, LoanGuarantor, User
 
-from app.db.models import User, Loan, ClanMembership, LoanGuarantor
-
-from app.schemas.repayments import RepaymentCreate, RepaymentOut, RepaymentsListResponse
+from app.schemas.guarantor_suggestions import GuarantorSuggestionsResponse
 from app.schemas.loans import (
-    LoansListResponse,
     LoanCreate,
-    LoanUpdate,
-    LoanOut,
     LoanGuarantorCreate,
     LoanGuarantorOut,
-    LoanSummaryOut,
-    LoanGuarantorsListResponse,
     LoanGuarantorUpdate,
+    LoanGuarantorsListResponse,
+    LoanOut,
+    LoanSummaryOut,
+    LoansListResponse,
+    LoanUpdate,
 )
-from app.schemas.guarantor_suggestions import GuarantorSuggestionsResponse
+from app.schemas.repayments import RepaymentCreate, RepaymentOut, RepaymentsListResponse
 
-from app.services.repayments_service import create_repayment, list_repayments
-from app.services.trust_events_services import log_trust_event
+from app.services.guarantor_suggestions_service import suggest_guarantors_for_loan
 from app.services.loan_approval import approve_loan
 from app.services.loans_service import (
     add_loan_guarantor,
+    count_approved_guarantors,
     list_loan_guarantors,
     update_loan_guarantor_status,
-    count_approved_guarantors,
 )
-
-# Trust enforcement (B3) — OFF by default via env flag
-from app.services.trust_score_service import trust_enforcement_enabled, loan_policy_for_band
-
-# Guarantor suggestions (C2)
-from app.services.guarantor_suggestions_service import suggest_guarantors_for_loan
+from app.services.repayments_service import create_repayment, list_repayments
+from app.services.trust_events_services import log_trust_event
+from app.services.trust_score_service import loan_policy_for_band, trust_enforcement_enabled
 
 
 router = APIRouter(prefix="/loans", tags=["loans"])
@@ -66,7 +62,7 @@ def list_all_loans_admin(
     db: Session = Depends(get_db),
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
-    clan, membership, current_user = clan_ctx
+    clan, membership, _current_user = clan_ctx
     _require_clan_admin(membership)
 
     items = (
@@ -83,7 +79,7 @@ def list_my_loans(
     db: Session = Depends(get_db),
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
-    clan, membership, current_user = clan_ctx
+    clan, _membership, current_user = clan_ctx
 
     items = (
         db.query(Loan)
@@ -108,15 +104,17 @@ def create_loan(
         raise HTTPException(status_code=400, detail="amount must be > 0")
 
     personal_pool = getattr(membership, "personal_pool_balance", None) or Decimal("0")
-    within_pool = requested <= personal_pool
 
-    # Existing default rule:
+    pool_used = min(requested, personal_pool)
+    guarantee_gap = max(Decimal("0"), requested - personal_pool)
+    within_pool = (guarantee_gap == 0)
+
     guarantors_required = 0 if within_pool else 2
     new_status = "approved" if within_pool else "pending"
     decision_by_user_id = _uid(current_user) if within_pool else None
     decision_at = datetime.now(timezone.utc) if within_pool else None
 
-    # ✅ B3: Trust band enforcement (only if enabled)
+    # ✅ Trust band enforcement (only if enabled)
     if trust_enforcement_enabled():
         band = getattr(current_user, "trust_band", None) or "C"
         policy = loan_policy_for_band(band)
@@ -137,27 +135,29 @@ def create_loan(
         amount=requested,
         currency=getattr(payload, "currency", None) or "NGN",
         status=new_status,
-        guarantors_required=guarantors_required,
+        guarantors_required=int(guarantors_required),
+        personal_pool_at_request=personal_pool,
+        pool_used=pool_used,
+        guarantee_gap=guarantee_gap,
         decision_by_user_id=decision_by_user_id,
         decision_at=decision_at,
     )
     db.add(loan)
 
-    # Auto-approved via personal pool: reduce personal balance
+    # ✅ Only deduct immediately when fully within pool (MVP)
     if within_pool:
         db_membership = db.get(ClanMembership, membership.id)
         if db_membership:
-            db_membership.personal_pool_balance = personal_pool - requested
+            db_membership.personal_pool_balance = (personal_pool - requested)
 
     db.commit()
     db.refresh(loan)
 
-    # ✅ TrustEvent: loan created (with explainable meta)
     log_trust_event(
         db,
         event_type="loan.created",
-        clan_id=clan.id,
-        loan_id=loan.id,
+        clan_id=int(clan.id),
+        loan_id=int(loan.id),
         guarantor_id=None,
         actor_user_id=_uid(current_user),
         subject_user_id=_uid(current_user),
@@ -165,15 +165,20 @@ def create_loan(
             "reason": "loan_created",
             "note": (
                 f"Loan request created for {loan.currency} {str(requested)}. "
-                f"Status set to '{loan.status}'. "
-                f"{'Covered by personal pool (no guarantors required).' if within_pool else 'Guarantors required for approval.'}"
+                f"Personal pool at request={str(personal_pool)}. "
+                f"Pool used={str(pool_used)}. "
+                f"Guarantee gap={str(guarantee_gap)}. "
+                f"Status='{loan.status}'. "
+                f"{'Covered fully by personal pool.' if within_pool else 'Guarantors required to cover gap beyond personal pool.'}"
             ),
             "amount": str(requested),
             "currency": loan.currency,
             "status": loan.status,
-            "guarantors_required": guarantors_required,
-            "within_personal_pool": within_pool,
-            "personal_pool_balance": str(personal_pool),
+            "guarantors_required": int(guarantors_required),
+            "within_personal_pool": bool(within_pool),
+            "personal_pool_at_request": str(personal_pool),
+            "pool_used": str(pool_used),
+            "guarantee_gap": str(guarantee_gap),
         },
     )
 
@@ -181,8 +186,8 @@ def create_loan(
         log_trust_event(
             db,
             event_type="loan.auto_approved_by_pool",
-            clan_id=clan.id,
-            loan_id=loan.id,
+            clan_id=int(clan.id),
+            loan_id=int(loan.id),
             guarantor_id=None,
             actor_user_id=_uid(current_user),
             subject_user_id=_uid(current_user),
@@ -262,8 +267,8 @@ def update_loan_status(
         log_trust_event(
             db,
             event_type="loan.approved_by_admin",
-            clan_id=clan.id,
-            loan_id=loan.id,
+            clan_id=int(clan.id),
+            loan_id=int(loan.id),
             guarantor_id=None,
             actor_user_id=_uid(current_user),
             subject_user_id=int(loan.borrower_user_id),
@@ -285,8 +290,8 @@ def update_loan_status(
         log_trust_event(
             db,
             event_type="loan.rejected_by_admin",
-            clan_id=clan.id,
-            loan_id=loan.id,
+            clan_id=int(clan.id),
+            loan_id=int(loan.id),
             guarantor_id=None,
             actor_user_id=_uid(current_user),
             subject_user_id=int(loan.borrower_user_id),
@@ -334,9 +339,9 @@ def create_loan_guarantor(
     log_trust_event(
         db,
         event_type="guarantor.requested",
-        clan_id=clan.id,
-        loan_id=loan.id,
-        guarantor_id=guarantor.id,
+        clan_id=int(clan.id),
+        loan_id=int(loan.id),
+        guarantor_id=int(guarantor.id),
         actor_user_id=_uid(current_user),
         subject_user_id=int(payload.guarantor_user_id),
         meta={
@@ -361,7 +366,7 @@ def get_loan_guarantors(
     db: Session = Depends(get_db),
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
-    clan, membership, current_user = clan_ctx
+    clan, membership, _current_user = clan_ctx
 
     loan = db.get(Loan, loan_id)
     if not loan:
@@ -372,7 +377,6 @@ def get_loan_guarantors(
     return {"items": items, "total": len(items)}
 
 
-# ✅ C2: suggestions endpoint
 @router.get("/{loan_id}/guarantors/suggestions", response_model=GuarantorSuggestionsResponse)
 def get_guarantor_suggestions(
     loan_id: int,
@@ -380,7 +384,7 @@ def get_guarantor_suggestions(
     db: Session = Depends(get_db),
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
-    clan, membership, current_user = clan_ctx
+    clan, membership, _current_user = clan_ctx
 
     loan = db.get(Loan, loan_id)
     if not loan:
@@ -422,61 +426,22 @@ def decide_loan_guarantor(
     if (not is_guarantor) and (not is_admin):
         raise HTTPException(status_code=403, detail="Only the guarantor or a clan admin can decide")
 
+    # Borrower must not decide guarantees
     if int(loan.borrower_user_id) == _uid(current_user) and not is_guarantor:
         raise HTTPException(status_code=403, detail="Borrower cannot decide guarantees")
 
+    # ✅ Service is canonical:
+    # - enforces availability
+    # - locks pledge on approval
+    # - logs canonical TrustEvents
+    # - evaluates loan auto-approval/rejection
     result = update_loan_guarantor_status(
         db,
         guarantor_id=guarantor_id,
-        clan_id=clan.id,
+        clan_id=int(clan.id),
         status=payload.status,
         decided_by_user_id=_uid(current_user),
     )
-
-    meta = {
-        "status": payload.status,
-        "reason": getattr(payload, "reason", None) or f"guarantor_{payload.status}",
-        "note": getattr(payload, "note", None)
-        or f"Guarantor set status to '{payload.status}' for loan #{loan.id}.",
-    }
-    if getattr(payload, "reason", None):
-        meta["reason"] = payload.reason
-    if getattr(payload, "note", None):
-        meta["note"] = payload.note
-
-    log_trust_event(
-        db,
-        event_type="guarantor.decided",
-        clan_id=clan.id,
-        loan_id=loan.id,
-        guarantor_id=guarantor_id,
-        actor_user_id=_uid(current_user),
-        subject_user_id=int(g.guarantor_user_id),
-        meta=meta,
-    )
-
-    if payload.status == "approved":
-        db.refresh(loan)
-        if loan.status == "pending":
-            approved_count = count_approved_guarantors(db, loan_id=loan.id)
-            required = loan.guarantors_required or 0
-            if required > 0 and approved_count >= required:
-                approve_loan(db=db, loan=loan, decided_by_user_id=_uid(current_user))
-                log_trust_event(
-                    db,
-                    event_type="loan.auto_approved_by_guarantors",
-                    clan_id=clan.id,
-                    loan_id=loan.id,
-                    guarantor_id=None,
-                    actor_user_id=_uid(current_user),
-                    subject_user_id=int(loan.borrower_user_id),
-                    meta={
-                        "reason": "loan_auto_approved_by_guarantors",
-                        "note": f"Loan auto-approved after enough guarantors approved ({approved_count}/{required}).",
-                        "approved_count": approved_count,
-                        "required": required,
-                    },
-                )
 
     return result
 
@@ -488,34 +453,13 @@ def repay_loan(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    repayment, loan = create_repayment(
+    # ✅ Service handles all repayment math AND all TrustEvents.
+    repayment, _loan = create_repayment(
         db=db,
         loan_id=loan_id,
         payer=current_user,
         amount=Decimal(str(payload.amount)),
     )
-
-    log_trust_event(
-        db,
-        event_type="repayment.made",
-        clan_id=int(loan.clan_id),
-        loan_id=int(loan.id),
-        guarantor_id=None,
-        actor_user_id=_uid(current_user),
-        subject_user_id=int(loan.borrower_user_id),
-        meta={
-            "reason": "repayment_made",
-            "note": (
-                f"Repayment recorded for loan #{loan.id}: "
-                f"{loan.currency} {str(payload.amount)} paid by user #{_uid(current_user)}."
-            ),
-            "amount": str(payload.amount),
-            "currency": loan.currency,
-            "payer_user_id": _uid(current_user),
-            "borrower_user_id": int(loan.borrower_user_id),
-        },
-    )
-
     return repayment
 
 
@@ -582,19 +526,22 @@ def get_loan_summary(
         .count()
     )
 
+    def s(x) -> str:
+        return str(x if x is not None else 0)
+
     return {
-        "id": loan.id,
-        "clan_id": loan.clan_id,
-        "borrower_user_id": loan.borrower_user_id,
+        "id": int(loan.id),
+        "clan_id": int(loan.clan_id),
+        "borrower_user_id": int(loan.borrower_user_id),
         "status": loan.status,
-        "amount": float(loan.amount),
+        "amount": s(getattr(loan, "amount", 0) or 0),
         "currency": loan.currency,
-        "service_fee": float(getattr(loan, "service_fee", 0) or 0),
-        "net_disbursed_amount": float(getattr(loan, "net_disbursed_amount", 0) or 0),
-        "guarantor_pool": float(getattr(loan, "guarantor_pool", 0) or 0),
-        "platform_revenue": float(getattr(loan, "platform_revenue", 0) or 0),
-        "paid_total": float(getattr(loan, "paid_total", 0) or 0),
-        "remaining_amount": float(getattr(loan, "remaining_amount", 0) or 0),
+        "service_fee": s(getattr(loan, "service_fee", 0) or 0),
+        "net_disbursed_amount": s(getattr(loan, "net_disbursed_amount", 0) or 0),
+        "guarantor_pool": s(getattr(loan, "guarantor_pool", 0) or 0),
+        "platform_revenue": s(getattr(loan, "platform_revenue", 0) or 0),
+        "paid_total": s(getattr(loan, "paid_total", 0) or 0),
+        "remaining_amount": s(getattr(loan, "remaining_amount", 0) or 0),
         "repaid_at": getattr(loan, "repaid_at", None),
         "due_at": getattr(loan, "due_at", None),
         "guarantors_required": int(getattr(loan, "guarantors_required", 0) or 0),
@@ -602,4 +549,103 @@ def get_loan_summary(
         "approved_guarantors": int(approved_guarantors),
         "created_at": getattr(loan, "created_at", None),
         "decision_at": getattr(loan, "decision_at", None),
+    }
+
+
+@router.get("/{loan_id}/trustslip_preview")
+def trustslip_preview(
+    loan_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Read-only TrustSlip-style preview for MVP.
+    Uses TrustEvents as evidence source (loan.created meta for pool_used/guarantee_gap).
+    """
+    import json
+    from sqlalchemy import func
+    from app.db.models import Clan, Repayment, TrustEvent
+
+    loan = db.get(Loan, loan_id)
+    if not loan:
+        raise HTTPException(status_code=404, detail="Loan not found")
+
+    m = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.user_id == _uid(current_user),
+            ClanMembership.clan_id == loan.clan_id,
+        )
+        .first()
+    )
+    if not m:
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    is_clan_admin = (m.role or "").lower() == "admin"
+    is_owner = int(loan.borrower_user_id) == _uid(current_user)
+    if not (is_owner or is_clan_admin):
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    clan = db.get(Clan, int(loan.clan_id))
+
+    ev = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.loan_id == loan.id, TrustEvent.event_type == "loan.created")
+        .order_by(TrustEvent.id.asc())
+        .first()
+    )
+
+    pool_used = None
+    guarantee_gap = None
+    personal_pool_at_request = None
+
+    if ev and getattr(ev, "meta_json", None):
+        try:
+            meta = json.loads(ev.meta_json)
+            pool_used = meta.get("pool_used")
+            guarantee_gap = meta.get("guarantee_gap")
+            personal_pool_at_request = meta.get("personal_pool_at_request")
+        except Exception:
+            pass
+
+    approved_guarantors = (
+        db.query(LoanGuarantor)
+        .filter(LoanGuarantor.loan_id == loan.id, LoanGuarantor.status == "approved")
+        .count()
+    )
+
+    pledged_coverage_raw = (
+        db.query(func.coalesce(func.sum(LoanGuarantor.locked_amount), 0))
+        .filter(LoanGuarantor.loan_id == loan.id, LoanGuarantor.status == "approved")
+        .scalar()
+        or 0
+    )
+
+    last_repayment = (
+        db.query(Repayment)
+        .filter(Repayment.loan_id == loan.id)
+        .order_by(Repayment.id.desc())
+        .first()
+    )
+
+    return {
+        "title": "GMFN TrustSlip Preview (MVP)",
+        "borrower_user_id": int(loan.borrower_user_id),
+        "clan_id": int(loan.clan_id),
+        "clan_name": getattr(clan, "name", None) if clan else None,
+        "currency": loan.currency,
+        "authorized_trust_limit": str(getattr(loan, "amount", 0) or 0),
+        "personal_pool_at_request": personal_pool_at_request,
+        "pool_used": pool_used,
+        "guarantee_gap": guarantee_gap,
+        "guarantors_required": int(getattr(loan, "guarantors_required", 0) or 0),
+        "approved_guarantors": int(approved_guarantors),
+        "pledged_coverage": str(Decimal(str(pledged_coverage_raw))),
+        "loan_status": loan.status,
+        "last_repayment_amount": str(getattr(last_repayment, "amount", 0) or 0) if last_repayment else None,
+        "last_repayment_at": getattr(last_repayment, "created_at", None) if last_repayment else None,
+        "breach_consequence": (
+            "If trust is breached, guarantors are notified and future trust access may be reduced. "
+            "This is not a bank guarantee."
+        ),
     }

@@ -1,66 +1,74 @@
-﻿from datetime import datetime
-from typing import List, Literal, Optional
-from typing import Optional
-from pydantic import BaseModel
+﻿from __future__ import annotations
+
+from datetime import datetime
+from decimal import Decimal
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
-LoanStatus = Literal["pending", "approved", "rejected"]
-GuarantorStatus = Literal["pending", "approved", "declined"]
-
 
 # -------------------------
-# Loans
+# Core Loan Schemas
 # -------------------------
+
 class LoanCreate(BaseModel):
-    amount: float = Field(..., gt=0)
+    clan_id: int
+    amount: Decimal
+    currency: Optional[str] = "NGN"
 
 
 class LoanUpdate(BaseModel):
-    status: LoanStatus
+    status: str
 
 
 class LoanOut(BaseModel):
     id: int
     borrower_user_id: int
     clan_id: int
-    amount: float
+
+    amount: Decimal
     currency: str
-    status: LoanStatus
+
+    status: str
 
     decision_by_user_id: Optional[int] = None
     decision_at: Optional[datetime] = None
 
-    service_fee: float = 0
-    net_disbursed_amount: float = 0
-    guarantor_pool: float = 0
-    platform_revenue: float = 0
+    service_fee: Decimal = Decimal("0")
+    net_disbursed_amount: Decimal = Decimal("0")
+    guarantor_pool: Decimal = Decimal("0")
+    platform_revenue: Decimal = Decimal("0")
 
-    paid_total: float = 0
-    remaining_amount: float = 0
+    paid_total: Decimal = Decimal("0")
+    remaining_amount: Decimal = Decimal("0")
     repaid_at: Optional[datetime] = None
     due_at: Optional[datetime] = None
 
     created_at: Optional[datetime] = None
 
-    model_config = {"from_attributes": True}
+    # ✅ CRITICAL: needed by UI + lifecycle logic
+    guarantors_required: int = 0
+
+    class Config:
+        from_attributes = True
 
 
 class LoansListResponse(BaseModel):
-    items: List[LoanOut]
+    items: list[LoanOut]
     total: int
 
 
 # -------------------------
 # Guarantors
 # -------------------------
+
 class LoanGuarantorCreate(BaseModel):
     guarantor_user_id: int
-    pledge_amount: float = 0
+    pledge_amount: Decimal = Field(..., gt=Decimal("0"))
 
 
 class LoanGuarantorUpdate(BaseModel):
-    status: str  # "approved" | "declined"
+    status: str
     reason: Optional[str] = None
     note: Optional[str] = None
 
@@ -70,47 +78,34 @@ class LoanGuarantorOut(BaseModel):
     loan_id: int
     clan_id: int
     guarantor_user_id: int
-    pledge_amount: float
+
+    pledge_amount: Decimal
     status: str
+
     responded_at: Optional[datetime] = None
 
-    # liability lock fields (optional; include if your DB has them)
-    is_locked: Optional[bool] = None
-    locked_amount: Optional[float] = None
-    released_amount: Optional[float] = None
+    is_locked: bool = True
+    locked_amount: Decimal = Decimal("0")
+    released_amount: Decimal = Decimal("0")
 
-    model_config = {"from_attributes": True}
+    class Config:
+        from_attributes = True
 
 
 class LoanGuarantorsListResponse(BaseModel):
-    items: List[LoanGuarantorOut]
+    items: list[LoanGuarantorOut]
     total: int
 
 
 # -------------------------
-# Pool balance
+# Loan Summary (already used)
 # -------------------------
-class PoolBalanceUpdate(BaseModel):
-    personal_pool_balance: float = Field(..., ge=0)
 
-
-class PoolBalanceOut(BaseModel):
-    clan_id: int
-    user_id: int
-    personal_pool_balance: float
-
-    model_config = {"from_attributes": True}
-
-
-# -------------------------
-# Loan summary
-# -------------------------
 class LoanSummaryOut(BaseModel):
     id: int
     clan_id: int
     borrower_user_id: int
     status: str
-
     amount: float
     currency: str
 
@@ -128,7 +123,15 @@ class LoanSummaryOut(BaseModel):
     guarantors_total: int
     approved_guarantors: int
 
-    created_at: datetime
+    created_at: Optional[datetime] = None
     decision_at: Optional[datetime] = None
 
-    model_config = {"from_attributes": True} 
+
+# -------------------------
+# Repayments list response imports your other module,
+# but keep compatibility with your current routers.
+# -------------------------
+
+class RepaymentsListResponse(BaseModel):
+    items: list[Any]
+    total: int

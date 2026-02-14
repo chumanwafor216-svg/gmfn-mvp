@@ -39,29 +39,44 @@ def _release_guarantor_locks_proportional(
 ) -> Dict[int, Dict[str, Any]]:
     """
     Release guarantor locked amounts proportionally as repayments happen.
-    Returns per-guarantor deltas so we can log a useful TrustEvent summary:
-      { guarantor_id: {released_delta, locked_before, locked_after} }
+    Only touches guarantors that are actually locked + approved.
+
+    Returns per-guarantor deltas for useful TrustEvent logging:
+      { guarantor_row_id: {guarantor_user_id, released_delta, locked_before, locked_after} }
     """
+    if repayment_amount <= 0:
+        return {}
+
     guarantors: List[LoanGuarantor] = (
         db.query(LoanGuarantor)
-        .filter(LoanGuarantor.loan_id == loan_id)
+        .filter(
+            LoanGuarantor.loan_id == loan_id,
+            LoanGuarantor.status == "approved",
+            LoanGuarantor.is_locked == True,  # noqa: E712
+        )
         .all()
     )
     if not guarantors:
         return {}
 
     total_locked = sum((_to_decimal(g.locked_amount or 0) for g in guarantors), Decimal("0"))
-    if total_locked <= 0 or repayment_amount <= 0:
+    if total_locked <= 0:
+        # Nothing to release
+        for g in guarantors:
+            g.is_locked = False
+            g.locked_amount = Decimal("0")
         return {}
 
     deltas: Dict[int, Dict[str, Any]] = {}
 
+    # Proportional release; rounding may leave tiny remainder, which is cleaned up on final repay.
     for g in guarantors:
         locked = _to_decimal(g.locked_amount or 0)
         released = _to_decimal(g.released_amount or 0)
 
         if locked <= 0:
             g.is_locked = False
+            g.locked_amount = Decimal("0")
             continue
 
         locked_before = locked
@@ -182,7 +197,7 @@ def create_repayment(
             },
         )
 
-    # If fully repaid -> close loan + fully unlock guarantors
+    # If fully repaid -> close loan + fully unlock approved guarantors
     if _to_decimal(loan.remaining_amount) <= 0:
         loan.repaid_at = datetime.now(timezone.utc)
         loan.remaining_amount = Decimal("0")
@@ -190,7 +205,10 @@ def create_repayment(
 
         guarantors = (
             db.query(LoanGuarantor)
-            .filter(LoanGuarantor.loan_id == loan.id)
+            .filter(
+                LoanGuarantor.loan_id == loan.id,
+                LoanGuarantor.status == "approved",
+            )
             .all()
         )
         for g in guarantors:

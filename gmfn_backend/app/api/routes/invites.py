@@ -27,6 +27,9 @@ from app.services.invites_service import (
 router = APIRouter(prefix="/invites", tags=["invites"])
 
 
+# -------------------------
+# Create invite
+# -------------------------
 @router.post(
     "/clans/{clan_id}",
     response_model=ClanInviteOut,
@@ -63,6 +66,9 @@ def create_invite(
     }
 
 
+# -------------------------
+# List clan invites
+# -------------------------
 @router.get(
     "/clans/{clan_id}",
     response_model=list[ClanInviteOut],
@@ -95,12 +101,14 @@ def get_clan_invites(
     ]
 
 
+# -------------------------
+# Share link helper
+# -------------------------
 @router.get(
     "/share/{code}",
     operation_id="invites_share_links",
 )
 def get_share_link(code: str, request: Request):
-    # keep this so you can copy/debug easily
     return {
         "code": code,
         "share_link": frontend_join_link(code),
@@ -108,6 +116,9 @@ def get_share_link(code: str, request: Request):
     }
 
 
+# -------------------------
+# Public preview
+# -------------------------
 @router.get(
     "/preview/{code}",
     response_model=InvitePreviewOut,
@@ -117,10 +128,12 @@ def get_invite_preview(
     code: str,
     db: Session = Depends(get_db),
 ):
-    # public preview (no auth needed)
     return preview_invite(db, code=code)
 
 
+# -------------------------
+# Join via invite
+# -------------------------
 @router.post(
     "/join",
     response_model=JoinByInviteOut,
@@ -134,6 +147,9 @@ def join_by_invite(
     return join_clan_by_invite_code(db, code=payload.code, user=user)
 
 
+# -------------------------
+# Revoke invite
+# -------------------------
 @router.post(
     "/revoke/{code}",
     response_model=InviteRevokeOut,
@@ -145,4 +161,8 @@ def revoke_invite_route(
     user: User = Depends(get_current_user),
 ):
     inv = revoke_invite(db, code=code, user=user)
-    return {"code": inv.code, "is_active": inv.is_active, "revoked_at": inv.revoked_at}
+    return {
+        "code": inv.code,
+        "is_active": inv.is_active,
+        "revoked_at": inv.revoked_at,
+    }

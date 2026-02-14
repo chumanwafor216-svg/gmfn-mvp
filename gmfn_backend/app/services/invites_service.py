@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import os
+import secrets
 import time
 from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import HTTPException, Request
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.models import Clan, ClanInvite, ClanMembership, User
@@ -49,8 +51,20 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _utc_aware(dt: Optional[datetime]) -> Optional[datetime]:
+    """
+    SQLite may return timezone-naive datetimes even when DateTime(timezone=True) is used.
+    Normalize to UTC-aware for safe comparisons.
+    """
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
 def _require_member_or_admin(db: Session, *, clan_id: int, user: User) -> None:
-    if getattr(user, "role", None) == "admin":
+    if (getattr(user, "role", None) or "").lower() == "admin":
         return
 
     m = (
@@ -90,13 +104,12 @@ def create_clan_invite(
         raise HTTPException(status_code=404, detail="Clan not found")
 
     _require_member_or_admin(db, clan_id=clan_id, user=created_by_user)
-
-    # ✅ Abuse control: rate-limit invite creation
     _rate_limit_create_invite(int(created_by_user.id), int(clan_id), limit=20, window_seconds=3600)
 
     invite = ClanInvite(
         clan_id=clan_id,
         created_by_user_id=created_by_user.id,
+        code=secrets.token_urlsafe(10),
         expires_at=expires_at,
         max_uses=max_uses,
         uses=0,
@@ -109,15 +122,14 @@ def create_clan_invite(
     db.commit()
     db.refresh(invite)
 
-    # ✅ TrustEvent: invite created
     log_trust_event(
         db,
         event_type="invite_created",
         clan_id=clan_id,
         loan_id=None,
         guarantor_id=None,
-        actor_user_id=created_by_user.id,
-        subject_user_id=created_by_user.id,
+        actor_user_id=int(created_by_user.id),
+        subject_user_id=int(created_by_user.id),
         meta={
             "invite_code": invite.code,
             "max_uses": invite.max_uses,
@@ -169,7 +181,7 @@ def revoke_invite(db: Session, *, code: str, user: User) -> ClanInvite:
     if not invite:
         raise HTTPException(status_code=404, detail="Invite not found")
 
-    _require_member_or_admin(db, clan_id=invite.clan_id, user=user)
+    _require_member_or_admin(db, clan_id=int(invite.clan_id), user=user)
 
     invite.is_active = False
     invite.revoked_at = _utcnow()
@@ -177,27 +189,30 @@ def revoke_invite(db: Session, *, code: str, user: User) -> ClanInvite:
     db.commit()
     db.refresh(invite)
 
-    # ✅ TrustEvent: invite revoked
     log_trust_event(
         db,
         event_type="invite_revoked",
-        clan_id=invite.clan_id,
+        clan_id=int(invite.clan_id),
         loan_id=None,
         guarantor_id=None,
-        actor_user_id=user.id,
-        subject_user_id=invite.created_by_user_id,
+        actor_user_id=int(user.id),
+        subject_user_id=int(invite.created_by_user_id),
         meta={
+            "reason": "invite_revoked",
+            "note": f"Invite {invite.code} was revoked.",
             "invite_code": invite.code,
             "uses": invite.uses,
             "max_uses": invite.max_uses,
         },
     )
 
+    recompute_trust_for_user_id(db, user_id=int(invite.created_by_user_id), source="invite_revoked")
+
     return invite
 
 
-def join_clan_by_invite_code(db: Session, *, code: str, user: User) -> tuple[Clan, ClanMembership]:
-    # ✅ Abuse control: rate-limit join attempts
+def join_clan_by_invite_code(db: Session, *, code: str, user: User):
+    # Abuse control
     _rate_limit_join(int(user.id), limit=10, window_seconds=600)
 
     invite = db.query(ClanInvite).filter(ClanInvite.code == code).first()
@@ -212,74 +227,116 @@ def join_clan_by_invite_code(db: Session, *, code: str, user: User) -> tuple[Cla
     if invite.revoked_at is not None:
         raise HTTPException(status_code=400, detail="Invite revoked")
 
-    if invite.expires_at is not None and invite.expires_at <= now:
+    expires_at = _utc_aware(invite.expires_at)
+    if expires_at is not None and expires_at <= now:
         raise HTTPException(status_code=400, detail="Invite expired")
 
     if invite.max_uses is not None and (invite.uses or 0) >= invite.max_uses:
         invite.is_active = False
         db.commit()
-        raise HTTPException(status_code=400, detail="Invite usage limit reached")
+        raise HTTPException(status_code=409, detail="Invite usage limit reached")
 
     clan = db.get(Clan, invite.clan_id)
     if not clan:
         raise HTTPException(status_code=404, detail="Clan not found")
 
+    # Already a member?
     existing = (
         db.query(ClanMembership)
         .filter(ClanMembership.clan_id == clan.id, ClanMembership.user_id == user.id)
         .first()
     )
     if existing:
-        return clan, existing
+        return {
+            "clan_id": clan.id,
+            "clan_name": clan.name,
+            "membership_id": existing.id,
+        }
 
-    max_members = getattr(clan, "max_members", None)
-    if max_members is not None:
-        member_count = db.query(ClanMembership).filter(ClanMembership.clan_id == clan.id).count()
-        if member_count >= int(max_members):
-            raise HTTPException(status_code=400, detail="Clan is full")
+    inviter_id = int(invite.created_by_user_id) if invite.created_by_user_id else None
 
-    membership = ClanMembership(clan_id=clan.id, user_id=user.id, role="member")
+    # ✅ Store provenance if model supports it (it does in your models.py)
+    membership = ClanMembership(
+        clan_id=clan.id,
+        user_id=user.id,
+        role="user",
+        invited_by_user_id=inviter_id,
+        invite_id=int(invite.id),
+    )
     db.add(membership)
 
     invite.uses = (invite.uses or 0) + 1
     if invite.max_uses is not None and invite.uses >= invite.max_uses:
         invite.is_active = False
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        existing2 = (
+            db.query(ClanMembership)
+            .filter(ClanMembership.clan_id == clan.id, ClanMembership.user_id == user.id)
+            .first()
+        )
+        if existing2:
+            return {
+                "clan_id": clan.id,
+                "clan_name": clan.name,
+                "membership_id": existing2.id,
+            }
+        raise HTTPException(status_code=409, detail="Membership already exists")
+
     db.refresh(membership)
 
-    # ✅ TrustEvent: joined via invite
     log_trust_event(
         db,
         event_type="clan_join_via_invite",
-        clan_id=clan.id,
+        clan_id=int(clan.id),
         loan_id=None,
         guarantor_id=None,
-        actor_user_id=user.id,
-        subject_user_id=user.id,
+        actor_user_id=int(user.id),
+        subject_user_id=int(user.id),
         meta={
+            "reason": "invite_join_success",
+            "note": f"User joined clan #{clan.id} via invite code {invite.code}.",
             "invite_code": invite.code,
-            "invited_by_user_id": invite.created_by_user_id,
+            "invited_by_user_id": inviter_id,
+            "invite_id": int(invite.id),
             "uses_after": invite.uses,
             "max_uses": invite.max_uses,
         },
     )
-    # joiner trust
-    # 🔍 Trust source: joined via invite
-    recompute_trust_for_user_id(
-    db,
-    user_id=int(user.id),
-    source="invite_join",
-)
 
-    # inviter trust (if known)
-    # 🔍 Trust source: successful invite onboarding
-    recompute_trust_for_user_id(
-    db,
-    user_id=int(invite.created_by_user_id),
-    source="invite_success",
-)
+    if inviter_id is not None and inviter_id != int(user.id):
+        log_trust_event(
+            db,
+            event_type="invite_successful_onboarding",
+            clan_id=int(clan.id),
+            loan_id=None,
+            guarantor_id=None,
+            actor_user_id=int(user.id),
+            subject_user_id=int(inviter_id),
+            meta={
+                "reason": "invite_onboarding_success",
+                "note": (
+                    f"Inviter user #{inviter_id} successfully onboarded "
+                    f"user #{int(user.id)} into clan #{clan.id}."
+                ),
+                "invite_code": invite.code,
+                "joiner_user_id": int(user.id),
+                "clan_id": int(clan.id),
+                "invite_id": int(invite.id),
+                "uses_after": invite.uses,
+                "max_uses": invite.max_uses,
+            },
+        )
 
-    recompute_trust_for_user_id(db, user_id=int(invite.created_by_user_id))
+    recompute_trust_for_user_id(db, user_id=int(user.id), source="invite_join")
+    if inviter_id is not None and inviter_id != int(user.id):
+        recompute_trust_for_user_id(db, user_id=int(inviter_id), source="invite_success")
 
-    return clan, membership
+    return {
+        "clan_id": clan.id,
+        "clan_name": clan.name,
+        "membership_id": membership.id,
+    }

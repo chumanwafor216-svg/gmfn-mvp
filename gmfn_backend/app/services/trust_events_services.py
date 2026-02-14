@@ -21,23 +21,32 @@ def log_trust_event(
     clan_id: int,
     actor_user_id: int,
     subject_user_id: int,
-    loan_id: int,  # ✅ required (your TrustEvent.loan_id is nullable=False)
+    loan_id: Optional[int] = None,  # ✅ now optional at call level
     guarantor_id: Optional[int] = None,
     meta: Optional[Dict[str, Any]] = None,
 ) -> TrustEvent:
     """
     Append a trust event (append-only ledger).
+
+    IMPORTANT:
+    Your DB requires loan_id (nullable=False).
+    So for non-loan events (like invite join),
+    we safely store 0 instead of None.
     """
+
+    safe_loan_id = int(loan_id or 0)  # ✅ prevents 500 crash
+
     ev = TrustEvent(
-        event_type=str(event_type),  # ✅ enum stored as string
+        event_type=str(event_type),
         clan_id=clan_id,
-        loan_id=loan_id,
+        loan_id=safe_loan_id,
         guarantor_id=guarantor_id,
         actor_user_id=actor_user_id,
         subject_user_id=subject_user_id,
-        meta=meta,  # ✅ stored in meta_json via synonym in model
+        meta=meta,
         created_at=_utcnow(),
     )
+
     db.add(ev)
     db.commit()
     db.refresh(ev)
@@ -54,11 +63,11 @@ def list_trust_events(
     offset: int = 0,
 ) -> List[TrustEvent]:
     """
-    List trust events for a clan, optionally filtered by user (actor or subject) and/or loan.
+    List trust events for a clan, optionally filtered by user and/or loan.
     """
+
     q = db.query(TrustEvent).filter(TrustEvent.clan_id == clan_id)
 
-    # user_id = either actor or subject
     if user_id is not None:
         q = q.filter(
             (TrustEvent.actor_user_id == user_id)
@@ -103,6 +112,7 @@ def compute_cci_score_v1(
     - GUARANTOR_DECLINED: -2
     - GUARANTOR_EXPIRED: -1 (actor only)
     """
+
     events = list_trust_events(
         db,
         clan_id=clan_id,
@@ -126,7 +136,6 @@ def compute_cci_score_v1(
             score -= 2
 
         elif ev.event_type == TrustEventType.GUARANTOR_EXPIRED:
-            # count only if the user was the actor (the guarantor who failed to respond)
             if ev.actor_user_id == user_id:
                 no_response += 1
                 score -= 1

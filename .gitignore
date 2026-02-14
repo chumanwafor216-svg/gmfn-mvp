@@ -12,3 +12,7 @@ __pycache__/
 # OS / Editor
 .DS_Store
 Thumbs.db
+# SQLite databases
+*.db
+gmfn_backend/test*.db
+gmfn_backend/gmfn.db

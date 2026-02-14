@@ -14,8 +14,35 @@ from app.db.models import Loan, LoanGuarantor, ClanMembership
 from app.services.guarantor_rules import require_clan_member
 from app.services.trust_events_services import log_trust_event
 from app.core.trust_event_types import TrustEventType
+from app.services.loan_approval import approve_loan  # ✅ important: ensures approved loans are fully initialized
 
 ALLOWED_GUARANTOR_STATUSES = {"pending", "approved", "declined", "no_response", "expired"}
+
+
+def _to_decimal(x) -> Decimal:
+    return Decimal(str(x))
+
+
+def _loan_required_gap(loan: Loan) -> Decimal:
+    """
+    The amount guarantors must cover.
+    Prefer Loan.guarantee_gap if present (recommended future column).
+    Fallback: full loan amount (safe but less GMFN-correct).
+    """
+    gg = getattr(loan, "guarantee_gap", None)
+    if gg is not None:
+        return _to_decimal(gg)
+    return _to_decimal(getattr(loan, "amount", 0) or 0)
+
+
+def _sum_approved_locked(db: Session, *, loan_id: int) -> Decimal:
+    raw = (
+        db.query(func.coalesce(func.sum(LoanGuarantor.locked_amount), 0))
+        .filter(LoanGuarantor.loan_id == loan_id, LoanGuarantor.status == "approved")
+        .scalar()
+        or 0
+    )
+    return _to_decimal(raw)
 
 
 # =========================
@@ -45,14 +72,15 @@ def add_loan_guarantor(
         raise HTTPException(status_code=400, detail="Borrower cannot be a guarantor on their own loan")
 
     try:
-        pledge = Decimal(str(pledge_amount))
+        pledge = _to_decimal(pledge_amount)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid pledge_amount")
 
-    if pledge < 0:
-        raise HTTPException(status_code=400, detail="pledge_amount must be >= 0")
+    # ✅ Freeze-grade rule: pending loans require real pledges (prevents 0-pledge approvals)
+    if pledge <= 0:
+        raise HTTPException(status_code=400, detail="pledge_amount must be > 0")
 
-    # ✅ availability check using pool - current exposure
+    # ✅ Availability check using pool - current exposure (only approved guarantors create exposure)
     m = (
         db.query(ClanMembership)
         .filter(ClanMembership.clan_id == clan_id, ClanMembership.user_id == guarantor_user_id)
@@ -61,9 +89,9 @@ def add_loan_guarantor(
     if not m:
         raise HTTPException(status_code=400, detail="Guarantor is not a clan member")
 
-    pool = Decimal(str(m.personal_pool_balance or 0))
+    pool = _to_decimal(m.personal_pool_balance or 0)
 
-    exposure = (
+    exposure_raw = (
         db.query(func.coalesce(func.sum(LoanGuarantor.locked_amount - LoanGuarantor.released_amount), 0))
         .filter(
             LoanGuarantor.clan_id == clan_id,
@@ -73,7 +101,7 @@ def add_loan_guarantor(
         .scalar()
         or 0
     )
-    exposure = Decimal(str(exposure))
+    exposure = _to_decimal(exposure_raw)
 
     available = pool - exposure
     if available < 0:
@@ -168,7 +196,7 @@ def update_loan_guarantor_status(
     exposure = Decimal("0")
     available = Decimal("0")
 
-    # ✅ if approving: enforce availability AND lock the pledge
+    # ✅ If approving: enforce availability AND lock the pledge
     if status == "approved":
         m = (
             db.query(ClanMembership)
@@ -178,7 +206,7 @@ def update_loan_guarantor_status(
         if not m:
             raise HTTPException(status_code=400, detail="Guarantor is not a clan member")
 
-        pool = Decimal(str(m.personal_pool_balance or 0))
+        pool = _to_decimal(m.personal_pool_balance or 0)
 
         exposure_raw = (
             db.query(func.coalesce(func.sum(LoanGuarantor.locked_amount - LoanGuarantor.released_amount), 0))
@@ -190,13 +218,16 @@ def update_loan_guarantor_status(
             .scalar()
             or 0
         )
-        exposure = Decimal(str(exposure_raw))
+        exposure = _to_decimal(exposure_raw)
 
         available = pool - exposure
         if available < 0:
             available = Decimal("0")
 
-        pledge = Decimal(str(getattr(g, "pledge_amount", 0) or 0))
+        pledge = _to_decimal(getattr(g, "pledge_amount", 0) or 0)
+        if pledge <= 0:
+            raise HTTPException(status_code=400, detail="pledge_amount must be > 0")
+
         if pledge > available:
             raise HTTPException(
                 status_code=400,
@@ -210,8 +241,11 @@ def update_loan_guarantor_status(
     g.status = status
     g.responded_at = datetime.now(timezone.utc)
 
-    event_type = TrustEventType.GUARANTOR_APPROVED if status == "approved" else TrustEventType.GUARANTOR_DECLINED
+    event_type = (
+        TrustEventType.GUARANTOR_APPROVED if status == "approved" else TrustEventType.GUARANTOR_DECLINED
+    )
 
+        # ✅ TrustEvent meta: strings only (no float drift)
     log_trust_event(
         db,
         event_type=event_type,
@@ -222,12 +256,13 @@ def update_loan_guarantor_status(
         subject_user_id=int(loan.borrower_user_id),
         meta={
             "guarantor_user_id": int(g.guarantor_user_id),
-            "pledge_amount": float(getattr(g, "pledge_amount", 0) or 0),
-            "loan_amount": float(getattr(loan, "amount", 0) or 0),
-            "locked_amount": float(getattr(g, "locked_amount", 0) or 0),
-            "pool_balance": float(pool) if status == "approved" else None,
-            "exposure_before": float(exposure) if status == "approved" else None,
-            "available_before": float(available) if status == "approved" else None,
+            "status": status,
+            "pledge_amount": str(getattr(g, "pledge_amount", 0) or 0),
+            "loan_amount": str(getattr(loan, "amount", 0) or 0),
+            "locked_amount": str(getattr(g, "locked_amount", 0) or 0),
+            "pool_balance": str(pool) if status == "approved" else None,
+            "exposure_before": str(exposure) if status == "approved" else None,
+            "available_before": str(available) if status == "approved" else None,
         },
     )
 
@@ -242,7 +277,31 @@ def update_loan_guarantor_status(
 # =========================
 # LOAN AUTO-DECISION
 # =========================
+def _loan_required_gap(loan: Loan) -> Decimal:
+    gap = Decimal(str(getattr(loan, "guarantee_gap", 0) or 0))
+    return gap
+
+
+def _sum_approved_locked(db: Session, *, loan_id: int) -> Decimal:
+    raw = (
+        db.query(func.coalesce(func.sum(LoanGuarantor.locked_amount), 0))
+        .filter(
+            LoanGuarantor.loan_id == loan_id,
+            LoanGuarantor.status == "approved",
+        )
+        .scalar()
+        or 0
+    )
+    return Decimal(str(raw))
+
+
 def evaluate_loan_after_guarantor_change(db: Session, *, loan_id: int) -> Loan:
+    """
+    Freeze-grade auto-decision:
+    - Requires approved guarantor count >= guarantors_required
+    - Requires locked coverage (sum locked) >= required gap
+    - Uses approve_loan() so approved loans ALWAYS get fees + remaining_amount set correctly
+    """
     loan = db.get(Loan, loan_id)
     if not loan:
         raise HTTPException(status_code=404, detail="Loan not found")
@@ -250,8 +309,8 @@ def evaluate_loan_after_guarantor_change(db: Session, *, loan_id: int) -> Loan:
     if (loan.status or "").lower() != "pending":
         return loan
 
-    required = int(loan.guarantors_required or 0)
-    if required <= 0:
+    required_count = int(loan.guarantors_required or 0)
+    if required_count <= 0:
         return loan
 
     approved = (
@@ -279,9 +338,15 @@ def evaluate_loan_after_guarantor_change(db: Session, *, loan_id: int) -> Loan:
         or 0
     )
 
-    if approved >= required:
-        loan.status = "approved"
-        loan.decision_at = datetime.now(timezone.utc)
+    required_gap = _loan_required_gap(loan)
+    coverage = _sum_approved_locked(db, loan_id=loan_id)
+
+    if approved >= required_count and coverage >= required_gap:
+        approve_loan(
+            db=db,
+            loan=loan,
+            decided_by_user_id=int(loan.borrower_user_id),  # system-context MVP choice
+        )
 
         log_trust_event(
             db,
@@ -292,11 +357,13 @@ def evaluate_loan_after_guarantor_change(db: Session, *, loan_id: int) -> Loan:
             actor_user_id=int(loan.borrower_user_id),
             subject_user_id=int(loan.borrower_user_id),
             meta={
-                "required": required,
+                "required_count": int(required_count),
                 "approved": int(approved),
                 "pending": int(pending),
                 "declined": int(declined),
                 "expired": int(expired),
+                "required_gap": str(required_gap),
+                "coverage": str(coverage),
                 "system": True,
             },
         )
@@ -304,7 +371,7 @@ def evaluate_loan_after_guarantor_change(db: Session, *, loan_id: int) -> Loan:
         db.refresh(loan)
         return loan
 
-    if approved + pending < required:
+    if approved + pending < required_count:
         loan.status = "declined"
         loan.decision_at = datetime.now(timezone.utc)
 
@@ -317,11 +384,13 @@ def evaluate_loan_after_guarantor_change(db: Session, *, loan_id: int) -> Loan:
             actor_user_id=int(loan.borrower_user_id),
             subject_user_id=int(loan.borrower_user_id),
             meta={
-                "required": required,
+                "required_count": int(required_count),
                 "approved": int(approved),
                 "pending": int(pending),
                 "declined": int(declined),
                 "expired": int(expired),
+                "required_gap": str(required_gap),
+                "coverage": str(coverage),
                 "system": True,
                 "reason": "not_enough_possible_approvals",
             },
