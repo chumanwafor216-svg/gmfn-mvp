@@ -4,14 +4,14 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import BaseModel, ConfigDict, EmailStr
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, EmailStr
 
 from app.core.auth import get_current_user
+from app.core.clan_auth import ensure_membership, get_or_create_default_clan
 from app.core.dev_guard import require_dev_mode  # ✅ DEV MODE GUARD
 from app.core.security import create_access_token, get_password_hash, verify_password
-from app.core.clan_auth import ensure_membership, get_or_create_default_clan
 from app.db.database import get_db
 from app.db.models import User
 
@@ -31,8 +31,7 @@ class UserOut(BaseModel):
     email: EmailStr
     role: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TokenOut(BaseModel):

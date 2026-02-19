@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional, List
-from pydantic import BaseModel
 from decimal import Decimal
+from typing import List, Optional
+
+from pydantic import BaseModel, ConfigDict
 
 
 class TrustSlipIssueRequest(BaseModel):
@@ -25,8 +26,7 @@ class TrustSlipOut(BaseModel):
     last_verified_at: Optional[datetime] = None
     last_release_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TrustSlipListOut(BaseModel):

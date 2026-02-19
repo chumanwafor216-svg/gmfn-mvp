@@ -1,9 +1,11 @@
-# app/api/routes/health.py
+﻿# app/api/routes/health.py
+from __future__ import annotations
+
 from fastapi import APIRouter
 
-router = APIRouter(tags=["default"])
+router = APIRouter(tags=["system"])
 
 
-@router.get("/health", response_model=None)
+@router.get("/health")
 def health():
-    return {"status": "ok"} 
+    return {"ok": True}

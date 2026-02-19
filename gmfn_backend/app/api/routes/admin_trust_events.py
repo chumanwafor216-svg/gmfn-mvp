@@ -1,102 +1,119 @@
+# app/api/routes/admin_trust_why.py
 from __future__ import annotations
 
-from typing import Any, Optional
+import json
+from decimal import Decimal
+from typing import Any, Optional, Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
+from app.core.constants import PROTOCOL_VERSION
 from app.db.database import get_db
 from app.db.models import TrustEvent, User
-from app.services.guarantor_expiry_service import expire_pending_guarantors
+from app.services.trust_score_service import apply_trust_score, compute_trust_breakdown
 
-router = APIRouter(prefix="/admin/trust-events", tags=["admin"])
-
-
-def _is_admin(user: User) -> bool:
-    return (getattr(user, "role", None) or "").lower() == "admin"
+router = APIRouter(prefix="/admin/trust", tags=["admin"])
 
 
-def _require_admin(user: User) -> None:
-    if not _is_admin(user):
-        raise HTTPException(status_code=403, detail="Not allowed")
+ExplainMode = Literal["minimal", "standard", "detailed"]
 
 
-@router.get("/recent")
-def admin_recent_trust_events(
-    limit: int = 50,
-    clan_id: Optional[int] = None,
+def _safe_meta(meta_json: Optional[str]) -> dict[str, Any]:
+    if not meta_json:
+        return {}
+    try:
+        v = json.loads(meta_json)
+        return v if isinstance(v, dict) else {}
+    except Exception:
+        return {}
+
+
+def _infer_delta(event_type: str) -> Optional[Decimal]:
+    t = (event_type or "").lower()
+    if t in {"repayment.confirmed", "loan.repaid", "repayment.completed"}:
+        return Decimal("0.10")
+    if t in {"guarantor.repayment.confirmed", "guarantor.support.confirmed"}:
+        return Decimal("0.03")
+    return None
+
+
+def _mode_redact_event(e: dict[str, Any], mode: ExplainMode) -> dict[str, Any]:
+    if mode == "detailed":
+        return e
+    if mode == "standard":
+        e.pop("meta", None)
+        return e
+    return {
+        "id": e.get("id"),
+        "event_type": e.get("event_type"),
+        "delta": e.get("delta"),
+        "created_at": e.get("created_at"),
+    }
+
+
+@router.get("/why/{user_id}")
+def admin_trust_why(
+    user_id: int,
+    limit: int = 10,
+    mode: ExplainMode = "standard",
     event_type: Optional[str] = None,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> dict[str, Any]:
-    """
-    Admin-only: list most recent TrustEvents for audit / visa screenshots.
-    Includes meta_json so you can see meta.reason/meta.note.
-    """
-    _require_admin(current_user)
-
-    q = db.query(TrustEvent)
-
-    if clan_id is not None:
-        q = q.filter(TrustEvent.clan_id == clan_id)
-
-    if event_type is not None:
-        q = q.filter(TrustEvent.event_type == event_type)
-
-    rows = q.order_by(TrustEvent.created_at.desc()).limit(int(limit)).all()
-
-    # Return raw meta_json (string). Frontend/admin can parse JSON if needed.
-    items = []
-    for r in rows:
-        items.append(
-            {
-                "id": r.id,
-                "event_type": r.event_type,
-                "clan_id": r.clan_id,
-                "loan_id": r.loan_id,
-                "guarantor_id": r.guarantor_id,
-                "actor_user_id": r.actor_user_id,
-                "subject_user_id": r.subject_user_id,
-                "created_at": r.created_at,
-                "meta_json": r.meta_json,
-            }
-        )
-
-    return {"items": items, "total": len(items)}
-
-
-@router.post("/expire-guarantors")
-def admin_expire_guarantors(
-    expiry_hours: int = 48,
     clan_id: Optional[int] = None,
-    max_batch: int = 500,
+    loan_id: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
-    """
-    Admin-only: expire pending guarantor requests older than expiry_hours.
-    This will:
-      - mark LoanGuarantor rows "expired"
-      - log TrustEventType.GUARANTOR_EXPIRED (with meta.reason/meta.note)
-      - re-evaluate loans (may auto-reject depending on rules)
+    if (current_user.role or "").lower() != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
 
-    Returns:
-      { "expired": int, "scanned": int, "expiry_hours": int, "clan_id": int|null }
-    """
-    _require_admin(current_user)
+    lim = max(1, min(int(limit or 10), 50))
 
-    expired, scanned = expire_pending_guarantors(
-        db,
-        clan_id=clan_id,
-        expiry_hours=expiry_hours,
-        max_batch=max_batch,
+    u = db.get(User, int(user_id))
+    if not u:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Deterministic recompute snapshot
+    apply_trust_score(db, user_id=int(user_id))
+    breakdown = compute_trust_breakdown(db, user_id=int(user_id))
+
+    q = db.query(TrustEvent).filter(TrustEvent.subject_user_id == int(user_id))
+    if event_type:
+        q = q.filter(TrustEvent.event_type == event_type)
+    if clan_id is not None:
+        q = q.filter(TrustEvent.clan_id == int(clan_id))
+    if loan_id is not None:
+        q = q.filter(TrustEvent.loan_id == int(loan_id))
+
+    rows: list[TrustEvent] = (
+        q.order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+        .limit(lim)
+        .all()
     )
 
+    events_out: list[dict[str, Any]] = []
+    for e in rows:
+        meta = _safe_meta(getattr(e, "meta_json", None))
+        d = _infer_delta(e.event_type)
+        ev = {
+            "id": e.id,
+            "event_type": e.event_type,
+            "delta": str(d) if d is not None else None,
+            "clan_id": e.clan_id,
+            "loan_id": e.loan_id,
+            "guarantor_id": e.guarantor_id,
+            "actor_user_id": e.actor_user_id,
+            "subject_user_id": e.subject_user_id,
+            "reason": meta.get("reason"),
+            "note": meta.get("note"),
+            "created_at": e.created_at,
+            "meta": meta if mode == "detailed" else None,
+        }
+        events_out.append(_mode_redact_event(ev, mode))
+
     return {
-        "expired": expired,
-        "scanned": scanned,
-        "expiry_hours": expiry_hours,
-        "clan_id": clan_id,
-        "max_batch": max_batch,
+        "user_id": int(user_id),
+        "protocol_version": PROTOCOL_VERSION,
+        "computed": breakdown,
+        "events": events_out,
     }

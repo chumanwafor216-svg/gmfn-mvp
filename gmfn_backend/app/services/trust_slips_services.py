@@ -1,169 +1,50 @@
+# app/services/trust_slips_services.py
+
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Optional
+from typing import Dict, Any
 
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.db.models import TrustSlip, Clan, User
-from app.services.trust_events_services import log_trust_event
+from app.services.trust_score_service import compute_trust_breakdown
 
 
-def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+# -------------------------------------------------------------------
+# CORE TRUST SLIP PAYLOAD
+# -------------------------------------------------------------------
 
+def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
+    """
+    Canonical TrustSlip payload used everywhere.
+    """
 
-def _trust_label(score: int) -> str:
-    if score >= 80:
-        return "🟢 STRONG"
-    if score >= 60:
-        return "🟦 GOOD"
-    if score >= 30:
-        return "🟨 BUILDING"
-    return "🔴 LOW"
-
-
-def _default_limit_for_score(score: int) -> Decimal:
-    # MVP heuristic; you can tune per region later
-    if score >= 80:
-        return Decimal("1200000")
-    if score >= 60:
-        return Decimal("600000")
-    if score >= 30:
-        return Decimal("200000")
-    return Decimal("50000")
-
-
-def issue_trust_slip(
-    db: Session,
-    *,
-    clan_id: int,
-    holder: User,
-    currency: str = "NGN",
-    expires_days: int = 7,
-) -> TrustSlip:
-    clan = db.get(Clan, clan_id)
-    if not clan:
-        raise HTTPException(status_code=404, detail="Clan not found")
-
-    score = int(getattr(holder, "trust_score", 50) or 50)
-    limit_amt = _default_limit_for_score(score)
-
-    expires_at = _utcnow() + timedelta(days=max(1, int(expires_days)))
-
-    slip = TrustSlip(
-        clan_id=int(clan_id),
-        holder_user_id=int(holder.id),
-        trust_limit=limit_amt,
-        currency=currency or "NGN",
-        status="active",
-        expires_at=expires_at,
-        created_at=_utcnow(),
-    )
-    db.add(slip)
-    db.commit()
-    db.refresh(slip)
-
-    log_trust_event(
-        db,
-        event_type="trust_slip.issued",
-        clan_id=int(clan_id),
-        loan_id=None,
-        guarantor_id=None,
-        actor_user_id=int(holder.id),
-        subject_user_id=int(holder.id),
-        meta={
-            "code": slip.code,
-            "trust_limit": str(limit_amt),
-            "currency": slip.currency,
-            "expires_at": slip.expires_at.isoformat() if slip.expires_at else None,
-        },
-    )
-    return slip
-
-
-def verify_trust_slip(db: Session, *, code: str) -> dict:
-    slip = db.query(TrustSlip).filter(TrustSlip.code == code).first()
-    if not slip:
-        raise HTTPException(status_code=404, detail="Trust slip not found")
-
-    if slip.status != "active":
-        raise HTTPException(status_code=400, detail="Trust slip not active")
-
-    if slip.expires_at and slip.expires_at <= _utcnow():
-        slip.status = "expired"
-        db.commit()
-        raise HTTPException(status_code=400, detail="Trust slip expired")
-
-    clan = db.get(Clan, slip.clan_id)
-    holder = db.get(User, slip.holder_user_id)
-
-    slip.last_verified_at = _utcnow()
-    db.commit()
-
-    # Log verification (supplier is anonymous in MVP)
-    log_trust_event(
-        db,
-        event_type="trust_slip.verified",
-        clan_id=int(slip.clan_id),
-        loan_id=None,
-        guarantor_id=None,
-        actor_user_id=int(slip.holder_user_id),
-        subject_user_id=int(slip.holder_user_id),
-        meta={"code": slip.code},
-    )
-
-    score = int(getattr(holder, "trust_score", 50) or 50) if holder else 50
+    summary = compute_trust_breakdown(db, user_id=int(user_id))
 
     return {
-        "code": slip.code,
-        "clan_id": int(slip.clan_id),
-        "clan_name": getattr(clan, "name", None) or "—",
-        "holder_user_id": int(slip.holder_user_id),
-        "holder_email": getattr(holder, "email", None) if holder else None,
-        "trust_limit": slip.trust_limit,
-        "currency": slip.currency,
-        "status": slip.status,
-        "expires_at": slip.expires_at,
-        "trust_level_label": _trust_label(score),
-        "trust_recent_line": None,
+        "verified": True,
+        "user_id": int(user_id),
+        "level": summary.get("band"),
+        "level_label": summary.get("level_label"),
+        "lifetime_trust": str(summary.get("lifetime_trust", Decimal("0.00"))),
+        "standing_score": str(summary.get("standing_score", Decimal("0.00"))),
+        "trust_slip_limit": str(summary.get("trust_slip_limit", Decimal("0.00"))),
+        "last_full_repayment_at": summary.get("last_full_repayment_at"),
+        "days_since_last_full_repayment": summary.get("days_since_last_full_repayment"),
+        "not_a_bank_guarantee": True,
+        "no_auto_debit": True,
+        "disclaimer": "Community-backed integrity limit. Not a bank guarantee. No auto-debit.",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
-def release_goods(db: Session, *, code: str, payload: dict) -> TrustSlip:
-    slip = db.query(TrustSlip).filter(TrustSlip.code == code).first()
-    if not slip:
-        raise HTTPException(status_code=404, detail="Trust slip not found")
+# -------------------------------------------------------------------
+# Backwards compatibility (routers still calling this)
+# -------------------------------------------------------------------
 
-    if slip.status != "active":
-        raise HTTPException(status_code=400, detail="Trust slip not active")
-
-    if slip.expires_at and slip.expires_at <= _utcnow():
-        slip.status = "expired"
-        db.commit()
-        raise HTTPException(status_code=400, detail="Trust slip expired")
-
-    slip.last_release_at = _utcnow()
-    db.commit()
-    db.refresh(slip)
-
-    log_trust_event(
-        db,
-        event_type="trust_slip.released",
-        clan_id=int(slip.clan_id),
-        loan_id=None,
-        guarantor_id=None,
-        actor_user_id=int(slip.holder_user_id),
-        subject_user_id=int(slip.holder_user_id),
-        meta={
-            "code": slip.code,
-            "supplier_name": payload.get("supplier_name"),
-            "supplier_phone": payload.get("supplier_phone"),
-            "amount_released": str(payload.get("amount_released")) if payload.get("amount_released") is not None else None,
-            "note": payload.get("note"),
-        },
-    )
-
-    return slip
+def get_trust_slip_for_user(db: Session, *, user_id: int) -> Dict[str, Any]:
+    """
+    Wrapper kept for compatibility with older routes.
+    """
+    return get_trust_slip_payload(db, user_id=int(user_id))

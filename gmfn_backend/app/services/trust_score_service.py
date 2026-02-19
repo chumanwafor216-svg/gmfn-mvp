@@ -1,222 +1,284 @@
+# app/services/trust_score_service.py
 from __future__ import annotations
 
-import json
-import os
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import datetime, timedelta, timezone
+from decimal import Decimal, ROUND_HALF_UP
+from typing import Any, Dict, Optional, Union
 
 from sqlalchemy.orm import Session
 
-from app.db.models import TrustEvent, User
-from app.services.trust_events_services import log_trust_event
+from app.core.constants import (
+    BORROWER_FULL_REPAY_GAIN,
+    GUARANTOR_SUCCESS_GAIN,
+    MISSED_PAYMENT_PENALTY,
+    DEFAULT_PENALTY,
+    FRAUD_PENALTY,
+    DEFAULT_WINDOW_DAYS,
+    RECENCY_MIN_FACTOR,
+    RECENCY_MAX_FACTOR,
+    INACTIVITY_DECAY_START_DAYS,
+    INACTIVITY_DECAY_PENALTY,
+    INACTIVITY_DECAY_FLOOR,
+)
+from app.db.models import TrustEvent
+
+# Canonical event types
+EV_BORROWER_FULL_REPAID = "loan_fully_repaid"
+EV_GUARANTOR_SUCCESS = "guarantor_success"
+EV_MISSED_PAYMENT = "missed_payment"
+EV_DEFAULT = "default"
+EV_FRAUD_FLAG = "fraud_flag"
+
+# Reversal event types (append-only corrections)
+EV_BORROWER_FULL_REPAID_REV = "loan_fully_repaid_reversed"
+EV_GUARANTOR_SUCCESS_REV = "guarantor_success_reversed"
+
+_EVENT_ALIASES = {
+    EV_BORROWER_FULL_REPAID: {"loan_fully_repaid", "loan_repaid", "repaid", "repayment_full", "full_repayment", "loan_repayment_completed"},
+    EV_GUARANTOR_SUCCESS: {"guarantor_success", "guarantor_repayment_success", "guarantor_supported_repaid", "guarantor_credit"},
+    EV_MISSED_PAYMENT: {"missed_payment", "repayment_missed", "late_payment", "overdue"},
+    EV_DEFAULT: {"default", "loan_defaulted", "write_off", "chargeoff"},
+    EV_FRAUD_FLAG: {"fraud_flag", "fraud", "abuse_flag", "ban"},
+    EV_BORROWER_FULL_REPAID_REV: {"loan_fully_repaid_reversed"},
+    EV_GUARANTOR_SUCCESS_REV: {"guarantor_success_reversed"},
+}
 
 
-def _utcnow() -> datetime:
+def _now_utc() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _loads_meta(meta_json: Optional[str]) -> dict[str, Any]:
-    if not meta_json:
-        return {}
-    try:
-        return json.loads(meta_json)
-    except Exception:
-        return {}
+def _d(x: Any) -> Decimal:
+    if x is None:
+        return Decimal("0")
+    if isinstance(x, Decimal):
+        return x
+    return Decimal(str(x))
 
 
-def trust_band_for_score(score: int) -> tuple[str, str]:
-    if score >= 80:
-        return ("A", "Highly trusted: you qualify for higher limits and fewer guarantors (if enforcement enabled).")
-    if score >= 60:
-        return ("B", "Trusted: normal limits and standard guarantor requirements (if enforcement enabled).")
-    if score >= 30:
-        return ("C", "Building trust: start small, repay consistently to improve your band.")
-    return ("D", "High risk: focus on participation and repayments to rebuild trust.")
+def _q(x: Decimal, places: str = "0.01") -> Decimal:
+    return x.quantize(Decimal(places), rounding=ROUND_HALF_UP)
 
 
-def compute_trust_score(db: Session, *, user_id: int) -> tuple[int, dict[str, Any]]:
-    score = 50
-    breakdown: dict[str, Any] = {
-        "base": 50,
-        "invite": 0,
-        "guarantor": 0,
-        "repayment": 0,
-        "participation": 0,
-        "penalties": 0,
-        "notes": [],
+def _normalize_event_type(event_type: str) -> str:
+    et = (event_type or "").strip()
+    if not et:
+        return et
+    for canonical, aliases in _EVENT_ALIASES.items():
+        if et == canonical or et in aliases:
+            return canonical
+    return et
+
+
+def humane_trust_level(score: Decimal) -> str:
+    s = _d(score)
+    if s < Decimal("0.50"):
+        return "Starting 🌱"
+    if s < Decimal("2.00"):
+        return "Growing 🌿"
+    if s < Decimal("6.00"):
+        return "Strong 🌳"
+    if s < Decimal("15.00"):
+        return "Established 🛡️"
+    return "Pillar 🏛️"
+
+
+def trust_band_for_score(score: Union[Decimal, str, int]) -> str:
+    s = _d(score)
+    if s >= Decimal("15.00"):
+        return "A"
+    if s >= Decimal("6.00"):
+        return "B"
+    if s >= Decimal("2.00"):
+        return "C"
+    return "D"
+
+
+def trust_enforcement_enabled(*_args: Any, **_kwargs: Any) -> bool:
+    return False
+
+
+def loan_policy_for_band(band: str) -> Dict[str, Any]:
+    b = (band or "").strip().upper() or "D"
+    if b == "A":
+        min_guarantors, max_open_loans = 0, 3
+    elif b == "B":
+        min_guarantors, max_open_loans = 1, 2
+    elif b == "C":
+        min_guarantors, max_open_loans = 2, 1
+    else:
+        min_guarantors, max_open_loans = 2, 1
+    return {
+        "band": b,
+        "min_guarantors": min_guarantors,
+        "guarantors_required": min_guarantors,
+        "max_open_loans": max_open_loans,
+        "enforcement_enabled": False,
+        "trust_enforcement_enabled": False,
+        "note": "Conservative policy (MVP). Trust grows only on full repayment. Append-only reversals supported.",
     }
 
-    events = (
+
+def recompute_trust_for_user(
+    db: Session,
+    *,
+    user_id: int,
+    window_days: int = DEFAULT_WINDOW_DAYS,
+    as_of: Optional[datetime] = None,
+) -> Dict[str, Any]:
+    if as_of is None:
+        as_of = _now_utc()
+    if as_of.tzinfo is None:
+        as_of = as_of.replace(tzinfo=timezone.utc)
+
+    window_start = as_of - timedelta(days=int(window_days))
+
+    rows = (
         db.query(TrustEvent)
-        .filter((TrustEvent.actor_user_id == user_id) | (TrustEvent.subject_user_id == user_id))
-        .order_by(TrustEvent.created_at.desc())
-        .limit(1000)
+        .filter(TrustEvent.subject_user_id == int(user_id))
+        .order_by(TrustEvent.created_at.asc())
         .all()
     )
 
-    # Invite behaviour
-    invite_points = 0.0
-    for ev in events:
-        et = ev.event_type
-        meta = _loads_meta(getattr(ev, "meta_json", None))
+    counts = {
+        EV_BORROWER_FULL_REPAID: 0,
+        EV_GUARANTOR_SUCCESS: 0,
+        EV_MISSED_PAYMENT: 0,
+        EV_DEFAULT: 0,
+        EV_FRAUD_FLAG: 0,
+        EV_BORROWER_FULL_REPAID_REV: 0,
+        EV_GUARANTOR_SUCCESS_REV: 0,
+    }
 
-        if et == "clan_join_via_invite":
-            invited_by = meta.get("invited_by_user_id")
-            if invited_by == user_id:
-                invite_points += 2
+    total_repayments = 0
+    recent_repayments = 0
+    last_full_repayment_at: Optional[datetime] = None
 
-        if et == "invite_revoked" and ev.actor_user_id == user_id:
-            invite_points -= 1
+    for r in rows:
+        et = _normalize_event_type(getattr(r, "event_type", "") or "")
+        if et not in counts:
+            continue
+        counts[et] += 1
 
-        if et == "invite_created" and ev.actor_user_id == user_id:
-            invite_points += 0.2
+        if et == EV_BORROWER_FULL_REPAID:
+            total_repayments += 1
+            created_at = getattr(r, "created_at", None)
+            if isinstance(created_at, datetime):
+                if created_at.tzinfo is None:
+                    created_at = created_at.replace(tzinfo=timezone.utc)
+                if last_full_repayment_at is None or created_at > last_full_repayment_at:
+                    last_full_repayment_at = created_at
+                if created_at >= window_start:
+                    recent_repayments += 1
 
-    invite_points = max(-10, min(20, int(round(invite_points))))
-    breakdown["invite"] = invite_points
+    full_repayments = counts[EV_BORROWER_FULL_REPAID]
+    guarantor_success = counts[EV_GUARANTOR_SUCCESS]
+    missed_payments = counts[EV_MISSED_PAYMENT]
+    defaults = counts[EV_DEFAULT]
+    fraud_flags = counts[EV_FRAUD_FLAG]
+    full_repayments_rev = counts[EV_BORROWER_FULL_REPAID_REV]
+    guarantor_success_rev = counts[EV_GUARANTOR_SUCCESS_REV]
 
-    # Guarantor behaviour
-    guarantor_points = 0
-    for ev in events:
-        et = ev.event_type
-        if et in ("guarantor_approved", "loan_guarantor_approved") and ev.actor_user_id == user_id:
-            guarantor_points += 2
-        if et in ("guarantor_declined", "loan_guarantor_declined") and ev.actor_user_id == user_id:
-            guarantor_points -= 1
-        if et in ("guarantor_expired", "loan_guarantor_expired") and ev.actor_user_id == user_id:
-            guarantor_points -= 2
+    gain_borrower = BORROWER_FULL_REPAY_GAIN * _d(full_repayments)
+    gain_guarantor = GUARANTOR_SUCCESS_GAIN * _d(guarantor_success)
+    rev_borrower = BORROWER_FULL_REPAY_GAIN * _d(full_repayments_rev)
+    rev_guarantor = GUARANTOR_SUCCESS_GAIN * _d(guarantor_success_rev)
 
-    guarantor_points = max(-15, min(25, int(round(guarantor_points))))
-    breakdown["guarantor"] = guarantor_points
+    penalty_missed = MISSED_PAYMENT_PENALTY * _d(missed_payments)
+    penalty_default = DEFAULT_PENALTY * _d(defaults)
+    penalty_fraud = FRAUD_PENALTY * _d(fraud_flags)
 
-    # Repayment behaviour
-    repayment_points = 0
-    for ev in events:
-        et = ev.event_type
-        if et in ("repayment_created", "repayment.made") and ev.actor_user_id == user_id:
-            repayment_points += 2
-        if et in ("loan_repaid", "loan_closed_repaid") and (ev.subject_user_id == user_id or ev.actor_user_id == user_id):
-            repayment_points += 10
-        if et in ("loan_defaulted", "loan_failed") and (ev.subject_user_id == user_id or ev.actor_user_id == user_id):
-            repayment_points -= 15
+    total_gains = (gain_borrower + gain_guarantor) - (rev_borrower + rev_guarantor)
+    total_penalties = penalty_missed + penalty_default + penalty_fraud
 
-    repayment_points = max(-30, min(35, int(round(repayment_points))))
-    breakdown["repayment"] = repayment_points
+    lifetime = total_gains - total_penalties
 
-    # Participation (simple MVP)
-    participation_points = 0
-    if len(events) >= 5:
-        participation_points += 3
-    if len(events) >= 20:
-        participation_points += 4
-    if len(events) >= 50:
-        participation_points += 3
-    participation_points = max(0, min(10, participation_points))
-    breakdown["participation"] = participation_points
+    denom = max(1, total_repayments)
+    ratio = _d(recent_repayments) / _d(denom)
+    recency_factor = RECENCY_MIN_FACTOR + (RECENCY_MAX_FACTOR - RECENCY_MIN_FACTOR) * ratio
 
-    # Penalties
-    penalties = 0
-    for ev in events:
-        if ev.event_type in ("abuse_flag", "suspicious_activity"):
-            penalties -= 10
-    breakdown["penalties"] = penalties
+    inactivity_decay_applied = False
+    days_since_last: Optional[int] = None
+    if last_full_repayment_at is not None:
+        delta_days = (as_of - last_full_repayment_at).days
+        days_since_last = int(delta_days if delta_days >= 0 else 0)
+        if days_since_last >= INACTIVITY_DECAY_START_DAYS:
+            recency_factor = recency_factor - INACTIVITY_DECAY_PENALTY
+            if recency_factor < INACTIVITY_DECAY_FLOOR:
+                recency_factor = INACTIVITY_DECAY_FLOOR
+            inactivity_decay_applied = True
 
-    score = breakdown["base"] + invite_points + guarantor_points + repayment_points + participation_points + penalties
-    score = max(0, min(100, int(round(score))))
+    standing = lifetime * recency_factor
+    band = trust_band_for_score(standing)
 
-    band, guidance = trust_band_for_score(score)
-    breakdown["score"] = score
-    breakdown["band"] = band
-    breakdown["guidance"] = guidance
-
-    return score, breakdown
-
-
-def _log_trust_score_updated(db: Session, *, user_id: int, score: int, band: str, source: str) -> None:
-    """
-    Writes a TrustEvent so we can build Trust Trend + explainable change history.
-    Safe: never raises.
-    """
-    try:
-        log_trust_event(
-            db,
-            event_type="trust.score_updated",
-            clan_id=None,
-            loan_id=None,
-            guarantor_id=None,
-            actor_user_id=int(user_id),
-            subject_user_id=int(user_id),
-            meta={"score": int(score), "band": band, "source": source},
-        )
-    except Exception:
-        # don't break flows if logging fails
-        try:
-            db.rollback()
-        except Exception:
-            pass
-
-
-def recompute_and_store_trust_score(db: Session, *, user: User) -> User:
-    """
-    user from auth may be detached; reload persistent instance.
-    """
-    db_user = db.get(User, int(user.id))
-    if not db_user:
-        raise ValueError("User not found")
-
-    score, breakdown = compute_trust_score(db, user_id=int(db_user.id))
-    db_user.trust_score = score
-    db_user.trust_band = breakdown.get("band")
-    db_user.trust_breakdown_json = json.dumps(breakdown, ensure_ascii=False)
-    db_user.trust_score_updated_at = _utcnow()
-
-    db.commit()
-    db.refresh(db_user)
-
-    # emit history event
-    _log_trust_score_updated(db, user_id=int(db_user.id), score=int(score), band=str(db_user.trust_band or ""), source="manual_recompute")
-    return db_user
+    return {
+        "user_id": int(user_id),
+        "lifetime_trust": str(_q(lifetime)),
+        "standing_score": str(_q(standing)),
+        "recency_factor": str(_q(recency_factor)),
+        "band": band,
+        "level_label": humane_trust_level(standing),
+        "last_full_repayment_at": last_full_repayment_at.isoformat() if last_full_repayment_at else None,
+        "days_since_last_full_repayment": days_since_last,
+        "inactivity_decay_applied": inactivity_decay_applied,
+        "counts": {
+            "full_repayments": full_repayments,
+            "guarantor_success": guarantor_success,
+            "missed_payments": missed_payments,
+            "defaults": defaults,
+            "fraud_flags": fraud_flags,
+            "full_repayments_reversed": full_repayments_rev,
+            "guarantor_success_reversed": guarantor_success_rev,
+        },
+        "gains": {
+            "borrower": str(_q(gain_borrower)),
+            "guarantor": str(_q(gain_guarantor)),
+            "reversals": str(_q(rev_borrower + rev_guarantor)),
+            "total": str(_q(total_gains)),
+        },
+        "penalties": {
+            "missed": str(_q(penalty_missed)),
+            "default": str(_q(penalty_default)),
+            "fraud": str(_q(penalty_fraud)),
+            "total": str(_q(total_penalties)),
+        },
+        "policy": loan_policy_for_band(band),
+    }
 
 
-def recompute_trust_for_user_id(db: Session, *, user_id: int, source: str = "auto") -> None:
-    """
-    Auto-recompute hook for business flows.
-    Never raises.
-    """
-    try:
-        db_user = db.get(User, int(user_id))
-        if not db_user:
-            return
-
-        score, breakdown = compute_trust_score(db, user_id=int(db_user.id))
-        db_user.trust_score = score
-        db_user.trust_band = breakdown.get("band")
-        db_user.trust_breakdown_json = json.dumps(breakdown, ensure_ascii=False)
-        db_user.trust_score_updated_at = _utcnow()
-        db.commit()
-
-        _log_trust_score_updated(db, user_id=int(db_user.id), score=int(score), band=str(db_user.trust_band or ""), source=source)
-    except Exception:
-        try:
-            db.rollback()
-        except Exception:
-            pass
+# Legacy wrappers
+def get_trust_summary(db: Session, *, user_id: int, window_days: int = DEFAULT_WINDOW_DAYS) -> Dict[str, Any]:
+    return recompute_trust_for_user(db, user_id=int(user_id), window_days=window_days)
 
 
-# Backward-compatible wrapper
-def compute_trust_score_explained(db: Session, *, user_id: int) -> dict[str, Any]:
-    score, breakdown = compute_trust_score(db, user_id=user_id)
-    return {"score": score, "breakdown": breakdown}
+def compute_trust_breakdown(db: Session, user_id: int) -> Dict[str, Any]:
+    return recompute_trust_for_user(db, user_id=int(user_id))
 
 
-def trust_enforcement_enabled() -> bool:
-    return os.getenv("TRUST_ENFORCE_LOAN_RULES", "0") == "1"
+def compute_trust_score_explained(db: Session, user_id: int) -> Dict[str, Any]:
+    out = recompute_trust_for_user(db, user_id=int(user_id))
+    out["explanation"] = (
+        "Your reputation grows slowly when you fully repay loans. "
+        "If a repayment is corrected later, a reversal event is logged (append-only)."
+    )
+    return out
 
 
-def loan_policy_for_band(band: str) -> dict[str, Any]:
-    if band == "A":
-        return {"max_amount": 1000, "min_guarantors": 1}
-    if band == "B":
-        return {"max_amount": 500, "min_guarantors": 2}
-    if band == "C":
-        return {"max_amount": 200, "min_guarantors": 3}
-    return {"max_amount": 50, "min_guarantors": 3}
+def apply_trust_score(db: Session, user_id: int, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+    return recompute_trust_for_user(db, user_id=int(user_id))
+
+
+def recompute_trust_for_user_id(db: Session, user_id: int) -> Dict[str, Any]:
+    return recompute_trust_for_user(db, user_id=int(user_id))
+
+
+def recompute_trust_score(db: Session, user_id: int) -> Dict[str, Any]:
+    return recompute_trust_for_user(db, user_id=int(user_id))
+
+
+def compute_trust_score(db: Session, user_id: int) -> Dict[str, Any]:
+    return recompute_trust_for_user(db, user_id=int(user_id))
+
+
+def calculate_trust_score(db: Session, user_id: int) -> Dict[str, Any]:
+    return recompute_trust_for_user(db, user_id=int(user_id))

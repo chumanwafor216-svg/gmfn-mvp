@@ -1,51 +1,132 @@
 # app/api/routes/exposure.py
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from decimal import Decimal
+from typing import Any
+
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
-from app.core.clan_auth import get_current_clan_membership
 from app.db.database import get_db
-from app.db.models import User
-from app.services.exposure_service import get_clan_exposure_rows
+from app.db.models import ClanMembership, LoanGuarantor, User
 
 router = APIRouter(prefix="/exposure", tags=["exposure"])
 
 
-@router.get("/admin", operation_id="exposure_get_admin_exposure")
+def _require_admin(u: User) -> None:
+    if (getattr(u, "role", "") or "").lower() != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+
+
+def _d(x: Any) -> Decimal:
+    try:
+        return Decimal(str(x if x is not None else 0))
+    except Exception:
+        return Decimal("0")
+
+
+def _effective_clan_id(clan_id_query: int | None, x_clan_id: int | None) -> int:
+    cid = clan_id_query if clan_id_query is not None else x_clan_id
+    if cid is None:
+        raise HTTPException(status_code=422, detail="clan_id required (query or X-Clan-Id header)")
+    return int(cid)
+
+
+@router.get("/admin")
 def get_exposure_admin(
-    clan_id: int = Query(...),
+    clan_id: int | None = Query(default=None),
+    x_clan_id: int | None = Header(default=None, alias="X-Clan-Id"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """
-    Clan-admin: view exposure rows for a clan.
-    NOTE: Guarantor expiry is handled centrally via:
-      POST /admin/trust-events/expire-guarantors
+    Admin exposure by user within a clan.
+
+    ✅ Fixes SQLite: 'Header' is not supported
+    by NEVER passing Header objects into SQLAlchemy filters.
     """
-    # Must be admin in THIS clan
-    clan, membership, _ = get_current_clan_membership(db=db, current_user=current_user)
+    _require_admin(current_user)
+    cid = _effective_clan_id(clan_id, x_clan_id)
 
-    if clan.id != clan_id:
-        raise HTTPException(status_code=403, detail="Not allowed")
+    # Members in clan
+    members = (
+        db.query(ClanMembership.user_id, ClanMembership.personal_pool_balance)
+        .filter(ClanMembership.clan_id == cid)
+        .all()
+    )
 
-    if membership.role != "admin":
-        raise HTTPException(status_code=403, detail="Clan admin only")
+    # Exposure (approved locks minus released) by guarantor
+    exposure_rows = (
+        db.query(
+            LoanGuarantor.guarantor_user_id.label("user_id"),
+            func.coalesce(func.sum(LoanGuarantor.locked_amount - LoanGuarantor.released_amount), 0).label("exposure"),
+        )
+        .filter(LoanGuarantor.clan_id == cid)
+        .filter(func.lower(LoanGuarantor.status) == "approved")
+        .group_by(LoanGuarantor.guarantor_user_id)
+        .all()
+    )
+    exposure_by_uid = {int(r.user_id): _d(r.exposure) for r in exposure_rows}
 
-    items = get_clan_exposure_rows(db, clan_id=clan_id)
+    # Email/role per user
+    users = (
+        db.query(User.id, User.email, User.role)
+        .join(ClanMembership, ClanMembership.user_id == User.id)
+        .filter(ClanMembership.clan_id == cid)
+        .all()
+    )
+    user_meta = {int(u.id): {"email": u.email, "role": u.role} for u in users}
 
-    totals_pool = sum(x.get("pool_balance", 0) for x in items)
-    totals_exposure = sum(x.get("exposure", 0) for x in items)
-    totals_available = sum(x.get("available", 0) for x in items)
+    items = []
+    for uid_raw, pool_raw in members:
+        uid = int(uid_raw)
+        pool = _d(pool_raw)
+        exposure = exposure_by_uid.get(uid, Decimal("0"))
+        available = pool - exposure
+        if available < 0:
+            available = Decimal("0")
 
-    return {
-        "clan_id": clan_id,
-        "items": items,
-        "totals": {
-            "pool_balance": totals_pool,
-            "exposure": totals_exposure,
-            "available": totals_available,
-        },
-        "total": len(items),
-    }
+        meta = user_meta.get(uid, {})
+        items.append(
+            {
+                "user_id": uid,
+                "email": meta.get("email"),
+                "role": meta.get("role"),
+                "personal_pool_balance": float(pool),
+                "exposure": float(exposure),
+                "available": float(available),
+            }
+        )
+
+    items.sort(key=lambda r: (r.get("exposure") or 0), reverse=True)
+    return {"clan_id": cid, "items": items, "total": len(items)}
+
+
+@router.get("/admin/cci-scores")
+def get_cci_scores_for_user(
+    clan_id: int = Query(...),
+    user_id: int = Query(...),
+    x_clan_id: int | None = Header(default=None, alias="X-Clan-Id"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Minimal CCI score response (admin only).
+    Frontend expects: {score: number}
+    """
+    _require_admin(current_user)
+    cid = _effective_clan_id(clan_id, x_clan_id)
+
+    # If user not in clan => score 0
+    m = (
+        db.query(ClanMembership)
+        .filter(ClanMembership.clan_id == cid, ClanMembership.user_id == int(user_id))
+        .first()
+    )
+    if not m:
+        return {"clan_id": cid, "user_id": int(user_id), "score": 0, "events_counted": 0}
+
+    # MVP stub: simple constant score (tune later)
+    return {"clan_id": cid, "user_id": int(user_id), "score": 50, "events_counted": 0}

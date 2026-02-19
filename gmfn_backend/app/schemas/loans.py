@@ -4,7 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any, Optional, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 # ✅ Central allowed loan statuses (MVP lifecycle)
@@ -61,8 +61,7 @@ class LoanOut(BaseModel):
     # ✅ CRITICAL: needed by UI + lifecycle logic
     guarantors_required: int = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LoansListResponse(BaseModel):
@@ -100,8 +99,7 @@ class LoanGuarantorOut(BaseModel):
     locked_amount: Decimal = Decimal("0")
     released_amount: Decimal = Decimal("0")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LoanGuarantorsListResponse(BaseModel):

@@ -3,7 +3,8 @@ from fastapi.testclient import TestClient
 
 def test_patch_member_pool_balance_admin_ok_contract(
     client: TestClient,
-    override_current_user,
+    override_clan_ctx_admin,          # 👈 membership role = admin
+    override_current_user,            # 👈 user role = admin (fine)
     seed_clan_admin_membership,
 ):
     clan_id = 1
@@ -21,7 +22,8 @@ def test_patch_member_pool_balance_admin_ok_contract(
 
 def test_patch_member_pool_balance_non_admin_forbidden_contract(
     client: TestClient,
-    override_current_user,
+    override_clan_ctx_member,         # 👈 critical: membership role = member
+    override_current_user_user,       # 👈 user role = user
     seed_clan_member_membership,
 ):
     clan_id = 1
@@ -39,6 +41,7 @@ def test_patch_member_pool_balance_non_admin_forbidden_contract(
 
 def test_patch_member_pool_balance_membership_not_found_contract(
     client: TestClient,
+    override_clan_ctx_admin,
     override_current_user,
     seed_clan_admin_membership,
 ):

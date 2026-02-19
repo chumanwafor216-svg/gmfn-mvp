@@ -1,69 +1,99 @@
-import sys
-from pathlib import Path
-
-ROOT_DIR = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT_DIR))
+# tests/conftest.py
+from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
+from typing import Iterable
 
 import pytest
 from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
 from sqlalchemy import text
-from app.main import app
 
-# ------------------------------------------------------------
-# Stable SQLite test database
-# ------------------------------------------------------------
+ROOT_DIR = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT_DIR))
+
 backend_root = Path(__file__).resolve().parents[1]  # gmfn_backend/
-db_path = backend_root / "test.db"
-os.environ["DATABASE_URL"] = f"sqlite:///{db_path.as_posix()}"
+pid = os.getpid()
+db_path = backend_root / f"test_{pid}.db"
+db_url = f"sqlite:///{db_path.as_posix()}"
 
-# Start clean BEFORE importing app/engine (important on Windows)
+os.environ["DATABASE_URL"] = db_url
+os.environ["PYTEST_RUNNING"] = "1"
+
 if db_path.exists():
     try:
         db_path.unlink()
     except Exception:
         pass
 
-from app.main import app
-from app.core import clan_auth
-from app.db.database import engine
+from app.main import app  # noqa: E402
+from app.core import clan_auth  # noqa: E402
+from app.db.database import engine  # noqa: E402
 
 
 class Obj:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
-@pytest.fixture(autouse=True)
-def _clean_db_between_tests(_apply_migrations):
 
-    """
-    Ensure test isolation: wipe mutable tables before each test.
-    """
-    with engine.begin() as conn:
-        conn.execute(text("DELETE FROM loan_guarantors"))
-        conn.execute(text("DELETE FROM loans"))
-        conn.execute(text("DELETE FROM clan_memberships"))
-        conn.execute(text("DELETE FROM clans"))
-        conn.execute(text("DELETE FROM users"))
-    yield 
+
+def _list_user_tables(conn) -> list[str]:
+    rows = conn.execute(
+        text(
+            """
+            SELECT name
+            FROM sqlite_master
+            WHERE type='table'
+              AND name NOT LIKE 'sqlite_%'
+              AND name != 'alembic_version'
+            ORDER BY name ASC
+            """
+        )
+    ).fetchall()
+    return [r[0] for r in rows]
+
+
+def _wipe_all_tables(conn, tables: Iterable[str]) -> None:
+    conn.execute(text("PRAGMA foreign_keys=OFF"))
+    for t in tables:
+        conn.execute(text(f'DELETE FROM "{t}"'))
+    conn.execute(text("PRAGMA foreign_keys=ON"))
 
 
 @pytest.fixture(scope="session", autouse=True)
 def _apply_migrations():
-    """
-    Create schema for tests by running Alembic upgrade head on a fresh SQLite DB.
-    Uses injected connection (requires alembic/env.py to honor config.attributes['connection']).
-    """
+    if db_path.name not in str(engine.url):
+        raise RuntimeError(
+            "TEST DB MISCONFIGURATION: app engine is not using the per-run test DB.\n"
+            f"Expected engine.url to include '{db_path.name}'\n"
+            f"Actual engine.url = {engine.url}\n"
+            f"DATABASE_URL = {db_url}\n"
+        )
+
     alembic_cfg = Config(str(backend_root / "alembic.ini"))
     alembic_cfg.set_main_option("script_location", str(backend_root / "alembic"))
+    alembic_cfg.set_main_option("sqlalchemy.url", db_url)
 
     with engine.begin() as connection:
         alembic_cfg.attributes["connection"] = connection
         command.upgrade(alembic_cfg, "head")
 
+    yield
+
+    try:
+        if db_path.exists():
+            db_path.unlink()
+    except Exception:
+        pass
+
+
+@pytest.fixture(autouse=True)
+def _clean_db_between_tests(_apply_migrations):
+    with engine.begin() as conn:
+        tables = _list_user_tables(conn)
+        _wipe_all_tables(conn, tables)
     yield
 
 
@@ -73,105 +103,115 @@ def client():
         yield c
 
 
-# ------------------------------------------------------------
-# Seed fixtures
-# ------------------------------------------------------------
 @pytest.fixture()
 def seed_clan_admin_membership():
     with engine.begin() as conn:
-        conn.execute(text("""
+        conn.execute(
+            text(
+                """
             INSERT OR IGNORE INTO users (id, email, hashed_password, role)
             VALUES (1, 'pytest@example.com', 'hashed', 'admin')
-        """))
-        conn.execute(text("""
-            INSERT OR IGNORE INTO clans (id, name)
-            VALUES (1, 'Test Clan')
-        """))
-        conn.execute(text("""
+            """
+            )
+        )
+        conn.execute(text("INSERT OR IGNORE INTO clans (id, name) VALUES (1, 'Test Clan')"))
+        conn.execute(
+            text(
+                """
             INSERT OR IGNORE INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
             VALUES (1, 1, 1, 'admin', 0)
-        """))
+            """
+            )
+        )
     yield
+
 
 @pytest.fixture()
 def seed_clan_member_membership():
     with engine.begin() as conn:
-        conn.execute(text("""
+        conn.execute(
+            text(
+                """
             INSERT OR IGNORE INTO users (id, email, hashed_password, role)
             VALUES (1, 'pytest@example.com', 'hashed', 'user')
-        """))
-        conn.execute(text("""
-            INSERT OR IGNORE INTO clans (id, name)
-            VALUES (1, 'Test Clan')
-        """))
-        conn.execute(text("""
+            """
+            )
+        )
+        conn.execute(text("INSERT OR IGNORE INTO clans (id, name) VALUES (1, 'Test Clan')"))
+        conn.execute(
+            text(
+                """
             INSERT OR IGNORE INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
             VALUES (1, 1, 1, 'member', 0)
-        """))
-    yield
-
-@pytest.fixture()
-def seed_loan():
-    """
-    Seed loan id=1. This fixture assumes user=1 and clan=1 already exist
-    (provided by seed_clan_admin_membership or seed_clan_member_membership).
-    """
-    with engine.begin() as conn:
-        conn.execute(text("""
-            INSERT OR IGNORE INTO loans (
-                id,
-                borrower_user_id,
-                amount,
-                currency,
-                status,
-                clan_id,
-                guarantors_required
+            """
             )
-            VALUES (
-                1,
-                1,
-                1000,
-                'USD',
-                'pending',
-                1,
-                1
-            )
-        """))
-    yield
-@pytest.fixture()
-def seed_loan_guarantor(seed_clan_admin_membership, seed_loan):
-    """
-    Seed loan_guarantors row id=1 so guarantor decision PATCH tests can succeed.
-    Requires:
-    - user=1 exists
-    - clan=1 exists
-    - membership (clan_id=1, user_id=1) exists
-    - loan id=1 exists
-    """
-    with engine.begin() as conn:
-        conn.execute(
-            text("""
-            INSERT OR IGNORE INTO loan_guarantors (
-                id, loan_id, clan_id, guarantor_user_id, pledge_amount, status
-            )
-            VALUES (1, 1, 1, 1, 0, 'pending')
-            """)
         )
     yield
+
 
 @pytest.fixture()
 def seed_user2_non_member():
     with engine.begin() as conn:
-        conn.execute(text("""
+        conn.execute(
+            text(
+                """
             INSERT OR IGNORE INTO users (id, email, hashed_password, role)
             VALUES (2, 'user2@example.com', 'hashed', 'user')
-        """))
+            """
+            )
+        )
     yield
 
 
-# ------------------------------------------------------------
-# Dependency overrides (clan context)
-# ------------------------------------------------------------
+@pytest.fixture()
+def seed_user2_member_membership(seed_clan_admin_membership, seed_user2_non_member):
+    """
+    Make user 2 a normal member of clan 1 (so they can be invited as guarantor).
+    """
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+            INSERT OR IGNORE INTO clan_memberships (clan_id, user_id, role, personal_pool_balance)
+            VALUES (1, 2, 'member', 0)
+            """
+            )
+        )
+    yield
+
+
+@pytest.fixture()
+def seed_loan():
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+            INSERT OR IGNORE INTO loans (
+                id, borrower_user_id, amount, currency, status, clan_id, guarantors_required
+            )
+            VALUES (1, 1, 1000, 'USD', 'pending', 1, 1)
+            """
+            )
+        )
+    yield
+
+
+@pytest.fixture()
+def seed_loan_guarantor(seed_clan_admin_membership, seed_loan):
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+            INSERT OR IGNORE INTO loan_guarantors (
+                id, loan_id, clan_id, guarantor_user_id, pledge_amount, status
+            )
+            VALUES (1, 1, 1, 1, 1.00, 'pending')
+            """
+            )
+        )
+    yield
+
+
 @pytest.fixture()
 def override_clan_ctx_admin():
     def fake_clan_ctx():
@@ -198,9 +238,6 @@ def override_clan_ctx_member():
     app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)
 
 
-# ------------------------------------------------------------
-# Current-user override (auth-protected routes)
-# ------------------------------------------------------------
 @pytest.fixture()
 def override_current_user():
     def fake_current_user():
@@ -231,5 +268,40 @@ def override_current_user():
             fn = getattr(mod, fn_name)
             app.dependency_overrides.pop(fn, None)
         except Exception:
-            pass 
+            pass
 
+
+@pytest.fixture()
+def override_current_user_user():
+    """
+    Non-admin current user override for permission tests.
+    """
+    def fake_current_user():
+        return Obj(id=1, email="pytest@example.com", role="user")
+
+    targets = (
+        ("app.core.auth", "get_current_user"),
+        ("app.core.auth", "get_current_active_user"),
+        ("app.core.security", "get_current_user"),
+        ("app.core.security", "get_current_active_user"),
+        ("app.deps", "get_current_user"),
+        ("app.deps", "get_current_active_user"),
+    )
+
+    for mod_name, fn_name in targets:
+        try:
+            mod = __import__(mod_name, fromlist=[fn_name])
+            fn = getattr(mod, fn_name)
+            app.dependency_overrides[fn] = fake_current_user
+        except Exception:
+            pass
+
+    yield
+
+    for mod_name, fn_name in targets:
+        try:
+            mod = __import__(mod_name, fromlist=[fn_name])
+            fn = getattr(mod, fn_name)
+            app.dependency_overrides.pop(fn, None)
+        except Exception:
+            pass

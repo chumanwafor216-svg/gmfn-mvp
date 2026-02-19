@@ -8,7 +8,7 @@ from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -20,23 +20,20 @@ from app.core.clan_auth import (
 from app.core.dev_guard import require_dev_mode  # ✅ DEV MODE GUARD
 from app.db.database import get_db
 from app.db.models import Clan, ClanMembership, User
-# ✅ ClanInvite-based invites (single source of truth)
 from app.services.invites_service import (
     create_clan_invite,
     join_clan_by_invite_code,
     frontend_join_link,
     api_join_link,
 )
+
 router = APIRouter(prefix="/clans", tags=["clans"])
 
 
-# ----------------------------
-# DEV: bootstrap clan + ensure current user is a member
-# ----------------------------
 @router.post(
     "/dev/bootstrap",
     response_model=dict[str, Any],
-    dependencies=[Depends(require_dev_mode)],  # ✅ HIDDEN unless GMFN_DEV_MODE enabled
+    dependencies=[Depends(require_dev_mode)],
 )
 def dev_bootstrap_clan(
     db: Session = Depends(get_db),
@@ -57,9 +54,6 @@ def dev_bootstrap_clan(
     }
 
 
-# ----------------------------
-# Request/Response schemas
-# ----------------------------
 class ClanCreateIn(BaseModel):
     name: str = Field(..., min_length=2, max_length=80)
     description: Optional[str] = Field(default=None, max_length=500)
@@ -70,8 +64,7 @@ class ClanOut(BaseModel):
     name: str
     description: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MyClansOut(BaseModel):
@@ -93,9 +86,10 @@ class JoinByInviteIn(BaseModel):
     invite_code: str
 
 
-# ----------------------------
-# Helpers
-# ----------------------------
+class PatchMemberPoolIn(BaseModel):
+    pool_balance: Decimal = Field(default=Decimal("0"))
+
+
 def _require_clan_admin(clan_ctx: tuple) -> tuple:
     clan, membership, current_user = clan_ctx
     if (membership.role or "").lower() != "admin":
@@ -174,10 +168,6 @@ def _ensure_invite_expiry(db: Session, clan: Clan, *, days: Optional[int] = None
 
 
 def _utc_aware(dt: Optional[datetime]) -> Optional[datetime]:
-    """
-    SQLite sometimes returns timezone-naive datetimes even when DateTime(timezone=True) is used.
-    Normalize to UTC-aware so comparisons don't crash.
-    """
     if dt is None:
         return None
     if dt.tzinfo is None:
@@ -192,9 +182,6 @@ def _is_invite_expired(clan: Clan) -> bool:
     return expires_at < datetime.now(timezone.utc)
 
 
-# ----------------------------
-# Current-clan helpers
-# ----------------------------
 @router.get("/current", response_model=dict[str, Any])
 def get_current_clan(
     clan_ctx: tuple = Depends(get_current_clan_membership),
@@ -237,9 +224,6 @@ def select_clan(
     }
 
 
-# ----------------------------
-# Invite links (expiry + days + max_uses + rotation)
-# ----------------------------
 @router.post("/{clan_id}/invite", response_model=dict[str, Any])
 def create_invite(
     clan_id: int,
@@ -279,6 +263,8 @@ def create_invite(
         "api_link": api_join_link(request, inv.code),
         "invite_text": f"Join my GMFN clan '{clan.name}' using invite code: {inv.code}",
     }
+
+
 @router.get("/{clan_id}/invite-link", response_model=dict[str, Any])
 def get_invite_link(
     clan_id: int,
@@ -540,9 +526,6 @@ def update_invite_settings(
     }
 
 
-# ----------------------------
-# Join by invite (THIS is the one that increments invite_uses)
-# ----------------------------
 @router.post("/join-by-invite", status_code=201, response_model=dict[str, Any])
 def join_by_invite(
     payload: JoinByInviteIn,
@@ -553,10 +536,8 @@ def join_by_invite(
     out = join_clan_by_invite_code(db, code=code, user=current_user)
     return {"ok": True, **out}
 
-# ----------------------------
-# Clan lifecycle routes
-# ----------------------------
-@router.post("/", status_code=201, response_model=ClanOut)  # ✅ FIXED: was ""
+
+@router.post("/", status_code=201, response_model=ClanOut)
 def create_clan(
     payload: ClanCreateIn,
     db: Session = Depends(get_db),
@@ -660,9 +641,6 @@ def leave_clan(
     return {"ok": True}
 
 
-# ----------------------------
-# Existing member/pool routes
-# ----------------------------
 @router.get("/{clan_id}/members", response_model=dict[str, Any])
 def list_members(
     clan_id: int,
@@ -783,6 +761,36 @@ def toggle_member_role(
     db.commit()
     db.refresh(m)
     return _member_row(db, m)
+
+
+@router.patch("/{clan_id}/members/{user_id}/pool", response_model=dict[str, Any])
+def patch_member_pool_balance_compat(
+    clan_id: int,
+    user_id: int,
+    payload: PatchMemberPoolIn,
+    db: Session = Depends(get_db),
+    clan_ctx: tuple = Depends(get_current_clan_membership),
+):
+    clan, membership, current_user = _require_clan_admin(clan_ctx)
+    if clan.id != clan_id:
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    if payload.pool_balance < 0:
+        raise HTTPException(status_code=400, detail="pool_balance must be >= 0")
+
+    m = (
+        db.query(ClanMembership)
+        .filter(ClanMembership.clan_id == clan_id, ClanMembership.user_id == user_id)
+        .first()
+    )
+    if not m:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    m.personal_pool_balance = payload.pool_balance
+    db.commit()
+    db.refresh(m)
+
+    return {"pool_balance": float(m.personal_pool_balance or Decimal("0"))}
 
 
 @router.post("/{clan_id}/members/pool/set", response_model=dict[str, Any])
