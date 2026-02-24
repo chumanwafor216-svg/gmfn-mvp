@@ -6,12 +6,12 @@ import json
 import re
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple, List
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.db.bank_models import BankEvent, ExpectedPayment
+from app.db.bank_models import BankEvent, ExpectedPayment, BankCredit
 
 
 def _now_utc() -> datetime:
@@ -24,6 +24,10 @@ def _safe_decimal(x: Any) -> Decimal:
     if isinstance(x, Decimal):
         return x
     return Decimal(str(x))
+
+
+def _q2(x: Any) -> Decimal:
+    return _safe_decimal(x).quantize(Decimal("0.01"))
 
 
 def normalize_reference(s: Optional[str]) -> Optional[str]:
@@ -45,7 +49,6 @@ def normalize_reference(s: Optional[str]) -> Optional[str]:
 
 
 def is_canonical_source(source_type: str) -> bool:
-    # canonical sources are those we trust as “final” truth
     return (source_type or "").lower() in {"statement_csv", "webhook_api"}
 
 
@@ -57,11 +60,7 @@ def compute_match_key(
     currency: str,
     reference_normalized: Optional[str],
 ) -> str:
-    """
-    Match key is stable and deterministic.
-    We intentionally include direction and currency and 2dp amount.
-    """
-    a = _safe_decimal(amount).quantize(Decimal("0.01"))
+    a = _q2(amount)
     ref = reference_normalized or ""
     return f"{int(clan_id)}|{(direction or '').lower()}|{currency.upper()}|{str(a)}|{ref}"
 
@@ -74,7 +73,7 @@ def compute_hash(fields: Dict[str, Any]) -> str:
     for k in sorted(fields.keys()):
         v = fields[k]
         if isinstance(v, Decimal):
-            clean[k] = str(v)
+            clean[k] = str(_q2(v))
         elif isinstance(v, datetime):
             clean[k] = v.isoformat()
         else:
@@ -103,7 +102,7 @@ def create_bank_event(
     Insert-or-return (by hash unique key) to avoid duplicates.
     Deterministic: hash ignores ingested_at.
     """
-    amt = _safe_decimal(amount).quantize(Decimal("0.01"))
+    amt = _q2(amount)
     ref_norm = normalize_reference(reference_raw)
 
     match_key = compute_match_key(
@@ -167,35 +166,51 @@ def create_bank_event(
         raise
 
 
-def _find_expected_by_reference(
+def _find_expected_candidates(
     db: Session,
     *,
     clan_id: int,
     reference_normalized: Optional[str],
-    amount: Decimal,
     currency: str,
-) -> Optional[ExpectedPayment]:
+) -> List[ExpectedPayment]:
     if not reference_normalized:
-        return None
-
-    q = (
+        return []
+    return (
         db.query(ExpectedPayment)
         .filter(ExpectedPayment.clan_id == int(clan_id))
         .filter(ExpectedPayment.reference_normalized == reference_normalized)
         .filter(ExpectedPayment.currency == (currency or "").upper())
         .order_by(ExpectedPayment.id.asc())
+        .all()
     )
 
-    candidates = q.all()
+
+def _select_expected_deterministically(
+    *,
+    candidates: List[ExpectedPayment],
+    incoming_amount: Decimal,
+) -> Tuple[Optional[ExpectedPayment], str]:
+    """
+    Deterministic selection rules:
+    - If 0 candidates -> None, reason
+    - If >1 candidates:
+        - If exactly one candidate has amount == incoming -> choose it
+        - Else -> None + "ambiguous_reference" (NEVER guess first row)
+    - If 1 candidate -> choose it
+    """
     if not candidates:
-        return None
+        return None, "no_expected_match"
 
-    amt = _safe_decimal(amount).quantize(Decimal("0.01"))
-    for c in candidates:
-        if _safe_decimal(c.amount).quantize(Decimal("0.01")) == amt:
-            return c
+    amt = _q2(incoming_amount)
 
-    return candidates[0]
+    if len(candidates) == 1:
+        return candidates[0], "matched_by_reference"
+
+    exact = [c for c in candidates if _q2(c.amount) == amt]
+    if len(exact) == 1:
+        return exact[0], "matched_by_reference_exact_amount"
+
+    return None, "ambiguous_reference"
 
 
 def _already_confirmed_expected(expected: ExpectedPayment) -> bool:
@@ -203,7 +218,145 @@ def _already_confirmed_expected(expected: ExpectedPayment) -> bool:
 
 
 def _canonical_already_linked(be: BankEvent) -> bool:
-    return bool(be.expected_payment_id) and (be.status or "").lower() == "confirmed"
+    return bool(be.expected_payment_id) and (be.status or "").lower() in {"confirmed", "partial"}
+
+
+def _ensure_expected_remaining_initialized(exp: ExpectedPayment) -> None:
+    """
+    Migration adds remaining_amount, but existing rows may have 0 until migration runs.
+    Ensure deterministic behavior for pre-migration data:
+    - If remaining_amount <= 0 and status not confirmed/cancelled -> set remaining=amount-paid
+    """
+    amt = _q2(exp.amount)
+    paid = _q2(getattr(exp, "paid_amount", Decimal("0.00")))
+
+    rem = _q2(getattr(exp, "remaining_amount", Decimal("0.00")))
+    status = (exp.status or "").lower()
+
+    if status in {"confirmed", "cancelled"}:
+        return
+
+    calc = amt - paid
+    if calc < Decimal("0"):
+        calc = Decimal("0")
+
+    if rem <= Decimal("0"):
+        exp.remaining_amount = calc
+
+
+def _create_credit(
+    db: Session,
+    *,
+    clan_id: int,
+    user_id: int,
+    currency: str,
+    amount: Decimal,
+    source_bank_event_id: int,
+    dry_run: bool,
+) -> Optional[BankCredit]:
+    amt = _q2(amount)
+    if amt <= Decimal("0"):
+        return None
+
+    row = BankCredit(
+        clan_id=int(clan_id),
+        user_id=int(user_id),
+        currency=(currency or "").upper(),
+        amount=amt,
+        source_bank_event_id=int(source_bank_event_id),
+        created_at=_now_utc(),
+        meta_json=None,
+    )
+
+    db.add(row)
+    if not dry_run:
+        try:
+            db.commit()
+            db.refresh(row)
+        except IntegrityError:
+            db.rollback()
+            # deterministic: credit already created for this bank_event
+            existing = (
+                db.query(BankCredit)
+                .filter(BankCredit.source_bank_event_id == int(source_bank_event_id))
+                .first()
+            )
+            return existing
+    return row
+
+
+def apply_available_credits_to_expected(
+    db: Session,
+    *,
+    exp: ExpectedPayment,
+    dry_run: bool = False,
+) -> Dict[str, Any]:
+    """
+    Deterministically applies credits (oldest-first) to reduce exp.remaining_amount.
+    This is safe to call from any expected-payment creation flow later.
+    It does NOT require human intervention.
+    """
+    _ensure_expected_remaining_initialized(exp)
+
+    if _q2(exp.remaining_amount) <= Decimal("0"):
+        return {"applied": "0.00", "used_credits": 0}
+
+    credits = (
+        db.query(BankCredit)
+        .filter(BankCredit.clan_id == int(exp.clan_id))
+        .filter(BankCredit.user_id == int(exp.user_id))
+        .filter(BankCredit.currency == (exp.currency or "").upper())
+        .order_by(BankCredit.id.asc())
+        .all()
+    )
+
+    remaining = _q2(exp.remaining_amount)
+    applied_total = Decimal("0.00")
+    used = 0
+
+    for c in credits:
+        if remaining <= Decimal("0"):
+            break
+        c_amt = _q2(c.amount)
+        if c_amt <= Decimal("0"):
+            continue
+
+        use = min(c_amt, remaining)
+        use = _q2(use)
+
+        # apply to expected
+        exp.paid_amount = _q2(exp.paid_amount) + use
+        remaining = _q2(remaining - use)
+        exp.remaining_amount = remaining
+
+        applied_total = _q2(applied_total + use)
+        used += 1
+
+        # reduce or delete credit
+        new_c = _q2(c_amt - use)
+        if new_c <= Decimal("0"):
+            db.delete(c)
+        else:
+            c.amount = new_c
+        if not dry_run:
+            db.add(c)
+
+    # update status if fully covered
+    if remaining == Decimal("0"):
+        exp.status = "confirmed"
+        exp.status_reason = "covered_by_credit"
+    else:
+        # only set to partial if we've applied something
+        if applied_total > Decimal("0"):
+            exp.status = "partial"
+            exp.status_reason = "partially_covered_by_credit"
+
+    if not dry_run:
+        db.add(exp)
+        db.commit()
+        db.refresh(exp)
+
+    return {"applied": str(applied_total), "used_credits": used}
 
 
 def reconcile_one_event(
@@ -215,16 +368,16 @@ def reconcile_one_event(
     dry_run: bool = False,
 ) -> BankEvent:
     """
-    Phase 2 hardened reconcile (still deterministic):
+    Deterministic reconciliation:
 
-    Match rule (still Phase 1 strict):
-    - Match by reference_normalized + currency (+ amount preference)
+    Match:
+    - candidates = clan_id + reference_normalized + currency
+    - if ambiguous -> mismatch_flagged (never guess)
+    - if none -> pending_match
 
-    Options:
-    - confirm_non_canonical (default True): preserve current behavior.
-      If False, non-canonical events become matched_unconfirmed instead of confirmed.
-    - canonical_only_match (default False): if True, only canonical BankEvents are eligible to match.
-    - dry_run (default False): no commits, returns a mutated in-memory object (caller should discard session).
+    Apply:
+    - partial payment supported via ExpectedPayment.paid_amount/remaining_amount
+    - overpay stored as BankCredit
     """
     if _canonical_already_linked(be):
         return be
@@ -239,18 +392,10 @@ def reconcile_one_event(
             db.refresh(be)
         return be
 
-    ref_norm = be.reference_normalized
-    exp = _find_expected_by_reference(
-        db,
-        clan_id=be.clan_id,
-        reference_normalized=ref_norm,
-        amount=be.amount,
-        currency=be.currency,
-    )
-
-    if not exp:
-        be.status = "pending_match"
-        be.status_reason = "no_expected_match"
+    # Only credit events should match ExpectedPayments in MVP
+    if (be.direction or "").lower() != "credit":
+        be.status = "mismatch_flagged"
+        be.status_reason = "non_credit_event_skipped"
         be.confidence = 0
         if not dry_run:
             db.add(be)
@@ -258,8 +403,32 @@ def reconcile_one_event(
             db.refresh(be)
         return be
 
+    candidates = _find_expected_candidates(
+        db,
+        clan_id=int(be.clan_id),
+        reference_normalized=be.reference_normalized,
+        currency=be.currency,
+    )
+
+    exp, reason = _select_expected_deterministically(
+        candidates=candidates,
+        incoming_amount=be.amount,
+    )
+
+    if not exp:
+        be.status = "mismatch_flagged" if reason == "ambiguous_reference" else "pending_match"
+        be.status_reason = reason
+        be.confidence = 0 if reason != "ambiguous_reference" else 1
+        if not dry_run:
+            db.add(be)
+            db.commit()
+            db.refresh(be)
+        return be
+
+    _ensure_expected_remaining_initialized(exp)
+
     # If expected is already confirmed with another bank_event, treat as duplicate / conflict
-    if _already_confirmed_expected(exp) and exp.bank_event_id and exp.bank_event_id != be.id:
+    if _already_confirmed_expected(exp) and exp.bank_event_id and int(exp.bank_event_id) != int(be.id):
         be.status = "duplicate"
         be.status_reason = "expected_already_confirmed_elsewhere"
         be.confidence = 10 if be.canonical else 5
@@ -269,28 +438,49 @@ def reconcile_one_event(
             db.refresh(be)
         return be
 
-    # Linkage decision
+    # Linkage decision (preserves your existing canonical behaviour)
     should_confirm = bool(be.canonical) or bool(confirm_non_canonical)
 
-    if should_confirm:
-        exp.status = "confirmed"
-        exp.status_reason = "matched_by_reference"
-        exp.bank_event_id = be.id
+    # Apply payment deterministically
+    incoming = _q2(be.amount)
+    remaining = _q2(exp.remaining_amount)
+    apply_amt = min(incoming, remaining)
+    apply_amt = _q2(apply_amt)
 
-        be.expected_payment_id = exp.id
-        be.status = "confirmed"
+    exp.paid_amount = _q2(exp.paid_amount) + apply_amt
+    exp.remaining_amount = _q2(remaining - apply_amt)
+
+    # Set statuses
+    if exp.remaining_amount == Decimal("0.00"):
+        exp.status = "confirmed" if should_confirm else (exp.status or "expected")
+        exp.status_reason = reason if should_confirm else "matched_unconfirmed"
+        be.status = "confirmed" if should_confirm else "matched_unconfirmed"
         be.status_reason = "matched_expected"
-        be.confidence = 10 if be.canonical else 7
+        be.confidence = 10 if be.canonical else (7 if should_confirm else 5)
     else:
-        # Keep deterministic linkage without “final confirmation”
-        exp.status = exp.status or "expected"
-        exp.status_reason = exp.status_reason or "matched_unconfirmed"
-        exp.bank_event_id = be.id
+        # Partial payment case
+        exp.status = "partial"
+        exp.status_reason = "partial_payment_applied"
+        be.status = "partial"
+        be.status_reason = "partial_payment_applied"
+        be.confidence = 9 if be.canonical else 6
 
-        be.expected_payment_id = exp.id
-        be.status = "matched_unconfirmed"
-        be.status_reason = "matched_expected_non_canonical"
-        be.confidence = 5
+    exp.bank_event_id = be.id
+    be.expected_payment_id = exp.id
+
+    # Overpay -> credit
+    excess = _q2(incoming - apply_amt)
+    if excess > Decimal("0.00"):
+        # Store credit for same clan/user/currency
+        _create_credit(
+            db,
+            clan_id=int(exp.clan_id),
+            user_id=int(exp.user_id),
+            currency=exp.currency,
+            amount=excess,
+            source_bank_event_id=int(be.id),
+            dry_run=dry_run,
+        )
 
     if not dry_run:
         db.add(exp)
@@ -313,11 +503,6 @@ def reconcile_batch(
     """
     Reconcile newest events first for a clan.
     Returns stats. Deterministic iteration order.
-
-    Options:
-    - confirm_non_canonical: see reconcile_one_event
-    - canonical_only_match: see reconcile_one_event
-    - dry_run: no commits (preview); caller should rollback/discard session
     """
     lim = int(limit or 200)
     lim = max(1, min(lim, 2000))
@@ -335,8 +520,10 @@ def reconcile_batch(
         "limit": lim,
         "seen": 0,
         "confirmed": 0,
+        "partial": 0,
         "matched_unconfirmed": 0,
         "pending_match": 0,
+        "mismatch_flagged": 0,
         "duplicate": 0,
         "other": 0,
         "last_event_id": None,
@@ -347,7 +534,8 @@ def reconcile_batch(
 
     for r in rows:
         stats["seen"] += 1
-        stats["last_event_id"] = r.id if stats["last_event_id"] is None else stats["last_event_id"]
+        if stats["last_event_id"] is None:
+            stats["last_event_id"] = r.id
 
         out = reconcile_one_event(
             db,
@@ -356,13 +544,18 @@ def reconcile_batch(
             canonical_only_match=canonical_only_match,
             dry_run=dry_run,
         )
+
         s = (out.status or "").lower()
         if s == "confirmed":
             stats["confirmed"] += 1
+        elif s == "partial":
+            stats["partial"] += 1
         elif s == "matched_unconfirmed":
             stats["matched_unconfirmed"] += 1
         elif s == "pending_match":
             stats["pending_match"] += 1
+        elif s == "mismatch_flagged":
+            stats["mismatch_flagged"] += 1
         elif s == "duplicate":
             stats["duplicate"] += 1
         else:
