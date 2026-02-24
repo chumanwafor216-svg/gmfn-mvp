@@ -2,12 +2,12 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
 
-class TrustEventOut(BaseModel):
+class TrustEventRowOut(BaseModel):
     id: int
     event_type: str
 
@@ -17,13 +17,20 @@ class TrustEventOut(BaseModel):
 
     actor_user_id: int
     subject_user_id: int
-    created_at: datetime
 
+    created_at: Optional[datetime] = None
+
+    # Keep meta for full auditability
+    meta: Optional[Dict[str, Any]] = None
+
+    # Screenshot-ready fields (pulled from meta when present)
     reason: Optional[str] = None
     note: Optional[str] = None
-    meta: dict[str, Any] = {}
+
+    class Config:
+        from_attributes = True
 
 
 class TrustEventsListOut(BaseModel):
-    items: list[TrustEventOut]
+    items: List[TrustEventRowOut]
     total: int

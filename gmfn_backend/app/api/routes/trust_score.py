@@ -30,7 +30,7 @@ def _as_event_row(te: TrustEvent) -> Dict[str, Any]:
     }
 
 
-@router.get("/score/explained", response_model=dict[str, Any])
+@router.get("/score/explained-clan", response_model=dict[str, Any])
 def get_my_trust_score_explained(
     limit: int = Query(25, ge=1, le=200),
     include_global_events: bool = Query(False, description="If true, includes events with clan_id = NULL"),
@@ -75,8 +75,7 @@ def get_my_trust_score_explained(
         ],
     }
 
-
-@router.get("/score/explained/{user_id}", response_model=dict[str, Any])
+@router.get("/score/explained-clan/{user_id}", response_model=dict[str, Any])
 def get_user_trust_score_explained_admin(
     user_id: int,
     limit: int = Query(25, ge=1, le=200),

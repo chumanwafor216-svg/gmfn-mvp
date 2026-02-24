@@ -305,4 +305,4 @@ def trust_why_user(
             for v in grouped.values()
         ]
 
-    return out
+    return out 

@@ -418,6 +418,37 @@ class Repayment(Base):
     loan = relationship("Loan")
     payer = relationship("User")
 
+# =========================
+# POOL EVENTS (Non-custodial ledger)
+# =========================
+class PoolEvent(Base):
+    __tablename__ = "pool_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    clan_id: Mapped[int] = mapped_column(
+        ForeignKey("clans.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+
+    event_type: Mapped[str] = mapped_column(String(32), index=True, nullable=False)
+
+    amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    currency: Mapped[str] = mapped_column(String(10), nullable=False, server_default="NGN")
+
+    reference: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    note: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    confirmed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    confirmed_by_user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
 # =========================
 # TRUST EVENTS (Append-only trust ledger)

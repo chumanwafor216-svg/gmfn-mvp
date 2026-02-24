@@ -11,9 +11,10 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.core.constants import PROTOCOL_VERSION
+from app.core.trust_policy import infer_delta_str, policy_version, rule_kind, rule_label
 from app.db.database import get_db
-from app.db.models import User, TrustEvent
-from app.services.trust_score_service import compute_trust_breakdown, apply_trust_score
+from app.db.models import TrustEvent, User
+from app.services.trust_score_service import apply_trust_score, compute_trust_breakdown
 
 router = APIRouter(prefix="/trust", tags=["trust"])
 
@@ -30,7 +31,7 @@ def _latest_event_time(db: Session, user_id: int) -> Optional[datetime]:
     row: Optional[TrustEvent] = (
         db.query(TrustEvent)
         .filter(TrustEvent.subject_user_id == int(user_id))
-        .order_by(TrustEvent.created_at.desc())
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
         .first()
     )
     return _to_aware(getattr(row, "created_at", None)) if row else None
@@ -52,6 +53,16 @@ def _build_pack_id(*, user_id: int, based_on_event_at: Optional[datetime]) -> st
     seed = f"{user_id}|{ts.isoformat()}|{PROTOCOL_VERSION}"
     digest = hashlib.sha256(seed.encode("utf-8")).hexdigest().upper()[:10]
     return f"TP-U{user_id}-{day}-{digest}"
+
+
+def _safe_meta(meta_json: Optional[str]) -> dict[str, Any]:
+    if not meta_json:
+        return {}
+    try:
+        v = json.loads(meta_json)
+        return v if isinstance(v, dict) else {}
+    except Exception:
+        return {}
 
 
 @router.get("/score/explained")
@@ -112,32 +123,6 @@ def get_my_evidence_pack_meta(
     }
 
 
-def _safe_meta(meta_json: Optional[str]) -> dict[str, Any]:
-    if not meta_json:
-        return {}
-    try:
-        v = json.loads(meta_json)
-        return v if isinstance(v, dict) else {}
-    except Exception:
-        return {}
-
-
-def _infer_delta(event_type: str) -> Optional[str]:
-    """
-    Deterministic delta mapping aligned with current trust policy.
-    Keep conservative: only map what we are sure about.
-    """
-    t = (event_type or "").lower()
-
-    # Repayment-only trust growth (your policy)
-    if t in {"repayment.confirmed", "loan.repaid", "repayment.completed"}:
-        return "+0.10"
-    if t in {"guarantor.repayment.confirmed", "guarantor.support.confirmed"}:
-        return "+0.03"
-
-    return None
-
-
 @router.get("/why/{user_id}")
 def trust_why_user(
     user_id: int,
@@ -147,9 +132,6 @@ def trust_why_user(
 ) -> Dict[str, Any]:
     """
     Explainable trust change feed for a user (audit surface).
-    - Deterministic: reads TrustEvents only (no fuzzy logic)
-    - Returns last N events + meta.reason/meta.note when present
-    - Includes current computed breakdown snapshot
 
     NOTE: Access control can be tightened later (admin/self only).
     For MVP/dev, this returns explainability for inspection/audit.
@@ -174,28 +156,115 @@ def trust_why_user(
     events_out: list[dict[str, Any]] = []
     for e in rows:
         meta = _safe_meta(getattr(e, "meta_json", None))
-        reason = meta.get("reason") if isinstance(meta, dict) else None
-        note = meta.get("note") if isinstance(meta, dict) else None
-
         events_out.append(
             {
-                "id": e.id,
+                "id": int(e.id),
                 "event_type": e.event_type,
-                "delta": _infer_delta(e.event_type),
+                "delta": infer_delta_str(e.event_type),
+                "delta_rule": (rule_label(e.event_type) or None),
                 "clan_id": e.clan_id,
                 "loan_id": e.loan_id,
                 "guarantor_id": e.guarantor_id,
-                "actor_user_id": e.actor_user_id,
-                "subject_user_id": e.subject_user_id,
-                "reason": reason,
-                "note": note,
-                "created_at": e.created_at,
+                "actor_user_id": int(e.actor_user_id),
+                "subject_user_id": int(e.subject_user_id),
+                "reason": meta.get("reason"),
+                "note": meta.get("note"),
+                "created_at": getattr(e, "created_at", None),
             }
         )
 
     return {
         "user_id": int(user_id),
         "protocol_version": PROTOCOL_VERSION,
+        "trust_policy_version": policy_version(),
         "computed": breakdown,
         "events": events_out,
+    }
+
+
+@router.get("/me")
+def trust_me(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """
+    A1: Single visa-friendly trust endpoint.
+    Returns current trust snapshot + last change (reason/note/delta) in one payload.
+    Must never crash.
+    """
+    uid = int(current_user.id)
+
+    # Ensure user trust fields are up-to-date (deterministic from TrustEvents)
+    apply_trust_score(db, user_id=uid)
+    breakdown = compute_trust_breakdown(db, user_id=uid)
+
+    # Latest TrustEvent for explainability
+    last: Optional[TrustEvent] = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.subject_user_id == uid)
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+        .first()
+    )
+
+    # Default last_change (always present for screenshot consistency)
+    last_change: Dict[str, Any] = {
+        "event_type": None,
+        "delta": None,
+        "reason": None,
+        "note": None,
+        "clan_id": None,
+        "loan_id": None,
+        "created_at": None,
+        "rule_label": None,
+        "rule_kind": None,
+        "policy_version": policy_version(),
+    }
+
+    if last is not None:
+        meta = _safe_meta(getattr(last, "meta_json", None))
+        et = getattr(last, "event_type", None) or ""
+        last_change = {
+            "event_type": getattr(last, "event_type", None),
+            "delta": infer_delta_str(et),
+            "reason": meta.get("reason"),
+            "note": meta.get("note"),
+            "clan_id": getattr(last, "clan_id", None),
+            "loan_id": getattr(last, "loan_id", None),
+            "created_at": getattr(last, "created_at", None),
+            "rule_label": rule_label(et),
+            "rule_kind": rule_kind(et),
+            "policy_version": policy_version(),
+        }
+
+    # Safe identity confidence (derived only; must never crash /trust/me)
+    try:
+        event_count = int(db.query(TrustEvent).filter(TrustEvent.subject_user_id == uid).count())
+    except Exception:
+        event_count = None
+
+    try:
+        invite_join_events = int(
+            db.query(TrustEvent)
+            .filter(TrustEvent.subject_user_id == uid)
+            .filter(TrustEvent.event_type == "invite_join")
+            .count()
+        )
+    except Exception:
+        invite_join_events = None
+
+    identity_conf = {
+        "event_count": event_count,
+        "account_age_days": None,
+        "invite_join_events": invite_join_events,
+    }
+
+    return {
+        "user_id": uid,
+        "email": getattr(current_user, "email", None),
+        "trust_score": str(breakdown.get("score") or "0.00"),
+        "computed": breakdown,
+        "last_change": last_change,
+        "policy_note": "Trust is rule-based and increases only when a loan is fully repaid.",
+        "trust_policy_version": policy_version(),
+        "identity_confidence": identity_conf,
     }

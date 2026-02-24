@@ -1,36 +1,63 @@
 # app/schemas/pool.py
+from __future__ import annotations
 
-from pydantic import BaseModel, Field, ConfigDict, model_validator
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Literal
+
+from pydantic import BaseModel, Field, ConfigDict
 
 
-class PoolBalanceUpdate(BaseModel):
-    """
-    Canonical request schema for updating a member's pool balance.
+PoolEventType = Literal[
+    "deposit.requested",
+    "deposit.confirmed",
+    "withdrawal.requested",
+    "withdrawal.confirmed",
+]
 
-    Accepts legacy keys for backward compatibility:
-    - pool_balance (canonical)
-    - personal_pool_balance (legacy)
-    - balance (legacy)
-    """
 
-    pool_balance: float = Field(...)
+from decimal import Decimal
+from datetime import datetime
+from pydantic import BaseModel, ConfigDict
 
-    @model_validator(mode="before")
-    @classmethod
-    def accept_legacy_keys(cls, values):
-        if isinstance(values, dict):
-            if "pool_balance" not in values:
-                if "personal_pool_balance" in values:
-                    values["pool_balance"] = values["personal_pool_balance"]
-                elif "balance" in values:
-                    values["pool_balance"] = values["balance"]
-        return values
+
+class PoolEventOut(BaseModel):
+    id: int
+    clan_id: int
+    user_id: int
+    event_type: str
+    amount: Decimal
+    currency: str
+    reference: str | None = None
+    note: str | None = None
+    created_at: datetime
+    confirmed_at: datetime | None = None
+    confirmed_by_user_id: int | None = None
 
     model_config = ConfigDict(
-        validate_by_name=True,
-        populate_by_name=True,
+        from_attributes=True,
+        json_encoders={Decimal: lambda v: str(v)},
     )
+class PoolMeOut(BaseModel):
+    clan_id: int
+    user_id: int
+    currency: str
+    reserved_pool: str = "0"
+    effective_available: str = "0"
+
+    available_balance: str
+    pending_deposits: str
+    pending_withdrawals: str
+
+    reference: str
+    recent_events: List[PoolEventOut]
 
 
-class PoolBalanceOut(BaseModel):
-    pool_balance: float
+class PoolRequestIn(BaseModel):
+    amount: str = Field(..., description="Decimal string")
+    currency: str = Field("NGN")
+    note: Optional[str] = None
+
+
+class AdminPoolPendingOut(BaseModel):
+    items: List[PoolEventOut]
+    total: int

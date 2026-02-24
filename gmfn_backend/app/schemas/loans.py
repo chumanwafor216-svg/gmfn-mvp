@@ -1,36 +1,25 @@
-﻿from __future__ import annotations
+﻿# app/schemas/loans.py
+from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
 from typing import Any, Optional, Literal
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
-# ✅ Central allowed loan statuses (MVP lifecycle)
-LoanStatus = Literal[
-    "pending",
-    "incomplete",  # needs borrower action: add guarantor or cancel
-    "approved",
-    "cancelled",   # borrower/system cancelled; locks released
-    "rejected",    # admin rejected
-    "declined",    # explicit decline (e.g., guarantor/admin rejection), not incompleteness
-]
+LoanStatus = str
 
-
-# -------------------------
-# Core Loan Schemas
-# -------------------------
 
 class LoanCreate(BaseModel):
     clan_id: int
-    amount: Decimal
-    currency: Optional[str] = "NGN"
+    amount: str  # Decimal string at API boundary
+    currency: str = "NGN"
+    purpose: Optional[str] = None
 
 
 class LoanUpdate(BaseModel):
-    # ✅ restrict to known statuses to prevent accidental bad states
-    status: LoanStatus
+    status: Optional[str] = None
 
 
 class LoanOut(BaseModel):
@@ -58,7 +47,11 @@ class LoanOut(BaseModel):
 
     created_at: Optional[datetime] = None
 
-    # ✅ CRITICAL: needed by UI + lifecycle logic
+    # B2 pool accounting (Decimal-safe; returned for analytics/UI)
+    personal_pool_at_request: Decimal = Decimal("0")
+    pool_used: Decimal = Decimal("0")
+    guarantee_gap: Decimal = Decimal("0")
+
     guarantors_required: int = 0
 
     model_config = ConfigDict(from_attributes=True)
@@ -69,17 +62,14 @@ class LoansListResponse(BaseModel):
     total: int
 
 
-# -------------------------
-# Guarantors
-# -------------------------
-
 class LoanGuarantorCreate(BaseModel):
     guarantor_user_id: int
     pledge_amount: Decimal = Field(..., gt=Decimal("0"))
+    note: Optional[str] = None
 
 
 class LoanGuarantorUpdate(BaseModel):
-    status: Literal["approved", "declined"]  # ✅ only decisions allowed here
+    status: Literal["approved", "declined"]
     reason: Optional[str] = None
     note: Optional[str] = None
 
@@ -95,7 +85,7 @@ class LoanGuarantorOut(BaseModel):
 
     responded_at: Optional[datetime] = None
 
-    is_locked: bool = True
+    is_locked: bool = False
     locked_amount: Decimal = Decimal("0")
     released_amount: Decimal = Decimal("0")
 
@@ -107,17 +97,13 @@ class LoanGuarantorsListResponse(BaseModel):
     total: int
 
 
-# -------------------------
-# Loan Summary
-# -------------------------
-
 class LoanSummaryOut(BaseModel):
     id: int
     clan_id: int
     borrower_user_id: int
+
     status: LoanStatus
 
-    # ✅ Decimal-safe (no float drift)
     amount: Decimal
     currency: str
 
@@ -136,13 +122,31 @@ class LoanSummaryOut(BaseModel):
     guarantors_total: int
     approved_guarantors: int
 
+    # B2 pool accounting
+    personal_pool_at_request: Decimal = Decimal("0")
+    pool_used: Decimal = Decimal("0")
+    guarantee_gap: Decimal = Decimal("0")
+
     created_at: Optional[datetime] = None
     decision_at: Optional[datetime] = None
 
+    model_config = ConfigDict(from_attributes=True)
 
-# -------------------------
-# Repayments list response
-# -------------------------
+
+class RepaymentCreate(BaseModel):
+    amount: str  # Decimal string
+    note: Optional[str] = None
+
+
+class RepaymentOut(BaseModel):
+    id: int
+    loan_id: int
+    payer_user_id: int
+    amount: Decimal
+    created_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
 
 class RepaymentsListResponse(BaseModel):
     items: list[Any]

@@ -29,7 +29,7 @@ def admin_recent_trust_events(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if (current_user.role or "").lower() != "admin":
+    if (getattr(current_user, "role", "") or "").lower() != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
     items = list_recent_admin(db, limit=limit)
     return {"items": items, "total": len(items)}

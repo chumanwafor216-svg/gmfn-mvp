@@ -1,0 +1,289 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+/* src/App.css */
+
+/* ---- Base font + smoothing ---- */
+:root {
+  --gmfn-font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans",
+    sans-serif;
+  --gmfn-bg: #f3f4f6;           /* clean grey */
+  --gmfn-panel: rgba(255,255,255,0.92);
+  --gmfn-border: #e5e7eb;
+  --gmfn-text: #0f172a;
+  --gmfn-muted: #64748b;
+
+  /* User-controlled watermark tint (only thing user can change) */
+  --gmfn-wm-tint: #16a34a;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--gmfn-font);
+  color: var(--gmfn-text);
+  background: var(--gmfn-bg);
+}
+
+/* ---- App shell with faint watermark ---- */
+.gmfn-shell {
+  min-height: 100vh;
+  background: var(--gmfn-bg);
+  position: relative;
+  isolation: isolate; /* ensures ::before stays behind children */
+}
+
+/* Faint repeating watermark (no images needed) */
+.gmfn-shell::before {
+  content: "GMFN  GMFN  GMFN  GMFN  GMFN  GMFN  GMFN  GMFN";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+
+  /* watermark style */
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  font-size: 64px;
+  line-height: 1.25;
+  opacity: 0.035;             /* faint */
+  color: var(--gmfn-wm-tint);
+
+  /* repeat effect */
+  white-space: pre-wrap;
+  transform: rotate(-12deg);
+  transform-origin: center;
+  padding: 40px;
+}
+
+/* ---- Layout grid ---- */
+.gmfn-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 100vh;
+}
+
+@media (max-width: 900px) {
+  .gmfn-grid {
+    grid-template-columns: 1fr; /* mobile stacks */
+  }
+}
+
+/* ---- Sidebar ---- */
+.gmfn-sidebar {
+  border-right: 1px solid var(--gmfn-border);
+  background: rgba(255,255,255,0.78);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  padding: 14px;
+}
+
+@media (max-width: 900px) {
+  .gmfn-sidebar {
+    position: relative;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--gmfn-border);
+  }
+}
+
+/* ---- Main ---- */
+.gmfn-main {
+  padding: 18px;
+}
+
+/* ---- Embossed cards ---- */
+.gmfn-card {
+  border: 1px solid var(--gmfn-border);
+  border-radius: 16px;
+  background: var(--gmfn-panel);
+  box-shadow:
+    0 10px 22px rgba(0,0,0,0.06),
+    inset 0 1px 0 rgba(255,255,255,0.8);
+}
+
+/* Optional: flatter card */
+.gmfn-card-flat {
+  box-shadow: none;
+}
+
+/* ---- Buttons ---- */
+.gmfn-btn {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--gmfn-border);
+  background: rgba(255,255,255,0.95);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.gmfn-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.gmfn-btn-primary {
+  background: rgba(59,130,246,0.12);
+  border: 1px solid rgba(59,130,246,0.35);
+}
+
+/* ---- Alerts (NO pink) ---- */
+.gmfn-alert {
+  border-radius: 16px;
+  padding: 14px;
+  border: 1px solid var(--gmfn-border);
+  background: rgba(255,255,255,0.92);
+}
+
+.gmfn-alert-error {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.gmfn-alert-info {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1e40af;
+}
+
+/* ---- Small text ---- */
+.gmfn-muted {
+  color: var(--gmfn-muted);
+  font-size: 12px;
+}
+/* src/App.css */
+
+:root {
+  --gmfn-font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", sans-serif;
+  --gmfn-bg: #f3f4f6;
+  --gmfn-panel: rgba(255,255,255,0.92);
+  --gmfn-border: #e5e7eb;
+  --gmfn-text: #0f172a;
+  --gmfn-muted: #64748b;
+
+  --gmfn-wm-tint: #16a34a;
+}
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  font-family: var(--gmfn-font);
+  color: var(--gmfn-text);
+  background: var(--gmfn-bg);
+}
+
+.gmfn-muted { color: var(--gmfn-muted); font-size: 12px; }
+
+.gmfn-shell {
+  min-height: 100vh;
+  background: var(--gmfn-bg);
+  position: relative;
+  isolation: isolate;
+}
+
+.gmfn-shell::before {
+  content: "GMFN  GMFN  GMFN  GMFN  GMFN  GMFN  GMFN  GMFN";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  font-size: 64px;
+  line-height: 1.25;
+  opacity: 0.03; /* faint */
+  color: var(--gmfn-wm-tint);
+  white-space: pre-wrap;
+  transform: rotate(-12deg);
+  padding: 40px;
+}
+
+.gmfn-grid { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+@media (max-width: 900px) { .gmfn-grid { grid-template-columns: 1fr; } }
+
+.gmfn-sidebar {
+  border-right: 1px solid var(--gmfn-border);
+  background: rgba(255,255,255,0.78);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  padding: 14px;
+}
+@media (max-width: 900px) {
+  .gmfn-sidebar { position: relative; height: auto; border-right: none; border-bottom: 1px solid var(--gmfn-border); }
+}
+
+.gmfn-main { padding: 18px; }
+
+/* Embossed cards */
+.gmfn-card {
+  border: 1px solid var(--gmfn-border);
+  border-radius: 16px;
+  background: var(--gmfn-panel);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8);
+}
+
+/* Buttons */
+.gmfn-btn {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--gmfn-border);
+  background: rgba(255,255,255,0.95);
+  font-weight: 800;
+  cursor: pointer;
+}
+.gmfn-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.gmfn-btn-primary { background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.35); }
+
+/* Alert tones (calm) */
+.gmfn-alert-error { border-color: #fecaca; background: #fffafa; color: #7f1d1d; }
+.gmfn-alert-warn  { border-color: #fde68a; background: #fffbeb; color: #92400e; }
+.gmfn-alert-info  { border-color: #bfdbfe; background: #eff6ff; color: #1e40af; }

@@ -1,0 +1,19 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 160" role="img" aria-label="GMFN wordmark">
+  <rect width="680" height="160" fill="none"/>
+  <!-- Mark -->
+  <g transform="translate(18,18)">
+    <path d="M62 0c16 11 33 15 46 16v36c0 31-19 51-46 59C35 103 16 83 16 52V16C29 15 46 11 62 0z" fill="#0f172a"/>
+    <path d="M32 78l46-50" stroke="#16a34a" stroke-width="8" stroke-linecap="round"/>
+  </g>
+
+  <!-- Text -->
+  <g transform="translate(170,44)" fill="#0f172a">
+    <text x="0" y="54" font-size="72" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial" font-weight="900" letter-spacing="2">
+      GMFN
+    </text>
+    <text x="2" y="94" font-size="20" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial" font-weight="700" fill="#334155">
+      Trust Infrastructure (Pilot)
+    </text>
+    <rect x="2" y="104" width="220" height="6" rx="3" fill="#16a34a"/>
+  </g>
+</svg>
