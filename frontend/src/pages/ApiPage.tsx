@@ -95,7 +95,7 @@ export default function ApiPage() {
           placeholder="Search routes (e.g. /loans, /trust, invites)"
           style={{ width: 420, maxWidth: "100%", padding: 8 }}
         />
-        <a href="http://127.0.0.1:8000/docs" target="_blank" rel="noreferrer">
+        <a href="/docs" target="_blank" rel="noreferrer">
           Swagger →
         </a>
         <a href="/api/openapi.json" target="_blank" rel="noreferrer">

@@ -27,7 +27,7 @@ import PilotShowcasePage from "./pages/PilotShowcasePage";
 import CommunityHomePage from "./pages/CommunityHomePage";
 import GuarantorInboxPage from "./pages/GuarantorInboxPage";
 import AppearancePage from "./pages/AppearancePage";
-
+import BankConsolePage from "./pages/BankConsolePage";
 export default function App() {
   return (
     <Routes>
@@ -75,7 +75,7 @@ export default function App() {
             </RequireAuth>
           }
         />
-
+        <Route path="admin/bank-console" element={<RequireAuth requireRole="admin"><BankConsolePage /></RequireAuth>} /> 
         <Route path="join/:code" element={<JoinByInvitePage />} />
         <Route path="api" element={<ApiPage />} />
       </Route>

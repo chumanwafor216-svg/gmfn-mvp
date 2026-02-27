@@ -1,0 +1,55 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "GMFN: Kill Ports (8000,5173)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "$ports=@(8000,5173); foreach($p in $ports){ $lines = netstat -ano | Select-String \":$p\" | Select-String LISTENING; foreach($l in $lines){ $pid = ($l -split '\\s+')[-1]; if($pid -match '^\\d+$'){ try{ taskkill /PID $pid /F | Out-Null } catch {} } } }"
+      ],
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "GMFN: Backend",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "cd \"${workspaceFolder}\\gmfn_backend\"; .\\.venv\\Scripts\\Activate.ps1; $env:GMFN_DEV_MODE='1'; python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --log-level info"
+      ],
+      "isBackground": true,
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "GMFN: Frontend",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "cd \"${workspaceFolder}\\frontend\"; npm run dev -- --port 5173 --strictPort"
+      ],
+      "isBackground": true,
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "GMFN: Start ALL",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "GMFN: Kill Ports (8000,5173)",
+        "GMFN: Backend",
+        "GMFN: Frontend"
+      ]
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 // src/pages/LoansPage.tsx
 import React, { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 import {
   getMe,
@@ -22,6 +23,7 @@ import { Alert, Button, ButtonPrimary, Card, PageHeader, Pill, Field, SoftCard }
 import { fmtMoney, moneyNum, parseItems, safeStr, maskedEmail } from "../ui/format";
 
 type MemberRow = { user_id: number; email?: string | null; personal_pool_balance?: string | null };
+
 type LoanRow = {
   id: number;
   clan_id: number;
@@ -43,6 +45,7 @@ type GuarantorRow = {
   pledge_amount: string;
   status: string;
   responded_at?: string | null;
+  locked_amount?: string | null;
 };
 
 type InboxItem = {
@@ -68,7 +71,49 @@ type MyGuaranteeRow = {
   status?: string | null;
 };
 
+type PoolMe = {
+  currency?: string;
+  available_balance?: string;
+  pending_deposits?: string;
+  pending_withdrawals?: string;
+  reserved_pool?: string;
+  effective_available?: string;
+  reference?: string;
+};
+
+function useQuery() {
+  const { search } = useLocation();
+  return useMemo(() => new URLSearchParams(search), [search]);
+}
+
+/**
+ * Local pool fetch helper (no hardcoded backend URL).
+ * Assumes your frontend dev server proxies /pool/* to backend.
+ */
+async function getPoolMe(currency: string = "NGN", limit: number = 20): Promise<PoolMe> {
+  const token = getAccessToken() || localStorage.getItem("access_token");
+  if (!token) throw new Error("Not authenticated");
+
+  const qs = new URLSearchParams();
+  qs.set("currency", currency);
+  qs.set("limit", String(limit));
+
+  const res = await fetch(`/pool/me?${qs.toString()}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `HTTP ${res.status}`);
+  }
+  return (await res.json()) as PoolMe;
+}
+
 export default function LoansPage() {
+  const query = useQuery();
+
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
@@ -79,7 +124,8 @@ export default function LoansPage() {
   const [selectedLoanId, setSelectedLoanId] = useState<number | null>(null);
   const [selectedLoan, setSelectedLoan] = useState<LoanRow | null>(null);
   const [guarantors, setGuarantors] = useState<GuarantorRow[]>([]);
-  const [pool, setPool] = useState<any | null>(null);
+  const [pool, setPool] = useState<PoolMe | null>(null);
+
   // Request support
   const [amountInput, setAmountInput] = useState("100");
   const [currencyInput, setCurrencyInput] = useState("NGN");
@@ -139,14 +185,19 @@ export default function LoansPage() {
 
       const l = await listMyLoans();
       setLoans(parseItems<LoanRow>(l));
-
-      if (selectedLoanId) {
-        // keep selection stable
-      }
     } catch (e: any) {
       setErr(String(e?.message || e));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadPool() {
+    try {
+      const p = await getPoolMe("NGN", 20);
+      setPool(p || null);
+    } catch {
+      setPool(null);
     }
   }
 
@@ -168,6 +219,7 @@ export default function LoansPage() {
     await loadCore();
     await loadInbox();
     await loadMyGuarantees();
+    await loadPool();
     if (selectedLoanId) await selectLoan(selectedLoanId);
   }
 
@@ -201,15 +253,14 @@ export default function LoansPage() {
   }
 
   async function decideGuarantor(guarantorId: number, status: "approved" | "declined") {
-  setErr(null);
+    setErr(null);
 
-  // Submit guard: reason required
-  if (!(reason || "").trim()) {
-    setErr("Please select a reason before approving or declining.");
-    return;
-  }
+    if (!(reason || "").trim()) {
+      setErr("Please select a reason before approving or declining.");
+      return;
+    }
 
-  try {
+    try {
       if (!selectedLoanId) throw new Error("Select a loan first.");
       await decideLoanGuarantor(selectedLoanId, guarantorId, {
         status,
@@ -256,7 +307,6 @@ export default function LoansPage() {
 
   async function decideInbox(it: InboxItem, status: "approved" | "declined") {
     setInboxErr(null);
-    // Submit guard: reason required
     if (!(reason || "").trim()) {
       setInboxErr("Please select a reason before approving or declining.");
       return;
@@ -297,6 +347,36 @@ export default function LoansPage() {
     }
   }
 
+  // Auto-load on mount
+  useEffect(() => {
+    (async () => {
+      await loadCore();
+      await loadInbox();
+      await loadMyGuarantees();
+      await loadPool();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-select loan from query param ?loan=123
+  useEffect(() => {
+    const q = query.get("loan");
+    if (!q) return;
+    const n = Number(q);
+    if (!Number.isFinite(n) || n <= 0) return;
+    setSelectedLoanId(n);
+    // selection happens after loans load; try a delayed select
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
+  useEffect(() => {
+    if (selectedLoanId && loans.length > 0) {
+      const exists = loans.some((l) => l.id === selectedLoanId);
+      if (exists) selectLoan(selectedLoanId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLoanId, loans]);
+
   // Share support request (simple internal link – stable, low friction)
   const shareLoanUrl = useMemo(() => {
     if (!selectedLoanId) return "";
@@ -307,39 +387,7 @@ export default function LoansPage() {
     if (!selectedLoan) return "";
     return `GMFN support request\nLoan #${selectedLoan.id}\nAmount: ${selectedLoan.amount} ${selectedLoan.currency}\n\nOpen:\n${shareLoanUrl}`;
   }, [selectedLoan, shareLoanUrl]);
-  
-  // ===== GMFN BLOCK START: LOANS_POOL_LOADER_V2 =====
-type PoolMe = {
-  currency?: string;
-  available_balance?: string;
-  pending_deposits?: string;
-  pending_withdrawals?: string;
-  reserved_pool?: string;
-  effective_available?: string;
-  reference?: string;
-};
 
-
-async function loadPool() {
-  try {
-    // IMPORTANT: use the same token mechanism as the rest of the frontend
-    const token = localStorage.getItem("access_token");
-    if (!token) return;
-
-    // IMPORTANT: do not hardcode backend URL; use Vite proxy via /pool/*
-    const p: any = await getPoolMe("NGN", 20);
-    setPool(p || null);
-  } catch {
-    // silent fail — loans page should still work without pool
-    setPool(null);
-  }
-}
-
-useEffect(() => {
-  loadPool();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []);
-// ===== GMFN BLOCK END: LOANS_POOL_LOADER_V2 =====
   return (
     <div style={{ padding: 18, maxWidth: 1100 }}>
       <PageHeader
@@ -371,29 +419,31 @@ useEffect(() => {
         <div style={{ marginTop: 6, color: "#64748b", fontSize: 12 }}>
           If amount is above your pool, it becomes a guarantor-backed request.
         </div>
-         {/* ===== GMFN BLOCK START: POOL_NOTE_B_MODEL ===== */}
-<div
-  style={{
-    marginTop: 10,
-    padding: "10px 12px",
-    borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "rgba(255,255,255,0.92)",
-    fontSize: 12,
-    color: "#6B7A88",
-    lineHeight: 1.5,
-  }}
->
-  <b style={{ color: "#0B1F33" }}>Pool note (Pilot):</b> The Clan Pool is <b>non-custodial</b>. Deposits and withdrawals are recorded for evidence and admin-confirmed,
-  but GMFN does not move money automatically in this phase.
-  <div style={{ marginTop: 8 }}>
-    If you need cash externally, <b>request a withdrawal in Dashboard</b> first.
-    <a href="/dashboard" style={{ marginLeft: 8, fontWeight: 1000, color: "#0B1F33", textDecoration: "none" }}>
-      Go to Pool →
-    </a>
-  </div>
-</div>
-{/* ===== GMFN BLOCK END: POOL_NOTE_B_MODEL ===== */}
+
+        {/* ===== GMFN BLOCK START: POOL_NOTE_B_MODEL ===== */}
+        <div
+          style={{
+            marginTop: 10,
+            padding: "10px 12px",
+            borderRadius: 14,
+            border: "1px solid rgba(11,31,51,0.10)",
+            background: "rgba(255,255,255,0.92)",
+            fontSize: 12,
+            color: "#6B7A88",
+            lineHeight: 1.5,
+          }}
+        >
+          <b style={{ color: "#0B1F33" }}>Pool note (Pilot):</b> The Clan Pool is <b>non-custodial</b>. Deposits and withdrawals are recorded for evidence and admin-confirmed,
+          but GMFN does not move money automatically in this phase.
+          <div style={{ marginTop: 8 }}>
+            If you need cash externally, <b>request a withdrawal in Dashboard</b> first.
+            <a href="/dashboard" style={{ marginLeft: 8, fontWeight: 1000, color: "#0B1F33", textDecoration: "none" }}>
+              Go to Pool →
+            </a>
+          </div>
+        </div>
+        {/* ===== GMFN BLOCK END: POOL_NOTE_B_MODEL ===== */}
+
         <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "end" }}>
           <Field label="Amount" value={amountInput} onChange={setAmountInput} width={180} placeholder="100" />
           <Field label="Currency" value={currencyInput} onChange={setCurrencyInput} width={120} placeholder="NGN" />
@@ -404,70 +454,61 @@ useEffect(() => {
         </div>
 
         <div style={{ marginTop: 12 }}>
-          <div style={{ marginTop: 6, fontSize: 12, fontWeight: 900, color: "#1e40af" }}>
-  Pilot Service Fee: 3%
-</div>
-
-<RevenuePanel
-  amount={amountInput}
-  currency={safeStr(currencyInput || "NGN")}
-  mode="pilot"
-/>
+          <div style={{ marginTop: 6, fontSize: 12, fontWeight: 900, color: "#1e40af" }}>Pilot Service Fee: 3%</div>
+          <RevenuePanel amount={amountInput} currency={safeStr(currencyInput || "NGN")} mode="pilot" />
         </div>
       </Card>
 
       {/* Decision meta */}
-<Card style={{ marginTop: 12 }}>
-  <div style={{ fontSize: 16, fontWeight: 1000 }}>Decision note (audit)</div>
-  <div style={{ marginTop: 6, color: "#64748b", fontSize: 12 }}>
-    Used when you approve/decline (incoming requests and guarantor decisions). Reason is stored in TrustEvent meta.
-  </div>
-
-  <div style={{ marginTop: 10, display: "grid", gap: 12 }}>
-    <div>
-      <div style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>Reason (required)</div>
-      <select
-        value={(reason ?? "").toString()}
-        onChange={(e) => setReason(e.target.value)}
-        style={{
-          width: "100%",
-          padding: "10px 12px",
-          borderRadius: 12,
-          border: "1px solid #e5e7eb",
-          background: "#fff",
-          fontWeight: 800,
-        }}
-      >
-        <option value="">Select reason…</option>
-
-        <option value="trust_character">I trust their repayment character.</option>
-        <option value="seen_history">I’ve seen good repayment history.</option>
-        <option value="business_verified">Their business is verifiable / stable.</option>
-        <option value="community_accountability">Community accountability is strong.</option>
-
-        <option value="decline_uncertain">I am not confident enough to support this.</option>
-        <option value="decline_no_capacity">I don’t have capacity to risk this right now.</option>
-        <option value="decline_insufficient_info">Not enough information / proof.</option>
-      </select>
-
-      {(!(reason || "").trim()) && (
-        <div style={{ marginTop: 6, fontSize: 12, fontWeight: 900, color: "#92400e" }}>
-          ⚠️ Pick a reason before you approve/decline — it’s part of the evidence trail.
+      <Card style={{ marginTop: 12 }}>
+        <div style={{ fontSize: 16, fontWeight: 1000 }}>Decision note (audit)</div>
+        <div style={{ marginTop: 6, color: "#64748b", fontSize: 12 }}>
+          Used when you approve/decline (incoming requests and guarantor decisions). Reason is stored in TrustEvent meta.
         </div>
-      )}
-    </div>
 
-    <div>
-      <div style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>Note (optional)</div>
-      <input
-        value={(note ?? "").toString()}
-        onChange={(e) => setNote(e.target.value)}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: 12, border: "1px solid #e5e7eb" }}
-        placeholder="Optional note…"
-      />
-    </div>
-  </div>
-</Card>
+        <div style={{ marginTop: 10, display: "grid", gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>Reason (required)</div>
+            <select
+              value={(reason ?? "").toString()}
+              onChange={(e) => setReason(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: 12,
+                border: "1px solid #e5e7eb",
+                background: "#fff",
+                fontWeight: 800,
+              }}
+            >
+              <option value="">Select reason…</option>
+              <option value="trust_character">I trust their repayment character.</option>
+              <option value="seen_history">I’ve seen good repayment history.</option>
+              <option value="business_verified">Their business is verifiable / stable.</option>
+              <option value="community_accountability">Community accountability is strong.</option>
+              <option value="decline_uncertain">I am not confident enough to support this.</option>
+              <option value="decline_no_capacity">I don’t have capacity to risk this right now.</option>
+              <option value="decline_insufficient_info">Not enough information / proof.</option>
+            </select>
+
+            {(!(reason || "").trim()) && (
+              <div style={{ marginTop: 6, fontSize: 12, fontWeight: 900, color: "#92400e" }}>
+                ⚠️ Pick a reason before you approve/decline — it’s part of the evidence trail.
+              </div>
+            )}
+          </div>
+
+          <div>
+            <div style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>Note (optional)</div>
+            <input
+              value={(note ?? "").toString()}
+              onChange={(e) => setNote(e.target.value)}
+              style={{ width: "100%", padding: "10px 12px", borderRadius: 12, border: "1px solid #e5e7eb" }}
+              placeholder="Optional note…"
+            />
+          </div>
+        </div>
+      </Card>
 
       {/* Incoming requests (Inbox) */}
       <Card style={{ marginTop: 12 }}>
@@ -563,162 +604,111 @@ useEffect(() => {
         </Card>
 
         <Card>
-  <div style={{ fontSize: 16, fontWeight: 1000 }}>Selected loan</div>
+          <div style={{ fontSize: 16, fontWeight: 1000 }}>Selected loan</div>
 
-  {!selectedLoan && (
-    <div style={{ marginTop: 10, color: "#64748b" }}>
-      Select a loan to view guarantors and pool-gap analytics.
-    </div>
-  )}
-
-  {selectedLoan && (
-    <>
-      <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-        <Pill kind="blue">Loan #{selectedLoan.id}</Pill>
-        <Pill kind="gray">Gap: {fmtMoney((selectedLoan as any)?.guarantee_gap ?? "0")}</Pill>
-        <Pill kind="green">
-          Coverage:{" "}
-          {(() => {
-            const gap = Number(String((selectedLoan as any)?.guarantee_gap ?? "0"));
-            const locked = (guarantors || []).reduce((acc: number, g: any) => acc + Number(g?.locked_amount ?? 0), 0);
-            if (!Number.isFinite(gap) || gap <= 0) return "Within pool";
-            const pct = Math.min(100, Math.round((locked / gap) * 100));
-            return `${pct}%`;
-          })()}
-        </Pill>
-      </div>
-
-      {/* Pool-gap analytics (B2) */}
-      <div
-        style={{
-          marginTop: 10,
-          padding: 12,
-          borderRadius: 14,
-          border: "1px solid rgba(11,31,51,0.10)",
-          background: "rgba(255,255,255,0.92)",
-        }}
-      {/* ===== GMFN BLOCK START: LOANS_B2_GRID_V3 ===== */}
-<div
-  style={{
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 10,
-    fontSize: 12,
-  }}
->
-  <div>
-    <div style={{ color: "#64748b" }}>Personal pool at request</div>
-    <div style={{ fontWeight: 900 }}>
-      {fmtMoney((selectedLoan as any)?.personal_pool_at_request ?? "0")}
-    </div>
-  </div>
-
-  <div>
-    <div style={{ color: "#64748b" }}>Effective pool now</div>
-    <div style={{ fontWeight: 900 }}>
-      {fmtMoney(pool?.effective_available ?? "0")}
-    </div>
-  </div>
-
-  <div>
-    <div style={{ color: "#64748b" }}>Pool used</div>
-    <div style={{ fontWeight: 900 }}>
-      {fmtMoney((selectedLoan as any)?.pool_used ?? "0")}
-    </div>
-  </div>
-
-  <div>
-    <div style={{ color: "#64748b" }}>Exposure ratio</div>
-    <div style={{ fontWeight: 900 }}>
-      {(() => {
-        const used = Number((selectedLoan as any)?.pool_used ?? 0);
-        const eff = Number(pool?.effective_available ?? 0);
-        const base = used + eff; // total “usable + already used”
-        if (!base || !Number.isFinite(base)) return "0%";
-        return `${Math.round((used / base) * 100)}%`;
-      })()}
-    </div>
-  </div>
-
-  <div>
-    <div style={{ color: "#64748b" }}>Guarantee gap</div>
-    <div style={{ fontWeight: 900 }}>
-      {fmtMoney((selectedLoan as any)?.guarantee_gap ?? "0")}
-    </div>
-  </div>
-
-  <div>
-    <div style={{ color: "#64748b" }}>Guarantors required</div>
-    <div style={{ fontWeight: 900 }}>
-      {String((selectedLoan as any)?.guarantors_required ?? "0")}
-    </div>
-  </div>
-
-  <div>
-    <div style={{ color: "#64748b" }}>Pledged total</div>
-    <div style={{ fontWeight: 900 }}>
-      {(guarantors || [])
-        .reduce((acc: number, g: any) => acc + Number(g?.pledge_amount ?? 0), 0)
-        .toFixed(2)}
-    </div>
-  </div>
-
-  <div>
-    <div style={{ color: "#64748b" }}>Locked total</div>
-    <div style={{ fontWeight: 900 }}>
-      {(guarantors || [])
-        .reduce((acc: number, g: any) => acc + Number(g?.locked_amount ?? 0), 0)
-        .toFixed(2)}
-    </div>
-  </div>
-</div>
-{/* ===== GMFN BLOCK END: LOANS_B2_GRID_V3 ===== */}
-
-
-
-{/* ================================
-    GMFN BLOCK END: LOANS_B2_GRID_V2
-   ================================ */} 
-
-
-        <div style={{ marginTop: 8, color: "#64748b", fontSize: 12 }}>
-          Note: Pool reduces guarantor gap (B2). GMFN does not auto-move money (non-custodial pilot).
-        </div>
-      </div>
-
-      {/* Share this request */}
-      <div style={{ marginTop: 12 }}>
-        <ShareActions
-          title={`GMFN support request (Loan #${selectedLoan.id})`}
-          text={shareLoanText}
-          url={shareLoanUrl}
-          copyLabel="Copy request link"
-          whatsappLabel="WhatsApp request"
-          qrLabel="QR"
-        />
-      </div>
-
-      {/* Guarantors list */}
-      <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-        {(guarantors || []).map((g: any) => (
-          <SoftCard key={String(g.id)}>
-            <div style={{ fontWeight: 1000 }}>Guarantor #{g.guarantor_user_id}</div>
-            <div style={{ marginTop: 6, color: "#334155", fontSize: 12 }}>
-              Pledge: <b>{String(g.pledge_amount ?? "—")}</b> · Status: <b>{String(g.status ?? "—")}</b>
+          {!selectedLoan && (
+            <div style={{ marginTop: 10, color: "#64748b" }}>
+              Select a loan to view guarantors and pool-gap analytics.
             </div>
+          )}
 
-            <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <ButtonPrimary onClick={() => decideGuarantor(g.id, "approved")}>Approve</ButtonPrimary>
-              <Button onClick={() => decideGuarantor(g.id, "declined")}>Decline</Button>
+          {selectedLoan && (
+            <div style={{ marginTop: 10 }}>
+              {/* Header pills */}
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                <Pill kind="blue">Loan #{String((selectedLoan as any)?.id ?? "")}</Pill>
+                <Pill kind="gray">Gap: {fmtMoney((selectedLoan as any)?.guarantee_gap ?? "0")}</Pill>
+                <Pill kind="green">Coverage: {String(coveragePct)}%</Pill>
+              </div>
+
+              {/* Pool-gap analytics (B2) */}
+              <div
+                style={{
+                  marginTop: 10,
+                  padding: 12,
+                  borderRadius: 14,
+                  border: "1px solid rgba(11,31,51,0.10)",
+                  background: "rgba(255,255,255,0.92)",
+                }}
+              >
+                {/* ===== GMFN BLOCK START: LOANS_B2_GRID_V3 ===== */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 10,
+                    fontSize: 12,
+                  }}
+                >
+                  <div>
+                    <div style={{ color: "#64748b" }}>Personal pool at request</div>
+                    <div style={{ fontWeight: 900 }}>{fmtMoney((selectedLoan as any)?.personal_pool_at_request ?? "0")}</div>
+                  </div>
+
+                  <div>
+                    <div style={{ color: "#64748b" }}>Effective pool now</div>
+                    <div style={{ fontWeight: 900 }}>{fmtMoney(pool?.effective_available ?? "0")}</div>
+                  </div>
+
+                  <div>
+                    <div style={{ color: "#64748b" }}>Pool used</div>
+                    <div style={{ fontWeight: 900 }}>{fmtMoney((selectedLoan as any)?.pool_used ?? "0")}</div>
+                  </div>
+
+                  <div>
+                    <div style={{ color: "#64748b" }}>Guarantee gap</div>
+                    <div style={{ fontWeight: 900 }}>{fmtMoney((selectedLoan as any)?.guarantee_gap ?? "0")}</div>
+                  </div>
+
+                  <div>
+                    <div style={{ color: "#64748b" }}>Guarantors required</div>
+                    <div style={{ fontWeight: 900 }}>{String((selectedLoan as any)?.guarantors_required ?? "0")}</div>
+                  </div>
+
+                  <div>
+                    <div style={{ color: "#64748b" }}>Approved total</div>
+                    <div style={{ fontWeight: 900 }}>{fmtMoney(String(approvedTotal))}</div>
+                  </div>
+                </div>
+                {/* ===== GMFN BLOCK END: LOANS_B2_GRID_V3 ===== */}
+
+                <div style={{ marginTop: 8, color: "#64748b", fontSize: 12 }}>
+                  Note: Pool reduces guarantor gap (B2). GMFN does not auto-move money.
+                </div>
+
+                <div style={{ marginTop: 12 }}>
+                  <ShareActions
+                    title={`GMFN support request (Loan #${String(selectedLoan?.id ?? "")})`}
+                    text={shareLoanText}
+                    url={shareLoanUrl}
+                    copyLabel="Copy request link"
+                    whatsappLabel="WhatsApp request"
+                    qrLabel="QR"
+                  />
+                </div>
+              </div>
+
+              {/* Guarantors list */}
+              <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+                {(guarantors || []).map((g: any) => (
+                  <SoftCard key={String(g.id)}>
+                    <div style={{ fontWeight: 1000 }}>Guarantor #{String(g?.guarantor_user_id ?? "")}</div>
+                    <div style={{ marginTop: 6, color: "#334155", fontSize: 12 }}>
+                      Pledge: <b>{String(g?.pledge_amount ?? "--")}</b> · Status: <b>{String(g?.status ?? "--")}</b>
+                    </div>
+
+                    <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      <ButtonPrimary onClick={() => decideGuarantor(g.id, "approved")}>Approve</ButtonPrimary>
+                      <Button onClick={() => decideGuarantor(g.id, "declined")}>Decline</Button>
+                    </div>
+                  </SoftCard>
+                ))}
+
+                {(guarantors || []).length === 0 && <div style={{ color: "#64748b" }}>No guarantors yet.</div>}
+              </div>
             </div>
-          </SoftCard>
-        ))}
-
-        {(guarantors || []).length === 0 && <div style={{ color: "#64748b" }}>No guarantors yet.</div>}
-      </div>
-    </>
-  )}
-</Card>
+          )}
+        </Card>
       </div>
     </div>
   );

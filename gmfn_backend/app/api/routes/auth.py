@@ -45,6 +45,12 @@ class DevUserCreate(BaseModel):
     role: Literal["user", "admin"] = "user"  # ✅ strict, Swagger dropdown
 
 
+class DevResetPassword(BaseModel):
+    email: EmailStr
+    new_password: str
+    role: Literal["user", "admin"] | None = None  # optional role update
+
+
 # ---------------------------
 # Helpers
 # ---------------------------
@@ -145,6 +151,34 @@ def dev_create_user(payload: DevUserCreate, db: Session = Depends(get_db)):
     db.refresh(user)
 
     # ✅ never crash dev-create-user if clan fails
+    try_ensure_user_in_default_clan(db, user)
+
+    return user
+
+
+@router.post(
+    "/dev/reset-password",
+    response_model=UserOut,
+    dependencies=[Depends(require_dev_mode)],  # ✅ DEV ONLY
+)
+def dev_reset_password(payload: DevResetPassword, db: Session = Depends(get_db)):
+    """
+    DEV-ONLY: Reset an existing user's password (and optionally role).
+    This prevents endless "401 password unknown" loops during local development.
+    """
+    user = db.query(User).filter(User.email == payload.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.hashed_password = get_password_hash(payload.new_password)
+    if payload.role is not None:
+        user.role = payload.role
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    # keep clan membership aligned (non-fatal)
     try_ensure_user_in_default_clan(db, user)
 
     return user

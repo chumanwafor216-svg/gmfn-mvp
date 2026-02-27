@@ -1,0 +1,6 @@
+﻿{
+  "files.exclude": {
+    "**/*QUARANTINED*": true,
+    "**/_QUARANTINE_STORE": true
+  }
+}
