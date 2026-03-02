@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 import Wordmark from "../assets/gmfn-wordmark.svg";
 import Mark from "../assets/gmfn-mark.svg";
 
+import { loginAndStore } from "../lib/api";
+
 function patternDataUri(): string {
   const svg = `
   <svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220">
@@ -24,7 +26,6 @@ function patternDataUri(): string {
 }
 
 function silhouettesSvg(): string {
-  // One lightweight SVG “success panel”: dignified silhouettes
   const svg = `
   <svg xmlns="http://www.w3.org/2000/svg" width="900" height="900" viewBox="0 0 900 900">
     <defs>
@@ -46,17 +47,13 @@ function silhouettesSvg(): string {
       <path d="M470 820 C590 690, 730 690, 850 820" />
     </g>
 
-    <!-- silhouettes -->
     <g fill="#ffffff" fill-opacity="0.18">
-      <!-- Person 1 -->
       <circle cx="220" cy="420" r="56"/>
       <path d="M120 760 C140 640, 300 640, 320 760 Z"/>
 
-      <!-- Person 2 -->
       <circle cx="460" cy="380" r="62"/>
       <path d="M340 760 C365 620, 555 620, 580 760 Z"/>
 
-      <!-- Person 3 -->
       <circle cx="680" cy="440" r="54"/>
       <path d="M590 760 C610 650, 750 650, 770 760 Z"/>
     </g>
@@ -75,7 +72,7 @@ export default function LoginPage() {
   const hero = useMemo(() => silhouettesSvg(), []);
 
   const [email, setEmail] = useState("admin@test.com");
-  const [password, setPassword] = useState("password");
+  const [password, setPassword] = useState("pass1234"); // matches dev reset-password flow
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -83,24 +80,7 @@ export default function LoginPage() {
     setErr(null);
     setBusy(true);
     try {
-      const body = new URLSearchParams();
-      body.set("username", email.trim());
-      body.set("password", password);
-
-      const res = await fetch("/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: body.toString(),
-      });
-
-      const text = await res.text();
-      if (!res.ok) throw new Error(text || `HTTP ${res.status}`);
-
-      const j = JSON.parse(text);
-      const token = j?.access_token;
-      if (!token) throw new Error("Login succeeded but no access_token returned.");
-
-      localStorage.setItem("access_token", token);
+      await loginAndStore(email.trim(), password);
       nav("/dashboard", { replace: true });
     } catch (e: any) {
       setErr(String(e?.message || e));
@@ -180,7 +160,17 @@ export default function LoginPage() {
             </div>
 
             {err && (
-              <div style={{ marginTop: 12, padding: 10, borderRadius: 14, border: "1px solid rgba(153,27,27,0.25)", background: "rgba(254,242,242,0.9)", color: "#991b1b", fontWeight: 900 }}>
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: 10,
+                  borderRadius: 14,
+                  border: "1px solid rgba(153,27,27,0.25)",
+                  background: "rgba(254,242,242,0.9)",
+                  color: "#991b1b",
+                  fontWeight: 900,
+                }}
+              >
                 {err}
               </div>
             )}
@@ -191,7 +181,12 @@ export default function LoginPage() {
                 <input
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  style={{ width: "100%", padding: "10px 12px", borderRadius: 14, border: "1px solid rgba(11,31,51,0.18)" }}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: 14,
+                    border: "1px solid rgba(11,31,51,0.18)",
+                  }}
                   placeholder="you@example.com"
                 />
               </div>
@@ -202,7 +197,12 @@ export default function LoginPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  style={{ width: "100%", padding: "10px 12px", borderRadius: 14, border: "1px solid rgba(11,31,51,0.18)" }}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: 14,
+                    border: "1px solid rgba(11,31,51,0.18)",
+                  }}
                   placeholder="••••••••"
                 />
               </div>
@@ -210,7 +210,6 @@ export default function LoginPage() {
               <div style={{ marginTop: 6, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ fontSize: 12, color: "#6B7A88" }}>Non-custodial pilot build.</div>
 
-                {/* Small padlock button */}
                 <button
                   onClick={doLogin}
                   disabled={busy}
