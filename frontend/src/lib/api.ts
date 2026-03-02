@@ -9,6 +9,55 @@ export type JsonValue =
   | { [k: string]: JsonValue }
   | JsonValue[];
 
+/**
+ * Stabilization:
+ * Backend has redirect_slashes=False.
+ * That means:
+ *  - /loans   ✅
+ *  - /loans/  ❌ (404)
+ *
+ * We normalize URLs to remove trailing slashes EXCEPT for a small allowlist
+ * where the backend endpoint is defined with a trailing slash (e.g. POST /clans/).
+ */
+const TRAILING_SLASH_ALLOWLIST = new Set<string>(["/clans/"]);
+
+// Optional absolute API base (leave empty to use relative URLs + Vite proxy).
+// If you set VITE_API_BASE_URL, it MUST NOT include a trailing slash.
+const API_BASE_URL_RAW: string =
+  (typeof import.meta !== "undefined" &&
+    (import.meta as any)?.env &&
+    (import.meta as any).env.VITE_API_BASE_URL) ||
+  "/api";
+
+// Normalize base url (no trailing slash)
+const API_BASE_URL = String(API_BASE_URL_RAW || "").trim().replace(/\/+$/, "");
+
+function normalizePath(path: string): string {
+  const p0 = String(path || "").trim();
+  if (!p0) return "/";
+
+  // Ensure leading slash for relative paths
+  let p = p0.startsWith("/") ? p0 : `/${p0}`;
+
+  // Preserve query string when normalizing
+  const [base, qs] = p.split("?", 2);
+
+  // Normalize trailing slash unless explicitly allowed
+  let nb = base;
+  if (nb.length > 1 && nb.endsWith("/") && !TRAILING_SLASH_ALLOWLIST.has(nb)) {
+    nb = nb.replace(/\/+$/, "");
+    if (!nb) nb = "/";
+  }
+
+  return qs !== undefined ? `${nb}?${qs}` : nb;
+}
+
+function buildUrl(path: string): string {
+  const p = normalizePath(path);
+  if (!API_BASE_URL) return p;
+  return `${API_BASE_URL}${p}`;
+}
+
 const ACCESS_TOKEN_KEY = "access_token";
 
 export function getAccessToken(): string | null {
@@ -111,7 +160,9 @@ async function httpJson(path: string, method: string, body?: any): Promise<any> 
   const clanId = getSelectedClanId();
   if (clanId) headers["X-Clan-Id"] = String(clanId);
 
-  const res = await fetch(path, {
+  const url = buildUrl(path);
+
+  const res = await fetch(url, {
     method,
     headers,
     body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
@@ -137,7 +188,9 @@ async function httpBlob(path: string, method: string, body?: any): Promise<Blob>
   const clanId = getSelectedClanId();
   if (clanId) headers["X-Clan-Id"] = String(clanId);
 
-  const res = await fetch(path, {
+  const url = buildUrl(path);
+
+  const res = await fetch(url, {
     method,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -154,7 +207,9 @@ async function httpForm(path: string, form: Record<string, any>): Promise<any> {
     fd.set(k, String(v));
   }
 
-  const res = await fetch(path, {
+  const url = buildUrl(path);
+
+  const res = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -174,7 +229,10 @@ export async function register(email: string, password: string): Promise<any> {
   return httpJson("/auth/register", "POST", { email, password });
 }
 
-export async function login(username: string, password: string): Promise<{ access_token: string; token_type: string }> {
+export async function login(
+  username: string,
+  password: string
+): Promise<{ access_token: string; token_type: string }> {
   return httpForm("/auth/login", {
     grant_type: "",
     username,
@@ -219,7 +277,7 @@ export async function getCurrentClan(): Promise<any> {
 }
 
 export async function createClan(payload: { name: string; description?: string | null; country?: string | null }): Promise<any> {
-  // Swagger: POST /clans/
+  // Swagger: POST /clans/  (trailing slash is real endpoint)
   return httpJson("/clans/", "POST", payload);
 }
 
@@ -361,7 +419,7 @@ export async function decideLoanGuarantorRequest(
     "PATCH",
     payload
   );
-} 
+}
 
 // Alias expected by LoansPage.tsx
 export const decideIncomingGuarantorRequest = decideLoanGuarantor;
@@ -373,6 +431,7 @@ export async function getGuarantorInbox(status: string = "pending", limit: numbe
 }
 // Alias expected by LoansPage.tsx
 export const listIncomingGuarantorRequests = getGuarantorInbox;
+
 /* evidence snapshot */
 export async function getLoanEvidenceSnapshot(loanId: number, limit_events: number = 25): Promise<any> {
   const q = buildQuery({ limit_events });
@@ -387,10 +446,18 @@ export async function getPoolMe(currency: string = "NGN", limit: number = 20): P
   return httpJson(`/pool/me${q}`, "GET");
 }
 export async function requestPoolDeposit(payload: { amount: string; currency?: string; note?: string | null }): Promise<any> {
-  return httpJson("/pool/deposits/request", "POST", { amount: String(payload.amount), currency: payload.currency || "NGN", note: payload.note ?? null });
+  return httpJson("/pool/deposits/request", "POST", {
+    amount: String(payload.amount),
+    currency: payload.currency || "NGN",
+    note: payload.note ?? null,
+  });
 }
 export async function requestPoolWithdrawal(payload: { amount: string; currency?: string; note?: string | null }): Promise<any> {
-  return httpJson("/pool/withdrawals/request", "POST", { amount: String(payload.amount), currency: payload.currency || "NGN", note: payload.note ?? null });
+  return httpJson("/pool/withdrawals/request", "POST", {
+    amount: String(payload.amount),
+    currency: payload.currency || "NGN",
+    note: payload.note ?? null,
+  });
 }
 
 /* =========================
@@ -473,7 +540,6 @@ export async function getTrustEvents(arg: number | TrustEventsQuery = 50): Promi
 }
 
 // Back-compat alias
-
 export const listTrustEvents = getTrustEvents;
 
 /* =========================
@@ -522,7 +588,7 @@ export async function getExposureAdmin(): Promise<any> {
 export async function getCciScore(clanId: number, userId: number): Promise<any> {
   const q = buildQuery({ clan_id: clanId, user_id: userId });
   return httpJson(`/exposure/admin/cci-scores${q}`, "GET");
-} 
+}
 
 export async function getClanLiquidity(): Promise<any> {
   return httpJson("/analytics/clan-liquidity", "GET");
@@ -605,6 +671,7 @@ export function extractMerchantToken(input: string): string {
   }
   return s;
 }
+
 /* =========================
    HARD GUARANTEE EXPORTS
    ========================= */
