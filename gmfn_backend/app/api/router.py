@@ -9,6 +9,7 @@ from app.api.routes.clans import router as clans_router
 from app.api.routes.invites import router as invites_router
 from app.api.routes.loans import router as loans_router
 from app.api.routes.pool import router as pool_router
+from app.api.routes.loans_inbox import router as loans_inbox_router
 # =========================
 # Trust Core
 # =========================
@@ -53,6 +54,7 @@ from app.api.routes.admin_reconcile import router as admin_reconcile_router
 from app.api.routes.admin_bank_debug import router as admin_bank_debug_router
 from app.api.routes.admin_trust_manual import router as admin_trust_manual_router
 from app.api.routes.admin_pool import router as admin_pool_router
+from app.api.routes.admin_behaviour_metrics import router as admin_behaviour_metrics_router
 # =========================
 # Shipment / Payments
 # =========================
@@ -77,6 +79,7 @@ api_router.include_router(clans_router)
 api_router.include_router(invites_router)
 api_router.include_router(loans_router)
 api_router.include_router(pool_router)
+api_router.include_router(loans_inbox_router)
 # --- Trust ---
 api_router.include_router(trust_events_router)
 api_router.include_router(trust_router)
@@ -111,6 +114,7 @@ api_router.include_router(admin_reconcile_router)
 api_router.include_router(admin_bank_debug_router)
 api_router.include_router(admin_trust_manual_router)
 api_router.include_router(admin_pool_router)
+api_router.include_router(admin_behaviour_metrics_router)
 # --- Shipment / Payments ---
 api_router.include_router(shipment_router)
 api_router.include_router(payment_router)
