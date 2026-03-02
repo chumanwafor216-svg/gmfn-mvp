@@ -2,35 +2,32 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional
+from decimal import Decimal
+from typing import Any, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 
 class RepaymentCreate(BaseModel):
-    """
-    Decimal-safe input:
-    - amount is a string (e.g. "140.00")
-    - optional payment_reference (from payment instruction channel)
-    """
+    # Accept string from frontend; route converts to Decimal anyway.
     amount: str = Field(..., min_length=1)
-    payment_reference: Optional[str] = None
+    currency: Optional[str] = None
+    note: Optional[str] = None
 
 
 class RepaymentOut(BaseModel):
-    """
-    Decimal-safe output:
-    - amount is a string
-    """
     id: int
     loan_id: int
     payer_user_id: int
-    amount: str
+    amount: Decimal
     created_at: datetime
 
-    # We don't store payment_reference on Repayment model yet (no column),
-    # but it will be captured in TrustEvent meta on full repayment.
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("amount")
+    def _ser_amount(self, v: Decimal, _info: Any) -> str:
+        # Stable public API: Decimal always serialized as string
+        return str(v)
 
 
 class RepaymentsListResponse(BaseModel):

@@ -8,23 +8,23 @@ from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.core.clan_auth import (
     ensure_membership,
     get_current_clan_membership,
-    get_or_create_default_clan,
+    get_or_create_default_clan,  # kept (used elsewhere), but NOT used by dev bootstrap anymore
 )
 from app.core.dev_guard import require_dev_mode  # ✅ DEV MODE GUARD
 from app.db.database import get_db
 from app.db.models import Clan, ClanMembership, User
 from app.services.invites_service import (
-    create_clan_invite,
-    join_clan_by_invite_code,
-    frontend_join_link,
     api_join_link,
+    create_clan_invite,
+    frontend_join_link,
+    join_clan_by_invite_code,
 )
 
 router = APIRouter(prefix="/clans", tags=["clans"])
@@ -39,18 +39,38 @@ def dev_bootstrap_clan(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    clan = get_or_create_default_clan(db=db)
+    """
+    DEV bootstrap MUST be deterministic for testing:
+    - Always creates a NEW clan (avoid polluted clan_id reuse)
+    - Ensures current user is clan admin
+    """
+    now = datetime.now(timezone.utc)
+    suffix = secrets.token_hex(3)
+    name = f"Dev Clan {now.strftime('%Y%m%d-%H%M%S')}-{suffix}"
 
-    role = "admin" if (current_user.role or "").lower() == "admin" else "user"
-    membership = ensure_membership(db=db, clan=clan, user=current_user, role=role)
+    clan = Clan(
+        name=name,
+        description="DEV bootstrap clan (fresh)",
+        invite_code=secrets.token_urlsafe(16),
+        invite_created_at=now,
+        invite_expires_at=now + timedelta(days=7),
+        invite_max_uses=None,
+        invite_uses=0,
+    )
+    db.add(clan)
+    db.commit()
+    db.refresh(clan)
+
+    membership = ensure_membership(db=db, clan=clan, user=current_user, role="admin")
 
     return {
         "ok": True,
-        "clan_id": clan.id,
-        "membership_id": membership.id,
+        "clan_id": int(clan.id),
+        "membership_id": int(membership.id),
         "membership_role": membership.role,
-        "user_id": current_user.id,
+        "user_id": int(current_user.id),
         "email": current_user.email,
+        "clan_name": clan.name,
     }
 
 
@@ -78,8 +98,18 @@ class AddMemberIn(BaseModel):
 
 
 class SetMemberPoolIn(BaseModel):
+    """
+    Backward compatible:
+    - accepts {"balance": "..."} (old)
+    - accepts {"amount": "..."}  (frontend/scripts)
+    """
+    model_config = ConfigDict(populate_by_name=True)
+
     user_id: int
-    balance: Decimal = Field(default=Decimal("0"))
+    balance: Decimal = Field(
+        default=Decimal("0"),
+        validation_alias=AliasChoices("balance", "amount"),
+    )
 
 
 class JoinByInviteIn(BaseModel):
@@ -87,7 +117,18 @@ class JoinByInviteIn(BaseModel):
 
 
 class PatchMemberPoolIn(BaseModel):
-    pool_balance: Decimal = Field(default=Decimal("0"))
+    """
+    Backward compatible:
+    - accepts {"pool_balance": "..."} (old)
+    - accepts {"amount": "..."}       (frontend/scripts)
+    - accepts {"balance": "..."}      (alt)
+    """
+    model_config = ConfigDict(populate_by_name=True)
+
+    pool_balance: Decimal = Field(
+        default=Decimal("0"),
+        validation_alias=AliasChoices("pool_balance", "amount", "balance"),
+    )
 
 
 def _require_clan_admin(clan_ctx: tuple) -> tuple:
@@ -186,7 +227,7 @@ def _is_invite_expired(clan: Clan) -> bool:
 def get_current_clan(
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
-    clan, membership, current_user = clan_ctx
+    clan, membership, _current_user = clan_ctx
     return {
         "ok": True,
         "clan": {
@@ -213,7 +254,9 @@ def select_clan(
     if not clan:
         raise HTTPException(status_code=404, detail="Clan not found")
 
-    membership = ensure_membership(db=db, clan=clan, user=current_user, role="admin")
+    # ✅ critical fix: do NOT promote everyone to admin
+    role = "admin" if (current_user.role or "").lower() == "admin" else "user"
+    membership = ensure_membership(db=db, clan=clan, user=current_user, role=role)
 
     return {
         "ok": True,
@@ -233,7 +276,7 @@ def create_invite(
     db: Session = Depends(get_db),
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
-    clan, membership, current_user = _require_clan_admin(clan_ctx)
+    clan, _membership, current_user = _require_clan_admin(clan_ctx)
     if int(clan.id) != int(clan_id):
         raise HTTPException(status_code=403, detail="Not allowed")
 
@@ -274,7 +317,7 @@ def get_invite_link(
     db: Session = Depends(get_db),
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
-    clan, membership, current_user = _require_clan_admin(clan_ctx)
+    clan, _membership, _current_user = _require_clan_admin(clan_ctx)
     if int(clan.id) != int(clan_id):
         raise HTTPException(status_code=403, detail="Not allowed")
 
@@ -463,7 +506,7 @@ def get_invite_settings(
     db: Session = Depends(get_db),
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
-    clan, membership, current_user = _require_clan_admin(clan_ctx)
+    clan, _membership, _current_user = _require_clan_admin(clan_ctx)
     if int(clan.id) != int(clan_id):
         raise HTTPException(status_code=403, detail="Not allowed")
 
@@ -493,7 +536,7 @@ def update_invite_settings(
     db: Session = Depends(get_db),
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
-    clan, membership, current_user = _require_clan_admin(clan_ctx)
+    clan, _membership, _current_user = _require_clan_admin(clan_ctx)
     if int(clan.id) != int(clan_id):
         raise HTTPException(status_code=403, detail="Not allowed")
 
@@ -647,7 +690,7 @@ def list_members(
     db: Session = Depends(get_db),
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
-    clan, membership, current_user = clan_ctx
+    clan, _membership, _current_user = clan_ctx
     if clan.id != clan_id:
         raise HTTPException(status_code=403, detail="Not allowed")
 
@@ -669,7 +712,7 @@ def add_member(
     db: Session = Depends(get_db),
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
-    clan, membership, current_user = _require_clan_admin(clan_ctx)
+    clan, _membership, _current_user = _require_clan_admin(clan_ctx)
     if clan.id != clan_id:
         raise HTTPException(status_code=403, detail="Not allowed")
 
@@ -709,7 +752,7 @@ def remove_member(
     db: Session = Depends(get_db),
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
-    clan, membership, current_user = _require_clan_admin(clan_ctx)
+    clan, _membership, _current_user = _require_clan_admin(clan_ctx)
     if clan.id != clan_id:
         raise HTTPException(status_code=403, detail="Not allowed")
 
@@ -739,7 +782,7 @@ def toggle_member_role(
     db: Session = Depends(get_db),
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
-    clan, membership, current_user = _require_clan_admin(clan_ctx)
+    clan, _membership, _current_user = _require_clan_admin(clan_ctx)
     if clan.id != clan_id:
         raise HTTPException(status_code=403, detail="Not allowed")
 
@@ -771,7 +814,7 @@ def patch_member_pool_balance_compat(
     db: Session = Depends(get_db),
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
-    clan, membership, current_user = _require_clan_admin(clan_ctx)
+    clan, _membership, _current_user = _require_clan_admin(clan_ctx)
     if clan.id != clan_id:
         raise HTTPException(status_code=403, detail="Not allowed")
 
@@ -800,7 +843,7 @@ def set_member_pool_balance(
     db: Session = Depends(get_db),
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
-    clan, membership, current_user = _require_clan_admin(clan_ctx)
+    clan, _membership, _current_user = _require_clan_admin(clan_ctx)
     if clan.id != clan_id:
         raise HTTPException(status_code=403, detail="Not allowed")
 
