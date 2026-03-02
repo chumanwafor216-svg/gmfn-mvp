@@ -101,7 +101,10 @@ def _lite_page_url(code: str) -> str:
 
 def _qr_png_bytes(url: str) -> bytes:
     if qrcode is None:
-        raise HTTPException(status_code=501, detail="QR requires 'qrcode[pil]' (pip install qrcode[pil])")
+        raise HTTPException(
+            status_code=501,
+            detail="QR requires 'qrcode[pil]' (pip install qrcode[pil])",
+        )
     img = qrcode.make(url)
     buf = io.BytesIO()
     img.save(buf, format="PNG")
@@ -193,6 +196,20 @@ def get_my_trust_slip(
 ) -> Dict[str, Any]:
     if getattr(current_user, "id", None) is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
+
+    # TrustSlip activation gate: requires verified phone
+    if (
+        not getattr(current_user, "phone_verified_at", None)
+        or not getattr(current_user, "phone_e164", None)
+    ):
+        return {
+            "ok": True,
+            "active": False,
+            "reason": "phone_unverified",
+            "detail": "Verify your phone number to activate TrustSlip portability.",
+            "gmfn_id": getattr(current_user, "gmfn_id", None),
+        }
+
     return get_trust_slip_payload(db, user_id=int(current_user.id))
 
 
@@ -203,6 +220,20 @@ def get_my_trust_slip_summary(
 ) -> Dict[str, Any]:
     if getattr(current_user, "id", None) is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
+
+    # TrustSlip activation gate: requires verified phone
+    if (
+        not getattr(current_user, "phone_verified_at", None)
+        or not getattr(current_user, "phone_e164", None)
+    ):
+        return {
+            "ok": True,
+            "active": False,
+            "reason": "phone_unverified",
+            "detail": "Verify your phone number to activate TrustSlip portability.",
+            "gmfn_id": getattr(current_user, "gmfn_id", None),
+        }
+
     return get_trust_slip_payload(db, user_id=int(current_user.id))
 
 
@@ -222,8 +253,15 @@ def verify_trust_slip_public(
     if not slip:
         raise HTTPException(status_code=404, detail="TrustSlip not found")
 
-    holder = db.get(User, int(slip.holder_user_id)) if getattr(slip, "holder_user_id", None) else None
-    effective = _status_effective(getattr(slip, "status", "") or "", getattr(slip, "expires_at", None))
+    holder = (
+        db.get(User, int(slip.holder_user_id))
+        if getattr(slip, "holder_user_id", None)
+        else None
+    )
+    effective = _status_effective(
+        getattr(slip, "status", "") or "",
+        getattr(slip, "expires_at", None),
+    )
     badge_text, _ = _merchant_badge(effective)
     exp = _to_aware(getattr(slip, "expires_at", None))
 
@@ -235,7 +273,9 @@ def verify_trust_slip_public(
         "trust_limit": str(getattr(slip, "trust_limit", "0")),
         "currency": getattr(slip, "currency", None),
         "expires_at": exp.isoformat() if exp else None,
-        "last_release_at": getattr(slip, "last_release_at", None).isoformat() if getattr(slip, "last_release_at", None) else None,
+        "last_release_at": getattr(slip, "last_release_at", None).isoformat()
+        if getattr(slip, "last_release_at", None)
+        else None,
         "holder_email_masked": _mask_email(getattr(holder, "email", None)),
         "verify_page": _verify_page_url(slip.code),
         "lite_page": _lite_page_url(slip.code),
@@ -260,7 +300,10 @@ def trust_slip_share_text_public(
     if not slip:
         raise HTTPException(status_code=404, detail="TrustSlip not found")
 
-    effective = _status_effective(getattr(slip, "status", "") or "", getattr(slip, "expires_at", None))
+    effective = _status_effective(
+        getattr(slip, "status", "") or "",
+        getattr(slip, "expires_at", None),
+    )
     msg, _ = _merchant_badge(effective)
 
     verify_page = _verify_page_url(code)
@@ -289,7 +332,10 @@ def trust_slip_verify_lite_page(
     if not slip:
         raise HTTPException(status_code=404, detail="TrustSlip not found")
 
-    effective = _status_effective(getattr(slip, "status", "") or "", getattr(slip, "expires_at", None))
+    effective = _status_effective(
+        getattr(slip, "status", "") or "",
+        getattr(slip, "expires_at", None),
+    )
     msg, color = _merchant_badge(effective)
 
     exp = _to_aware(getattr(slip, "expires_at", None))
@@ -328,7 +374,11 @@ def trust_slip_verify_lite_page(
 # QR endpoint (PNG)
 # ----------------------------
 @router.get("/verify/{code}/qr.png")
-def trust_slip_verify_qr_png(code: str, request: Request, db: Session = Depends(get_db)) -> Response:
+def trust_slip_verify_qr_png(
+    code: str,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> Response:
     _throttle_public(request, "trustslip_verify_qr")
 
     slip = db.query(TrustSlip).filter(TrustSlip.code == code).first()
@@ -343,16 +393,27 @@ def trust_slip_verify_qr_png(code: str, request: Request, db: Session = Depends(
 # Merchant HTML verify page + Print view (rate-limited)
 # ----------------------------
 @router.get("/verify/{code}/page", response_class=HTMLResponse)
-def trust_slip_verify_page(code: str, request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
+def trust_slip_verify_page(
+    code: str,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
     _throttle_public(request, "trustslip_verify_page")
 
     slip = db.query(TrustSlip).filter(TrustSlip.code == code).first()
     if not slip:
         raise HTTPException(status_code=404, detail="TrustSlip not found")
 
-    holder = db.get(User, int(slip.holder_user_id)) if getattr(slip, "holder_user_id", None) else None
+    holder = (
+        db.get(User, int(slip.holder_user_id))
+        if getattr(slip, "holder_user_id", None)
+        else None
+    )
 
-    effective = _status_effective(getattr(slip, "status", "") or "", getattr(slip, "expires_at", None))
+    effective = _status_effective(
+        getattr(slip, "status", "") or "",
+        getattr(slip, "expires_at", None),
+    )
     badge_text, badge_color = _merchant_badge(effective)
 
     now = _now_utc()
@@ -460,7 +521,11 @@ def trust_slip_verify_page(code: str, request: Request, db: Session = Depends(ge
 
 
 @router.get("/verify/{code}/print", response_class=HTMLResponse)
-def trust_slip_verify_print(code: str, request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
+def trust_slip_verify_print(
+    code: str,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
     _throttle_public(request, "trustslip_verify_print")
     resp = trust_slip_verify_page(code=code, request=request, db=db)
     return HTMLResponse(content=resp.body.decode("utf-8"), headers=_no_store_headers())
@@ -486,7 +551,10 @@ def trust_slip_share_bundle(
     if not slip:
         raise HTTPException(status_code=404, detail="TrustSlip not found")
 
-    effective = _status_effective(getattr(slip, "status", "") or "", getattr(slip, "expires_at", None))
+    effective = _status_effective(
+        getattr(slip, "status", "") or "",
+        getattr(slip, "expires_at", None),
+    )
     msg, _ = _merchant_badge(effective)
 
     exp = _to_aware(getattr(slip, "expires_at", None))
@@ -504,7 +572,10 @@ def trust_slip_share_bundle(
         f"Expires: {expires_text}\n"
         f"Status: {msg}"
     )
-    sms_text = f"Verify TrustSlip: {verify_page} | Code: {code} | Limit: {trust_limit} {currency} | Expires: {expires_text}"
+    sms_text = (
+        f"Verify TrustSlip: {verify_page} | Code: {code} | "
+        f"Limit: {trust_limit} {currency} | Expires: {expires_text}"
+    )
 
     return {
         "code": code,
@@ -541,7 +612,9 @@ def record_trust_slip_release(
     meta = {
         "supplier_name": payload.supplier_name,
         "supplier_phone": payload.supplier_phone,
-        "amount_released": str(payload.amount_released) if payload.amount_released is not None else None,
+        "amount_released": str(payload.amount_released)
+        if payload.amount_released is not None
+        else None,
         "note": payload.note,
         "verify_page": _verify_page_url(slip.code),
     }
@@ -563,7 +636,9 @@ def record_trust_slip_release(
         "ok": True,
         "code": slip.code,
         "status": getattr(slip, "status", None),
-        "last_release_at": slip.last_release_at.isoformat() if slip.last_release_at else None,
+        "last_release_at": slip.last_release_at.isoformat()
+        if slip.last_release_at
+        else None,
         "event_type": te.event_type,
         "verify_page": _verify_page_url(slip.code),
     }
@@ -730,13 +805,22 @@ def extend_trust_slip_expiry(
         clan_id=getattr(slip, "clan_id", None),
         actor_user_id=int(current_user.id),
         subject_user_id=int(getattr(slip, "holder_user_id")),
-        meta={"code": slip.code, "days": days, "expires_at": slip.expires_at.isoformat() if slip.expires_at else None},
+        meta={
+            "code": slip.code,
+            "days": days,
+            "expires_at": slip.expires_at.isoformat() if slip.expires_at else None,
+        },
     )
     db.add(te)
 
     db.commit()
     db.refresh(slip)
-    return {"ok": True, "code": slip.code, "status": slip.status, "expires_at": slip.expires_at.isoformat() if slip.expires_at else None}
+    return {
+        "ok": True,
+        "code": slip.code,
+        "status": slip.status,
+        "expires_at": slip.expires_at.isoformat() if slip.expires_at else None,
+    }
 
 
 # ----------------------------
