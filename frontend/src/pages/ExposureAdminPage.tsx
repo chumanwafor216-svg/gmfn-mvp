@@ -1,11 +1,10 @@
 // frontend/src/pages/ExposureAdminPage.tsx
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import {
   getMe,
   getExposureAdmin,
-  runGuarantorExpiryNow,
   getTrustEvents,
   getCciScore,
 } from "../lib/api";
@@ -25,6 +24,7 @@ type ExposureRow = {
   personal_pool_balance?: number;
   exposure?: number;
   available?: number;
+  clans_count?: number;
 };
 
 type TrustEvent = {
@@ -32,8 +32,6 @@ type TrustEvent = {
   event_type?: string;
   created_at?: string;
   loan_id?: number;
-  actor_user_id?: number;
-  subject_user_id?: number;
   meta_json?: any;
   meta?: any;
 };
@@ -57,10 +55,9 @@ function n(x: any): number {
   return Number.isFinite(v) ? v : 0;
 }
 
-function isoNow(): string {
-  return new Date().toISOString();
+function safeStr(x: any): string {
+  return (x ?? "").toString();
 }
-
 function parseMeta(e: TrustEvent): any {
   if (e.meta && typeof e.meta === "object") return e.meta;
   if (!e.meta_json) return null;
@@ -85,13 +82,53 @@ function timeAgo(iso?: string): string {
   return `${days} day(s) ago`;
 }
 
-export default function ExposureAdminPage() {
-  const [me, setMe] = useState<MeLite | null>(null);
+function card(): React.CSSProperties {
+  return {
+    border: "1px solid rgba(11,31,51,0.10)",
+    borderRadius: 18,
+    padding: 14,
+    background: "rgba(255,255,255,0.94)",
+    boxShadow: "0 18px 60px rgba(2,6,23,0.06)",
+  };
+}
 
-  const [clanId, setClanId] = useState<number>(
-    Number(localStorage.getItem("selected_clan_id") || "1")
-  );
-  const [expiryHours, setExpiryHours] = useState<number>(48);
+function btn(primary?: boolean, disabled?: boolean): React.CSSProperties {
+  return {
+    padding: "10px 12px",
+    borderRadius: 14,
+    border: primary ? "1px solid rgba(11,31,51,0.75)" : "1px solid rgba(11,31,51,0.12)",
+    background: primary ? "#0B1F33" : "#fff",
+    color: primary ? "#fff" : "#0B1F33",
+    fontWeight: 1000,
+    cursor: disabled ? "not-allowed" : "pointer",
+    opacity: disabled ? 0.7 : 1,
+  };
+}
+
+function pill(kind: "green" | "red" | "gray" | "gold" | "blue"): React.CSSProperties {
+  const base: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    padding: "4px 10px",
+    borderRadius: 999,
+    fontSize: 12,
+    fontWeight: 1000,
+    border: "1px solid #e5e7eb",
+    background: "#fff",
+    whiteSpace: "nowrap",
+  };
+  if (kind === "green") return { ...base, color: "#065f46", background: "#ecfdf5", borderColor: "#a7f3d0" };
+  if (kind === "red") return { ...base, color: "#991b1b", background: "#fef2f2", borderColor: "#fecaca" };
+  if (kind === "blue") return { ...base, color: "#1e40af", background: "#eff6ff", borderColor: "#bfdbfe" };
+  if (kind === "gold") return { ...base, color: "#92400e", background: "#fffbeb", borderColor: "#fde68a" };
+  return { ...base, color: "#334155", background: "#f9fafb", borderColor: "#e5e7eb" };
+}
+
+export default function ExposureAdminPage() {
+  const nav = useNavigate();
+
+  const [me, setMe] = useState<MeLite | null>(null);
 
   const [rows, setRows] = useState<ExposureRow[]>([]);
   const [expiredEvents, setExpiredEvents] = useState<TrustEvent[]>([]);
@@ -103,9 +140,15 @@ export default function ExposureAdminPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
-  const [expiryLastRunAt, setExpiryLastRunAt] = useState<string | null>(null);
-  const [expiryScanned, setExpiryScanned] = useState<number | null>(null);
-  const [expiryExpired, setExpiryExpired] = useState<number | null>(null);
+  const clanId = useMemo(() => {
+    // IMPORTANT: in this build, selected clan is stored by API client as gmfn_selected_clan_id.
+    // But older screens used selected_clan_id. We support both.
+    const a = localStorage.getItem("gmfn_selected_clan_id");
+    const b = localStorage.getItem("selected_clan_id");
+    const raw = (a || b || "").trim();
+    const v = Number(raw || "0");
+    return Number.isFinite(v) && v > 0 ? v : 0;
+  }, []);
 
   const isAdmin = (me?.role || "").toLowerCase() === "admin";
 
@@ -123,11 +166,10 @@ export default function ExposureAdminPage() {
     setErr(null);
     setMsg(null);
     try {
-      localStorage.setItem("selected_clan_id", String(clanId));
       const res = await getExposureAdmin();
       const r = safeRows(res);
       setRows(r);
-      setMsg(`Loaded ${r.length} row(s) ✅`);
+      setMsg(`Loaded ${r.length} member(s).`);
     } catch (e: any) {
       setErr(e?.message || String(e));
       setRows([]);
@@ -138,12 +180,10 @@ export default function ExposureAdminPage() {
 
   async function loadExpiredGuarantorsUI() {
     try {
-      const res: any = await getTrustEvents();
+      const res: any = await getTrustEvents(120);
       const events = safeEvents(res)
-        .filter((e) => e.event_type === "GUARANTOR_EXPIRED")
-        .sort((a, b) =>
-          String(b.created_at ?? "").localeCompare(String(a.created_at ?? ""))
-        )
+        .filter((e) => safeStr(e.event_type).toUpperCase() === "GUARANTOR_EXPIRED")
+        .sort((a, b) => String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")))
         .slice(0, 10);
 
       setExpiredEvents(events);
@@ -170,7 +210,7 @@ export default function ExposureAdminPage() {
       }
 
       setCciByUserId(next);
-      setMsg("CCI scores loaded ✅");
+      setMsg("CCI loaded.");
     } catch (e: any) {
       setErr(e?.message || String(e));
     } finally {
@@ -178,43 +218,8 @@ export default function ExposureAdminPage() {
     }
   }
 
-  async function runExpiryNowUI() {
-    setLoading(true);
-    setErr(null);
-    setMsg(null);
-
-    try {
-      const hours =
-        Number.isFinite(expiryHours) && expiryHours > 0
-          ? expiryHours
-          : 48;
-
-      const res: any = await runGuarantorExpiryNow(clanId, hours);
-
-      setExpiryLastRunAt(isoNow());
-      setExpiryScanned(n(res?.scanned) || n(res?.processed));
-      setExpiryExpired(n(res?.expired));
-
-      setMsg(
-        `Expiry run ✅ expired=${n(res?.expired)}, scanned=${n(
-          res?.scanned
-        )}`
-      );
-
-      await loadExposureUI();
-      await loadExpiredGuarantorsUI();
-    } catch (e: any) {
-      setErr(e?.message || String(e));
-    } finally {
-      setLoading(false);
-    }
-  }
-
   const totals = useMemo(() => {
-    const pool = rows.reduce(
-      (acc, r) => acc + n(r.personal_pool_balance),
-      0
-    );
+    const pool = rows.reduce((acc, r) => acc + n(r.personal_pool_balance), 0);
     const exposure = rows.reduce((acc, r) => acc + n(r.exposure), 0);
     const available = rows.reduce((acc, r) => acc + n(r.available), 0);
     return { pool, exposure, available };
@@ -227,87 +232,169 @@ export default function ExposureAdminPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  if (!isAdmin) {
+    return (
+      <div style={{ padding: 18, maxWidth: 1100 }}>
+        <div style={card()}>
+          <div style={{ fontWeight: 1000, color: "#0B1F33" }}>Admin only</div>
+          <div style={{ marginTop: 6, fontSize: 12, color: "#6B7A88" }}>
+            This screen is for admin risk checks.
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <Link to="/dashboard" style={{ textDecoration: "none", ...btn(false, false) as any }}>
+              Back to Home →
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ padding: 20, maxWidth: 1100 }}>
-      <h2 style={{ marginTop: 0 }}>Exposure (Admin)</h2>
+    <div style={{ padding: 18, maxWidth: 1100 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+        <div>
+          <div style={{ fontSize: 22, fontWeight: 1000, color: "#0B1F33" }}>Exposure & Risk</div>
+          <div style={{ marginTop: 4, fontSize: 12, color: "#6B7A88", lineHeight: 1.4 }}>
+            Who is exposed right now (locked guarantees). Use this to prevent silent risk.
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button style={btn(false, loading)} onClick={loadExposureUI} disabled={loading}>
+            {loading ? "Loading..." : "Refresh"}
+          </button>
+          <button style={btn(false, cciLoading || rows.length === 0)} onClick={loadCciScoresUI} disabled={cciLoading || rows.length === 0}>
+            {cciLoading ? "Loading CCI..." : "Load CCI"}
+          </button>
+          <button style={btn(false, false)} onClick={() => nav("/clans")}>
+            Change clan →
+          </button>
+        </div>
+      </div>
 
       {msg && (
-        <div style={{ background: "#d1fae5", padding: 10, marginBottom: 10, borderRadius: 8 }}>
+        <div style={{ ...card(), marginTop: 12, borderColor: "rgba(6,95,70,0.18)", background: "rgba(236,253,245,0.95)", color: "#065f46", fontWeight: 900 }}>
           {msg}
         </div>
       )}
 
       {err && (
-        <div style={{ background: "#fee2e2", padding: 10, marginBottom: 10, borderRadius: 8 }}>
+        <div style={{ ...card(), marginTop: 12, borderColor: "rgba(153,27,27,0.25)", background: "rgba(254,242,242,0.9)", color: "#991b1b", fontWeight: 900 }}>
           {err}
         </div>
       )}
 
-      <div style={{ marginBottom: 12 }}>
-        Totals:{" "}
-        <b>Pool</b> {formatMoney(totals.pool, "NGN")} ·{" "}
-        <b>Exposure</b> {formatMoney(totals.exposure, "NGN")} ·{" "}
-        <b>Available</b> {formatMoney(totals.available, "NGN")}
+      {/* Totals */}
+      <div style={{ ...card(), marginTop: 12 }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ fontWeight: 1000, color: "#0B1F33" }}>Totals (clan #{clanId || "—"})</div>
+          <span style={pill("gray")}>Pilot</span>
+        </div>
+
+        <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+          <div>
+            <div style={{ fontSize: 12, color: "#6B7A88", fontWeight: 900 }}>Pool</div>
+            <div style={{ fontWeight: 1000 }}>{formatMoney(totals.pool, "NGN")}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: "#6B7A88", fontWeight: 900 }}>Exposure</div>
+            <div style={{ fontWeight: 1000 }}>{formatMoney(totals.exposure, "NGN")}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: "#6B7A88", fontWeight: 900 }}>Available</div>
+            <div style={{ fontWeight: 1000 }}>{formatMoney(totals.available, "NGN")}</div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 10, fontSize: 12, color: "#6B7A88", lineHeight: 1.4 }}>
+          Exposure = locked amount not yet released. If exposure is high, do not approve more guarantees.
+        </div>
       </div>
 
-      <div style={{ marginBottom: 12 }}>
-        <input
-          type="number"
-          value={clanId}
-          onChange={(e) => {
-            const v = Number(e.target.value);
-            setClanId(v);
-            localStorage.setItem("selected_clan_id", String(v));
-          }}
-          style={{ width: 120, marginRight: 8 }}
-        />
-        <button onClick={loadExposureUI}>Refresh</button>
-      </div>
+      {/* Member risk list (mobile friendly) */}
+      <div style={{ ...card(), marginTop: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ fontWeight: 1000, color: "#0B1F33" }}>Members</div>
+          <span style={pill(rows.length ? "blue" : "gray")}>{rows.length} member(s)</span>
+        </div>
 
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr>
-            <th>User</th>
-            <th>Role</th>
-            <th>Pool</th>
-            <th>Exposure</th>
-            <th>Available</th>
-            <th>CCI</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => {
+        <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+          {rows.map((r) => {
             const uid = Number(r.user_id);
             const cci = cciByUserId[uid];
+            const exp = n(r.exposure);
+            const kind = exp > 0 ? "gold" : "gray";
+
             return (
-              <tr key={i}>
-                <td>{r.email ?? `user:${uid}`}</td>
-                <td>{r.role ?? "—"}</td>
-                <td>{formatMoney(n(r.personal_pool_balance), "NGN")}</td>
-                <td>{formatMoney(n(r.exposure), "NGN")}</td>
-                <td>{formatMoney(n(r.available), "NGN")}</td>
-                <td>{Number.isFinite(cci) ? cci : "—"}</td>
-              </tr>
+              <div key={uid} style={{ border: "1px solid rgba(11,31,51,0.10)", borderRadius: 16, padding: 12, background: "#fff" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontWeight: 1000, color: "#0B1F33" }}>{r.email ?? `User #${uid}`}</div>
+                    <div style={{ marginTop: 4, fontSize: 12, color: "#6B7A88" }}>
+                      Role: <b style={{ color: "#0B1F33" }}>{safeStr(r.role || "user")}</b>
+                      {Number.isFinite(n(r.clans_count)) ? <span> · clans: <b>{n(r.clans_count)}</b></span> : null}
+                    </div>
+                  </div>
+                  <span style={pill(kind as any)}>exposure: {formatMoney(exp, "NGN")}</span>
+                </div>
+
+                <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, fontSize: 12 }}>
+                  <div>
+                    <div style={{ color: "#6B7A88", fontWeight: 900 }}>Pool</div>
+                    <div style={{ fontWeight: 1000 }}>{formatMoney(n(r.personal_pool_balance), "NGN")}</div>
+                  </div>
+                  <div>
+                    <div style={{ color: "#6B7A88", fontWeight: 900 }}>Available</div>
+                    <div style={{ fontWeight: 1000 }}>{formatMoney(n(r.available), "NGN")}</div>
+                  </div>
+                  <div>
+                    <div style={{ color: "#6B7A88", fontWeight: 900 }}>CCI</div>
+                    <div style={{ fontWeight: 1000 }}>{Number.isFinite(cci) ? cci : "—"}</div>
+                  </div>
+                </div>
+              </div>
             );
           })}
-        </tbody>
-      </table>
 
-      <div style={{ marginTop: 20 }}>
-        <h3>Recently Expired</h3>
-        {expiredEvents.map((e, i) => {
-          const meta = parseMeta(e) || {};
-          return (
-            <div key={i} style={{ marginBottom: 6 }}>
-              {e.loan_id && (
-                <Link to={`/trust-analytics?loan_id=${e.loan_id}`}>
-                  Loan #{e.loan_id}
-                </Link>
-              )}{" "}
-              – {meta.reason ?? "—"} – {timeAgo(e.created_at)}
-            </div>
-          );
-        })}
+          {rows.length === 0 && <div style={{ fontSize: 12, color: "#6B7A88" }}>No members loaded.</div>}
+        </div>
+      </div>
+
+      {/* Recently expired (pilot) */}
+      <div style={{ ...card(), marginTop: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ fontWeight: 1000, color: "#0B1F33" }}>Recently expired</div>
+          <button style={btn(false, false)} onClick={loadExpiredGuarantorsUI}>
+            Refresh
+          </button>
+        </div>
+
+        <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+          {expiredEvents.length === 0 && <div style={{ fontSize: 12, color: "#6B7A88" }}>No expired items.</div>}
+
+          {expiredEvents.map((e, i) => {
+            const meta = parseMeta(e) || {};
+            return (
+              <div key={i} style={{ fontSize: 12, color: "#334155", borderTop: "1px solid rgba(11,31,51,0.08)", paddingTop: 8 }}>
+                <b>{safeStr(e.event_type)}</b>
+                {e.loan_id ? (
+                  <span>
+                    {" "}
+                    · loan #{e.loan_id} · <Link to={`/loans?loan=${encodeURIComponent(String(e.loan_id))}`}>open</Link>
+                  </span>
+                ) : null}
+                <div style={{ marginTop: 4, color: "#6B7A88" }}>
+                  {safeStr(meta.reason || "—")} · {timeAgo(e.created_at)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ marginTop: 12, fontSize: 12, color: "#6B7A88" }}>
+        Admin note: keep exposure low. Do not approve guarantees blindly.
       </div>
     </div>
   );
