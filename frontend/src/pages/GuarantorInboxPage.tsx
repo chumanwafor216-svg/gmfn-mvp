@@ -1,408 +1,525 @@
-// src/pages/GuarantorInboxPage.tsx
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import {
+  decideIncomingGuarantorRequest,
+  getGuarantorInbox,
+  getMe,
+  safeCopy,
+} from "../lib/api";
 
-import { getMe, listIncomingGuarantorRequests, decideIncomingGuarantorRequest } from "../lib/api";
-
-/**
- * B) GUARANTOR EXPERIENCE (Inbox)
- * - Underbanked/low-end friendly: big cards, simple language, minimal payload
- * - Actions: Approve / Decline / Ignore (ignore = leave pending)
- * - Reason + note (audit / visa evidence)
- * - Shows "My Guarantees" (history) in the same page for simplicity
- *
- * Authority UI:
- * - Neutral base (slate/gray)
- * - Green = approved
- * - Red = declined
- * - Blue = informational
- * - Gold = history/records
- */
-
-type InboxItem = {
-  id: number;
-  loan_id: number;
-  clan_id: number;
-  guarantor_user_id: number;
-
-  status: string;
-  pledge_amount?: string | null;
-
-  responded_at?: string | null;
-
-  borrower_user_id?: number | null;
-  borrower_email?: string | null;
-
-  amount?: string | null;
-  currency?: string | null;
+type MeLite = {
+  gmfn_id?: string | null;
+  nickname?: string | null;
+  display_name?: string | null;
+  email?: string | null;
 };
 
-type DecisionStatus = "approved" | "declined";
+type InboxRow = {
+  id?: number;
+  loan_id?: number;
+  guarantor_user_id?: number;
+  borrower_user_id?: number;
+  borrower_display?: string | null;
+  borrower_email?: string | null;
+  pledge_amount?: string | number | null;
+  requested_amount?: string | number | null;
+  amount?: string | number | null;
+  currency?: string | null;
+  status?: string | null;
+  note?: string | null;
+  created_at?: string | null;
+};
 
 function safeStr(x: any): string {
-  return (x ?? "").toString();
+  return String(x ?? "");
 }
 
-function displayNameFromEmail(email?: string | null): string {
-  const e = safeStr(email).trim();
-  if (!e) return "Borrower";
-  const head = e.split("@")[0] || "borrower";
-  const pretty = head.replace(/[._-]+/g, " ").trim();
-  return pretty ? pretty.replace(/\b\w/g, (m) => m.toUpperCase()) : "Borrower";
+function fmtMoney(x: any): string {
+  const n = Number(x);
+  if (!Number.isFinite(n)) {
+    const s = String(x ?? "").trim();
+    return s || "0.00";
+  }
+  return n.toFixed(2);
 }
 
-function maskedEmail(email?: string | null): string {
-  const e = safeStr(email).trim();
-  if (!e) return "borrower@gmfn.com";
-  const head = e.split("@")[0] || "borrower";
-  const short = head.length <= 3 ? head : head.slice(0, 3) + "…";
-  return `${short}@gmfn.com`;
+function displayName(me: MeLite | null): string {
+  const n1 = safeStr(me?.nickname).trim();
+  if (n1) return n1;
+
+  const n2 = safeStr(me?.display_name).trim();
+  if (n2) return n2;
+
+  const email = safeStr(me?.email).trim();
+  if (!email) return "Member";
+
+  const left = email.split("@")[0] || "member";
+  return left
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map((x) => x.charAt(0).toUpperCase() + x.slice(1))
+    .join(" ");
 }
 
-function cardStyle(): React.CSSProperties {
+function topPattern(): string {
+  const svg = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="320" viewBox="0 0 1600 320">
+    <rect width="1600" height="320" fill="#F7FAFD"/>
+    <g fill="none" stroke="#C7D9EE" stroke-opacity="0.42" stroke-width="2">
+      <path d="M80 160 C180 90, 280 90, 380 160 S580 230, 690 150" />
+      <path d="M920 160 C1020 90, 1120 90, 1220 160 S1420 230, 1520 150" />
+    </g>
+    <g fill="#D6AF47" fill-opacity="0.95">
+      <path d="M80 150 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
+      <path d="M180 96 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
+      <path d="M280 96 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
+      <path d="M380 150 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
+      <path d="M510 205 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
+      <path d="M650 150 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
+
+      <path d="M920 150 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
+      <path d="M1020 96 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
+      <path d="M1120 96 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
+      <path d="M1220 150 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
+      <path d="M1350 205 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
+      <path d="M1490 150 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
+    </g>
+  </svg>`.trim();
+
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+function card(): React.CSSProperties {
   return {
-    border: "1px solid #e5e7eb",
-    borderRadius: 16,
-    padding: 14,
-    background: "rgba(255,255,255,0.92)",
-    boxShadow: "0 6px 18px rgba(0,0,0,0.06)",
+    borderRadius: 22,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: "#FFFFFF",
+    boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
+    padding: 22,
   };
 }
 
-function btnStyle(disabled?: boolean): React.CSSProperties {
-  return {
-    padding: "10px 12px",
-    borderRadius: 12,
-    border: "1px solid #e5e7eb",
-    background: "rgba(255,255,255,0.95)",
-    cursor: disabled ? "not-allowed" : "pointer",
-    fontWeight: 900,
-    opacity: disabled ? 0.6 : 1,
-  };
-}
-
-function btnPrimaryStyle(disabled?: boolean): React.CSSProperties {
-  return {
-    ...btnStyle(disabled),
-    background: "#111827",
-    color: "white",
-    border: "1px solid #111827",
-  };
-}
-
-function pill(kind: "green" | "red" | "gray" | "blue" | "gold"): React.CSSProperties {
+function pill(kind: "green" | "gold" | "red" | "gray" | "blue"): React.CSSProperties {
   const base: React.CSSProperties = {
     display: "inline-flex",
     alignItems: "center",
     gap: 6,
-    padding: "4px 10px",
+    padding: "5px 10px",
     borderRadius: 999,
     fontSize: 12,
     fontWeight: 1000,
-    border: "1px solid #e5e7eb",
-    background: "#fff",
+    border: "1px solid #E5E7EB",
     whiteSpace: "nowrap",
+    background: "#FFFFFF",
   };
-  if (kind === "green") return { ...base, color: "#065f46", background: "#ecfdf5", borderColor: "#a7f3d0" };
-  if (kind === "red") return { ...base, color: "#991b1b", background: "#fef2f2", borderColor: "#fecaca" };
-  if (kind === "blue") return { ...base, color: "#1e40af", background: "#eff6ff", borderColor: "#bfdbfe" };
-  if (kind === "gold") return { ...base, color: "#92400e", background: "#fffbeb", borderColor: "#fde68a" };
-  return { ...base, color: "#374151", background: "#f9fafb", borderColor: "#e5e7eb" };
+
+  if (kind === "green") return { ...base, color: "#065F46", background: "#ECFDF5", borderColor: "#A7F3D0" };
+  if (kind === "gold") return { ...base, color: "#92400E", background: "#FFFBEB", borderColor: "#FDE68A" };
+  if (kind === "red") return { ...base, color: "#991B1B", background: "#FEF2F2", borderColor: "#FECACA" };
+  if (kind === "blue") return { ...base, color: "#1D4ED8", background: "#EFF6FF", borderColor: "#BFDBFE" };
+  return { ...base, color: "#475569", background: "#F8FAFC", borderColor: "#E2E8F0" };
 }
 
-function normalizeInboxPayload(payload: any): InboxItem[] {
-  if (!payload) return [];
-  const items = Array.isArray(payload?.items) ? payload.items : Array.isArray(payload) ? payload : [];
-  const out: InboxItem[] = [];
-
-  for (const r of items) {
-    const id = Number(r?.id);
-    const loan_id = Number(r?.loan_id ?? r?.loanId ?? r?.loan);
-    const clan_id = Number(r?.clan_id ?? r?.clanId ?? r?.clan);
-    const guarantor_user_id = Number(r?.guarantor_user_id ?? r?.guarantorUserId ?? r?.guarantor_user);
-
-    if (!Number.isFinite(id) || !Number.isFinite(loan_id) || !Number.isFinite(clan_id) || !Number.isFinite(guarantor_user_id)) continue;
-
-    out.push({
-      id,
-      loan_id,
-      clan_id,
-      guarantor_user_id,
-      status: safeStr(r?.status ?? "pending"),
-      pledge_amount: r?.pledge_amount != null ? safeStr(r.pledge_amount) : null,
-      responded_at: r?.responded_at ?? r?.respondedAt ?? null,
-      borrower_user_id: r?.borrower_user_id ?? r?.borrowerUserId ?? null,
-      borrower_email: r?.borrower_email ?? r?.borrowerEmail ?? null,
-      amount: r?.amount != null ? safeStr(r.amount) : null,
-      currency: r?.currency != null ? safeStr(r.currency) : null,
-    });
+function actionButton(kind: "default" | "approve" | "decline" = "default"): React.CSSProperties {
+  if (kind === "approve") {
+    return {
+      padding: "10px 12px",
+      borderRadius: 14,
+      border: "1px solid #A7F3D0",
+      background: "#ECFDF5",
+      color: "#065F46",
+      fontWeight: 1000,
+      cursor: "pointer",
+      fontSize: 14,
+    };
   }
 
-  return out;
+  if (kind === "decline") {
+    return {
+      padding: "10px 12px",
+      borderRadius: 14,
+      border: "1px solid #FECACA",
+      background: "#FEF2F2",
+      color: "#991B1B",
+      fontWeight: 1000,
+      cursor: "pointer",
+      fontSize: 14,
+    };
+  }
+
+  return {
+    padding: "10px 12px",
+    borderRadius: 14,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#FFFFFF",
+    color: "#0B1F33",
+    fontWeight: 1000,
+    cursor: "pointer",
+    fontSize: 14,
+  };
 }
 
-// Structured reasons (good for audit & visa evidence)
-const REASONS: { value: string; label: string }[] = [
-  { value: "trust_character", label: "I trust their repayment character." },
-  { value: "seen_history", label: "I’ve seen good repayment history." },
-  { value: "business_verified", label: "Their business is verifiable / stable." },
-  { value: "community_accountability", label: "Community accountability is strong." },
-  { value: "decline_uncertain", label: "I am not confident enough to support this." },
-  { value: "decline_no_capacity", label: "I don’t have capacity to risk this right now." },
-  { value: "decline_insufficient_info", label: "Not enough information / proof." },
-];
+function statusKind(status?: string | null): "green" | "gold" | "red" | "gray" | "blue" {
+  const s = safeStr(status).toLowerCase();
+  if (s.includes("approved")) return "green";
+  if (s.includes("pending") || s.includes("requested")) return "gold";
+  if (s.includes("declined") || s.includes("expired")) return "red";
+  return "gray";
+}
 
-function defaultReasonFor(status: DecisionStatus): string {
-  return status === "approved" ? "trust_character" : "decline_uncertain";
+function fieldLabel(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#5B7693",
+    fontWeight: 1000,
+    marginBottom: 6,
+  };
 }
 
 export default function GuarantorInboxPage() {
   const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<number | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
 
-  const [me, setMe] = useState<any>(null);
-  const [items, setItems] = useState<InboxItem[]>([]);
+  const [me, setMe] = useState<MeLite | null>(null);
+  const [rows, setRows] = useState<InboxRow[]>([]);
+  const [statusFilter, setStatusFilter] = useState("pending");
 
-  const pending = useMemo(() => items.filter((x) => safeStr(x.status).toLowerCase() === "pending"), [items]);
-  const history = useMemo(() => items.filter((x) => safeStr(x.status).toLowerCase() !== "pending"), [items]);
-
-  // Evidence inputs
-  const [decisionReason, setDecisionReason] = useState<string>(defaultReasonFor("approved"));
-  const [note, setNote] = useState<string>("");
-
-  // Guard against double-taps / retries
-  const [submittingId, setSubmittingId] = useState<number | null>(null);
+  const pattern = useMemo(() => topPattern(), []);
 
   async function loadAll() {
     setLoading(true);
     setErr(null);
-    try {
-      const m = await getMe();
-      setMe(m);
 
-      const raw = await listIncomingGuarantorRequests();
-      setItems(normalizeInboxPayload(raw));
+    try {
+      const [meRes, inboxRes] = await Promise.all([
+        getMe().catch(() => null),
+        getGuarantorInbox(statusFilter, 100).catch(() => []),
+      ]);
+
+      setMe(meRes || null);
+
+      const items = Array.isArray(inboxRes) ? inboxRes : inboxRes?.items || [];
+      setRows(items || []);
     } catch (e: any) {
-      setErr(String(e?.message || e));
-      setItems([]);
+      setErr(String(e?.message || e || "Unable to load guarantor inbox."));
     } finally {
       setLoading(false);
     }
   }
 
-  async function decide(item: InboxItem, status: DecisionStatus) {
-    setErr(null);
+  useEffect(() => {
+    loadAll();
+  }, [statusFilter]);
 
-    // Reason is mandatory (structured)
-    const r = safeStr(decisionReason).trim();
-    if (!r) {
-      setErr("Please select a reason before submitting.");
+  async function decide(row: InboxRow, decision: "approved" | "declined") {
+    const loanId = Number(row.loan_id || 0);
+    const guarantorId = Number(row.guarantor_user_id || 0);
+
+    if (!loanId || !guarantorId) {
+      setErr("Missing loan or guarantor information.");
       return;
     }
 
-    // Prevent double submit for the same row
-    if (submittingId === item.id) return;
+    setBusyId(Number(row.id || loanId));
+    setErr(null);
+    setMsg(null);
 
-    setSubmittingId(item.id);
     try {
-      await decideIncomingGuarantorRequest(item.loan_id, item.id, {
-        status,
-        reason: r,
-        note: safeStr(note).trim() || undefined,
+      await decideIncomingGuarantorRequest(loanId, guarantorId, {
+        status: decision,
+        reason: decision === "approved" ? "capacity_confirmed" : "capacity_declined",
+        note:
+          decision === "approved"
+            ? "Approved from guarantor inbox."
+            : "Declined from guarantor inbox.",
       });
+
+      setMsg(decision === "approved" ? "Request approved." : "Request declined.");
       await loadAll();
     } catch (e: any) {
       setErr(String(e?.message || e));
     } finally {
-      setSubmittingId(null);
+      setBusyId(null);
     }
   }
 
-  useEffect(() => {
-    loadAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const name = useMemo(() => displayName(me), [me]);
+  const gmfnId = useMemo(() => safeStr(me?.gmfn_id).trim() || "Pending", [me]);
+  const pendingCount = useMemo(
+    () => rows.filter((r) => safeStr(r.status || "pending").toLowerCase().includes("pending")).length,
+    [rows]
+  );
 
   return (
-    <div style={{ padding: 18 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <div>
-          <div style={{ fontSize: 24, fontWeight: 1000 }}>Guarantor Inbox</div>
-          <div style={{ color: "#64748b", fontSize: 12 }}>Decide who to support. Keep trust precious.</div>
-        </div>
+    <div style={{ maxWidth: 1260, margin: "0 auto" }}>
+      <div
+        style={{
+          backgroundImage: `url("${pattern}")`,
+          backgroundRepeat: "no-repeat",
+          backgroundSize: "cover",
+          backgroundPosition: "center top",
+          borderRadius: 28,
+          border: "1px solid rgba(11,31,51,0.06)",
+          overflow: "hidden",
+          backgroundColor: "#F8FBFE",
+        }}
+      >
+        <div style={{ padding: 24 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 16,
+              flexWrap: "wrap",
+              alignItems: "flex-start",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: 34,
+                  fontWeight: 1000,
+                  color: "#0B1F33",
+                  textShadow: "0 1px 0 rgba(255,255,255,0.85)",
+                }}
+              >
+                Incoming Guarantor Requests
+              </div>
+              <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
+                Review requests carefully. Guarantee is a personal commitment decision.
+              </div>
+            </div>
 
-        <button style={btnStyle(loading)} onClick={loadAll} disabled={loading}>
-          {loading ? "Refreshing..." : "Refresh"}
-        </button>
-      </div>
+            <button onClick={loadAll} disabled={loading} style={actionButton()}>
+              {loading ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
 
-      {err && (
-        <div style={{ marginTop: 12, ...cardStyle(), borderColor: "#fecaca", background: "#fef2f2", color: "#991b1b" }}>
-          {err}
-        </div>
-      )}
-
-      {/* Reason / note */}
-      <div style={{ marginTop: 12, ...cardStyle() }}>
-        <div style={{ fontSize: 16, fontWeight: 1000 }}>Your explanation (stored as evidence)</div>
-        <div style={{ color: "#64748b", fontSize: 12, marginTop: 4 }}>
-          This becomes part of the TrustEvent audit trail (“Why did trust change?”).
-        </div>
-
-        <div style={{ marginTop: 10, display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" }}>
-          <div>
-            <div style={{ fontSize: 12, color: "#64748b" }}>Reason (required)</div>
-            <select
-              value={decisionReason}
-              onChange={(e) => setDecisionReason(e.target.value)}
-              style={{ width: "100%", padding: "10px 12px", borderRadius: 12, border: "1px solid #e5e7eb", background: "#fff" }}
+          {err && (
+            <div
+              style={{
+                marginTop: 16,
+                padding: "12px 14px",
+                borderRadius: 14,
+                background: "#FEF2F2",
+                border: "1px solid #FECACA",
+                color: "#991B1B",
+                fontWeight: 900,
+              }}
             >
-              {REASONS.map((x) => (
-                <option key={x.value} value={x.value}>
-                  {x.label}
-                </option>
-              ))}
-            </select>
+              {err}
+            </div>
+          )}
 
-            <div style={{ marginTop: 6, fontSize: 12, color: "#64748b" }}>
-              Tip: use <b>Approve</b> reasons when approving, and <b>Decline</b> reasons when declining.
+          {msg && (
+            <div
+              style={{
+                marginTop: 16,
+                padding: "12px 14px",
+                borderRadius: 14,
+                background: "#ECFDF5",
+                border: "1px solid #A7F3D0",
+                color: "#065F46",
+                fontWeight: 900,
+              }}
+            >
+              {msg}
+            </div>
+          )}
+
+          <div
+            style={{
+              marginTop: 18,
+              display: "grid",
+              gridTemplateColumns: "1.05fr 0.95fr",
+              gap: 18,
+            }}
+          >
+            <div
+              style={{
+                ...card(),
+                background: "linear-gradient(180deg, rgba(239,246,255,0.96) 0%, rgba(255,255,255,0.98) 100%)",
+              }}
+            >
+              <div style={{ fontSize: 12, color: "#5B7693", fontWeight: 1000, letterSpacing: 0.8 }}>
+                GUARANTOR POSITION
+              </div>
+
+              <div style={{ marginTop: 10, fontSize: 28, fontWeight: 1000, color: "#0B1F33" }}>
+                {name}
+              </div>
+
+              <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <span style={pill("blue")}>{gmfnId}</span>
+                <span style={pill(pendingCount > 0 ? "gold" : "gray")}>
+                  {pendingCount} pending
+                </span>
+              </div>
+
+              <div style={{ marginTop: 16, color: "#6B7A88", lineHeight: 1.8 }}>
+                Approval should reflect your real willingness and actual capacity to stand behind the request.
+              </div>
+            </div>
+
+            <div style={card()}>
+              <div style={{ fontSize: 16, fontWeight: 1000, color: "#0B1F33" }}>Filter inbox</div>
+
+              <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
+                View pending, approved, declined, or all requests.
+              </div>
+
+              <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                {["pending", "approved", "declined", "all"].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setStatusFilter(s)}
+                    style={
+                      statusFilter === s
+                        ? {
+                            padding: "10px 12px",
+                            borderRadius: 14,
+                            border: "1px solid #BFDBFE",
+                            background: "#EFF6FF",
+                            color: "#1D4ED8",
+                            fontWeight: 1000,
+                            cursor: "pointer",
+                          }
+                        : actionButton()
+                    }
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          <div>
-            <div style={{ fontSize: 12, color: "#64748b" }}>Note (optional)</div>
-            <input
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              style={{ width: "100%", padding: "10px 12px", borderRadius: 12, border: "1px solid #e5e7eb" }}
-              placeholder="Short note (optional)..."
-            />
-          </div>
-        </div>
+          <div style={{ marginTop: 18, ...card() }}>
+            <div style={{ fontSize: 16, fontWeight: 1000, color: "#0B1F33" }}>
+              Request queue
+            </div>
+            <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
+              Open each request with clear judgment. Approval should not be casual.
+            </div>
 
-        <div style={{ marginTop: 10, fontSize: 12, color: "#64748b" }}>
-          Signed in as: <b>{me?.email ?? "—"}</b>
-        </div>
-      </div>
+            <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
+              {rows.length === 0 && (
+                <div style={{ color: "#7A8D9F" }}>No guarantor requests found for this filter.</div>
+              )}
 
-      {/* Pending */}
-      <div style={{ marginTop: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-          <div style={{ fontSize: 16, fontWeight: 1000 }}>Pending Requests</div>
-          <span style={pill(pending.length ? "blue" : "gray")}>{pending.length} pending</span>
-        </div>
+              {rows.map((row, idx) => {
+                const rowId = Number(row.id || idx + 1);
+                const loanId = Number(row.loan_id || 0);
+                const borrower = safeStr(
+                  row.borrower_display || row.borrower_email || `Borrower #${row.borrower_user_id || "—"}`
+                );
+                const pledgeAmount = fmtMoney(row.pledge_amount ?? "0");
+                const requestedAmount = fmtMoney(row.requested_amount ?? row.amount ?? "0");
+                const rowCurrency = safeStr(row.currency || "NGN");
+                const rowStatus = safeStr(row.status || "pending");
 
-        <div style={{ marginTop: 10, display: "grid", gap: 12 }}>
-          {pending.map((it) => {
-            const borrowerName = displayNameFromEmail(it.borrower_email);
-            const borrowerMail = maskedEmail(it.borrower_email);
-            const busy = submittingId === it.id;
+                return (
+                  <div
+                    key={`${rowId}-${idx}`}
+                    style={{
+                      borderRadius: 18,
+                      border: "1px solid rgba(11,31,51,0.08)",
+                      background: "#FFFFFF",
+                      padding: 16,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 12,
+                        flexWrap: "wrap",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 1000, color: "#0B1F33", fontSize: 18 }}>
+                          Loan #{loanId || "—"}
+                        </div>
+                        <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 13 }}>
+                          {row.created_at ? new Date(row.created_at).toLocaleString() : "—"}
+                        </div>
+                      </div>
 
-            return (
-              <div key={it.id} style={cardStyle()}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                    <span style={pill("blue")}>Loan #{it.loan_id}</span>
-                    <span style={pill("gray")}>Clan #{it.clan_id}</span>
-                    <span style={pill("gray")}>Pledge: {it.pledge_amount ?? "—"}</span>
-                  </div>
-                  <span style={pill("gray")}>pending</span>
-                </div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <span style={pill(statusKind(rowStatus))}>{rowStatus}</span>
+                        <span style={pill("blue")}>
+                          pledge {pledgeAmount} {rowCurrency}
+                        </span>
+                      </div>
+                    </div>
 
-                <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  <div>
-                    <div style={{ fontSize: 12, color: "#64748b" }}>Borrower</div>
-                    <div style={{ fontWeight: 1000 }}>{borrowerName}</div>
-                    <div style={{ fontSize: 12, color: "#64748b" }}>{borrowerMail}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 12, color: "#64748b" }}>Loan amount</div>
-                    <div style={{ fontWeight: 1000 }}>
-                      {it.amount ?? "—"} {it.currency ?? ""}
+                    <div
+                      style={{
+                        marginTop: 14,
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr 1fr",
+                        gap: 12,
+                      }}
+                    >
+                      <div>
+                        <div style={fieldLabel()}>Borrower</div>
+                        <div style={{ color: "#0B1F33", fontWeight: 900 }}>{borrower}</div>
+                      </div>
+
+                      <div>
+                        <div style={fieldLabel()}>Requested amount</div>
+                        <div style={{ color: "#0B1F33", fontWeight: 900 }}>
+                          {requestedAmount} {rowCurrency}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div style={fieldLabel()}>Note</div>
+                        <div style={{ color: "#0B1F33", fontWeight: 900 }}>
+                          {safeStr(row.note || "—")}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      {safeStr(rowStatus).toLowerCase().includes("pending") ? (
+                        <>
+                          <button
+                            onClick={() => decide(row, "approved")}
+                            disabled={busyId === rowId}
+                            style={actionButton("approve")}
+                          >
+                            {busyId === rowId ? "Working..." : "Approve"}
+                          </button>
+
+                          <button
+                            onClick={() => decide(row, "declined")}
+                            disabled={busyId === rowId}
+                            style={actionButton("decline")}
+                          >
+                            {busyId === rowId ? "Working..." : "Decline"}
+                          </button>
+                        </>
+                      ) : null}
+
+                      <button
+                        onClick={() =>
+                          safeCopy(
+                            `Loan ${loanId} | Borrower: ${borrower} | Pledge: ${pledgeAmount} ${rowCurrency} | Status: ${rowStatus}`
+                          )
+                        }
+                        style={actionButton()}
+                      >
+                        Copy summary
+                      </button>
                     </div>
                   </div>
-                </div>
-
-                <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <button
-                    style={btnPrimaryStyle(busy)}
-                    onClick={() => {
-                      // helpful default: if user is approving and has a "decline_*" reason selected, switch to approve default
-                      if (safeStr(decisionReason).startsWith("decline_")) setDecisionReason(defaultReasonFor("approved"));
-                      decide(it, "approved");
-                    }}
-                    disabled={busy}
-                  >
-                    {busy ? "Saving..." : "Approve"}
-                  </button>
-
-                  <button
-                    style={btnStyle(busy)}
-                    onClick={() => {
-                      // helpful default: if user is declining and has an approve reason selected, switch to decline default
-                      if (!safeStr(decisionReason).startsWith("decline_")) setDecisionReason(defaultReasonFor("declined"));
-                      decide(it, "declined");
-                    }}
-                    disabled={busy}
-                  >
-                    Decline
-                  </button>
-
-                  <button
-                    style={btnStyle(busy)}
-                    onClick={() => alert("Ignore = do nothing. The request stays pending until it expires.")}
-                    title="Ignore leaves it pending."
-                    disabled={busy}
-                  >
-                    Ignore
-                  </button>
-
-                  <Link to="/loans" style={{ ...btnStyle(busy), display: "inline-block", textDecoration: "none", color: "#111827" }}>
-                    Open Loans →
-                  </Link>
-                </div>
-
-                <div style={{ marginTop: 10, fontSize: 12, color: "#64748b" }}>
-                  Tip: Approve only when you trust the person’s repayment character. Your reputation is also at stake.
-                </div>
-              </div>
-            );
-          })}
-
-          {!loading && pending.length === 0 && (
-            <div style={{ ...cardStyle(), color: "#64748b" }}>No pending requests right now.</div>
-          )}
-        </div>
-      </div>
-
-      {/* My Guarantees (History) */}
-      <div style={{ marginTop: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-          <div style={{ fontSize: 16, fontWeight: 1000 }}>My Guarantees (History)</div>
-          <span style={pill(history.length ? "gold" : "gray")}>{history.length} record(s)</span>
-        </div>
-
-        <div style={{ marginTop: 10, display: "grid", gap: 12 }}>
-          {history.slice(0, 60).map((it) => {
-            const st = safeStr(it.status).toLowerCase();
-            const k = st === "approved" ? "green" : st === "declined" ? "red" : "gray";
-
-            return (
-              <div key={it.id} style={cardStyle()}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                    <span style={pill("blue")}>Loan #{it.loan_id}</span>
-                    <span style={pill("gray")}>Pledge: {it.pledge_amount ?? "—"}</span>
-                  </div>
-                  <span style={pill(k as any)}>{st || "—"}</span>
-                </div>
-
-                <div style={{ marginTop: 6, fontSize: 12, color: "#64748b" }}>Responded: {it.responded_at ?? "—"}</div>
-              </div>
-            );
-          })}
-
-          {!loading && history.length === 0 && <div style={{ ...cardStyle(), color: "#64748b" }}>No guarantees history yet.</div>}
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -1,136 +1,119 @@
-// frontend/src/pages/AdminIncompleteLoansPage.tsx
-import React, { useEffect, useState } from "react";
-import { getAccessToken } from "../lib/api";
+import React, { useEffect, useMemo, useState } from "react";
+import { listMyLoans } from "../lib/api";
 
-type Row = {
-  loan_id: number;
-  borrower_user_id: number;
-  amount: number;
-  currency: string;
-  status: string;
-  decision_at: string | null;
-  auto_cancel_remaining_seconds: number | null;
-  guarantors_required: number;
-  approved_guarantors: number;
-  pending_guarantors: number;
-  locked_coverage: number;
-  required_gap: number;
-};
-
-async function apiGet(path: string) {
-  const t = getAccessToken();
-  if (!t) throw new Error("Not authenticated");
-  const res = await fetch(`/api${path}`, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${t}` },
-  });
-  const txt = await res.text();
-  if (!res.ok) throw new Error(txt || `HTTP ${res.status}`);
-  try {
-    return JSON.parse(txt);
-  } catch {
-    return txt;
-  }
+function safeStr(x: any): string {
+  return String(x ?? "");
 }
-
-function fmtCountdown(sec: number | null) {
-  if (sec == null) return "—";
-  const s = Math.max(0, sec);
-  const m = Math.floor(s / 60);
-  const r = s % 60;
-  return `${m}:${String(r).padStart(2, "0")}`;
+function fmtMoney(x: any): string {
+  const n = Number(x);
+  if (!Number.isFinite(n)) return String(x ?? "").trim() || "0.00";
+  return n.toFixed(2);
+}
+function topPattern(): string {
+  const svg = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="320" viewBox="0 0 1600 320">
+    <rect width="1600" height="320" fill="#F7FAFD"/>
+    <g fill="none" stroke="#C7D9EE" stroke-opacity="0.42" stroke-width="2">
+      <path d="M80 160 C180 90, 280 90, 380 160 S580 230, 690 150" />
+      <path d="M920 160 C1020 90, 1120 90, 1220 160 S1420 230, 1520 150" />
+    </g>
+  </svg>`.trim();
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+function card(): React.CSSProperties {
+  return {
+    borderRadius: 22,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: "#FFFFFF",
+    boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
+    padding: 22,
+  };
+}
+function isIncomplete(loan: any): boolean {
+  const status = safeStr(loan?.status).toLowerCase();
+  return !(status.includes("repaid") || status.includes("cancel") || status.includes("declined"));
 }
 
 export default function AdminIncompleteLoansPage() {
-  const [rows, setRows] = useState<Row[]>([]);
+  const [rows, setRows] = useState<any[]>([]);
   const [err, setErr] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  async function load() {
-    setLoading(true);
-    setErr(null);
-    try {
-      const data: any = await apiGet(`/admin/loans/incomplete?limit=50`);
-      setRows((data?.items || []) as Row[]);
-    } catch (e: any) {
-      setErr(e?.message || String(e));
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const pattern = useMemo(() => topPattern(), []);
 
   useEffect(() => {
-    load();
+    (async () => {
+      try {
+        const res = await listMyLoans().catch(() => []);
+        const items = Array.isArray(res) ? res : res?.items || [];
+        setRows((items || []).filter(isIncomplete));
+      } catch (e: any) {
+        setErr(String(e?.message || e || "Unable to load incomplete loans."));
+      }
+    })();
   }, []);
 
   return (
-    <div style={{ padding: 18 }}>
-      <h2>Admin — Incomplete Loans Queue</h2>
-
-      <button
-        onClick={load}
-        disabled={loading}
-        style={{ padding: "10px 12px", borderRadius: 12, border: "1px solid #ddd", background: "white" }}
+    <div style={{ maxWidth: 1260, margin: "0 auto" }}>
+      <div
+        style={{
+          backgroundImage: `url("${pattern}")`,
+          backgroundRepeat: "no-repeat",
+          backgroundSize: "cover",
+          backgroundPosition: "center top",
+          borderRadius: 28,
+          border: "1px solid rgba(11,31,51,0.06)",
+          overflow: "hidden",
+          backgroundColor: "#F8FBFE",
+        }}
       >
-        {loading ? "Loading…" : "Refresh"}
-      </button>
+        <div style={{ padding: 24 }}>
+          <div style={{ fontSize: 34, fontWeight: 1000, color: "#0B1F33" }}>Incomplete Loans Queue</div>
+          <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
+            Visibility over loans still in motion or not yet fully resolved.
+          </div>
 
-      {err && (
-        <div style={{ marginTop: 12, background: "#fee2e2", border: "1px solid #fecaca", padding: 10, borderRadius: 10, whiteSpace: "pre-wrap" }}>
-          {err}
-        </div>
-      )}
+          {err && (
+            <div
+              style={{
+                marginTop: 16,
+                padding: "12px 14px",
+                borderRadius: 14,
+                background: "#FEF2F2",
+                border: "1px solid #FECACA",
+                color: "#991B1B",
+                fontWeight: 900,
+              }}
+            >
+              {err}
+            </div>
+          )}
 
-      <div style={{ marginTop: 12, border: "1px solid #e5e7eb", borderRadius: 14, overflow: "hidden", background: "white" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ background: "#f9fafb" }}>
-              <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #eee" }}>Loan</th>
-              <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #eee" }}>Borrower</th>
-              <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #eee" }}>Amount</th>
-              <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #eee" }}>Quorum</th>
-              <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #eee" }}>Coverage</th>
-              <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #eee" }}>Auto-cancel</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.loan_id}>
-                <td style={{ padding: 10, borderBottom: "1px solid #f1f5f9", fontWeight: 900 }}>
-                  #{r.loan_id} <div style={{ fontSize: 12, color: "#64748b" }}>{r.status}</div>
-                </td>
-                <td style={{ padding: 10, borderBottom: "1px solid #f1f5f9" }}>
-                  user_id: {r.borrower_user_id}
-                </td>
-                <td style={{ padding: 10, borderBottom: "1px solid #f1f5f9" }}>
-                  {r.amount} {r.currency}
-                </td>
-                <td style={{ padding: 10, borderBottom: "1px solid #f1f5f9" }}>
-                  {r.approved_guarantors}/{r.guarantors_required} approved
-                  <div style={{ fontSize: 12, color: "#64748b" }}>{r.pending_guarantors} pending</div>
-                </td>
-                <td style={{ padding: 10, borderBottom: "1px solid #f1f5f9" }}>
-                  locked {r.locked_coverage} / gap {r.required_gap}
-                </td>
-                <td style={{ padding: 10, borderBottom: "1px solid #f1f5f9", fontWeight: 900 }}>
-                  {fmtCountdown(r.auto_cancel_remaining_seconds)}
-                </td>
-              </tr>
+          <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
+            {rows.length === 0 && <div style={{ ...card(), color: "#7A8D9F" }}>No incomplete loans visible.</div>}
+
+            {rows.map((loan, i) => (
+              <div key={loan?.id || i} style={card()}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                  <div>
+                    <div style={{ fontWeight: 1000, color: "#0B1F33", fontSize: 18 }}>
+                      Loan #{safeStr(loan?.id || "—")}
+                    </div>
+                    <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 13 }}>
+                      {safeStr(loan?.created_at || "—")}
+                    </div>
+                  </div>
+
+                  <div style={{ color: "#0B1F33", fontWeight: 1000 }}>
+                    {fmtMoney(loan?.amount ?? "0")} {safeStr(loan?.currency || "NGN")}
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 12, color: "#6B7A88", lineHeight: 1.8 }}>
+                  Status: {safeStr(loan?.status || "pending")} · Purpose: {safeStr(loan?.purpose || "—")}
+                </div>
+              </div>
             ))}
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={6} style={{ padding: 12, color: "#6b7280" }}>
-                  No incomplete loans right now.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <div style={{ marginTop: 10, fontSize: 12, color: "#64748b" }}>
-        Screenshot tip: This page is visa-evidence friendly (incomplete queue + countdown).
+          </div>
+        </div>
       </div>
     </div>
   );

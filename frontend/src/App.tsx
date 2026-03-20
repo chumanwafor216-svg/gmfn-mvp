@@ -1,83 +1,116 @@
-// src/App.tsx
 import { Routes, Route, Navigate } from "react-router-dom";
-
+import InviteInterestPage from "./pages/InviteInterestPage";
+import JoinRequestPendingPage from "./pages/JoinRequestPendingPage";
 import CoverPage from "./pages/CoverPage";
+import CreateEntryPage from "./pages/CreateEntryPage";
+import WelcomePage from "./pages/WelcomePage";
+import ActivatePage from "./pages/ActivatePage";
 import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import JoinEntryPage from "./pages/JoinEntryPage";
 import DashboardPage from "./pages/DashboardPage";
+import MarketplaceWorkspacePage from "./pages/MarketplaceWorkspacePage";
 import ClansPage from "./pages/ClansPage";
+import CommunityHomePage from "./pages/CommunityHomePage";
 import LoansPage from "./pages/LoansPage";
-import SeedDemoPage from "./pages/SeedDemoPage";
-
-import ApiPage from "./pages/ApiPage";
+import MarketplacePage from "./pages/MarketplacePage";
+import ShopPage from "./pages/ShopPage";
 import TrustScorePage from "./pages/TrustScorePage";
+import TrustSlipPage from "./pages/TrustSlipPage";
+import TrustSlipVerifyPage from "./pages/TrustSlipVerifyPage";
+import PaymentInstructionsPage from "./pages/PaymentInstructionsPage";
+import WithdrawalInstructionsPage from "./pages/WithdrawalInstructionsPage";
+import LoanReadinessPage from "./pages/LoanReadinessPage";
+import LoanSuggestionsPage from "./pages/LoanSuggestionsPage";
+import LoanWorkbenchPage from "./pages/LoanWorkbenchPage";
+import GuarantorEarningsPage from "./pages/GuarantorEarningsPage";
+import IdentityIntegrityPage from "./pages/IdentityIntegrityPage";
+import NotificationsPage from "./pages/NotificationsPage";
+import SystemOperationsPage from "./pages/SystemOperationsPage";
 import ExposureAdminPage from "./pages/ExposureAdminPage";
-
+import AdminTrustGraphPage from "./pages/AdminTrustGraphPage";
+import MyGMFNAndIPage from "./pages/MyGMFNAndIPage";
+import TrustAnalyticsPage from "./pages/TrustAnalyticsPage";
+import TrustCommandCentrePage from "./pages/TrustCommandCentrePage";
+import ShopControlPage from "./pages/ShopControlPage";
 import AppLayout from "./layout/AppLayout";
 import RequireAuth from "./components/RequireAuth";
+import CommunityJoinRequestsPage from "./pages/CommunityJoinRequestsPage";
+import JoinApprovalPage from "./pages/JoinApprovalPage";
+import MemberActivationPage from "./pages/MemberActivationPage";
 
-import TrustSlipVerifyPage from "./pages/TrustSlipVerifyPage";
-import AdminTrustEventsPage from "./pages/AdminTrustEventsPage";
-import AdminIncompleteLoansPage from "./pages/AdminIncompleteLoansPage";
-import JoinByInvitePage from "./pages/JoinByInvitePage";
-
-import TrustSlipPage from "./pages/TrustSlipPage";
-import PaymentInstructionsPage from "./pages/PaymentInstructionsPage";
-import PilotShowcasePage from "./pages/PilotShowcasePage";
-
-import CommunityHomePage from "./pages/CommunityHomePage";
-import GuarantorInboxPage from "./pages/GuarantorInboxPage";
-import AppearancePage from "./pages/AppearancePage";
-import BankConsolePage from "./pages/BankConsolePage";
 export default function App() {
   return (
     <Routes>
-      {/* Public */}
+      <Route path="/" element={<Navigate to="/cover" replace />} />
+
       <Route path="/cover" element={<CoverPage />} />
+      <Route path="/welcome" element={<WelcomePage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/join" element={<JoinEntryPage />} />
+      <Route path="/create" element={<CreateEntryPage />} />
+
+      {/* keep both activation paths working */}
+      <Route path="/activate" element={<ActivatePage />} />
+      <Route path="/activate-membership" element={<MemberActivationPage />} />
+
+      <Route path="/invite/:code" element={<InviteInterestPage />} />
+      <Route path="/join-request/pending" element={<JoinRequestPendingPage />} />
+      <Route path="/join-approval/:requestId" element={<JoinApprovalPage />} />
       <Route path="/t/:code" element={<TrustSlipVerifyPage />} />
+      <Route path="/community/:clanId" element={<MarketplaceWorkspacePage />} />
 
-      {/* Start at cover */}
-      <Route index element={<Navigate to="/cover" replace />} />
-
-      {/* Authenticated shell */}
       <Route
-        path="/"
+        path="/app"
         element={
           <RequireAuth>
             <AppLayout />
           </RequireAuth>
         }
       >
-        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route index element={<Navigate to="dashboard" replace />} />
 
         <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="community" element={<CommunityHomePage />} />
+
         <Route path="clans" element={<ClansPage />} />
+        <Route path="community" element={<CommunityHomePage />} />
+        <Route path="community/:clanId" element={<CommunityHomePage />} />
+        <Route
+          path="community/:clanId/join-requests"
+          element={<CommunityJoinRequestsPage />}
+        />
 
         <Route path="loans" element={<LoansPage />} />
-        <Route path="guarantor" element={<GuarantorInboxPage />} />
+        <Route path="payment/pool" element={<PaymentInstructionsPage />} />
+        <Route
+          path="withdrawal-instructions"
+          element={<WithdrawalInstructionsPage />}
+        />
+        <Route path="loan-readiness" element={<LoanReadinessPage />} />
+        <Route path="loan-suggestions" element={<LoanSuggestionsPage />} />
+        <Route path="loan-workbench" element={<LoanWorkbenchPage />} />
+        <Route path="guarantor-earnings" element={<GuarantorEarningsPage />} />
+
+        <Route path="marketplace" element={<MarketplacePage />} />
+        <Route path="shop-control" element={<ShopControlPage />} />
+        <Route path="shop/:gmfn_id" element={<ShopPage />} />
 
         <Route path="trust" element={<TrustScorePage />} />
         <Route path="trust-slip" element={<TrustSlipPage />} />
-
-        <Route path="payment/loans/:loanId" element={<PaymentInstructionsPage />} />
-        <Route path="pilot-showcase" element={<PilotShowcasePage />} />
-        <Route path="seed" element={<SeedDemoPage />} />
-        <Route path="settings" element={<AppearancePage />} />
-
-        <Route path="admin/trust-events" element={<AdminTrustEventsPage />} />
-        <Route path="admin/incomplete-loans" element={<AdminIncompleteLoansPage />} />
+        <Route path="trust-slip/verify" element={<TrustSlipVerifyPage />} />
+        <Route path="trust-analytics" element={<TrustAnalyticsPage />} />
         <Route
-          path="exposure"
-          element={
-            <RequireAuth requireRole="admin">
-              <ExposureAdminPage />
-            </RequireAuth>
-          }
+          path="trust-command-centre"
+          element={<TrustCommandCentrePage />}
         />
-        <Route path="admin/bank-console" element={<RequireAuth requireRole="admin"><BankConsolePage /></RequireAuth>} /> 
-        <Route path="join/:code" element={<JoinByInvitePage />} />
-        <Route path="api" element={<ApiPage />} />
+
+        <Route path="identity" element={<IdentityIntegrityPage />} />
+        <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="my-gmfn-and-i" element={<MyGMFNAndIPage />} />
+        <Route path="system-operations" element={<SystemOperationsPage />} />
+        <Route path="admin/exposure" element={<ExposureAdminPage />} />
+        <Route path="admin/trust-graph" element={<AdminTrustGraphPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/cover" replace />} />

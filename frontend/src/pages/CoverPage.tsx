@@ -1,103 +1,125 @@
-// src/pages/CoverPage.tsx
-import React, { useMemo } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-
-import Wordmark from "../assets/gmfn-wordmark.svg";
-import Mark from "../assets/gmfn-mark.svg";
-
-function patternDataUri(): string {
-  // Ultra-light SVG pattern (WhatsApp-like, but institutional geometry)
-  const svg = `
-  <svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
-    <g fill="none" stroke="#0B1F33" stroke-opacity="0.08" stroke-width="1">
-      <circle cx="42" cy="46" r="10"/>
-      <circle cx="168" cy="58" r="8"/>
-      <circle cx="122" cy="170" r="9"/>
-      <path d="M42 46 L88 66 L122 44" />
-      <path d="M168 58 L198 92 L154 106" />
-      <path d="M122 170 L154 106" />
-      <path d="M88 66 L154 106" />
-      <path d="M60 140 C90 110, 140 110, 180 140" />
-      <path d="M52 188 C92 156, 150 156, 196 188" />
-      <path d="M26 118 H214" />
-    </g>
-    <g fill="none" stroke="#C6A14A" stroke-opacity="0.06" stroke-width="1">
-      <path d="M120 22 C170 22, 218 70, 218 120 C218 170, 170 218, 120 218 C70 218, 22 170, 22 120 C22 70, 70 22, 120 22 Z"/>
-    </g>
-  </svg>`.trim();
-
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-}
+import gmfnMark from "../assets/gmfn-mark.svg";
 
 export default function CoverPage() {
-  const nav = useNavigate();
-  const bg = useMemo(() => patternDataUri(), []);
+  const navigate = useNavigate();
+
+  const goNext = () => navigate("/welcome");
 
   return (
     <div
-      onClick={() => nav("/login", { replace: true })}
-      role="button"
-      title="Tap to enter"
       style={{
         minHeight: "100vh",
-        background: "#ffffff",
+        width: "100%",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: 18,
-        cursor: "pointer",
-        backgroundImage: `url("${bg}")`,
-        backgroundRepeat: "repeat",
-        backgroundSize: "240px 240px",
+        background:
+          "radial-gradient(circle at center, #0d3b8b 0%, #08255e 60%, #05173d 100%)",
+        color: "#ffffff",
+        fontFamily:
+          "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
+        padding: "20px",
+        boxSizing: "border-box",
       }}
     >
-      <div style={{ width: "100%", maxWidth: 760, textAlign: "center" }}>
+      <div
+        style={{
+          textAlign: "center",
+          maxWidth: 720,
+          width: "100%",
+        }}
+      >
+        {/* Logo */}
         <div
           style={{
-            border: "1px solid rgba(11,31,51,0.10)",
-            borderRadius: 26,
-            padding: 28,
-            background: "rgba(255,255,255,0.92)",
-            boxShadow: "0 18px 60px rgba(2, 6, 23, 0.10)",
+            display: "flex",
+            justifyContent: "center",
+            marginBottom: 28,
           }}
         >
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            <img src={Mark} alt="GMFN Mark" style={{ height: 58, width: 58 }} />
-          </div>
-
-          <div style={{ display: "flex", justifyContent: "center", marginTop: 10 }}>
-            <img src={Wordmark} alt="GMFN" style={{ height: 46, maxWidth: "100%" }} />
-          </div>
-
-          <div style={{ marginTop: 12, color: "#1E2A36", fontWeight: 900, letterSpacing: 0.4 }}>
-            Trust Infrastructure Protocol
-          </div>
-
-          <div style={{ marginTop: 8, color: "#6B7A88", fontSize: 13, lineHeight: 1.5 }}>
-            Sovereign-grade trust transmission for underbanked markets.
-          </div>
-
-          <div
+          <img
+            src={gmfnMark}
+            alt="GSN"
             style={{
-              marginTop: 18,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "10px 14px",
-              borderRadius: 16,
-              border: "1px solid rgba(198,161,74,0.40)",
-              background: "rgba(198,161,74,0.08)",
-              color: "#0B1F33",
-              fontWeight: 1000,
+              width: 140,
+              height: "auto",
+              filter: "drop-shadow(0 8px 25px rgba(0,0,0,0.35))",
             }}
-          >
-            Tap to enter →
-          </div>
-
-          <div style={{ marginTop: 10, fontSize: 12, color: "#6B7A88" }}>
-            (Pilot build)
-          </div>
+          />
         </div>
+
+        {/* Title */}
+        <div
+          style={{
+            fontSize: 42,
+            fontWeight: 800,
+            letterSpacing: 1,
+            marginBottom: 8,
+          }}
+        >
+          GSN
+        </div>
+
+        {/* Subtitle */}
+        <div
+          style={{
+            fontSize: 22,
+            fontWeight: 600,
+            color: "#f5d36b",
+            marginBottom: 10,
+          }}
+        >
+          Global Support Network
+        </div>
+
+        <div
+          style={{
+            fontSize: 16,
+            opacity: 0.9,
+            marginBottom: 36,
+          }}
+        >
+          Trust Infrastructure Protocol
+        </div>
+
+        {/* Tagline */}
+        <div
+          style={{
+            fontSize: 18,
+            marginBottom: 40,
+            opacity: 0.95,
+            lineHeight: 1.5,
+          }}
+        >
+          Trusted cooperation for communities.
+        </div>
+
+        {/* Continue Button */}
+        <button
+          onClick={goNext}
+          style={{
+            padding: "14px 36px",
+            borderRadius: 30,
+            border: "none",
+            fontSize: 16,
+            fontWeight: 700,
+            background: "#f5d36b",
+            color: "#0a2147",
+            cursor: "pointer",
+            boxShadow: "0 6px 18px rgba(0,0,0,0.25)",
+            transition: "transform 0.15s ease, box-shadow 0.15s ease",
+          }}
+          onMouseDown={(e) => {
+            e.currentTarget.style.transform = "scale(0.97)";
+          }}
+          onMouseUp={(e) => {
+            e.currentTarget.style.transform = "scale(1)";
+          }}
+        >
+          Tap to continue
+        </button>
       </div>
     </div>
   );

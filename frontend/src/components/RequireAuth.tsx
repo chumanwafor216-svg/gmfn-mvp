@@ -1,34 +1,110 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { getAccessToken } from "../lib/api";
+import { getAccessToken, getMe, observeIdentityRisk } from "../lib/api";
 
 type Props = {
   children: React.ReactNode;
-  requireRole?: string; // optional role gating
+  requireRole?: "admin";
 };
 
-function getStoredRole(): string | null {
-  // If you store role elsewhere, adjust here.
-  // Many apps store role in localStorage after /auth/me.
-  return localStorage.getItem("role");
+function computeClientFingerprint(): string {
+  const parts = [
+    navigator.userAgent || "",
+    navigator.language || "",
+    String(window.screen?.width || 0),
+    String(window.screen?.height || 0),
+    Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+  ];
+
+  return btoa(parts.join("|")).slice(0, 120);
 }
 
 export default function RequireAuth({ children, requireRole }: Props) {
   const location = useLocation();
-  const token = getAccessToken();
 
-  // If not logged in, redirect to login with next target
-  if (!token) {
-    const next = encodeURIComponent(location.pathname + location.search);
-    return <Navigate to={`/login?next=${next}`} replace />;
+  const [loading, setLoading] = useState(true);
+  const [allowed, setAllowed] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    (async () => {
+      try {
+        const tok = getAccessToken();
+
+        if (!tok) {
+          if (active) {
+            setAllowed(false);
+            setLoading(false);
+          }
+          return;
+        }
+
+        const me = await getMe().catch(() => null);
+
+        if (!me) {
+          if (active) {
+            setAllowed(false);
+            setLoading(false);
+          }
+          return;
+        }
+
+        const role = String(me?.role || "").toLowerCase();
+
+        if (requireRole === "admin" && role !== "admin") {
+          if (active) {
+            setAllowed(false);
+            setLoading(false);
+          }
+          return;
+        }
+
+        try {
+          const fp = computeClientFingerprint();
+          await observeIdentityRisk(fp);
+        } catch (error) {
+          console.warn("Identity observation skipped:", error);
+        }
+
+        if (active) {
+          setAllowed(true);
+          setLoading(false);
+        }
+      } catch {
+        if (active) {
+          setAllowed(false);
+          setLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [requireRole]);
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          fontWeight: 700,
+        }}
+      >
+        Loading workspace...
+      </div>
+    );
   }
 
-  // Optional role gate (if you already use it)
-  if (requireRole) {
-    const role = (getStoredRole() || "").toLowerCase();
-    if (role && role !== requireRole.toLowerCase()) {
-      return <Navigate to="/dashboard" replace />;
+  if (!allowed) {
+    if (!getAccessToken()) {
+      return <Navigate to="/login" replace state={{ from: location }} />;
     }
+
+    return <Navigate to="/cover" replace />;
   }
 
   return <>{children}</>;

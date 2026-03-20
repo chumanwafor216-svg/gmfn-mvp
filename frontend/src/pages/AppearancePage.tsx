@@ -1,127 +1,146 @@
-// src/pages/AppearancePage.tsx
-import React, { useEffect, useMemo, useState } from "react";
-import { applyAppearanceToDocument, getWatermarkCustomHex, getWatermarkPreset, setWatermarkCustomHex, setWatermarkPreset, type WatermarkPreset } from "../lib/appearance";
-import { Card, PageHeader, Button, ButtonPrimary, Pill } from "../components/uiKit";
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import PageTopNav from "../components/PageTopNav";
 
-function isValidHex(s: string): boolean {
-  const t = (s || "").trim();
-  return /^#?[0-9a-fA-F]{6}$/.test(t);
+function card(): React.CSSProperties {
+  return {
+    borderRadius: 22,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: "#FFFFFF",
+    boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
+    padding: 22,
+  };
 }
 
+function linkBtn(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "11px 14px",
+    borderRadius: 14,
+    border: primary ? "none" : "1px solid rgba(11,31,51,0.10)",
+    background: primary ? "#0B63D1" : "#FFFFFF",
+    color: primary ? "#FFFFFF" : "#0B1F33",
+    fontWeight: 1000,
+    fontSize: 14,
+    textDecoration: "none",
+    cursor: "pointer",
+  };
+}
+
+const THEMES = [
+  { key: "deep_blue", label: "Deep Blue", note: "Institutional default", preview: "#0B63D1" },
+  { key: "soft_light", label: "Soft Light", note: "Easier for some eyes", preview: "#CBD5E1" },
+  { key: "dark", label: "Dark", note: "Night mode style", preview: "#0F172A" },
+  { key: "royal_purple", label: "Royal Purple", note: "Premium visual feel", preview: "#6B46C1" },
+  { key: "rose_pink", label: "Rose Pink", note: "Warm, softer theme", preview: "#E64980" },
+];
+
 export default function AppearancePage() {
-  const [preset, setPreset] = useState<WatermarkPreset>("green");
-  const [custom, setCustom] = useState("#111827");
+  const [theme, setTheme] = useState("deep_blue");
+  const [msg, setMsg] = useState("");
 
   useEffect(() => {
-    const p = getWatermarkPreset();
-    setPreset(p);
-    setCustom(getWatermarkCustomHex());
+    const saved = localStorage.getItem("gmfn_theme") || "deep_blue";
+    setTheme(saved);
   }, []);
 
-  const effectiveHex = useMemo(() => {
-    if (preset === "green") return "#16a34a";
-    if (preset === "black") return "#111827";
-    if (preset === "pink") return "#db2777";
-    return (custom || "").startsWith("#") ? custom : `#${custom}`;
-  }, [preset, custom]);
-
-  function applyNow(nextPreset: WatermarkPreset, nextCustom?: string) {
-    setWatermarkPreset(nextPreset);
-    if (nextCustom != null) setWatermarkCustomHex(nextCustom);
-    applyAppearanceToDocument();
+  function applyTheme(next: string) {
+    localStorage.setItem("gmfn_theme", next);
+    setTheme(next);
+    setMsg(`Theme saved: ${next}. Navigate to another page or reopen the sidebar to see the updated shell styling.`);
   }
 
   return (
-    <div style={{ padding: 18, maxWidth: 900 }}>
-      <PageHeader
-        title="Appearance"
-        subtitle="Only one setting is user-controlled: the Watermark / Emboss tint. Everything else stays professional and consistent."
+    <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+      <PageTopNav
+        title="Settings"
+        subtitle="Manage your visual preferences and the financial identity details used in your pilot workflow."
       />
 
-      <Card style={{ marginTop: 12 }}>
-        <div style={{ fontSize: 16, fontWeight: 1000 }}>Watermark / Emboss tint</div>
-        <div style={{ marginTop: 6, color: "#64748b", fontSize: 12 }}>
-          This controls the faint “GMFN” background watermark and subtle embossed highlights. Grey base background stays fixed.
+      <div style={{ ...card(), marginTop: 18 }}>
+        <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+          Settings shortcuts
         </div>
 
-        <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-          <ButtonPrimary
-            onClick={() => {
-              setPreset("green");
-              applyNow("green");
-            }}
-            style={{ opacity: preset === "green" ? 1 : 0.75 }}
-          >
-            <span style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
-              <span style={{ width: 12, height: 12, borderRadius: 999, background: "#16a34a", display: "inline-block" }} />
-              Green
-            </span>
-          </ButtonPrimary>
+        <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <Link to="/payout-details" style={linkBtn(true)}>
+            Bank / Wallet Details
+          </Link>
+          <Link to="/notifications" style={linkBtn(false)}>
+            Notifications
+          </Link>
+          <Link to="/identity" style={linkBtn(false)}>
+            Identity Integrity
+          </Link>
+        </div>
+      </div>
 
-          <ButtonPrimary
-            onClick={() => {
-              setPreset("black");
-              applyNow("black");
-            }}
-            style={{ opacity: preset === "black" ? 1 : 0.75 }}
-          >
-            <span style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
-              <span style={{ width: 12, height: 12, borderRadius: 999, background: "#111827", display: "inline-block" }} />
-              Black
-            </span>
-          </ButtonPrimary>
-
-          <ButtonPrimary
-            onClick={() => {
-              setPreset("pink");
-              applyNow("pink");
-            }}
-            style={{ opacity: preset === "pink" ? 1 : 0.75 }}
-          >
-            <span style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
-              <span style={{ width: 12, height: 12, borderRadius: 999, background: "#db2777", display: "inline-block" }} />
-              Pink
-            </span>
-          </ButtonPrimary>
-
-          <Button
-            onClick={() => {
-              setPreset("custom");
-              applyNow("custom", custom);
-            }}
-            style={{ opacity: preset === "custom" ? 1 : 0.75 }}
-          >
-            Custom
-          </Button>
+      <div style={{ ...card(), marginTop: 18 }}>
+        <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+          Choose your colour
+        </div>
+        <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
+          Different users prefer different contrast levels. This setting changes the shell feel of the workspace and helps the platform feel clearer and more comfortable.
         </div>
 
-        <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-          <input
-            value={custom}
-            onChange={(e) => setCustom(e.target.value)}
-            placeholder="#111827"
-            style={{ padding: "10px 12px", borderRadius: 12, border: "1px solid #e5e7eb", width: 160 }}
-          />
-          <ButtonPrimary
-            onClick={() => {
-              if (!isValidHex(custom)) {
-                alert("Enter a valid 6-digit hex, e.g. #111827");
-                return;
-              }
-              setPreset("custom");
-              applyNow("custom", custom);
+        {msg ? (
+          <div
+            style={{
+              marginTop: 16,
+              padding: "12px 14px",
+              borderRadius: 14,
+              background: "#ECFDF5",
+              border: "1px solid #A7F3D0",
+              color: "#065F46",
+              fontWeight: 900,
             }}
           >
-            Save custom
-          </ButtonPrimary>
+            {msg}
+          </div>
+        ) : null}
 
-          <Pill kind="gray">Preview: {effectiveHex}</Pill>
+        <div
+          style={{
+            marginTop: 18,
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 14,
+          }}
+        >
+          {THEMES.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => applyTheme(t.key)}
+              style={{
+                textAlign: "left",
+                borderRadius: 18,
+                border: theme === t.key ? "2px solid #0B63D1" : "1px solid rgba(11,31,51,0.10)",
+                background: "#FFFFFF",
+                padding: 16,
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: 999,
+                    background: t.preview,
+                    border: "1px solid rgba(11,31,51,0.10)",
+                  }}
+                />
+                <div>
+                  <div style={{ fontWeight: 1000, color: "#0B1F33" }}>{t.label}</div>
+                  <div style={{ marginTop: 4, fontSize: 13, color: "#64748b" }}>{t.note}</div>
+                </div>
+              </div>
+            </button>
+          ))}
         </div>
-
-        <div style={{ marginTop: 14, color: "#64748b", fontSize: 12 }}>
-          Tip: If you want it subtle, use a softer hex (e.g. #94a3b8) or keep Green.
-        </div>
-      </Card>
+      </div>
     </div>
   );
 }

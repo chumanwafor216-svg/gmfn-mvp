@@ -1,241 +1,426 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+import { verifyTrustSlip } from "../lib/api";
 
-type VerifyOut = {
-  verified: boolean;
-  user_id: number;
-  level: string;
-  level_label: string;
-  disclaimer: string;
-  not_a_bank_guarantee?: boolean;
-  no_auto_debit?: boolean;
-  last_full_repayment_at?: string | null;
-  trust_slip_limit?: string | null;
-};
+type VerifyLevel = "minimal" | "standard" | "detailed";
 
-async function parseError(res: Response): Promise<string> {
-  const text = await res.text();
-  try {
-    const j = JSON.parse(text);
-    return j?.detail || j?.message || text || `HTTP ${res.status}`;
-  } catch {
-    return text || `HTTP ${res.status}`;
+function safeStr(x: any, fallback = ""): string {
+  const s = String(x ?? "").trim();
+  return s || fallback;
+}
+
+function normalizeMerchantMessage(x: any): string {
+  const s = safeStr(x);
+  if (!s) return "";
+  return s
+    .replace(/â€”|â€"|â€“/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function card(): React.CSSProperties {
+  return {
+    borderRadius: 24,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: "#FFFFFF",
+    boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
+    padding: 22,
+  };
+}
+
+function actionLink(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "11px 14px",
+    borderRadius: 14,
+    border: primary ? "none" : "1px solid rgba(11,31,51,0.10)",
+    background: primary ? "#0B63D1" : "#FFFFFF",
+    color: primary ? "#FFFFFF" : "#0B1F33",
+    textDecoration: "none",
+    fontWeight: 1000,
+    fontSize: 14,
+    cursor: "pointer",
+  };
+}
+
+function statusBanner(status: string): React.CSSProperties {
+  const s = status.toLowerCase();
+
+  if (
+    s.includes("valid") ||
+    s.includes("active") ||
+    s.includes("ok to release goods")
+  ) {
+    return {
+      borderRadius: 18,
+      background: "#ECFDF5",
+      border: "1px solid #A7F3D0",
+      color: "#065F46",
+      padding: 16,
+      fontWeight: 1000,
+      fontSize: 18,
+    };
   }
-}
 
-function normalizeToken(input: string): string {
-  const t = (input || "").trim();
-
-  // If user pasted full URL, pull the token after "/trust-slips/verify/"
-  const idx = t.indexOf("/trust-slips/verify/");
-  if (idx >= 0) return t.slice(idx + "/trust-slips/verify/".length).trim();
-
-  // If user pasted "/trust-slips/verify/<token>"
-  if (t.startsWith("/trust-slips/verify/")) return t.replace("/trust-slips/verify/", "").trim();
-
-  // If token starts with leading slash due to copy issues
-  return t.replace(/^\//, "");
-}
-
-/**
- * Merchant Verification Pack ID (deterministic):
- * MV- + short hash of token.
- * This is NOT the Evidence Pack ID; it's a merchant-quoteable verification code.
- */
-async function makeMerchantPackId(token: string): Promise<string> {
-  const clean = normalizeToken(token);
-  const data = new TextEncoder().encode(clean);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  const hex = Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  return `MV-${hex.slice(0, 10).toUpperCase()}`;
-}
-
-async function copyToClipboard(text: string) {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand("copy");
-    ta.remove();
+  if (
+    s.includes("expired") ||
+    s.includes("revoked") ||
+    s.includes("invalid") ||
+    s.includes("do not release") ||
+    s.includes("frozen")
+  ) {
+    return {
+      borderRadius: 18,
+      background: "#FEF2F2",
+      border: "1px solid #FECACA",
+      color: "#991B1B",
+      padding: 16,
+      fontWeight: 1000,
+      fontSize: 18,
+    };
   }
+
+  return {
+    borderRadius: 18,
+    background: "#FFF7ED",
+    border: "1px solid #FED7AA",
+    color: "#9A3412",
+    padding: 16,
+    fontWeight: 1000,
+    fontSize: 18,
+  };
+}
+
+function pagePattern(): string {
+  const svg = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="320" viewBox="0 0 1600 320">
+    <rect width="1600" height="320" fill="#F8FBFE"/>
+    <g fill="none" stroke="#C7D9EE" stroke-opacity="0.40" stroke-width="2">
+      <path d="M70 170 C180 90, 290 90, 400 170 S620 250, 730 170" />
+      <path d="M900 170 C1010 90, 1120 90, 1230 170 S1450 250, 1560 170" />
+    </g>
+    <g fill="#D6AF47" fill-opacity="0.92">
+      <path d="M70 160 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
+      <path d="M180 96 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
+      <path d="M290 96 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
+      <path d="M400 160 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
+    </g>
+  </svg>`.trim();
+
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+function safeLevel(value: string | null): VerifyLevel {
+  if (value === "minimal" || value === "standard" || value === "detailed") {
+    return value;
+  }
+  return "standard";
 }
 
 export default function TrustSlipVerifyPage() {
-  const params = useParams<{ code?: string }>();
-  const rawCode = params.code || "";
+  const params = useParams();
+  const [searchParams] = useSearchParams();
 
-  const [token, setToken] = useState<string>(rawCode);
-  const [packId, setPackId] = useState<string>("");
-  const [data, setData] = useState<VerifyOut | null>(null);
+  const codeFromParam = safeStr(params.code);
+  const codeFromQuery = safeStr(searchParams.get("code"));
+  const code = codeFromParam || codeFromQuery;
+
+  const level = safeLevel(searchParams.get("level"));
+  const pattern = useMemo(() => pagePattern(), []);
+
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
-
-  const cleanToken = useMemo(() => normalizeToken(token), [token]);
-
-  async function load() {
-    setErr(null);
-    setMsg(null);
-    setLoading(true);
-    setData(null);
-
-    try {
-      if (!cleanToken) throw new Error("Missing verification token.");
-
-      // Generate merchant quoteable Pack ID
-      const pid = await makeMerchantPackId(cleanToken);
-      setPackId(pid);
-
-      const res = await fetch(`/trust-slips/verify/${encodeURIComponent(cleanToken)}`, {
-        method: "GET",
-        headers: { Accept: "application/json" },
-      });
-
-      if (!res.ok) throw new Error(await parseError(res));
-      const j = (await res.json()) as VerifyOut;
-      setData(j);
-    } catch (e: any) {
-      setErr(e?.message || String(e));
-    } finally {
-      setLoading(false);
-    }
-  }
+  const [err, setErr] = useState("");
+  const [data, setData] = useState<any>(null);
 
   useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cleanToken]);
+    let active = true;
 
-  const card: React.CSSProperties = {
-    border: "1px solid #e5e7eb",
-    borderRadius: 16,
-    padding: 14,
-    background: "rgba(255,255,255,0.9)",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.06)",
-  };
+    (async () => {
+      setLoading(true);
+      setErr("");
 
-  const btn: React.CSSProperties = {
-    padding: "10px 12px",
-    borderRadius: 12,
-    border: "1px solid #e5e7eb",
-    background: "white",
-    fontWeight: 900,
-    cursor: "pointer",
-  };
+      try {
+        if (!code) {
+          throw new Error("TrustSlip code is missing. Open this page with /t/{code} or ?code={code}.");
+        }
 
-  const small: React.CSSProperties = { fontSize: 12, color: "#64748b" };
+        const res = await verifyTrustSlip(code, level);
+
+        if (active) {
+          setData(res || null);
+        }
+      } catch (e: any) {
+        if (active) {
+          setErr(String(e?.message || e || "Unable to verify TrustSlip."));
+          setData(null);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [code, level]);
+
+  const merchantView = data?.merchant_view || {};
+  const merchantSummary = merchantView?.merchant_summary || {};
+
+  const displayName = safeStr(
+    merchantView?.display_name ||
+      merchantSummary?.display_name ||
+      data?.holder_gmfn_id ||
+      "Member"
+  );
+
+  const gmfnId = safeStr(
+    merchantView?.gmfn_id ||
+      merchantSummary?.gmfn_id ||
+      data?.holder_gmfn_id ||
+      "N/A"
+  );
+
+  const community = safeStr(
+    merchantView?.community || merchantSummary?.community || "—"
+  );
+
+  const band = safeStr(
+    merchantView?.band || merchantSummary?.band || "—"
+  );
+
+  const trustLimit = safeStr(
+    data?.trust_limit ||
+      data?.trust_slip_limit ||
+      merchantSummary?.trust_limit ||
+      merchantView?.trust_limit ||
+      "0.00"
+  );
+
+  const currency = safeStr(
+    data?.currency || merchantSummary?.currency || merchantView?.currency || "NGN"
+  );
+
+  const issued = safeStr(data?.issued_at || data?.created_at || "—");
+  const expires = safeStr(data?.expires_at || merchantSummary?.expires_at || "—");
+  const effectiveStatus = safeStr(data?.effective_status || data?.status || "unknown");
+  const merchantMessage = normalizeMerchantMessage(
+    data?.merchant_message || effectiveStatus
+  );
 
   return (
-    <div style={{ minHeight: "100vh", padding: 18, background: "linear-gradient(180deg, #e0f2fe 0%, #fff7ed 45%, #f0fdf4 100%)" }}>
-      <div style={{ maxWidth: 860, margin: "0 auto" }}>
-        <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}>
-          <h2 style={{ margin: 0 }}>Merchant verification</h2>
-          <span style={{ color: "#64748b" }}>Simple proof of community-backed integrity (pilot).</span>
-        </div>
-
-        <div style={{ marginTop: 12, ...card }}>
-          <div style={{ fontWeight: 1000, fontSize: 14 }}>Verification Pack ID</div>
-          <div style={{ marginTop: 6, fontFamily: "monospace", fontSize: 16 }}>{packId || "—"}</div>
-          <div style={small}>
-            Ask the customer to quote this ID if you need to confirm the exact verification link used.
+    <div style={{ maxWidth: 1180, margin: "0 auto", padding: 20 }}>
+      <div
+        style={{
+          backgroundImage: `url("${pattern}")`,
+          backgroundRepeat: "no-repeat",
+          backgroundSize: "cover",
+          backgroundPosition: "center top",
+          borderRadius: 28,
+          border: "1px solid rgba(11,31,51,0.06)",
+          overflow: "hidden",
+          backgroundColor: "#F8FBFE",
+        }}
+      >
+        <div style={{ padding: 24 }}>
+          <div style={{ fontSize: 36, fontWeight: 1000, color: "#0B1F33" }}>
+            TrustSlip Verification
+          </div>
+          <div style={{ marginTop: 10, color: "#6B7A88", lineHeight: 1.8 }}>
+            Independent verification of community-backed trust visibility.
           </div>
 
-          <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button
-              style={btn}
-              onClick={async () => {
-                if (!packId) return;
-                await copyToClipboard(packId);
-                setMsg("Verification Pack ID copied ✅");
-                window.setTimeout(() => setMsg(null), 1500);
+          {loading ? (
+            <div style={{ ...card(), marginTop: 18, fontWeight: 900 }}>
+              Loading verification...
+            </div>
+          ) : null}
+
+          {err ? (
+            <div
+              style={{
+                ...card(),
+                marginTop: 18,
+                background: "#FEF2F2",
+                border: "1px solid #FECACA",
+                color: "#991B1B",
+                fontWeight: 900,
               }}
             >
-              Copy Pack ID
-            </button>
+              {err}
+            </div>
+          ) : null}
 
-            <button
-              style={btn}
-              onClick={async () => {
-                if (!cleanToken) return;
-                await copyToClipboard(cleanToken);
-                setMsg("Token copied ✅");
-                window.setTimeout(() => setMsg(null), 1500);
-              }}
-            >
-              Copy token
-            </button>
-
-            <button style={btn} onClick={load}>
-              Refresh
-            </button>
-          </div>
-        </div>
-
-        {err && (
-          <div style={{ marginTop: 12, padding: 12, borderRadius: 14, border: "1px solid #fecaca", background: "#fee2e2", whiteSpace: "pre-wrap" }}>
-            {err}
-          </div>
-        )}
-
-        {msg && (
-          <div style={{ marginTop: 12, padding: 12, borderRadius: 14, border: "1px solid #a7f3d0", background: "#ecfdf5" }}>
-            {msg}
-          </div>
-        )}
-
-        <div style={{ marginTop: 12, ...card }}>
-          <div style={{ fontWeight: 1000 }}>Result</div>
-
-          {loading && <div style={{ marginTop: 10, color: "#64748b" }}>Checking…</div>}
-
-          {!loading && data && (
+          {!loading && !err && data ? (
             <>
-              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                <div>
-                  <b>Status:</b>{" "}
-                  {data.verified ? <span style={{ color: "#166534", fontWeight: 900 }}>Verified ✅</span> : <span style={{ color: "#991b1b", fontWeight: 900 }}>Not verified</span>}
+              <div style={{ marginTop: 18, ...statusBanner(merchantMessage) }}>
+                {merchantMessage}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 18,
+                  display: "grid",
+                  gridTemplateColumns: "1.15fr 0.85fr",
+                  gap: 18,
+                }}
+              >
+                <div style={card()}>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "#64748B",
+                      fontWeight: 1000,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    Verified TrustSlip
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 12,
+                      fontSize: 30,
+                      fontWeight: 1000,
+                      color: "#0B1F33",
+                    }}
+                  >
+                    {displayName}
+                  </div>
+
+                  <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+                    <div style={{ color: "#475569", lineHeight: 1.8 }}>
+                      <b>GMFN ID:</b> {gmfnId}
+                    </div>
+                    <div style={{ color: "#475569", lineHeight: 1.8 }}>
+                      <b>Community:</b> {community}
+                    </div>
+                    <div style={{ color: "#475569", lineHeight: 1.8 }}>
+                      <b>Band:</b> {band}
+                    </div>
+                    <div style={{ color: "#475569", lineHeight: 1.8 }}>
+                      <b>Trust Limit:</b> {trustLimit} {currency}
+                    </div>
+                    <div style={{ color: "#475569", lineHeight: 1.8 }}>
+                      <b>Issued:</b> {issued}
+                    </div>
+                    <div style={{ color: "#475569", lineHeight: 1.8 }}>
+                      <b>Expires:</b> {expires}
+                    </div>
+                    <div style={{ color: "#475569", lineHeight: 1.8 }}>
+                      <b>Status:</b> {effectiveStatus}
+                    </div>
+                  </div>
                 </div>
 
-                <div><b>Level:</b> {data.level_label || data.level || "—"}</div>
-                <div><b>TrustSlip limit:</b> {data.trust_slip_limit ?? "—"}</div>
-                <div><b>Last full repayment:</b> {data.last_full_repayment_at ?? "—"}</div>
+                <div style={card()}>
+                  <div
+                    style={{
+                      fontSize: 18,
+                      fontWeight: 1000,
+                      color: "#0B1F33",
+                    }}
+                  >
+                    Merchant Guidance
+                  </div>
 
-                <div style={{ marginTop: 8, padding: 12, borderRadius: 12, border: "1px solid #e5e7eb", background: "rgba(255,255,255,0.95)" }}>
-                  <div style={{ fontWeight: 1000 }}>Important</div>
-                  <ul style={{ marginTop: 8, marginBottom: 0 }}>
-                    <li>This is <b>not</b> a bank guarantee.</li>
-                    <li>No auto-debit. No forced collection in MVP.</li>
-                    <li>Verification is evidence-backed, not cash-backed.</li>
-                  </ul>
+                  <div
+                    style={{
+                      marginTop: 12,
+                      color: "#6B7A88",
+                      lineHeight: 1.9,
+                    }}
+                  >
+                    This verification confirms whether the TrustSlip is currently
+                    valid, expired, frozen, revoked, or otherwise not valid for
+                    trust-based release decisions.
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 16,
+                      padding: 14,
+                      borderRadius: 14,
+                      background: "#F8FAFC",
+                      border: "1px solid rgba(11,31,51,0.06)",
+                      color: "#475569",
+                      lineHeight: 1.8,
+                    }}
+                  >
+                    {safeStr(
+                      data?.offline_note ||
+                        "If network drops, screenshot this page and re-verify later using the same code."
+                    )}
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 12,
+                      padding: 14,
+                      borderRadius: 14,
+                      background: "#F8FAFC",
+                      border: "1px solid rgba(11,31,51,0.06)",
+                      color: "#475569",
+                      lineHeight: 1.8,
+                    }}
+                  >
+                    {safeStr(
+                      data?.pilot_note ||
+                        "GMFN is non-custodial in MVP. This verifies TrustSlip validity only."
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ ...card(), marginTop: 18 }}>
+                <div
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 1000,
+                    color: "#0B1F33",
+                  }}
+                >
+                  Verification Details
                 </div>
 
-                <div style={{ marginTop: 10, fontSize: 12, color: "#64748b", whiteSpace: "pre-wrap" }}>
-                  {data.disclaimer || "Community-backed integrity limit. Not a bank guarantee. No auto-debit."}
+                <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+                  <div style={{ color: "#475569", lineHeight: 1.8 }}>
+                    <b>Code:</b> {safeStr(data?.code || code, "—")}
+                  </div>
+                  <div style={{ color: "#475569", lineHeight: 1.8 }}>
+                    <b>Verified At:</b> {safeStr(data?.verified_at, "—")}
+                  </div>
+                  <div style={{ color: "#475569", lineHeight: 1.8 }}>
+                    <b>Visibility Level:</b>{" "}
+                    {safeStr(merchantView?.visibility_level || level, "standard")}
+                  </div>
+                  <div style={{ color: "#475569", lineHeight: 1.8 }}>
+                    <b>Snapshot Version:</b> {safeStr(data?.snapshot_version, "—")}
+                  </div>
+                  <div style={{ color: "#475569", lineHeight: 1.8, wordBreak: "break-word" }}>
+                    <b>Snapshot Checksum:</b> {safeStr(data?.snapshot_checksum, "—")}
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 18, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <Link to="/cover" style={actionLink(false)}>
+                    Open Cover
+                  </Link>
+                  <Link to="/login" style={actionLink(false)}>
+                    Open Login
+                  </Link>
+                  <Link to="/app/trust-slip" style={actionLink(true)}>
+                    Open TrustSlip
+                  </Link>
                 </div>
               </div>
             </>
-          )}
-        </div>
-
-        <div style={{ marginTop: 12, ...card }}>
-          <div style={{ fontWeight: 1000 }}>Paste a link / token</div>
-          <div style={small}>If you received a link on WhatsApp/SMS, paste it here.</div>
-
-          <input
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            placeholder="Paste /trust-slips/verify/<token> or full URL"
-            style={{ marginTop: 10, width: "100%", padding: "10px 12px", borderRadius: 12, border: "1px solid #e5e7eb" }}
-          />
-
-          <div style={{ marginTop: 10 }}>
-            <button style={btn} onClick={load}>Verify</button>
-          </div>
+          ) : null}
         </div>
       </div>
     </div>

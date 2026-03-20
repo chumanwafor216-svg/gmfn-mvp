@@ -1,25 +1,38 @@
-﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="GMFN mark">
-  <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#0f172a"/>
-      <stop offset="1" stop-color="#111827"/>
-    </linearGradient>
-  </defs>
+<svg width="220" height="220" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
 
-  <!-- Shield -->
-  <path d="M128 18c33 22 67 29 94 33v74c0 63-38 104-94 121C72 229 34 188 34 125V51c27-4 61-11 94-33z"
-        fill="url(#g)"/>
+<defs>
+<linearGradient id="shieldBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" stop-color="#0B3C6F"/>
+<stop offset="100%" stop-color="#0A2E55"/>
+</linearGradient>
+</defs>
 
-  <!-- Inner border -->
-  <path d="M128 34c29 18 58 24 82 28v63c0 56-33 92-82 108-49-16-82-52-82-108V62c24-4 53-10 82-28z"
-        fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="6"/>
+<!-- Shield -->
+<path d="M110 12
+L188 40
+V104
+C188 158 150 188 110 204
+C70 188 32 158 32 104
+V40
+Z"
+fill="url(#shieldBlue)"
+stroke="#D4A73F"
+stroke-width="4"/>
 
-  <!-- Accent slash -->
-  <path d="M74 170l92-98" stroke="#16a34a" stroke-width="12" stroke-linecap="round" opacity="0.95"/>
+<!-- GS Letters -->
+<text x="110" y="95"
+font-size="64"
+font-family="Inter, Arial, sans-serif"
+font-weight="700"
+fill="white"
+text-anchor="middle">GS</text>
 
-  <!-- GMFN monogram -->
-  <g fill="#ffffff" opacity="0.95">
-    <path d="M74 118c0-20 14-34 36-34 12 0 22 4 30 12l-12 12c-4-4-10-7-17-7-12 0-19 7-19 17 0 11 7 17 19 17 6 0 10-1 14-3v-7h-16v-16h34v33c-9 7-21 11-34 11-22 0-35-14-35-35z"/>
-    <path d="M151 170V86h20l18 31 18-31h19v84h-18v-48l-17 28h-4l-17-28v48h-19z"/>
-  </g>
-</svg>
+<!-- Gold trust network trails -->
+<circle cx="78" cy="142" r="4" fill="#D4A73F"/>
+<circle cx="112" cy="154" r="4" fill="#D4A73F"/>
+<circle cx="142" cy="138" r="4" fill="#D4A73F"/>
+
+<line x1="78" y1="142" x2="112" y2="154" stroke="#D4A73F" stroke-width="2"/>
+<line x1="112" y1="154" x2="142" y2="138" stroke="#D4A73F" stroke-width="2"/>
+
+</svg> 

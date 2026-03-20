@@ -1,91 +1,177 @@
-// src/pages/LoginPage.tsx
-import React, { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { getAccessToken, getMe, loginAndStore } from "../lib/api";
 
-import Wordmark from "../assets/gmfn-wordmark.svg";
-import Mark from "../assets/gmfn-mark.svg";
-
-import { loginAndStore } from "../lib/api";
-
-function patternDataUri(): string {
-  const svg = `
-  <svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220">
-    <g fill="none" stroke="#0B1F33" stroke-opacity="0.06" stroke-width="1">
-      <path d="M18 62 H202" />
-      <path d="M30 160 C70 128, 150 128, 190 160" />
-      <circle cx="56" cy="56" r="10"/>
-      <circle cx="164" cy="56" r="8"/>
-      <circle cx="110" cy="110" r="9"/>
-      <path d="M56 56 L110 110 L164 56"/>
-    </g>
-    <g fill="none" stroke="#C6A14A" stroke-opacity="0.05" stroke-width="1">
-      <circle cx="110" cy="110" r="82"/>
-    </g>
-  </svg>`.trim();
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+function card(): React.CSSProperties {
+  return {
+    width: "100%",
+    maxWidth: 560,
+    padding: 30,
+    borderRadius: 24,
+    background: "#FFFFFF",
+    border: "1px solid rgba(11,31,51,0.08)",
+    boxShadow: "0 18px 50px rgba(15,23,42,0.08)",
+  };
 }
 
-function silhouettesSvg(): string {
-  const svg = `
-  <svg xmlns="http://www.w3.org/2000/svg" width="900" height="900" viewBox="0 0 900 900">
-    <defs>
-      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#0B1F33" stop-opacity="0.95"/>
-        <stop offset="1" stop-color="#0B1F33" stop-opacity="0.70"/>
-      </linearGradient>
-    </defs>
-    <rect x="0" y="0" width="900" height="900" fill="url(#g)"/>
-    <g fill="#ffffff" fill-opacity="0.06">
-      <circle cx="140" cy="150" r="90"/>
-      <circle cx="520" cy="180" r="120"/>
-      <circle cx="780" cy="260" r="80"/>
-      <circle cx="260" cy="520" r="120"/>
-      <circle cx="660" cy="560" r="140"/>
-    </g>
-    <g fill="none" stroke="#C6A14A" stroke-opacity="0.22" stroke-width="2">
-      <path d="M60 820 C180 710, 310 710, 430 820" />
-      <path d="M470 820 C590 690, 730 690, 850 820" />
-    </g>
+function inputStyle(): React.CSSProperties {
+  return {
+    width: "100%",
+    padding: "13px 14px",
+    borderRadius: 14,
+    border: "1px solid rgba(11,31,51,0.12)",
+    outline: "none",
+    fontSize: 14,
+    color: "#0B1F33",
+    background: "#FFFFFF",
+    boxSizing: "border-box",
+  };
+}
 
-    <g fill="#ffffff" fill-opacity="0.18">
-      <circle cx="220" cy="420" r="56"/>
-      <path d="M120 760 C140 640, 300 640, 320 760 Z"/>
+function primaryBtn(disabled = false): React.CSSProperties {
+  return {
+    width: "100%",
+    padding: "14px 18px",
+    borderRadius: 16,
+    border: "none",
+    background: disabled ? "#93B7E3" : "#0B63D1",
+    color: "#FFFFFF",
+    fontWeight: 1000,
+    cursor: disabled ? "not-allowed" : "pointer",
+    fontSize: 15,
+  };
+}
 
-      <circle cx="460" cy="380" r="62"/>
-      <path d="M340 760 C365 620, 555 620, 580 760 Z"/>
+function secondaryLink(): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "10px 12px",
+    borderRadius: 12,
+    background: "#FFFFFF",
+    color: "#0B1F33",
+    textDecoration: "none",
+    fontWeight: 900,
+    border: "1px solid rgba(11,31,51,0.10)",
+    fontSize: 14,
+  };
+}
 
-      <circle cx="680" cy="440" r="54"/>
-      <path d="M590 760 C610 650, 750 650, 770 760 Z"/>
-    </g>
+function noticeStyle(
+  kind: "error" | "info" | "success" | "warning"
+): React.CSSProperties {
+  if (kind === "error") {
+    return {
+      borderRadius: 16,
+      background: "#FEF2F2",
+      border: "1px solid #FECACA",
+      color: "#991B1B",
+      padding: 16,
+      lineHeight: 1.7,
+      fontSize: 14,
+    };
+  }
 
-    <g fill="#ffffff" fill-opacity="0.10">
-      <path d="M0 640 H900" />
-      <path d="M0 700 H900" />
-    </g>
-  </svg>`.trim();
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  if (kind === "success") {
+    return {
+      borderRadius: 16,
+      background: "#ECFDF5",
+      border: "1px solid #A7F3D0",
+      color: "#065F46",
+      padding: 16,
+      lineHeight: 1.7,
+      fontSize: 14,
+    };
+  }
+
+  if (kind === "warning") {
+    return {
+      borderRadius: 16,
+      background: "#FFFBEB",
+      border: "1px solid #FDE68A",
+      color: "#92400E",
+      padding: 16,
+      lineHeight: 1.7,
+      fontSize: 14,
+    };
+  }
+
+  return {
+    borderRadius: 16,
+    background: "#F8FBFF",
+    border: "1px solid rgba(11,31,51,0.08)",
+    color: "#35516B",
+    padding: 16,
+    lineHeight: 1.7,
+    fontSize: 14,
+  };
 }
 
 export default function LoginPage() {
   const nav = useNavigate();
-  const bg = useMemo(() => patternDataUri(), []);
-  const hero = useMemo(() => silhouettesSvg(), []);
 
   const [email, setEmail] = useState("admin@test.com");
-  const [password, setPassword] = useState("pass1234"); // matches dev reset-password flow
-  const [err, setErr] = useState<string | null>(null);
+  const [password, setPassword] = useState("pass1234");
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
 
-  async function doLogin() {
-    setErr(null);
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!getAccessToken()) return;
+        const me = await getMe();
+        if (me?.id) {
+          nav("/app/dashboard", { replace: true });
+        }
+      } catch {
+        // ignore stale token during test phase
+      }
+    })();
+  }, [nav]);
+
+  async function onSubmit(e?: React.FormEvent) {
+    if (e) e.preventDefault();
+
     setBusy(true);
+    setErr(null);
+    setMsg(null);
+
     try {
-      await loginAndStore(email.trim(), password);
-      nav("/dashboard", { replace: true });
+      const u = String(email || "").trim();
+      const p = String(password || "");
+
+      if (!u) throw new Error("Enter your email.");
+      if (!p) throw new Error("Enter your password.");
+
+      await loginAndStore(u, p);
+
+      setMsg("Sign-in successful. Opening workspace...");
+      setTimeout(() => {
+        nav("/app/dashboard", { replace: true });
+      }, 500);
     } catch (e: any) {
-      setErr(String(e?.message || e));
+      setErr(
+        String(
+          e?.message ||
+            "Unable to sign in. Confirm the email or GMFN membership has been activated."
+        )
+      );
     } finally {
       setBusy(false);
+    }
+  }
+
+  function clearBrowserSession() {
+    try {
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("gmfn_selected_clan_id");
+      setMsg("Old test session cleared from browser.");
+      setErr(null);
+    } catch {
+      setMsg("Browser session cleared.");
+      setErr(null);
     }
   }
 
@@ -93,152 +179,129 @@ export default function LoginPage() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#ffffff",
         display: "grid",
-        gridTemplateColumns: "1.35fr 1fr",
+        placeItems: "center",
+        background: "#EEF5FB",
+        padding: "24px 18px",
+        boxSizing: "border-box",
       }}
     >
-      {/* Left: dignity panel */}
-      <div
-        style={{
-          position: "relative",
-          overflow: "hidden",
-          backgroundImage: `url("${hero}")`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        <div style={{ position: "absolute", inset: 0, background: "rgba(11,31,51,0.10)" }} />
-        <div style={{ position: "absolute", top: 22, left: 22, display: "flex", alignItems: "center", gap: 10 }}>
-          <img src={Mark} alt="GMFN" style={{ height: 34, width: 34, opacity: 0.98 }} />
-          <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
-            <div style={{ color: "rgba(255,255,255,0.92)", fontWeight: 1000, letterSpacing: 1.5 }}>GMFN</div>
-            <div style={{ color: "rgba(255,255,255,0.70)", fontSize: 12 }}>Trust Infrastructure (Pilot)</div>
+      <div style={card()}>
+        <div
+          style={{
+            fontSize: 32,
+            fontWeight: 1000,
+            color: "#0B1F33",
+            lineHeight: 1.1,
+          }}
+        >
+          GMFN Sign In
+        </div>
+
+        <div
+          style={{
+            marginTop: 10,
+            color: "#5F768D",
+            lineHeight: 1.75,
+            fontSize: 15,
+          }}
+        >
+          Sign in with your approved email and password. If your community has
+          already approved you and you have been issued a GMFN ID, activate your
+          membership first before signing in.
+        </div>
+
+        <div style={{ marginTop: 18, ...noticeStyle("warning") }}>
+          <div style={{ fontWeight: 1000, marginBottom: 8 }}>
+            Approved members
+          </div>
+          <div>
+            If you have already been approved through the join request process,
+            use <strong>Activate Membership</strong> first. That step will bind
+            your GMFN ID to your password and open your entry path into the
+            workspace.
           </div>
         </div>
 
-        <div style={{ position: "absolute", bottom: 22, left: 22, right: 22, color: "rgba(255,255,255,0.80)" }}>
-          <div style={{ fontWeight: 1000, fontSize: 18 }}>Dignity. Structure. Accountability.</div>
-          <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.5 }}>
-            GMFN transforms informal trust into a portable, verifiable authorization layer — without banks or collateral.
+        <div style={{ marginTop: 16, ...noticeStyle("info") }}>
+          <div style={{ fontWeight: 1000, marginBottom: 8 }}>
+            Current test defaults
+          </div>
+          <div>
+            Email: <strong>admin@test.com</strong>
+          </div>
+          <div>
+            Password: <strong>pass1234</strong>
           </div>
         </div>
-      </div>
 
-      {/* Right: login card */}
-      <div
-        style={{
-          backgroundImage: `url("${bg}")`,
-          backgroundRepeat: "repeat",
-          backgroundSize: "220px 220px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 18,
-        }}
-      >
-        <div style={{ width: "100%", maxWidth: 420 }}>
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            <img src={Wordmark} alt="GMFN" style={{ height: 38 }} />
+        {err ? (
+          <div style={{ marginTop: 16, ...noticeStyle("error") }}>{err}</div>
+        ) : null}
+
+        {msg ? (
+          <div style={{ marginTop: 16, ...noticeStyle("success") }}>{msg}</div>
+        ) : null}
+
+        <form onSubmit={onSubmit} style={{ marginTop: 18 }}>
+          <div style={{ display: "grid", gap: 12 }}>
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              autoComplete="username"
+              style={inputStyle()}
+            />
+
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              autoComplete="current-password"
+              style={inputStyle()}
+            />
           </div>
 
-          <div
-            style={{
-              marginTop: 14,
-              border: "1px solid rgba(11,31,51,0.12)",
-              borderRadius: 22,
-              padding: 18,
-              background: "rgba(255,255,255,0.94)",
-              boxShadow: "0 18px 60px rgba(2, 6, 23, 0.08)",
-            }}
-          >
-            <div style={{ fontSize: 14, fontWeight: 1000, color: "#0B1F33", letterSpacing: 0.6 }}>
-              Secure Access
-            </div>
-            <div style={{ marginTop: 6, fontSize: 12, color: "#6B7A88" }}>
-              Pilot login. Authorization required.
-            </div>
+          <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
+            <button type="submit" disabled={busy} style={primaryBtn(busy)}>
+              {busy ? "Signing in..." : "Enter Workspace"}
+            </button>
 
-            {err && (
-              <div
-                style={{
-                  marginTop: 12,
-                  padding: 10,
-                  borderRadius: 14,
-                  border: "1px solid rgba(153,27,27,0.25)",
-                  background: "rgba(254,242,242,0.9)",
-                  color: "#991b1b",
-                  fontWeight: 900,
-                }}
-              >
-                {err}
-              </div>
-            )}
-
-            <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-              <div>
-                <div style={{ fontSize: 12, color: "#6B7A88", fontWeight: 900 }}>Email</div>
-                <input
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    borderRadius: 14,
-                    border: "1px solid rgba(11,31,51,0.18)",
-                  }}
-                  placeholder="you@example.com"
-                />
-              </div>
-
-              <div>
-                <div style={{ fontSize: 12, color: "#6B7A88", fontWeight: 900 }}>Password</div>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    borderRadius: 14,
-                    border: "1px solid rgba(11,31,51,0.18)",
-                  }}
-                  placeholder="••••••••"
-                />
-              </div>
-
-              <div style={{ marginTop: 6, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ fontSize: 12, color: "#6B7A88" }}>Non-custodial pilot build.</div>
-
-                <button
-                  onClick={doLogin}
-                  disabled={busy}
-                  title="Unlock Access"
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 14,
-                    border: "1px solid rgba(198,161,74,0.65)",
-                    background: busy ? "rgba(198,161,74,0.12)" : "rgba(198,161,74,0.16)",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: busy ? "not-allowed" : "pointer",
-                  }}
-                >
-                  <span style={{ fontSize: 18, lineHeight: 1 }}>🔒</span>
-                </button>
-              </div>
-
-              <div style={{ marginTop: 4, fontSize: 12, color: "#6B7A88" }}>
-                Tip: button is intentionally small — authority UI, not attention UI.
-              </div>
-            </div>
+            <button
+              type="button"
+              onClick={clearBrowserSession}
+              style={{
+                ...primaryBtn(false),
+                background: "#FFFFFF",
+                color: "#0B1F33",
+                border: "1px solid rgba(11,31,51,0.10)",
+              }}
+            >
+              Clear Old Test Session
+            </button>
           </div>
+        </form>
 
-          <div style={{ marginTop: 12, textAlign: "center", fontSize: 12, color: "#6B7A88" }}>
-            Trust Infrastructure Protocol — <span style={{ fontWeight: 900, color: "#0B1F33" }}>GMFN</span>
-          </div>
+        <div
+          style={{
+            marginTop: 18,
+            display: "flex",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
+          <Link to="/activate" style={secondaryLink()}>
+            Activate Membership
+          </Link>
+
+          <Link to="/welcome" style={secondaryLink()}>
+            Welcome
+          </Link>
+
+          <Link to="/cover" style={secondaryLink()}>
+            Cover
+          </Link>
         </div>
       </div>
     </div>

@@ -1,76 +1,50 @@
-// frontend/src/lib/api.ts
-// GMFN Frontend API client (Swagger-aligned, stable exports + backward-compat aliases)
-
-export type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | { [k: string]: JsonValue }
-  | JsonValue[];
-
-/**
- * Stabilization:
- * Backend has redirect_slashes=False.
- * That means:
- *  - /loans   ✅
- *  - /loans/  ❌ (404)
- *
- * We normalize URLs to remove trailing slashes EXCEPT for a small allowlist
- * where the backend endpoint is defined with a trailing slash (e.g. POST /clans/).
- */
-const TRAILING_SLASH_ALLOWLIST = new Set<string>(["/clans/"]);
-
-// Optional absolute API base (leave empty to use relative URLs + Vite proxy).
-// If you set VITE_API_BASE_URL, it MUST NOT include a trailing slash.
 const API_BASE_URL_RAW: string =
   (typeof import.meta !== "undefined" &&
     (import.meta as any)?.env &&
     (import.meta as any).env.VITE_API_BASE_URL) ||
   "/api";
 
-// Normalize base url (no trailing slash)
 const API_BASE_URL = String(API_BASE_URL_RAW || "").trim().replace(/\/+$/, "");
 
-function normalizePath(path: string): string {
-  const p0 = String(path || "").trim();
-  if (!p0) return "/";
-
-  // Ensure leading slash for relative paths
-  let p = p0.startsWith("/") ? p0 : `/${p0}`;
-
-  // Preserve query string when normalizing
-  const [base, qs] = p.split("?", 2);
-
-  // Normalize trailing slash unless explicitly allowed
-  let nb = base;
-  if (nb.length > 1 && nb.endsWith("/") && !TRAILING_SLASH_ALLOWLIST.has(nb)) {
-    nb = nb.replace(/\/+$/, "");
-    if (!nb) nb = "/";
-  }
-
-  return qs !== undefined ? `${nb}?${qs}` : nb;
-}
-
 function buildUrl(path: string): string {
-  const p = normalizePath(path);
-  if (!API_BASE_URL) return p;
+  const p = String(path || "").startsWith("/")
+    ? String(path)
+    : `/${String(path || "")}`;
   return `${API_BASE_URL}${p}`;
 }
 
 const ACCESS_TOKEN_KEY = "access_token";
+const GMFN_SELECTED_CLAN_ID_KEY = "gmfn_selected_clan_id";
 
 export function getAccessToken(): string | null {
   return localStorage.getItem(ACCESS_TOKEN_KEY);
 }
+
 export function setAccessToken(tok: string | null) {
   if (!tok) localStorage.removeItem(ACCESS_TOKEN_KEY);
   else localStorage.setItem(ACCESS_TOKEN_KEY, tok);
 }
+
 export function logout(): void {
   setAccessToken(null);
 }
-export const logoutAndClear = logout;
+
+export function getSelectedClanId(): number | null {
+  try {
+    const raw = localStorage.getItem(GMFN_SELECTED_CLAN_ID_KEY);
+    const n = Number(raw || "");
+    return Number.isFinite(n) && n > 0 ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setSelectedClanId(clanId: number | null): void {
+  try {
+    if (clanId == null) localStorage.removeItem(GMFN_SELECTED_CLAN_ID_KEY);
+    else localStorage.setItem(GMFN_SELECTED_CLAN_ID_KEY, String(clanId));
+  } catch {}
+}
 
 async function readTextSafe(res: Response): Promise<string> {
   try {
@@ -84,9 +58,7 @@ export async function parseError(res: Response): Promise<string> {
   const text = await readTextSafe(res);
   try {
     const j = JSON.parse(text);
-    if (typeof j?.detail === "string") return j.detail;
-    if (Array.isArray(j?.detail)) return JSON.stringify(j.detail, null, 2);
-    return j?.message || text || `HTTP ${res.status}`;
+    return j?.detail || j?.message || text || `HTTP ${res.status}`;
   } catch {
     return text || `HTTP ${res.status}`;
   }
@@ -96,63 +68,14 @@ function buildQuery(params: Record<string, any> | undefined | null): string {
   if (!params) return "";
   const q: string[] = [];
   for (const [k, v] of Object.entries(params)) {
-    if (v === undefined || v === null) continue;
-    const sv = String(v).trim();
-    if (!sv) continue;
-    q.push(`${encodeURIComponent(k)}=${encodeURIComponent(sv)}`);
+    if (v === undefined || v === null || String(v).trim() === "") continue;
+    q.push(`${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`);
   }
   return q.length ? `?${q.join("&")}` : "";
 }
 
-/* ===============================
-   SELECTED CLAN (localStorage)
-   =============================== */
-const GMFN_SELECTED_CLAN_ID_KEY = "gmfn_selected_clan_id";
-
-export function getSelectedClanId(): number | null {
-  try {
-    const raw = localStorage.getItem(GMFN_SELECTED_CLAN_ID_KEY);
-    if (!raw) return null;
-    const n = Number(raw);
-    return Number.isFinite(n) && n > 0 ? n : null;
-  } catch {
-    return null;
-  }
-}
-
-export function setSelectedClanId(clanId: number | null): void {
-  try {
-    if (clanId == null) {
-      localStorage.removeItem(GMFN_SELECTED_CLAN_ID_KEY);
-      return;
-    }
-    const n = Number(clanId);
-    if (!Number.isFinite(n) || n <= 0) {
-      localStorage.removeItem(GMFN_SELECTED_CLAN_ID_KEY);
-      return;
-    }
-    localStorage.setItem(GMFN_SELECTED_CLAN_ID_KEY, String(n));
-  } catch {
-    // ignore
-  }
-}
-
-export function clearSelectedClanId(): void {
-  try {
-    localStorage.removeItem(GMFN_SELECTED_CLAN_ID_KEY);
-  } catch {
-    // ignore
-  }
-}
-
-/* ===============================
-   HTTP Helpers (relative URLs; Vite proxy can be used)
-   =============================== */
 async function httpJson(path: string, method: string, body?: any): Promise<any> {
   const headers: Record<string, string> = { Accept: "application/json" };
-
-  const isForm = typeof FormData !== "undefined" && body instanceof FormData;
-  if (!isForm && body !== undefined) headers["Content-Type"] = "application/json";
 
   const tok = getAccessToken();
   if (tok) headers["Authorization"] = `Bearer ${tok}`;
@@ -160,12 +83,12 @@ async function httpJson(path: string, method: string, body?: any): Promise<any> 
   const clanId = getSelectedClanId();
   if (clanId) headers["X-Clan-Id"] = String(clanId);
 
-  const url = buildUrl(path);
+  if (body !== undefined) headers["Content-Type"] = "application/json";
 
-  const res = await fetch(url, {
+  const res = await fetch(buildUrl(path), {
     method,
     headers,
-    body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
+    body: body === undefined ? undefined : JSON.stringify(body),
   });
 
   if (!res.ok) throw new Error(await parseError(res));
@@ -173,31 +96,12 @@ async function httpJson(path: string, method: string, body?: any): Promise<any> 
 
   const txt = await readTextSafe(res);
   if (!txt) return null;
+
   try {
     return JSON.parse(txt);
   } catch {
     return txt;
   }
-}
-
-async function httpBlob(path: string, method: string, body?: any): Promise<Blob> {
-  const headers: Record<string, string> = {};
-  const tok = getAccessToken();
-  if (tok) headers["Authorization"] = `Bearer ${tok}`;
-
-  const clanId = getSelectedClanId();
-  if (clanId) headers["X-Clan-Id"] = String(clanId);
-
-  const url = buildUrl(path);
-
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-
-  if (!res.ok) throw new Error(await parseError(res));
-  return await res.blob();
 }
 
 async function httpForm(path: string, form: Record<string, any>): Promise<any> {
@@ -207,9 +111,7 @@ async function httpForm(path: string, form: Record<string, any>): Promise<any> {
     fd.set(k, String(v));
   }
 
-  const url = buildUrl(path);
-
-  const res = await fetch(url, {
+  const res = await fetch(buildUrl(path), {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -223,11 +125,8 @@ async function httpForm(path: string, form: Record<string, any>): Promise<any> {
 }
 
 /* =========================
-   AUTH (Swagger /auth/*)
+   AUTH
    ========================= */
-export async function register(email: string, password: string): Promise<any> {
-  return httpJson("/auth/register", "POST", { email, password });
-}
 
 export async function login(
   username: string,
@@ -243,408 +142,685 @@ export async function login(
   });
 }
 
-export async function loginAndStore(username: string, password: string): Promise<string> {
-  const res = await login(username, password);
-  const tok = res?.access_token || "";
-  setAccessToken(tok || null);
-  return tok;
+export async function loginAndStore(username: string, password: string) {
+  const out = await login(username, password);
+  if (out?.access_token) {
+    setAccessToken(out.access_token);
+  }
+  return out;
 }
 
-export async function getMe(): Promise<any> {
+export async function getMe() {
   return httpJson("/auth/me", "GET");
 }
 
-/* =========================
-   DEV (Swagger /auth/dev/create-user)
-   ========================= */
-export async function devCreateUser(payload: { email: string; password: string; role?: string | null }): Promise<any> {
-  return httpJson("/auth/dev/create-user", "POST", payload);
+export async function activateApprovedMember(payload: {
+  gmfn_id: string;
+  password: string;
+}): Promise<any> {
+  return httpJson("/auth/activate-approved-member", "POST", payload);
+}
+
+export async function activateMembership(payload: {
+  gmfn_id: string;
+  password: string;
+  confirm_password: string;
+}) {
+  const cleaned = {
+    gmfn_id: String(payload.gmfn_id || "")
+      .replace(/^GMFN ID:\s*/i, "")
+      .trim(),
+    password: String(payload.password || ""),
+    confirm_password: String(payload.confirm_password || ""),
+  };
+
+  const res = await fetch("http://127.0.0.1:8012/auth/activate-membership", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(cleaned),
+  });
+
+  if (!res.ok) {
+    throw new Error(await parseError(res));
+  }
+
+  return await res.json();
+}
+export async function getApprovedMemberStatus(gmfnId: string): Promise<any> {
+  return httpJson(
+    `/auth/approved-member/${encodeURIComponent(String(gmfnId))}`,
+    "GET"
+  );
+}
+
+export async function founderSignupWithInvite(payload: {
+  invite_code: string;
+  email: string;
+  password: string;
+  clan_name: string;
+  clan_description?: string | null;
+}): Promise<any> {
+  return httpJson("/auth/signup-with-invite", "POST", payload);
 }
 
 /* =========================
-   CLANS (Swagger /clans/*)
+   CLANS / COMMUNITY
    ========================= */
-export async function devBootstrapClan(): Promise<any> {
-  return httpJson("/clans/dev/bootstrap", "POST");
-}
 
 export async function listMyClans(): Promise<any> {
   return httpJson("/clans/me", "GET");
 }
 
 export async function getCurrentClan(): Promise<any> {
-  return httpJson("/clans/current", "GET");
+  const selectedClanId = getSelectedClanId();
+  const res = await listMyClans().catch(() => ({ items: [] }));
+  const rows = Array.isArray(res) ? res : res?.items || [];
+
+  if (!rows.length) return null;
+
+  if (selectedClanId) {
+    const match = rows.find(
+      (x: any) => Number(x?.id || x?.clan_id || 0) === Number(selectedClanId)
+    );
+    if (match) return match;
+  }
+
+  return rows[0] || null;
 }
 
-export async function createClan(payload: { name: string; description?: string | null; country?: string | null }): Promise<any> {
-  // Swagger: POST /clans/  (trailing slash is real endpoint)
+export async function createClan(payload: {
+  name: string;
+  description?: string | null;
+  country?: string | null;
+  marketplace_name?: string | null;
+  marketplace_description?: string | null;
+}): Promise<any> {
   return httpJson("/clans/", "POST", payload);
 }
 
 export async function selectClan(clanId: number): Promise<any> {
   setSelectedClanId(clanId);
-  return httpJson(`/clans/${encodeURIComponent(String(clanId))}/select`, "POST");
+  return httpJson(
+    `/clans/${encodeURIComponent(String(clanId))}/select`,
+    "POST"
+  );
 }
 
-export async function leaveClan(clanId: number): Promise<any> {
-  return httpJson(`/clans/${encodeURIComponent(String(clanId))}/leave`, "DELETE");
+export async function devBootstrapClan(): Promise<any> {
+  return httpJson("/clans/dev/bootstrap", "POST");
+}
+
+export async function getClanInviteLink(clanId: number): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(clanId))}/invite-link`,
+    "GET"
+  );
 }
 
 export async function listClanMembers(clanId: number): Promise<any> {
   return httpJson(`/clans/${encodeURIComponent(String(clanId))}/members`, "GET");
 }
 
-export async function addMemberToClan(clanId: number, payload: { user_id: number }): Promise<any> {
-  return httpJson(`/clans/${encodeURIComponent(String(clanId))}/members`, "POST", payload);
+export async function submitJoinRequest(payload: {
+  invite_code: string;
+  first_name: string;
+  surname: string;
+  phone_e164: string;
+  country: string;
+  business_name?: string | null;
+  note?: string | null;
+}): Promise<any> {
+  return httpJson("/clans/join-requests", "POST", payload);
 }
 
-export async function removeMemberFromClan(clanId: number, userId: number): Promise<any> {
-  return httpJson(`/clans/${encodeURIComponent(String(clanId))}/members/${encodeURIComponent(String(userId))}`, "DELETE");
+export async function listJoinRequests(clanId: number): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(clanId))}/join-requests`,
+    "GET"
+  );
 }
 
-export async function toggleMemberRole(clanId: number, userId: number): Promise<any> {
-  return httpJson(`/clans/${encodeURIComponent(String(clanId))}/members/${encodeURIComponent(String(userId))}/toggle-role`, "POST");
+export async function getJoinRequestStatus(requestId: number | string): Promise<any> {
+  return httpJson(
+    `/clans/join-requests/${encodeURIComponent(String(requestId))}/status`,
+    "GET"
+  );
 }
 
-// legacy pool setters (still exist)
-export async function patchMemberPoolBalanceCompat(clanId: number, userId: number, amount: string): Promise<any> {
-  return httpJson(`/clans/${encodeURIComponent(String(clanId))}/members/${encodeURIComponent(String(userId))}/pool`, "PATCH", { amount });
-}
-export async function setMemberPoolBalance(clanId: number, payload: { user_id: number; amount: string }): Promise<any> {
-  return httpJson(`/clans/${encodeURIComponent(String(clanId))}/members/pool/set`, "POST", payload);
-}
-export const setMemberPoolBalanceCompat = patchMemberPoolBalanceCompat;
-
-// invite flow
-export async function createInvite(clanId: number): Promise<any> {
-  return httpJson(`/clans/${encodeURIComponent(String(clanId))}/invite`, "POST");
-}
-export const createClanInvite = createInvite;
-
-export async function getClanInviteLink(clanId: number): Promise<any> {
-  return httpJson(`/clans/${encodeURIComponent(String(clanId))}/invite-link`, "GET");
-}
-
-export async function getInviteSettings(clanId: number): Promise<any> {
-  return httpJson(`/clans/${encodeURIComponent(String(clanId))}/invite/settings`, "GET");
-}
-export async function updateInviteSettings(clanId: number, payload: any): Promise<any> {
-  return httpJson(`/clans/${encodeURIComponent(String(clanId))}/invite/settings`, "PATCH", payload);
-}
-
-// join-by-invite (Swagger: POST /clans/join-by-invite)
-export async function joinByInvite(code: string): Promise<any> {
-  return httpJson(`/clans/join-by-invite`, "POST", { code });
-}
-
-/* =========================
-   INVITES (Swagger /invites/*) – keep for compatibility
-   ========================= */
-export async function getClanInvites(clanId: number): Promise<any> {
-  return httpJson(`/invites/clans/${encodeURIComponent(String(clanId))}`, "GET");
-}
-export async function getShareLink(code: string): Promise<any> {
-  return httpJson(`/invites/share/${encodeURIComponent(code)}`, "GET");
-}
 export async function getInvitePreview(code: string): Promise<any> {
-  return httpJson(`/invites/preview/${encodeURIComponent(code)}`, "GET");
+  return httpJson(
+    `/invites/preview/${encodeURIComponent(String(code))}`,
+    "GET"
+  );
 }
-export async function joinByInviteLegacy(code: string): Promise<any> {
-  return httpJson(`/invites/join`, "POST", { code });
-}
-export async function revokeInvite(code: string): Promise<any> {
-  return httpJson(`/invites/revoke/${encodeURIComponent(code)}`, "POST");
+
+export async function voteJoinRequest(
+  clanId: number,
+  joinRequestId: number,
+  vote: "approve" | "reject"
+): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(clanId))}/join-requests/${encodeURIComponent(
+      String(joinRequestId)
+    )}/vote`,
+    "POST",
+    { vote }
+  );
 }
 
 /* =========================
-   LOANS (Swagger /loans/*)
+   LOANS / POOL
    ========================= */
+
 export async function listMyLoans(): Promise<any> {
   return httpJson("/loans", "GET");
 }
+
 export async function getLoan(loanId: number): Promise<any> {
   return httpJson(`/loans/${encodeURIComponent(String(loanId))}`, "GET");
 }
-export async function createLoan(payload: { clan_id: number; amount: string; currency: string; purpose?: string | null }): Promise<any> {
-  return httpJson("/loans", "POST", payload);
-}
-export async function cancelLoan(loanId: number): Promise<any> {
-  return httpJson(`/loans/${encodeURIComponent(String(loanId))}/cancel`, "POST");
-}
-export async function repayLoan(loanId: number, payload: { amount: string; currency?: string | null; note?: string | null }): Promise<any> {
-  // Swagger expects RepayLoan schema; keep amount as string
-  return httpJson(`/loans/${encodeURIComponent(String(loanId))}/repayments`, "POST", payload);
-}
-export async function getRepayments(loanId: number): Promise<any> {
-  return httpJson(`/loans/${encodeURIComponent(String(loanId))}/repayments`, "GET");
-}
+
 export async function getLoanSummary(loanId: number): Promise<any> {
-  return httpJson(`/loans/${encodeURIComponent(String(loanId))}/summary`, "GET");
-}
-export async function getTrustSlipPreview(loanId: number): Promise<any> {
-  return httpJson(`/loans/${encodeURIComponent(String(loanId))}/trustslip_preview`, "GET");
+  return httpJson(
+    `/loans/${encodeURIComponent(String(loanId))}/summary`,
+    "GET"
+  );
 }
 
-// guarantors
-export async function createLoanGuarantor(loanId: number, payload: { guarantor_user_id: number; pledge_amount: string; note?: string | null }): Promise<any> {
-  return httpJson(`/loans/${encodeURIComponent(String(loanId))}/guarantors`, "POST", payload);
-}
-export async function getLoanGuarantors(loanId: number): Promise<any> {
-  return httpJson(`/loans/${encodeURIComponent(String(loanId))}/guarantors`, "GET");
-}
-export async function getGuarantorSuggestions(loanId: number): Promise<any> {
-  return httpJson(`/loans/${encodeURIComponent(String(loanId))}/guarantors/suggestions`, "GET");
-}
-export async function decideLoanGuarantor(
+export async function repayLoan(
   loanId: number,
-  guarantorId: number,
-  payload: { status: "approved" | "declined"; reason?: string | null; note?: string | null }
-): Promise<any> {
-  return httpJson(`/loans/${encodeURIComponent(String(loanId))}/guarantors/${encodeURIComponent(String(guarantorId))}`, "PATCH", payload);
-}
-// Decide incoming guarantor request (compat export for LoansPage)
-export async function decideLoanGuarantorRequest(
-  loanId: number,
-  guarantorId: number,
-  payload: {
-    status: "approved" | "declined";
-    reason?: string | null;
-    note?: string | null;
-  }
+  payload: { amount: string; currency?: string | null; note?: string | null }
 ): Promise<any> {
   return httpJson(
-    `/loans/${encodeURIComponent(String(loanId))}/guarantors/${encodeURIComponent(
-      String(guarantorId)
-    )}`,
-    "PATCH",
+    `/loans/${encodeURIComponent(String(loanId))}/repayments`,
+    "POST",
     payload
   );
 }
 
-// Alias expected by LoansPage.tsx
-export const decideIncomingGuarantorRequest = decideLoanGuarantor;
-
-// inbox
-export async function getGuarantorInbox(status: string = "pending", limit: number = 50): Promise<any> {
-  const q = buildQuery({ status, limit });
-  return httpJson(`/loans/guarantors/inbox${q}`, "GET");
-}
-// Alias expected by LoansPage.tsx
-export const listIncomingGuarantorRequests = getGuarantorInbox;
-
-/* evidence snapshot */
-export async function getLoanEvidenceSnapshot(loanId: number, limit_events: number = 25): Promise<any> {
-  const q = buildQuery({ limit_events });
-  return httpJson(`/loans/${encodeURIComponent(String(loanId))}/evidence-snapshot${q}`, "GET");
+export async function getPoolMe(
+  currency: string = "NGN",
+  limit: number = 20
+): Promise<any> {
+  return httpJson(`/pool/me${buildQuery({ currency, limit })}`, "GET");
 }
 
-/* =========================
-   POOL (Swagger /pool/*)
-   ========================= */
-export async function getPoolMe(currency: string = "NGN", limit: number = 20): Promise<any> {
-  const q = buildQuery({ currency, limit });
-  return httpJson(`/pool/me${q}`, "GET");
-}
-export async function requestPoolDeposit(payload: { amount: string; currency?: string; note?: string | null }): Promise<any> {
-  return httpJson("/pool/deposits/request", "POST", {
-    amount: String(payload.amount),
-    currency: payload.currency || "NGN",
-    note: payload.note ?? null,
-  });
-}
-export async function requestPoolWithdrawal(payload: { amount: string; currency?: string; note?: string | null }): Promise<any> {
-  return httpJson("/pool/withdrawals/request", "POST", {
-    amount: String(payload.amount),
-    currency: payload.currency || "NGN",
-    note: payload.note ?? null,
-  });
+export async function createPoolInstruction(payload: {
+  clan_id: number;
+  amount: string;
+  currency?: string;
+}): Promise<any> {
+  return httpJson(
+    `/payment-instructions/pool${buildQuery({
+      clan_id: payload.clan_id,
+      amount: payload.amount,
+      currency: payload.currency || "NGN",
+    })}`,
+    "POST"
+  );
 }
 
-/* =========================
-   ADMIN (Swagger /admin/*)
-   ========================= */
-export async function adminRecentTrustEvents(limit: number = 50): Promise<any> {
-  const q = buildQuery({ limit });
-  return httpJson(`/admin/trust-events/recent${q}`, "GET");
+export async function createLoanInstruction(payload: {
+  clan_id: number;
+  loan_id: number;
+  amount: string;
+  currency?: string;
+}): Promise<any> {
+  return httpJson(
+    `/payment-instructions/loan${buildQuery({
+      clan_id: payload.clan_id,
+      loan_id: payload.loan_id,
+      amount: payload.amount,
+      currency: payload.currency || "NGN",
+    })}`,
+    "POST"
+  );
 }
-export async function adminManualTrustEvent(qs: Record<string, any>): Promise<any> {
-  const q = buildQuery(qs);
-  return httpJson(`/admin/trust-events/manual${q}`, "POST");
-}
-export async function adminPoolPending(limit: number = 50): Promise<any> {
-  const q = buildQuery({ limit });
-  return httpJson(`/admin/pool/pending${q}`, "GET");
-}
-export async function adminConfirmPoolEvent(eventId: number, note?: string): Promise<any> {
-  const q = buildQuery({ note: note ?? undefined });
-  return httpJson(`/admin/pool/events/${encodeURIComponent(String(eventId))}/confirm${q}`, "POST");
+
+export async function getLoanWithdrawalInstruction(
+  loanId: number
+): Promise<any> {
+  return httpJson(
+    `/withdrawal-instructions/loan/${encodeURIComponent(String(loanId))}`,
+    "GET"
+  );
 }
 
 /* =========================
-   TRUST (Swagger /trust/*)
+   TRUST / IDENTITY / NOTIFICATIONS
    ========================= */
+
 export async function getTrustScoreExplained(): Promise<any> {
   return httpJson("/trust/score/explained", "GET");
 }
-export async function getTrustLatestSource(): Promise<any> {
-  return httpJson("/trust/me/latest-source", "GET");
-}
-export async function getTrustWhyMe(limit?: number): Promise<any> {
-  const q = buildQuery({ limit: limit ?? undefined });
-  return httpJson(`/trust/me/why${q}`, "GET");
-}
-export async function getTrustWhyUser(userId: number, limit?: number): Promise<any> {
-  const q = buildQuery({ limit: limit ?? undefined });
-  return httpJson(`/trust/why/${encodeURIComponent(String(userId))}${q}`, "GET");
-}
-export async function downloadMyTrustTimelinePdf(limit = 50): Promise<Blob> {
-  const q = buildQuery({ limit });
-  return httpBlob(`/trust/me/timeline.pdf${q}`, "GET");
-}
-export async function downloadMyTrustTimelinePdfAlias(limit = 50): Promise<Blob> {
-  const q = buildQuery({ limit });
-  return httpBlob(`/trust/me/trust-timeline.pdf${q}`, "GET");
-}
-export async function trustMe(): Promise<any> {
-  return httpJson("/trust/me", "GET");
-}
 
-/* =========================
-   TRUST EVENTS (Swagger /trust-events/me)
-   ========================= */
-export type TrustEventsQuery = {
-  limit?: number;
-  clan_id?: number;
-  loan_id?: number;
-  actor_user_id?: number;
-  subject_user_id?: number;
-  event_type?: string;
-};
-export async function getTrustEvents(arg: number | TrustEventsQuery = 50): Promise<any> {
-  const qObj: TrustEventsQuery =
-    typeof arg === "number"
-      ? { limit: Math.max(1, Math.min(Number(arg || 50), 200)) }
-      : { ...arg, limit: Math.max(1, Math.min(Number(arg.limit || 50), 200)) };
-
-  // Backend /trust-events/me supports at least limit; extra filters are safe (ignored if not implemented)
-  const q = buildQuery({
-    limit: qObj.limit,
-    clan_id: qObj.clan_id,
-    loan_id: qObj.loan_id,
-    actor_user_id: qObj.actor_user_id,
-    subject_user_id: qObj.subject_user_id,
-    event_type: qObj.event_type,
-  });
-
-  return httpJson(`/trust-events/me${q}`, "GET");
-}
-
-// Back-compat alias
-export const listTrustEvents = getTrustEvents;
-
-/* =========================
-   TRUST SLIPS (Swagger /trust-slips/*)
-   ========================= */
 export async function getMyTrustSlip(): Promise<any> {
   return httpJson("/trust-slips/me", "GET");
 }
-export async function getMyTrustSlipSummary(): Promise<any> {
-  return httpJson("/trust-slips/me/summary", "GET");
+
+export async function verifyTrustSlip(
+  code: string,
+  level?: "minimal" | "standard" | "detailed"
+): Promise<any> {
+  return httpJson(
+    `/trust-slips/verify/${encodeURIComponent(String(code))}${buildQuery({
+      level: level || undefined,
+    })}`,
+    "GET"
+  );
 }
 
-// Share bundle (merchant link generator) – derived from /trust-slips/me/summary -> code -> /trust-slips/{code}/share
-export async function getMerchantLink(): Promise<any> {
-  const s = await getMyTrustSlipSummary();
-  const code = String(s?.code || "").trim();
-  if (!code) return { ok: false, detail: "No TrustSlip code found for current user." };
-  return httpJson(`/trust-slips/${encodeURIComponent(code)}/share`, "GET");
+export async function getTrustSlipShareBundle(
+  code: string,
+  level?: "minimal" | "standard" | "detailed"
+): Promise<any> {
+  return httpJson(
+    `/trust-slips/${encodeURIComponent(String(code))}/share${buildQuery({
+      level: level || undefined,
+    })}`,
+    "GET"
+  );
 }
 
-// Merchant release logging
-export async function postMerchantRelease(payload: { token: string; goods_value: string; currency: string; merchant_note?: string }): Promise<any> {
-  const code = String(payload.token || "").trim();
-  if (!code) throw new Error("Missing TrustSlip code/token");
-  return httpJson(`/trust-slips/${encodeURIComponent(code)}/release`, "POST", {
-    goods_value: String(payload.goods_value),
-    currency: payload.currency || "NGN",
-    merchant_note: payload.merchant_note || "",
-  });
+export async function logTrustSlipRelease(
+  code: string,
+  payload: {
+    supplier_name?: string | null;
+    supplier_phone?: string | null;
+    amount_released?: string | null;
+    note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/trust-slips/${encodeURIComponent(String(code))}/release`,
+    "POST",
+    payload
+  );
 }
 
-// Evidence pack
-export async function getEvidencePackMeta(): Promise<any> {
-  return httpJson("/trust/me/evidence-pack/meta", "GET");
+export async function observeIdentityRisk(
+  clientFingerprint?: string
+): Promise<any> {
+  return {
+    ok: true,
+    detail: "Identity observation is disabled in temporary test mode.",
+    client_fingerprint: clientFingerprint || null,
+  };
 }
-export async function downloadEvidencePackZip(): Promise<Blob> {
-  return httpBlob("/trust/me/evidence-pack.zip", "GET");
+
+export async function getMyIdentityRisk(): Promise<any> {
+  return httpJson("/identity-risk/me", "GET");
+}
+
+export async function getAdminIdentityRisk(limit: number = 100): Promise<any> {
+  return httpJson(`/identity-risk/admin${buildQuery({ limit })}`, "GET");
+}
+
+export async function getMyNotifications(
+  limit: number = 50,
+  unreadOnly: boolean = false
+): Promise<any> {
+  return httpJson(
+    `/notifications/me${buildQuery({ limit, unread_only: unreadOnly })}`,
+    "GET"
+  );
+}
+
+export async function getMyUnreadNotificationCount(): Promise<any> {
+  return httpJson("/notifications/me/unread-count", "GET");
+}
+
+export async function markNotificationRead(notificationId: number): Promise<any> {
+  return httpJson(
+    `/notifications/me/${encodeURIComponent(String(notificationId))}/read`,
+    "POST"
+  );
+}
+
+export async function seedAssistantNotifications(): Promise<any> {
+  return httpJson("/notifications/me/seed-assistant", "POST");
 }
 
 /* =========================
-   EXPOSURE / ANALYTICS / PUBLIC / MERCHANT
+   ADMIN / OPS / ANALYTICS
    ========================= */
+
+export async function adminRecentTrustEvents(limit: number = 50): Promise<any> {
+  return httpJson(`/admin/trust-events/recent${buildQuery({ limit })}`, "GET");
+}
+
+export async function getTrustEvents(params?: {
+  clan_id?: number;
+  user_id?: number;
+  loan_id?: number;
+  limit?: number;
+}): Promise<any> {
+  const limit = Number(params?.limit || 200);
+
+  return httpJson(
+    `/admin/trust-events/recent${buildQuery({
+      limit,
+      clan_id: params?.clan_id,
+      user_id: params?.user_id,
+      loan_id: params?.loan_id,
+    })}`,
+    "GET"
+  );
+}
+
+export async function adminConfirmPoolEvent(
+  eventId: number,
+  note?: string
+): Promise<any> {
+  return httpJson(
+    `/admin/pool/events/${encodeURIComponent(String(eventId))}/confirm${buildQuery({
+      note,
+    })}`,
+    "POST"
+  );
+}
+
+export async function getAdminTrustGraph(
+  userId: string | number,
+  opts?: { include_clans?: boolean; limit_events?: number }
+): Promise<any> {
+  return httpJson(
+    `/admin/trust-graph/${encodeURIComponent(String(userId))}${buildQuery({
+      include_clans: opts?.include_clans ?? true,
+      limit_events: opts?.limit_events ?? 500,
+    })}`,
+    "GET"
+  );
+}
+
 export async function getExposureAdmin(): Promise<any> {
   return httpJson("/exposure/admin", "GET");
 }
-export async function getCciScore(clanId: number, userId: number): Promise<any> {
-  const q = buildQuery({ clan_id: clanId, user_id: userId });
-  return httpJson(`/exposure/admin/cci-scores${q}`, "GET");
+
+export async function getRevenueAllocation(loanId: number): Promise<any> {
+  return httpJson(
+    `/revenue-allocation/loan/${encodeURIComponent(String(loanId))}`,
+    "GET"
+  );
 }
 
-export async function getClanLiquidity(): Promise<any> {
-  return httpJson("/analytics/clan-liquidity", "GET");
+export async function getMyGuarantorEarnings(
+  limit: number = 100
+): Promise<any> {
+  return httpJson(`/guarantor-earnings/me${buildQuery({ limit })}`, "GET");
 }
+
+export async function getSettlementConfig(): Promise<any> {
+  return httpJson("/settlement-config", "GET");
+}
+
+export async function getPaymentRails(): Promise<any> {
+  return httpJson("/payment-rails", "GET");
+}
+
 export async function getPublicConfig(): Promise<any> {
   return httpJson("/public/config", "GET");
 }
-export async function getMerchantRisk(userId: number): Promise<any> {
-  return httpJson(`/merchant/risk/${encodeURIComponent(String(userId))}`, "GET");
-}
-export async function getMyGuarantorExposure(): Promise<any> {
-  return httpJson("/guarantors/exposure/me", "GET");
-}
-export async function runGuarantorExpiryNow(clanId: number, hours: number): Promise<any> {
-  // Pilot-safe stub: endpoint not present in current Swagger list.
-  // Keeps admin UI from crashing. Implement real endpoint later if needed.
-  return {
-    ok: false,
-    detail: "Guarantor expiry scan is not enabled in this build.",
-    clan_id: Number(clanId),
-    hours: Number(hours),
-  };
-}
-export async function downloadMyTrustSlipEvidencePdf(): Promise<Blob> {
-  try {
-    return await httpBlob("/trust/me/timeline.pdf", "GET");
-  } catch {
-    return await httpBlob("/trust/me/trust-timeline.pdf", "GET");
-  }
-}
-export const downloadTrustSlipEvidencePdf = downloadMyTrustSlipEvidencePdf;
 
-// --- Compat: Merchant view (used by TrustSlipPage) ---
-// There is no /merchant/me endpoint in current Swagger.
-// We return TrustSlip summary as "merchant view context".
-export async function getMyMerchantView(): Promise<any> {
-  return getMyTrustSlipSummary();
+export async function getSystemHealth(): Promise<any> {
+  return httpJson("/system-health", "GET");
 }
 
-// Setting merchant view is not supported in this build (keep UI stable).
-export async function setMyMerchantView(_payload: any): Promise<any> {
-  return { ok: false, detail: "Merchant visibility settings not enabled in this build." };
+export async function getProtocolStatus(): Promise<any> {
+  return httpJson("/protocol-status", "GET");
+}
+
+export async function getPilotReadiness(): Promise<any> {
+  return httpJson("/pilot-readiness", "GET");
 }
 
 /* =========================
-   SAFE COPY + Token extraction
+   BANK / RECONCILIATION
    ========================= */
+
+export async function bankIngestEvent(payload: {
+  clan_id: number;
+  amount: string;
+  currency?: string;
+  direction: "credit" | "debit";
+  reference?: string | null;
+  description?: string | null;
+}): Promise<any> {
+  return httpJson(
+    `/bank/ingest${buildQuery({
+      clan_id: payload.clan_id,
+      amount: payload.amount,
+      currency: payload.currency || "NGN",
+      direction: payload.direction,
+      reference: payload.reference ?? undefined,
+      description: payload.description ?? undefined,
+    })}`,
+    "POST"
+  );
+}
+
+export async function listRecentBankEvents(clanId: number): Promise<any> {
+  return httpJson(`/bank/recent${buildQuery({ clan_id: clanId })}`, "GET");
+}
+
+export async function listUnmatchedBankEvents(clanId: number): Promise<any> {
+  return httpJson(`/bank/unmatched${buildQuery({ clan_id: clanId })}`, "GET");
+}
+
+export async function listBankCredits(payload: {
+  clan_id: number;
+  user_id?: number;
+  currency?: string;
+}): Promise<any> {
+  return httpJson(
+    `/bank/credits${buildQuery({
+      clan_id: payload.clan_id,
+      user_id: payload.user_id,
+      currency: payload.currency,
+    })}`,
+    "GET"
+  );
+}
+
+export async function listExpectedPayments(_payload?: any): Promise<any> {
+  return {
+    items: [],
+    total: 0,
+    detail: "Expected payments listing is not enabled in this frontend build.",
+  };
+}
+
+export async function runBankReconciliation(payload: {
+  clan_id: number;
+  limit?: number;
+}): Promise<any> {
+  return httpJson(
+    `/bank/reconcile${buildQuery({
+      clan_id: payload.clan_id,
+      limit: payload.limit ?? 200,
+    })}`,
+    "POST"
+  );
+}
+
+/* =========================
+   MARKETPLACE
+   ========================= */
+
+export async function createMarketplaceShop(payload: {
+  clan_id?: number | null;
+  name: string;
+  description?: string | null;
+  whatsapp_number?: string | null;
+  telegram_handle?: string | null;
+}): Promise<any> {
+  return httpJson("/marketplace/shops", "POST", payload);
+}
+
+export async function getMarketplaceShops(params?: {
+  clan_id?: number | null;
+  only_active?: boolean;
+  limit?: number;
+}): Promise<any> {
+  return httpJson(
+    `/marketplace/shops${buildQuery({
+      clan_id: params?.clan_id ?? undefined,
+      only_active: params?.only_active ?? true,
+      limit: params?.limit ?? 50,
+    })}`,
+    "GET"
+  );
+}
+
+export async function getMarketplaceShopByGmfnId(
+  gmfnId: string,
+  params?: {
+    clan_id?: number | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/marketplace/shops/by-gmfn/${encodeURIComponent(String(gmfnId))}${buildQuery({
+      clan_id: params?.clan_id ?? undefined,
+    })}`,
+    "GET"
+  );
+}
+
+export async function createMarketplaceProduct(payload: {
+  clan_id?: number | null;
+  shop_id: number;
+  name: string;
+  description?: string | null;
+  price?: string | null;
+  currency?: string | null;
+  image_url?: string | null;
+  video_url?: string | null;
+}): Promise<any> {
+  return httpJson("/marketplace/products", "POST", payload);
+}
+
+export async function getMarketplaceProducts(params?: {
+  clan_id?: number | null;
+  shop_id?: number | null;
+  only_active?: boolean;
+  include_reposted?: boolean;
+  limit?: number;
+}): Promise<any> {
+  return httpJson(
+    `/marketplace/products${buildQuery({
+      clan_id: params?.clan_id ?? undefined,
+      shop_id: params?.shop_id ?? undefined,
+      only_active: params?.only_active ?? true,
+      include_reposted: params?.include_reposted ?? true,
+      limit: params?.limit ?? 100,
+    })}`,
+    "GET"
+  );
+}
+
+export async function createMarketplaceBroadcast(payload: {
+  clan_id?: number | null;
+  message: string;
+  image_url?: string | null;
+  expires_at?: string | null;
+}): Promise<any> {
+  return httpJson("/marketplace/broadcasts", "POST", payload);
+}
+
+export async function getMarketplaceBroadcasts(params?: {
+  clan_id?: number | null;
+  active_only?: boolean;
+  limit?: number;
+}): Promise<any> {
+  return httpJson(
+    `/marketplace/broadcasts${buildQuery({
+      clan_id: params?.clan_id ?? undefined,
+      active_only: params?.active_only ?? true,
+      limit: params?.limit ?? 100,
+    })}`,
+    "GET"
+  );
+}
+
+export async function createMarketplaceFeed(payload: {
+  clan_id?: number | null;
+  message: string;
+  image_url?: string | null;
+  expires_at?: string | null;
+}): Promise<any> {
+  return createMarketplaceBroadcast(payload);
+}
+
+export async function getMarketplaceFeed(params?: {
+  clan_id?: number | null;
+  active_only?: boolean;
+  limit?: number;
+}): Promise<any> {
+  return getMarketplaceBroadcasts(params);
+}
+
+export async function createMarketplaceRepost(payload: {
+  product_id: number;
+  target_clan_id: number;
+}): Promise<any> {
+  return httpJson(
+    `/marketplace/products/${encodeURIComponent(String(payload.product_id))}/repost`,
+    "POST",
+    { target_clan_id: payload.target_clan_id }
+  );
+}
+
+export async function getMarketplaceProductReposts(
+  productId: number
+): Promise<any> {
+  return httpJson(
+    `/marketplace/products/${encodeURIComponent(String(productId))}/reposts`,
+    "GET"
+  );
+}
+
+export async function createMarketplaceReview(_payload: {
+  clan_id?: number | null;
+  product_id?: number | null;
+  shop_id?: number | null;
+  rating: number;
+  review_text?: string | null;
+}): Promise<any> {
+  return {
+    ok: false,
+    detail: "Marketplace review endpoint is not enabled in the backend yet.",
+  };
+}
+
+/* =========================
+   LIGHTWEIGHT INSIGHT
+   ========================= */
+
+export async function getDailyInsight(): Promise<any> {
+  return {
+    text: "Stay consistent. Small positive actions strengthen long-term trust.",
+  };
+}
+
+/* =========================
+   UTIL
+   ========================= */
+
 export function safeCopy(text: string): void {
-  const t = (text || "").trim();
+  const t = String(text || "").trim();
   if (!t) return;
+
   if ((navigator as any)?.clipboard?.writeText) {
     (navigator as any).clipboard.writeText(t).catch(() => tryLegacyCopy(t));
     return;
   }
+
   tryLegacyCopy(t);
 }
+
 function tryLegacyCopy(text: string) {
   try {
     const ta = document.createElement("textarea");
@@ -661,36 +837,160 @@ function tryLegacyCopy(text: string) {
   } catch {}
 }
 
-export function extractMerchantToken(input: string): string {
-  const s = (input || "").trim();
-  if (!s) return "";
-  const markers = ["/t/", "/trust-slips/verify/"];
-  for (const m of markers) {
-    const idx = s.indexOf(m);
-    if (idx >= 0) return s.substring(idx + m.length).trim();
-  }
-  return s;
+/* =========================
+   BEHAVIOUR / TRUST COMMAND CENTRE
+   ========================= */
+
+export async function getBehaviourMetrics(userId: number): Promise<any> {
+  return httpJson(
+    `/admin/behaviour/metrics/${encodeURIComponent(String(userId))}`,
+    "GET"
+  );
 }
 
 /* =========================
-   HARD GUARANTEE EXPORTS
+   TRUST COMMAND CENTRE / ADMIN ANALYTICS
    ========================= */
 
-/**
- * listMyGuarantees
- * Stable export used by LoansPage.tsx
- * Uses Swagger endpoint:
- * GET /loans/guarantors/inbox
- */
-export async function listMyGuarantees(limit: number = 200): Promise<any> {
-  try {
-    const res = await httpJson(`/loans/guarantors/inbox?limit=${limit}`, "GET");
-    return res;
-  } catch {
-    return { items: [], total: 0 };
-  }
+export async function getAdminTrustWhy(userId: number): Promise<any> {
+  return httpJson(
+    `/admin/trust/why/${encodeURIComponent(String(userId))}`,
+    "GET"
+  );
 }
 
-/**
- * listIncomingGuarantorRequests
- */
+export async function getAdminTrustEvidenceSnapshot(
+  userId: number
+): Promise<any> {
+  return httpJson(
+    `/admin/trust/evidence/${encodeURIComponent(String(userId))}`,
+    "GET"
+  );
+}
+
+export async function getAdminTrustRecompute(userId: number): Promise<any> {
+  return httpJson(
+    `/admin/trust/recompute/${encodeURIComponent(String(userId))}`,
+    "GET"
+  );
+}
+
+export async function applyAdminTrustRecompute(userId: number): Promise<any> {
+  return httpJson(
+    `/admin/trust/recompute/${encodeURIComponent(String(userId))}/apply`,
+    "POST"
+  );
+}
+
+export async function getTrustWhyMe(): Promise<any> {
+  return httpJson("/trust/me/why", "GET");
+}
+
+export async function getTrustWhyUser(userId: number): Promise<any> {
+  return httpJson(
+    `/trust/why/${encodeURIComponent(String(userId))}`,
+    "GET"
+  );
+}
+
+export async function deleteMarketplaceBroadcast(
+  broadcastId: number
+): Promise<any> {
+  return httpJson(
+    `/marketplace/broadcasts/${encodeURIComponent(String(broadcastId))}`,
+    "DELETE"
+  );
+}
+
+export async function uploadMarketplaceImageFile(
+  file: File,
+  clanId?: number | null
+): Promise<any> {
+  const fd = new FormData();
+  fd.append("file", file);
+  if (clanId) fd.append("clan_id", String(clanId));
+
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+  };
+
+  const tok = getAccessToken();
+  if (tok) headers["Authorization"] = `Bearer ${tok}`;
+
+  const selectedClanId = getSelectedClanId();
+  if (selectedClanId) headers["X-Clan-Id"] = String(selectedClanId);
+
+  const res = await fetch(buildUrl("/marketplace/media/image"), {
+    method: "POST",
+    headers,
+    body: fd,
+  });
+
+  if (!res.ok) throw new Error(await parseError(res));
+  return await res.json();
+}
+
+export async function uploadMarketplaceVideoFile(
+  file: File,
+  durationSeconds?: number | null,
+  clanId?: number | null
+): Promise<any> {
+  const fd = new FormData();
+  fd.append("file", file);
+  if (durationSeconds != null) {
+    fd.append("duration_seconds", String(durationSeconds));
+  }
+  if (clanId) fd.append("clan_id", String(clanId));
+
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+  };
+
+  const tok = getAccessToken();
+  if (tok) headers["Authorization"] = `Bearer ${tok}`;
+
+  const selectedClanId = getSelectedClanId();
+  if (selectedClanId) headers["X-Clan-Id"] = String(selectedClanId);
+
+  const res = await fetch(buildUrl("/marketplace/media/video"), {
+    method: "POST",
+    headers,
+    body: fd,
+  });
+
+  if (!res.ok) throw new Error(await parseError(res));
+  return await res.json();
+}
+
+export async function getJoinApprovalStatus(requestId: number | string) {
+  return httpJson(
+    `/clans/join-requests/${encodeURIComponent(String(requestId))}/status`,
+    "GET"
+  );
+}
+
+export async function getCommunityJoinRequests(clanId: number): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(clanId))}/join-requests`,
+    "GET"
+  );
+}
+
+export async function voteOnJoinRequest(
+  id: number,
+  vote: "approve" | "reject"
+): Promise<any> {
+  const clanId = getSelectedClanId();
+
+  if (!clanId) {
+    throw new Error("No selected community");
+  }
+
+  return httpJson(
+    `/clans/${encodeURIComponent(String(clanId))}/join-requests/${encodeURIComponent(
+      String(id)
+    )}/vote`,
+    "POST",
+    { vote }
+  );
+}

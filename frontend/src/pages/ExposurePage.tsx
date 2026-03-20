@@ -1,11 +1,10 @@
-// frontend/src/pages/ExposurePage.tsx
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
   getMe,
   getExposureAdmin,
-  runGuarantorExpiryNow,
+  runOverdueDetector,
   getTrustEvents,
   getCciScore,
 } from "../lib/api";
@@ -27,7 +26,7 @@ type ExposureRow = {
   available?: number;
 };
 
-type TrustEvent = {
+type TrustEventRow = {
   id?: number;
   event_type?: string;
   created_at?: string;
@@ -45,10 +44,10 @@ function safeRows(res: any): ExposureRow[] {
   return [];
 }
 
-function safeEvents(res: any): TrustEvent[] {
+function safeEvents(res: any): TrustEventRow[] {
   if (!res) return [];
-  if (Array.isArray(res)) return res as TrustEvent[];
-  if (Array.isArray(res.items)) return res.items as TrustEvent[];
+  if (Array.isArray(res)) return res as TrustEventRow[];
+  if (Array.isArray(res.items)) return res.items as TrustEventRow[];
   return [];
 }
 
@@ -61,7 +60,7 @@ function isoNow(): string {
   return new Date().toISOString();
 }
 
-function parseMeta(e: TrustEvent): any {
+function parseMeta(e: TrustEventRow): any {
   if (e.meta && typeof e.meta === "object") return e.meta;
   if (!e.meta_json) return null;
   if (typeof e.meta_json === "object") return e.meta_json;
@@ -88,13 +87,14 @@ function timeAgo(iso?: string): string {
 export default function ExposurePage() {
   const [me, setMe] = useState<MeLite | null>(null);
 
-  const [clanId, setClanId] = useState<number>(Number(localStorage.getItem("selected_clan_id") || "1"));
-  const [expiryHours, setExpiryHours] = useState<number>(48);
+  const [clanId, setClanId] = useState<number>(
+    Number(localStorage.getItem("gmfn_selected_clan_id") || localStorage.getItem("selected_clan_id") || "1")
+  );
+  const [graceDays, setGraceDays] = useState<number>(3);
 
   const [rows, setRows] = useState<ExposureRow[]>([]);
-  const [expiredEvents, setExpiredEvents] = useState<TrustEvent[]>([]);
+  const [defaultedEvents, setDefaultedEvents] = useState<TrustEventRow[]>([]);
 
-  // CCI per user_id
   const [cciByUserId, setCciByUserId] = useState<Record<number, number>>({});
   const [cciLoading, setCciLoading] = useState(false);
 
@@ -102,13 +102,13 @@ export default function ExposurePage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
-  const [expiryLastRunAt, setExpiryLastRunAt] = useState<string | null>(null);
-  const [expiryScanned, setExpiryScanned] = useState<number | null>(null);
-  const [expiryExpired, setExpiryExpired] = useState<number | null>(null);
+  const [lastRunAt, setLastRunAt] = useState<string | null>(null);
+  const [lastScanned, setLastScanned] = useState<number | null>(null);
+  const [lastMatched, setLastMatched] = useState<number | null>(null);
+  const [lastDefaulted, setLastDefaulted] = useState<number | null>(null);
 
   const isAdmin = (me?.role || "").toLowerCase() === "admin";
 
-  // user lookup map: id -> email
   const userEmailById = useMemo(() => {
     const m = new Map<number, string>();
     for (const r of rows) {
@@ -130,7 +130,7 @@ export default function ExposurePage() {
 
   function loanTimelineLink(loanId?: number) {
     if (!loanId) return "#";
-    return `/trust-analytics?clan_id=${clanId}&loan_id=${loanId}`;
+    return `/loans?loan=${loanId}`;
   }
 
   async function loadMeUI() {
@@ -159,17 +159,17 @@ export default function ExposurePage() {
     }
   }
 
-  async function loadExpiredGuarantorsUI() {
+  async function loadDefaultedLoansUI() {
     try {
-      const res = await getTrustEvents();
+      const res = await getTrustEvents(120);
       const events = safeEvents(res)
-        .filter((e) => e.event_type === "GUARANTOR_EXPIRED")
+        .filter((e) => String(e.event_type || "").toLowerCase() === "loan_defaulted")
         .sort((a, b) => String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")))
         .slice(0, 10);
 
-      setExpiredEvents(events);
+      setDefaultedEvents(events);
     } catch {
-      setExpiredEvents([]);
+      setDefaultedEvents([]);
     }
   }
 
@@ -185,7 +185,6 @@ export default function ExposurePage() {
         const userId = Number(r.user_id);
         if (!Number.isFinite(userId) || userId <= 0) continue;
 
-        // backend returns {score, events_counted, ...}
         const res: any = await getCciScore(clanId, userId);
         next[userId] = n(res?.score);
       }
@@ -199,24 +198,29 @@ export default function ExposurePage() {
     }
   }
 
-  async function runExpiryNowUI() {
+  async function runOverdueNowUI() {
     setLoading(true);
     setErr(null);
     setMsg(null);
 
     try {
-      const hours = Number.isFinite(expiryHours) && expiryHours > 0 ? expiryHours : 48;
+      const res: any = await runOverdueDetector({
+        dry_run: false,
+        grace_days: graceDays,
+        limit: 200,
+      });
 
-      const res: any = await runGuarantorExpiryNow(clanId, hours);
+      setLastRunAt(isoNow());
+      setLastScanned(n(res?.scanned));
+      setLastMatched(n(res?.matched));
+      setLastDefaulted(n(res?.defaulted));
 
-      setExpiryLastRunAt(isoNow());
-      setExpiryScanned(n(res?.scanned) || n(res?.processed));
-      setExpiryExpired(n(res?.expired));
-
-      setMsg(`Expiry run ✅ expired=${n(res?.expired)}, scanned=${n(res?.scanned)}`);
+      setMsg(
+        `Overdue scan complete ✅ scanned=${n(res?.scanned)}, matched=${n(res?.matched)}, defaulted=${n(res?.defaulted)}`
+      );
 
       await loadExposureUI();
-      await loadExpiredGuarantorsUI();
+      await loadDefaultedLoansUI();
     } catch (e: any) {
       setErr(e?.message || String(e));
     } finally {
@@ -224,7 +228,6 @@ export default function ExposurePage() {
     }
   }
 
-  // totals
   const totals = useMemo(() => {
     const pool = rows.reduce((acc, r) => acc + n(r.personal_pool_balance), 0);
     const exposure = rows.reduce((acc, r) => acc + n(r.exposure), 0);
@@ -235,7 +238,7 @@ export default function ExposurePage() {
   useEffect(() => {
     loadMeUI();
     loadExposureUI();
-    loadExpiredGuarantorsUI();
+    loadDefaultedLoansUI();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -244,8 +247,7 @@ export default function ExposurePage() {
       <h2 style={{ marginTop: 0 }}>Exposure (Admin)</h2>
 
       <div style={{ color: "#6b7280", marginBottom: 12 }}>
-        Exposure = sum(locked − released) for approved guarantees in this clan. You can also run
-        guarantor expiry from here.
+        Exposure = sum(locked − released) for approved guarantees in this clan. You can also run overdue detection from here.
       </div>
 
       {msg && (
@@ -259,7 +261,6 @@ export default function ExposurePage() {
         </div>
       )}
 
-      {/* Auto-expiry status */}
       <div
         style={{
           border: "1px solid #eee",
@@ -269,15 +270,14 @@ export default function ExposurePage() {
           borderRadius: 10,
         }}
       >
-        <div style={{ fontWeight: 700 }}>Auto-expiry status</div>
+        <div style={{ fontWeight: 700 }}>Overdue detector status</div>
         <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
-          Last run:{" "}
-          <b>{expiryLastRunAt ? new Date(expiryLastRunAt).toLocaleString() : "—"}</b> · scanned:{" "}
-          <b>{expiryScanned ?? "—"}</b> · expired: <b>{expiryExpired ?? "—"}</b>
+          Last run: <b>{lastRunAt ? new Date(lastRunAt).toLocaleString() : "—"}</b> · scanned:{" "}
+          <b>{lastScanned ?? "—"}</b> · matched: <b>{lastMatched ?? "—"}</b> · defaulted:{" "}
+          <b>{lastDefaulted ?? "—"}</b>
         </div>
       </div>
 
-      {/* Admin tools */}
       <div style={{ border: "1px solid #eee", padding: 12, marginBottom: 12, borderRadius: 10 }}>
         <h3 style={{ marginTop: 0 }}>Admin tools</h3>
 
@@ -288,26 +288,27 @@ export default function ExposurePage() {
               type="number"
               value={clanId}
               onChange={(e) => {
-              const v = Number(e.target.value);
-              setClanId(v);
-              localStorage.setItem("selected_clan_id", String(v));
-            }}
+                const v = Number(e.target.value);
+                setClanId(v);
+                localStorage.setItem("gmfn_selected_clan_id", String(v));
+                localStorage.setItem("selected_clan_id", String(v));
+              }}
               style={{ padding: 8, borderRadius: 8, border: "1px solid #ddd", width: 140 }}
             />
           </div>
 
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>Expiry hours</div>
+            <div style={{ fontSize: 12, color: "#6b7280" }}>Grace days</div>
             <input
               type="number"
-              value={expiryHours}
-              onChange={(e) => setExpiryHours(Number(e.target.value))}
+              value={graceDays}
+              onChange={(e) => setGraceDays(Number(e.target.value))}
               style={{ padding: 8, borderRadius: 8, border: "1px solid #ddd", width: 140 }}
             />
           </div>
 
           <button
-            onClick={runExpiryNowUI}
+            onClick={runOverdueNowUI}
             disabled={loading || !isAdmin}
             style={{
               padding: "10px 12px",
@@ -317,7 +318,7 @@ export default function ExposurePage() {
               cursor: loading || !isAdmin ? "not-allowed" : "pointer",
             }}
           >
-            {loading ? "Working..." : "Run guarantor expiry now"}
+            {loading ? "Working..." : "Run overdue detector now"}
           </button>
 
           <button
@@ -355,14 +356,12 @@ export default function ExposurePage() {
         </div>
 
         <div style={{ marginTop: 10, fontSize: 12, color: "#6b7280" }}>
-          Totals:{" "}
-          <b>Pool</b> {formatMoney(totals.pool, "NGN")} · <b>Exposure</b>{" "}
+          Totals: <b>Pool</b> {formatMoney(totals.pool, "NGN")} · <b>Exposure</b>{" "}
           {formatMoney(totals.exposure, "NGN")} · <b>Available</b>{" "}
           {formatMoney(totals.available, "NGN")}
         </div>
       </div>
 
-      {/* Exposure table */}
       <div style={{ border: "1px solid #eee", padding: 12, borderRadius: 10, marginBottom: 12 }}>
         <h3 style={{ marginTop: 0 }}>Exposure by user</h3>
 
@@ -425,12 +424,11 @@ export default function ExposurePage() {
         )}
       </div>
 
-      {/* Recently expired */}
       <div style={{ border: "1px solid #eee", padding: 12, borderRadius: 10, marginBottom: 12 }}>
-        <h3 style={{ marginTop: 0 }}>Recently expired guarantors</h3>
+        <h3 style={{ marginTop: 0 }}>Recently defaulted loans</h3>
 
-        {expiredEvents.length === 0 ? (
-          <div style={{ color: "#6b7280" }}>No expired guarantors yet.</div>
+        {defaultedEvents.length === 0 ? (
+          <div style={{ color: "#6b7280" }}>No defaulted loans yet.</div>
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -445,10 +443,10 @@ export default function ExposurePage() {
                   Loan
                 </th>
                 <th style={{ textAlign: "left", padding: 8, borderBottom: "1px solid #eee" }}>
-                  Guarantor
+                  Borrower
                 </th>
                 <th style={{ textAlign: "left", padding: 8, borderBottom: "1px solid #eee" }}>
-                  Borrower
+                  Actor
                 </th>
                 <th style={{ textAlign: "left", padding: 8, borderBottom: "1px solid #eee" }}>
                   Why
@@ -456,12 +454,12 @@ export default function ExposurePage() {
               </tr>
             </thead>
             <tbody>
-              {expiredEvents.map((e, i) => {
+              {defaultedEvents.map((e, i) => {
                 const meta = parseMeta(e) || {};
-                const reason = meta.reason ?? (meta.system ? "system_timeout" : "manual");
-                const expiryH = meta.expiry_hours ?? "—";
+                const reason = meta.reason ?? "loan_defaulted";
+                const daysPastDue = meta.days_past_due ?? "—";
 
-                const guarantorId = e.actor_user_id;
+                const actorId = e.actor_user_id;
                 const borrowerId = e.subject_user_id;
 
                 return (
@@ -478,16 +476,6 @@ export default function ExposurePage() {
                     </td>
 
                     <td style={{ padding: 8, borderBottom: "1px solid #f3f3f3" }}>
-                      {guarantorId ? (
-                        <Link to={userTimelineLink(guarantorId)}>
-                          {displayUserLabel(guarantorId)}
-                        </Link>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-
-                    <td style={{ padding: 8, borderBottom: "1px solid #f3f3f3" }}>
                       {borrowerId ? (
                         <Link to={userTimelineLink(borrowerId)}>
                           {displayUserLabel(borrowerId)}
@@ -497,8 +485,12 @@ export default function ExposurePage() {
                       )}
                     </td>
 
+                    <td style={{ padding: 8, borderBottom: "1px solid #f3f3f3" }}>
+                      {actorId ? displayUserLabel(actorId) : "system"}
+                    </td>
+
                     <td style={{ padding: 8, borderBottom: "1px solid #f3f3f3", fontSize: 12, color: "#6b7280" }}>
-                      reason={reason}, expiry_hours={expiryH}
+                      reason={reason}, days_past_due={daysPastDue}
                     </td>
                   </tr>
                 );
@@ -513,4 +505,4 @@ export default function ExposurePage() {
       </div>
     </div>
   );
-} 
+}

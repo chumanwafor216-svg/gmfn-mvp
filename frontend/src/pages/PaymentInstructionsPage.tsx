@@ -1,166 +1,313 @@
-// src/pages/PaymentInstructionsPage.tsx
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+import PageTopNav from "../components/PageTopNav";
+import {
+  createLoanInstruction,
+  createPoolInstruction,
+  getLoan,
+  getLoanSummary,
+  getMe,
+  getSettlementConfig,
+  getSelectedClanId,
+  safeCopy,
+} from "../lib/api";
 
-import { getPaymentInstructions, PaymentInstructionPayload } from "../lib/paymentChannel";
+function safeStr(x: any): string {
+  return String(x ?? "");
+}
 
-function copyToClipboard(text: string): Promise<void> {
-  if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
-  // fallback
-  const ta = document.createElement("textarea");
-  ta.value = text;
-  document.body.appendChild(ta);
-  ta.select();
-  document.execCommand("copy");
-  document.body.removeChild(ta);
-  return Promise.resolve();
+function fmtMoney(x: any): string {
+  const n = Number(x);
+  if (!Number.isFinite(n)) return String(x ?? "").trim() || "0.00";
+  return n.toFixed(2);
+}
+
+function card(): React.CSSProperties {
+  return {
+    borderRadius: 22,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: "#FFFFFF",
+    boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
+    padding: 22,
+  };
+}
+
+function btn(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "11px 14px",
+    borderRadius: 14,
+    border: primary ? "none" : "1px solid rgba(11,31,51,0.10)",
+    background: primary ? "#0B63D1" : "#FFFFFF",
+    color: primary ? "#FFFFFF" : "#0B1F33",
+    fontWeight: 1000,
+    fontSize: 14,
+    textDecoration: "none",
+    cursor: "pointer",
+  };
+}
+
+function detectCurrency(me: any, fallback?: string | null): string {
+  const preferred = safeStr(me?.preferred_currency).trim().toUpperCase();
+  if (preferred) return preferred;
+
+  const country = safeStr(me?.country).trim().toUpperCase();
+  if (country === "GB" || country === "UK") return "GBP";
+  if (country === "NG") return "NGN";
+  if (country === "KE") return "KES";
+  if (country === "GH") return "GHS";
+
+  return safeStr(fallback || "NGN").trim().toUpperCase() || "NGN";
 }
 
 export default function PaymentInstructionsPage() {
-  const nav = useNavigate();
-  const { loanId } = useParams<{ loanId: string }>();
+  const { loanId } = useParams();
+  const [params] = useSearchParams();
+  const isLoan = Boolean(loanId);
 
-  const [data, setData] = useState<PaymentInstructionPayload | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
-  const [copied, setCopied] = useState<string | null>(null);
+  const [instruction, setInstruction] = useState<any>(null);
+  const [settlement, setSettlement] = useState<any>(null);
+  const [summary, setSummary] = useState<any>(null);
+  const [me, setMe] = useState<any>(null);
+
+  const [amount, setAmount] = useState(params.get("amount") || "");
+  const [currency, setCurrency] = useState(params.get("currency") || "NGN");
+
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [msg, setMsg] = useState("");
 
   useEffect(() => {
-    let alive = true;
     (async () => {
-      try {
-        setLoading(true);
-        setErr(null);
+      const [cfg, meRes] = await Promise.all([
+        getSettlementConfig().catch(() => null),
+        getMe().catch(() => null),
+      ]);
 
-        const id = Number(loanId);
-        if (!loanId || Number.isNaN(id) || id <= 0) throw new Error("Invalid loan id.");
+      setSettlement(cfg || null);
+      setMe(meRes || null);
 
-        const resp = await getPaymentInstructions(id);
-        if (!alive) return;
-        setData(resp);
-      } catch (e: any) {
-        if (!alive) return;
-        setErr(e?.message || String(e));
-      } finally {
-        if (alive) setLoading(false);
+      if (!params.get("currency")) {
+        setCurrency(detectCurrency(meRes, "NGN"));
       }
     })();
+  }, []);
 
-    return () => {
-      alive = false;
-    };
-  }, [loanId]);
+  useEffect(() => {
+    if (!loanId) return;
+    (async () => {
+      const [loanRes, summaryRes] = await Promise.all([
+        getLoan(Number(loanId)).catch(() => null),
+        getLoanSummary(Number(loanId)).catch(() => null),
+      ]);
 
-  async function doCopy(label: string, value: string) {
-    await copyToClipboard(value);
-    setCopied(label);
-    setTimeout(() => setCopied(null), 1200);
+      if (!amount) {
+        const rem = summaryRes?.remaining_amount ?? loanRes?.remaining_amount ?? loanRes?.amount ?? "0";
+        setAmount(safeStr(rem));
+      }
+
+      if (!params.get("currency")) {
+        setCurrency(detectCurrency(me, summaryRes?.currency || loanRes?.currency || "NGN"));
+      }
+
+      setSummary(summaryRes || null);
+    })();
+  }, [loanId, me]);
+
+  async function generate() {
+    setBusy(true);
+    setErr("");
+    setMsg("");
+
+    try {
+      const clanId = getSelectedClanId();
+      if (!clanId) throw new Error("Select a community first.");
+      if (!amount || Number(amount) <= 0) throw new Error("Enter a valid amount.");
+
+      const out = isLoan
+        ? await createLoanInstruction({
+            clan_id: clanId,
+            loan_id: Number(loanId),
+            amount,
+            currency,
+          })
+        : await createPoolInstruction({
+            clan_id: clanId,
+            amount,
+            currency,
+          });
+
+      setInstruction(out || null);
+      if (out?.settlement) setSettlement(out.settlement);
+      setMsg("Instruction generated.");
+    } catch (e: any) {
+      setErr(String(e?.message || e || "Unable to generate instruction."));
+    } finally {
+      setBusy(false);
+    }
   }
 
+  const shownSettlement = instruction?.settlement || settlement || {};
+  const ref = safeStr(instruction?.reference || "");
+  const shownAmount = safeStr(instruction?.amount || amount || "0");
+  const shownCurrency = safeStr(instruction?.currency || currency || "NGN");
+
   return (
-    <div style={{ padding: 16, maxWidth: 860, margin: "0 auto" }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
-        <h2 style={{ margin: 0 }}>Payment Instructions</h2>
-        <button
-          onClick={() => nav(-1)}
-          style={{
-            borderRadius: 10,
-            padding: "10px 12px",
-            border: "1px solid rgba(0,0,0,0.15)",
-            background: "white",
-          }}
-        >
-          Back
-        </button>
+    <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+      <PageTopNav
+        title={isLoan ? "Loan Repayment Instructions" : "Pool Deposit Instructions"}
+        subtitle={
+          isLoan
+            ? "Generate a unique repayment reference, then transfer using that exact reference."
+            : "Generate a unique deposit reference, then transfer to the community settlement account using that exact reference."
+        }
+      />
+
+      {err ? (
+        <div style={{ ...card(), marginTop: 18, background: "#FEF2F2", border: "1px solid #FECACA", color: "#991B1B", fontWeight: 900 }}>
+          {err}
+        </div>
+      ) : null}
+
+      {msg ? (
+        <div style={{ ...card(), marginTop: 18, background: "#ECFDF5", border: "1px solid #A7F3D0", color: "#065F46", fontWeight: 900 }}>
+          {msg}
+        </div>
+      ) : null}
+
+      <div style={{ ...card(), marginTop: 18 }}>
+        <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>How this works</div>
+        <div style={{ marginTop: 12, color: "#475569", lineHeight: 1.8 }}>
+          1. Enter the amount you want to {isLoan ? "repay" : "deposit"}.
+          <br />
+          2. Generate an instruction with a unique reference.
+          <br />
+          3. Transfer funds using the exact reference shown below.
+          <br />
+          4. The system will use that reference for deterministic reconciliation.
+        </div>
+
+        <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <Link to="/payout-details" style={btn(false)}>
+            Bank / Wallet Details
+          </Link>
+          <Link to="/loans" style={btn(false)}>
+            Return to Finances
+          </Link>
+        </div>
       </div>
 
-      <p style={{ marginTop: 8, opacity: 0.85 }}>
-        This is a manual transfer (MVP). **No auto debit.** Your Trust grows only after a full repayment is confirmed.
-      </p>
+      <div style={{ ...card(), marginTop: 18 }}>
+        <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>Instruction Request</div>
 
-      {loading && <div style={{ padding: 12 }}>Loading…</div>}
-
-      {err && (
-        <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,0,0,0.06)", border: "1px solid rgba(255,0,0,0.15)" }}>
-          <div style={{ fontWeight: 700, marginBottom: 6 }}>We couldn’t load instructions</div>
-          <div style={{ whiteSpace: "pre-wrap" }}>{err}</div>
+        <div style={{ marginTop: 8, color: "#6B7A88", fontSize: 14 }}>
+          Amount: Enter the value you intend to {isLoan ? "repay" : "deposit"}.
         </div>
-      )}
+        <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 14 }}>
+          Currency: Defaults to your preferred or detected currency, but you can change it if needed.
+        </div>
 
-      {!loading && data && (
-        <div style={{ marginTop: 14, borderRadius: 16, padding: 16, border: "1px solid rgba(0,0,0,0.12)", background: "white" }}>
-          <div style={{ fontWeight: 900, marginBottom: 6 }}>Loan #{data.loan_id}</div>
+        <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <input
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="Amount"
+            style={{ padding: 12, borderRadius: 12, border: "1px solid #CBD5E1" }}
+          />
+          <select
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            style={{ padding: 12, borderRadius: 12, border: "1px solid #CBD5E1" }}
+          >
+            <option value="GBP">GBP</option>
+            <option value="NGN">NGN</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="KES">KES</option>
+            <option value="GHS">GHS</option>
+          </select>
+        </div>
 
-          <div style={{ marginTop: 10, borderRadius: 14, padding: 12, background: "rgba(255, 215, 0, 0.10)" }}>
-            <div style={{ fontSize: 13, opacity: 0.85 }}>Your payment reference</div>
-            <div style={{ fontSize: 22, fontWeight: 900, marginTop: 4 }}>{data.reference}</div>
+        {isLoan ? (
+          <div style={{ marginTop: 12, color: "#6B7A88" }}>
+            Loan ID: <b>{loanId}</b>
+            {summary?.remaining_amount != null ? (
+              <>
+                {" "}
+                · Remaining: <b>{fmtMoney(summary.remaining_amount)}</b> {safeStr(summary?.currency || currency)}
+              </>
+            ) : null}
+          </div>
+        ) : null}
 
-            <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
-              <button
-                onClick={() => doCopy("Reference", data.reference)}
-                style={{ borderRadius: 12, padding: "10px 14px", border: "1px solid rgba(0,0,0,0.15)", background: "white", fontWeight: 800 }}
-              >
-                Copy reference
-              </button>
+        <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button onClick={generate} disabled={busy} style={btn(true)}>
+            {busy ? "Generating..." : "Generate Instruction"}
+          </button>
+        </div>
+      </div>
 
-              {copied && (
-                <div style={{ alignSelf: "center", fontWeight: 800, opacity: 0.85 }}>
-                  Copied: {copied} ✅
-                </div>
-              )}
+      {instruction ? (
+        <div style={{ ...card(), marginTop: 18 }}>
+          <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>Transfer Details</div>
+
+          <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div style={{ ...card(), boxShadow: "none", padding: 16 }}>
+              <div style={{ fontSize: 12, color: "#64748b", fontWeight: 1000 }}>BANK</div>
+              <div style={{ marginTop: 6, fontWeight: 1000 }}>{safeStr(shownSettlement?.bank_name || "—")}</div>
+            </div>
+            <div style={{ ...card(), boxShadow: "none", padding: 16 }}>
+              <div style={{ fontSize: 12, color: "#64748b", fontWeight: 1000 }}>ACCOUNT NAME</div>
+              <div style={{ marginTop: 6, fontWeight: 1000 }}>{safeStr(shownSettlement?.account_name || "—")}</div>
+            </div>
+            <div style={{ ...card(), boxShadow: "none", padding: 16 }}>
+              <div style={{ fontSize: 12, color: "#64748b", fontWeight: 1000 }}>ACCOUNT NUMBER</div>
+              <div style={{ marginTop: 6, fontWeight: 1000 }}>{safeStr(shownSettlement?.account_number || "—")}</div>
+            </div>
+            <div style={{ ...card(), boxShadow: "none", padding: 16 }}>
+              <div style={{ fontSize: 12, color: "#64748b", fontWeight: 1000 }}>AMOUNT</div>
+              <div style={{ marginTop: 6, fontWeight: 1000 }}>{shownAmount} {shownCurrency}</div>
             </div>
           </div>
 
-          <div style={{ marginTop: 12, borderRadius: 14, padding: 12, background: "rgba(0, 0, 255, 0.03)" }}>
-            <div style={{ fontWeight: 900, marginBottom: 8 }}>Bank details</div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10 }}>
-              <div>Account name</div>
-              <div style={{ fontWeight: 800 }}>{data.bank_details.account_name}</div>
-
-              <div>Account number</div>
-              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                <span style={{ fontWeight: 800 }}>{data.bank_details.account_number}</span>
-                <button
-                  onClick={() => doCopy("Account number", data.bank_details.account_number)}
-                  style={{ borderRadius: 10, padding: "6px 10px", border: "1px solid rgba(0,0,0,0.15)", background: "white", fontWeight: 800 }}
-                >
-                  Copy
-                </button>
-              </div>
-
-              <div>Sort code</div>
-              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                <span style={{ fontWeight: 800 }}>{data.bank_details.sort_code}</span>
-                <button
-                  onClick={() => doCopy("Sort code", data.bank_details.sort_code)}
-                  style={{ borderRadius: 10, padding: "6px 10px", border: "1px solid rgba(0,0,0,0.15)", background: "white", fontWeight: 800 }}
-                >
-                  Copy
-                </button>
-              </div>
-
-              <div>Bank</div>
-              <div style={{ fontWeight: 800 }}>{data.bank_details.bank_name}</div>
-
-              <div>Currency</div>
-              <div style={{ fontWeight: 800 }}>{data.bank_details.currency}</div>
+          <div style={{ ...card(), marginTop: 16, boxShadow: "none", padding: 16 }}>
+            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 1000 }}>PAYMENT REFERENCE</div>
+            <div style={{ marginTop: 8, fontSize: 20, fontWeight: 1000, color: "#0B1F33", wordBreak: "break-word" }}>
+              {ref || "—"}
             </div>
           </div>
 
-          <div style={{ marginTop: 12, whiteSpace: "pre-wrap", lineHeight: 1.4 }}>
-            {data.instructions}
+          <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button onClick={() => { safeCopy(ref); setMsg("Reference copied."); }} style={btn(true)}>
+              Copy Reference
+            </button>
+            <button
+              onClick={() => {
+                safeCopy(
+                  [
+                    isLoan ? "Loan Repayment Instructions" : "Pool Deposit Instructions",
+                    `Bank: ${safeStr(shownSettlement?.bank_name || "")}`,
+                    `Account Name: ${safeStr(shownSettlement?.account_name || "")}`,
+                    `Account Number: ${safeStr(shownSettlement?.account_number || "")}`,
+                    `Amount: ${shownAmount} ${shownCurrency}`,
+                    `Reference: ${ref}`,
+                  ].join("\n")
+                );
+                setMsg("Full instruction copied.");
+              }}
+              style={btn(false)}
+            >
+              Copy Full Instruction
+            </button>
           </div>
 
-          <div style={{ marginTop: 12, fontSize: 12, opacity: 0.85 }}>
-            {data.disclaimer}
-          </div>
-
-          <div style={{ marginTop: 10, fontSize: 12, opacity: 0.75 }}>
-            Created: {data.created_at}
+          <div style={{ marginTop: 12, color: "#6B7A88", lineHeight: 1.8 }}>
+            {safeStr(shownSettlement?.support_note || "Use the exact payment reference when transferring funds.")}
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

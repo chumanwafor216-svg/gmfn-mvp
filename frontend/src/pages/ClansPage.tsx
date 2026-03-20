@@ -1,471 +1,463 @@
-// src/pages/ClansPage.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import PageTopNav from "../components/PageTopNav";
 import {
-  getMe,
-  listMyClans,
   createClan,
-  selectClan,
-  getCurrentClan,
-  getSelectedClanId,
-  setSelectedClanId,
   getClanInviteLink,
-  listClanMembers,
+  getSelectedClanId,
+  listMyClans,
   safeCopy,
+  setSelectedClanId,
 } from "../lib/api";
 
-type ClanRow = { id: number; name: string; description?: string | null };
-type MemberRow = { user_id: number; email?: string | null; role?: string | null; personal_pool_balance?: string | null };
+function safeStr(x: any): string {
+  return String(x ?? "");
+}
 
 function card(): React.CSSProperties {
   return {
-    border: "1px solid rgba(11,31,51,0.10)",
-    borderRadius: 18,
-    padding: 14,
-    background: "rgba(255,255,255,0.94)",
-    boxShadow: "0 18px 60px rgba(2,6,23,0.06)",
+    borderRadius: 22,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: "#FFFFFF",
+    boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
+    padding: 22,
   };
 }
 
-function btn(primary?: boolean): React.CSSProperties {
+function btn(primary = false): React.CSSProperties {
   return {
-    padding: "10px 12px",
-    borderRadius: 14,
-    border: primary ? "1px solid rgba(11,31,51,0.75)" : "1px solid rgba(11,31,51,0.12)",
-    background: primary ? "#0B1F33" : "#fff",
-    color: primary ? "#fff" : "#0B1F33",
-    fontWeight: 1000,
-    cursor: "pointer",
-  };
-}
-
-function pill(kind: "blue" | "gray" | "gold" | "green"): React.CSSProperties {
-  const base: React.CSSProperties = {
     display: "inline-flex",
     alignItems: "center",
-    gap: 6,
-    padding: "4px 10px",
-    borderRadius: 999,
-    fontSize: 12,
+    justifyContent: "center",
+    padding: "11px 14px",
+    borderRadius: 14,
+    border: primary ? "none" : "1px solid rgba(11,31,51,0.10)",
+    background: primary ? "#0B63D1" : "#FFFFFF",
+    color: primary ? "#FFFFFF" : "#0B1F33",
     fontWeight: 1000,
-    border: "1px solid #e5e7eb",
-    background: "#fff",
-    whiteSpace: "nowrap",
+    cursor: "pointer",
+    fontSize: 14,
+    textDecoration: "none",
   };
-  if (kind === "blue") return { ...base, color: "#1e40af", background: "#eff6ff", borderColor: "#bfdbfe" };
-  if (kind === "gold") return { ...base, color: "#92400e", background: "#fffbeb", borderColor: "#fde68a" };
-  if (kind === "green") return { ...base, color: "#065f46", background: "#ecfdf5", borderColor: "#a7f3d0" };
-  return { ...base, color: "#334155", background: "#f9fafb", borderColor: "#e5e7eb" };
 }
 
-function safeStr(x: any): string {
-  return (x ?? "").toString();
+function softCard(): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: "#F8FAFC",
+    padding: 16,
+  };
 }
 
-function parseItems<T = any>(raw: any): T[] {
-  if (Array.isArray(raw)) return raw as T[];
-  if (Array.isArray(raw?.items)) return raw.items as T[];
-  if (Array.isArray(raw?.clans)) return raw.clans as T[];
-  return [];
+function inputStyle(): React.CSSProperties {
+  return {
+    width: "100%",
+    padding: 12,
+    borderRadius: 12,
+    border: "1px solid #CBD5E1",
+    boxSizing: "border-box",
+    fontSize: 14,
+  };
 }
 
-function prettyErr(e: any): string {
-  const msg = String(e?.message || e || "").trim();
-  if (!msg) return "Unknown error";
-  try {
-    const j = JSON.parse(msg);
-    if (typeof j?.detail === "string") return j.detail;
-    if (Array.isArray(j?.detail)) return JSON.stringify(j.detail, null, 2);
-    return JSON.stringify(j, null, 2);
-  } catch {
-    return msg;
-  }
+function textareaStyle(rows = 3): React.CSSProperties {
+  return {
+    width: "100%",
+    padding: 12,
+    borderRadius: 12,
+    border: "1px solid #CBD5E1",
+    boxSizing: "border-box",
+    fontSize: 14,
+    resize: "vertical",
+    minHeight: rows * 26,
+  };
 }
 
-function waLink(text: string): string {
-  return `https://wa.me/?text=${encodeURIComponent(text)}`;
+function helperText(): React.CSSProperties {
+  return {
+    marginTop: 6,
+    color: "#6B7A88",
+    lineHeight: 1.75,
+    fontSize: 13,
+  };
 }
+
+type ClanItem = {
+  id?: number;
+  clan_id?: number;
+  name?: string;
+  description?: string | null;
+  marketplace_name?: string | null;
+  marketplace_description?: string | null;
+};
+
+type InviteInfo = {
+  invite_code?: string;
+  invite_created_at?: string | null;
+  invite_expires_at?: string | null;
+  invite_max_uses?: number | null;
+  invite_uses?: number | null;
+  invite_link?: string;
+  invite_url?: string;
+  url?: string;
+  link?: string;
+  invite_text?: string;
+};
 
 export default function ClansPage() {
-  const nav = useNavigate();
+  const navigate = useNavigate();
 
-  const [me, setMe] = useState<any>(null);
-  const role = useMemo(() => safeStr(me?.role || "user").toLowerCase(), [me]);
-  const isAdmin = role === "admin";
-
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
-  const [okMsg, setOkMsg] = useState<string | null>(null);
-
-  const [clans, setClans] = useState<ClanRow[]>([]);
-  const [selectedId, setSelectedId] = useState<number | null>(getSelectedClanId());
-  const [selectedClan, setSelectedClan] = useState<ClanRow | null>(null);
-
-  // Invite link
+  const [items, setItems] = useState<ClanItem[]>([]);
+  const [busy, setBusy] = useState(false);
   const [inviteBusy, setInviteBusy] = useState(false);
-  const [inviteLink, setInviteLink] = useState<string>("");
-  const [inviteCode, setInviteCode] = useState<string>("");
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
 
-  // Members
-  const [members, setMembers] = useState<MemberRow[]>([]);
-  const [membersBusy, setMembersBusy] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
 
-  // Create clan (admin-only)
-  const [name, setName] = useState("My Community");
-  const [desc, setDesc] = useState("");
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [marketplaceName, setMarketplaceName] = useState("");
+  const [marketplaceDescription, setMarketplaceDescription] = useState("");
 
-  async function loadAll() {
-    setLoading(true);
-    setErr(null);
-    setOkMsg(null);
+  const [createdClan, setCreatedClan] = useState<ClanItem | null>(null);
 
+  const [inviteInfo, setInviteInfo] = useState<InviteInfo | null>(null);
+  const [inviteMessage, setInviteMessage] = useState("");
+
+  async function load() {
+    setErr("");
     try {
-      const m = await getMe();
-      setMe(m);
-
-      const raw = await listMyClans();
-      const list = parseItems<any>(raw).map((c: any) => ({
-        id: Number(c?.id ?? c?.clan_id ?? c?.clanId ?? 0),
-        name: safeStr(c?.name || "Community"),
-        description: c?.description ?? null,
-      }));
-      setClans(list.filter((x) => Number.isFinite(x.id) && x.id > 0));
-
-      // Try server current clan
-      try {
-        const cur = await getCurrentClan();
-        const cid = Number(cur?.clan?.id ?? cur?.id ?? cur?.clan_id ?? cur?.clanId ?? 0);
-        if (Number.isFinite(cid) && cid > 0) {
-          setSelectedId(cid);
-          setSelectedClan(list.find((x) => x.id === cid) || null);
-          setSelectedClanId(cid);
-        }
-      } catch {
-        // ignore
-      }
-
-      // If we already have selectedId in local storage, map it
-      const sid = getSelectedClanId();
-      if (sid && (!selectedId || selectedId !== sid)) {
-        setSelectedId(sid);
-        setSelectedClan(list.find((x) => x.id === sid) || null);
-      }
+      const res = await listMyClans().catch(() => ({ items: [] }));
+      const rows = Array.isArray(res) ? res : res?.items || [];
+      setItems(rows);
     } catch (e: any) {
-      setErr(prettyErr(e));
-      setClans([]);
-    } finally {
-      setLoading(false);
+      setErr(String(e?.message || e || "Unable to load communities."));
     }
   }
 
-  async function onSelect(clanId: number) {
-    setErr(null);
-    setOkMsg(null);
-    try {
-      await selectClan(clanId);
-      setSelectedId(clanId);
-      setSelectedClan(clans.find((c) => c.id === clanId) || null);
-      setSelectedClanId(clanId);
-      setOkMsg("Community selected. Loading…");
+  useEffect(() => {
+    void load();
+  }, []);
 
-      // preload members + invite
-      await loadMembers(clanId);
-      await loadInvite(clanId);
+  const selectedClanId = useMemo(
+    () => Number(getSelectedClanId() || 0),
+    [items, createdClan, inviteInfo]
+  );
 
-      window.setTimeout(() => nav("/dashboard"), 250);
-    } catch (e: any) {
-      setErr(prettyErr(e));
-    }
+  const selectedClan = useMemo(() => {
+    if (!selectedClanId) return null;
+    return (
+      items.find((x) => Number(x?.id || x?.clan_id || 0) === selectedClanId) ||
+      (createdClan &&
+      Number(createdClan?.id || createdClan?.clan_id || 0) === selectedClanId
+        ? createdClan
+        : null)
+    );
+  }, [items, createdClan, selectedClanId]);
+
+  const inviteLink = useMemo(() => {
+    return safeStr(
+      inviteInfo?.invite_url ||
+        inviteInfo?.url ||
+        inviteInfo?.link ||
+        inviteInfo?.invite_link ||
+        ""
+    ).trim();
+  }, [inviteInfo]);
+
+  function suggestedMarketplaceName(): string {
+    const clanName = safeStr(name).trim();
+    if (!clanName) return "";
+    return `${clanName} Marketplace`;
   }
 
-  async function loadInvite(clanId: number) {
+  function buildInviteMessage(clan: ClanItem | null, link: string): string {
+    const clanName = safeStr(clan?.name || "our GMFN community").trim();
+    const marketplace = safeStr(clan?.marketplace_name || "").trim();
+    const expiresAt = safeStr(inviteInfo?.invite_expires_at || "").trim();
+
+    return [
+      `Hello,`,
+      ``,
+      `You are invited to begin the request-to-join process for ${clanName}.`,
+      marketplace ? `Community / market identity: ${marketplace}.` : "",
+      `GMFN is a trust-based community infrastructure for structured support, credibility, and economic coordination.`,
+      `This invitation is not automatic admission. Final acceptance still depends on community approval.`,
+      expiresAt ? `This invitation expires on: ${expiresAt}` : "",
+      ``,
+      link ? `Use this link to begin: ${link}` : `Invite link will appear here once generated.`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  async function loadInviteForClan(clan: ClanItem | null) {
+    const clanId = Number(clan?.id || clan?.clan_id || 0);
+    if (!clanId) {
+      setInviteInfo(null);
+      setInviteMessage("");
+      return;
+    }
+
     setInviteBusy(true);
+    setErr("");
+
     try {
-      const out: any = await getClanInviteLink(clanId);
-      setInviteCode(safeStr(out?.invite_code || out?.code || ""));
-      const link = safeStr(out?.invite_link || out?.link || "");
-      setInviteLink(link);
-    } catch {
-      setInviteCode("");
-      setInviteLink("");
+      const out = await getClanInviteLink(clanId);
+      setInviteInfo(out || null);
+
+      const link = safeStr(
+        out?.invite_url || out?.url || out?.link || out?.invite_link || ""
+      ).trim();
+
+      setInviteMessage(buildInviteMessage(clan, link));
+    } catch (e: any) {
+      setInviteInfo(null);
+      setInviteMessage(buildInviteMessage(clan, ""));
+      setErr(String(e?.message || e || "Unable to load invite link."));
     } finally {
       setInviteBusy(false);
     }
   }
 
-  async function loadMembers(clanId: number) {
-    setMembersBusy(true);
-    try {
-      const out: any = await listClanMembers(clanId);
-      const items = parseItems<any>(out).map((m: any) => ({
-        user_id: Number(m?.user_id ?? 0),
-        email: m?.email ?? null,
-        role: m?.role ?? null,
-        personal_pool_balance: m?.personal_pool_balance ?? null,
-      }));
-      setMembers(items.filter((x) => Number.isFinite(x.user_id) && x.user_id > 0));
-    } catch {
-      setMembers([]);
-    } finally {
-      setMembersBusy(false);
+  useEffect(() => {
+    if (selectedClan) {
+      void loadInviteForClan(selectedClan);
+    } else {
+      setInviteInfo(null);
+      setInviteMessage("");
     }
-  }
+  }, [selectedClanId]);
 
-  async function onCreate() {
-    setErr(null);
-    setOkMsg(null);
+  async function handleCreate() {
+    setBusy(true);
+    setErr("");
+    setMsg("");
+    setCreatedClan(null);
+    setInviteInfo(null);
+    setInviteMessage("");
+
     try {
-      const nm = name.trim();
-      if (!nm) throw new Error("Enter a community name.");
-      const created: any = await createClan({ name: nm, description: desc.trim() || null });
-      setOkMsg(`Community created: ${safeStr(created?.name || nm)}`);
-      await loadAll();
+      const trimmedName = name.trim();
+      const trimmedDescription = description.trim();
+      const trimmedMarketplaceName =
+        marketplaceName.trim() || suggestedMarketplaceName();
+      const trimmedMarketplaceDescription = marketplaceDescription.trim();
+
+      if (!trimmedName) {
+        throw new Error("Enter a community name.");
+      }
+
+      const out = await createClan({
+        name: trimmedName,
+        description: trimmedDescription || null,
+        marketplace_name: trimmedMarketplaceName || null,
+        marketplace_description: trimmedMarketplaceDescription || null,
+      });
+
+      const clanId = Number(out?.id || out?.clan_id || 0);
+      if (!clanId) {
+        throw new Error("Community was created but no ID was returned.");
+      }
+
+      setSelectedClanId(clanId);
+
+      const created: ClanItem = {
+        id: clanId,
+        name: out?.name || trimmedName,
+        description: out?.description || trimmedDescription,
+        marketplace_name:
+          out?.marketplace_name ||
+          trimmedMarketplaceName ||
+          suggestedMarketplaceName(),
+        marketplace_description:
+          out?.marketplace_description || trimmedMarketplaceDescription,
+      };
+
+      setCreatedClan(created);
+      setMsg("Community created successfully.");
+
+      setName("");
+      setDescription("");
+      setMarketplaceName("");
+      setMarketplaceDescription("");
+      setShowCreate(true);
+
+      await load();
+      await loadInviteForClan(created);
     } catch (e: any) {
-      setErr(prettyErr(e));
+      setErr(String(e?.message || e || "Unable to create community."));
+    } finally {
+      setBusy(false);
     }
   }
 
-  useEffect(() => {
-    loadAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  function handleOpenCommunity(clan: any) {
+    const clanId = Number(clan?.id || clan?.clan_id || 0);
+    if (!clanId) return;
 
-  // When selected changes, load invite + members
-  useEffect(() => {
-    if (!selectedId) return;
-    loadInvite(selectedId);
-    loadMembers(selectedId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId]);
+    setSelectedClanId(clanId);
+    navigate(`/app/community/${clanId}`);
+  }
 
-  const selectedLabel = useMemo(() => {
-    if (!selectedId) return "No community selected";
-    const n = selectedClan?.name ? `${selectedClan.name}` : `Community #${selectedId}`;
-    return n;
-  }, [selectedId, selectedClan]);
+  function handleOpenJoinRequests(clan: any) {
+    const clanId = Number(clan?.id || clan?.clan_id || 0);
+    if (!clanId) return;
 
-  const inviteText = useMemo(() => {
-    if (!inviteLink && !inviteCode) return "";
-    if (inviteLink) return `Join my GMFN community: ${inviteLink}`;
-    return `Join my GMFN community with invite code: ${inviteCode}`;
-  }, [inviteLink, inviteCode]);
+    setSelectedClanId(clanId);
+    navigate(`/app/community/${clanId}/join-requests`);
+  }
+
+  function handleSelectCommunity(clan: ClanItem) {
+    const clanId = Number(clan?.id || clan?.clan_id || 0);
+    if (!clanId) return;
+
+    setSelectedClanId(clanId);
+    setCreatedClan(clan);
+    setMsg(`Selected ${safeStr(clan?.name)}.`);
+  }
+
+  function whatsappShare(text: string) {
+    const wa = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(wa, "_blank", "noopener,noreferrer");
+  }
+
+  function fmtDate(value: any): string {
+    const s = safeStr(value).trim();
+    if (!s) return "—";
+    return s;
+  }
 
   return (
-    <div style={{ padding: 18, maxWidth: 1100 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-        <div>
-          <div style={{ fontSize: 22, fontWeight: 1000, color: "#0B1F33" }}>Community</div>
-          <div style={{ marginTop: 4, fontSize: 12, color: "#6B7A88", lineHeight: 1.4 }}>
-            Choose your community. Invite people you already know.
-          </div>
+    <div style={{ maxWidth: 1180, margin: "0 auto" }}>
+      <PageTopNav
+        title="My Communities"
+        subtitle="Open a community, create a new one, and manage its invitation flow."
+      />
+
+      {err ? (
+        <div
+          style={{
+            ...card(),
+            marginTop: 18,
+            background: "#FEF2F2",
+            border: "1px solid #FECACA",
+            color: "#991B1B",
+            fontWeight: 900,
+          }}
+        >
+          {err}
+        </div>
+      ) : null}
+
+      {msg ? (
+        <div
+          style={{
+            ...card(),
+            marginTop: 18,
+            background: "#ECFDF5",
+            border: "1px solid #A7F3D0",
+            color: "#065F46",
+            fontWeight: 900,
+          }}
+        >
+          {msg}
+        </div>
+      ) : null}
+
+      <div style={{ ...card(), marginTop: 18 }}>
+        <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+          Existing Communities
         </div>
 
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <span style={pill(selectedId ? "gold" : "gray")}>
-            Active: <b>{selectedLabel}</b>
-          </span>
-          <button onClick={loadAll} style={btn()} disabled={loading}>
-            {loading ? "Loading..." : "Refresh"}
-          </button>
-        </div>
-      </div>
+        <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
+          {items.length === 0 ? (
+            <div style={{ color: "#6B7A88" }}>No communities found yet.</div>
+          ) : null}
 
-      {err && (
-        <div style={{ ...card(), marginTop: 12, borderColor: "rgba(153,27,27,0.25)", background: "rgba(254,242,242,0.9)", color: "#991b1b" }}>
-          <div style={{ fontWeight: 1000 }}>Something went wrong</div>
-          <div style={{ marginTop: 6, fontSize: 12, whiteSpace: "pre-wrap", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>{err}</div>
-        </div>
-      )}
-
-      {okMsg && (
-        <div style={{ ...card(), marginTop: 12, borderColor: "rgba(6,95,70,0.18)", background: "rgba(236,253,245,0.95)", color: "#065f46", fontWeight: 900 }}>
-          {okMsg}
-        </div>
-      )}
-
-      {/* Invite card */}
-      <div style={{ ...card(), marginTop: 12 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-          <div>
-            <div style={{ fontWeight: 1000, color: "#0B1F33" }}>Invite (WhatsApp)</div>
-            <div style={{ marginTop: 4, fontSize: 12, color: "#6B7A88", lineHeight: 1.4 }}>
-              Invite only people you already know. This is how trust stays safe.
-            </div>
-          </div>
-          <button
-            onClick={() => (selectedId ? loadInvite(selectedId) : null)}
-            style={btn()}
-            disabled={!selectedId || inviteBusy}
-            title={!selectedId ? "Select a community first" : "Refresh invite link"}
-          >
-            {inviteBusy ? "Refreshing..." : "Refresh link"}
-          </button>
-        </div>
-
-        {!selectedId && (
-          <div style={{ marginTop: 10, fontSize: 12, color: "#6B7A88" }}>
-            Select a community first, then you can invite people.
-          </div>
-        )}
-
-        {selectedId && (
-          <div style={{ marginTop: 10 }}>
-            <div style={{ fontSize: 12, color: "#6B7A88", fontWeight: 900 }}>Invite link</div>
-            <div style={{ marginTop: 6, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-              <input
-                value={inviteLink || (inviteCode ? `code: ${inviteCode}` : "")}
-                readOnly
-                style={{
-                  flex: 1,
-                  minWidth: 240,
-                  padding: "10px 12px",
-                  borderRadius: 14,
-                  border: "1px solid rgba(11,31,51,0.18)",
-                  background: "#fff",
-                }}
-              />
-              <button
-                style={btn(true)}
-                disabled={!inviteText}
-                onClick={() => safeCopy(inviteLink || inviteCode)}
-              >
-                Copy
-              </button>
-              <a
-                href={inviteText ? waLink(inviteText) : "#"}
-                target="_blank"
-                rel="noreferrer"
-                style={{ ...btn(), textDecoration: "none", display: "inline-flex", alignItems: "center" }}
-                onClick={(e) => {
-                  if (!inviteText) e.preventDefault();
-                }}
-              >
-                WhatsApp →
-              </a>
-            </div>
-
-            <div style={{ marginTop: 10, fontSize: 12, color: "#6B7A88" }}>
-              If network drops, you can still copy the link and send later.
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Members */}
-      <div style={{ ...card(), marginTop: 12 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-          <div>
-            <div style={{ fontWeight: 1000, color: "#0B1F33" }}>Members</div>
-            <div style={{ marginTop: 4, fontSize: 12, color: "#6B7A88" }}>
-              People in this community.
-            </div>
-          </div>
-          <button
-            onClick={() => (selectedId ? loadMembers(selectedId) : null)}
-            style={btn()}
-            disabled={!selectedId || membersBusy}
-            title={!selectedId ? "Select a community first" : "Refresh members"}
-          >
-            {membersBusy ? "Loading..." : "Refresh"}
-          </button>
-        </div>
-
-        {!selectedId && <div style={{ marginTop: 10, fontSize: 12, color: "#6B7A88" }}>Select a community to see members.</div>}
-
-        {selectedId && (
-          <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-            {members.length === 0 && !membersBusy && <div style={{ fontSize: 12, color: "#6B7A88" }}>No members to show.</div>}
-
-            {members.map((m) => (
-              <div key={`${m.user_id}`} style={{ border: "1px solid rgba(11,31,51,0.10)", borderRadius: 16, padding: 12, background: "#fff" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                  <div>
-                    <div style={{ fontWeight: 1000, color: "#0B1F33" }}>{safeStr(m.email || `User #${m.user_id}`)}</div>
-                    <div style={{ marginTop: 4, fontSize: 12, color: "#6B7A88" }}>User #{m.user_id}</div>
-                  </div>
-                  <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                    <span style={pill((safeStr(m.role).toLowerCase() === "admin") ? "green" : "gray")}>
-                      {safeStr(m.role || "user")}
-                    </span>
-                    <span style={pill("blue")}>Pool: {safeStr(m.personal_pool_balance || "0")}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Admin-only create */}
-      {isAdmin && (
-        <div style={{ ...card(), marginTop: 12 }}>
-          <div style={{ fontWeight: 1000, color: "#0B1F33" }}>Admin: Create a new community</div>
-          <div style={{ marginTop: 6, fontSize: 12, color: "#6B7A88", lineHeight: 1.4 }}>
-            Use this only when starting a new group. Do not create many groups for one set of people.
-          </div>
-
-          <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-            <div>
-              <div style={{ fontSize: 12, color: "#6B7A88", fontWeight: 900 }}>Community name</div>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                style={{ width: "100%", marginTop: 6, padding: "10px 12px", borderRadius: 14, border: "1px solid rgba(11,31,51,0.18)" }}
-                placeholder="e.g., Ladipo Tools Group"
-              />
-            </div>
-
-            <div>
-              <div style={{ fontSize: 12, color: "#6B7A88", fontWeight: 900 }}>Description (optional)</div>
-              <input
-                value={desc}
-                onChange={(e) => setDesc(e.target.value)}
-                style={{ width: "100%", marginTop: 6, padding: "10px 12px", borderRadius: 14, border: "1px solid rgba(11,31,51,0.18)" }}
-                placeholder="Short description…"
-              />
-            </div>
-
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button onClick={onCreate} style={btn(true)} disabled={loading}>
-                Create
-              </button>
-              <div style={{ fontSize: 12, color: "#6B7A88", display: "flex", alignItems: "center" }}>
-                After creating, select it to make it active.
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* List of my clans */}
-      <div style={{ ...card(), marginTop: 12 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-          <div style={{ fontWeight: 1000, color: "#0B1F33" }}>My communities</div>
-          <span style={pill(clans.length ? "blue" : "gray")}>{clans.length} total</span>
-        </div>
-
-        <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-          {clans.length === 0 && <div style={{ fontSize: 12, color: "#6B7A88" }}>No communities yet.</div>}
-
-          {clans.map((c) => {
-            const cid = Number(c.id);
-            const isSelected = selectedId != null && cid === selectedId;
+          {items.map((clan: ClanItem, idx: number) => {
+            const clanId = Number(clan?.id || clan?.clan_id || 0);
+            const active = selectedClanId > 0 && clanId === selectedClanId;
 
             return (
-              <div key={String(cid)} style={{ border: "1px solid rgba(11,31,51,0.10)", borderRadius: 16, padding: 12, background: "#fff" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <div key={clanId || idx} style={softCard()}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                  }}
+                >
                   <div>
-                    <div style={{ fontWeight: 1000, color: "#0B1F33" }}>{safeStr(c.name || "Community")}</div>
-                    <div style={{ marginTop: 2, fontSize: 12, color: "#6B7A88" }}>#{cid}</div>
-                    {c.description ? <div style={{ marginTop: 6, fontSize: 12, color: "#6B7A88" }}>{safeStr(c.description)}</div> : null}
+                    <div
+                      style={{
+                        fontWeight: 1000,
+                        fontSize: 18,
+                        color: "#0B1F33",
+                      }}
+                    >
+                      {safeStr(clan?.name || `Community ${idx + 1}`)}
+                    </div>
+
+                    <div style={{ marginTop: 6, color: "#64748b" }}>
+                      {safeStr(clan?.description || "Community workspace")}
+                    </div>
+
+                    {safeStr(clan?.marketplace_name).trim() ? (
+                      <div
+                        style={{
+                          marginTop: 8,
+                          color: "#0B63D1",
+                          fontWeight: 1000,
+                          fontSize: 13,
+                        }}
+                      >
+                        Community / Market: {safeStr(clan?.marketplace_name)}
+                      </div>
+                    ) : null}
+
+                    {active ? (
+                      <div
+                        style={{
+                          marginTop: 8,
+                          fontSize: 12,
+                          fontWeight: 1000,
+                          color: "#0B63D1",
+                        }}
+                      >
+                        CURRENTLY SELECTED
+                      </div>
+                    ) : null}
                   </div>
 
-                  <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                    <button onClick={() => onSelect(cid)} style={btn()} disabled={!Number.isFinite(cid) || cid <= 0}>
-                      Use this
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectCommunity(clan)}
+                      style={btn(false)}
+                    >
+                      Select
                     </button>
-                    {isSelected && <span style={pill("green")}>Active</span>}
+
+                    <button
+                      type="button"
+                      onClick={() => handleOpenCommunity(clan)}
+                      style={btn(false)}
+                    >
+                      Open Community
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleOpenJoinRequests(clan)}
+                      style={btn(false)}
+                    >
+                      Join Requests
+                    </button>
                   </div>
                 </div>
               </div>
@@ -474,8 +466,326 @@ export default function ClansPage() {
         </div>
       </div>
 
-      <div style={{ marginTop: 12, fontSize: 12, color: "#6B7A88" }}>
-        Tip: If you can’t see the right community, tap <b>Refresh</b>.
+      <div style={{ ...card(), marginTop: 18 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 10,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+              Create New Community
+            </div>
+            <div style={helperText()}>
+              Start a new community and define the community / market identity once here.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowCreate((v) => !v)}
+            style={btn(false)}
+          >
+            {showCreate ? "Hide" : "Open"}
+          </button>
+        </div>
+
+        {showCreate ? (
+          <div style={{ marginTop: 18, display: "grid", gap: 14 }}>
+            <div style={softCard()}>
+              <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
+                Community Identity
+              </div>
+              <div style={helperText()}>
+                This is the name and description of the community itself.
+              </div>
+
+              <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Community name"
+                  style={inputStyle()}
+                />
+
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Short community description"
+                  rows={3}
+                  style={textareaStyle(3)}
+                />
+              </div>
+            </div>
+
+            <div style={softCard()}>
+              <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
+                Community / Market Identity
+              </div>
+              <div style={helperText()}>
+                Use this only if you want a separate display label. Otherwise it can match the community name.
+              </div>
+
+              <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+                <input
+                  value={marketplaceName}
+                  onChange={(e) => setMarketplaceName(e.target.value)}
+                  placeholder={suggestedMarketplaceName() || "Community / market name"}
+                  style={inputStyle()}
+                />
+
+                <textarea
+                  value={marketplaceDescription}
+                  onChange={(e) => setMarketplaceDescription(e.target.value)}
+                  placeholder="Short community / market description"
+                  rows={3}
+                  style={textareaStyle(3)}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={handleCreate}
+                disabled={busy}
+                style={btn(true)}
+              >
+                {busy ? "Creating..." : "Create Community"}
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      {selectedClan ? (
+        <div
+          style={{
+            ...card(),
+            marginTop: 18,
+            background: "linear-gradient(180deg,#F8FBFF,#FFFFFF)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+                Invite Members
+              </div>
+              <div style={helperText()}>
+                Generate or reload the join link for the selected community, then share it with the right message.
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => void loadInviteForClan(selectedClan)}
+              style={btn(false)}
+            >
+              {inviteBusy ? "Loading..." : "Reload Invite Link"}
+            </button>
+          </div>
+
+          <div style={{ ...softCard(), marginTop: 16 }}>
+            <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
+              Selected Community
+            </div>
+
+            <div style={{ marginTop: 10, color: "#0B63D1", fontWeight: 1000 }}>
+              {safeStr(selectedClan?.name || "Unnamed community")}
+            </div>
+
+            <div style={{ marginTop: 8, color: "#64748b", lineHeight: 1.7 }}>
+              {safeStr(
+                selectedClan?.marketplace_name || "Community / market name not yet defined."
+              )}
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: 16,
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 16,
+            }}
+          >
+            <div style={softCard()}>
+              <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
+                Invite Link
+              </div>
+
+              <div style={{ marginTop: 10, color: "#64748b", fontSize: 13 }}>
+                Code
+              </div>
+              <div
+                style={{
+                  marginTop: 4,
+                  fontWeight: 1000,
+                  color: "#0B1F33",
+                  wordBreak: "break-word",
+                }}
+              >
+                {safeStr(inviteInfo?.invite_code || "—")}
+              </div>
+
+              <div style={{ marginTop: 12, color: "#64748b", fontSize: 13 }}>
+                Link
+              </div>
+              <div
+                style={{
+                  marginTop: 4,
+                  fontWeight: 1000,
+                  color: "#0B1F33",
+                  wordBreak: "break-word",
+                }}
+              >
+                {inviteLink || "Invite link not available yet."}
+              </div>
+
+              <div style={{ marginTop: 12, color: "#64748b", fontSize: 13 }}>
+                Created
+              </div>
+              <div style={{ marginTop: 4, color: "#0B1F33" }}>
+                {fmtDate(inviteInfo?.invite_created_at)}
+              </div>
+
+              <div style={{ marginTop: 12, color: "#64748b", fontSize: 13 }}>
+                Expires
+              </div>
+              <div style={{ marginTop: 4, color: "#0B1F33" }}>
+                {fmtDate(inviteInfo?.invite_expires_at)}
+              </div>
+            </div>
+
+            <div style={softCard()}>
+              <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
+                Share Message
+              </div>
+
+              <div style={helperText()}>
+                This is the sender-facing message block you can copy or send out together with the join link.
+              </div>
+
+              <div style={{ marginTop: 12 }}>
+                <textarea
+                  value={inviteMessage}
+                  onChange={(e) => setInviteMessage(e.target.value)}
+                  rows={8}
+                  style={textareaStyle(8)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: 16,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                if (!inviteLink) return;
+                safeCopy(inviteLink);
+                setMsg("Invite link copied.");
+              }}
+              style={btn(true)}
+            >
+              Copy Invite Link
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                safeCopy(inviteMessage);
+                setMsg("Invitation message copied.");
+              }}
+              style={btn(false)}
+            >
+              Copy Message
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                const payload = inviteMessage || inviteLink;
+                if (!payload) return;
+                whatsappShare(payload);
+              }}
+              style={btn(false)}
+            >
+              Send via WhatsApp
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleOpenCommunity(selectedClan)}
+              style={btn(false)}
+            >
+              Open Community
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleOpenJoinRequests(selectedClan)}
+              style={btn(false)}
+            >
+              Open Join Requests
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {createdClan && !selectedClan ? (
+        <div
+          style={{
+            ...card(),
+            marginTop: 18,
+            background: "linear-gradient(180deg,#F8FBFF,#FFFFFF)",
+          }}
+        >
+          <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+            Community Created
+          </div>
+
+          <div style={{ marginTop: 12, color: "#475569", lineHeight: 1.8 }}>
+            <b>{safeStr(createdClan?.name)}</b> is ready. Select it above if you want to manage its invite link now.
+          </div>
+        </div>
+      ) : null}
+
+      <div style={{ ...card(), marginTop: 18 }}>
+        <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+          Invitation Channel
+        </div>
+        <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
+          Invite only people already known and trusted by the community.
+        </div>
+      </div>
+
+      <div style={{ ...card(), marginTop: 18 }}>
+        <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+          Community Social Space
+        </div>
+        <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
+          Social events, outings, and informal updates remain linked through the
+          community WhatsApp space.
+        </div>
       </div>
     </div>
   );

@@ -1,394 +1,208 @@
-// src/pages/BankConsolePage.tsx
-import { useEffect, useMemo, useState } from "react";
-import toast from "react-hot-toast";
+import React, { useEffect, useState } from "react";
+import PageTopNav from "../components/PageTopNav";
+import {
+  bankIngestEvent,
+  getPublicConfig,
+  getSelectedClanId,
+  listBankCredits,
+  listExpectedPayments,
+  listRecentBankEvents,
+  listUnmatchedBankEvents,
+  runBankReconciliation,
+} from "../lib/api";
 
-import { getAccessToken } from "../lib/api";
-
-type BankEventRow = {
-  id: number;
-  direction: string;
-  amount: string;
-  currency: string;
-  reference?: string | null;
-  status: string;
-  status_reason?: string | null;
-  expected_payment_id?: number | null;
-  canonical?: boolean;
-};
-
-type BankCreditRow = {
-  id: number;
-  clan_id: number;
-  user_id: number;
-  currency: string;
-  amount: string;
-  source_bank_event_id: number;
-  created_at?: string | null;
-};
-
-type ExpectedPaymentRow = {
-  id: number;
-  clan_id: number;
-  user_id: number;
-  expected_type: string;
-  amount: string;
-  currency: string;
-  paid_amount?: string;
-  remaining_amount?: string;
-  status: string;
-  status_reason?: string | null;
-  reference_display: string;
-  reference_normalized: string;
-  bank_event_id?: number | null;
-  created_at?: string;
-};
-
-type TabKey = "recent" | "unmatched" | "credits" | "expected";
-
-function apiBase(): string {
-  // Keep consistent with your existing setup (same as other pages).
-  // If you already have a central BASE_URL in lib/api, swap to that.
-  return (import.meta as any).env?.VITE_API_BASE_URL || "";
+function safeStr(x: any): string {
+  return String(x ?? "");
 }
 
-async function parseError(res: Response): Promise<string> {
-  const text = await res.text();
-  try {
-    const j = JSON.parse(text);
-    return j?.detail || text || `HTTP ${res.status}`;
-  } catch {
-    return text || `HTTP ${res.status}`;
-  }
+function card(): React.CSSProperties {
+  return {
+    borderRadius: 22,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: "#FFFFFF",
+    boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
+    padding: 22,
+  };
 }
 
-async function authedGet(path: string): Promise<any> {
-  const token = getAccessToken();
-  const res = await fetch(`${apiBase()}${path}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-  if (!res.ok) throw new Error(await parseError(res));
-  return await res.json();
-}
-
-async function authedPost(path: string, body?: any): Promise<any> {
-  const token = getAccessToken();
-  const res = await fetch(`${apiBase()}${path}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: body ? JSON.stringify(body) : "{}",
-  });
-  if (!res.ok) throw new Error(await parseError(res));
-  return await res.json();
+function btn(primary = false): React.CSSProperties {
+  return {
+    padding: "10px 12px",
+    borderRadius: 14,
+    border: primary ? "none" : "1px solid rgba(11,31,51,0.10)",
+    background: primary ? "#0B63D1" : "#FFFFFF",
+    color: primary ? "#FFFFFF" : "#0B1F33",
+    fontWeight: 1000,
+    cursor: "pointer",
+    fontSize: 14,
+  };
 }
 
 export default function BankConsolePage() {
-  const [tab, setTab] = useState<TabKey>("recent");
+  const [cfg, setCfg] = useState<any>(null);
+  const [recent, setRecent] = useState<any[]>([]);
+  const [unmatched, setUnmatched] = useState<any[]>([]);
+  const [credits, setCredits] = useState<any[]>([]);
+  const [expected, setExpected] = useState<any[]>([]);
+  const [err, setErr] = useState("");
+  const [msg, setMsg] = useState("");
 
-  const [clanId, setClanId] = useState<string>(() => localStorage.getItem("bank_console_clan_id") || "");
-  const clanIdNum = useMemo(() => {
-    const n = Number(clanId);
-    return Number.isFinite(n) && n > 0 ? n : null;
-  }, [clanId]);
+  const [amount, setAmount] = useState("1000.00");
+  const [currency, setCurrency] = useState("NGN");
+  const [direction, setDirection] = useState<"credit" | "debit">("credit");
+  const [reference, setReference] = useState("");
+  const [description, setDescription] = useState("");
 
-  const [loading, setLoading] = useState(false);
-  const [recent, setRecent] = useState<BankEventRow[]>([]);
-  const [unmatched, setUnmatched] = useState<BankEventRow[]>([]);
-  const [credits, setCredits] = useState<BankCreditRow[]>([]);
-  const [expected, setExpected] = useState<ExpectedPaymentRow[]>([]);
-
-  const [reconcileLimit, setReconcileLimit] = useState<string>("200");
-
-  useEffect(() => {
-    localStorage.setItem("bank_console_clan_id", clanId);
-  }, [clanId]);
-
-  async function loadActiveTab() {
-    if (!clanIdNum) {
-      toast.error("Enter a valid clan_id");
-      return;
-    }
-    setLoading(true);
+  async function loadAll() {
+    setErr("");
     try {
-      if (tab === "recent") {
-        const rows = await authedGet(`/bank/recent?clan_id=${clanIdNum}`);
-        setRecent(Array.isArray(rows) ? rows : []);
-      } else if (tab === "unmatched") {
-        const rows = await authedGet(`/bank/unmatched?clan_id=${clanIdNum}`);
-        setUnmatched(Array.isArray(rows) ? rows : []);
-      } else if (tab === "credits") {
-        const rows = await authedGet(`/bank/credits?clan_id=${clanIdNum}`);
-        setCredits(Array.isArray(rows) ? rows : []);
-      } else if (tab === "expected") {
-        // if your endpoint is /bank/expected, use it. If it’s /bank/expected?clan_id=..., this matches.
-        const rows = await authedGet(`/bank/expected?clan_id=${clanIdNum}`);
-        setExpected(Array.isArray(rows) ? rows : []);
+      const clanId = getSelectedClanId();
+      if (!clanId) {
+        setRecent([]);
+        setUnmatched([]);
+        setCredits([]);
+        setExpected([]);
+        return;
       }
-    } catch (e: any) {
-      toast.error(e?.message || "Failed to load");
-    } finally {
-      setLoading(false);
-    }
-  }
 
-  async function runReconcile() {
-    if (!clanIdNum) {
-      toast.error("Enter a valid clan_id");
-      return;
-    }
-    const lim = Number(reconcileLimit);
-    const limit = Number.isFinite(lim) && lim > 0 ? lim : 200;
+      const [cfgRes, recentRes, unmatchedRes, creditsRes, expectedRes] = await Promise.all([
+        getPublicConfig().catch(() => null),
+        listRecentBankEvents(clanId).catch(() => []),
+        listUnmatchedBankEvents(clanId).catch(() => []),
+        listBankCredits({ clan_id: clanId, currency }).catch(() => []),
+        listExpectedPayments({ clan_id: clanId }).catch(() => ({ items: [] })),
+      ]);
 
-    setLoading(true);
-    try {
-      const res = await authedPost(`/bank/reconcile?clan_id=${clanIdNum}&limit=${limit}`);
-      toast.success(`Reconcile ran. Seen=${res?.seen ?? "?"} confirmed=${res?.confirmed ?? "?"} partial=${res?.partial ?? "?"}`);
-      await loadActiveTab();
+      setCfg(cfgRes || null);
+      setRecent(Array.isArray(recentRes) ? recentRes : recentRes?.items || []);
+      setUnmatched(Array.isArray(unmatchedRes) ? unmatchedRes : unmatchedRes?.items || []);
+      setCredits(Array.isArray(creditsRes) ? creditsRes : creditsRes?.items || []);
+      setExpected(Array.isArray(expectedRes) ? expectedRes : expectedRes?.items || []);
     } catch (e: any) {
-      toast.error(e?.message || "Reconcile failed");
-    } finally {
-      setLoading(false);
+      setErr(String(e?.message || e || "Unable to load bank console."));
     }
   }
 
   useEffect(() => {
-    // auto-load when tab changes, but only if clan_id valid
-    if (clanIdNum) loadActiveTab();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab]);
+    loadAll();
+  }, []);
+
+  async function ingestNow() {
+    setErr("");
+    setMsg("");
+
+    try {
+      const clanId = getSelectedClanId();
+      if (!clanId) throw new Error("Select a community first.");
+
+      const res = await bankIngestEvent({
+        clan_id: clanId,
+        amount,
+        currency,
+        direction,
+        reference: reference || null,
+        description: description || null,
+      });
+
+      setMsg(`Bank event ingested${res?.bank_event_id ? ` (#${res.bank_event_id})` : ""}.`);
+      await loadAll();
+    } catch (e: any) {
+      setErr(String(e?.message || e || "Unable to ingest bank event."));
+    }
+  }
+
+  async function reconcileNow() {
+    setErr("");
+    setMsg("");
+
+    try {
+      const clanId = getSelectedClanId();
+      if (!clanId) throw new Error("Select a community first.");
+
+      const res = await runBankReconciliation({ clan_id: clanId, limit: 200 });
+      setMsg(`Reconciliation complete. Seen=${safeStr(res?.seen || 0)} Confirmed=${safeStr(res?.confirmed || 0)}.`);
+      await loadAll();
+    } catch (e: any) {
+      setErr(String(e?.message || e || "Unable to run reconciliation."));
+    }
+  }
+
+  function renderList(title: string, rows: any[]) {
+    return (
+      <div style={card()}>
+        <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>{title}</div>
+        <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+          {rows.length === 0 ? <div style={{ color: "#6B7A88" }}>No records.</div> : null}
+          {rows.map((row: any, i: number) => (
+            <div key={row?.id || i} style={{ borderRadius: 14, background: "#F8FAFC", border: "1px solid rgba(11,31,51,0.08)", padding: 14 }}>
+              <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
+                {row?.reference || row?.reference_raw || row?.bank_txn_id || `Item ${i + 1}`}
+              </div>
+              <div style={{ marginTop: 6, color: "#475569", lineHeight: 1.7 }}>
+                Amount: {row?.amount ?? "—"} {row?.currency ?? ""}
+              </div>
+              <div style={{ marginTop: 4, color: "#64748b", fontSize: 13 }}>
+                Status: {row?.status ?? "—"}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ padding: 16 }}>
-      <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-        <h2 style={{ margin: 0 }}>Bank Console</h2>
-        <div style={{ color: "#64748b" }}>
-          Read-only monitoring + deterministic reconcile runner.
+    <div style={{ maxWidth: 1260, margin: "0 auto" }}>
+      <PageTopNav
+        title="Bank Console"
+        subtitle="Use this page to ingest bank events, run reconciliation, and review what has matched or remained unmatched."
+      />
+
+      {err ? (
+        <div style={{ ...card(), marginTop: 18, background: "#FEF2F2", border: "1px solid #FECACA", color: "#991B1B", fontWeight: 900 }}>
+          {err}
+        </div>
+      ) : null}
+
+      {msg ? (
+        <div style={{ ...card(), marginTop: 18, background: "#ECFDF5", border: "1px solid #A7F3D0", color: "#065F46", fontWeight: 900 }}>
+          {msg}
+        </div>
+      ) : null}
+
+      <div style={{ ...card(), marginTop: 18 }}>
+        <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>What this page does</div>
+        <div style={{ marginTop: 10, color: "#475569", lineHeight: 1.8 }}>
+          This page helps operations staff detect incoming bank events, match them against expected references,
+          and understand which items are confirmed and which still need review.
         </div>
       </div>
 
-      <div style={{ marginTop: 12, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <span style={{ fontSize: 12, color: "#64748b" }}>clan_id</span>
-          <input
-            value={clanId}
-            onChange={(e) => setClanId(e.target.value)}
-            placeholder="e.g. 1"
-            style={{ padding: 8, border: "1px solid #e2e8f0", borderRadius: 8, width: 140 }}
-          />
-        </label>
+      <div style={{ ...card(), marginTop: 18 }}>
+        <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>Manual Ingest</div>
+        <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+          <input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" style={{ padding: 12, borderRadius: 12, border: "1px solid #CBD5E1" }} />
+          <input value={currency} onChange={(e) => setCurrency(e.target.value)} placeholder="Currency" style={{ padding: 12, borderRadius: 12, border: "1px solid #CBD5E1" }} />
+          <select value={direction} onChange={(e) => setDirection(e.target.value as "credit" | "debit")} style={{ padding: 12, borderRadius: 12, border: "1px solid #CBD5E1" }}>
+            <option value="credit">credit</option>
+            <option value="debit">debit</option>
+          </select>
+          <input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Reference" style={{ padding: 12, borderRadius: 12, border: "1px solid #CBD5E1" }} />
+          <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" style={{ padding: 12, borderRadius: 12, border: "1px solid #CBD5E1", gridColumn: "span 2" }} />
+        </div>
 
-        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <span style={{ fontSize: 12, color: "#64748b" }}>reconcile limit</span>
-          <input
-            value={reconcileLimit}
-            onChange={(e) => setReconcileLimit(e.target.value)}
-            placeholder="200"
-            style={{ padding: 8, border: "1px solid #e2e8f0", borderRadius: 8, width: 140 }}
-          />
-        </label>
-
-        <button
-          onClick={runReconcile}
-          disabled={loading}
-          style={{
-            padding: "10px 12px",
-            borderRadius: 10,
-            border: "1px solid #0f172a",
-            background: "#0f172a",
-            color: "white",
-            fontWeight: 700,
-          }}
-        >
-          Run reconcile
-        </button>
-
-        <button
-          onClick={loadActiveTab}
-          disabled={loading}
-          style={{
-            padding: "10px 12px",
-            borderRadius: 10,
-            border: "1px solid #cbd5e1",
-            background: "white",
-            color: "#0f172a",
-            fontWeight: 700,
-          }}
-        >
-          Refresh
-        </button>
-
-        {loading ? <span style={{ color: "#64748b" }}>Loading…</span> : null}
+        <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button onClick={ingestNow} style={btn(true)}>Ingest Event</button>
+          <button onClick={reconcileNow} style={btn(false)}>Run Reconciliation</button>
+        </div>
       </div>
 
-      <div style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {(["recent", "unmatched", "credits", "expected"] as TabKey[]).map((k) => (
-          <button
-            key={k}
-            onClick={() => setTab(k)}
-            style={{
-              padding: "8px 10px",
-              borderRadius: 999,
-              border: "1px solid #cbd5e1",
-              background: tab === k ? "#e2e8f0" : "white",
-              fontWeight: 700,
-            }}
-          >
-            {k.toUpperCase()}
-          </button>
-        ))}
-      </div>
-
-      <div style={{ marginTop: 14 }}>
-        {tab === "recent" && <EventsTable rows={recent} />}
-        {tab === "unmatched" && <EventsTable rows={unmatched} />}
-        {tab === "credits" && <CreditsTable rows={credits} />}
-        {tab === "expected" && <ExpectedTable rows={expected} />}
+      <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
+        {renderList("Recent Events", recent)}
+        {renderList("Unmatched Events", unmatched)}
+        {renderList("Credits", credits)}
+        {renderList("Expected Payments / Config", expected.length ? expected : cfg ? [cfg] : [])}
       </div>
     </div>
   );
 }
-
-function EventsTable({ rows }: { rows: BankEventRow[] }) {
-  return (
-    <div style={{ overflowX: "auto", border: "1px solid #e2e8f0", borderRadius: 12 }}>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ background: "#f8fafc", textAlign: "left" }}>
-            <th style={th}>id</th>
-            <th style={th}>dir</th>
-            <th style={th}>amount</th>
-            <th style={th}>ccy</th>
-            <th style={th}>reference</th>
-            <th style={th}>status</th>
-            <th style={th}>reason</th>
-            <th style={th}>expected</th>
-            <th style={th}>canonical</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.id} style={{ borderTop: "1px solid #e2e8f0" }}>
-              <td style={td}>{r.id}</td>
-              <td style={td}>{r.direction}</td>
-              <td style={td}>{r.amount}</td>
-              <td style={td}>{r.currency}</td>
-              <td style={td}>{r.reference ?? ""}</td>
-              <td style={td}>{r.status}</td>
-              <td style={td}>{r.status_reason ?? ""}</td>
-              <td style={td}>{r.expected_payment_id ?? ""}</td>
-              <td style={td}>{String(!!r.canonical)}</td>
-            </tr>
-          ))}
-          {rows.length === 0 ? (
-            <tr>
-              <td style={td} colSpan={9}>
-                No rows
-              </td>
-            </tr>
-          ) : null}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function CreditsTable({ rows }: { rows: BankCreditRow[] }) {
-  return (
-    <div style={{ overflowX: "auto", border: "1px solid #e2e8f0", borderRadius: 12 }}>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ background: "#f8fafc", textAlign: "left" }}>
-            <th style={th}>id</th>
-            <th style={th}>user_id</th>
-            <th style={th}>ccy</th>
-            <th style={th}>amount</th>
-            <th style={th}>source_be</th>
-            <th style={th}>created_at</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.id} style={{ borderTop: "1px solid #e2e8f0" }}>
-              <td style={td}>{r.id}</td>
-              <td style={td}>{r.user_id}</td>
-              <td style={td}>{r.currency}</td>
-              <td style={td}>{r.amount}</td>
-              <td style={td}>{r.source_bank_event_id}</td>
-              <td style={td}>{r.created_at ?? ""}</td>
-            </tr>
-          ))}
-          {rows.length === 0 ? (
-            <tr>
-              <td style={td} colSpan={6}>
-                No rows
-              </td>
-            </tr>
-          ) : null}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function ExpectedTable({ rows }: { rows: ExpectedPaymentRow[] }) {
-  return (
-    <div style={{ overflowX: "auto", border: "1px solid #e2e8f0", borderRadius: 12 }}>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ background: "#f8fafc", textAlign: "left" }}>
-            <th style={th}>id</th>
-            <th style={th}>user</th>
-            <th style={th}>type</th>
-            <th style={th}>amount</th>
-            <th style={th}>paid</th>
-            <th style={th}>remaining</th>
-            <th style={th}>ccy</th>
-            <th style={th}>ref</th>
-            <th style={th}>status</th>
-            <th style={th}>reason</th>
-            <th style={th}>bank_event</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.id} style={{ borderTop: "1px solid #e2e8f0" }}>
-              <td style={td}>{r.id}</td>
-              <td style={td}>{r.user_id}</td>
-              <td style={td}>{r.expected_type}</td>
-              <td style={td}>{r.amount}</td>
-              <td style={td}>{r.paid_amount ?? ""}</td>
-              <td style={td}>{r.remaining_amount ?? ""}</td>
-              <td style={td}>{r.currency}</td>
-              <td style={td}>{r.reference_normalized}</td>
-              <td style={td}>{r.status}</td>
-              <td style={td}>{r.status_reason ?? ""}</td>
-              <td style={td}>{r.bank_event_id ?? ""}</td>
-            </tr>
-          ))}
-          {rows.length === 0 ? (
-            <tr>
-              <td style={td} colSpan={11}>
-                No rows
-              </td>
-            </tr>
-          ) : null}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-const th: React.CSSProperties = {
-  padding: "10px 10px",
-  fontSize: 12,
-  color: "#334155",
-  whiteSpace: "nowrap",
-};
-
-const td: React.CSSProperties = {
-  padding: "10px 10px",
-  fontSize: 13,
-  whiteSpace: "nowrap",
-};
