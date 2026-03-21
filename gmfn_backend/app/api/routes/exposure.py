@@ -43,26 +43,9 @@ def get_exposure_admin(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Admin exposure by user within a clan.
-
-    ✅ Fixes SQLite: 'Header' is not supported
-    by NEVER passing Header objects into SQLAlchemy filters.
-    """
     _require_admin(current_user)
     cid = _effective_clan_id(clan_id, x_clan_id)
 
-    # Subquery: how many clans each user belongs to (global across DB)
-    clan_counts_sq = (
-        db.query(
-            ClanMembership.user_id.label("user_id"),
-            func.count(ClanMembership.clan_id).label("clans_count"),
-        )
-        .group_by(ClanMembership.user_id)
-        .subquery()
-    )
-
-    # Members in clan
     members = (
         db.query(
             ClanMembership.user_id,
@@ -72,7 +55,6 @@ def get_exposure_admin(
         .all()
     )
 
-    # Exposure (approved locks minus released) by guarantor
     exposure_rows = (
         db.query(
             LoanGuarantor.guarantor_user_id.label("user_id"),
@@ -91,7 +73,6 @@ def get_exposure_admin(
 
     exposure_by_uid = {int(r.user_id): _d(r.exposure) for r in exposure_rows}
 
-    # Email/role + clan membership count per user (deterministic count)
     users = (
         db.query(
             User.id,
@@ -131,15 +112,14 @@ def get_exposure_admin(
                 "user_id": uid,
                 "email": meta.get("email"),
                 "role": meta.get("role"),
-                # NOTE: UI currently expects numbers. Keep float for now.
-                "personal_pool_balance": float(pool),
-                "exposure": float(exposure),
-                "available": float(available),
+                "personal_pool_balance": str(pool),
+                "exposure": str(exposure),
+                "available": str(available),
                 "clans_count": int(meta.get("clans_count", 0) or 0),
             }
         )
 
-    items.sort(key=lambda r: (r.get("exposure") or 0), reverse=True)
+    items.sort(key=lambda r: Decimal(r.get("exposure") or "0"), reverse=True)
 
     return {"clan_id": cid, "items": items, "total": len(items)}
 
@@ -152,14 +132,9 @@ def get_cci_scores_for_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Minimal CCI score response (admin only).
-    Frontend expects: {score: number}
-    """
     _require_admin(current_user)
     cid = _effective_clan_id(clan_id, x_clan_id)
 
-    # If user not in clan => score 0
     m = (
         db.query(ClanMembership)
         .filter(
@@ -177,7 +152,6 @@ def get_cci_scores_for_user(
             "events_counted": 0,
         }
 
-    # MVP stub: simple constant score (tune later)
     return {
         "clan_id": cid,
         "user_id": int(user_id),

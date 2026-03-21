@@ -8,7 +8,12 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.db.models import ClanMembership, Loan, LoanGuarantor, Repayment, User
-from app.services.trust_events_services import log_trust_event
+from app.services.notification_hooks import notify_loan_repaid
+from app.services.trust_events_services import (
+    log_guarantee_released,
+    log_loan_repaid,
+    log_trust_event,
+)
 
 
 def _now_utc() -> datetime:
@@ -55,16 +60,6 @@ def create_repayment(
     payer: User,
     amount: Decimal,
 ) -> Tuple[Repayment, Loan]:
-    """
-    Deterministic repayment application.
-
-    MVP-safe rules:
-    - borrower or clan admin can repay
-    - Decimal-only math
-    - repayment is CLAMPED to remaining balance (prevents paid_total > loan_amount)
-    - releases guarantor locks only on full repayment
-    - logs TrustEvents
-    """
     if _uid(payer) <= 0:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
@@ -80,14 +75,16 @@ def create_repayment(
     if clan_id <= 0:
         raise HTTPException(status_code=500, detail="Loan missing clan_id")
 
+    borrower_user_id = int(getattr(loan, "borrower_user_id", 0) or 0)
+
     m = _require_clan_member(db, clan_id=clan_id, user_id=_uid(payer))
     is_admin = (getattr(m, "role", "") or "").lower() == "admin"
-    is_borrower = int(getattr(loan, "borrower_user_id", 0) or 0) == _uid(payer)
+    is_borrower = borrower_user_id == _uid(payer)
     if not (is_admin or is_borrower):
         raise HTTPException(status_code=403, detail="Only borrower or clan admin can repay")
 
     status = (getattr(loan, "status", "") or "").lower().strip()
-    if status in {"repaid", "cancelled"}:
+    if status in {"repaid", "cancelled", "defaulted"}:
         raise HTTPException(status_code=400, detail=f"Loan status '{loan.status}' does not accept repayments")
 
     loan_amount = _d(getattr(loan, "amount", None))
@@ -97,7 +94,6 @@ def create_repayment(
     if remaining_before <= 0:
         remaining_before = max(Decimal("0"), loan_amount - paid_total_before)
 
-    # ✅ clamp to remaining
     applied = requested if requested <= remaining_before else remaining_before
     overpayment = requested - applied
 
@@ -116,11 +112,13 @@ def create_repayment(
         created_at=_now_utc(),
     )
     db.add(rep)
+    db.flush()
 
     loan.paid_total = new_paid_total
     loan.remaining_amount = remaining_after
 
-    if remaining_after == Decimal("0"):
+    fully_repaid = remaining_after == Decimal("0")
+    if fully_repaid:
         loan.status = "repaid"
         loan.repaid_at = _now_utc()
 
@@ -131,7 +129,7 @@ def create_repayment(
         loan_id=int(loan.id),
         guarantor_id=None,
         actor_user_id=_uid(payer),
-        subject_user_id=int(getattr(loan, "borrower_user_id", 0) or 0),
+        subject_user_id=borrower_user_id,
         meta={
             "reason": "repayment_created",
             "amount": str(applied),
@@ -144,39 +142,66 @@ def create_repayment(
             "remaining_after": str(remaining_after),
             "loan_status_after": str(getattr(loan, "status", None)),
         },
+        commit=False,
+        refresh=False,
     )
 
-    if remaining_after == Decimal("0"):
+    if fully_repaid:
         guars = (
             db.query(LoanGuarantor)
             .filter(LoanGuarantor.loan_id == int(loan.id))
             .filter(LoanGuarantor.status == "approved")
             .all()
         )
+
         for g in guars:
             locked = _d(getattr(g, "locked_amount", None))
-            released = _d(getattr(g, "released_amount", None))
-            if locked > released:
-                g.released_amount = locked
-            g.is_locked = False
+            already_released = _d(getattr(g, "released_amount", None))
 
-        log_trust_event(
+            if locked > Decimal("0"):
+                g.released_amount = already_released + locked
+                g.locked_amount = Decimal("0")
+                g.is_locked = False
+
+                log_guarantee_released(
+                    db,
+                    clan_id=clan_id,
+                    actor_user_id=_uid(payer),
+                    borrower_user_id=borrower_user_id,
+                    guarantor_user_id=int(getattr(g, "guarantor_user_id", 0) or 0),
+                    loan_id=int(loan.id),
+                    guarantor_id=int(getattr(g, "id", 0) or 0),
+                    released_amount=locked,
+                    release_reason="loan_fully_repaid",
+                    note="Locked guarantor exposure released because the loan was fully repaid.",
+                    commit=False,
+                    refresh=False,
+                )
+
+        log_loan_repaid(
             db,
-            event_type="loan.repaid",
             clan_id=clan_id,
-            loan_id=int(loan.id),
-            guarantor_id=None,
             actor_user_id=_uid(payer),
-            subject_user_id=int(getattr(loan, "borrower_user_id", 0) or 0),
-            meta={
-                "reason": "loan_fully_repaid",
-                "amount": str(loan_amount),
-                "paid_total": str(new_paid_total),
-                "released_guarantors": True,
-            },
+            borrower_user_id=borrower_user_id,
+            loan_id=int(loan.id),
+            amount=loan_amount,
+            confirmed_by_user_id=_uid(payer),
+            payment_reference=None,
+            reason="loan_fully_repaid",
+            note="Loan balance reached zero through confirmed repayment.",
+            commit=False,
+            refresh=False,
         )
 
     db.commit()
     db.refresh(rep)
     db.refresh(loan)
+
+    if fully_repaid:
+        notify_loan_repaid(
+            db,
+            borrower_user_id=borrower_user_id,
+            loan_id=int(loan.id),
+        )
+
     return rep, loan

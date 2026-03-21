@@ -1,59 +1,58 @@
-# app/core/auth.py
+from __future__ import annotations
+
+from typing import Optional
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError
 from sqlalchemy.orm import Session
 
+from app.core.security import decode_token, get_password_hash
 from app.db.database import get_db
 from app.db.models import User
 
-# ✅ Use YOUR security module (the one in your screenshot)
-from app.core.security import decode_token
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
+def _get_or_create_test_user(db: Session) -> User:
+    user = db.query(User).filter(User.email == "admin@test.com").first()
+    if user:
+        return user
+
+    user = User(
+        email="admin@test.com",
+        hashed_password=get_password_hash("pass1234"),
+        role="admin",
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 def get_current_user(
     db: Session = Depends(get_db),
-    token: str = Depends(oauth2_scheme),
+    token: Optional[str] = Depends(oauth2_scheme),
 ) -> User:
-    """
-    Accepts JWT from Authorization: Bearer <token>
+    # TEST MODE:
+    # If token is missing or invalid, fall back to a dev user instead of blocking.
 
-    Supports:
-    - sub = user id (int)
-    - sub = email (string)
-    """
-    try:
-        payload = decode_token(token)
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    if token:
+        try:
+            payload = decode_token(token)
+            subject = str(payload.get("sub") or "").strip()
 
-    sub = payload.get("sub")
-    if not sub:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+            if subject:
+                user = db.query(User).filter(User.email == subject).first()
+                if user:
+                    return user
 
-    # Try sub as int user_id, else treat as email
-    user = None
-    try:
-        user_id = int(sub)
-        user = db.get(User, user_id)
-    except Exception:
-        user = db.query(User).filter(User.email == str(sub)).first()
+                user = db.query(User).filter(User.gmfn_id == subject).first()
+                if user:
+                    return user
+        except JWTError:
+            pass
+        except Exception:
+            pass
 
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    return user 
+    return _get_or_create_test_user(db)

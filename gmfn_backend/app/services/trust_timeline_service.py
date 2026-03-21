@@ -1,4 +1,3 @@
-# app/services/trust_timeline_service.py
 from __future__ import annotations
 
 import json
@@ -7,6 +6,7 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional, Literal
 
 from sqlalchemy.orm import Session
+
 from app.db.models import TrustEvent
 
 Audience = Literal["user", "admin"]
@@ -17,30 +17,36 @@ DELTA_MISSED = Decimal("-0.30")
 DELTA_DEFAULT = Decimal("-0.70")
 DELTA_FRAUD = Decimal("-1.50")
 
-EV_FULL_REPAID = "loan_fully_repaid"
+EV_FULL_REPAID = "loan_repaid"
 EV_GUARANTOR_SUCCESS = "guarantor_success"
 EV_MISSED = "missed_payment"
-EV_DEFAULT = "default"
+EV_DEFAULT = "loan_defaulted"
 EV_FRAUD = "fraud_flag"
+EV_GUARANTEE_GIVEN = "guarantee_given"
+EV_GUARANTEE_RELEASED = "guarantee_released"
 
 ALIASES = {
     EV_FULL_REPAID: {
-        "loan_fully_repaid",
         "loan_repaid",
+        "loan_fully_repaid",
         "repaid",
         "repayment_full",
         "full_repayment",
         "loan_repayment_completed",
+        "loan.repaid",
     },
     EV_GUARANTOR_SUCCESS: {
         "guarantor_success",
         "guarantor_repayment_success",
         "guarantor_supported_repaid",
         "guarantor_credit",
+        "guarantee_given",
     },
     EV_MISSED: {"missed_payment", "repayment_missed", "late_payment", "overdue"},
-    EV_DEFAULT: {"default", "loan_defaulted", "write_off", "chargeoff"},
+    EV_DEFAULT: {"loan_defaulted", "default", "write_off", "chargeoff"},
     EV_FRAUD: {"fraud_flag", "fraud", "abuse_flag", "ban"},
+    EV_GUARANTEE_GIVEN: {"guarantee_given"},
+    EV_GUARANTEE_RELEASED: {"guarantee_released"},
 }
 
 
@@ -87,11 +93,14 @@ def _parse_meta(meta_json: Optional[str]) -> Dict[str, Any]:
 
 
 def _humane_label(event_type_raw: str, canonical: str, meta: Dict[str, Any]) -> str:
-    # Trust-changing events
     if canonical == EV_FULL_REPAID:
         return "Full repayment ✅"
     if canonical == EV_GUARANTOR_SUCCESS:
-        return "You supported a repaid loan 🤝"
+        return "Support worked well 🤝"
+    if canonical == EV_GUARANTEE_GIVEN:
+        return "A supporter backed you 🤝"
+    if canonical == EV_GUARANTEE_RELEASED:
+        return "Support lock released 🔓"
     if canonical == EV_MISSED:
         return "Payment missed ⚠️"
     if canonical == EV_DEFAULT:
@@ -103,7 +112,6 @@ def _humane_label(event_type_raw: str, canonical: str, meta: Dict[str, Any]) -> 
     et_lower = et.lower()
     et_upper = et.upper()
 
-    # Loan / community lifecycle
     if et == "loan.created":
         return "You asked for support 💬"
     if et_upper == "LOAN_AUTO_APPROVED":
@@ -114,7 +122,7 @@ def _humane_label(event_type_raw: str, canonical: str, meta: Dict[str, Any]) -> 
         return "Request cancelled"
 
     if et_upper == "GUARANTOR_APPROVED":
-        return "A supporter backed you 🤝"
+        return "A supporter approved 🤝"
     if et_upper == "GUARANTOR_DECLINED":
         return "A supporter declined 🙏"
     if et_upper == "GUARANTOR_EXPIRED":
@@ -123,7 +131,6 @@ def _humane_label(event_type_raw: str, canonical: str, meta: Dict[str, Any]) -> 
     if et_lower in ("repayment.claimed", "repayment_claimed", "repayment.claim"):
         return "You said you paid 💸"
 
-    # Merchant / trade lifecycle
     if et_lower in ("merchant.release_recorded", "merchant_release_recorded"):
         return "Merchant recorded goods release 🧾"
     if et_lower == "merchant.dispatched":
@@ -137,7 +144,6 @@ def _humane_label(event_type_raw: str, canonical: str, meta: Dict[str, Any]) -> 
     if et_lower == "merchant.delivery_confirmed":
         return "Delivery confirmed ✅"
 
-    # Courier acknowledgments
     if et_lower == "courier.received":
         return "Courier acknowledged receipt 📦"
     if et_lower == "courier.in_transit":
@@ -145,13 +151,11 @@ def _humane_label(event_type_raw: str, canonical: str, meta: Dict[str, Any]) -> 
     if et_lower == "courier.delivered":
         return "Courier marked delivered 📬"
 
-    # Invites
     if et == "invite_created":
         return "Invite link created 🔗"
     if et == "invite_joined":
         return "Someone joined via invite 🎉"
 
-    # System
     if et == "trust.score_updated":
         return "Internal update"
 
@@ -191,8 +195,8 @@ def list_trust_timeline(
         delta = _delta_for_event(canonical)
 
         meta = _parse_meta(getattr(r, "meta_json", None))
-        reason = meta.get("reason") or meta.get("meta", {}).get("reason")
-        note = meta.get("note") or meta.get("meta", {}).get("note")
+        reason = meta.get("reason") or (meta.get("meta", {}) or {}).get("reason")
+        note = meta.get("note") or (meta.get("meta", {}) or {}).get("note")
         payment_reference = meta.get("payment_reference")
 
         if audience == "user":
@@ -203,15 +207,14 @@ def list_trust_timeline(
                 keep = False
                 rt = (raw_type or "").strip().lower()
 
-                # Keep meaningful zero-delta events
+                if canonical in {EV_GUARANTEE_GIVEN, EV_GUARANTEE_RELEASED, EV_DEFAULT, EV_FULL_REPAID}:
+                    keep = True
                 if raw_type == "loan.created":
                     keep = True
                 if (raw_type or "").upper() in {"LOAN_CANCELLED", "LOAN_INCOMPLETE"}:
                     keep = True
                 if rt in {"repayment.claimed", "repayment_claimed", "repayment.claim"}:
                     keep = True
-
-                # Merchant + courier lifecycle should stay visible
                 if rt.startswith("merchant.") or rt.startswith("courier."):
                     keep = True
 

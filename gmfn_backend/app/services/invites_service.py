@@ -10,16 +10,14 @@ from fastapi import HTTPException, Request
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.trust_event_types import TrustEventType
 from app.db.models import Clan, ClanInvite, ClanMembership, User
 from app.services.trust_events_services import log_trust_event
 from app.services.trust_score_service import recompute_trust_for_user_id
+from app.services.trust_service import log_invite_accepted_event
 
-# -------------------------
-# Simple in-memory rate limits (DEV)
-# For production: replace with Redis.
-# -------------------------
-_INVITE_CREATE_BUCKET: dict[tuple[int, int], list[float]] = {}  # (user_id, clan_id) -> timestamps
-_JOIN_BUCKET: dict[int, list[float]] = {}  # user_id -> timestamps
+_INVITE_CREATE_BUCKET: dict[tuple[int, int], list[float]] = {}
+_JOIN_BUCKET: dict[int, list[float]] = {}
 
 
 def _bucket_prune(ts_list: list[float], window_seconds: int) -> list[float]:
@@ -52,10 +50,6 @@ def _utcnow() -> datetime:
 
 
 def _utc_aware(dt: Optional[datetime]) -> Optional[datetime]:
-    """
-    SQLite may return timezone-naive datetimes even when DateTime(timezone=True) is used.
-    Normalize to UTC-aware for safe comparisons.
-    """
     if dt is None:
         return None
     if dt.tzinfo is None:
@@ -76,21 +70,15 @@ def _require_member_or_admin(db: Session, *, clan_id: int, user: User) -> None:
         raise HTTPException(status_code=403, detail="Not allowed")
 
 
-# -------------------------
-# Link helpers
-# -------------------------
 def frontend_join_link(code: str) -> str:
-    base = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
-    return f"{base.rstrip('/')}/join/{code}"
+    base = os.getenv("FRONTEND_BASE_URL", "http://localhost:5174")
+    return f"{base.rstrip('/')}/join?code={code}"
 
 
 def api_join_link(request: Request, code: str) -> str:
     return str(request.base_url).rstrip("/") + f"/invites/share/{code}"
 
 
-# -------------------------
-# Core invite operations
-# -------------------------
 def create_clan_invite(
     db: Session,
     *,
@@ -106,11 +94,13 @@ def create_clan_invite(
     _require_member_or_admin(db, clan_id=clan_id, user=created_by_user)
     _rate_limit_create_invite(int(created_by_user.id), int(clan_id), limit=20, window_seconds=3600)
 
+    safe_expires_at = _utc_aware(expires_at)
+
     invite = ClanInvite(
         clan_id=clan_id,
         created_by_user_id=created_by_user.id,
         code=secrets.token_urlsafe(10),
-        expires_at=expires_at,
+        expires_at=safe_expires_at,
         max_uses=max_uses,
         uses=0,
         is_active=True,
@@ -124,13 +114,14 @@ def create_clan_invite(
 
     log_trust_event(
         db,
-        event_type="invite_created",
-        clan_id=clan_id,
+        event_type=TrustEventType.INVITE_CREATED,
+        clan_id=int(clan_id),
         loan_id=None,
         guarantor_id=None,
         actor_user_id=int(created_by_user.id),
         subject_user_id=int(created_by_user.id),
         meta={
+            "reason": "invite_created",
             "invite_code": invite.code,
             "max_uses": invite.max_uses,
             "expires_at": invite.expires_at.isoformat() if invite.expires_at else None,
@@ -191,7 +182,7 @@ def revoke_invite(db: Session, *, code: str, user: User) -> ClanInvite:
 
     log_trust_event(
         db,
-        event_type="invite_revoked",
+        event_type=TrustEventType.INVITE_REVOKED,
         clan_id=int(invite.clan_id),
         loan_id=None,
         guarantor_id=None,
@@ -206,13 +197,11 @@ def revoke_invite(db: Session, *, code: str, user: User) -> ClanInvite:
         },
     )
 
-    recompute_trust_for_user_id(db, user_id=int(invite.created_by_user_id), source="invite_revoked")
-
+    recompute_trust_for_user_id(db, user_id=int(invite.created_by_user_id))
     return invite
 
 
 def join_clan_by_invite_code(db: Session, *, code: str, user: User):
-    # Abuse control
     _rate_limit_join(int(user.id), limit=10, window_seconds=600)
 
     invite = db.query(ClanInvite).filter(ClanInvite.code == code).first()
@@ -240,7 +229,6 @@ def join_clan_by_invite_code(db: Session, *, code: str, user: User):
     if not clan:
         raise HTTPException(status_code=404, detail="Clan not found")
 
-    # Already a member?
     existing = (
         db.query(ClanMembership)
         .filter(ClanMembership.clan_id == clan.id, ClanMembership.user_id == user.id)
@@ -255,7 +243,6 @@ def join_clan_by_invite_code(db: Session, *, code: str, user: User):
 
     inviter_id = int(invite.created_by_user_id) if invite.created_by_user_id else None
 
-    # ✅ Store provenance if model supports it (it does in your models.py)
     membership = ClanMembership(
         clan_id=clan.id,
         user_id=user.id,
@@ -290,7 +277,7 @@ def join_clan_by_invite_code(db: Session, *, code: str, user: User):
 
     log_trust_event(
         db,
-        event_type="clan_join_via_invite",
+        event_type=TrustEventType.CLAN_JOIN_VIA_INVITE,
         clan_id=int(clan.id),
         loan_id=None,
         guarantor_id=None,
@@ -310,7 +297,7 @@ def join_clan_by_invite_code(db: Session, *, code: str, user: User):
     if inviter_id is not None and inviter_id != int(user.id):
         log_trust_event(
             db,
-            event_type="invite_successful_onboarding",
+            event_type=TrustEventType.INVITE_SUCCESSFUL_ONBOARDING,
             clan_id=int(clan.id),
             loan_id=None,
             guarantor_id=None,
@@ -331,9 +318,23 @@ def join_clan_by_invite_code(db: Session, *, code: str, user: User):
             },
         )
 
-    recompute_trust_for_user_id(db, user_id=int(user.id), source="invite_join")
+        log_invite_accepted_event(
+            db,
+            clan_id=int(clan.id),
+            inviter_user_id=int(inviter_id),
+            joiner_user_id=int(user.id),
+            meta={
+                "invite_code": invite.code,
+                "invite_id": int(invite.id),
+                "uses_after": invite.uses,
+                "max_uses": invite.max_uses,
+                "reason": "invite_accepted",
+            },
+        )
+
+    recompute_trust_for_user_id(db, user_id=int(user.id))
     if inviter_id is not None and inviter_id != int(user.id):
-        recompute_trust_for_user_id(db, user_id=int(inviter_id), source="invite_success")
+        recompute_trust_for_user_id(db, user_id=int(inviter_id))
 
     return {
         "clan_id": clan.id,

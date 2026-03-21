@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from decimal import Decimal
+import json
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -26,7 +27,7 @@ from app.schemas.loans import (
 )
 from app.schemas.repayments import RepaymentCreate, RepaymentOut, RepaymentsListResponse
 from app.services.guarantor_suggestions_service import suggest_guarantors_for_loan
-from app.services.loan_approval import approve_loan
+from app.services.loan_overdue_service import run_overdue_default_scan
 from app.services.loan_tier_rules import compute_loan_snapshot
 from app.services.loans_service import (
     add_loan_guarantor,
@@ -62,17 +63,12 @@ def _require_same_clan(loan: Loan, clan_id: int) -> None:
         )
 
 
-# ✅ FIX: Frontend calls GET /loans (listMyLoans). Backend previously lacked it => 405.
 @router.get("", response_model=LoansListResponse)
 def list_my_loans(
     limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
-    """
-    List loans for the current user in the currently selected clan context.
-    Deterministic + clan-isolated.
-    """
     clan, _membership, current_user = clan_ctx
 
     items = (
@@ -95,7 +91,6 @@ def create_loan(
 ):
     clan, membership, current_user = clan_ctx
 
-    # --- Requested amount (Decimal-safe) ---
     requested = Decimal(str(payload.amount))
     if requested <= 0:
         raise HTTPException(
@@ -103,18 +98,16 @@ def create_loan(
             detail="amount must be > 0",
         )
 
-    # --- Personal pool snapshot (Decimal-safe) ---
     personal_pool_raw = getattr(membership, "personal_pool_balance", None)
     personal_pool = (
         Decimal("0") if personal_pool_raw is None else Decimal(str(personal_pool_raw))
     )
 
-    # --- Deterministic tier computation ---
     snap = compute_loan_snapshot(
         loan_amount=requested,
         personal_pool_at_request=personal_pool,
-        max_guarantors=12,  # hard safety cap
-        starter_guarantors_when_pool_zero=4,  # MVP default when P=0
+        max_guarantors=12,
+        starter_guarantors_when_pool_zero=4,
     )
 
     pool_used = snap.pool_used
@@ -122,12 +115,10 @@ def create_loan(
     guarantors_required = int(snap.guarantors_required)
     within_pool = guarantee_gap == Decimal("0")
 
-    # --- Status / decision logic ---
     new_status = "approved" if within_pool else "pending"
     decision_by_user_id = _uid(current_user) if within_pool else None
     decision_at = datetime.now(timezone.utc) if within_pool else None
 
-    # ✅ Trust band enforcement (only if enabled)
     if trust_enforcement_enabled():
         band = getattr(current_user, "trust_band", None) or "C"
         policy = loan_policy_for_band(band)
@@ -139,12 +130,9 @@ def create_loan(
                 detail=f"Trust band {band}: max loan amount is {policy['max_amount']}.",
             )
 
-        # Only enforce min guarantors if beyond pool
         if not within_pool:
             policy_min = int(policy.get("min_guarantors") or 0)
             guarantors_required = max(int(guarantors_required), policy_min)
-
-            # Hard cap (pilot safety)
             guarantors_required = min(12, int(guarantors_required))
 
     loan = Loan(
@@ -162,11 +150,9 @@ def create_loan(
     )
     db.add(loan)
 
-    # ✅ Only deduct immediately when fully within pool (MVP)
     if within_pool:
         db_membership = db.get(ClanMembership, membership.id)
         if db_membership:
-            # Deduct requested from personal pool (Decimal-safe)
             db_membership.personal_pool_balance = Decimal(str(personal_pool)) - Decimal(
                 str(requested)
             )
@@ -268,6 +254,14 @@ def update_loan_status(
     db: Session = Depends(get_db),
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
+    """
+    Manual loan status mutation is disabled.
+
+    GMFN frozen protocol:
+    - admins cannot approve loans alone
+    - admins cannot reject loans alone
+    - loan outcomes must remain deterministic
+    """
     clan, membership, current_user = clan_ctx
     _require_clan_admin(membership)
 
@@ -277,60 +271,18 @@ def update_loan_status(
 
     _require_same_clan(loan, clan.id)
 
-    if payload.status == "approved":
-        approved_count = count_approved_guarantors(db, loan_id=loan.id)
-        required = loan.guarantors_required or 0
-        if approved_count < required:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Loan requires {required} approved guarantor(s); currently {approved_count}.",
-            )
+    requested_status = (getattr(payload, "status", None) or "").strip().lower()
 
-        approve_loan(db=db, loan=loan, decided_by_user_id=_uid(current_user))
-
-        log_trust_event(
-            db,
-            event_type="loan.approved_by_admin",
-            clan_id=int(clan.id),
-            loan_id=int(loan.id),
-            guarantor_id=None,
-            actor_user_id=_uid(current_user),
-            subject_user_id=int(loan.borrower_user_id),
-            meta={
-                "reason": "loan_approved_by_admin",
-                "note": f"Loan approved by clan admin user #{_uid(current_user)}.",
-                "status": loan.status,
-            },
+    if requested_status in {"approved", "rejected", "defaulted", "repaid", "pending", "incomplete", "cancelled"}:
+        raise HTTPException(
+            status_code=403,
+            detail="Manual loan status changes are disabled. Loan outcomes are determined by protocol logic only.",
         )
-        return loan
 
-    if payload.status == "rejected":
-        loan.status = "rejected"
-        loan.decision_by_user_id = _uid(current_user)
-        loan.decision_at = datetime.now(timezone.utc)
-        db.commit()
-        db.refresh(loan)
-
-        log_trust_event(
-            db,
-            event_type="loan.rejected_by_admin",
-            clan_id=int(clan.id),
-            loan_id=int(loan.id),
-            guarantor_id=None,
-            actor_user_id=_uid(current_user),
-            subject_user_id=int(loan.borrower_user_id),
-            meta={
-                "reason": "loan_rejected_by_admin",
-                "note": f"Loan rejected by clan admin user #{_uid(current_user)}.",
-                "status": loan.status,
-            },
-        )
-        return loan
-
-    loan.status = payload.status
-    db.commit()
-    db.refresh(loan)
-    return loan
+    raise HTTPException(
+        status_code=400,
+        detail="Unsupported loan status update.",
+    )
 
 
 @router.post("/{loan_id}/guarantors", response_model=LoanGuarantorOut, status_code=201)
@@ -405,6 +357,27 @@ def cancel_loan_route(
     return {"ok": True, "loan_id": int(loan.id), "status": loan.status}
 
 
+@router.post("/overdue/run")
+def run_overdue_detector(
+    dry_run: bool = Query(True),
+    grace_days: int = Query(3, ge=0, le=60),
+    limit: int = Query(200, ge=1, le=2000),
+    db: Session = Depends(get_db),
+    clan_ctx: tuple = Depends(get_current_clan_membership),
+):
+    clan, membership, current_user = clan_ctx
+    _require_clan_admin(membership)
+
+    return run_overdue_default_scan(
+        db,
+        actor_user_id=_uid(current_user),
+        clan_id=int(clan.id),
+        grace_days=int(grace_days),
+        limit=int(limit),
+        dry_run=bool(dry_run),
+    )
+
+
 @router.get("/{loan_id}/guarantors", response_model=LoanGuarantorsListResponse)
 def get_loan_guarantors(
     loan_id: int,
@@ -477,7 +450,6 @@ def decide_loan_guarantor(
             detail="Only the guarantor or a clan admin can decide",
         )
 
-    # Borrower must not decide guarantees
     if int(loan.borrower_user_id) == _uid(current_user) and not is_guarantor:
         raise HTTPException(
             status_code=403,
@@ -490,6 +462,8 @@ def decide_loan_guarantor(
         clan_id=int(clan.id),
         status=payload.status,
         decided_by_user_id=_uid(current_user),
+        reason=getattr(payload, "reason", None),
+        note=getattr(payload, "note", None),
     )
 
     return result
@@ -604,12 +578,6 @@ def trustslip_preview(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Read-only TrustSlip-style preview for MVP.
-    Uses TrustEvents as evidence source (loan.created meta for pool_used/guarantee_gap).
-    """
-    import json
-
     from sqlalchemy import func
 
     from app.db.models import Clan, Repayment, TrustEvent
@@ -647,14 +615,21 @@ def trustslip_preview(
     guarantee_gap = None
     personal_pool_at_request = None
 
-    if ev and getattr(ev, "meta_json", None):
+    if ev:
         try:
-            meta = json.loads(ev.meta_json)
+            meta = ev.meta or {}
             pool_used = meta.get("pool_used")
             guarantee_gap = meta.get("guarantee_gap")
             personal_pool_at_request = meta.get("personal_pool_at_request")
         except Exception:
-            pass
+            try:
+                if getattr(ev, "meta_json", None):
+                    meta = json.loads(ev.meta_json)
+                    pool_used = meta.get("pool_used")
+                    guarantee_gap = meta.get("guarantee_gap")
+                    personal_pool_at_request = meta.get("personal_pool_at_request")
+            except Exception:
+                pass
 
     approved_guarantors = (
         db.query(LoanGuarantor)

@@ -1,78 +1,106 @@
-# app/services/cci_service.py
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Dict, Optional, Tuple
-
-from sqlalchemy import func
-from sqlalchemy.orm import Session
-
-from app.db.models import TrustEvent
+from decimal import Decimal
+from typing import Any, Dict, List
 
 
-@dataclass
-class CciResult:
-    clan_id: int
-    user_id: int
-    score: int
-    events_counted: int
-    breakdown: Dict[str, int]
+def _safe_decimal(x: Any) -> Decimal:
+    if x is None:
+        return Decimal("0")
+    if isinstance(x, Decimal):
+        return x
+    try:
+        return Decimal(str(x))
+    except Exception:
+        return Decimal("0")
 
 
-# Simple MVP weights. Tune later.
-EVENT_WEIGHTS: Dict[str, int] = {
-    "GUARANTOR_APPROVED": 5,
-    "GUARANTOR_DECLINED": -2,
-    "LOAN_AUTO_APPROVED": 3,
-    "LOAN_AUTO_REJECTED": -3,
-    "GUARANTEE_LOCKS_RELEASED": 1,
-    "ADMIN_POOL_TOPUP": 0,
-}
+def _clamp(value: Decimal, min_v: Decimal, max_v: Decimal) -> Decimal:
+    if value < min_v:
+        return min_v
+    if value > max_v:
+        return max_v
+    return value
 
 
-def _clamp(n: int, lo: int, hi: int) -> int:
-    return max(lo, min(hi, n))
-
-
-def compute_cci_score(
-    db: Session,
-    *,
-    clan_id: int,
-    user_id: int,
-) -> CciResult:
+def compute_cci_from_summary(summary: Dict[str, Any]) -> Dict[str, Any]:
     """
-    MVP trust score per user per clan based on TrustEvents where subject_user_id == user_id.
-    Score range: 0..100
+    Deterministic Cross-Clan Integrity (CCI) score derived from TrustGraph summary.
+    Pure calculation only. No DB reads/writes.
     """
-    rows = (
-        db.query(TrustEvent.event_type, func.count(TrustEvent.id))
-        .filter(TrustEvent.clan_id == clan_id)
-        .filter(TrustEvent.subject_user_id == int(user_id))
-        .group_by(TrustEvent.event_type)
-        .all()
+
+    breadth = _safe_decimal(summary.get("network_breadth", 0))
+    quality = _safe_decimal(summary.get("network_quality", 0))
+    guarantees = _safe_decimal(summary.get("guarantee_integrity", 0))
+    repayment = _safe_decimal(summary.get("repayment_integrity", 0))
+    defaults = _safe_decimal(summary.get("default_pressure", 0))
+    volatility = _safe_decimal(summary.get("trust_volatility", 0))
+
+    score = (
+        breadth * Decimal("0.10")
+        + quality * Decimal("0.20")
+        + guarantees * Decimal("0.20")
+        + repayment * Decimal("0.35")
+        - defaults * Decimal("0.10")
+        - volatility * Decimal("0.05")
     )
 
-    breakdown: Dict[str, int] = {k: int(v) for (k, v) in rows}
-    total_events = sum(breakdown.values())
+    score = _clamp(score, Decimal("0"), Decimal("100"))
 
-    raw = 0
-    for etype, count in breakdown.items():
-        w = EVENT_WEIGHTS.get(etype, 0)
-        raw += int(count) * int(w)
+    if score >= 80:
+        band = "A"
+    elif score >= 65:
+        band = "B"
+    elif score >= 50:
+        band = "C"
+    elif score >= 35:
+        band = "D"
+    else:
+        band = "E"
 
-    # Convert raw to 0..100 in a simple way
-    # baseline 50, then apply raw, then clamp
-    score = _clamp(50 + raw, 0, 100)
+    risk_flags: List[str] = []
 
-    return CciResult(
-        clan_id=int(clan_id),
-        user_id=int(user_id),
-        score=int(score),
-        events_counted=int(total_events),
-        breakdown=breakdown,
-    )
+    if defaults > Decimal("0"):
+        risk_flags.append("default_history")
 
+    if volatility > Decimal("10"):
+        risk_flags.append("high_trust_volatility")
 
-# ✅ Alias used by some routes/services
-def compute_cci(db: Session, *, clan_id: int, user_id: int) -> CciResult:
-    return compute_cci_score(db, clan_id=clan_id, user_id=user_id)
+    if breadth < Decimal("3"):
+        risk_flags.append("low_network_breadth")
+
+    explain = {
+        "strengths": [],
+        "pressures": [],
+    }
+
+    if repayment >= Decimal("40"):
+        explain["strengths"].append("strong_repayment_integrity")
+    if quality >= Decimal("40"):
+        explain["strengths"].append("healthy_network_quality")
+    if guarantees >= Decimal("35"):
+        explain["strengths"].append("credible_guarantee_support")
+    if breadth >= Decimal("30"):
+        explain["strengths"].append("broad_relationship_network")
+
+    if defaults > Decimal("0"):
+        explain["pressures"].append("default_pressure_present")
+    if volatility > Decimal("10"):
+        explain["pressures"].append("trust_is_volatile")
+    if breadth < Decimal("3"):
+        explain["pressures"].append("network_is_thin")
+    if quality < Decimal("20"):
+        explain["pressures"].append("weak_network_quality")
+
+    return {
+        "network_breadth": str(breadth),
+        "network_quality": str(quality),
+        "guarantee_integrity": str(guarantees),
+        "repayment_integrity": str(repayment),
+        "default_pressure": str(defaults),
+        "trust_volatility": str(volatility),
+        "cci_score": str(score.quantize(Decimal("0.01"))),
+        "cci_band": band,
+        "risk_flags": risk_flags,
+        "explain": explain,
+    }

@@ -246,7 +246,6 @@ def recompute_trust_for_user(
     }
 
 
-# Legacy wrappers
 def get_trust_summary(db: Session, *, user_id: int, window_days: int = DEFAULT_WINDOW_DAYS) -> Dict[str, Any]:
     return recompute_trust_for_user(db, user_id=int(user_id), window_days=window_days)
 
@@ -268,7 +267,7 @@ def apply_trust_score(db: Session, user_id: int, *args: Any, **kwargs: Any) -> D
     return recompute_trust_for_user(db, user_id=int(user_id))
 
 
-def recompute_trust_for_user_id(db: Session, user_id: int) -> Dict[str, Any]:
+def recompute_trust_for_user_id(db: Session, user_id: int, *args: Any, **kwargs: Any) -> Dict[str, Any]:
     return recompute_trust_for_user(db, user_id=int(user_id))
 
 

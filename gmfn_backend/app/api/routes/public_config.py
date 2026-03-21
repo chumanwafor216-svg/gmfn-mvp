@@ -2,23 +2,22 @@
 
 from fastapi import APIRouter
 
-from app.core.trust_policy import policy_version
+from app.services.settlement_config_service import get_settlement_config
 
-router = APIRouter(prefix="/public", tags=["public"])
+router = APIRouter(prefix="/public/config", tags=["public-config"])
 
 
-@router.get("/config")
+@router.get("")
 def public_config():
-    """
-    Public, non-sensitive config for frontend.
-    Freeze-safe: does not affect backend decisions.
-    """
+    settlement = get_settlement_config()
+
     return {
-        "mode": "pilot",
-        "service_fee_rate": "0.03",
-        "trust_policy_version": policy_version(),
-        "notes": [
-            "Pilot mode values are placeholders while behavior is validated.",
-            "Fees must be visibly disclosed to users (no hidden charges).",
-        ],
+        "app_name": "GMFN",
+        "product_name": "Global Support Network",
+        "protocol_name": "Trust Infrastructure Protocol",
+        "supports_bank_transfer": True,
+        "supports_gateway": True,
+        "supports_mobile_money": True,
+        "default_currency": "NGN",
+        "settlement": settlement,
     }

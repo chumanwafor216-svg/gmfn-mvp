@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from io import BytesIO, StringIO
 import csv
+import json
 import zipfile
 from datetime import datetime
 from typing import Any, Dict, List
@@ -21,6 +22,7 @@ from app.db.models import (
     LoanGuarantor,
     Repayment,
     TrustEvent,
+    TrustSlip,
 )
 
 from app.services.exposure_service import get_clan_exposure_rows
@@ -30,9 +32,6 @@ from app.services.reports_service import build_loan_trust_report_pdf, build_clan
 router = APIRouter(prefix="/reports", tags=["reports"])
 
 
-# -------------------------
-# Shared helpers
-# -------------------------
 def _csv_bytes(rows: List[List[Any]]) -> bytes:
     sio = StringIO()
     w = csv.writer(sio)
@@ -102,36 +101,17 @@ def _user_email_map(
 def _trust_scores_for_report(
     db: Session,
     *,
-    clan_id: int,
     borrower: User | None,
     guarantors: List[LoanGuarantor],
 ) -> tuple[Dict[str, Any] | None, Dict[int, Dict[str, Any]]]:
     borrower_score = None
     if borrower:
-        borrower_events = (
-            db.query(TrustEvent)
-            .filter(
-                TrustEvent.subject_user_id == int(borrower.id),
-                TrustEvent.clan_id == int(clan_id),
-            )
-            .order_by(TrustEvent.id.asc())
-            .all()
-        )
-        borrower_score = compute_trust_score_explained(borrower_events)
+        borrower_score = compute_trust_score_explained(db, int(borrower.id))
 
     guarantor_scores: Dict[int, Dict[str, Any]] = {}
     for g in guarantors:
         uid = int(g.guarantor_user_id)
-        g_events = (
-            db.query(TrustEvent)
-            .filter(
-                TrustEvent.subject_user_id == uid,
-                TrustEvent.clan_id == int(clan_id),
-            )
-            .order_by(TrustEvent.id.asc())
-            .all()
-        )
-        guarantor_scores[uid] = compute_trust_score_explained(g_events)
+        guarantor_scores[uid] = compute_trust_score_explained(db, uid)
 
     return borrower_score, guarantor_scores
 
@@ -171,14 +151,19 @@ def _gather_report_data(db: Session, *, loan_id: int) -> Dict[str, Any]:
         trust_events=trust_events,
     )
 
-    # ✅ ALWAYS include this (your rule)
     clan_exposure_rows = get_clan_exposure_rows(db, clan_id=int(loan.clan_id))
 
     borrower_score, guarantor_scores = _trust_scores_for_report(
         db,
-        clan_id=int(loan.clan_id),
         borrower=borrower,
         guarantors=guarantors,
+    )
+
+    trust_slip = (
+        db.query(TrustSlip)
+        .filter(TrustSlip.holder_user_id == int(loan.borrower_user_id))
+        .order_by(TrustSlip.id.desc())
+        .first()
     )
 
     return {
@@ -192,6 +177,7 @@ def _gather_report_data(db: Session, *, loan_id: int) -> Dict[str, Any]:
         "clan_exposure_rows": clan_exposure_rows,
         "borrower_trust_score": borrower_score,
         "guarantor_trust_scores": guarantor_scores,
+        "trust_slip": trust_slip,
     }
 
 
@@ -290,9 +276,6 @@ def _build_clan_loans_csv(db: Session, *, clan_id: int) -> bytes:
     return _csv_bytes(rows)
 
 
-# -------------------------
-# Clan exposure exports
-# -------------------------
 @router.get("/clans/{clan_id}/exposure.csv")
 def download_clan_exposure_csv(
     clan_id: int,
@@ -342,9 +325,6 @@ def download_clan_exposure_pdf(
     )
 
 
-# -------------------------
-# Governance pack ZIP
-# -------------------------
 @router.get("/clans/{clan_id}/governance-pack.zip")
 def download_clan_governance_pack(
     clan_id: int,
@@ -398,9 +378,6 @@ def download_clan_governance_pack(
     )
 
 
-# -------------------------
-# Loan trust report (CSV + PDF)
-# -------------------------
 @router.get("/loans/{loan_id}/trust-report.csv")
 def download_loan_trust_report_csv(
     loan_id: int,
@@ -442,12 +419,16 @@ def download_loan_trust_report_csv(
 
     rows.append(["SECTION", "TRUST_SCORES"])
     if borrower_score:
-        rows.append(["borrower_score", borrower_score.get("score")])
-        rows.append(["borrower_positives", borrower_score.get("positives")])
-        rows.append(["borrower_negatives", borrower_score.get("negatives")])
-        rows.append(["borrower_counts", borrower_score.get("counts")])
+        rows.append(["standing_score", borrower_score.get("standing_score")])
+        rows.append(["band", borrower_score.get("band")])
+        rows.append(["level_label", borrower_score.get("level_label")])
+        rows.append(["lifetime_trust", borrower_score.get("lifetime_trust")])
+        rows.append(["recency_factor", borrower_score.get("recency_factor")])
+        rows.append(["counts", borrower_score.get("counts")])
+        rows.append(["gains", borrower_score.get("gains")])
+        rows.append(["penalties", borrower_score.get("penalties")])
     else:
-        rows.append(["borrower_score", None])
+        rows.append(["standing_score", None])
     rows.append([])
 
     rows.append(["SECTION", "CLAN_EXPOSURE"])
@@ -457,10 +438,10 @@ def download_loan_trust_report_csv(
     rows.append([])
 
     rows.append(["SECTION", "GUARANTORS"])
-    rows.append(["guarantor_row_id", "guarantor_user_id", "email", "status", "pledge_amount", "locked_amount", "released_amount", "responded_at", "created_at", "trust_score"])
+    rows.append(["guarantor_row_id", "guarantor_user_id", "email", "status", "pledge_amount", "locked_amount", "released_amount", "responded_at", "created_at", "standing_score", "band"])
     for g in guarantors:
         uid = int(g.guarantor_user_id)
-        score = (guarantor_scores.get(uid, {}) or {}).get("score")
+        score = guarantor_scores.get(uid, {}) or {}
         rows.append([
             int(g.id),
             uid,
@@ -471,7 +452,8 @@ def download_loan_trust_report_csv(
             str(getattr(g, "released_amount", 0)),
             getattr(g, "responded_at", None),
             getattr(g, "created_at", None),
-            score,
+            score.get("standing_score"),
+            score.get("band"),
         ])
     rows.append([])
 
@@ -524,7 +506,7 @@ def download_loan_trust_report_pdf(
         repayments=data["repayments"],
         trust_events=data["trust_events"],
         user_email_by_id=data["user_email_by_id"],
-        clan_exposure_rows=data["clan_exposure_rows"],  # ✅ always pass
+        clan_exposure_rows=data["clan_exposure_rows"],
         borrower_trust_score=data["borrower_trust_score"],
         guarantor_trust_scores=data["guarantor_trust_scores"],
     )
@@ -533,5 +515,93 @@ def download_loan_trust_report_pdf(
     return StreamingResponse(
         BytesIO(pdf_bytes),
         media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/loans/{loan_id}/evidence-pack.zip")
+def download_loan_evidence_pack_zip(
+    loan_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    data = _gather_report_data(db, loan_id=loan_id)
+    loan: Loan = data["loan"]
+    _ensure_can_view_loan_report(db, current_user=current_user, loan=loan)
+
+    trust_slip = data.get("trust_slip")
+    pdf_bytes = build_loan_trust_report_pdf(
+        loan=data["loan"],
+        clan=data["clan"],
+        borrower=data["borrower"],
+        guarantors=data["guarantors"],
+        repayments=data["repayments"],
+        trust_events=data["trust_events"],
+        user_email_by_id=data["user_email_by_id"],
+        clan_exposure_rows=data["clan_exposure_rows"],
+        borrower_trust_score=data["borrower_trust_score"],
+        guarantor_trust_scores=data["guarantor_trust_scores"],
+    )
+
+    snapshot = None
+    if trust_slip and getattr(trust_slip, "snapshot_json", None):
+        try:
+            snapshot = json.loads(trust_slip.snapshot_json)
+        except Exception:
+            snapshot = {"raw_snapshot_json": trust_slip.snapshot_json}
+
+    manifest = {
+        "artifact": "gmfn_loan_evidence_pack",
+        "loan_id": int(loan.id),
+        "clan_id": int(loan.clan_id),
+        "borrower_user_id": int(loan.borrower_user_id),
+        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "files": [
+            "manifest.json",
+            "trustslip_snapshot.json",
+            "trust_timeline.pdf",
+            "checksums.json",
+            "README.txt",
+        ],
+    }
+
+    trustslip_snapshot = snapshot or {
+        "trust_slip_id": int(getattr(trust_slip, "id", 0) or 0) if trust_slip else None,
+        "code": getattr(trust_slip, "code", None) if trust_slip else None,
+        "snapshot_version": getattr(trust_slip, "snapshot_version", None) if trust_slip else None,
+        "snapshot_checksum": getattr(trust_slip, "snapshot_checksum", None) if trust_slip else None,
+        "status": getattr(trust_slip, "status", None) if trust_slip else None,
+    }
+
+    checksums = {
+        "trust_timeline_pdf_bytes": len(pdf_bytes),
+        "trustslip_snapshot_checksum": getattr(trust_slip, "snapshot_checksum", None) if trust_slip else None,
+    }
+
+    readme = (
+        "GMFN Loan Evidence Pack\n"
+        f"Loan ID: {loan.id}\n"
+        f"Clan ID: {loan.clan_id}\n"
+        "Contents:\n"
+        "- manifest.json\n"
+        "- trustslip_snapshot.json\n"
+        "- trust_timeline.pdf\n"
+        "- checksums.json\n"
+        "- README.txt\n"
+    )
+
+    ts = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+    zip_buf = BytesIO()
+    with zipfile.ZipFile(zip_buf, "w", compression=zipfile.ZIP_DEFLATED) as z:
+        z.writestr("manifest.json", json.dumps(manifest, indent=2, default=str))
+        z.writestr("trustslip_snapshot.json", json.dumps(trustslip_snapshot, indent=2, default=str))
+        z.writestr("trust_timeline.pdf", pdf_bytes)
+        z.writestr("checksums.json", json.dumps(checksums, indent=2, default=str))
+        z.writestr("README.txt", readme)
+
+    filename = f"gmfn-loan-{loan.id}-evidence-pack-{ts}.zip"
+    return StreamingResponse(
+        BytesIO(zip_buf.getvalue()),
+        media_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

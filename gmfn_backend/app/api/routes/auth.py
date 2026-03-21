@@ -1,36 +1,35 @@
 from __future__ import annotations
 
-from typing import Literal
+import secrets
+from datetime import datetime, timedelta, timezone
+from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
-from app.core.clan_auth import ensure_membership, get_or_create_default_clan
-from app.core.dev_guard import require_dev_mode  # ✅ DEV MODE GUARD
+from app.core.clan_auth import ensure_membership
+from app.core.dev_guard import require_dev_mode
 from app.core.security import create_access_token, get_password_hash, verify_password
 from app.db.database import get_db
-from app.db.models import User
-import secrets
-from datetime import datetime, timezone
+from app.db.models import Clan, ClanInvite, ClanJoinRequest, ClanMembership, User
+
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-# ---------------------------
-# Schemas
-# ---------------------------
 class UserCreate(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(..., min_length=6)
 
 
 class UserOut(BaseModel):
     id: int
     email: EmailStr
     role: str
+    gmfn_id: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -43,86 +42,297 @@ class TokenOut(BaseModel):
 class DevUserCreate(BaseModel):
     email: EmailStr
     password: str
-    role: Literal["user", "admin"] = "user"  # ✅ strict, Swagger dropdown
+    role: Literal["user", "admin"] = "user"
 
 
 class DevResetPassword(BaseModel):
     email: EmailStr
     new_password: str
-    role: Literal["user", "admin"] | None = None  # optional role update
+    role: Literal["user", "admin"] | None = None
 
 
-# ---------------------------
-# Helpers
-# ---------------------------
+class DevVerifyPhoneIn(BaseModel):
+    email: str
+    phone_e164: str
+
+
+class FounderSignupWithInviteIn(BaseModel):
+    invite_code: str = Field(..., min_length=3)
+    email: EmailStr
+    password: str = Field(..., min_length=6)
+    clan_name: str = Field(..., min_length=2, max_length=80)
+    clan_description: Optional[str] = Field(default=None, max_length=500)
+
+
+class FounderSignupWithInviteOut(BaseModel):
+    ok: bool
+    user_id: int
+    email: EmailStr
+    gmfn_id: Optional[str] = None
+    clan_id: int
+    clan_name: str
+    membership_role: str
+    access_token: str
+    token_type: str = "bearer"
+
+
+class ActivateApprovedMemberIn(BaseModel):
+    gmfn_id: str = Field(..., min_length=6, max_length=64)
+    password: str = Field(..., min_length=6)
+
+
+class ActivateApprovedMemberOut(BaseModel):
+    ok: bool
+    user_id: int
+    email: str
+    gmfn_id: str
+    access_token: str
+    token_type: str = "bearer"
+
+
+class ActivateMembershipIn(BaseModel):
+    gmfn_id: str = Field(..., min_length=6, max_length=64)
+    password: str = Field(..., min_length=6)
+    confirm_password: str = Field(..., min_length=6)
+    request_id: Optional[str] = None
+
+
 def authenticate_user(db: Session, email: str, password: str) -> User | None:
     user = db.query(User).filter(User.email == email).first()
     if not user:
         return None
-    if not verify_password(password, user.hashed_password):
+
+    hashed = str(getattr(user, "hashed_password", "") or "")
+    if not hashed or hashed == "PENDING_APPROVAL":
         return None
+
+    if not verify_password(password, hashed):
+        return None
+
     return user
 
 
-def try_ensure_user_in_default_clan(db: Session, user: User) -> None:
-    """
-    IMPORTANT: Do NOT allow clan bootstrapping errors to crash login/register.
-    We'll log it and continue so you can still login.
-    """
-    try:
-        clan = get_or_create_default_clan(db=db)
-        clan_role = "admin" if (user.role or "").lower() == "admin" else "user"
-        ensure_membership(db=db, clan=clan, user=user, role=clan_role)
-    except Exception as e:
-        try:
-            db.rollback()
-        except Exception:
-            pass
-        print("⚠️ Clan bootstrap failed during login/register:", repr(e))
+def authenticate_user_by_identity(db: Session, identity: str, password: str) -> User | None:
+    raw = str(identity or "").strip()
+    if not raw:
+        return None
+
+    user = db.query(User).filter(User.email == raw).first()
+    if not user:
+        user = db.query(User).filter(User.gmfn_id == raw).first()
+    if not user:
+        return None
+
+    hashed = str(getattr(user, "hashed_password", "") or "")
+    if not hashed or hashed == "PENDING_APPROVAL":
+        return None
+
+    if not verify_password(password, hashed):
+        return None
+
+    return user
+
 
 def _generate_gmfn_id() -> str:
-    # Example: GMFN-7K2F93QX (short, readable)
-    return "GMFN-" + secrets.token_hex(4).upper()  # 8 hex chars
+    return "GMFN-U-" + secrets.token_hex(4).upper()
 
-def _ensure_user_gmfn_id(db: Session, user: User) -> None:
-    # Backfill on-demand for existing users
-    if getattr(user, "gmfn_id", None):
-        return
 
-    # Generate with collision check (very low probability, but we do it anyway)
+def _ensure_user_gmfn_id(db: Session, user: User) -> User:
+    current = str(getattr(user, "gmfn_id", "") or "").strip()
+    if current:
+        return user
+
     for _ in range(20):
-        cand = _generate_gmfn_id()
-        exists = db.query(User).filter(User.gmfn_id == cand).first()
+        candidate = _generate_gmfn_id()
+        exists = db.query(User).filter(User.gmfn_id == candidate).first()
         if not exists:
-            user.gmfn_id = cand
+            user.gmfn_id = candidate
             db.add(user)
             db.commit()
             db.refresh(user)
-            return
+            return user
 
     raise HTTPException(status_code=500, detail="Could not generate unique GMFN ID.")
-# ---------------------------
-# Routes
-# ---------------------------
+
+
+def _utc_aware(dt: Optional[datetime]) -> Optional[datetime]:
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _validate_founder_invite(db: Session, code: str) -> ClanInvite:
+    safe_code = (code or "").strip()
+    if not safe_code:
+        raise HTTPException(status_code=400, detail="Invite code is required")
+
+    invite = db.query(ClanInvite).filter(ClanInvite.code == safe_code).first()
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invitation not found")
+
+    if not bool(invite.is_active):
+        raise HTTPException(status_code=400, detail="Invitation is not active")
+
+    if invite.revoked_at is not None:
+        raise HTTPException(status_code=400, detail="Invitation has been revoked")
+
+    expires_at = _utc_aware(invite.expires_at)
+    if expires_at is not None and expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Invitation has expired")
+
+    max_uses = int(invite.max_uses or 0)
+    uses = int(invite.uses or 0)
+    if max_uses > 0 and uses >= max_uses:
+        raise HTTPException(status_code=400, detail="Invitation usage limit reached")
+
+    return invite
+
+
+def _create_founder_clan(
+    db: Session,
+    *,
+    current_user: User,
+    clan_name: str,
+    clan_description: Optional[str],
+) -> tuple[Clan, str]:
+    existing = db.query(Clan).filter(Clan.name == clan_name).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Clan name already exists")
+
+    now = datetime.now(timezone.utc)
+    invite_code = secrets.token_urlsafe(16)
+
+    clan = Clan(
+        name=clan_name,
+        description=clan_description,
+        marketplace_name=f"{clan_name} Marketplace",
+        marketplace_description=f"Marketplace for {clan_name} community members.",
+        invite_code=invite_code,
+        invite_created_at=now,
+        invite_expires_at=now + timedelta(days=7),
+        invite_max_uses=None,
+        invite_uses=0,
+    )
+    db.add(clan)
+    db.commit()
+    db.refresh(clan)
+
+    membership = ensure_membership(db=db, clan=clan, user=current_user, role="admin")
+    return clan, membership.role
+
+
+def _is_user_approved_somewhere(db: Session, user: User) -> bool:
+    membership_exists = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.user_id == int(user.id),
+            ClanMembership.left_at.is_(None),
+        )
+        .first()
+        is not None
+    )
+    return membership_exists
+
+
 @router.post("/register", response_model=UserOut, status_code=201)
 def register(payload: UserCreate, db: Session = Depends(get_db)):
-    existing = db.query(User).filter(User.email == payload.email).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
-
-    user = User(
-        email=payload.email,
-        hashed_password=get_password_hash(payload.password),
-        role="user",
+    raise HTTPException(
+        status_code=403,
+        detail=(
+            "Open public registration is not enabled. "
+            "Use community invitation approval or founder create-community onboarding."
+        ),
     )
+
+
+@router.post("/activate-approved-member", response_model=ActivateApprovedMemberOut)
+def activate_approved_member(
+    payload: ActivateApprovedMemberIn,
+    db: Session = Depends(get_db),
+):
+    gmfn_id = str(payload.gmfn_id or "").strip().upper()
+    if not gmfn_id:
+        raise HTTPException(status_code=400, detail="GMFN ID is required")
+
+    user = db.query(User).filter(User.gmfn_id == gmfn_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Approved member identity not found")
+
+    if not _is_user_approved_somewhere(db, user):
+        raise HTTPException(
+            status_code=403,
+            detail="This identity has not been admitted to an active community",
+        )
+
+    current_hash = str(getattr(user, "hashed_password", "") or "")
+    if current_hash and current_hash != "PENDING_APPROVAL":
+        raise HTTPException(
+            status_code=409,
+            detail="This approved identity has already been activated",
+        )
+
+    user.hashed_password = get_password_hash(payload.password)
     db.add(user)
     db.commit()
     db.refresh(user)
 
-    # ✅ never crash register if clan fails
-    try_ensure_user_in_default_clan(db, user)
+    access_token = create_access_token(data={"sub": user.email})
+    return {
+        "ok": True,
+        "user_id": int(user.id),
+        "email": user.email,
+        "gmfn_id": str(user.gmfn_id),
+        "access_token": access_token,
+        "token_type": "bearer",
+    }
 
-    return user
+
+@router.post("/activate-membership")
+def activate_membership(
+    payload: ActivateMembershipIn,
+    db: Session = Depends(get_db),
+):
+    gmfn_id = str(payload.gmfn_id or "").strip().upper()
+    password = payload.password or ""
+    confirm_password = payload.confirm_password or ""
+
+    if not gmfn_id:
+        raise HTTPException(status_code=400, detail="GMFN ID is required")
+
+    if not password or len(password) < 6:
+        raise HTTPException(
+            status_code=400,
+            detail="Password must be at least 6 characters",
+        )
+
+    if password != confirm_password:
+        raise HTTPException(status_code=400, detail="Passwords do not match")
+
+    user = db.query(User).filter(User.gmfn_id == gmfn_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Invalid GMFN ID")
+
+    if not _is_user_approved_somewhere(db, user):
+        raise HTTPException(
+            status_code=403,
+            detail="This identity has not been admitted to an active community",
+        )
+
+    user.hashed_password = get_password_hash(password)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    access_token = create_access_token(data={"sub": user.email})
+
+    return {
+        "status": "activated",
+        "gmfn_id": user.gmfn_id,
+        "access_token": access_token,
+        "token_type": "bearer",
+    }
 
 
 @router.post("/login", response_model=TokenOut)
@@ -130,27 +340,129 @@ def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
-    user = authenticate_user(db, email=form_data.username, password=form_data.password)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    identity = str(form_data.username or "").strip()
+    password = str(form_data.password or "")
 
-    # ✅ never crash login if clan fails
-    try_ensure_user_in_default_clan(db, user)
+    user = authenticate_user_by_identity(db, identity=identity, password=password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials or account not yet activated",
+        )
+
+    user = _ensure_user_gmfn_id(db, user)
 
     access_token = create_access_token(data={"sub": user.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
 
+@router.post("/signup-with-invite", response_model=FounderSignupWithInviteOut, status_code=201)
+def signup_with_invite(payload: FounderSignupWithInviteIn, db: Session = Depends(get_db)):
+    invite = _validate_founder_invite(db, payload.invite_code)
+
+    existing = db.query(User).filter(User.email == payload.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    user = User(
+        email=payload.email,
+        hashed_password=get_password_hash(payload.password),
+        role="admin",
+    )
+    db.add(user)
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="User already exists")
+
+    db.refresh(user)
+    user = _ensure_user_gmfn_id(db, user)
+
+    clan, membership_role = _create_founder_clan(
+        db,
+        current_user=user,
+        clan_name=payload.clan_name.strip(),
+        clan_description=payload.clan_description,
+    )
+
+    invite.uses = int(invite.uses or 0) + 1
+    if invite.max_uses is not None and invite.uses >= int(invite.max_uses):
+        invite.is_active = False
+
+    db.add(invite)
+    db.commit()
+    db.refresh(user)
+
+    access_token = create_access_token(data={"sub": user.email})
+
+    return {
+        "ok": True,
+        "user_id": int(user.id),
+        "email": user.email,
+        "gmfn_id": getattr(user, "gmfn_id", None),
+        "clan_id": int(clan.id),
+        "clan_name": clan.name,
+        "membership_role": membership_role,
+        "access_token": access_token,
+        "token_type": "bearer",
+    }
+
+
 @router.get("/me", response_model=UserOut)
-def me(current_user: User = Depends(get_current_user)):
+def me(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        current_user = _ensure_user_gmfn_id(db, current_user)
+    except Exception:
+        pass
     return current_user
-    _ensure_user_gmfn_id(db, current_user)
+
+
+@router.get("/approved-member/{gmfn_id}", response_model=dict[str, object])
+def get_approved_member_activation_status(
+    gmfn_id: str,
+    db: Session = Depends(get_db),
+):
+    safe_gmfn_id = str(gmfn_id or "").strip().upper()
+    if not safe_gmfn_id:
+        raise HTTPException(status_code=400, detail="GMFN ID is required")
+
+    user = db.query(User).filter(User.gmfn_id == safe_gmfn_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Approved member identity not found")
+
+    approved = _is_user_approved_somewhere(db, user)
+    activated = bool(
+        str(getattr(user, "hashed_password", "") or "") not in ("", "PENDING_APPROVAL")
+    )
+
+    latest_join_request = (
+        db.query(ClanJoinRequest)
+        .filter(ClanJoinRequest.applicant_user_id == int(user.id))
+        .order_by(ClanJoinRequest.created_at.desc(), ClanJoinRequest.id.desc())
+        .first()
+    )
+
+    return {
+        "ok": True,
+        "gmfn_id": safe_gmfn_id,
+        "approved": approved,
+        "activated": activated,
+        "status": (latest_join_request.status if latest_join_request else None),
+        "user_id": int(user.id),
+        "email": user.email,
+    }
+
 
 @router.post(
     "/dev/create-user",
     status_code=201,
     response_model=UserOut,
-    dependencies=[Depends(require_dev_mode)],  # ✅ HIDDEN unless GMFN_DEV_MODE enabled
+    dependencies=[Depends(require_dev_mode)],
 )
 def dev_create_user(payload: DevUserCreate, db: Session = Depends(get_db)):
     existing = db.query(User).filter(User.email == payload.email).first()
@@ -160,7 +472,7 @@ def dev_create_user(payload: DevUserCreate, db: Session = Depends(get_db)):
     user = User(
         email=payload.email,
         hashed_password=get_password_hash(payload.password),
-        role=payload.role,  # already validated by Literal
+        role=payload.role,
     )
     db.add(user)
     try:
@@ -170,23 +482,16 @@ def dev_create_user(payload: DevUserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=409, detail="User already exists")
 
     db.refresh(user)
-
-    # ✅ never crash dev-create-user if clan fails
-    try_ensure_user_in_default_clan(db, user)
-    _ensure_user_gmfn_id(db, user)
+    user = _ensure_user_gmfn_id(db, user)
     return user
 
 
 @router.post(
     "/dev/reset-password",
     response_model=UserOut,
-    dependencies=[Depends(require_dev_mode)],  # ✅ DEV ONLY
+    dependencies=[Depends(require_dev_mode)],
 )
 def dev_reset_password(payload: DevResetPassword, db: Session = Depends(get_db)):
-    """
-    DEV-ONLY: Reset an existing user's password (and optionally role).
-    This prevents endless "401 password unknown" loops during local development.
-    """
     user = db.query(User).filter(User.email == payload.email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -199,39 +504,39 @@ def dev_reset_password(payload: DevResetPassword, db: Session = Depends(get_db))
     db.commit()
     db.refresh(user)
 
-    # keep clan membership aligned (non-fatal)
-    try_ensure_user_in_default_clan(db, user)
-    
+    try:
+        user = _ensure_user_gmfn_id(db, user)
+    except Exception:
+        pass
+
     return user
-from pydantic import BaseModel
 
-class DevVerifyPhoneIn(BaseModel):
-    email: str
-    phone_e164: str  # must be like +447...
 
-@router.post("/auth/dev/verify-phone", status_code=200)
+@router.post(
+    "/dev/verify-phone",
+    status_code=200,
+    dependencies=[Depends(require_dev_mode)],
+)
 def dev_verify_phone(
     payload: DevVerifyPhoneIn,
     db: Session = Depends(get_db),
 ):
-    # DEV ONLY guard if you have one
-    # if not dev_mode_enabled(): raise HTTPException(403, "DEV only")
-
     user = db.query(User).filter(User.email == payload.email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     phone = (payload.phone_e164 or "").strip()
     if not phone.startswith("+") or len(phone) < 8:
-        raise HTTPException(status_code=400, detail="phone_e164 must be in +E164 format (e.g. +447...)")
+        raise HTTPException(
+            status_code=400,
+            detail="phone_e164 must be in +E164 format (e.g. +447...)",
+        )
 
-    # Enforce uniqueness
     clash = db.query(User).filter(User.phone_e164 == phone, User.id != user.id).first()
     if clash:
         raise HTTPException(status_code=400, detail="phone already in use by another account")
 
-    # Ensure gmfn_id exists too
-    _ensure_user_gmfn_id(db, user)
+    user = _ensure_user_gmfn_id(db, user)
 
     user.phone_e164 = phone
     user.phone_verified_at = datetime.now(timezone.utc)
@@ -245,5 +550,7 @@ def dev_verify_phone(
         "email": user.email,
         "gmfn_id": user.gmfn_id,
         "phone_e164": user.phone_e164,
-        "phone_verified_at": user.phone_verified_at.isoformat() if user.phone_verified_at else None,
-    }    
+        "phone_verified_at": user.phone_verified_at.isoformat()
+        if user.phone_verified_at
+        else None,
+    }

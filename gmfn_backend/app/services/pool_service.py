@@ -1,4 +1,3 @@
-# app/services/pool_service.py
 from __future__ import annotations
 
 from datetime import datetime
@@ -9,11 +8,9 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.models import Loan, PoolEvent
+from app.services.notification_hooks import notify_pool_deposit_confirmed
 
 
-# -------------------------
-# Helpers
-# -------------------------
 def _d(x: object) -> Decimal:
     if isinstance(x, Decimal):
         return x
@@ -30,24 +27,7 @@ def build_reference(clan_id: int, user_id: int) -> str:
     return f"GMFN-CLAN-{int(clan_id)}-U{int(user_id)}"
 
 
-# -------------------------
-# Core balances (B2 + reservation)
-# -------------------------
 def compute_pool_balances(db: Session, *, clan_id: int, user_id: int, currency: str) -> Dict[str, Decimal]:
-    """
-    Non-custodial pool ledger (pilot).
-
-    Confirmed:
-      available = sum(deposit.confirmed) - sum(withdrawal.confirmed)
-
-    Pending:
-      pending_deposits = sum(deposit.requested)
-      pending_withdrawals = sum(withdrawal.requested)
-
-    B2 reservation honesty:
-      reserved_pool = sum(Loan.pool_used) for ACTIVE loans (pending/approved)
-      effective_available = max(0, available - reserved_pool)
-    """
     ccy = _ccy(currency)
 
     dep_confirmed = (
@@ -130,9 +110,6 @@ def compute_pool_balances(db: Session, *, clan_id: int, user_id: int, currency: 
     }
 
 
-# -------------------------
-# User actions
-# -------------------------
 def request_deposit(
     db: Session,
     *,
@@ -201,9 +178,6 @@ def request_withdrawal(
     return e
 
 
-# -------------------------
-# Admin actions (expected by admin_pool.py)
-# -------------------------
 def list_pending_pool_events(
     db: Session,
     *,
@@ -233,18 +207,13 @@ def confirm_pool_event(
     confirmed_by_user_id: int,
     note: Optional[str] = None,
 ) -> PoolEvent:
-    """
-    Confirms a pending pool event by converting:
-      deposit.requested     -> deposit.confirmed
-      withdrawal.requested  -> withdrawal.confirmed
-
-    Also stamps confirmed_at and confirmed_by_user_id.
-    """
     e = db.get(PoolEvent, int(event_id))
     if not e:
         raise ValueError("Pool event not found")
     if int(e.clan_id) != int(clan_id):
         raise ValueError("Pool event clan mismatch")
+
+    original_type = e.event_type
 
     if e.event_type == "deposit.requested":
         e.event_type = "deposit.confirmed"
@@ -257,7 +226,6 @@ def confirm_pool_event(
     e.confirmed_by_user_id = int(confirmed_by_user_id)
 
     if note:
-        # keep original note, append admin note
         if e.note:
             e.note = f"{e.note} | admin: {note}"
         else:
@@ -265,4 +233,13 @@ def confirm_pool_event(
 
     db.add(e)
     db.flush()
+
+    if original_type == "deposit.requested":
+        notify_pool_deposit_confirmed(
+            db,
+            user_id=int(e.user_id),
+            amount=str(e.amount),
+            currency=str(e.currency),
+        )
+
     return e

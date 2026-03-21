@@ -1,4 +1,3 @@
-# app/services/reconciliation_service.py
 from __future__ import annotations
 
 import hashlib
@@ -6,12 +5,12 @@ import json
 import re
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Any, Dict, Optional, Tuple, List
+from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.db.bank_models import BankEvent, ExpectedPayment, BankCredit
+from app.db.bank_models import BankCredit, BankEvent, ExpectedPayment
 
 
 def _now_utc() -> datetime:
@@ -275,7 +274,6 @@ def _create_credit(
             db.refresh(row)
         except IntegrityError:
             db.rollback()
-            # deterministic: credit already created for this bank_event
             existing = (
                 db.query(BankCredit)
                 .filter(BankCredit.source_bank_event_id == int(source_bank_event_id))
@@ -324,7 +322,6 @@ def apply_available_credits_to_expected(
         use = min(c_amt, remaining)
         use = _q2(use)
 
-        # apply to expected
         exp.paid_amount = _q2(exp.paid_amount) + use
         remaining = _q2(remaining - use)
         exp.remaining_amount = remaining
@@ -332,7 +329,6 @@ def apply_available_credits_to_expected(
         applied_total = _q2(applied_total + use)
         used += 1
 
-        # reduce or delete credit
         new_c = _q2(c_amt - use)
         if new_c <= Decimal("0"):
             db.delete(c)
@@ -341,12 +337,10 @@ def apply_available_credits_to_expected(
         if not dry_run:
             db.add(c)
 
-    # update status if fully covered
     if remaining == Decimal("0"):
         exp.status = "confirmed"
         exp.status_reason = "covered_by_credit"
     else:
-        # only set to partial if we've applied something
         if applied_total > Decimal("0"):
             exp.status = "partial"
             exp.status_reason = "partially_covered_by_credit"
@@ -357,6 +351,47 @@ def apply_available_credits_to_expected(
         db.refresh(exp)
 
     return {"applied": str(applied_total), "used_credits": used}
+
+
+def _maybe_apply_match(
+    db: Session,
+    *,
+    be: BankEvent,
+    exp: Optional[ExpectedPayment],
+    dry_run: bool,
+) -> None:
+    """
+    Apply matched/confirmed payment into downstream ledgers.
+
+    This is intentionally best-effort:
+    - reconciliation truth is committed first
+    - downstream application runs second
+    - exceptions here should not roll back reconciliation
+    """
+    if dry_run:
+        return
+    if not exp:
+        return
+
+    status = (be.status or "").lower()
+    if status not in {"confirmed", "partial"}:
+        return
+
+    try:
+        from app.services.bank_application_service import apply_expected_payment_match
+
+        apply_expected_payment_match(
+            db,
+            bank_event_id=int(be.id),
+            expected_payment_id=int(exp.id),
+        )
+    except Exception as exc:
+        current_reason = (be.status_reason or "").strip()
+        extra = f"application_error:{str(exc)[:80]}"
+        be.status_reason = f"{current_reason}|{extra}".strip("|")
+        db.add(be)
+        db.commit()
+        db.refresh(be)
 
 
 def reconcile_one_event(
@@ -392,7 +427,6 @@ def reconcile_one_event(
             db.refresh(be)
         return be
 
-    # Only credit events should match ExpectedPayments in MVP
     if (be.direction or "").lower() != "credit":
         be.status = "mismatch_flagged"
         be.status_reason = "non_credit_event_skipped"
@@ -427,7 +461,6 @@ def reconcile_one_event(
 
     _ensure_expected_remaining_initialized(exp)
 
-    # If expected is already confirmed with another bank_event, treat as duplicate / conflict
     if _already_confirmed_expected(exp) and exp.bank_event_id and int(exp.bank_event_id) != int(be.id):
         be.status = "duplicate"
         be.status_reason = "expected_already_confirmed_elsewhere"
@@ -438,10 +471,8 @@ def reconcile_one_event(
             db.refresh(be)
         return be
 
-    # Linkage decision (preserves your existing canonical behaviour)
     should_confirm = bool(be.canonical) or bool(confirm_non_canonical)
 
-    # Apply payment deterministically
     incoming = _q2(be.amount)
     remaining = _q2(exp.remaining_amount)
     apply_amt = min(incoming, remaining)
@@ -450,7 +481,6 @@ def reconcile_one_event(
     exp.paid_amount = _q2(exp.paid_amount) + apply_amt
     exp.remaining_amount = _q2(remaining - apply_amt)
 
-    # Set statuses
     if exp.remaining_amount == Decimal("0.00"):
         exp.status = "confirmed" if should_confirm else (exp.status or "expected")
         exp.status_reason = reason if should_confirm else "matched_unconfirmed"
@@ -458,7 +488,6 @@ def reconcile_one_event(
         be.status_reason = "matched_expected"
         be.confidence = 10 if be.canonical else (7 if should_confirm else 5)
     else:
-        # Partial payment case
         exp.status = "partial"
         exp.status_reason = "partial_payment_applied"
         be.status = "partial"
@@ -468,10 +497,8 @@ def reconcile_one_event(
     exp.bank_event_id = be.id
     be.expected_payment_id = exp.id
 
-    # Overpay -> credit
     excess = _q2(incoming - apply_amt)
     if excess > Decimal("0.00"):
-        # Store credit for same clan/user/currency
         _create_credit(
             db,
             clan_id=int(exp.clan_id),
@@ -487,6 +514,8 @@ def reconcile_one_event(
         db.add(be)
         db.commit()
         db.refresh(be)
+        db.refresh(exp)
+        _maybe_apply_match(db, be=be, exp=exp, dry_run=dry_run)
 
     return be
 

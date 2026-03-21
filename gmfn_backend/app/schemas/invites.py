@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime
 from typing import Optional
 
@@ -20,14 +22,8 @@ class ClanInviteOut(BaseModel):
     created_at: datetime
     expires_at: Optional[datetime] = None
     revoked_at: Optional[datetime] = None
-        # ✅ Preferred: user-facing link (frontend)
-    share_link: str | None = None
-
-    # ✅ Fallback: API link (debug/testing)
-    api_link: str | None = None
-
-    # ✅ NEW: WhatsApp-style copy link
     share_link: Optional[str] = None
+    api_link: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -40,18 +36,7 @@ class JoinByInviteOut(BaseModel):
     clan_id: int
     clan_name: str
     membership_id: int
-class InvitePreviewOut(BaseModel):
-    code: str
-    clan_id: int
-    clan_name: str
-    is_active: bool
-    uses: int
-    max_uses: Optional[int] = None
-    expires_at: Optional[datetime] = None
-    revoked_at: Optional[datetime] = None
-from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel
+
 
 class InvitePreviewOut(BaseModel):
     code: str
@@ -62,9 +47,13 @@ class InvitePreviewOut(BaseModel):
     max_uses: Optional[int] = None
     expires_at: Optional[datetime] = None
     revoked_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
 
 
 class InviteRevokeOut(BaseModel):
     code: str
     is_active: bool
     revoked_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}

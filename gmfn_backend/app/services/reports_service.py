@@ -1,4 +1,3 @@
-# app/services/reports_service.py
 from __future__ import annotations
 
 from datetime import datetime
@@ -12,7 +11,7 @@ from reportlab.pdfgen import canvas
 from app.db.models import Loan, Clan, User, LoanGuarantor, Repayment, TrustEvent
 
 
-def _d(x) -> Decimal:
+def _d(x: Any) -> Decimal:
     return Decimal("0") if x is None else Decimal(str(x))
 
 
@@ -37,6 +36,91 @@ def _safe_meta(te: TrustEvent) -> Dict[str, Any]:
         return m if isinstance(m, dict) else {}
     except Exception:
         return {}
+
+
+def _timeline_note(te: TrustEvent) -> str:
+    meta = _safe_meta(te)
+    event_type = str(getattr(te, "event_type", "") or "").lower()
+
+    parts: List[str] = []
+
+    if event_type == "guarantee_given":
+        if meta.get("pledge_amount") is not None:
+            parts.append(f"pledge={meta.get('pledge_amount')}")
+        if meta.get("guarantee_gap") is not None:
+            parts.append(f"gap={meta.get('guarantee_gap')}")
+        if meta.get("reason"):
+            parts.append(f"reason={meta.get('reason')}")
+
+    elif event_type == "guarantee_released":
+        if meta.get("released_amount") is not None:
+            parts.append(f"released={meta.get('released_amount')}")
+        if meta.get("release_reason"):
+            parts.append(f"release_reason={meta.get('release_reason')}")
+        if meta.get("note"):
+            parts.append(f"note={meta.get('note')}")
+
+    elif event_type == "loan_repaid":
+        if meta.get("amount") is not None:
+            parts.append(f"amount={meta.get('amount')}")
+        if meta.get("payment_reference"):
+            parts.append(f"payment_ref={meta.get('payment_reference')}")
+        if meta.get("reason"):
+            parts.append(f"reason={meta.get('reason')}")
+
+    elif event_type == "loan_defaulted":
+        if meta.get("default_amount") is not None:
+            parts.append(f"default_amount={meta.get('default_amount')}")
+        if meta.get("days_past_due") is not None:
+            parts.append(f"days_past_due={meta.get('days_past_due')}")
+        if meta.get("trigger_mode"):
+            parts.append(f"trigger={meta.get('trigger_mode')}")
+        if meta.get("reason"):
+            parts.append(f"reason={meta.get('reason')}")
+
+    elif event_type in {"guarantor.approved", "guarantor_approved"}:
+        if meta.get("pledge_amount") is not None:
+            parts.append(f"pledge={meta.get('pledge_amount')}")
+        if meta.get("locked_amount") is not None:
+            parts.append(f"locked={meta.get('locked_amount')}")
+        if meta.get("reason"):
+            parts.append(f"reason={meta.get('reason')}")
+
+    elif event_type in {"guarantor.declined", "guarantor_declined"}:
+        if meta.get("released_amount") is not None:
+            parts.append(f"released={meta.get('released_amount')}")
+        if meta.get("reason"):
+            parts.append(f"reason={meta.get('reason')}")
+
+    elif event_type == "repayment.created":
+        if meta.get("amount") is not None:
+            parts.append(f"amount={meta.get('amount')}")
+        if meta.get("remaining_after") is not None:
+            parts.append(f"remaining_after={meta.get('remaining_after')}")
+
+    else:
+        for key in ("reason", "note", "amount", "status", "payment_reference"):
+            value = meta.get(key)
+            if value not in (None, ""):
+                parts.append(f"{key}={value}")
+
+    return " | ".join(parts)
+
+
+def _trust_score_label(score: Optional[Dict[str, Any]]) -> str:
+    if not score:
+        return "Not available"
+    band = score.get("band")
+    standing = score.get("standing_score")
+    level = score.get("level_label")
+    pieces = []
+    if standing is not None:
+        pieces.append(str(standing))
+    if band:
+        pieces.append(f"Band {band}")
+    if level:
+        pieces.append(str(level))
+    return " | ".join(pieces) if pieces else "Not available"
 
 
 def build_loan_trust_report_pdf(
@@ -92,9 +176,6 @@ def build_loan_trust_report_pdf(
         c.line(left, y, right, y)
         y -= 6 * mm
 
-    # -------------------------
-    # Header
-    # -------------------------
     h1("GMFN Loan Trust Report")
     c.setFont("Helvetica", 9)
     c.drawRightString(
@@ -104,52 +185,82 @@ def build_loan_trust_report_pdf(
     )
     line()
 
-    # -------------------------
-    # Summary
-    # -------------------------
     h2("Loan Summary")
     borrower_email = user_email_by_id.get(
         int(getattr(loan, "borrower_user_id", 0)),
         getattr(borrower, "email", "—"),
     )
+
+    amount = _d(getattr(loan, "amount", 0))
+    pool_used = _d(getattr(loan, "pool_used", 0))
+    guarantee_gap = _d(getattr(loan, "guarantee_gap", 0))
+    guarantors_required = int(getattr(loan, "guarantors_required", 0) or 0)
+
     p("Loan ID", str(getattr(loan, "id", "-")))
     p("Clan", f"{getattr(clan, 'name', None) or '—'} (ID: {getattr(loan, 'clan_id', '-')})")
     p("Borrower", borrower_email)
     p("Status", str(getattr(loan, "status", "—")))
-    p("Amount", f"{_fmt_money(getattr(loan, 'amount', 0))} {getattr(loan, 'currency', '')}")
-    p("Guarantors Required", str(int(getattr(loan, "guarantors_required", 0) or 0)))
+    p("Amount", f"{_fmt_money(amount)} {getattr(loan, 'currency', '')}")
+    p("Pool Used", _fmt_money(pool_used))
+    p("Guarantee Gap", _fmt_money(guarantee_gap))
+    p("Guarantors Required", str(guarantors_required))
     p("Created At", _fmt_dt(getattr(loan, "created_at", None)))
     p("Decision At", _fmt_dt(getattr(loan, "decision_at", None)))
     p("Repaid At", _fmt_dt(getattr(loan, "repaid_at", None)))
     line()
 
-    # -------------------------
-    # Trust Score Summary (NEW)
-    # -------------------------
     ensure_space()
-    h2("Trust Score Summary (Clan)")
-    if borrower_trust_score:
-        counts = borrower_trust_score.get("counts", {}) or {}
-        p("Borrower Trust Score (0–100)", str(borrower_trust_score.get("score", 0)))
-        p("Positive Signals", str(borrower_trust_score.get("positives", 0)))
-        p("Negative Signals", str(borrower_trust_score.get("negatives", 0)))
-        p("Guarantor Approvals", str(counts.get("guarantor_approved", 0)))
-        p("Guarantor Declines", str(counts.get("guarantor_declined", 0)))
-        p("Repayments Made", str(counts.get("repayment_made", 0)))
-        p("Loan Repaid", str(counts.get("loan_repaid", 0)))
-    else:
-        p("Borrower Trust Score", "Not available")
+    h2("Explainability Snapshot")
+
+    approved_guarantors = len([g for g in guarantors if str(getattr(g, "status", "")).lower() == "approved"])
+    total_locked = sum((_d(getattr(g, "locked_amount", 0)) for g in guarantors), Decimal("0"))
+    capacity_ratio = Decimal("0.00")
+    if guarantee_gap > Decimal("0"):
+        try:
+            capacity_ratio = total_locked / guarantee_gap
+        except Exception:
+            capacity_ratio = Decimal("0.00")
+
+    recommendation = "proceed"
+    if total_locked <= Decimal("0"):
+        recommendation = "block"
+    elif guarantee_gap > Decimal("0") and total_locked < guarantee_gap:
+        recommendation = "reduce_amount"
+
+    p("Approved Guarantors", str(approved_guarantors))
+    p("Approved Locked Coverage", _fmt_money(total_locked))
+    p("Coverage Ratio", f"{capacity_ratio:.2f}")
+    p("Evidence Recommendation", recommendation)
     line()
 
-    # -------------------------
-    # Guarantor Trust Scores (NEW)
-    # -------------------------
     ensure_space()
-    h2("Guarantor Trust Scores (Clan)")
+    h2("Trust Score Summary")
+    if borrower_trust_score:
+        counts = borrower_trust_score.get("counts", {}) or {}
+        gains = borrower_trust_score.get("gains", {}) or {}
+        penalties = borrower_trust_score.get("penalties", {}) or {}
+
+        p("Borrower Trust Snapshot", _trust_score_label(borrower_trust_score))
+        p("Lifetime Trust", str(borrower_trust_score.get("lifetime_trust", "0")))
+        p("Standing Score", str(borrower_trust_score.get("standing_score", "0")))
+        p("Recency Factor", str(borrower_trust_score.get("recency_factor", "0")))
+        p("Full Repayments", str(counts.get("full_repayments", 0)))
+        p("Guarantor Success", str(counts.get("guarantor_success", 0)))
+        p("Missed Payments", str(counts.get("missed_payments", 0)))
+        p("Defaults", str(counts.get("defaults", 0)))
+        p("Fraud Flags", str(counts.get("fraud_flags", 0)))
+        p("Total Gains", str(gains.get("total", "0")))
+        p("Total Penalties", str(penalties.get("total", "0")))
+    else:
+        p("Borrower Trust Snapshot", "Not available")
+    line()
+
+    ensure_space()
+    h2("Guarantor Trust Scores")
     c.setFont("Helvetica-Bold", 9)
     c.drawString(left, y, "Guarantor")
-    c.drawRightString(right - 45 * mm, y, "Score")
-    c.drawRightString(right, y, "Approvals/Declines")
+    c.drawRightString(right - 55 * mm, y, "Band")
+    c.drawRightString(right, y, "Standing Score")
     y -= 5 * mm
     c.setFont("Helvetica", 9)
 
@@ -159,28 +270,22 @@ def build_loan_trust_report_pdf(
     else:
         for g in guarantors:
             ensure_space()
-            uid = int(g.guarantor_user_id)
+            uid = int(getattr(g, "guarantor_user_id", 0) or 0)
             email = user_email_by_id.get(uid, f"user:{uid}")
             s = guarantor_trust_scores.get(uid, {}) or {}
-            score = s.get("score", 0)
-            counts = s.get("counts", {}) or {}
-            approvals = counts.get("guarantor_approved", 0)
-            declines = counts.get("guarantor_declined", 0)
+            band = s.get("band", "-")
+            standing = s.get("standing_score", "0")
 
             c.drawString(left, y, email[:45])
-            c.drawRightString(right - 45 * mm, y, str(score))
-            c.drawRightString(right, y, f"{approvals}/{declines}")
+            c.drawRightString(right - 55 * mm, y, str(band))
+            c.drawRightString(right, y, str(standing))
             y -= 5 * mm
 
     line()
 
-    # -------------------------
-    # Loan Statement
-    # -------------------------
     ensure_space()
     h2("Loan Statement")
 
-    loan_amount = _d(getattr(loan, "amount", 0))
     service_fee = _d(getattr(loan, "service_fee", 0))
     net_disbursed = _d(getattr(loan, "net_disbursed_amount", 0))
     guarantor_pool = _d(getattr(loan, "guarantor_pool", 0))
@@ -188,12 +293,12 @@ def build_loan_trust_report_pdf(
     paid_total = _d(getattr(loan, "paid_total", 0))
     remaining_amount = _d(getattr(loan, "remaining_amount", 0))
 
-    if net_disbursed <= 0 and loan_amount > 0:
-        net_disbursed = loan_amount - service_fee
+    if net_disbursed <= 0 and amount > 0:
+        net_disbursed = amount - service_fee
         if net_disbursed < 0:
             net_disbursed = Decimal("0")
 
-    p("Principal", _fmt_money(loan_amount))
+    p("Principal", _fmt_money(amount))
     p("Service Fee", _fmt_money(service_fee))
     p("Net Disbursed", _fmt_money(net_disbursed))
     p("Guarantor Pool", _fmt_money(guarantor_pool))
@@ -221,7 +326,7 @@ def build_loan_trust_report_pdf(
             ensure_space()
             amt = _d(getattr(r, "amount", 0))
             running_paid += amt
-            bal = loan_amount - running_paid
+            bal = amount - running_paid
             if bal < 0:
                 bal = Decimal("0")
 
@@ -237,12 +342,8 @@ def build_loan_trust_report_pdf(
 
     line()
 
-    # -------------------------
-    # Exposure / locks snapshot
-    # -------------------------
     ensure_space()
     h2("Guarantor Exposure Snapshot")
-    total_locked = sum((_d(getattr(g, "locked_amount", 0)) for g in guarantors), Decimal("0"))
     total_released = sum((_d(getattr(g, "released_amount", 0)) for g in guarantors), Decimal("0"))
     total_pledged = sum((_d(getattr(g, "pledge_amount", 0)) for g in guarantors), Decimal("0"))
     p("Total Pledged", _fmt_money(total_pledged))
@@ -250,9 +351,6 @@ def build_loan_trust_report_pdf(
     p("Total Released", _fmt_money(total_released))
     line()
 
-    # -------------------------
-    # Clan exposure table (printable)
-    # -------------------------
     ensure_space()
     h2("Clan Exposure Table (Pool vs Exposure)")
 
@@ -283,9 +381,6 @@ def build_loan_trust_report_pdf(
 
     line()
 
-    # -------------------------
-    # Trust timeline
-    # -------------------------
     ensure_space()
     h2("Trust Timeline")
 
@@ -304,30 +399,9 @@ def build_loan_trust_report_pdf(
         for te in trust_events:
             ensure_space()
 
-            actor_email = user_email_by_id.get(int(te.actor_user_id), f"user:{te.actor_user_id}")
-            subject_email = user_email_by_id.get(int(te.subject_user_id), f"user:{te.subject_user_id}")
-
-            meta = _safe_meta(te)
-            note = ""
-            et = str(getattr(te, "event_type", "")).upper()
-
-            if et == "GUARANTOR_APPROVED":
-                pledge = meta.get("pledge_amount")
-                available = meta.get("available_before")
-                pool = meta.get("pool_balance")
-                exposure = meta.get("exposure_before")
-
-                parts: List[str] = []
-                if pledge is not None:
-                    parts.append(f"pledge={pledge}")
-                if available is not None:
-                    parts.append(f"available={available}")
-                if pool is not None:
-                    parts.append(f"pool={pool}")
-                if exposure is not None:
-                    parts.append(f"exposure={exposure}")
-                if parts:
-                    note = " | " + ", ".join(parts)
+            actor_email = user_email_by_id.get(int(getattr(te, "actor_user_id", 0)), f"user:{getattr(te, 'actor_user_id', 0)}")
+            subject_email = user_email_by_id.get(int(getattr(te, "subject_user_id", 0)), f"user:{getattr(te, 'subject_user_id', 0)}")
+            note = _timeline_note(te)
 
             c.drawString(left, y, _fmt_dt(getattr(te, "created_at", None))[:16])
             c.drawString(left + 30 * mm, y, str(getattr(te, "event_type", ""))[:22])
@@ -338,13 +412,15 @@ def build_loan_trust_report_pdf(
             if note:
                 ensure_space()
                 c.setFont("Helvetica-Oblique", 7)
-                c.drawString(left + 30 * mm, y, note[:110])
+                c.drawString(left + 30 * mm, y, note[:120])
                 y -= 4.2 * mm
                 c.setFont("Helvetica", 8)
 
     c.showPage()
     c.save()
     return bio.getvalue()
+
+
 def build_clan_exposure_report_pdf(
     *,
     clan_id: int,
@@ -385,7 +461,6 @@ def build_clan_exposure_report_pdf(
         c.line(left, y, right, y)
         y -= 6 * mm
 
-    # Header
     h1("GMFN Clan Exposure Report")
     c.setFont("Helvetica", 9)
     c.drawRightString(
@@ -403,7 +478,6 @@ def build_clan_exposure_report_pdf(
     y -= 7 * mm
     line()
 
-    # Table header
     c.setFont("Helvetica-Bold", 9)
     c.drawString(left, y, "Member")
     c.drawRightString(right - 60 * mm, y, "Pool")
@@ -412,6 +486,10 @@ def build_clan_exposure_report_pdf(
     y -= 5 * mm
     c.setFont("Helvetica", 9)
 
+    total_pool = Decimal("0")
+    total_exposure = Decimal("0")
+    total_available = Decimal("0")
+
     if not clan_exposure_rows:
         c.drawString(left, y, "No exposure rows.")
         y -= 6 * mm
@@ -419,9 +497,13 @@ def build_clan_exposure_report_pdf(
         for row in clan_exposure_rows:
             ensure_space()
             email = str(row.get("email", "—"))[:45]
-            pool_v = row.get("pool_balance", 0)
-            exposure_v = row.get("exposure", 0)
-            available_v = row.get("available", 0)
+            pool_v = _d(row.get("pool_balance", 0))
+            exposure_v = _d(row.get("exposure", 0))
+            available_v = _d(row.get("available", 0))
+
+            total_pool += pool_v
+            total_exposure += exposure_v
+            total_available += available_v
 
             c.drawString(left, y, email)
             c.drawRightString(right - 60 * mm, y, _fmt_money(pool_v))
@@ -431,10 +513,32 @@ def build_clan_exposure_report_pdf(
 
     line()
 
-    # Footer note
+    ensure_space()
+    h2("Clan Exposure Summary")
+    c.setFont("Helvetica", 10)
+    c.drawString(left, y, f"Total Pool: {_fmt_money(total_pool)}")
+    y -= 5 * mm
+    c.drawString(left, y, f"Total Exposure: {_fmt_money(total_exposure)}")
+    y -= 5 * mm
+    c.drawString(left, y, f"Total Available Capacity: {_fmt_money(total_available)}")
+    y -= 7 * mm
+
+    exposure_ratio = Decimal("0.00")
+    if total_pool > Decimal("0"):
+        try:
+            exposure_ratio = total_exposure / total_pool
+        except Exception:
+            exposure_ratio = Decimal("0.00")
+
+    c.drawString(left, y, f"Clan Exposure Ratio: {exposure_ratio:.2f}")
+    y -= 7 * mm
+    line()
+
     ensure_space()
     c.setFont("Helvetica-Oblique", 8)
-    c.drawString(left, y, "Exposure = sum(locked_amount - released_amount) for approved guarantees in this clan.")
+    c.drawString(left, y, "Exposure = approved/locked guarantor pressure visible across the clan evidence surface.")
+    y -= 5 * mm
+    c.drawString(left, y, "Available = current remaining support capacity after existing exposure.")
     y -= 5 * mm
 
     c.showPage()

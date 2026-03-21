@@ -53,13 +53,17 @@ def calc_loan_financials(
     amount: Decimal,
     guarantors_required: int,
 ) -> Tuple[Decimal, Decimal, Decimal, Decimal]:
-    """
-    Returns:
-      service_fee, net_disbursed_amount, guarantor_pool, platform_revenue
-    """
+
     rate = calc_service_fee_rate(guarantors_required=guarantors_required)
+
     service_fee = _q2(amount * rate)
+
     net_disbursed = _q2(amount - service_fee)
-    guarantor_pool = calc_guarantor_pool(db, loan_id=loan_id)
-    platform_revenue = calc_platform_revenue(service_fee=service_fee)
+
+    # earnings pool for guarantors
+    guarantor_pool = _q2(service_fee * Decimal("0.80"))
+
+    # platform revenue
+    platform_revenue = _q2(service_fee - guarantor_pool)
+
     return service_fee, net_disbursed, guarantor_pool, platform_revenue

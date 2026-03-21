@@ -31,7 +31,7 @@ def update_loan_guarantor_status(
     **kwargs: Any,
 ):
     """
-    Canonical guarantor decision service (Priority B).
+    Canonical guarantor decision service.
 
     Guarantees:
     - clan isolation (when clan_id provided)
@@ -40,20 +40,23 @@ def update_loan_guarantor_status(
     - decline releases lock -> released_amount += locked_amount, clears lock
     - idempotent: no-op if same status, no flipping after decision
     - appends TrustEvent with meta.reason/meta.note
+    - appends lifecycle event(s) for TrustGraph / audit derivation
     - triggers loan evaluation after guarantor change
-
-    Import-safe: all model/service imports are lazy inside function.
     """
-
     from datetime import datetime, timezone
 
-    # Lazy imports to avoid circular import problems
+    from app.core.trust_event_types import TrustEventType  # noqa: WPS433
     from app.db.models import Loan, LoanGuarantor  # noqa: WPS433
+    from app.services.loans_service import evaluate_loan_after_guarantor_change  # noqa: WPS433
+    from app.services.trust_events_services import (  # noqa: WPS433
+        log_guarantee_given,
+        log_guarantee_released,
+        log_trust_event,
+    )
 
     def _now_utc() -> datetime:
         return datetime.now(timezone.utc)
 
-    # Back-compat aliases from kwargs
     if decided_by_user_id is None:
         decided_by_user_id = (
             kwargs.get("decided_by_user_id")
@@ -66,7 +69,6 @@ def update_loan_guarantor_status(
     if note is None:
         note = kwargs.get("note")
 
-    # Status aliases
     if new_status is None:
         new_status = kwargs.get("status") or kwargs.get("decision")
 
@@ -74,12 +76,8 @@ def update_loan_guarantor_status(
     if status not in ALLOWED_GUARANTOR_STATUSES:
         raise ValueError(f"Invalid guarantor status: {new_status}")
 
-    # -------------------------
-    # Resolve LoanGuarantor row
-    # -------------------------
     row: Optional[LoanGuarantor] = None
 
-    # 1) Prefer direct row object if provided
     for k in ("loan_guarantor", "guarantor", "row", "guarantor_row", "lg"):
         v = kwargs.get(k)
         if isinstance(v, LoanGuarantor):
@@ -94,7 +92,6 @@ def update_loan_guarantor_status(
                 pass
             break
 
-    # 2) Try row-id keys
     if row is None:
         loan_guarantor_id = (
             kwargs.get("loan_guarantor_id")
@@ -102,7 +99,6 @@ def update_loan_guarantor_status(
             or kwargs.get("id")
         )
 
-        # legacy: guarantor_id sometimes means LoanGuarantor.id when loan_id isn't provided
         if loan_guarantor_id is None and kwargs.get("guarantor_id") is not None and loan_id is None:
             loan_guarantor_id = kwargs.get("guarantor_id")
 
@@ -114,7 +110,6 @@ def update_loan_guarantor_status(
             if row is None:
                 raise LookupError("LoanGuarantor not found")
 
-    # 3) Fall back to loan_id + guarantor_user_id
     if row is None:
         if loan_id is None:
             loan_id = kwargs.get("loan_id")
@@ -123,7 +118,6 @@ def update_loan_guarantor_status(
             guarantor_user_id = (
                 kwargs.get("guarantor_user_id")
                 or kwargs.get("guarantor_user")
-                # If loan_id exists, treat guarantor_id as user_id (common meaning)
                 or (kwargs.get("guarantor_id") if loan_id is not None else None)
             )
 
@@ -142,13 +136,9 @@ def update_loan_guarantor_status(
         if row is None:
             raise LookupError("LoanGuarantor not found")
 
-    # Enforce clan isolation if requested
     if clan_id is not None and int(getattr(row, "clan_id", -1)) != int(clan_id):
         raise LookupError("LoanGuarantor not found")
 
-    # -------------------------
-    # Loan status gate
-    # -------------------------
     loan = db.get(Loan, int(getattr(row, "loan_id", 0) or 0))
     if not loan:
         raise LookupError("Loan not found")
@@ -160,36 +150,31 @@ def update_loan_guarantor_status(
     if loan_status not in {"pending", "incomplete"}:
         raise ValueError(f"Cannot decide guarantor when loan status is '{getattr(loan, 'status', None)}'")
 
-    # -------------------------
-    # Idempotency + finality
-    # -------------------------
     prev_status = (getattr(row, "status", "") or "").lower()
 
-    # prevent flipping after decision
     if prev_status in {"approved", "declined"} and status != prev_status:
         raise ValueError("Guarantor decision is final and cannot be changed")
 
-    # no-op if same status
     if status == prev_status:
         return row
 
     pledge = _d(getattr(row, "pledge_amount", None))
+    locked_before = _d(getattr(row, "locked_amount", None))
+    released_before = _d(getattr(row, "released_amount", None))
 
-    # Hardening: cannot approve a zero pledge
     if status == "approved" and pledge <= Decimal("0"):
         raise ValueError("pledge_amount must be > 0 to approve")
 
-    # -------------------------
-    # Lock / release rules
-    # -------------------------
+    released_now = Decimal("0")
+
     if status == "approved":
         row.is_locked = True
         row.locked_amount = pledge
-        # released_amount unchanged
     elif status == "declined":
         locked = _d(getattr(row, "locked_amount", None))
         if locked > Decimal("0"):
             row.released_amount = _d(getattr(row, "released_amount", None)) + locked
+            released_now = locked
         row.locked_amount = Decimal("0")
         row.is_locked = False
 
@@ -199,67 +184,87 @@ def update_loan_guarantor_status(
     db.add(row)
     db.flush()
 
-    # -------------------------
-    # Evidence logging (TrustEvent)
-    # -------------------------
-    try:
-        from app.services.trust_events_services import log_trust_event  # noqa: WPS433
-        from app.core.trust_event_types import TrustEventType  # noqa: WPS433
+    actor_id = int(decided_by_user_id or getattr(row, "guarantor_user_id", 0) or 0)
+    subject_id = int(getattr(row, "guarantor_user_id", 0) or 0)
+    borrower_user_id = int(getattr(loan, "borrower_user_id", 0) or 0)
+    row_id = int(getattr(row, "id", 0) or 0)
+    loan_id_int = int(getattr(row, "loan_id", 0) or 0)
+    clan_id_int = int(getattr(row, "clan_id", 0) or 0)
 
-        event_type = (
-            getattr(TrustEventType, "GUARANTOR_APPROVED", "guarantor.approved")
-            if status == "approved"
-            else getattr(TrustEventType, "GUARANTOR_DECLINED", "guarantor.declined")
-        )
+    event_type = (
+        getattr(TrustEventType, "GUARANTOR_APPROVED", "guarantor.approved")
+        if status == "approved"
+        else getattr(TrustEventType, "GUARANTOR_DECLINED", "guarantor.declined")
+    )
 
-        actor_id = int(decided_by_user_id or getattr(row, "guarantor_user_id", 0) or 0)
-        subject_id = int(getattr(row, "guarantor_user_id", 0) or 0)
+    meta = {
+        "system": False,
+        "decision": status,
+        "prev_status": prev_status,
+        "pledge_amount": str(pledge),
+        "locked_before": str(locked_before),
+        "locked_amount": str(_d(getattr(row, "locked_amount", None))),
+        "released_before": str(released_before),
+        "released_amount": str(_d(getattr(row, "released_amount", None))),
+        "reason": (reason or "").strip() or None,
+        "note": (note or "").strip() or None,
+    }
 
-        # Deterministic meta payload (no floats, no timestamps here)
-        meta = {
-            "system": False,
-            "decision": status,
-            "prev_status": prev_status,
-            "pledge_amount": str(pledge),
-            "locked_amount": str(_d(getattr(row, "locked_amount", None))),
-            "released_amount": str(_d(getattr(row, "released_amount", None))),
-            "reason": (reason or "").strip() or None,
-            "note": (note or "").strip() or None,
-        }
+    log_trust_event(
+        db,
+        event_type=event_type,
+        clan_id=clan_id_int,
+        loan_id=loan_id_int,
+        guarantor_id=row_id,
+        actor_user_id=actor_id,
+        subject_user_id=subject_id,
+        meta=meta,
+        commit=False,
+        refresh=False,
+    )
 
-        log_trust_event(
+    if status == "approved":
+        log_guarantee_given(
             db,
-            event_type=event_type,
-            clan_id=int(getattr(row, "clan_id", 0) or 0),
-            loan_id=int(getattr(row, "loan_id", 0) or 0),
-            guarantor_id=int(getattr(row, "id", 0) or 0),
+            clan_id=clan_id_int,
             actor_user_id=actor_id,
-            subject_user_id=subject_id,
-            meta=meta,
+            borrower_user_id=borrower_user_id,
+            guarantor_user_id=subject_id,
+            loan_id=loan_id_int,
+            guarantor_id=row_id,
+            pledge_amount=pledge,
+            guarantee_gap=_d(getattr(loan, "guarantee_gap", None)),
+            reason=(reason or "").strip() or None,
+            note=(note or "").strip() or None,
+            commit=False,
+            refresh=False,
         )
-    except Exception:
-        # TrustEvent should not block the financial state transition in MVP,
-        # but if you prefer strictness later, flip this to raise.
-        pass
 
-    # -------------------------
-    # Re-evaluate loan after decision (coverage/quorum)
-    # -------------------------
-    try:
-        # Prefer a stable entry-point if you have one; otherwise call loans_service.
-        from app.services.loans_service import evaluate_loan_after_guarantor_change  # noqa: WPS433
-
-        evaluate_loan_after_guarantor_change(
+    elif status == "declined" and released_now > Decimal("0"):
+        log_guarantee_released(
             db,
-            loan_id=int(getattr(loan, "id", 0) or 0),
-            clan_id=int(getattr(loan, "clan_id", 0) or 0),
+            clan_id=clan_id_int,
+            actor_user_id=actor_id,
+            borrower_user_id=borrower_user_id,
+            guarantor_user_id=subject_id,
+            loan_id=loan_id_int,
+            guarantor_id=row_id,
+            released_amount=released_now,
+            release_reason="guarantor_declined",
+            note=(note or "").strip() or None,
+            commit=False,
+            refresh=False,
         )
-    except Exception:
-        pass
+
+    evaluate_loan_after_guarantor_change(
+        db,
+        loan_id=int(getattr(loan, "id", 0) or 0),
+    )
 
     db.commit()
     db.refresh(row)
     return row
+
 
 def approve_guarantor(
     db: Session,

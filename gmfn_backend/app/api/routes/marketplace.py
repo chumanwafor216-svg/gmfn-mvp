@@ -1,0 +1,1201 @@
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from math import floor
+from typing import Any, Dict, Optional
+
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
+
+from app.core.auth import get_current_user
+from app.db.database import get_db
+from app.db.models import (
+    Clan,
+    ClanMembership,
+    MarketplaceBroadcast,
+    MarketplaceProduct,
+    MarketplaceProductRepost,
+    MarketplaceReview,
+    MarketplaceShop,
+    User,
+)
+from app.services.trust_events_services import log_trust_event
+
+router = APIRouter(prefix="/marketplace", tags=["marketplace"])
+
+TOTAL_PRODUCT_SLOTS = 12
+TOTAL_DISTRIBUTION_SLOTS = 10
+ORIGIN_SPOTLIGHT_RESERVED_SLOTS = 1
+MAX_REPOST_SLOTS = TOTAL_DISTRIBUTION_SLOTS - ORIGIN_SPOTLIGHT_RESERVED_SLOTS
+
+
+def _now_utc() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _safe_str(value: Any, default: str = "") -> str:
+    if value is None:
+        return default
+    s = str(value).strip()
+    return s if s else default
+
+
+def _safe_int(value: Any, default: int = 0) -> int:
+    try:
+        return int(value)
+    except Exception:
+        return default
+
+
+def _is_admin(user: Any) -> bool:
+    return str(getattr(user, "role", "")).lower() == "admin"
+
+
+def _resolve_clan_id(
+    *,
+    current_user: User,
+    db: Session,
+    explicit_clan_id: Optional[int] = None,
+    header_clan_id: Optional[str] = None,
+) -> int:
+    candidate = _safe_int(explicit_clan_id, 0)
+    if candidate <= 0:
+        candidate = _safe_int(header_clan_id, 0)
+
+    if candidate <= 0:
+        membership = (
+            db.query(ClanMembership)
+            .filter(
+                ClanMembership.user_id == int(current_user.id),
+                ClanMembership.left_at.is_(None),
+            )
+            .order_by(ClanMembership.created_at.asc(), ClanMembership.id.asc())
+            .first()
+        )
+        if not membership or getattr(membership, "clan_id", None) is None:
+            raise HTTPException(status_code=400, detail="No active clan selected")
+        return int(membership.clan_id)
+
+    membership = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.user_id == int(current_user.id),
+            ClanMembership.clan_id == int(candidate),
+            ClanMembership.left_at.is_(None),
+        )
+        .first()
+    )
+    if not membership and not _is_admin(current_user):
+        raise HTTPException(
+            status_code=403,
+            detail="You are not an active member of this clan",
+        )
+
+    return int(candidate)
+
+
+def _require_active_membership(
+    *,
+    db: Session,
+    user_id: int,
+    clan_id: int,
+) -> ClanMembership:
+    membership = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.user_id == int(user_id),
+            ClanMembership.clan_id == int(clan_id),
+            ClanMembership.left_at.is_(None),
+        )
+        .first()
+    )
+    if not membership:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not an active member of this clan",
+        )
+    return membership
+
+
+def _get_active_clan_ids_for_user(
+    *,
+    db: Session,
+    user_id: int,
+) -> list[int]:
+    rows = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.user_id == int(user_id),
+            ClanMembership.left_at.is_(None),
+        )
+        .order_by(ClanMembership.created_at.asc(), ClanMembership.id.asc())
+        .all()
+    )
+    out: list[int] = []
+    seen: set[int] = set()
+    for row in rows:
+        clan_id = int(row.clan_id)
+        if clan_id not in seen:
+            out.append(clan_id)
+            seen.add(clan_id)
+    return out
+
+
+def _get_repost_count(db: Session, *, product_id: int) -> int:
+    return (
+        db.query(MarketplaceProductRepost)
+        .filter(MarketplaceProductRepost.original_product_id == int(product_id))
+        .count()
+    )
+
+
+def _remaining_distribution_slots(db: Session, *, product_id: int) -> int:
+    repost_count = _get_repost_count(db, product_id=int(product_id))
+    remaining = MAX_REPOST_SLOTS - repost_count
+    return max(0, remaining)
+
+
+def _shop_is_visible_in_clan(
+    db: Session,
+    *,
+    shop: MarketplaceShop,
+    clan_id: int,
+) -> bool:
+    membership = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.user_id == int(shop.owner_user_id),
+            ClanMembership.clan_id == int(clan_id),
+            ClanMembership.left_at.is_(None),
+        )
+        .first()
+    )
+    return membership is not None
+
+
+def _get_canonical_shop_by_owner(
+    db: Session,
+    *,
+    owner_user_id: int,
+) -> Optional[MarketplaceShop]:
+    return (
+        db.query(MarketplaceShop)
+        .filter(
+            MarketplaceShop.owner_user_id == int(owner_user_id),
+            MarketplaceShop.is_active.is_(True),
+        )
+        .order_by(MarketplaceShop.created_at.asc(), MarketplaceShop.id.asc())
+        .first()
+    )
+
+
+def _get_user_by_identity_key(
+    db: Session,
+    *,
+    identity_key: str,
+) -> Optional[User]:
+    raw = _safe_str(identity_key)
+    if not raw:
+        return None
+
+    user = (
+        db.query(User)
+        .filter(User.gmfn_id == raw)
+        .first()
+    )
+    if user:
+        return user
+
+    numeric_id = _safe_int(raw, 0)
+    if numeric_id > 0:
+        return db.query(User).filter(User.id == int(numeric_id)).first()
+
+    return None
+
+
+def _count_active_spotlights_for_clan(
+    *,
+    db: Session,
+    clan_id: int,
+    now: Optional[datetime] = None,
+) -> int:
+    current_time = now or _now_utc()
+    return (
+        db.query(MarketplaceBroadcast)
+        .filter(
+            MarketplaceBroadcast.clan_id == int(clan_id),
+            (MarketplaceBroadcast.expires_at.is_(None))
+            | (MarketplaceBroadcast.expires_at > current_time),
+        )
+        .count()
+    )
+
+
+def _member_count_for_clan(
+    *,
+    db: Session,
+    clan_id: int,
+) -> int:
+    return (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.clan_id == int(clan_id),
+            ClanMembership.left_at.is_(None),
+        )
+        .count()
+    )
+
+
+def _max_spotlights_for_clan(
+    *,
+    db: Session,
+    clan_id: int,
+) -> int:
+    member_count = _member_count_for_clan(db=db, clan_id=int(clan_id))
+    return max(1, floor(member_count * 0.4))
+
+
+class MarketplaceShopCreateIn(BaseModel):
+    clan_id: Optional[int] = None
+    name: str = Field(min_length=2, max_length=120)
+    description: Optional[str] = Field(default=None, max_length=2000)
+    whatsapp_number: Optional[str] = Field(default=None, max_length=32)
+    telegram_handle: Optional[str] = Field(default=None, max_length=64)
+
+
+class MarketplaceProductCreateIn(BaseModel):
+    clan_id: Optional[int] = None
+    shop_id: int = Field(gt=0)
+    name: str = Field(min_length=2, max_length=160)
+    description: Optional[str] = Field(default=None, max_length=4000)
+    price: Optional[str] = Field(default=None, max_length=32)
+    currency: Optional[str] = Field(default="NGN", max_length=8)
+    image_url: Optional[str] = Field(default=None, max_length=4000)
+    video_url: Optional[str] = Field(default=None, max_length=4000)
+
+
+class MarketplaceBroadcastCreateIn(BaseModel):
+    clan_id: Optional[int] = None
+    message: str = Field(min_length=2, max_length=2000)
+    image_url: Optional[str] = Field(default=None, max_length=4000)
+    expires_at: Optional[datetime] = None
+
+
+class MarketplaceRepostCreateIn(BaseModel):
+    target_clan_id: int = Field(gt=0)
+
+
+def _shop_out(db: Session, shop: MarketplaceShop) -> Dict[str, Any]:
+    owner = db.query(User).filter(User.id == int(shop.owner_user_id)).first()
+
+    return {
+        "id": int(shop.id),
+        "clan_id": int(shop.clan_id) if shop.clan_id is not None else None,
+        "owner_user_id": int(shop.owner_user_id),
+        "gmfn_id": _safe_str(getattr(owner, "gmfn_id", None)) or None,
+        "owner_display_name": (
+            _safe_str(getattr(owner, "gmfn_id", None))
+            or _safe_str(getattr(owner, "email", None))
+            or f"Member {int(shop.owner_user_id)}"
+        ),
+        "name": getattr(shop, "name", None),
+        "description": shop.description,
+        "whatsapp_number": shop.whatsapp_number,
+        "telegram_handle": shop.telegram_handle,
+        "is_active": bool(shop.is_active),
+        "created_at": shop.created_at.isoformat() if shop.created_at else None,
+    }
+
+
+def _product_out(db: Session, product: MarketplaceProduct) -> Dict[str, Any]:
+    shop = (
+        db.query(MarketplaceShop)
+        .filter(MarketplaceShop.id == int(product.shop_id))
+        .first()
+    )
+    seller = db.query(User).filter(User.id == int(product.seller_user_id)).first()
+    repost_count = _get_repost_count(db, product_id=int(product.id))
+    remaining_slots = _remaining_distribution_slots(db, product_id=int(product.id))
+
+    return {
+        "id": int(product.id),
+        "clan_id": int(product.clan_id),
+        "shop_id": int(product.shop_id),
+        "seller_user_id": int(product.seller_user_id),
+        "seller_gmfn_id": _safe_str(getattr(seller, "gmfn_id", None)) or None,
+        "name": getattr(product, "name", None),
+        "description": product.description,
+        "price": product.price,
+        "currency": product.currency,
+        "image_url": product.image_url,
+        "video_url": getattr(product, "video_url", None),
+        "is_active": bool(product.is_active),
+        "created_at": product.created_at.isoformat() if product.created_at else None,
+        "origin_clan_id": int(product.clan_id),
+        "origin_shop_id": int(product.shop_id),
+        "origin_shop_name": getattr(shop, "name", None) if shop else None,
+        "distribution_slots_total": TOTAL_DISTRIBUTION_SLOTS,
+        "distribution_slots_reserved_for_origin_spotlight": ORIGIN_SPOTLIGHT_RESERVED_SLOTS,
+        "reposts_used": repost_count,
+        "distribution_slots_remaining": remaining_slots,
+        "shop_product_slots_total": TOTAL_PRODUCT_SLOTS,
+    }
+
+
+def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
+    author = db.query(User).filter(User.id == int(item.author_user_id)).first()
+    clan = db.query(Clan).filter(Clan.id == int(item.clan_id)).first()
+    canonical_shop = _get_canonical_shop_by_owner(
+        db,
+        owner_user_id=int(item.author_user_id),
+    )
+
+    author_name = None
+    if author:
+        author_name = (
+            _safe_str(getattr(author, "gmfn_id", None))
+            or _safe_str(getattr(author, "email", None))
+            or f"Member {int(author.id)}"
+        )
+
+    clan_display_name = None
+    if clan:
+        clan_display_name = (
+            _safe_str(getattr(clan, "marketplace_name", None))
+            or _safe_str(getattr(clan, "name", None))
+            or f"Clan {int(clan.id)}"
+        )
+
+    shop_display_name = None
+    if canonical_shop:
+        shop_display_name = (
+            _safe_str(getattr(canonical_shop, "name", None))
+            or author_name
+            or "Community seller"
+        )
+
+    trust_band = None
+    trust_score = None
+    if author:
+        trust_band = _safe_str(getattr(author, "trust_band", None)) or None
+        trust_score = getattr(author, "trust_score", None)
+
+    author_gmfn_id = None
+    if author:
+        author_gmfn_id = (
+            _safe_str(getattr(author, "gmfn_id", None))
+            or str(author.id)
+        )
+
+    return {
+        "id": int(item.id),
+        "clan_id": int(item.clan_id),
+        "author_user_id": int(item.author_user_id),
+        "author_gmfn_id": author_gmfn_id,
+        "message": item.message,
+        "image_url": item.image_url,
+        "expires_at": item.expires_at.isoformat() if item.expires_at else None,
+        "created_at": item.created_at.isoformat() if item.created_at else None,
+        "author_name": author_name,
+        "source_shop_name": shop_display_name,
+        "source_clan_name": clan_display_name,
+        "trust_band": trust_band,
+        "trust_score": trust_score,
+    }
+
+def _repost_out(db: Session, repost: MarketplaceProductRepost) -> Dict[str, Any]:
+    product = (
+        db.query(MarketplaceProduct)
+        .filter(MarketplaceProduct.id == int(repost.original_product_id))
+        .first()
+    )
+    remaining_slots = (
+        _remaining_distribution_slots(db, product_id=int(product.id))
+        if product
+        else 0
+    )
+
+    return {
+        "id": int(repost.id),
+        "original_product_id": int(repost.original_product_id),
+        "reposted_by_user_id": int(repost.reposted_by_user_id),
+        "target_clan_id": int(repost.target_clan_id),
+        "created_at": repost.created_at.isoformat() if repost.created_at else None,
+        "remaining_distribution_slots": remaining_slots,
+    }
+
+
+@router.get("/shops")
+def list_marketplace_shops(
+    clan_id: Optional[int] = Query(default=None),
+    only_active: bool = Query(default=True),
+    limit: int = Query(default=50, ge=1, le=200),
+    x_clan_id: Optional[str] = Header(default=None, alias="X-Clan-Id"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    resolved_clan_id = _resolve_clan_id(
+        current_user=current_user,
+        db=db,
+        explicit_clan_id=clan_id,
+        header_clan_id=x_clan_id,
+    )
+
+    q = db.query(MarketplaceShop)
+    if only_active:
+        q = q.filter(MarketplaceShop.is_active.is_(True))
+
+    rows = (
+        q.order_by(MarketplaceShop.created_at.desc(), MarketplaceShop.id.desc())
+        .all()
+    )
+
+    visible = [
+        row for row in rows if _shop_is_visible_in_clan(db, shop=row, clan_id=resolved_clan_id)
+    ][: int(limit)]
+
+    return {
+        "items": [_shop_out(db, x) for x in visible],
+        "total": len(visible),
+        "clan_id": resolved_clan_id,
+    }
+
+
+@router.get("/shops/by-gmfn/{gmfn_id}")
+def get_marketplace_shop_by_gmfn_id(
+    gmfn_id: str,
+    clan_id: Optional[int] = Query(default=None),
+    x_clan_id: Optional[str] = Header(default=None, alias="X-Clan-Id"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    resolved_clan_id = _resolve_clan_id(
+        current_user=current_user,
+        db=db,
+        explicit_clan_id=clan_id,
+        header_clan_id=x_clan_id,
+    )
+
+    owner = _get_user_by_identity_key(db, identity_key=gmfn_id)
+    if not owner:
+        raise HTTPException(status_code=404, detail="Seller identity not found")
+
+    shop = _get_canonical_shop_by_owner(
+        db,
+        owner_user_id=int(owner.id),
+    )
+    if not shop:
+        raise HTTPException(status_code=404, detail="Shop not found")
+
+    if not _shop_is_visible_in_clan(db, shop=shop, clan_id=resolved_clan_id):
+        raise HTTPException(
+            status_code=404,
+            detail="Shop is not visible in the selected community",
+        )
+
+    product_rows = (
+        db.query(MarketplaceProduct)
+        .filter(
+            MarketplaceProduct.shop_id == int(shop.id),
+            MarketplaceProduct.is_active.is_(True),
+        )
+        .order_by(MarketplaceProduct.created_at.desc(), MarketplaceProduct.id.desc())
+        .all()
+    )
+
+    visible_products = [
+        _product_out(db, p)
+        for p in product_rows
+        if int(p.clan_id) == int(resolved_clan_id)
+        or (
+            db.query(MarketplaceProductRepost)
+            .filter(
+                MarketplaceProductRepost.original_product_id == int(p.id),
+                MarketplaceProductRepost.target_clan_id == int(resolved_clan_id),
+            )
+            .first()
+            is not None
+        )
+    ]
+
+    return {
+        "ok": True,
+        "item": _shop_out(db, shop),
+        "products": visible_products,
+        "gmfn_id": _safe_str(getattr(owner, "gmfn_id", None)) or gmfn_id,
+        "clan_id": resolved_clan_id,
+    }
+
+
+@router.post("/shops")
+def create_marketplace_shop(
+    payload: MarketplaceShopCreateIn,
+    x_clan_id: Optional[str] = Header(default=None, alias="X-Clan-Id"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    resolved_clan_id = _resolve_clan_id(
+        current_user=current_user,
+        db=db,
+        explicit_clan_id=payload.clan_id,
+        header_clan_id=x_clan_id,
+    )
+
+    _require_active_membership(
+        db=db,
+        user_id=int(current_user.id),
+        clan_id=resolved_clan_id,
+    )
+
+    existing_shop = _get_canonical_shop_by_owner(
+        db,
+        owner_user_id=int(current_user.id),
+    )
+
+    if existing_shop:
+        changed = False
+
+        if _safe_str(payload.name) and existing_shop.name != _safe_str(payload.name):
+            existing_shop.name = _safe_str(payload.name)
+            changed = True
+
+        if payload.description is not None:
+            new_description = _safe_str(payload.description) or None
+            if existing_shop.description != new_description:
+                existing_shop.description = new_description
+                changed = True
+
+        if payload.whatsapp_number is not None:
+            new_whatsapp = _safe_str(payload.whatsapp_number) or None
+            if existing_shop.whatsapp_number != new_whatsapp:
+                existing_shop.whatsapp_number = new_whatsapp
+                changed = True
+
+        if payload.telegram_handle is not None:
+            new_telegram = _safe_str(payload.telegram_handle) or None
+            if existing_shop.telegram_handle != new_telegram:
+                existing_shop.telegram_handle = new_telegram
+                changed = True
+
+        if existing_shop.clan_id is None:
+            existing_shop.clan_id = int(resolved_clan_id)
+            changed = True
+
+        if changed:
+            db.add(existing_shop)
+            db.commit()
+            db.refresh(existing_shop)
+
+        return {
+            "ok": True,
+            "item": _shop_out(db, existing_shop),
+            "detail": "Existing canonical shop returned.",
+        }
+
+    shop = MarketplaceShop(
+        clan_id=int(resolved_clan_id),
+        owner_user_id=int(current_user.id),
+        name=_safe_str(payload.name),
+        description=_safe_str(payload.description) or None,
+        whatsapp_number=_safe_str(payload.whatsapp_number) or None,
+        telegram_handle=_safe_str(payload.telegram_handle) or None,
+        is_active=True,
+        created_at=_now_utc(),
+    )
+    db.add(shop)
+    db.commit()
+    db.refresh(shop)
+
+    log_trust_event(
+        db,
+        event_type="marketplace.shop.created",
+        clan_id=resolved_clan_id,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        loan_id=None,
+        guarantor_id=None,
+        meta={
+            "shop_id": int(shop.id),
+            "shop_name": getattr(shop, "name", None),
+            "canonical_shop": True,
+            "reason": "marketplace_shop_created",
+        },
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+
+    return {"ok": True, "item": _shop_out(db, shop)}
+
+
+@router.get("/products")
+def list_marketplace_products(
+    clan_id: Optional[int] = Query(default=None),
+    shop_id: Optional[int] = Query(default=None),
+    only_active: bool = Query(default=True),
+    include_reposted: bool = Query(default=True),
+    limit: int = Query(default=100, ge=1, le=300),
+    x_clan_id: Optional[str] = Header(default=None, alias="X-Clan-Id"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    resolved_clan_id = _resolve_clan_id(
+        current_user=current_user,
+        db=db,
+        explicit_clan_id=clan_id,
+        header_clan_id=x_clan_id,
+    )
+
+    direct_products = (
+        db.query(MarketplaceProduct)
+        .filter(MarketplaceProduct.clan_id == resolved_clan_id)
+        .all()
+    )
+
+    reposted_products: list[MarketplaceProduct] = []
+    if include_reposted:
+        repost_rows = (
+            db.query(MarketplaceProductRepost)
+            .filter(MarketplaceProductRepost.target_clan_id == resolved_clan_id)
+            .order_by(
+                MarketplaceProductRepost.created_at.desc(),
+                MarketplaceProductRepost.id.desc(),
+            )
+            .all()
+        )
+        repost_product_ids = [int(x.original_product_id) for x in repost_rows]
+        if repost_product_ids:
+            reposted_products = (
+                db.query(MarketplaceProduct)
+                .filter(MarketplaceProduct.id.in_(repost_product_ids))
+                .all()
+            )
+
+    merged: Dict[int, MarketplaceProduct] = {}
+    for p in direct_products:
+        merged[int(p.id)] = p
+    for p in reposted_products:
+        merged[int(p.id)] = p
+
+    items = list(merged.values())
+
+    if shop_id and int(shop_id) > 0:
+        items = [x for x in items if int(x.shop_id) == int(shop_id)]
+
+    visible_items: list[MarketplaceProduct] = []
+    for item in items:
+        shop = (
+            db.query(MarketplaceShop)
+            .filter(MarketplaceShop.id == int(item.shop_id))
+            .first()
+        )
+        if not shop:
+            continue
+        if not _shop_is_visible_in_clan(db, shop=shop, clan_id=resolved_clan_id):
+            continue
+        visible_items.append(item)
+
+    if only_active:
+        visible_items = [x for x in visible_items if bool(x.is_active)]
+
+    visible_items.sort(
+        key=lambda x: (
+            x.created_at or _now_utc(),
+            x.id or 0,
+        ),
+        reverse=True,
+    )
+    visible_items = visible_items[: int(limit)]
+
+    return {
+        "items": [_product_out(db, x) for x in visible_items],
+        "total": len(visible_items),
+        "clan_id": resolved_clan_id,
+    }
+
+
+@router.post("/products")
+def create_marketplace_product(
+    payload: MarketplaceProductCreateIn,
+    x_clan_id: Optional[str] = Header(default=None, alias="X-Clan-Id"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    resolved_clan_id = _resolve_clan_id(
+        current_user=current_user,
+        db=db,
+        explicit_clan_id=payload.clan_id,
+        header_clan_id=x_clan_id,
+    )
+
+    shop = (
+        db.query(MarketplaceShop)
+        .filter(MarketplaceShop.id == int(payload.shop_id))
+        .first()
+    )
+    if not shop:
+        raise HTTPException(status_code=404, detail="Shop not found")
+
+    if int(shop.owner_user_id) != int(current_user.id) and not _is_admin(current_user):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the shop owner can add products",
+        )
+
+    _require_active_membership(
+        db=db,
+        user_id=int(current_user.id),
+        clan_id=resolved_clan_id,
+    )
+
+    if not _safe_str(payload.name):
+        raise HTTPException(status_code=400, detail="Product name is required")
+
+    if not _safe_str(payload.price):
+        raise HTTPException(status_code=400, detail="Product price is required")
+
+    if not _safe_str(payload.image_url):
+        raise HTTPException(status_code=400, detail="Product image is required")
+
+    active_product_count = (
+        db.query(MarketplaceProduct)
+        .filter(
+            MarketplaceProduct.shop_id == int(shop.id),
+            MarketplaceProduct.is_active.is_(True),
+        )
+        .count()
+    )
+    if active_product_count >= TOTAL_PRODUCT_SLOTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Maximum of {TOTAL_PRODUCT_SLOTS} products allowed per shop",
+        )
+
+    product = MarketplaceProduct(
+        clan_id=resolved_clan_id,
+        shop_id=int(shop.id),
+        seller_user_id=int(current_user.id),
+        name=_safe_str(payload.name),
+        description=_safe_str(payload.description) or None,
+        price=_safe_str(payload.price) or None,
+        currency=_safe_str(payload.currency, "NGN") or "NGN",
+        image_url=_safe_str(payload.image_url) or None,
+        is_active=True,
+        created_at=_now_utc(),
+    )
+
+    if hasattr(product, "video_url"):
+        setattr(product, "video_url", _safe_str(payload.video_url) or None)
+
+    db.add(product)
+    db.commit()
+    db.refresh(product)
+
+    log_trust_event(
+        db,
+        event_type="marketplace.product.created",
+        clan_id=resolved_clan_id,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        loan_id=None,
+        guarantor_id=None,
+        meta={
+            "product_id": int(product.id),
+            "shop_id": int(shop.id),
+            "name": getattr(product, "name", None),
+            "price": product.price,
+            "currency": product.currency,
+            "image_url": product.image_url,
+            "video_url": getattr(product, "video_url", None),
+            "distribution_slots_total": TOTAL_DISTRIBUTION_SLOTS,
+            "distribution_slots_reserved_for_origin_spotlight": ORIGIN_SPOTLIGHT_RESERVED_SLOTS,
+            "distribution_slots_remaining": _remaining_distribution_slots(
+                db,
+                product_id=int(product.id),
+            ),
+            "shop_product_slots_total": TOTAL_PRODUCT_SLOTS,
+            "reason": "marketplace_product_created",
+        },
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+
+    return {"ok": True, "item": _product_out(db, product)}
+
+
+@router.post("/products/{product_id}/repost")
+def repost_marketplace_product(
+    product_id: int,
+    payload: MarketplaceRepostCreateIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    product = (
+        db.query(MarketplaceProduct)
+        .filter(MarketplaceProduct.id == int(product_id))
+        .first()
+    )
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    target_clan_id = int(payload.target_clan_id)
+    origin_clan_id = int(product.clan_id)
+
+    if target_clan_id == origin_clan_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot repost a product back into its origin clan",
+        )
+
+    _require_active_membership(
+        db=db,
+        user_id=int(current_user.id),
+        clan_id=target_clan_id,
+    )
+
+    existing = (
+        db.query(MarketplaceProductRepost)
+        .filter(
+            MarketplaceProductRepost.original_product_id == int(product.id),
+            MarketplaceProductRepost.reposted_by_user_id == int(current_user.id),
+            MarketplaceProductRepost.target_clan_id == target_clan_id,
+        )
+        .first()
+    )
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail="You already reposted this product to that clan",
+        )
+
+    remaining_slots = _remaining_distribution_slots(db, product_id=int(product.id))
+    if remaining_slots <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="No distribution slots remaining for this product",
+        )
+
+    repost = MarketplaceProductRepost(
+        original_product_id=int(product.id),
+        reposted_by_user_id=int(current_user.id),
+        target_clan_id=target_clan_id,
+        created_at=_now_utc(),
+    )
+    db.add(repost)
+    db.commit()
+    db.refresh(repost)
+
+    remaining_after = _remaining_distribution_slots(db, product_id=int(product.id))
+
+    log_trust_event(
+        db,
+        event_type="marketplace.product.reposted",
+        clan_id=target_clan_id,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(product.seller_user_id),
+        loan_id=None,
+        guarantor_id=None,
+        meta={
+            "product_id": int(product.id),
+            "origin_clan_id": origin_clan_id,
+            "target_clan_id": target_clan_id,
+            "repost_id": int(repost.id),
+            "distribution_slots_total": TOTAL_DISTRIBUTION_SLOTS,
+            "distribution_slots_reserved_for_origin_spotlight": ORIGIN_SPOTLIGHT_RESERVED_SLOTS,
+            "distribution_slots_remaining": remaining_after,
+            "reason": "marketplace_product_reposted",
+        },
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+
+    return {
+        "ok": True,
+        "item": _repost_out(db, repost),
+        "product": _product_out(db, product),
+    }
+
+
+@router.get("/products/{product_id}/reposts")
+def list_marketplace_product_reposts(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    product = (
+        db.query(MarketplaceProduct)
+        .filter(MarketplaceProduct.id == int(product_id))
+        .first()
+    )
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    _require_active_membership(
+        db=db,
+        user_id=int(current_user.id),
+        clan_id=int(product.clan_id),
+    )
+
+    rows = (
+        db.query(MarketplaceProductRepost)
+        .filter(MarketplaceProductRepost.original_product_id == int(product.id))
+        .order_by(
+            MarketplaceProductRepost.created_at.desc(),
+            MarketplaceProductRepost.id.desc(),
+        )
+        .all()
+    )
+
+    return {
+        "items": [_repost_out(db, x) for x in rows],
+        "total": len(rows),
+        "product": _product_out(db, product),
+    }
+
+
+@router.get("/broadcasts")
+def list_marketplace_broadcasts(
+    clan_id: Optional[int] = Query(default=None),
+    active_only: bool = Query(default=True),
+    limit: int = Query(default=100, ge=1, le=300),
+    x_clan_id: Optional[str] = Header(default=None, alias="X-Clan-Id"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    explicit_candidate = _safe_int(clan_id, 0)
+    header_candidate = _safe_int(x_clan_id, 0)
+
+    selected_clan_id: Optional[int] = None
+    if explicit_candidate > 0:
+        selected_clan_id = int(explicit_candidate)
+    elif header_candidate > 0:
+        selected_clan_id = int(header_candidate)
+
+    if selected_clan_id is not None:
+        _require_active_membership(
+            db=db,
+            user_id=int(current_user.id),
+            clan_id=int(selected_clan_id),
+        )
+        clan_ids = [int(selected_clan_id)]
+    else:
+        clan_ids = _get_active_clan_ids_for_user(
+            db=db,
+            user_id=int(current_user.id),
+        )
+        if not clan_ids:
+            return {
+                "items": [],
+                "total": 0,
+                "clan_id": None,
+            }
+
+    q = db.query(MarketplaceBroadcast).filter(
+        MarketplaceBroadcast.clan_id.in_(clan_ids)
+    )
+
+    if active_only:
+        now = _now_utc()
+        q = q.filter(
+            (MarketplaceBroadcast.expires_at.is_(None))
+            | (MarketplaceBroadcast.expires_at > now)
+        )
+
+    items = (
+        q.order_by(MarketplaceBroadcast.created_at.desc(), MarketplaceBroadcast.id.desc())
+        .limit(int(limit))
+        .all()
+    )
+
+    return {
+        "items": [_broadcast_out(db, x) for x in items],
+        "total": len(items),
+        "clan_id": selected_clan_id,
+    }
+
+
+@router.post("/broadcasts")
+def create_marketplace_broadcast(
+    payload: MarketplaceBroadcastCreateIn,
+    x_clan_id: Optional[str] = Header(default=None, alias="X-Clan-Id"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    resolved_clan_id = _resolve_clan_id(
+        current_user=current_user,
+        db=db,
+        explicit_clan_id=payload.clan_id,
+        header_clan_id=x_clan_id,
+    )
+
+    _require_active_membership(
+        db=db,
+        user_id=int(current_user.id),
+        clan_id=resolved_clan_id,
+    )
+
+    expires_at = payload.expires_at
+    if expires_at is None:
+        expires_at = _now_utc().replace(microsecond=0)
+        expires_at = expires_at.replace(hour=23, minute=59, second=59)
+    else:
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        else:
+            expires_at = expires_at.astimezone(timezone.utc)
+
+    if expires_at <= _now_utc():
+        raise HTTPException(status_code=400, detail="expires_at must be in the future")
+
+    target_clan_ids = _get_active_clan_ids_for_user(
+        db=db,
+        user_id=int(current_user.id),
+    )
+    if not target_clan_ids:
+        raise HTTPException(status_code=400, detail="No active clan memberships found")
+
+    current_time = _now_utc()
+    for clan_id in target_clan_ids:
+        active_count = _count_active_spotlights_for_clan(
+            db=db,
+            clan_id=int(clan_id),
+            now=current_time,
+        )
+        max_allowed = _max_spotlights_for_clan(
+            db=db,
+            clan_id=int(clan_id),
+        )
+        if active_count >= max_allowed:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Spotlight capacity reached for clan {clan_id}. Wait for an active spotlight to expire.",
+            )
+
+    created_at = _now_utc()
+    created_items: list[MarketplaceBroadcast] = []
+
+    for clan_id in target_clan_ids:
+        item = MarketplaceBroadcast(
+            clan_id=int(clan_id),
+            author_user_id=int(current_user.id),
+            message=_safe_str(payload.message),
+            image_url=_safe_str(payload.image_url) or None,
+            expires_at=expires_at,
+            created_at=created_at,
+        )
+        db.add(item)
+        created_items.append(item)
+
+    db.commit()
+
+    for item in created_items:
+        db.refresh(item)
+
+    canonical_shop = _get_canonical_shop_by_owner(
+        db,
+        owner_user_id=int(current_user.id),
+    )
+
+    for item in created_items:
+        log_trust_event(
+            db,
+            event_type="marketplace.broadcast.created",
+            clan_id=int(item.clan_id),
+            actor_user_id=int(current_user.id),
+            subject_user_id=int(current_user.id),
+            loan_id=None,
+            guarantor_id=None,
+            meta={
+                "broadcast_id": int(item.id),
+                "shop_id": int(canonical_shop.id) if canonical_shop else None,
+                "message_preview": _safe_str(item.message)[:120],
+                "image_url": item.image_url,
+                "expires_at": item.expires_at.isoformat() if item.expires_at else None,
+                "propagated_to_all_active_clans": True,
+                "propagated_clan_count": len(target_clan_ids),
+                "reason": "marketplace_broadcast_created",
+            },
+            commit=False,
+            refresh=False,
+        )
+    db.commit()
+
+    primary_item = next(
+        (x for x in created_items if int(x.clan_id) == int(resolved_clan_id)),
+        created_items[0],
+    )
+
+    return {
+        "ok": True,
+        "item": _broadcast_out(db, primary_item),
+        "items": [_broadcast_out(db, x) for x in created_items],
+        "propagated_clan_ids": target_clan_ids,
+        "propagated_count": len(created_items),
+    }
+
+
+@router.delete("/broadcasts/{broadcast_id}")
+def delete_marketplace_broadcast(
+    broadcast_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    item = (
+        db.query(MarketplaceBroadcast)
+        .filter(MarketplaceBroadcast.id == int(broadcast_id))
+        .first()
+    )
+    if not item:
+        raise HTTPException(status_code=404, detail="Spotlight post not found")
+
+    if int(item.author_user_id) != int(current_user.id) and not _is_admin(current_user):
+        raise HTTPException(status_code=403, detail="You can only delete your own spotlight post")
+
+    sibling_rows = (
+        db.query(MarketplaceBroadcast)
+        .filter(
+            MarketplaceBroadcast.author_user_id == int(item.author_user_id),
+            MarketplaceBroadcast.created_at == item.created_at,
+            MarketplaceBroadcast.message == item.message,
+            MarketplaceBroadcast.image_url == item.image_url,
+            MarketplaceBroadcast.expires_at == item.expires_at,
+        )
+        .all()
+    )
+
+    deleted_snapshots = [_broadcast_out(db, row) for row in sibling_rows]
+
+    for row in sibling_rows:
+        db.delete(row)
+    db.commit()
+
+    for deleted_snapshot in deleted_snapshots:
+        log_trust_event(
+            db,
+            event_type="marketplace.broadcast.deleted",
+            clan_id=int(deleted_snapshot["clan_id"]),
+            actor_user_id=int(current_user.id),
+            subject_user_id=int(current_user.id),
+            loan_id=None,
+            guarantor_id=None,
+            meta={
+                "broadcast_id": int(deleted_snapshot["id"]),
+                "message_preview": _safe_str(deleted_snapshot.get("message"))[:120],
+                "image_url": deleted_snapshot.get("image_url"),
+                "propagated_delete": True,
+                "reason": "marketplace_broadcast_deleted",
+            },
+            commit=False,
+            refresh=False,
+        )
+    db.commit()
+
+    return {
+        "ok": True,
+        "deleted": deleted_snapshots[0] if deleted_snapshots else None,
+        "deleted_items": deleted_snapshots,
+        "deleted_count": len(deleted_snapshots),
+    }

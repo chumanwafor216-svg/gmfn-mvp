@@ -8,8 +8,9 @@ from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
 
 from app.deps import get_db
-from app.core.auth import get_current_user 
+from app.core.auth import get_current_user
 from app.services.trust_timeline_pdf_service import build_trust_timeline_pdf
+from app.services.trust_slips_services import get_trust_slip_payload
 
 # pack meta is optional — if service/route doesn't exist, we still render the PDF
 try:
@@ -32,17 +33,35 @@ def _safe_str(x: Any) -> Optional[str]:
     return str(x)
 
 
+def _safe_visibility_level(current_user: Any, requested_level: Optional[str]) -> str:
+    raw = (
+        requested_level
+        or getattr(current_user, "merchant_visibility_level", "standard")
+        or "standard"
+    )
+    level = str(raw).strip().lower()
+    if level not in {"minimal", "standard", "detailed"}:
+        return "standard"
+    return level
+
+
 @router.get("/timeline.pdf")
 def download_my_trust_timeline_pdf(
     limit: int = 200,
     audience: str = "user",
+    level: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: Any = Depends(get_current_user),
 ) -> Response:
     """
     Authenticated Trust Timeline PDF snapshot ("Why did my trust change?").
+
+    Evidence alignment:
+    - binds PDF export to saved merchant visibility policy by default
+    - optional ?level=minimal|standard|detailed override for controlled export
     """
     user_id = int(getattr(current_user, "id"))
+    visibility_level = _safe_visibility_level(current_user, level)
 
     pack_id = None
     protocol_version = None
@@ -51,9 +70,10 @@ def download_my_trust_timeline_pdf(
     if get_evidence_pack_meta_for_user:
         try:
             meta = get_evidence_pack_meta_for_user(db, user_id=user_id)  # type: ignore
-            pack_id = _safe_str(meta.get("pack_id")) if isinstance(meta, dict) else None
-            protocol_version = _safe_str(meta.get("protocol_version")) if isinstance(meta, dict) else None
-            footer = _safe_str(meta.get("footer")) if isinstance(meta, dict) else None
+            if isinstance(meta, dict):
+                pack_id = _safe_str(meta.get("pack_id"))
+                protocol_version = _safe_str(meta.get("protocol_version"))
+                footer = _safe_str(meta.get("footer"))
         except Exception:
             pass
 
@@ -64,9 +84,21 @@ def download_my_trust_timeline_pdf(
             explained = get_trust_score_explained_for_user(db, user_id=user_id)  # type: ignore
             if isinstance(explained, dict):
                 score = _safe_str(explained.get("score"))
-                last_change = explained.get("last_change") if isinstance(explained.get("last_change"), dict) else None
+                last_change = (
+                    explained.get("last_change")
+                    if isinstance(explained.get("last_change"), dict)
+                    else None
+                )
         except Exception:
             pass
+
+    trustslip_summary = get_trust_slip_payload(db, user_id=user_id)
+
+    visibility_footer = f"Visibility: {visibility_level}"
+    if footer:
+        footer = f"{footer} | {visibility_footer}"
+    else:
+        footer = visibility_footer
 
     pdf = build_trust_timeline_pdf(
         db,
@@ -80,10 +112,14 @@ def download_my_trust_timeline_pdf(
         last_change=last_change,
     )
 
-    filename = f"gmfn_trust_timeline_u{user_id}.pdf"
+    filename = f"gmfn_trust_timeline_u{user_id}_{visibility_level}.pdf"
     headers = {
-        "Content-Disposition": f'attachment; filename="{filename}"'
+        "Content-Disposition": f'attachment; filename="{filename}"',
+        "X-GMFN-Merchant-Visibility-Level": visibility_level,
+        "X-GMFN-TrustSlip-Code": str(trustslip_summary.get("code") or ""),
+        "X-GMFN-CCI-Score": str(trustslip_summary.get("cci_score") or ""),
     }
+
     return Response(content=pdf, media_type="application/pdf", headers=headers)
 
 
@@ -91,10 +127,17 @@ def download_my_trust_timeline_pdf(
 def download_my_trust_timeline_pdf_alias(
     limit: int = 200,
     audience: str = "user",
+    level: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: Any = Depends(get_current_user),
 ) -> Response:
     """
     Alias endpoint for stability (some UIs expect this naming).
     """
-    return download_my_trust_timeline_pdf(limit=limit, audience=audience, db=db, current_user=current_user)
+    return download_my_trust_timeline_pdf(
+        limit=limit,
+        audience=audience,
+        level=level,
+        db=db,
+        current_user=current_user,
+    )

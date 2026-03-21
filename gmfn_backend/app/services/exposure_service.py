@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.db.models import User, ClanMembership, LoanGuarantor
 
 
-def D(x) -> Decimal:
+def D(x: Any) -> Decimal:
     return Decimal("0") if x is None else Decimal(str(x))
 
 
@@ -62,9 +62,9 @@ def get_clan_exposure_rows(db: Session, *, clan_id: int) -> List[Dict[str, Any]]
             {
                 "user_id": int(user_id),
                 "email": email,
-                "pool_balance": float(pool),
-                "exposure": float(exp),
-                "available": float(available),
+                "pool_balance": str(pool),
+                "exposure": str(exp),
+                "available": str(available),
             }
         )
     return rows

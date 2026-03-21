@@ -1,47 +1,51 @@
 from __future__ import annotations
 
-from enum import StrEnum
 
+class TrustEventType:
+    """
+    Canonical Trust Event Types for GMFN.
 
-class TrustEventType(StrEnum):
-    # =========================
-    # GUARANTOR DECISIONS
-    # =========================
-    GUARANTOR_APPROVED = "GUARANTOR_APPROVED"
-    GUARANTOR_DECLINED = "GUARANTOR_DECLINED"
-    GUARANTOR_EXPIRED = "GUARANTOR_EXPIRED"
+    These are used across:
+    - TrustEvent ledger
+    - TrustGraph edge builder
+    - Trust scoring
+    - Evidence packs
+    """
 
-    # =========================
-    # LOAN DECISIONS
-    # =========================
-    LOAN_AUTO_APPROVED = "LOAN_AUTO_APPROVED"
-    LOAN_AUTO_APPROVED_BY_GUARANTORS = "LOAN_AUTO_APPROVED_BY_GUARANTORS"
-    LOAN_AUTO_REJECTED = "LOAN_AUTO_REJECTED"
+    # -------------------------
+    # Invite lifecycle
+    # -------------------------
+    INVITE_CREATED = "invite_created"
+    INVITE_REVOKED = "invite_revoked"
+    INVITE_ACCEPTED = "invite_accepted"
+    INVITE_SUCCESSFUL_ONBOARDING = "invite_successful_onboarding"
 
-    # ✅ NEW: lifecycle states aligned with GMFN philosophy
-    LOAN_INCOMPLETE = "LOAN_INCOMPLETE"      # quorum/coverage not yet complete
-    LOAN_CANCELLED = "LOAN_CANCELLED"        # borrower/system cancelled incomplete loan
+    # -------------------------
+    # Clan membership
+    # -------------------------
+    CLAN_JOIN_VIA_INVITE = "clan_join_via_invite"
 
-    LOAN_REPAID = "LOAN_REPAID"
+    # -------------------------
+    # Loan lifecycle
+    # -------------------------
+    LOAN_REQUESTED = "loan_requested"
+    LOAN_APPROVED = "loan_approved"
+    LOAN_DISBURSED = "loan_disbursed"
+    LOAN_REPAID = "loan_repaid"
+    LOAN_DEFAULTED = "loan_defaulted"
+    LOAN_AUTO_APPROVED = "loan_auto_approved"
+    LOAN_INCOMPLETE = "loan_incomplete"
+    LOAN_CANCELLED = "loan_cancelled"
 
-    # =========================
-    # REPAYMENTS
-    # =========================
-    REPAYMENT_MADE = "REPAYMENT_MADE"
+    # -------------------------
+    # Guarantor actions
+    # -------------------------
+    GUARANTOR_REQUESTED = "guarantor_requested"
+    GUARANTOR_APPROVED = "guarantor_approved"
+    GUARANTOR_DECLINED = "guarantor_declined"
+    GUARANTOR_EXPIRED = "guarantor_expired"
 
-    # =========================
-    # GUARANTEE / EXPOSURE LOCKS
-    # =========================
-    GUARANTEE_LOCKS_RELEASED = "GUARANTEE_LOCKS_RELEASED"
-    GUARANTOR_LOCK_RELEASED = "GUARANTOR_LOCK_RELEASED"
-
-    # =========================
-    # ADMIN ACTIONS
-    # =========================
-    ADMIN_POOL_TOPUP = "ADMIN_POOL_TOPUP"
-
-    # =========================
-    # ADMIN / BULK ACTIONS
-    # =========================
-    ADMIN_BULK_GUARANTOR_APPROVED = "ADMIN_BULK_GUARANTOR_APPROVED"
-    ADMIN_BULK_GUARANTOR_DECLINED = "ADMIN_BULK_GUARANTOR_DECLINED"
+    # -------------------------
+    # System signals
+    # -------------------------
+    TRUST_RECALCULATED = "trust_recalculated"

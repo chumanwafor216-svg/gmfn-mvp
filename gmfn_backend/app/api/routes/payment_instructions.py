@@ -1,6 +1,6 @@
-﻿# app/api/routes/payment_instructions.py
-from __future__ import annotations
+﻿from __future__ import annotations
 
+from decimal import Decimal
 from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -8,28 +8,71 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.db.database import get_db
-from app.db.models import User, Loan
-from app.services.payment_instructions_service import build_payment_instruction
+from app.db.models import User
 
-router = APIRouter(prefix="/payment", tags=["payment"])
+from app.services.payment_instruction_service import (
+    create_loan_repayment_instruction,
+    create_pool_deposit_instruction,
+)
+from app.services.settlement_config_service import get_settlement_config
+
+router = APIRouter(prefix="/payment-instructions", tags=["payment-instructions"])
 
 
-@router.get("/loans/{loan_id}/instructions")
-def get_payment_instruction(
-    loan_id: int,
+@router.post("/pool")
+def create_pool_instruction(
+    clan_id: int,
+    amount: Decimal,
+    currency: str = "NGN",
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
-    loan = db.query(Loan).filter(Loan.id == loan_id).first()
-    if not loan:
-        raise HTTPException(status_code=404, detail="Loan not found")
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="amount must be > 0")
 
-    if int(loan.borrower_user_id) != int(current_user.id):
-        raise HTTPException(status_code=403, detail="Not your loan")
-
-    instruction = build_payment_instruction(
-        loan_id=int(loan_id),
+    out = create_pool_deposit_instruction(
+        db,
+        clan_id=int(clan_id),
         user_id=int(current_user.id),
-        currency=str(getattr(loan, "currency", "GBP") or "GBP"),
+        amount=amount,
+        currency=currency,
     )
-    return instruction.as_dict()
+    out["settlement"] = get_settlement_config()
+    out["instruction_type"] = "pool_deposit"
+    return out
+
+
+@router.post("/loan")
+def create_loan_instruction(
+    clan_id: int,
+    loan_id: int,
+    amount: Decimal,
+    currency: str = "NGN",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="amount must be > 0")
+
+    out = create_loan_repayment_instruction(
+        db,
+        clan_id=int(clan_id),
+        user_id=int(current_user.id),
+        loan_id=int(loan_id),
+        amount=amount,
+        currency=currency,
+    )
+    out["settlement"] = get_settlement_config()
+    out["instruction_type"] = "loan_repayment"
+    return out
+
+
+@router.get("/my")
+def my_instruction_config(
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    return {
+        "user_id": int(current_user.id),
+        "settlement": get_settlement_config(),
+        "available_instruction_types": ["pool_deposit", "loan_repayment"],
+    }

@@ -1,85 +1,40 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from __future__ import annotations
 
-from app.db.database import get_db
-from app.core.auth import get_current_user
-from app.db.models import User, Clan, ClanMembership
-from app.schemas.public import UserPublicOut, ClanOut
+import os
+from typing import Any, Dict
+
+from fastapi import APIRouter
 
 router = APIRouter(prefix="/public", tags=["public"])
 
 
-@router.get("/clans/{clan_id}", response_model=ClanOut)
-def get_clan_public(
-    clan_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    clan = db.get(Clan, clan_id)
-    if not clan:
-        raise HTTPException(status_code=404, detail="Clan not found")
-
-    # must be member of the clan OR admin user
-    m = (
-        db.query(ClanMembership)
-        .filter(
-            ClanMembership.clan_id == clan_id,
-            ClanMembership.user_id == current_user.id,
-        )
-        .first()
-    )
-    if not m and getattr(current_user, "role", "") != "admin":
-        raise HTTPException(status_code=403, detail="Not allowed")
-
-    return clan
+def _s(name: str, default: str = "") -> str:
+    return str(os.getenv(name, default) or "").strip()
 
 
-@router.get("/users/{user_id}", response_model=UserPublicOut)
-def get_user_public(
-    user_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    user = db.get(User, user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    # allow self
-    if user.id == current_user.id:
-        return user
-
-    # allow admin
-    if getattr(current_user, "role", "") == "admin":
-        return user
-
-    # allow only if shares at least one clan
-    shared = (
-        db.query(ClanMembership)
-        .join(
-            ClanMembership,
-            ClanMembership.user_id == current_user.id,
-        )
-        .filter(ClanMembership.user_id == user.id)
-        .first()
-    )
-
-    # The above join is tricky depending on your ORM setup.
-    # Safer approach: check any clan_id in common.
-    my_clans = (
-        db.query(ClanMembership.clan_id)
-        .filter(ClanMembership.user_id == current_user.id)
-        .all()
-    )
-    my_clan_ids = {x[0] for x in my_clans}
-
-    their_clans = (
-        db.query(ClanMembership.clan_id)
-        .filter(ClanMembership.user_id == user.id)
-        .all()
-    )
-    their_clan_ids = {x[0] for x in their_clans}
-
-    if not (my_clan_ids & their_clan_ids):
-        raise HTTPException(status_code=403, detail="Not allowed")
-
-    return user
+@router.get("/config")
+def get_public_config() -> Dict[str, Any]:
+    """
+    Public-safe runtime config for frontend display.
+    Do not put secrets here.
+    """
+    return {
+        "settlement": {
+            "rail_name": _s("GMFN_SETTLEMENT_RAIL_NAME", "Bank Transfer"),
+            "bank_name": _s("GMFN_SETTLEMENT_BANK_NAME", "Pilot Bank Rail"),
+            "account_name": _s("GMFN_SETTLEMENT_ACCOUNT_NAME", "GMFN Pilot Settlement"),
+            "account_number": _s("GMFN_SETTLEMENT_ACCOUNT_NUMBER", "To be assigned"),
+            "sort_code": _s("GMFN_SETTLEMENT_SORT_CODE", ""),
+            "country": _s("GMFN_SETTLEMENT_COUNTRY", ""),
+            "support_note": _s(
+                "GMFN_SETTLEMENT_SUPPORT_NOTE",
+                "Use the exact payment reference. Normal matched transfers should reconcile automatically.",
+            ),
+        },
+        "webhooks": {
+            "signature_verification_enabled": bool(_s("GMFN_WEBHOOK_SECRET", "")),
+        },
+        "app": {
+            "mode": _s("GMFN_APP_MODE", "pilot"),
+        },
+    }
