@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 
 function shell(): React.CSSProperties {
@@ -120,8 +120,14 @@ type NavGroup = {
 
 export default function AppLayout() {
   const location = useLocation();
-  const isAdmin =
-    (localStorage.getItem("gmfn_role") || "").toLowerCase() === "admin";
+
+  const isAdmin = useMemo(() => {
+    try {
+      return (localStorage.getItem("gmfn_role") || "").toLowerCase() === "admin";
+    } catch {
+      return false;
+    }
+  }, []);
 
   const groups: NavGroup[] = useMemo(
     () => [
@@ -134,61 +140,73 @@ export default function AppLayout() {
       {
         key: "community",
         label: "Community",
-        hint: "Open your current community or manage membership and invites.",
+        hint: "Your private community hub and related member tools.",
         items: [
-          { label: "Community Overview", to: "/app/community" },
-          { label: "Manage Community", to: "/app/clans" },
+          { label: "Community Home", to: "/app/community" },
+          { label: "My Communities", to: "/app/clans" },
+          { label: "My Shop Tools", to: "/app/shop-control" },
         ],
       },
       {
         key: "market",
         label: "Marketplace",
-        hint: "Browse people, shops, and requests across your communities.",
+        hint: "Work inside community market flow and demand visibility.",
         items: [
           { label: "Browse Marketplace", to: "/app/marketplace" },
           { label: "Demand Box", to: "/app/demand-box" },
-          { label: "Shop Control", to: "/app/shop-control" },
         ],
       },
       {
         key: "money",
         label: "Money and Support",
-        hint: "Follow loans, readiness, workbench, and earnings.",
+        hint: "Loans, readiness, guidance, workbench, and earnings.",
         items: [
           { label: "Loans and Support", to: "/app/loans" },
-          { label: "Guarantor Earnings", to: "/app/guarantor-earnings" },
+          { label: "Pool Payment", to: "/app/payment/pool" },
+          { label: "Withdrawal Guidance", to: "/app/withdrawal-instructions" },
           { label: "Support Readiness", to: "/app/loan-readiness" },
           { label: "Helpful Suggestions", to: "/app/loan-suggestions" },
           { label: "Workbench", to: "/app/loan-workbench" },
+          { label: "Guarantor Earnings", to: "/app/guarantor-earnings" },
         ],
       },
       {
         key: "trust",
         label: "Trust and Identity",
-        hint: "See trust position, trust tools, and updates.",
+        hint: "Member-facing trust, identity, and notice surfaces only.",
         items: [
           { label: "My Trust", to: "/app/trust" },
           { label: "TrustSlip", to: "/app/trust-slip" },
-          { label: "Trust Activity", to: "/app/trust-analytics" },
-          { label: "Trust Operations", to: "/app/trust-command-centre" },
+          { label: "Identity Integrity", to: "/app/identity" },
           { label: "Notifications", to: "/app/notifications" },
         ],
       },
       {
-        key: "identity",
+        key: "guide",
         label: "My GSN",
-        hint: "Understand your place in the network.",
+        hint: "Read the guide and understand how the system works.",
         items: [{ label: "My GMFN and I", to: "/app/my-gmfn-and-i" }],
       },
       {
-        key: "system",
-        label: "System Tools",
-        hint: "Internal controls and review tools.",
+        key: "admin",
+        label: "Command Center",
+        hint: "Restricted system oversight, analytics, and admin tools.",
         adminOnly: true,
         items: [
-          { label: "System Operations", to: "/app/system-operations" },
-          { label: "Safety and Risk", to: "/app/admin/exposure" },
-          { label: "Relationship Graph", to: "/app/admin/trust-graph" },
+          { label: "Command Center Home", to: "/app/command-center" },
+          {
+            label: "Trust Analytics",
+            to: "/app/command-center/trust-analytics",
+          },
+          {
+            label: "System Operations",
+            to: "/app/command-center/system-operations",
+          },
+          { label: "Safety and Risk", to: "/app/command-center/exposure" },
+          {
+            label: "Relationship Graph",
+            to: "/app/command-center/trust-graph",
+          },
         ],
       },
     ],
@@ -204,7 +222,7 @@ export default function AppLayout() {
 
   const [openGroup, setOpenGroup] = useState<string>(firstOpenGroup);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setOpenGroup(firstOpenGroup);
   }, [firstOpenGroup]);
 
@@ -217,7 +235,7 @@ export default function AppLayout() {
       <aside style={sidebar()}>
         <div style={brandBox()}>
           <div style={{ fontSize: 12, fontWeight: 1000, letterSpacing: "0.06em" }}>
-            GLOBAL SUPPORT NETWORK
+            GMFN / GSN
           </div>
 
           <div
@@ -228,8 +246,8 @@ export default function AppLayout() {
               lineHeight: 1.7,
             }}
           >
-            GSN connects identity, trust, community, and market activity in one
-            network.
+            Trust, identity, community, and market activity arranged into one
+            working system.
           </div>
         </div>
 
@@ -282,8 +300,15 @@ export default function AppLayout() {
 
                   {group.key === "market" ? (
                     <div style={noteBox()}>
-                      One identity stays the same across communities. Shops are
-                      global per identity, while Demand Box remains identity-based.
+                      One identity stays the same across communities. The shop
+                      belongs to identity, while Demand Box stays identity-based.
+                    </div>
+                  ) : null}
+
+                  {group.key === "admin" ? (
+                    <div style={noteBox()}>
+                      These tools are restricted. They should not appear in
+                      normal member flow.
                     </div>
                   ) : null}
                 </div>
