@@ -118,13 +118,14 @@ function safeDate(x: any): Date | null {
 function notificationSourceLabel(kind?: string | null): string {
   const k = String(kind || "").toLowerCase();
 
+  if (k.includes("approval") || k.includes("join")) return "Approval";
   if (k.includes("demand") || k.includes("request")) return "Demand";
   if (k.includes("trust")) return "Trust";
-  if (k.includes("approval") || k.includes("join")) return "Approval";
   if (k.includes("spotlight") || k.includes("marketplace")) return "Marketplace";
   if (k.includes("assistant")) return "Assistant";
-  if (k.includes("money") || k.includes("pool") || k.includes("loan"))
+  if (k.includes("money") || k.includes("pool") || k.includes("loan")) {
     return "Money";
+  }
 
   return "Update";
 }
@@ -132,13 +133,15 @@ function notificationSourceLabel(kind?: string | null): string {
 function fallbackActionUrl(kind?: string | null): string {
   const k = String(kind || "").toLowerCase();
 
+  if (k.includes("approval") || k.includes("join")) return "/app/community";
   if (k.includes("demand") || k.includes("request")) return "/app/demand-box";
   if (k.includes("trust")) return "/app/trust";
-  if (k.includes("approval") || k.includes("join")) return "/app/clans";
-  if (k.includes("money") || k.includes("pool") || k.includes("loan"))
-    return "/app/money";
-  if (k.includes("spotlight") || k.includes("marketplace"))
+  if (k.includes("money") || k.includes("pool") || k.includes("loan")) {
+    return "/app/loans";
+  }
+  if (k.includes("spotlight") || k.includes("marketplace")) {
     return "/app/marketplace";
+  }
   if (k.includes("assistant")) return "/app/dashboard";
 
   return "/app/dashboard";
@@ -147,13 +150,15 @@ function fallbackActionUrl(kind?: string | null): string {
 function fallbackActionLabel(kind?: string | null): string {
   const k = String(kind || "").toLowerCase();
 
+  if (k.includes("approval") || k.includes("join")) return "Open Community Home";
   if (k.includes("demand") || k.includes("request")) return "Open Demand Box";
   if (k.includes("trust")) return "Open Trust";
-  if (k.includes("approval") || k.includes("join")) return "Open My People";
-  if (k.includes("money") || k.includes("pool") || k.includes("loan"))
-    return "Open Money & Support";
-  if (k.includes("spotlight") || k.includes("marketplace"))
-    return "Open Market";
+  if (k.includes("money") || k.includes("pool") || k.includes("loan")) {
+    return "Open Loans & Support";
+  }
+  if (k.includes("spotlight") || k.includes("marketplace")) {
+    return "Open Marketplace";
+  }
   if (k.includes("assistant")) return "Open Dashboard";
 
   return "Open";
@@ -195,6 +200,13 @@ function sourceTone(label: string) {
       text: "#6D28D9",
     };
   }
+  if (label === "Assistant") {
+    return {
+      bg: "rgba(6,182,212,0.08)",
+      border: "1px solid rgba(6,182,212,0.18)",
+      text: "#0E7490",
+    };
+  }
   return {
     bg: "rgba(71,85,105,0.08)",
     border: "1px solid rgba(71,85,105,0.16)",
@@ -216,22 +228,30 @@ function groupNotifications(items: NoticeItem[]): NotificationGroup[] {
 
   items.forEach((item) => {
     const d = safeDate(item.created_at);
+
     if (!d) {
       groups[2].items.push(item);
       return;
     }
+
     if (d >= todayStart) {
       groups[0].items.push(item);
       return;
     }
+
     if (d >= yesterdayStart) {
       groups[1].items.push(item);
       return;
     }
+
     groups[2].items.push(item);
   });
 
   return groups.filter((group) => group.items.length > 0);
+}
+
+function isExternalUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value);
 }
 
 export default function NotificationsPage() {
@@ -240,6 +260,7 @@ export default function NotificationsPage() {
   const [items, setItems] = useState<NoticeItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
+  const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -254,14 +275,35 @@ export default function NotificationsPage() {
         setLoading(false);
       }
     })();
-  }, [showUnreadOnly]);
+  }, [showUnreadOnly, refreshTick]);
 
   const unreadCount = useMemo(
     () => items.filter((item) => !item?.is_read).length,
     [items]
   );
 
+  const todayCount = useMemo(() => {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    return items.filter((item) => {
+      const d = safeDate(item.created_at);
+      return !!d && d >= todayStart;
+    }).length;
+  }, [items]);
+
   const grouped = useMemo(() => groupNotifications(items), [items]);
+
+  function openDestination(destination: string) {
+    if (!destination) return;
+
+    if (isExternalUrl(destination)) {
+      window.open(destination, "_blank", "noreferrer");
+      return;
+    }
+
+    navigate(destination);
+  }
 
   return (
     <div
@@ -316,7 +358,7 @@ export default function NotificationsPage() {
             }}
           >
             Every notification should help you understand what happened and move
-            you directly to the next step.
+            you directly to the next useful step.
           </div>
         </div>
       </div>
@@ -402,6 +444,37 @@ export default function NotificationsPage() {
                   {unreadCount}
                 </div>
               </div>
+
+              <div
+                style={{
+                  ...innerCard("#FFFFFF"),
+                  minWidth: 150,
+                  padding: 14,
+                }}
+              >
+                <div
+                  style={{
+                    color: "#5A6B7C",
+                    fontSize: 12,
+                    fontWeight: 900,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.35,
+                  }}
+                >
+                  Today
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontSize: 24,
+                    fontWeight: 1000,
+                    lineHeight: 1,
+                  }}
+                >
+                  {todayCount}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -421,10 +494,41 @@ export default function NotificationsPage() {
               {showUnreadOnly ? "Showing unread only" : "Show unread only"}
             </button>
 
+            <button
+              type="button"
+              style={smallBtn(false)}
+              onClick={() => setRefreshTick((v) => v + 1)}
+            >
+              Refresh
+            </button>
+
             <Link to="/app/dashboard" style={smallBtn(false)}>
-              Back to dashboard
+              Dashboard
             </Link>
           </div>
+        </div>
+      </div>
+
+      <div style={{ ...pageCard(), marginTop: 2 }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
+          <Link to="/app/community" style={smallBtn(false)}>
+            Community Home
+          </Link>
+          <Link to="/app/demand-box" style={smallBtn(false)}>
+            Demand Box
+          </Link>
+          <Link to="/app/trust" style={smallBtn(false)}>
+            Trust
+          </Link>
+          <Link to="/app/marketplace" style={smallBtn(false)}>
+            Marketplace
+          </Link>
         </div>
       </div>
 
@@ -474,11 +578,15 @@ export default function NotificationsPage() {
                 }}
               >
                 <Link to="/app/dashboard" style={smallBtn(true)}>
-                  Open dashboard
+                  Open Dashboard
                 </Link>
 
                 <Link to="/app/demand-box" style={smallBtn(false)}>
                   Open Demand Box
+                </Link>
+
+                <Link to="/app/community" style={smallBtn(false)}>
+                  Open Community Home
                 </Link>
               </div>
             </div>
@@ -619,7 +727,7 @@ export default function NotificationsPage() {
                           <button
                             type="button"
                             style={smallBtn(true)}
-                            onClick={() => navigate(destination)}
+                            onClick={() => openDestination(destination)}
                           >
                             {actionLabel}
                           </button>
