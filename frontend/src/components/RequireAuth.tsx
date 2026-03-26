@@ -8,15 +8,19 @@ type Props = {
 };
 
 function computeClientFingerprint(): string {
-  const parts = [
-    navigator.userAgent || "",
-    navigator.language || "",
-    String(window.screen?.width || 0),
-    String(window.screen?.height || 0),
-    Intl.DateTimeFormat().resolvedOptions().timeZone || "",
-  ];
+  try {
+    const parts = [
+      navigator.userAgent || "",
+      navigator.language || "",
+      String(window.screen?.width || 0),
+      String(window.screen?.height || 0),
+      Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+    ];
 
-  return btoa(parts.join("|")).slice(0, 120);
+    return btoa(parts.join("|")).slice(0, 120);
+  } catch {
+    return "unknown-client";
+  }
 }
 
 export default function RequireAuth({ children, requireRole }: Props) {
@@ -24,60 +28,57 @@ export default function RequireAuth({ children, requireRole }: Props) {
 
   const [loading, setLoading] = useState(true);
   const [allowed, setAllowed] = useState(false);
+  const [deniedForRole, setDeniedForRole] = useState(false);
 
   useEffect(() => {
     let active = true;
 
-    (async () => {
+    const finish = (nextAllowed: boolean, roleDenied = false) => {
+      if (!active) return;
+      setAllowed(nextAllowed);
+      setDeniedForRole(roleDenied);
+      setLoading(false);
+    };
+
+    const run = async () => {
       try {
         const tok = getAccessToken();
 
         if (!tok) {
-          if (active) {
-            setAllowed(false);
-            setLoading(false);
-          }
+          finish(false);
           return;
         }
 
         const me = await getMe().catch(() => null);
 
         if (!me) {
-          if (active) {
-            setAllowed(false);
-            setLoading(false);
-          }
+          finish(false);
           return;
         }
 
         const role = String(me?.role || "").toLowerCase();
 
         if (requireRole === "admin" && role !== "admin") {
-          if (active) {
-            setAllowed(false);
-            setLoading(false);
-          }
+          finish(false, true);
           return;
         }
 
+        finish(true);
+
         try {
           const fp = computeClientFingerprint();
-          await observeIdentityRisk(fp);
+          void observeIdentityRisk(fp).catch((error) => {
+            console.warn("Identity observation skipped:", error);
+          });
         } catch (error) {
           console.warn("Identity observation skipped:", error);
         }
-
-        if (active) {
-          setAllowed(true);
-          setLoading(false);
-        }
       } catch {
-        if (active) {
-          setAllowed(false);
-          setLoading(false);
-        }
+        finish(false);
       }
-    })();
+    };
+
+    run();
 
     return () => {
       active = false;
@@ -102,6 +103,10 @@ export default function RequireAuth({ children, requireRole }: Props) {
   if (!allowed) {
     if (!getAccessToken()) {
       return <Navigate to="/login" replace state={{ from: location }} />;
+    }
+
+    if (deniedForRole) {
+      return <Navigate to="/app/dashboard" replace />;
     }
 
     return <Navigate to="/cover" replace />;

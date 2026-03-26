@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import InviteInterestPage from "./pages/InviteInterestPage";
 import JoinRequestPendingPage from "./pages/JoinRequestPendingPage";
 import CoverPage from "./pages/CoverPage";
@@ -38,6 +38,7 @@ import RequireAuth from "./components/RequireAuth";
 import CommunityJoinRequestsPage from "./pages/CommunityJoinRequestsPage";
 import JoinApprovalPage from "./pages/JoinApprovalPage";
 import MemberActivationPage from "./pages/MemberActivationPage";
+import DemandBoxPage from "./pages/DemandBoxPage";
 
 export default function App() {
   return (
@@ -48,10 +49,12 @@ export default function App() {
       <Route path="/welcome" element={<WelcomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+
       <Route path="/join" element={<JoinEntryPage />} />
+      <Route path="/join/community/:clanId" element={<JoinEntryPage />} />
+
       <Route path="/create" element={<CreateEntryPage />} />
 
-      {/* keep both activation paths working */}
       <Route path="/activate" element={<ActivatePage />} />
       <Route path="/activate-membership" element={<MemberActivationPage />} />
 
@@ -93,24 +96,60 @@ export default function App() {
         <Route path="guarantor-earnings" element={<GuarantorEarningsPage />} />
 
         <Route path="marketplace" element={<MarketplacePage />} />
+        <Route path="marketplace/demand-box" element={<DemandBoxPage />} />
+        <Route path="demand-box" element={<DemandBoxPage />} />
+
         <Route path="shop-control" element={<ShopControlPage />} />
         <Route path="shop/:gmfn_id" element={<ShopPage />} />
 
         <Route path="trust" element={<TrustScorePage />} />
         <Route path="trust-slip" element={<TrustSlipPage />} />
         <Route path="trust-slip/verify" element={<TrustSlipVerifyPage />} />
-        <Route path="trust-analytics" element={<TrustAnalyticsPage />} />
-        <Route
-          path="trust-command-centre"
-          element={<TrustCommandCentrePage />}
-        />
 
         <Route path="identity" element={<IdentityIntegrityPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="my-gmfn-and-i" element={<MyGMFNAndIPage />} />
-        <Route path="system-operations" element={<SystemOperationsPage />} />
-        <Route path="admin/exposure" element={<ExposureAdminPage />} />
-        <Route path="admin/trust-graph" element={<AdminTrustGraphPage />} />
+
+        <Route
+          path="command-center"
+          element={
+            <RequireAuth requireRole="admin">
+              <Outlet />
+            </RequireAuth>
+          }
+        >
+          <Route index element={<TrustCommandCentrePage />} />
+          <Route path="trust-analytics" element={<TrustAnalyticsPage />} />
+          <Route
+            path="system-operations"
+            element={<SystemOperationsPage />}
+          />
+          <Route path="exposure" element={<ExposureAdminPage />} />
+          <Route path="trust-graph" element={<AdminTrustGraphPage />} />
+        </Route>
+
+        <Route
+          path="trust-command-centre"
+          element={<Navigate to="/app/command-center" replace />}
+        />
+        <Route
+          path="trust-analytics"
+          element={<Navigate to="/app/command-center/trust-analytics" replace />}
+        />
+        <Route
+          path="system-operations"
+          element={
+            <Navigate to="/app/command-center/system-operations" replace />
+          }
+        />
+        <Route
+          path="admin/exposure"
+          element={<Navigate to="/app/command-center/exposure" replace />}
+        />
+        <Route
+          path="admin/trust-graph"
+          element={<Navigate to="/app/command-center/trust-graph" replace />}
+        />
       </Route>
 
       <Route path="*" element={<Navigate to="/cover" replace />} />
