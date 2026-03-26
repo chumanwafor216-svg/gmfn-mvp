@@ -1,11 +1,31 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   createMarketplaceRequest,
+  getMe,
+  getSelectedClanId,
   listMarketplaceRequests,
   MarketplaceRequestItem,
   updateMarketplaceRequestStatus,
 } from "../lib/api";
 import { HUMANIZED } from "../lib/humanizedText";
+
+type SummaryCounts = {
+  openVisible: number;
+  myOpen: number;
+};
+
+function pageCard(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    borderRadius: 24,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: bg,
+    padding: 20,
+    boxShadow:
+      "0 22px 54px rgba(15,23,42,0.07), 0 2px 8px rgba(15,23,42,0.03)",
+    overflow: "hidden",
+  };
+}
 
 function card(bg = "#FFFFFF"): React.CSSProperties {
   return {
@@ -68,6 +88,16 @@ function tiny(): React.CSSProperties {
   };
 }
 
+function sectionLabel(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#4F6B8A",
+    fontWeight: 1000,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  };
+}
+
 function inputStyle(): React.CSSProperties {
   return {
     marginTop: 6,
@@ -77,11 +107,12 @@ function inputStyle(): React.CSSProperties {
     padding: "12px 14px",
     outline: "none",
     background: "#FFFFFF",
+    boxSizing: "border-box",
   };
 }
 
 function safeStr(x: any): string {
-  return String(x ?? "");
+  return String(x ?? "").trim();
 }
 
 function safeDateTime(x: any): string {
@@ -249,6 +280,10 @@ function formatStatusLabel(value?: string | null): string {
   return "Open";
 }
 
+function normalizeWhatsappNumber(phone?: string | null): string {
+  return String(phone || "").replace(/[^\d]/g, "");
+}
+
 export default function DemandBoxPage() {
   const demandTitle =
     HUMANIZED?.demandTitle || "Post what you need — your people can respond.";
@@ -257,13 +292,21 @@ export default function DemandBoxPage() {
     HUMANIZED?.demandHelper ||
     "Keep it short. Share your need once and let connected communities see it.";
 
+  const [me, setMe] = useState<any>(null);
   const [items, setItems] = useState<MarketplaceRequestItem[]>([]);
+  const [summaryCounts, setSummaryCounts] = useState<SummaryCounts>({
+    openVisible: 0,
+    myOpen: 0,
+  });
+
   const [loading, setLoading] = useState(false);
   const [posting, setPosting] = useState(false);
   const [showPostForm, setShowPostForm] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [statusFilter, setStatusFilter] = useState("open");
   const [mineOnly, setMineOnly] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const [error, setError] = useState("");
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -278,18 +321,50 @@ export default function DemandBoxPage() {
 
   const titleInputRef = useRef<HTMLInputElement | null>(null);
 
+  const selectedClanId = Number(getSelectedClanId() || 0);
+
   async function load() {
     setLoading(true);
+    setError("");
+
     try {
-      const rows = await listMarketplaceRequests({
-        status: statusFilter,
-        mine_only: mineOnly,
-        limit: 100,
+      const params =
+        statusFilter === "all"
+          ? { mine_only: mineOnly, limit: 100 }
+          : { status: statusFilter, mine_only: mineOnly, limit: 100 };
+
+      const [meRes, rows, openRows, myOpenRows] = await Promise.all([
+        getMe().catch(() => null),
+        listMarketplaceRequests(params).catch(() => []),
+        listMarketplaceRequests({
+          status: "open",
+          mine_only: false,
+          limit: 100,
+        }).catch(() => []),
+        listMarketplaceRequests({
+          status: "open",
+          mine_only: true,
+          limit: 100,
+        }).catch(() => []),
+      ]);
+
+      const loadedRows = Array.isArray(rows) ? rows : [];
+      const loadedOpenRows = Array.isArray(openRows) ? openRows : [];
+      const loadedMyOpenRows = Array.isArray(myOpenRows) ? myOpenRows : [];
+
+      setMe(meRes || null);
+      setItems(loadedRows);
+      setSummaryCounts({
+        openVisible: loadedOpenRows.length,
+        myOpen: loadedMyOpenRows.length,
       });
-      setItems(Array.isArray(rows) ? rows : []);
     } catch (err: any) {
-      alert(err?.message || "Failed to load demand box");
+      setError(err?.message || "Failed to load demand box.");
       setItems([]);
+      setSummaryCounts({
+        openVisible: 0,
+        myOpen: 0,
+      });
     } finally {
       setLoading(false);
     }
@@ -312,11 +387,14 @@ export default function DemandBoxPage() {
   async function submitRequest() {
     const cleanTitle = title.trim();
     if (!cleanTitle) {
-      alert("Please tell people what you need");
+      setError("Please tell people what you need.");
       return;
     }
 
     setPosting(true);
+    setError("");
+    setFeedback("");
+
     try {
       await createMarketplaceRequest({
         title: cleanTitle,
@@ -342,10 +420,11 @@ export default function DemandBoxPage() {
       setAllowTrustCredit(false);
       setShowMoreOptions(false);
       setShowPostForm(false);
+      setFeedback("Your demand has been posted.");
 
       await load();
     } catch (err: any) {
-      alert(err?.message || "Failed to share your need");
+      setError(err?.message || "Failed to share your need.");
     } finally {
       setPosting(false);
     }
@@ -355,18 +434,26 @@ export default function DemandBoxPage() {
     requestId: number,
     status: "fulfilled" | "cancelled"
   ) {
+    setError("");
+    setFeedback("");
+
     try {
       await updateMarketplaceRequestStatus(requestId, status);
+      setFeedback(
+        status === "fulfilled"
+          ? "Request marked as fulfilled."
+          : "Request closed."
+      );
       await load();
     } catch (err: any) {
-      alert(err?.message || "Failed to update request");
+      setError(err?.message || "Failed to update request.");
     }
   }
 
   function openWhatsapp(item: MarketplaceRequestItem) {
-    const phone = String(item.whatsapp_number || "").trim();
+    const phone = normalizeWhatsappNumber(item.whatsapp_number);
     if (!phone) {
-      alert("No WhatsApp number is available for this post");
+      setError("No WhatsApp number is available for this post.");
       return;
     }
 
@@ -374,106 +461,192 @@ export default function DemandBoxPage() {
       `Hello, I saw your GMFN post: "${item.title}". I can help.`
     );
 
-    const normalized = phone.replace(/[^\d]/g, "");
-    window.open(`https://wa.me/${normalized}?text=${message}`, "_blank");
+    window.open(`https://wa.me/${phone}?text=${message}`, "_blank");
   }
 
-  const openItems = useMemo(
+  const visibleOpenItems = useMemo(
     () => items.filter((x) => String(x.status || "").toLowerCase() === "open"),
     [items]
   );
 
-    const myOpenItems = useMemo(
-    () =>
-      items.filter(
-        (x) => String(x.status || "").toLowerCase() === "open" && mineOnly
-      ),
-    [items, mineOnly]
-  );
+  const myVisibleItems = useMemo(() => {
+    const myId = safeStr(me?.gmfn_id || "");
+    if (!myId) return [];
+    return items.filter(
+      (item) => safeStr(item.requester_gmfn_id || "") === myId
+    );
+  }, [items, me?.gmfn_id]);
 
   return (
     <div style={{ maxWidth: 1180, margin: "0 auto", paddingBottom: 30 }}>
       <div
         style={{
-          ...card("#F8FBFF"),
+          ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
           marginTop: 18,
-          paddingTop: 16,
-          paddingBottom: 16,
         }}
       >
-        <div style={{ fontSize: 28, fontWeight: 1000, color: "#0B1F33" }}>
-          {demandTitle}
-        </div>
-
         <div
           style={{
-            marginTop: 6,
-            color: "#6B7A88",
-            lineHeight: 1.7,
-            fontSize: 14,
-            maxWidth: 760,
-          }}
-        >
-          {demandSubtitle}
-        </div>
-
-        <div
-          style={{
-            marginTop: 14,
             display: "flex",
-            gap: 10,
+            gap: 18,
+            justifyContent: "space-between",
+            alignItems: "flex-start",
             flexWrap: "wrap",
           }}
         >
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              padding: "8px 12px",
-              borderRadius: 999,
-              background: "#FFFFFF",
-              border: "1px solid rgba(11,31,51,0.08)",
-              color: "#0B1F33",
-              fontSize: 13,
-              fontWeight: 800,
-            }}
-          >
-            Post once
+          <div style={{ maxWidth: 760 }}>
+            <div style={sectionLabel()}>Demand Box</div>
+
+            <div
+              style={{
+                marginTop: 10,
+                fontSize: 30,
+                fontWeight: 1000,
+                color: "#0B1F33",
+                lineHeight: 1.15,
+              }}
+            >
+              {demandTitle}
+            </div>
+
+            <div
+              style={{
+                marginTop: 8,
+                color: "#6B7A88",
+                lineHeight: 1.7,
+                fontSize: 14,
+                maxWidth: 760,
+              }}
+            >
+              {demandSubtitle}
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+              }}
+            >
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                  background: "#FFFFFF",
+                  border: "1px solid rgba(11,31,51,0.08)",
+                  color: "#0B1F33",
+                  fontSize: 13,
+                  fontWeight: 800,
+                }}
+              >
+                Identity-based
+              </div>
+
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                  background: "#FFFFFF",
+                  border: "1px solid rgba(11,31,51,0.08)",
+                  color: "#0B1F33",
+                  fontSize: 13,
+                  fontWeight: 800,
+                }}
+              >
+                Visible through your communities
+              </div>
+
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                  background: "#FFFFFF",
+                  border: "1px solid rgba(11,31,51,0.08)",
+                  color: "#0B1F33",
+                  fontSize: 13,
+                  fontWeight: 800,
+                }}
+              >
+                No shop required
+              </div>
+            </div>
           </div>
 
           <div
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              padding: "8px 12px",
-              borderRadius: 999,
-              background: "#FFFFFF",
-              border: "1px solid rgba(11,31,51,0.08)",
-              color: "#0B1F33",
-              fontSize: 13,
-              fontWeight: 800,
+              minWidth: 240,
+              flex: "0 1 300px",
+              ...softCard("#FFFFFF"),
             }}
           >
-            Reach connected communities
-          </div>
+            <div style={tiny()}>Quick links</div>
 
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              padding: "8px 12px",
-              borderRadius: 999,
-              background: "#FFFFFF",
-              border: "1px solid rgba(11,31,51,0.08)",
-              color: "#0B1F33",
-              fontSize: 13,
-              fontWeight: 800,
-            }}
-          >
-            WhatsApp response enabled
+            <div
+              style={{
+                marginTop: 12,
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+              }}
+            >
+              <Link to="/app/community" style={btn(false)}>
+                Community Home
+              </Link>
+              <Link to="/app/marketplace" style={btn(true)}>
+                Marketplace
+              </Link>
+            </div>
+
+            <div
+              style={{
+                marginTop: 12,
+                color: "#64748B",
+                fontSize: 13,
+                lineHeight: 1.7,
+              }}
+            >
+              {selectedClanId
+                ? `Selected community context is active.`
+                : "No selected community context yet."}
+            </div>
           </div>
         </div>
       </div>
+
+      {error ? (
+        <div
+          style={{
+            ...card("#FEF2F2"),
+            marginTop: 18,
+            border: "1px solid rgba(239,68,68,0.18)",
+            color: "#991B1B",
+            fontWeight: 800,
+          }}
+        >
+          {error}
+        </div>
+      ) : null}
+
+      {feedback ? (
+        <div
+          style={{
+            ...card("#ECFDF5"),
+            marginTop: 18,
+            border: "1px solid rgba(16,185,129,0.18)",
+            color: "#065F46",
+            fontWeight: 800,
+          }}
+        >
+          {feedback}
+        </div>
+      ) : null}
 
       <div
         style={{
@@ -485,31 +658,69 @@ export default function DemandBoxPage() {
       >
         <div style={softCard()}>
           <div style={tiny()}>OPEN NOW</div>
-          <div style={{ marginTop: 8, fontSize: 26, fontWeight: 1000, color: "#0B1F33" }}>
-            {openItems.length}
+          <div
+            style={{
+              marginTop: 8,
+              fontSize: 26,
+              fontWeight: 1000,
+              color: "#0B1F33",
+            }}
+          >
+            {summaryCounts.openVisible}
           </div>
           <div style={{ marginTop: 6, color: "#64748B", fontSize: 14 }}>
-            Active posts across your current view.
+            Active visible posts across your current view.
           </div>
         </div>
 
         <div style={softCard()}>
           <div style={tiny()}>MY OPEN POSTS</div>
-          <div style={{ marginTop: 8, fontSize: 26, fontWeight: 1000, color: "#0B1F33" }}>
-            {myOpenItems.length}
+          <div
+            style={{
+              marginTop: 8,
+              fontSize: 26,
+              fontWeight: 1000,
+              color: "#0B1F33",
+            }}
+          >
+            {summaryCounts.myOpen}
           </div>
           <div style={{ marginTop: 6, color: "#64748B", fontSize: 14 }}>
-            Keep only what you still need.
+            Your currently open demand posts.
           </div>
         </div>
 
         <div style={softCard()}>
-          <div style={tiny()}>QUICK ACTION</div>
-          <div style={{ marginTop: 10, color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}>
-            Post what you need
+          <div style={tiny()}>VISIBLE RIGHT NOW</div>
+          <div
+            style={{
+              marginTop: 8,
+              fontSize: 26,
+              fontWeight: 1000,
+              color: "#0B1F33",
+            }}
+          >
+            {visibleOpenItems.length}
           </div>
-          <div style={{ marginTop: 6, color: "#64748B", fontSize: 14, lineHeight: 1.7 }}>
-            Short title first. More detail only if needed.
+          <div style={{ marginTop: 6, color: "#64748B", fontSize: 14 }}>
+            Open items in the list you are currently viewing.
+          </div>
+        </div>
+
+        <div style={softCard()}>
+          <div style={tiny()}>MY VISIBLE POSTS</div>
+          <div
+            style={{
+              marginTop: 8,
+              fontSize: 26,
+              fontWeight: 1000,
+              color: "#0B1F33",
+            }}
+          >
+            {myVisibleItems.length}
+          </div>
+          <div style={{ marginTop: 6, color: "#64748B", fontSize: 14 }}>
+            Your items in the current filtered list.
           </div>
         </div>
       </div>
@@ -526,7 +737,14 @@ export default function DemandBoxPage() {
         >
           <div>
             <div style={tiny()}>POST A NEED</div>
-            <div style={{ marginTop: 6, color: "#64748B", fontSize: 14, lineHeight: 1.6 }}>
+            <div
+              style={{
+                marginTop: 6,
+                color: "#64748B",
+                fontSize: 14,
+                lineHeight: 1.6,
+              }}
+            >
               Start with one clear line. Add more only if it helps someone respond faster.
             </div>
           </div>
@@ -576,7 +794,9 @@ export default function DemandBoxPage() {
                   lineHeight: 1.6,
                 }}
               >
-                <span>Examples: Plumber, Electrician, Painter, Cement, Welding repair.</span>
+                <span>
+                  Examples: Plumber, Electrician, Painter, Cement, Welding repair.
+                </span>
                 <span style={{ fontWeight: 900 }}>{title.length}/40</span>
               </div>
             </div>
@@ -724,7 +944,9 @@ export default function DemandBoxPage() {
                   </div>
 
                   <div>
-                    <div style={tiny()}>{HUMANIZED?.paymentLabel || "HOW CAN YOU PAY?"}</div>
+                    <div style={tiny()}>
+                      {HUMANIZED?.paymentLabel || "HOW CAN YOU PAY?"}
+                    </div>
                     <input
                       value={paymentMode}
                       onChange={(e) => setPaymentMode(e.target.value)}
@@ -791,7 +1013,14 @@ export default function DemandBoxPage() {
         >
           <div>
             <div style={tiny()}>DEMAND FLOW</div>
-            <div style={{ marginTop: 6, color: "#64748B", fontSize: 14, lineHeight: 1.6 }}>
+            <div
+              style={{
+                marginTop: 6,
+                color: "#64748B",
+                fontSize: 14,
+                lineHeight: 1.6,
+              }}
+            >
               See what people need now. Respond quickly where you can help.
             </div>
           </div>
@@ -857,6 +1086,9 @@ export default function DemandBoxPage() {
 
               const derivedType = normalizeRequestType(item.category);
               const trustBand = safeStr(item.requester_trust_band || "");
+              const isMine =
+                safeStr(me?.gmfn_id || "") &&
+                safeStr(item.requester_gmfn_id || "") === safeStr(me?.gmfn_id || "");
 
               return (
                 <div
@@ -902,7 +1134,9 @@ export default function DemandBoxPage() {
                           {formatStatusLabel(item.status)}
                         </span>
 
-                        {trustBand ? <span style={trustPill(trustBand)}>{trustBand}</span> : null}
+                        {trustBand ? (
+                          <span style={trustPill(trustBand)}>{trustBand}</span>
+                        ) : null}
 
                         {item.allow_trust_credit ? (
                           <span
@@ -919,6 +1153,8 @@ export default function DemandBoxPage() {
                             Trust-backed allowed
                           </span>
                         ) : null}
+
+                        {isMine ? <span style={trustPill("mine")}>Your post</span> : null}
                       </div>
                     </div>
 
@@ -976,7 +1212,7 @@ export default function DemandBoxPage() {
                       </button>
                     ) : null}
 
-                    {isOpen && typeof item.id === "number" ? (
+                    {isOpen && typeof item.id === "number" && isMine ? (
                       <button
                         type="button"
                         style={smallBtn(false)}
@@ -986,7 +1222,7 @@ export default function DemandBoxPage() {
                       </button>
                     ) : null}
 
-                    {isOpen && typeof item.id === "number" ? (
+                    {isOpen && typeof item.id === "number" && isMine ? (
                       <button
                         type="button"
                         style={smallBtn(false)}
