@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   getMe,
+  getMyNotifications,
   getMyTrustSlip,
-  listMyClans,
   getSelectedClanId,
+  listMyClans,
   selectClan,
 } from "../lib/api";
 
@@ -17,6 +18,15 @@ type ClanItem = {
   gmfn_id?: string | null;
   clan_code?: string | null;
   description?: string | null;
+};
+
+type NoticeItem = {
+  id?: number;
+  kind?: string | null;
+  title?: string | null;
+  message?: string | null;
+  is_read?: boolean;
+  created_at?: string | null;
 };
 
 type CciState = {
@@ -45,10 +55,12 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
   };
 }
 
-function btn(primary = false): React.CSSProperties {
+function btn(primary = false, disabled = false): React.CSSProperties {
   return {
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: primary ? "#0B63D1" : "#FFFFFF",
+    border: primary
+      ? "1px solid rgba(11,99,209,0.22)"
+      : "1px solid rgba(11,31,51,0.10)",
+    background: disabled ? "#CBD5E1" : primary ? "#0B63D1" : "#FFFFFF",
     color: primary ? "#FFFFFF" : "#0B1F33",
     borderRadius: 12,
     padding: "10px 12px",
@@ -59,7 +71,8 @@ function btn(primary = false): React.CSSProperties {
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    cursor: "pointer",
+    cursor: disabled ? "not-allowed" : "pointer",
+    opacity: disabled ? 0.8 : 1,
   };
 }
 
@@ -77,8 +90,26 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
+function sectionLabel(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#4F6B8A",
+    fontWeight: 1000,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  };
+}
+
 function safeStr(x: any): string {
   return String(x ?? "").trim();
+}
+
+function safeDateTime(x: any): string {
+  const raw = String(x || "").trim();
+  if (!raw) return "";
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return raw;
+  return d.toLocaleString();
 }
 
 function apiBase(): string {
@@ -154,10 +185,10 @@ function getCciState(me: any): CciState {
         classText === "A" || classText === "A+"
           ? "Healthy"
           : classText === "B"
-            ? "Stable"
-            : classText === "C"
-              ? "Needs attention"
-              : "At risk",
+          ? "Stable"
+          : classText === "C"
+          ? "Needs attention"
+          : "At risk",
     };
   }
 
@@ -234,14 +265,34 @@ function cciToneStyles(tone: "green" | "yellow" | "red" | "neutral") {
   };
 }
 
+function isDemandNotice(n: NoticeItem): boolean {
+  const kind = safeStr(n.kind).toLowerCase();
+  const text = `${safeStr(n.title)} ${safeStr(n.message)}`.toLowerCase();
+
+  return (
+    kind.includes("demand") ||
+    kind.includes("request") ||
+    kind.includes("join") ||
+    kind.includes("approval") ||
+    text.includes("demand") ||
+    text.includes("request") ||
+    text.includes("join")
+  );
+}
+
 export default function CommunityHomePage() {
+  const navigate = useNavigate();
+
   const [me, setMe] = useState<any>(null);
   const [trustSlip, setTrustSlip] = useState<any>(null);
   const [clans, setClans] = useState<ClanItem[]>([]);
+  const [notices, setNotices] = useState<NoticeItem[]>([]);
   const [selectedClanId, setSelectedClanId] = useState<number | null>(
     getSelectedClanId()
   );
   const [loading, setLoading] = useState(true);
+  const [noticesLoading, setNoticesLoading] = useState(false);
+  const [inviteCopied, setInviteCopied] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -273,9 +324,53 @@ export default function CommunityHomePage() {
     })();
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      setNoticesLoading(true);
+      try {
+        const res = await getMyNotifications(12, false).catch(() => ({
+          items: [],
+        }));
+        const rows: NoticeItem[] = Array.isArray(res?.items) ? res.items : [];
+        setNotices(rows);
+      } finally {
+        setNoticesLoading(false);
+      }
+    })();
+  }, []);
+
   async function handleSelectClan(id: number) {
     await selectClan(id).catch(() => null);
     setSelectedClanId(id);
+  }
+
+  async function handleOpenMarketplace(id: number) {
+    await handleSelectClan(id);
+    navigate("/app/marketplace");
+  }
+
+  async function handleCopyInvite() {
+    const origin =
+      typeof window !== "undefined" ? window.location.origin : "";
+    const selectedClan = clans.find((c) => Number(c.id || 0) === selectedClanId);
+    const inviteTarget = selectedClanId
+      ? `${origin}/join/community/${selectedClanId}`
+      : `${origin}/create`;
+
+    const inviteText = selectedClan
+      ? `Join ${communityName(selectedClan)} on GMFN / GSN.\n\n${inviteTarget}`
+      : `Join me on GMFN / GSN.\n\n${inviteTarget}`;
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(inviteText);
+        setInviteCopied(true);
+        window.setTimeout(() => setInviteCopied(false), 1800);
+        return;
+      }
+    } catch {}
+
+    window.prompt("Copy this invite text:", inviteText);
   }
 
   const cci = useMemo(() => getCciState(me), [me]);
@@ -287,11 +382,35 @@ export default function CommunityHomePage() {
 
   const gmfnId = safeStr(me?.gmfn_id || "Pending");
   const trustSlipCode = safeStr(trustSlip?.code || "");
+  const selectedClan = useMemo(
+    () =>
+      clans.find((c) => Number(c.id || 0) === Number(selectedClanId || 0)) ||
+      null,
+    [clans, selectedClanId]
+  );
+
+  const selectedCommunityLabel = selectedClan
+    ? communityName(selectedClan)
+    : "No community selected";
+
+  const myShopLink = safeStr(me?.gmfn_id)
+    ? `/app/shop/${encodeURIComponent(safeStr(me?.gmfn_id))}`
+    : "/app/shop-control";
+
+  const demandNotices = useMemo(
+    () => notices.filter(isDemandNotice).slice(0, 3),
+    [notices]
+  );
+
+  const unreadDemandCount = useMemo(
+    () => notices.filter((n) => isDemandNotice(n) && !n.is_read).length,
+    [notices]
+  );
 
   return (
     <div
       style={{
-        maxWidth: 1040,
+        maxWidth: 1080,
         margin: "0 auto",
         paddingBottom: 30,
         display: "grid",
@@ -308,9 +427,7 @@ export default function CommunityHomePage() {
           }}
         >
           <div style={softCard("#FCFEFF")}>
-            <div style={{ fontSize: 13, color: "#64748B", fontWeight: 900 }}>
-              My identity
-            </div>
+            <div style={sectionLabel()}>Community Home</div>
 
             <div
               style={{
@@ -333,6 +450,7 @@ export default function CommunityHomePage() {
               }}
             >
               <span style={badge(true)}>GMFN ID: {gmfnId}</span>
+              <span style={badge(false)}>Selected: {selectedCommunityLabel}</span>
               <span style={badge(false)}>CCI: {cci.classText}</span>
               <span style={badge(false)}>Score: {cci.scoreText}</span>
             </div>
@@ -343,11 +461,12 @@ export default function CommunityHomePage() {
                 color: "#64748B",
                 fontSize: 14,
                 lineHeight: 1.75,
-                maxWidth: 560,
+                maxWidth: 580,
               }}
             >
-              Your identity travels with you across the communities you belong to.
-              This page only shows your identity and the communities you belong to.
+              This is your private control center. Use it to manage your
+              communities, demand access, spotlight access, invite sharing, money
+              and support, and your shop.
             </div>
 
             <div
@@ -358,8 +477,8 @@ export default function CommunityHomePage() {
                 flexWrap: "wrap",
               }}
             >
-              <Link to="/app/shop-control" style={btn(true)}>
-                My Shop
+              <Link to={myShopLink} style={btn(true)}>
+                Open My Shop
               </Link>
               <Link to="/app/trust-slip" style={btn(false)}>
                 TrustSlip
@@ -367,7 +486,7 @@ export default function CommunityHomePage() {
               <Link to="/app/trust" style={btn(false)}>
                 Trust
               </Link>
-              <Link to="/app/clans" style={btn(false)}>
+              <Link to="/create" style={btn(false)}>
                 Create Community
               </Link>
             </div>
@@ -505,40 +624,265 @@ export default function CommunityHomePage() {
         </div>
       </div>
 
-      <div style={pageCard()}>
-        <div style={{ fontWeight: 900, color: "#0B1F33", fontSize: 18 }}>
-          Money & Support
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+          gap: 16,
+        }}
+      >
+        <div style={pageCard()}>
+          <div style={{ fontWeight: 900, color: "#0B1F33", fontSize: 18 }}>
+            Demand Box control
+          </div>
+
+          <div
+            style={{
+              marginTop: 8,
+              color: "#64748B",
+              fontSize: 14,
+              lineHeight: 1.7,
+            }}
+          >
+            Demand belongs to your identity. Use this block to open demand tools
+            and review demand-related notifications.
+          </div>
+
+          <div
+            style={{
+              marginTop: 12,
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
+            <span style={badge(true)}>
+              {unreadDemandCount} demand update{unreadDemandCount === 1 ? "" : "s"}
+            </span>
+          </div>
+
+          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+            {noticesLoading ? (
+              <div style={{ color: "#64748B" }}>Loading updates...</div>
+            ) : demandNotices.length === 0 ? (
+              <div style={{ color: "#64748B", lineHeight: 1.7 }}>
+                No demand-related notification is waiting right now.
+              </div>
+            ) : (
+              demandNotices.map((item, idx) => (
+                <div key={item.id || idx} style={softCard("#FCFEFF")}>
+                  <div
+                    style={{
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      fontSize: 15,
+                    }}
+                  >
+                    {safeStr(item.title || item.message || "Demand update")}
+                  </div>
+
+                  {safeStr(item.message) ? (
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#64748B",
+                        fontSize: 14,
+                        lineHeight: 1.7,
+                      }}
+                    >
+                      {safeStr(item.message)}
+                    </div>
+                  ) : null}
+
+                  {item.created_at ? (
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#64748B",
+                        fontSize: 12,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {safeDateTime(item.created_at)}
+                    </div>
+                  ) : null}
+                </div>
+              ))
+            )}
+          </div>
+
+          <div
+            style={{
+              marginTop: 14,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <Link to="/app/demand-box" style={btn(true)}>
+              Open Demand Box
+            </Link>
+            <Link to="/app/notifications" style={btn(false)}>
+              Notifications
+            </Link>
+          </div>
         </div>
 
-        <div
-          style={{
-            marginTop: 12,
-            display: "flex",
-            gap: 10,
-            flexWrap: "wrap",
-          }}
-        >
-          <Link to="/app/payment/pool" style={btn(false)}>
-            Money In
-          </Link>
-          <Link to="/app/withdrawal-instructions" style={btn(false)}>
-            Money Out
-          </Link>
-          <Link to="/app/loans" style={btn(false)}>
-            Loans
-          </Link>
-          <Link to="/app/loan-readiness" style={btn(false)}>
-            Readiness
-          </Link>
-          <Link to="/app/loan-workbench" style={btn(false)}>
-            Workbench
-          </Link>
-          <Link to="/app/guarantor-earnings" style={btn(false)}>
-            Earnings
-          </Link>
-          <Link to="/app/loan-suggestions" style={btn(false)}>
-            Suggestions
-          </Link>
+        <div style={pageCard()}>
+          <div style={{ fontWeight: 900, color: "#0B1F33", fontSize: 18 }}>
+            Spotlight and shop
+          </div>
+
+          <div
+            style={{
+              marginTop: 8,
+              color: "#64748B",
+              fontSize: 14,
+              lineHeight: 1.7,
+            }}
+          >
+            Spotlight is shop-based. Use your shop tools to prepare what appears
+            in visible community market flow.
+          </div>
+
+          <div
+            style={{
+              marginTop: 12,
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
+            <span style={badge(false)}>Selected community: {selectedCommunityLabel}</span>
+          </div>
+
+          <div
+            style={{
+              marginTop: 14,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <Link to="/app/shop-control" style={btn(true)}>
+              Shop tools
+            </Link>
+            <button
+              type="button"
+              style={btn(false, !selectedClanId)}
+              onClick={() => selectedClanId && navigate("/app/marketplace")}
+              disabled={!selectedClanId}
+            >
+              Open marketplace
+            </button>
+            <Link to={myShopLink} style={btn(false)}>
+              Open my shop
+            </Link>
+          </div>
+        </div>
+
+        <div style={pageCard()}>
+          <div style={{ fontWeight: 900, color: "#0B1F33", fontSize: 18 }}>
+            Invite and community actions
+          </div>
+
+          <div
+            style={{
+              marginTop: 8,
+              color: "#64748B",
+              fontSize: 14,
+              lineHeight: 1.7,
+            }}
+          >
+            Use the selected community for quick join sharing. Keep the guide
+            close when explaining GMFN / GSN to others.
+          </div>
+
+          <div
+            style={{
+              marginTop: 12,
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
+            <span style={badge(true)}>
+              {selectedClan ? `Invite target: ${communityName(selectedClan)}` : "Select a community first"}
+            </span>
+          </div>
+
+          <div
+            style={{
+              marginTop: 14,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <button
+              type="button"
+              style={btn(true, !selectedClanId)}
+              onClick={handleCopyInvite}
+              disabled={!selectedClanId}
+            >
+              {inviteCopied ? "Invite copied" : "Copy join link"}
+            </button>
+            <Link to="/create" style={btn(false)}>
+              Create Community
+            </Link>
+            <Link to="/app/my-gmfn-and-i" style={btn(false)}>
+              Open guide
+            </Link>
+          </div>
+        </div>
+
+        <div style={pageCard()}>
+          <div style={{ fontWeight: 900, color: "#0B1F33", fontSize: 18 }}>
+            Money & Support
+          </div>
+
+          <div
+            style={{
+              marginTop: 8,
+              color: "#64748B",
+              fontSize: 14,
+              lineHeight: 1.7,
+            }}
+          >
+            Follow money movement, loans, readiness, workbench, and guarantor
+            earnings from one grouped hub.
+          </div>
+
+          <div
+            style={{
+              marginTop: 14,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <Link to="/app/payment/pool" style={btn(false)}>
+              Money In
+            </Link>
+            <Link to="/app/withdrawal-instructions" style={btn(false)}>
+              Money Out
+            </Link>
+            <Link to="/app/loans" style={btn(false)}>
+              Loans
+            </Link>
+            <Link to="/app/loan-readiness" style={btn(false)}>
+              Readiness
+            </Link>
+            <Link to="/app/loan-workbench" style={btn(false)}>
+              Workbench
+            </Link>
+            <Link to="/app/guarantor-earnings" style={btn(false)}>
+              Earnings
+            </Link>
+            <Link to="/app/loan-suggestions" style={btn(false)}>
+              Suggestions
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -555,7 +899,8 @@ export default function CommunityHomePage() {
             lineHeight: 1.7,
           }}
         >
-          Open any community you belong to.
+          Select one community to set your marketplace context, then open that
+          marketplace or its join requests.
         </div>
 
         {loading ? (
@@ -564,7 +909,7 @@ export default function CommunityHomePage() {
           </div>
         ) : clans.length === 0 ? (
           <div style={{ marginTop: 14, color: "#64748B" }}>
-            No communities yet
+            No communities yet.
           </div>
         ) : (
           <div
@@ -603,11 +948,15 @@ export default function CommunityHomePage() {
                       <div
                         style={{
                           marginTop: 6,
-                          color: "#64748B",
-                          fontSize: 13,
+                          display: "flex",
+                          gap: 8,
+                          flexWrap: "wrap",
                         }}
                       >
-                        Community ID: {communityId(c)}
+                        <span style={badge(active)}>{active ? "Selected" : "Available"}</span>
+                        <span style={badge(false)}>
+                          Community ID: {communityId(c)}
+                        </span>
                       </div>
 
                       {safeStr(c.description) ? (
@@ -617,6 +966,7 @@ export default function CommunityHomePage() {
                             color: "#64748B",
                             fontSize: 14,
                             lineHeight: 1.65,
+                            maxWidth: 620,
                           }}
                         >
                           {safeStr(c.description)}
@@ -639,8 +989,19 @@ export default function CommunityHomePage() {
                         {active ? "Selected" : "Select"}
                       </button>
 
-                      <Link to={`/community/${id}`} style={btn(false)}>
-                        Open Community
+                      <button
+                        type="button"
+                        onClick={() => handleOpenMarketplace(id)}
+                        style={btn(false)}
+                      >
+                        Open Marketplace
+                      </button>
+
+                      <Link
+                        to={`/app/community/${id}/join-requests`}
+                        style={btn(false)}
+                      >
+                        Join Requests
                       </Link>
                     </div>
                   </div>
