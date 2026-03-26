@@ -85,7 +85,9 @@ function btn(primary = false, disabled = false): React.CSSProperties {
     gap: 8,
     padding: "10px 14px",
     borderRadius: 12,
-    border: primary ? "1px solid rgba(11,99,209,0.22)" : "1px solid rgba(11,31,51,0.10)",
+    border: primary
+      ? "1px solid rgba(11,99,209,0.22)"
+      : "1px solid rgba(11,31,51,0.10)",
     background: disabled ? "#CBD5E1" : primary ? "#0B63D1" : "#FFFFFF",
     color: primary ? "#FFFFFF" : "#0B1F33",
     fontWeight: 900,
@@ -139,6 +141,10 @@ function tinyText(): React.CSSProperties {
   };
 }
 
+function safeStr(value: any): string {
+  return String(value ?? "").trim();
+}
+
 function formatWhen(value?: string | null): string {
   if (!value) return "Unknown time";
   const d = new Date(value);
@@ -162,6 +168,12 @@ function buildWhatsAppLink(phone?: string | null, message?: string): string | nu
   return msg
     ? `https://wa.me/${normalized}?text=${encodeURIComponent(msg)}`
     : `https://wa.me/${normalized}`;
+}
+
+function buildTelegramLink(handle?: string | null): string | null {
+  const raw = safeStr(handle).replace(/^@+/, "");
+  if (!raw) return null;
+  return `https://t.me/${raw}`;
 }
 
 type ShopItem = {
@@ -211,13 +223,14 @@ export default function ShopPage() {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
   const [expandedProductId, setExpandedProductId] = useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const pageTitle = useMemo(() => {
     return shop?.name || "Shop Gallery";
   }, [shop]);
 
   const pageSubtitle = useMemo(() => {
-    return "Viewer-facing shop display";
+    return "Browse, share, and contact the seller";
   }, []);
 
   const productSlots = useMemo(() => {
@@ -225,10 +238,35 @@ export default function ShopPage() {
     return Array.from({ length: 12 }, (_, i) => firstTwelve[i] || null);
   }, [products]);
 
+  const currentUrl = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    return window.location.href;
+  }, [gmfnId]);
+
+  const guideUrl = useMemo(() => {
+    if (typeof window === "undefined") return "/GSN_FINAL_WHITE.pdf";
+    return `${window.location.origin}/GSN_FINAL_WHITE.pdf`;
+  }, []);
+
   const shopWhatsappLink = useMemo(() => {
     const intro = `Hello, I am viewing ${shop?.name || "your shop"} and would like to ask a question.`;
     return buildWhatsAppLink(shop?.whatsapp_number, intro);
   }, [shop]);
+
+  const telegramLink = useMemo(() => {
+    return buildTelegramLink(shop?.telegram_handle);
+  }, [shop]);
+
+  const shareText = useMemo(() => {
+    const seller = safeStr(shop?.owner_display_name || "the seller");
+    const shopName = safeStr(shop?.name || "this shop");
+
+    return `Take a look at ${shopName} by ${seller} on GMFN / GSN.\n\nShop link:\n${currentUrl}\n\nUnderstand GMFN / GSN first:\n${guideUrl}`;
+  }, [currentUrl, guideUrl, shop]);
+
+  const shareWhatsAppUrl = useMemo(() => {
+    return `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+  }, [shareText]);
 
   useEffect(() => {
     loadShop();
@@ -238,6 +276,7 @@ export default function ShopPage() {
     setLoading(true);
     setErr("");
     setMsg("");
+    setExpandedProductId(null);
 
     try {
       const identityKey = String(gmfnId || "").trim();
@@ -262,11 +301,28 @@ export default function ShopPage() {
     }
   }
 
+  async function copyShopLink() {
+    try {
+      if (navigator?.clipboard?.writeText && currentUrl) {
+        await navigator.clipboard.writeText(currentUrl);
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 1800);
+        return;
+      }
+    } catch {}
+
+    if (currentUrl) {
+      window.prompt("Copy this shop link:", currentUrl);
+    }
+  }
+
   function renderProductCard(product: ProductItem, index: number) {
     const productRef = `P-${String(index + 1).padStart(3, "0")}`;
     const productId = Number(product.id || 0);
     const isExpanded = expandedProductId === productId;
-    const whatsappMessage = `Hello, I am interested in ${productRef} - ${product.name || "this product"} from ${shop?.name || "your shop"}.`;
+    const whatsappMessage = `Hello, I am interested in ${productRef} - ${
+      product.name || "this product"
+    } from ${shop?.name || "your shop"}.`;
     const whatsappLink = buildWhatsAppLink(shop?.whatsapp_number, whatsappMessage);
 
     return (
@@ -278,7 +334,7 @@ export default function ShopPage() {
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
-          minHeight: isExpanded ? 700 : 430,
+          minHeight: isExpanded ? 720 : 430,
           gridColumn: isExpanded ? "1 / -1" : undefined,
         }}
       >
@@ -382,7 +438,7 @@ export default function ShopPage() {
           {isExpanded ? (
             <div style={softCard("#F8FBFF")}>
               <div style={{ fontWeight: 900, color: "#0B1F33", fontSize: 13 }}>
-                Product details
+                Product and repost details
               </div>
 
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
@@ -396,7 +452,15 @@ export default function ShopPage() {
                   Total distribution slots: {product.distribution_slots_total ?? "—"}
                 </div>
                 <div style={tinyText()}>
+                  Reserved for origin spotlight:{" "}
+                  {product.distribution_slots_reserved_for_origin_spotlight ?? "—"}
+                </div>
+                <div style={tinyText()}>
                   Reposts used: {product.reposts_used ?? "—"}
+                </div>
+                <div style={tinyText()}>
+                  Repost visibility follows membership overlap, origin rules, and
+                  slot availability.
                 </div>
               </div>
             </div>
@@ -427,11 +491,11 @@ export default function ShopPage() {
                 rel="noreferrer"
                 style={btn(true, false)}
               >
-                WhatsApp
+                Contact seller
               </a>
             ) : (
               <button type="button" style={btn(true, true)} disabled>
-                WhatsApp
+                Contact unavailable
               </button>
             )}
           </div>
@@ -525,7 +589,7 @@ export default function ShopPage() {
               View
             </button>
             <button type="button" style={btn(true, true)} disabled>
-              WhatsApp
+              Contact unavailable
             </button>
           </div>
         </div>
@@ -596,7 +660,7 @@ export default function ShopPage() {
             >
               <div style={softCard("#FFFFFF")}>
                 <div style={{ fontSize: 13, color: "#64748B", fontWeight: 900 }}>
-                  Shop owner
+                  Shop identity
                 </div>
 
                 <div
@@ -633,7 +697,8 @@ export default function ShopPage() {
                     fontSize: 14,
                   }}
                 >
-                  {shop.description || "Trusted seller in this visible community network."}
+                  {shop.description ||
+                    "This is the seller-facing identity summary for the visible shop gallery."}
                 </div>
 
                 <div style={{ marginTop: 14, display: "grid", gap: 8 }}>
@@ -663,42 +728,24 @@ export default function ShopPage() {
                       rel="noreferrer"
                       style={btn(true, false)}
                     >
-                      Contact on WhatsApp
+                      Contact seller
                     </a>
                   ) : (
                     <button type="button" style={btn(true, true)} disabled>
-                      WhatsApp unavailable
+                      Contact unavailable
                     </button>
                   )}
-                  <div style={{ marginTop: 14 }}>
-                    <div style={{ fontSize: 12, fontWeight: 900, color: "#64748B" }}>
-                      Share this shop
-                  </div>
 
-                  <div style={{ marginTop: 8 }}>
+                  {telegramLink ? (
                     <a
-                      href={`https://wa.me/?text=${encodeURIComponent(
-                        `Take a look at this shop:\n\n${window.location.href}\n\nBefore you proceed, understand how GMFN works:\nhttp://localhost:5174/GSN_FINAL_WHITE.pdf`
-                      )}`}
+                      href={telegramLink}
                       target="_blank"
                       rel="noreferrer"
-                      style={{
-                        display: "inline-flex",
-                        padding: "10px 14px",
-                        borderRadius: 12,
-                        background: "#25D366",
-                        color: "#FFFFFF",
-                        fontWeight: 900,
-                        textDecoration: "none",
-                       }}
-                     >
-                       Share Shop (WhatsApp)
-                     </a>
-                   </div>
-                 </div>
-                  <Link to="/app/community" style={btn(false, false)}>
-                    Back to Community Home
-                  </Link>
+                      style={btn(false, false)}
+                    >
+                      Telegram
+                    </a>
+                  ) : null}
                 </div>
               </div>
 
@@ -741,9 +788,9 @@ export default function ShopPage() {
                     maxWidth: 780,
                   }}
                 >
-                  This is the viewer-facing shop surface. It is for browsing the
-                  member’s goods and identity-linked shop presence. It does not carry
-                  invite, money-in, or community-management controls.
+                  This is the browse, share, and contact surface for this shop.
+                  It stays separate from private controls, community money tools,
+                  and management panels.
                 </div>
 
                 <div
@@ -784,24 +831,71 @@ export default function ShopPage() {
                         wordBreak: "break-word",
                       }}
                     >
-                      {shop.gmfn_id || "GMFN ID pending"}
+                      {shop.gmfn_id || gmfnId || "GMFN ID pending"}
                     </div>
                   </div>
 
                   <div style={card("#FFFFFF")}>
                     <div style={{ fontSize: 13, color: "#64748B", fontWeight: 800 }}>
-                      Shop status
+                      Repost visibility
                     </div>
                     <div
                       style={{
                         marginTop: 8,
-                        fontSize: 18,
-                        fontWeight: 1000,
+                        fontSize: 15,
+                        fontWeight: 900,
                         color: "#0B1F33",
+                        lineHeight: 1.45,
                       }}
                     >
-                      {shop.is_active === false ? "Inactive" : "Active"}
+                      Follows membership overlap and slot rules
                     </div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 16,
+                    display: "flex",
+                    gap: 10,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <a
+                    href={shareWhatsAppUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={btn(true, false)}
+                  >
+                    Share shop
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={copyShopLink}
+                    style={btn(false, false)}
+                  >
+                    {copied ? "Link copied" : "Copy link"}
+                  </button>
+
+                  <Link to="/app/my-gmfn-and-i" style={btn(false, false)}>
+                    Open guide
+                  </Link>
+
+                  <Link to="/app/marketplace" style={btn(false, false)}>
+                    Open marketplace
+                  </Link>
+                </div>
+
+                <div style={{ marginTop: 12, ...softCard("#F8FBFF") }}>
+                  <div style={{ fontWeight: 900, color: "#0B1F33", fontSize: 13 }}>
+                    Share package
+                  </div>
+
+                  <div style={{ marginTop: 8, color: "#64748B", fontSize: 13, lineHeight: 1.65 }}>
+                    Share this shop with a shop link and the GMFN / GSN guide.
+                    Repost visibility still depends on community membership,
+                    origin rules, and slot availability.
                   </div>
                 </div>
               </div>
@@ -814,6 +908,7 @@ export default function ShopPage() {
             </div>
             <div style={helperTextStyle()}>
               Browse the visible products from this member’s single global shop.
+              Up to 12 product slots are shown here.
             </div>
 
             <div
