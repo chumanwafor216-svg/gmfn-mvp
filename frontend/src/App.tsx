@@ -1,4 +1,10 @@
-import { Routes, Route, Navigate, Outlet } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Navigate,
+  Outlet,
+  useLocation,
+} from "react-router-dom";
 import InviteInterestPage from "./pages/InviteInterestPage";
 import JoinRequestPendingPage from "./pages/JoinRequestPendingPage";
 import CoverPage from "./pages/CoverPage";
@@ -40,6 +46,11 @@ import JoinApprovalPage from "./pages/JoinApprovalPage";
 import MemberActivationPage from "./pages/MemberActivationPage";
 import DemandBoxPage from "./pages/DemandBoxPage";
 
+function PreserveQueryRedirect({ to }: { to: string }) {
+  const location = useLocation();
+  return <Navigate to={`${to}${location.search}`} replace />;
+}
+
 export default function App() {
   return (
     <Routes>
@@ -77,6 +88,8 @@ export default function App() {
         <Route path="dashboard" element={<DashboardPage />} />
 
         <Route path="clans" element={<ClansPage />} />
+        <Route path="create-community" element={<Navigate to="/app/clans" replace />} />
+
         <Route path="community" element={<CommunityHomePage />} />
         <Route path="community/:clanId" element={<CommunityHomePage />} />
         <Route
@@ -85,7 +98,10 @@ export default function App() {
         />
 
         <Route path="loans" element={<LoansPage />} />
+        <Route path="money" element={<Navigate to="/app/loans" replace />} />
+
         <Route path="payment/pool" element={<PaymentInstructionsPage />} />
+        <Route path="payment/loans/:loanId" element={<PaymentInstructionsPage />} />
         <Route
           path="withdrawal-instructions"
           element={<WithdrawalInstructionsPage />}
@@ -120,35 +136,34 @@ export default function App() {
         >
           <Route index element={<TrustCommandCentrePage />} />
           <Route path="trust-analytics" element={<TrustAnalyticsPage />} />
-          <Route
-            path="system-operations"
-            element={<SystemOperationsPage />}
-          />
+          <Route path="system-operations" element={<SystemOperationsPage />} />
           <Route path="exposure" element={<ExposureAdminPage />} />
           <Route path="trust-graph" element={<AdminTrustGraphPage />} />
         </Route>
 
         <Route
           path="trust-command-centre"
-          element={<Navigate to="/app/command-center" replace />}
+          element={<PreserveQueryRedirect to="/app/command-center" />}
         />
         <Route
           path="trust-analytics"
-          element={<Navigate to="/app/command-center/trust-analytics" replace />}
+          element={
+            <PreserveQueryRedirect to="/app/command-center/trust-analytics" />
+          }
         />
         <Route
           path="system-operations"
           element={
-            <Navigate to="/app/command-center/system-operations" replace />
+            <PreserveQueryRedirect to="/app/command-center/system-operations" />
           }
         />
         <Route
           path="admin/exposure"
-          element={<Navigate to="/app/command-center/exposure" replace />}
+          element={<PreserveQueryRedirect to="/app/command-center/exposure" />}
         />
         <Route
           path="admin/trust-graph"
-          element={<Navigate to="/app/command-center/trust-graph" replace />}
+          element={<PreserveQueryRedirect to="/app/command-center/trust-graph" />}
         />
       </Route>
 
