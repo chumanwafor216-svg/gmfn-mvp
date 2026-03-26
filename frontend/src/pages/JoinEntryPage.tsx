@@ -2,20 +2,20 @@ import React, { useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { submitJoinRequest } from "../lib/api";
 
-function card(): React.CSSProperties {
+function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
-    background: "#FFFFFF",
+    background: bg,
     border: "1px solid rgba(11,31,51,0.08)",
     boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
     padding: 24,
   };
 }
 
-function softCard(): React.CSSProperties {
+function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     borderRadius: 18,
-    background: "#F8FBFF",
+    background: bg,
     border: "1px solid rgba(11,31,51,0.08)",
     padding: 18,
   };
@@ -50,6 +50,7 @@ function primaryBtn(disabled = false): React.CSSProperties {
     border: "none",
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 15,
+    opacity: disabled ? 0.82 : 1,
   };
 }
 
@@ -93,6 +94,7 @@ function labelText(): React.CSSProperties {
     color: "#64748B",
     fontWeight: 1000,
     letterSpacing: 0.2,
+    textTransform: "uppercase",
   };
 }
 
@@ -170,6 +172,14 @@ function humanInviterLabel(rawInviter: string): string {
   return v;
 }
 
+function safeDateTime(value: any): string {
+  const raw = cleanText(value);
+  if (!raw) return "—";
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return raw;
+  return d.toLocaleString();
+}
+
 export default function JoinEntryPage() {
   const { clanId } = useParams();
   const [searchParams] = useSearchParams();
@@ -208,6 +218,33 @@ export default function JoinEntryPage() {
     return humanInviterLabel(inviterNameRaw);
   }, [inviterNameRaw]);
 
+  const intendedReceiver = useMemo(() => {
+    return decodeFriendly(
+      searchParams.get("receiver_name") ||
+        searchParams.get("receiver") ||
+        searchParams.get("to") ||
+        ""
+    );
+  }, [searchParams]);
+
+  const inviteExpiry = useMemo(() => {
+    return cleanText(
+      searchParams.get("expires_at") ||
+        searchParams.get("expiry") ||
+        searchParams.get("expires") ||
+        ""
+    );
+  }, [searchParams]);
+
+  const inviteMessage = useMemo(() => {
+    return decodeFriendly(
+      searchParams.get("message") ||
+        searchParams.get("note") ||
+        searchParams.get("invite_message") ||
+        ""
+    );
+  }, [searchParams]);
+
   const communityCode = useMemo(() => {
     return cleanText(searchParams.get("community_code") || "");
   }, [searchParams]);
@@ -228,6 +265,18 @@ export default function JoinEntryPage() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [success, setSuccess] = useState<any>(null);
+
+  const canSubmit =
+    !!inviteCode &&
+    !!cleanText(firstName) &&
+    !!cleanText(surname) &&
+    !!cleanText(phone) &&
+    !!cleanText(country) &&
+    !busy;
+
+  const submittedRequestId = cleanText(
+    success?.request?.id || success?.request_id || ""
+  );
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -295,7 +344,7 @@ export default function JoinEntryPage() {
       }}
     >
       <div style={{ maxWidth: 1120, margin: "0 auto" }}>
-        <div style={{ ...card(), padding: 30 }}>
+        <div style={{ ...pageCard(), padding: 30 }}>
           <div
             style={{
               fontSize: 42,
@@ -330,8 +379,8 @@ export default function JoinEntryPage() {
             gap: 18,
           }}
         >
-          <div style={card()}>
-            <div style={labelText()}>JOIN INFORMATION</div>
+          <div style={pageCard()}>
+            <div style={labelText()}>Join information</div>
 
             <div
               style={{
@@ -352,9 +401,8 @@ export default function JoinEntryPage() {
                 fontSize: 15,
               }}
             >
-              You are not creating a public account here. You are submitting a
-              request to be considered for admission into an existing
-              community.
+              You are not creating a normal public account here. You are submitting
+              a request to be considered for admission into an existing community.
             </div>
 
             <div style={{ marginTop: 18, ...softCard() }}>
@@ -365,7 +413,7 @@ export default function JoinEntryPage() {
                   fontSize: 15,
                 }}
               >
-                Invitation context
+                Invitation package
               </div>
 
               <div
@@ -393,13 +441,45 @@ export default function JoinEntryPage() {
                   {inviterLabel}
                 </div>
 
+                {intendedReceiver ? (
+                  <div>
+                    <strong style={{ color: "#0B1F33" }}>Intended receiver:</strong>{" "}
+                    {intendedReceiver}
+                  </div>
+                ) : null}
+
                 {routeLabel ? (
                   <div>
                     <strong style={{ color: "#0B1F33" }}>Community route:</strong>{" "}
                     {routeLabel}
                   </div>
                 ) : null}
+
+                {inviteExpiry ? (
+                  <div>
+                    <strong style={{ color: "#0B1F33" }}>Expiry:</strong>{" "}
+                    {safeDateTime(inviteExpiry)}
+                  </div>
+                ) : null}
               </div>
+
+              {inviteMessage ? (
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: 12,
+                    borderRadius: 12,
+                    background: "#FFFFFF",
+                    border: "1px solid rgba(11,31,51,0.08)",
+                    color: "#475569",
+                    lineHeight: 1.75,
+                    fontSize: 14,
+                  }}
+                >
+                  <strong style={{ color: "#0B1F33" }}>Invite message:</strong>{" "}
+                  {inviteMessage}
+                </div>
+              ) : null}
             </div>
 
             <div style={{ marginTop: 18, ...softCard() }}>
@@ -423,8 +503,42 @@ export default function JoinEntryPage() {
               >
                 Receiving an invitation or submitting this request does not by
                 itself guarantee admission. Members of the community must still
-                approve your request according to the voting rule already in
-                place.
+                approve your request according to the voting rule already in place.
+              </div>
+            </div>
+
+            <div style={{ marginTop: 18, ...softCard() }}>
+              <div
+                style={{
+                  fontWeight: 1000,
+                  color: "#0B1F33",
+                  fontSize: 15,
+                }}
+              >
+                Guide
+              </div>
+
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#6B7A88",
+                  lineHeight: 1.75,
+                  fontSize: 14,
+                }}
+              >
+                Before joining, read the guide and understand what GMFN / GSN is
+                for and how trust-based participation works.
+              </div>
+
+              <div style={{ marginTop: 12 }}>
+                <a
+                  href="/GSN_FINAL_WHITE.pdf"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={secondaryLink()}
+                >
+                  Open guide
+                </a>
               </div>
             </div>
 
@@ -448,9 +562,8 @@ export default function JoinEntryPage() {
                 }}
               >
                 Once you submit, your request goes to {communityName || "the community"} for
-                review. If approved, GMFN will issue your institutional
-                identity and you will then be invited to activate your account
-                properly.
+                review. If approved, GMFN will issue your institutional identity
+                and you will then be invited to activate your account properly.
               </div>
             </div>
 
@@ -492,8 +605,8 @@ export default function JoinEntryPage() {
             </div>
           </div>
 
-          <div style={card()}>
-            <div style={labelText()}>JOIN REQUEST FORM</div>
+          <div style={pageCard()}>
+            <div style={labelText()}>Join request form</div>
 
             <div
               style={{
@@ -529,15 +642,16 @@ export default function JoinEntryPage() {
                 <div style={{ fontWeight: 1000, marginBottom: 8 }}>
                   Join request submitted successfully.
                 </div>
+
                 <div>
                   Your request has been sent for community review. Admission is
                   not automatic. Once approval is reached, you will be able to
-                  proceed to account activation with your GMFN identity.
+                  proceed to activation with your GMFN identity.
                 </div>
 
                 <div style={{ marginTop: 12 }}>
                   <strong>Request status:</strong>{" "}
-                  {String(success?.request?.status || "pending")}
+                  {String(success?.request?.status || success?.status || "pending")}
                 </div>
 
                 <div style={{ marginTop: 6 }}>
@@ -549,6 +663,23 @@ export default function JoinEntryPage() {
                       "Pending community"
                   )}
                 </div>
+
+                {submittedRequestId ? (
+                  <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <Link
+                      to={`/join-approval/${submittedRequestId}`}
+                      style={secondaryLink()}
+                    >
+                      Check approval status
+                    </Link>
+                  </div>
+                ) : (
+                  <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <Link to="/join-request/pending" style={secondaryLink()}>
+                      Open pending page
+                    </Link>
+                  </div>
+                )}
               </div>
             ) : null}
 
@@ -627,11 +758,7 @@ export default function JoinEntryPage() {
                   gap: 12,
                 }}
               >
-                <button
-                  type="submit"
-                  disabled={busy || !inviteCode}
-                  style={primaryBtn(busy || !inviteCode)}
-                >
+                <button type="submit" disabled={!canSubmit} style={primaryBtn(!canSubmit)}>
                   {busy ? "Submitting Request..." : "Submit Join Request"}
                 </button>
 
