@@ -1,7 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
-import { getCommunityJoinRequests, voteOnJoinRequest } from "../lib/api";
+import {
+  getCommunityJoinRequests,
+  selectClan,
+  voteOnJoinRequest,
+} from "../lib/api";
 
 type JoinRequestItem = {
   id: number;
@@ -10,6 +14,8 @@ type JoinRequestItem = {
   clan_name?: string | null;
   marketplace_name?: string | null;
   applicant_user_id?: number | null;
+  applicant_name?: string | null;
+  applicant_nickname?: string | null;
   applicant_email?: string | null;
   applicant_gmfn_id?: string | null;
   invite_id?: number | null;
@@ -150,6 +156,10 @@ function copyText(text: string) {
   document.body.removeChild(area);
 }
 
+function isExternalUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value);
+}
+
 export default function CommunityJoinRequestsPage() {
   const navigate = useNavigate();
   const { clanId } = useParams();
@@ -184,19 +194,35 @@ export default function CommunityJoinRequestsPage() {
   }
 
   useEffect(() => {
-    if (!clanId) return;
-    void load();
-  }, [clanId]);
+    if (!clanNum) {
+      setError("Invalid community ID.");
+      setLoading(false);
+      return;
+    }
+
+    (async () => {
+      await selectClan(clanNum).catch(() => null);
+      await load();
+    })();
+  }, [clanNum]);
 
   const selectedCommunityName = useMemo(() => {
     const first = items[0];
-    return safeStr(first?.clan_name || first?.marketplace_name || `Community ${clanNum}`);
+    return safeStr(
+      first?.clan_name || first?.marketplace_name || `Community ${clanNum}`
+    );
   }, [items, clanNum]);
 
   const summary = useMemo(() => {
-    const pending = items.filter((item) => friendlyStatus(item.status) === "pending").length;
-    const approved = items.filter((item) => friendlyStatus(item.status) === "approved").length;
-    const rejected = items.filter((item) => friendlyStatus(item.status) === "rejected").length;
+    const pending = items.filter(
+      (item) => friendlyStatus(item.status) === "pending"
+    ).length;
+    const approved = items.filter(
+      (item) => friendlyStatus(item.status) === "approved"
+    ).length;
+    const rejected = items.filter(
+      (item) => friendlyStatus(item.status) === "rejected"
+    ).length;
 
     return {
       total: items.length,
@@ -213,6 +239,8 @@ export default function CommunityJoinRequestsPage() {
       setSuccess("");
       setActivationPack(null);
 
+      await selectClan(clanNum).catch(() => null);
+
       const res = (await voteOnJoinRequest(requestId, vote)) as VoteResponse;
 
       if (vote === "approve" && res?.approved_now && res?.approval_result?.gmfn_id) {
@@ -221,7 +249,9 @@ export default function CommunityJoinRequestsPage() {
         );
         setActivationPack(res.approval_result || null);
       } else if (vote === "approve") {
-        setSuccess("Approval recorded successfully.");
+        setSuccess(
+          "Approval recorded successfully. The request may still be waiting for the final approval threshold."
+        );
       } else {
         setSuccess("Rejection recorded successfully.");
       }
@@ -235,7 +265,7 @@ export default function CommunityJoinRequestsPage() {
   }
 
   function goBack() {
-    navigate("/app/community");
+    navigate(`/app/community/${clanNum}`);
   }
 
   return (
@@ -272,7 +302,8 @@ export default function CommunityJoinRequestsPage() {
             lineHeight: 1.8,
           }}
         >
-          This page belongs to the community control flow. Review pending requests here, then return to Community Home or the selected marketplace when finished.
+          This page belongs to the community control flow. Review pending requests
+          here, then return to Community Home or the selected marketplace when finished.
         </div>
 
         <div
@@ -291,8 +322,13 @@ export default function CommunityJoinRequestsPage() {
             Marketplace
           </Link>
 
-          <button type="button" onClick={() => void load()} style={actionBtn(true)}>
-            Refresh
+          <button
+            type="button"
+            onClick={() => void load()}
+            style={actionBtn(true, loading)}
+            disabled={loading}
+          >
+            {loading ? "Refreshing..." : "Refresh"}
           </button>
         </div>
       </div>
@@ -467,6 +503,17 @@ export default function CommunityJoinRequestsPage() {
             >
               Copy Activation Link
             </button>
+
+            {safeStr(activationPack.activation_link || "") ? (
+              <a
+                href={safeStr(activationPack.activation_link || "")}
+                target={isExternalUrl(safeStr(activationPack.activation_link || "")) ? "_blank" : undefined}
+                rel={isExternalUrl(safeStr(activationPack.activation_link || "")) ? "noreferrer" : undefined}
+                style={actionBtn(false)}
+              >
+                Open Activation Page
+              </a>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -488,6 +535,12 @@ export default function CommunityJoinRequestsPage() {
           const status = friendlyStatus(item.status);
           const isPending = status === "pending";
           const isBusy = busyId === item.id;
+          const applicantLabel = safeStr(
+            item.applicant_name ||
+              item.applicant_nickname ||
+              item.applicant_email ||
+              "Applicant"
+          );
 
           return (
             <div key={item.id} style={pageCard()}>
@@ -497,7 +550,7 @@ export default function CommunityJoinRequestsPage() {
 
               <div style={{ fontSize: 14, lineHeight: 1.7, color: "#334155" }}>
                 <div>
-                  <strong>{safeStr(item.applicant_email || "A member")}</strong> invited by{" "}
+                  <strong>{applicantLabel}</strong> invited by{" "}
                   <strong>
                     {safeStr(
                       item.invited_by_display ||
