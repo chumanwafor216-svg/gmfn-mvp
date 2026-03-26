@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   createClan,
   createClanInvite,
-  getCommunityJoinRequests,
+  getMe,
   getSelectedClanId,
   listMyClans,
   selectClan,
@@ -28,27 +28,14 @@ type CommunityItem = {
   created_at?: string | null;
 };
 
-type JoinRequestItem = {
-  id?: number;
-  clan_id?: number;
-  clan_name?: string | null;
-  applicant_name?: string | null;
-  applicant_nickname?: string | null;
-  applicant_email?: string | null;
-  applicant_gmfn_id?: string | null;
-  status?: string | null;
-  approvals?: number;
-  required_approvals?: number;
-  created_at?: string | null;
-};
-
 type InviteState = {
   code?: string | null;
   link?: string | null;
-  shareText?: string | null;
   expiresAt?: string | null;
   guideUrl?: string | null;
+  fallbackGuideUrl?: string | null;
   packagedShareText?: string | null;
+  whatsappShareText?: string | null;
 };
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
@@ -118,6 +105,16 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
+function sectionLabel(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#4F6B8A",
+    fontWeight: 1000,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  };
+}
+
 function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
@@ -163,22 +160,44 @@ function appOrigin(): string {
 }
 
 function buildGuideUrl(): string {
+  return `${appOrigin()}/app/my-gmfn-and-i`;
+}
+
+function buildGuideFallbackUrl(): string {
   return `${appOrigin()}/GSN_FINAL_WHITE.pdf`;
 }
 
-function buildInviteState(raw: any): InviteState {
+function buildInviteState(
+  raw: any,
+  senderName: string,
+  receiverField: string,
+  shortMessage: string,
+  selectedCommunityName: string
+): InviteState {
   const code = safeStr(raw?.code || raw?.invite_code || "");
   const link = safeStr(raw?.link || raw?.invite_link || raw?.invite_url || "");
-  const shareText = safeStr(raw?.share_text || raw?.message || "");
   const expiresAt = safeStr(raw?.expires_at || raw?.expiry || "");
   const guideUrl = buildGuideUrl();
+  const fallbackGuideUrl = buildGuideFallbackUrl();
+
+  const defaultMessage = `You are invited to join ${selectedCommunityName} on GMFN / GSN.`;
+  const effectiveMessage = safeStr(shortMessage) || defaultMessage;
 
   const packagedShareText = [
-    shareText || "You are invited to join our GSN community.",
-    link ? `Join here: ${link}` : "",
+    `From: ${senderName || "Community member"}`,
+    `Receiver: ${safeStr(receiverField) || "[add receiver name]"}`,
+    `Community: ${selectedCommunityName}`,
     "",
-    "Before you enter, see what GSN can do for you:",
+    `Message: ${effectiveMessage}`,
+    link ? `Join link: ${link}` : "",
+    code ? `Invite code: ${code}` : "",
+    expiresAt ? `Expiry: ${safeDateTime(expiresAt)}` : "",
+    "",
+    "Guide: My GMFN and I",
     guideUrl,
+    "",
+    "Fallback PDF guide:",
+    fallbackGuideUrl,
   ]
     .filter(Boolean)
     .join("\n");
@@ -186,20 +205,21 @@ function buildInviteState(raw: any): InviteState {
   return {
     code,
     link,
-    shareText,
     expiresAt,
     guideUrl,
+    fallbackGuideUrl,
     packagedShareText,
+    whatsappShareText: packagedShareText,
   };
 }
 
 export default function ClansPage() {
+  const navigate = useNavigate();
+
+  const [me, setMe] = useState<any>(null);
   const [communities, setCommunities] = useState<CommunityItem[]>([]);
   const [selectedCommunityId, setSelectedCommunityId] = useState<number>(0);
   const [loadingCommunities, setLoadingCommunities] = useState(false);
-
-  const [requests, setRequests] = useState<JoinRequestItem[]>([]);
-  const [loadingRequests, setLoadingRequests] = useState(false);
 
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteState, setInviteState] = useState<InviteState | null>(null);
@@ -208,17 +228,26 @@ export default function ClansPage() {
   const [communityNameInput, setCommunityNameInput] = useState("");
   const [communityDescriptionInput, setCommunityDescriptionInput] = useState("");
   const [creatingCommunity, setCreatingCommunity] = useState(false);
+  const [createMessage, setCreateMessage] = useState("");
+
+  const [inviteReceiver, setInviteReceiver] = useState("");
+  const [inviteMessage, setInviteMessage] = useState("");
 
   async function loadCommunities(preferredId?: number) {
     setLoadingCommunities(true);
     try {
-      const res = await listMyClans().catch(() => []);
+      const [meRes, res] = await Promise.all([
+        getMe().catch(() => null),
+        listMyClans().catch(() => []),
+      ]);
+
       const rows: CommunityItem[] = Array.isArray(res)
         ? res
         : Array.isArray((res as any)?.items)
         ? (res as any).items
         : [];
 
+      setMe(meRes || null);
       setCommunities(rows);
 
       const storedId = Number(getSelectedClanId() || 0);
@@ -230,37 +259,9 @@ export default function ClansPage() {
     }
   }
 
-  async function loadRequests(clanId: number) {
-    if (!clanId) {
-      setRequests([]);
-      return;
-    }
-
-    setLoadingRequests(true);
-    try {
-      const res = await getCommunityJoinRequests(clanId).catch(() => ({ items: [] }));
-      const rows: JoinRequestItem[] = Array.isArray(res)
-        ? res
-        : Array.isArray((res as any)?.items)
-        ? (res as any).items
-        : [];
-      setRequests(rows);
-    } finally {
-      setLoadingRequests(false);
-    }
-  }
-
   useEffect(() => {
     loadCommunities();
   }, []);
-
-  useEffect(() => {
-    if (!selectedCommunityId) {
-      setRequests([]);
-      return;
-    }
-    loadRequests(selectedCommunityId);
-  }, [selectedCommunityId]);
 
   const selectedCommunity = useMemo(() => {
     return (
@@ -269,15 +270,14 @@ export default function ClansPage() {
     );
   }, [communities, selectedCommunityId]);
 
-  const pendingRequests = useMemo(() => {
-    return requests.filter(
-      (item) => safeStr(item?.status || "").toLowerCase() === "pending"
-    );
-  }, [requests]);
+  const communityCount = communities.length;
+  const selectedCommunityMemberCount = selectedCommunity
+    ? extractMembers(selectedCommunity).length
+    : 0;
 
-  const selectedMembers = useMemo(() => {
-    return extractMembers(selectedCommunity);
-  }, [selectedCommunity]);
+  const senderName = safeStr(
+    me?.display_name || me?.full_name || me?.nickname || me?.email || "Community member"
+  );
 
   async function handleSelectCommunity(clanId: number) {
     if (!clanId) return;
@@ -286,15 +286,27 @@ export default function ClansPage() {
     } finally {
       setSelectedCommunityId(clanId);
       setInviteState(null);
+      setCreateMessage("");
     }
   }
 
   async function handleCreateInvite() {
-    if (!selectedCommunityId) return;
+    if (!selectedCommunityId || !selectedCommunity) return;
+
     setInviteLoading(true);
     try {
       const res = await createClanInvite(selectedCommunityId).catch(() => null);
-      setInviteState(buildInviteState(res));
+
+      const source = res || selectedCommunity || {};
+      setInviteState(
+        buildInviteState(
+          source,
+          senderName,
+          inviteReceiver,
+          inviteMessage,
+          communityName(selectedCommunity)
+        )
+      );
     } finally {
       setInviteLoading(false);
     }
@@ -305,20 +317,22 @@ export default function ClansPage() {
     if (!text) return;
 
     try {
-      await navigator.clipboard.writeText(text);
-      setCopied(tag);
-      window.setTimeout(() => setCopied(""), 1400);
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        setCopied(tag);
+        window.setTimeout(() => setCopied(""), 1400);
+        return;
+      }
     } catch {}
+
+    window.prompt("Copy this text:", text);
   }
 
   function shareViaWhatsApp() {
-    const text = safeStr(inviteState?.packagedShareText || "");
+    const text = safeStr(inviteState?.whatsappShareText || "");
     if (!text) return;
 
-    window.open(
-      `https://wa.me/?text=${encodeURIComponent(text)}`,
-      "_blank"
-    );
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   }
 
   async function handleCreateCommunity(e: React.FormEvent) {
@@ -347,13 +361,17 @@ export default function ClansPage() {
       setCommunityNameInput("");
       setCommunityDescriptionInput("");
       setInviteState(null);
+      setCreateMessage("Community created. Continue below with next steps.");
     } finally {
       setCreatingCommunity(false);
     }
   }
 
-  const communityCount = communities.length;
-  const selectedCommunityMemberCount = selectedMembers.length;
+  async function handleOpenMarketplace(clanId: number) {
+    if (!clanId) return;
+    await handleSelectCommunity(clanId);
+    navigate("/app/marketplace");
+  }
 
   return (
     <div
@@ -381,24 +399,7 @@ export default function ClansPage() {
           }}
         >
           <div style={{ maxWidth: 760 }}>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                borderRadius: 999,
-                padding: "8px 12px",
-                border: "1px solid rgba(11,99,209,0.14)",
-                background: "rgba(11,99,209,0.06)",
-                color: "#0B63D1",
-                fontWeight: 900,
-                fontSize: 12,
-                letterSpacing: 0.4,
-                textTransform: "uppercase",
-              }}
-            >
-              Communities
-            </div>
+            <div style={sectionLabel()}>Create Community</div>
 
             <h1
               style={{
@@ -408,7 +409,7 @@ export default function ClansPage() {
                 color: "#0B1F33",
               }}
             >
-              Choose or create a community
+              Create a new community
             </h1>
 
             <div
@@ -419,9 +420,9 @@ export default function ClansPage() {
                 maxWidth: 760,
               }}
             >
-              This page is for community selection and setup. Keep it simple:
-              choose the community you want to work with, create a new one when
-              needed, and handle invite and requests for the selected community.
+              This page is for creation first. Create a community, select the one
+              you want active, then move into invite, demand, marketplace, shop,
+              or Community Home.
             </div>
           </div>
 
@@ -480,7 +481,24 @@ export default function ClansPage() {
 
         <div style={card("#FFFFFF")}>
           <div style={{ fontSize: 13, color: "#64748B", fontWeight: 800 }}>
-            Selected community members
+            Selected community
+          </div>
+          <div
+            style={{
+              marginTop: 8,
+              fontSize: 18,
+              fontWeight: 1000,
+              color: "#0B1F33",
+              lineHeight: 1.35,
+            }}
+          >
+            {selectedCommunity ? communityName(selectedCommunity) : "None selected"}
+          </div>
+        </div>
+
+        <div style={card("#FFFFFF")}>
+          <div style={{ fontSize: 13, color: "#64748B", fontWeight: 800 }}>
+            Selected members
           </div>
           <div
             style={{
@@ -493,37 +511,22 @@ export default function ClansPage() {
             {selectedCommunityMemberCount}
           </div>
         </div>
-
-        <div style={card("#FFFFFF")}>
-          <div style={{ fontSize: 13, color: "#64748B", fontWeight: 800 }}>
-            Pending join requests
-          </div>
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 28,
-              fontWeight: 1000,
-              color: "#0B1F33",
-            }}
-          >
-            {pendingRequests.length}
-          </div>
-        </div>
       </div>
 
-      <div style={{ ...pageCard("#FFFFFF") }}>
+      <div style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1.1fr 0.9fr",
+            gridTemplateColumns: "1.05fr 0.95fr",
             gap: 16,
             alignItems: "start",
           }}
         >
           <div style={softCard("#FFFFFF")}>
             <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-              My communities
+              Community creation form
             </div>
+
             <div
               style={{
                 marginTop: 6,
@@ -532,158 +535,25 @@ export default function ClansPage() {
                 lineHeight: 1.7,
               }}
             >
-              Select one community to make it active.
+              Keep the name clear and the description short. This page should stay
+              creation-first, not overloaded with extra control surfaces.
             </div>
 
-            <div
-              style={{
-                marginTop: 14,
-                display: "grid",
-                gap: 10,
-              }}
-            >
-              {loadingCommunities ? (
-                <div style={{ color: "#64748B", lineHeight: 1.7 }}>
-                  Loading your communities...
-                </div>
-              ) : communities.length === 0 ? (
-                <div style={card("#F8FBFF")}>
-                  <div
-                    style={{
-                      color: "#0B1F33",
-                      fontWeight: 1000,
-                      fontSize: 17,
-                    }}
-                  >
-                    No community yet
-                  </div>
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "#64748B",
-                      lineHeight: 1.7,
-                      fontSize: 14,
-                    }}
-                  >
-                    Create your first community on the right.
-                  </div>
-                </div>
-              ) : (
-                communities.map((item, idx) => {
-                  const id = Number(item?.id || 0);
-                  const isActive = id === selectedCommunityId;
-                  const memberCount = extractMembers(item).length;
-
-                  return (
-                    <div
-                      key={`${id || "community"}-${idx}`}
-                      style={{
-                        ...card("#FFFFFF"),
-                        border: isActive
-                          ? "1px solid rgba(11,99,209,0.24)"
-                          : "1px solid rgba(11,31,51,0.08)",
-                        boxShadow: isActive
-                          ? "0 12px 28px rgba(11,99,209,0.08)"
-                          : "0 12px 30px rgba(15,23,42,0.05)",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          gap: 12,
-                          flexWrap: "wrap",
-                          alignItems: "center",
-                        }}
-                      >
-                        <div style={{ minWidth: 220, flex: 1 }}>
-                          <div
-                            style={{
-                              color: "#0B1F33",
-                              fontWeight: 1000,
-                              fontSize: 17,
-                            }}
-                          >
-                            {communityName(item)}
-                          </div>
-
-                          <div
-                            style={{
-                              marginTop: 8,
-                              color: "#64748B",
-                              fontSize: 14,
-                              lineHeight: 1.7,
-                            }}
-                          >
-                            {safeStr(
-                              item?.description ||
-                                "Community governance and relationship layer."
-                            )}
-                          </div>
-
-                          <div
-                            style={{
-                              marginTop: 10,
-                              display: "flex",
-                              gap: 8,
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            <span style={badge(true)}>
-                              ID: {communityIdentity(item)}
-                            </span>
-                            <span style={badge(false)}>
-                              {memberCount} member{memberCount === 1 ? "" : "s"}
-                            </span>
-                            {isActive ? <span style={badge(false)}>Active</span> : null}
-                          </div>
-                        </div>
-
-                        <div
-                          style={{
-                            display: "flex",
-                            gap: 10,
-                            flexWrap: "wrap",
-                            justifyContent: "flex-end",
-                          }}
-                        >
-                          <button
-                            type="button"
-                            style={isActive ? btn(true) : btn(false)}
-                            onClick={() => handleSelectCommunity(id)}
-                          >
-                            {isActive ? "Selected" : "Select"}
-                          </button>
-
-                          <Link
-                            to={id ? `/community/${id}` : "/app/community"}
-                            style={btn(false)}
-                          >
-                            Open Workspace
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
-          <div style={softCard("#FFFFFF")}>
-            <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-              Create community
-            </div>
-            <div
-              style={{
-                marginTop: 6,
-                color: "#64748B",
-                fontSize: 14,
-                lineHeight: 1.7,
-              }}
-            >
-              Start a new community with a clear name and short description.
-            </div>
+            {createMessage ? (
+              <div
+                style={{
+                  marginTop: 14,
+                  borderRadius: 14,
+                  border: "1px solid #A7F3D0",
+                  background: "#ECFDF5",
+                  color: "#065F46",
+                  fontWeight: 900,
+                  padding: 12,
+                }}
+              >
+                {createMessage}
+              </div>
+            ) : null}
 
             <form
               onSubmit={handleCreateCommunity}
@@ -774,432 +644,494 @@ export default function ClansPage() {
               </div>
             </form>
           </div>
-        </div>
-      </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 16,
-        }}
-      >
-        <div style={pageCard("#FFFFFF")}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-                Membership requests
-              </div>
-              <div
-                style={{
-                  marginTop: 6,
-                  color: "#64748B",
-                  fontSize: 14,
-                  lineHeight: 1.7,
-                }}
-              >
-                Review people asking to join the selected community.
-              </div>
+          <div style={softCard("#FFFFFF")}>
+            <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+              Current community context
             </div>
 
-            <span style={badge(false)}>{pendingRequests.length} pending</span>
-          </div>
+            <div
+              style={{
+                marginTop: 6,
+                color: "#64748B",
+                fontSize: 14,
+                lineHeight: 1.7,
+              }}
+            >
+              Use one selected community as your active context for next steps.
+            </div>
 
-          <div
-            style={{
-              marginTop: 14,
-              display: "grid",
-              gap: 10,
-            }}
-          >
-            {!selectedCommunityId ? (
-              <div style={{ color: "#64748B", lineHeight: 1.7 }}>
-                Select a community to view membership requests.
+            <div style={{ marginTop: 14 }}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 14,
+                  marginBottom: 6,
+                }}
+              >
+                Active community
               </div>
-            ) : loadingRequests ? (
-              <div style={{ color: "#64748B", lineHeight: 1.7 }}>
-                Loading membership requests...
-              </div>
-            ) : pendingRequests.length === 0 ? (
+
+              <select
+                value={selectedCommunityId || ""}
+                onChange={(e) => handleSelectCommunity(Number(e.target.value))}
+                disabled={loadingCommunities || communities.length === 0}
+                style={{
+                  width: "100%",
+                  borderRadius: 12,
+                  border: "1px solid rgba(11,31,51,0.12)",
+                  background: "#FFFFFF",
+                  padding: "12px 14px",
+                  fontSize: 14,
+                  color: "#0B1F33",
+                  outline: "none",
+                }}
+              >
+                {communities.length === 0 ? (
+                  <option value="">No communities available</option>
+                ) : (
+                  communities.map((community) => (
+                    <option key={community.id} value={community.id}>
+                      {communityName(community)}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+
+            <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
               <div style={card("#F8FBFF")}>
+                <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 16 }}>
+                  {selectedCommunity
+                    ? communityName(selectedCommunity)
+                    : "No community selected"}
+                </div>
+
                 <div
                   style={{
-                    color: "#0B1F33",
-                    fontWeight: 1000,
-                    fontSize: 16,
+                    marginTop: 8,
+                    display: "flex",
+                    gap: 8,
+                    flexWrap: "wrap",
                   }}
                 >
-                  No pending requests
+                  {selectedCommunity ? (
+                    <>
+                      <span style={badge(true)}>
+                        ID: {communityIdentity(selectedCommunity)}
+                      </span>
+                      <span style={badge(false)}>
+                        Members: {selectedCommunityMemberCount}
+                      </span>
+                    </>
+                  ) : null}
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 10,
+                    color: "#64748B",
+                    fontSize: 14,
+                    lineHeight: 1.7,
+                  }}
+                >
+                  {selectedCommunity
+                    ? safeStr(
+                        selectedCommunity.description ||
+                          "Community governance and relationship layer."
+                      )
+                    : "Create or select a community to continue."}
+                </div>
+              </div>
+
+              <div style={card("#FFFFFF")}>
+                <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 16 }}>
+                  After creation / next steps
                 </div>
 
                 <div
                   style={{
                     marginTop: 8,
                     color: "#64748B",
-                    lineHeight: 1.7,
                     fontSize: 14,
+                    lineHeight: 1.7,
                   }}
                 >
-                  New join requests will appear here.
+                  Move from creation into the surfaces that matter next.
                 </div>
-              </div>
-            ) : (
-              pendingRequests.slice(0, 4).map((item, idx) => (
-                <div key={`${item.id || "request"}-${idx}`} style={card("#FFFFFF")}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 12,
-                      flexWrap: "wrap",
-                      alignItems: "flex-start",
-                    }}
-                  >
-                    <div style={{ flex: 1, minWidth: 220 }}>
-                      <div
-                        style={{
-                          color: "#0B1F33",
-                          fontWeight: 1000,
-                          fontSize: 16,
-                        }}
-                      >
-                        {safeStr(
-                          item?.applicant_name ||
-                            item?.applicant_nickname ||
-                            item?.applicant_email ||
-                            "Applicant"
-                        )}
-                      </div>
 
-                      <div
-                        style={{
-                          marginTop: 8,
-                          color: "#64748B",
-                          fontSize: 14,
-                          lineHeight: 1.7,
-                        }}
-                      >
-                        {safeStr(item?.applicant_email || "No email provided")}
-                      </div>
-
-                      <div
-                        style={{
-                          marginTop: 10,
-                          display: "flex",
-                          gap: 8,
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <span style={badge(true)}>
-                          {Number(item?.approvals || 0)} /{" "}
-                          {Number(item?.required_approvals || 0)} approvals
-                        </span>
-
-                        {safeStr(item?.applicant_gmfn_id) ? (
-                          <span style={badge(false)}>
-                            {safeStr(item?.applicant_gmfn_id)}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <Link
-                      to={
-                        selectedCommunityId
-                          ? `/app/community/${selectedCommunityId}/join-requests`
-                          : "/app/community"
-                      }
-                      style={btn(true)}
-                    >
-                      Open requests
-                    </Link>
-                  </div>
+                <div
+                  style={{
+                    marginTop: 12,
+                    display: "flex",
+                    gap: 10,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <Link to="/app/community" style={btn(false)}>
+                    Community Home
+                  </Link>
+                  <Link to="/app/demand-box" style={btn(false)}>
+                    Demand Box
+                  </Link>
+                  <Link to="/app/shop-control" style={btn(false)}>
+                    My Shop Tools
+                  </Link>
+                  <Link to="/app/marketplace" style={btn(false)}>
+                    Marketplace
+                  </Link>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
 
-        <div style={pageCard("#FFFFFF")}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-                Invitation
-              </div>
-              <div
-                style={{
-                  marginTop: 6,
-                  color: "#64748B",
-                  fontSize: 14,
-                  lineHeight: 1.7,
-                }}
-              >
-                Create and share an invite for the selected community.
+                <div
+                  style={{
+                    marginTop: 12,
+                    borderRadius: 12,
+                    border: "1px solid rgba(11,31,51,0.08)",
+                    background: "#F8FBFF",
+                    padding: 12,
+                    color: "#64748B",
+                    fontSize: 13,
+                    lineHeight: 1.7,
+                  }}
+                >
+                  Spotlight entry has no separate page active yet. Use shop tools
+                  and marketplace visibility for now.
+                </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
 
-            <button
-              type="button"
-              style={btn(true, !selectedCommunityId || inviteLoading)}
-              onClick={handleCreateInvite}
-              disabled={!selectedCommunityId || inviteLoading}
+      <div style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+              Invite package
+            </div>
+            <div
+              style={{
+                marginTop: 6,
+                color: "#64748B",
+                fontSize: 14,
+                lineHeight: 1.7,
+              }}
             >
-              {inviteLoading ? "Creating..." : "Create invite"}
-            </button>
+              Create a join package for the selected community with sender,
+              receiver, message, guide link, share-ready copy, and WhatsApp copy.
+            </div>
           </div>
 
-          <div
-            style={{
-              marginTop: 14,
-              display: "grid",
-              gap: 10,
-            }}
+          <button
+            type="button"
+            style={btn(true, !selectedCommunityId || inviteLoading)}
+            onClick={handleCreateInvite}
+            disabled={!selectedCommunityId || inviteLoading}
           >
+            {inviteLoading ? "Creating..." : "Create invite"}
+          </button>
+        </div>
+
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 16,
+          }}
+        >
+          <div style={softCard("#FFFFFF")}>
+            <div
+              style={{
+                color: "#0B1F33",
+                fontWeight: 1000,
+                fontSize: 16,
+              }}
+            >
+              Invite details
+            </div>
+
+            <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
+              <div>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 14,
+                    marginBottom: 6,
+                  }}
+                >
+                  Sender
+                </div>
+                <div
+                  style={{
+                    borderRadius: 12,
+                    border: "1px solid rgba(11,31,51,0.08)",
+                    background: "#F8FBFF",
+                    padding: "12px 14px",
+                    color: "#0B1F33",
+                    fontWeight: 700,
+                  }}
+                >
+                  {senderName}
+                </div>
+              </div>
+
+              <div>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 14,
+                    marginBottom: 6,
+                  }}
+                >
+                  Intended receiver
+                </div>
+                <input
+                  value={inviteReceiver}
+                  onChange={(e) => setInviteReceiver(e.target.value)}
+                  placeholder="Enter receiver name or leave blank"
+                  style={{
+                    width: "100%",
+                    borderRadius: 12,
+                    border: "1px solid rgba(11,31,51,0.12)",
+                    padding: "12px 14px",
+                    outline: "none",
+                    fontSize: 14,
+                    color: "#0B1F33",
+                    background: "#FFFFFF",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              <div>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 14,
+                    marginBottom: 6,
+                  }}
+                >
+                  Editable short message
+                </div>
+                <textarea
+                  value={inviteMessage}
+                  onChange={(e) => setInviteMessage(e.target.value)}
+                  placeholder="Add a short personal message"
+                  rows={4}
+                  style={{
+                    width: "100%",
+                    borderRadius: 12,
+                    border: "1px solid rgba(11,31,51,0.12)",
+                    padding: "12px 14px",
+                    outline: "none",
+                    fontSize: 14,
+                    color: "#0B1F33",
+                    background: "#FFFFFF",
+                    boxSizing: "border-box",
+                    resize: "vertical",
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div style={softCard("#FFFFFF")}>
             {!selectedCommunityId ? (
               <div style={{ color: "#64748B", lineHeight: 1.7 }}>
                 Select a community to create an invitation.
               </div>
             ) : inviteState?.link || inviteState?.code ? (
-              <div style={card("#F8FBFF")}>
-                <div
-                  style={{
-                    color: "#0B1F33",
-                    fontWeight: 1000,
-                    fontSize: 16,
-                  }}
-                >
-                  Invitation ready
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#64748B",
-                    fontSize: 14,
-                    lineHeight: 1.7,
-                  }}
-                >
-                  This invite now includes the GSN guide so the person you are
-                  inviting can understand what GSN is for before entering.
-                </div>
-
-                <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-                  {inviteState?.code ? (
-                    <div>
-                      <div
-                        style={{
-                          fontSize: 12,
-                          color: "#64748B",
-                          fontWeight: 900,
-                          marginBottom: 6,
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        Invite code
-                      </div>
-                      <div
-                        style={{
-                          borderRadius: 12,
-                          border: "1px solid rgba(11,31,51,0.08)",
-                          background: "#FFFFFF",
-                          padding: "12px 14px",
-                          color: "#0B1F33",
-                          fontWeight: 900,
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        {inviteState.code}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {inviteState?.link ? (
-                    <div>
-                      <div
-                        style={{
-                          fontSize: 12,
-                          color: "#64748B",
-                          fontWeight: 900,
-                          marginBottom: 6,
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        Invite link
-                      </div>
-                      <div
-                        style={{
-                          borderRadius: 12,
-                          border: "1px solid rgba(11,31,51,0.08)",
-                          background: "#FFFFFF",
-                          padding: "12px 14px",
-                          color: "#0B1F33",
-                          fontWeight: 700,
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        {inviteState.link}
-                      </div>
-                    </div>
-                  ) : null}
-                  <div style={{ marginTop: 10 }}>
-                    <div style={{ fontSize: 12, fontWeight: 900, color: "#64748B" }}>
-                      GSN Guide
-                  </div>
-
-                  <a
-                    href="/app/my-gmfn-and-i"
-                    target="_blank"
-                    rel="noreferrer"
+              <div style={{ display: "grid", gap: 10 }}>
+                <div style={card("#F8FBFF")}>
+                  <div
                     style={{
-                      display: "inline-block",
-                      marginTop: 6,
-                      color: "#0B63D1",
-                      fontWeight: 900,
-                      textDecoration: "none",
+                      color: "#0B1F33",
+                      fontWeight: 1000,
+                      fontSize: 16,
                     }}
                   >
-                    Open Guide (What GSN Can Do)
-                  </a>
-                </div>
-                  {inviteState?.guideUrl ? (
-                    <div>
-                      <div
-                        style={{
-                          fontSize: 12,
-                          color: "#64748B",
-                          fontWeight: 900,
-                          marginBottom: 6,
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        GSN guide attached
-                      </div>
-                      <div
-                        style={{
-                          borderRadius: 12,
-                          border: "1px solid rgba(11,31,51,0.08)",
-                          background: "#FFFFFF",
-                          padding: "12px 14px",
-                          color: "#0B1F33",
-                          fontWeight: 700,
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        {inviteState.guideUrl}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {inviteState?.expiresAt ? (
-                    <div
-                      style={{
-                        color: "#64748B",
-                        fontSize: 12,
-                        fontWeight: 700,
-                      }}
-                    >
-                      Expires: {safeDateTime(inviteState.expiresAt)}
-                    </div>
-                  ) : null}
-
-                  {inviteState?.packagedShareText ? (
-                    <div>
-                      <div
-                        style={{
-                          fontSize: 12,
-                          color: "#64748B",
-                          fontWeight: 900,
-                          marginBottom: 6,
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        Full share package
-                      </div>
-                      <div
-                        style={{
-                          borderRadius: 12,
-                          border: "1px solid rgba(11,31,51,0.08)",
-                          background: "#FFFFFF",
-                          padding: "12px 14px",
-                          color: "#0B1F33",
-                          fontWeight: 700,
-                          whiteSpace: "pre-wrap",
-                          wordBreak: "break-word",
-                          lineHeight: 1.7,
-                        }}
-                      >
-                        {inviteState.packagedShareText}
-                      </div>
-                    </div>
-                  ) : null}
+                    Invitation ready
+                  </div>
 
                   <div
                     style={{
-                      display: "flex",
-                      gap: 10,
-                      flexWrap: "wrap",
+                      marginTop: 8,
+                      color: "#64748B",
+                      fontSize: 14,
+                      lineHeight: 1.7,
                     }}
                   >
-                    {inviteState?.link ? (
-                      <button
-                        type="button"
-                        style={btn(false)}
-                        onClick={() => copyText(inviteState.link || "", "link")}
-                      >
-                        {copied === "link" ? "Copied link" : "Copy link"}
-                      </button>
+                    This package uses the selected community plus the guide link
+                    and fallback PDF.
+                  </div>
+
+                  <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+                    {inviteState.code ? (
+                      <div>
+                        <div
+                          style={{
+                            fontSize: 12,
+                            color: "#64748B",
+                            fontWeight: 900,
+                            marginBottom: 6,
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          Invite code
+                        </div>
+                        <div
+                          style={{
+                            borderRadius: 12,
+                            border: "1px solid rgba(11,31,51,0.08)",
+                            background: "#FFFFFF",
+                            padding: "12px 14px",
+                            color: "#0B1F33",
+                            fontWeight: 900,
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          {inviteState.code}
+                        </div>
+                      </div>
                     ) : null}
 
-                    {inviteState?.packagedShareText ? (
-                      <button
-                        type="button"
-                        style={btn(false)}
-                        onClick={() =>
-                          copyText(inviteState.packagedShareText || "", "package")
-                        }
-                      >
-                        {copied === "package"
-                          ? "Copied full package"
-                          : "Copy full invite package"}
-                      </button>
+                    {inviteState.link ? (
+                      <div>
+                        <div
+                          style={{
+                            fontSize: 12,
+                            color: "#64748B",
+                            fontWeight: 900,
+                            marginBottom: 6,
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          Join link
+                        </div>
+                        <div
+                          style={{
+                            borderRadius: 12,
+                            border: "1px solid rgba(11,31,51,0.08)",
+                            background: "#FFFFFF",
+                            padding: "12px 14px",
+                            color: "#0B1F33",
+                            fontWeight: 700,
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          {inviteState.link}
+                        </div>
+                      </div>
                     ) : null}
 
-                    {inviteState?.guideUrl ? (
-                      <a
-                        href={inviteState.guideUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={btn(false)}
+                    {inviteState.expiresAt ? (
+                      <div
+                        style={{
+                          color: "#64748B",
+                          fontSize: 12,
+                          fontWeight: 700,
+                        }}
                       >
-                        Open GSN guide
-                      </a>
+                        Expiry: {safeDateTime(inviteState.expiresAt)}
+                      </div>
                     ) : null}
 
-                    {inviteState?.packagedShareText ? (
-                      <button
-                        type="button"
-                        style={btn(true)}
-                        onClick={shareViaWhatsApp}
-                      >
-                        Share on WhatsApp
-                      </button>
+                    {inviteState.packagedShareText ? (
+                      <div>
+                        <div
+                          style={{
+                            fontSize: 12,
+                            color: "#64748B",
+                            fontWeight: 900,
+                            marginBottom: 6,
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          Share-ready copy
+                        </div>
+                        <div
+                          style={{
+                            borderRadius: 12,
+                            border: "1px solid rgba(11,31,51,0.08)",
+                            background: "#FFFFFF",
+                            padding: "12px 14px",
+                            color: "#0B1F33",
+                            fontWeight: 700,
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word",
+                            lineHeight: 1.7,
+                          }}
+                        >
+                          {inviteState.packagedShareText}
+                        </div>
+                      </div>
                     ) : null}
+
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 10,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      {inviteState.link ? (
+                        <button
+                          type="button"
+                          style={btn(false)}
+                          onClick={() => copyText(inviteState.link || "", "link")}
+                        >
+                          {copied === "link" ? "Copied link" : "Copy link"}
+                        </button>
+                      ) : null}
+
+                      {inviteState.packagedShareText ? (
+                        <button
+                          type="button"
+                          style={btn(false)}
+                          onClick={() =>
+                            copyText(inviteState.packagedShareText || "", "package")
+                          }
+                        >
+                          {copied === "package"
+                            ? "Copied package"
+                            : "Copy full package"}
+                        </button>
+                      ) : null}
+
+                      {inviteState.guideUrl ? (
+                        <a
+                          href={inviteState.guideUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={btn(false)}
+                        >
+                          Open guide
+                        </a>
+                      ) : null}
+
+                      {inviteState.whatsappShareText ? (
+                        <button
+                          type="button"
+                          style={btn(true)}
+                          onClick={shareViaWhatsApp}
+                        >
+                          Share on WhatsApp
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1223,7 +1155,8 @@ export default function ClansPage() {
                     fontSize: 14,
                   }}
                 >
-                  Create an invite when you are ready to bring someone in.
+                  Create an invite when you are ready. The package will include
+                  sender, receiver, message, guide link, and share-ready copy.
                 </div>
               </div>
             )}
@@ -1243,7 +1176,7 @@ export default function ClansPage() {
         >
           <div>
             <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-              Selected community summary
+              Existing communities
             </div>
             <div
               style={{
@@ -1253,7 +1186,7 @@ export default function ClansPage() {
                 lineHeight: 1.7,
               }}
             >
-              For full member browsing and shop access, continue in Community Home.
+              Keep this compact. Community Home remains the real control surface.
             </div>
           </div>
 
@@ -1269,11 +1202,11 @@ export default function ClansPage() {
             gap: 10,
           }}
         >
-          {!selectedCommunity ? (
+          {loadingCommunities ? (
             <div style={{ color: "#64748B", lineHeight: 1.7 }}>
-              Select a community to see its summary.
+              Loading your communities...
             </div>
-          ) : (
+          ) : communities.length === 0 ? (
             <div style={card("#F8FBFF")}>
               <div
                 style={{
@@ -1282,59 +1215,118 @@ export default function ClansPage() {
                   fontSize: 17,
                 }}
               >
-                {communityName(selectedCommunity)}
+                No community yet
               </div>
-
               <div
                 style={{
-                  marginTop: 10,
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                }}
-              >
-                <span style={badge(true)}>
-                  ID: {communityIdentity(selectedCommunity)}
-                </span>
-                <span style={badge(false)}>
-                  Members: {selectedMembers.length}
-                </span>
-              </div>
-
-              <div
-                style={{
-                  marginTop: 12,
+                  marginTop: 8,
                   color: "#64748B",
-                  fontSize: 14,
                   lineHeight: 1.7,
+                  fontSize: 14,
                 }}
               >
-                {safeStr(
-                  selectedCommunity?.description ||
-                    "Community governance and relationship layer."
-                )}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 14,
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
-                }}
-              >
-                <Link
-                  to={selectedCommunityId ? `/community/${selectedCommunityId}` : "/app/community"}
-                  style={btn(false)}
-                >
-                  Open Workspace
-                </Link>
-
-                <Link to="/app/community" style={btn(false)}>
-                  Open Community Home
-                </Link>
+                Create your first community above.
               </div>
             </div>
+          ) : (
+            communities.map((item, idx) => {
+              const id = Number(item?.id || 0);
+              const isActive = id === selectedCommunityId;
+              const memberCount = extractMembers(item).length;
+
+              return (
+                <div
+                  key={`${id || "community"}-${idx}`}
+                  style={{
+                    ...card("#FFFFFF"),
+                    border: isActive
+                      ? "1px solid rgba(11,99,209,0.24)"
+                      : "1px solid rgba(11,31,51,0.08)",
+                    boxShadow: isActive
+                      ? "0 12px 28px rgba(11,99,209,0.08)"
+                      : "0 12px 30px rgba(15,23,42,0.05)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div style={{ minWidth: 220, flex: 1 }}>
+                      <div
+                        style={{
+                          color: "#0B1F33",
+                          fontWeight: 1000,
+                          fontSize: 17,
+                        }}
+                      >
+                        {communityName(item)}
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: 8,
+                          color: "#64748B",
+                          fontSize: 14,
+                          lineHeight: 1.7,
+                        }}
+                      >
+                        {safeStr(
+                          item?.description ||
+                            "Community governance and relationship layer."
+                        )}
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: 10,
+                          display: "flex",
+                          gap: 8,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <span style={badge(true)}>
+                          ID: {communityIdentity(item)}
+                        </span>
+                        <span style={badge(false)}>
+                          {memberCount} member{memberCount === 1 ? "" : "s"}
+                        </span>
+                        {isActive ? <span style={badge(false)}>Active</span> : null}
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 10,
+                        flexWrap: "wrap",
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        style={isActive ? btn(true) : btn(false)}
+                        onClick={() => handleSelectCommunity(id)}
+                      >
+                        {isActive ? "Selected" : "Select"}
+                      </button>
+
+                      <button
+                        type="button"
+                        style={btn(false)}
+                        onClick={() => handleOpenMarketplace(id)}
+                      >
+                        Open Marketplace
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
       </div>
