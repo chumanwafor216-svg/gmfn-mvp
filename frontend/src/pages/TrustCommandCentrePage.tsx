@@ -4,9 +4,9 @@ import {
   adminRecentTrustEvents,
   applyAdminTrustRecompute,
   getAdminTrustEvidenceSnapshot,
+  getAdminTrustGraph,
   getAdminTrustRecompute,
   getAdminTrustWhy,
-  getAdminTrustGraph,
   getBehaviourMetrics,
   getExposureAdmin,
   getSelectedClanId,
@@ -34,6 +34,22 @@ function n(x: any): number {
   return Number.isFinite(v) ? v : 0;
 }
 
+function safeDate(x: any): Date | null {
+  const raw = String(x || "").trim();
+  if (!raw) return null;
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return null;
+  return d;
+}
+
+function safeDateTime(x: any): string {
+  const raw = String(x || "").trim();
+  if (!raw) return "—";
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return raw;
+  return d.toLocaleString();
+}
+
 function parseMeta(row: TrustEventRow): any {
   if (row?.meta && typeof row.meta === "object") return row.meta;
   if (row?.meta_json && typeof row.meta_json === "object") return row.meta_json;
@@ -57,26 +73,26 @@ function prettyValue(v: any): string {
   }
 }
 
-function card(bg = "#FFFFFF"): React.CSSProperties {
+function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 22,
-    border: "1px solid rgba(11,31,51,0.08)",
+    borderRadius: 24,
+    border: "1px solid rgba(11,31,51,0.10)",
     background: bg,
     boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
     padding: 22,
   };
 }
 
-function softCard(): React.CSSProperties {
+function softCard(bg = "#F8FAFC"): React.CSSProperties {
   return {
     borderRadius: 16,
     border: "1px solid rgba(11,31,51,0.08)",
-    background: "#F8FAFC",
+    background: bg,
     padding: 16,
   };
 }
 
-function btn(primary = false): React.CSSProperties {
+function btn(primary = false, disabled = false): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
@@ -84,12 +100,13 @@ function btn(primary = false): React.CSSProperties {
     padding: "11px 14px",
     borderRadius: 14,
     border: primary ? "none" : "1px solid rgba(11,31,51,0.10)",
-    background: primary ? "#0B63D1" : "#FFFFFF",
+    background: disabled ? "#CBD5E1" : primary ? "#0B63D1" : "#FFFFFF",
     color: primary ? "#FFFFFF" : "#0B1F33",
     textDecoration: "none",
     fontWeight: 1000,
     fontSize: 14,
-    cursor: "pointer",
+    cursor: disabled ? "not-allowed" : "pointer",
+    opacity: disabled ? 0.72 : 1,
   };
 }
 
@@ -116,6 +133,16 @@ function metricValueStyle(): React.CSSProperties {
   };
 }
 
+function sectionLabel(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#4F6B8A",
+    fontWeight: 1000,
+    letterSpacing: 0.45,
+    textTransform: "uppercase",
+  };
+}
+
 export default function TrustCommandCentrePage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -137,10 +164,12 @@ export default function TrustCommandCentrePage() {
   const [recomputePreview, setRecomputePreview] = useState<any>(null);
   const [graph, setGraph] = useState<any>(null);
 
-  async function load() {
+  async function load(options?: { preserveMessage?: boolean }) {
     setLoading(true);
     setErr("");
-    setMsg("");
+    if (!options?.preserveMessage) {
+      setMsg("");
+    }
 
     try {
       const [
@@ -156,10 +185,15 @@ export default function TrustCommandCentrePage() {
         getExposureAdmin().catch(() => null),
         userId > 0 ? getBehaviourMetrics(userId).catch(() => null) : Promise.resolve(null),
         userId > 0 ? getAdminTrustWhy(userId).catch(() => null) : Promise.resolve(null),
-        userId > 0 ? getAdminTrustEvidenceSnapshot(userId).catch(() => null) : Promise.resolve(null),
+        userId > 0
+          ? getAdminTrustEvidenceSnapshot(userId).catch(() => null)
+          : Promise.resolve(null),
         userId > 0 ? getAdminTrustRecompute(userId).catch(() => null) : Promise.resolve(null),
         userId > 0
-          ? getAdminTrustGraph(userId, { include_clans: true, limit_events: 500 }).catch(() => null)
+          ? getAdminTrustGraph(userId, {
+              include_clans: true,
+              limit_events: 500,
+            }).catch(() => null)
           : Promise.resolve(null),
       ]);
 
@@ -176,9 +210,8 @@ export default function TrustCommandCentrePage() {
       setEvidenceSnapshot(evidenceRes || null);
       setRecomputePreview(recomputeRes || null);
       setGraph(graphRes || null);
-      setMsg("Trust command centre loaded.");
     } catch (e: any) {
-      setErr(String(e?.message || e || "Unable to load trust command centre."));
+      setErr(String(e?.message || e || "Unable to load command center."));
       setEvents([]);
       setExposure(null);
       setBehaviour(null);
@@ -203,12 +236,10 @@ export default function TrustCommandCentrePage() {
 
     try {
       const out = await applyAdminTrustRecompute(userId);
+      await load({ preserveMessage: true });
       setMsg(
-        safeStr(
-          out?.detail || out?.message || "Trust recompute applied successfully."
-        )
+        safeStr(out?.detail || out?.message || "Trust recompute applied successfully.")
       );
-      await load();
     } catch (e: any) {
       setErr(String(e?.message || e || "Unable to apply trust recompute."));
     } finally {
@@ -225,26 +256,35 @@ export default function TrustCommandCentrePage() {
     let rows = events.slice();
 
     if (effectiveClanId > 0) {
-      rows = rows.filter((r) => n(r.clan_id) === effectiveClanId);
+      rows = rows.filter((row) => n(row.clan_id) === effectiveClanId);
     }
 
     if (userId > 0) {
       rows = rows.filter(
-        (r) => n(r.actor_user_id) === userId || n(r.subject_user_id) === userId
+        (row) => n(row.actor_user_id) === userId || n(row.subject_user_id) === userId
       );
     }
 
-    rows.sort((a, b) => safeStr(b.created_at).localeCompare(safeStr(a.created_at)));
+    rows.sort((a, b) => {
+      const da = safeDate(a.created_at)?.getTime() || 0;
+      const db = safeDate(b.created_at)?.getTime() || 0;
+      return db - da;
+    });
+
     return rows;
   }, [events, effectiveClanId, userId]);
 
   const eventTypeSummary = useMemo(() => {
     const map = new Map<string, number>();
+
     for (const row of filteredEvents) {
       const key = safeStr(row.event_type, "unknown_event");
       map.set(key, (map.get(key) || 0) + 1);
     }
-    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8);
+
+    return Array.from(map.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8);
   }, [filteredEvents]);
 
   const graphSummary = graph?.summary || {};
@@ -263,6 +303,13 @@ export default function TrustCommandCentrePage() {
       .sort((a: any, b: any) => Number(b?.weight ?? 0) - Number(a?.weight ?? 0));
   }, [graphEdges]);
 
+  const queryString = useMemo(() => {
+    const params = new URLSearchParams();
+    if (effectiveClanId > 0) params.set("clan_id", String(effectiveClanId));
+    if (userId > 0) params.set("user_id", String(userId));
+    return params.toString();
+  }, [effectiveClanId, userId]);
+
   function updateQuery(next: { clan_id?: number | null; user_id?: number | null }) {
     const p = new URLSearchParams(searchParams.toString());
 
@@ -275,12 +322,19 @@ export default function TrustCommandCentrePage() {
     setSearchParams(p);
   }
 
+  function clearFilters() {
+    setSearchParams(new URLSearchParams());
+  }
+
   return (
-    <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-      <div style={{ ...card("#F8FBFF"), marginTop: 18 }}>
-        <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-          TRUST OPERATIONS CENTRE
-        </div>
+    <div style={{ maxWidth: 1280, margin: "0 auto", paddingBottom: 30 }}>
+      <div
+        style={{
+          ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
+          marginTop: 18,
+        }}
+      >
+        <div style={sectionLabel()}>Command Center</div>
 
         <div
           style={{
@@ -294,34 +348,63 @@ export default function TrustCommandCentrePage() {
         >
           <div>
             <div style={{ fontSize: 34, fontWeight: 1000, color: "#0B1F33" }}>
-              Trust Operations Centre
+              Trust Operations
             </div>
             <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
-              Central trust operations view for behaviour metrics, explainability,
-              evidence, exposure, graph signals, and recent trust-event activity.
+              Admin-only oversight for trust events, explainability, exposure,
+              graph signals, and recompute review.
             </div>
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <Link to="/app/trust-analytics" style={btn(false)}>
-              Open Trust Analytics
+            <Link
+              to={`/app/command-center${queryString ? `?${queryString}` : ""}`}
+              style={btn(true)}
+            >
+              Trust Operations
             </Link>
-            <Link to="/app/admin/trust-graph" style={btn(false)}>
-              Open Trust Graph
+            <Link
+              to={`/app/command-center/trust-analytics${queryString ? `?${queryString}` : ""}`}
+              style={btn(false)}
+            >
+              Trust Analytics
             </Link>
-            <Link to="/app/dashboard" style={btn(true)}>
-              Dashboard
+            <Link
+              to={`/app/command-center/trust-graph${queryString ? `?${queryString}` : ""}`}
+              style={btn(false)}
+            >
+              Trust Graph
+            </Link>
+            <Link to="/app/command-center/exposure" style={btn(false)}>
+              Exposure
+            </Link>
+            <Link to="/app/command-center/system-operations" style={btn(false)}>
+              System Operations
             </Link>
           </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            padding: 14,
+            borderRadius: 16,
+            background: "#FFFDF5",
+            border: "1px solid rgba(214,175,71,0.25)",
+            color: "#475569",
+            lineHeight: 1.8,
+          }}
+        >
+          This page is admin-only. It should not expose everyday member actions or
+          depend on member-facing control surfaces.
         </div>
       </div>
 
       {err ? (
         <div
           style={{
-            ...card(),
+            ...pageCard("#FEF2F2"),
             marginTop: 18,
-            background: "#FEF2F2",
             border: "1px solid #FECACA",
             color: "#991B1B",
             fontWeight: 900,
@@ -334,9 +417,8 @@ export default function TrustCommandCentrePage() {
       {msg ? (
         <div
           style={{
-            ...card(),
+            ...pageCard("#ECFDF5"),
             marginTop: 18,
-            background: "#ECFDF5",
             border: "1px solid #A7F3D0",
             color: "#065F46",
             fontWeight: 900,
@@ -346,7 +428,7 @@ export default function TrustCommandCentrePage() {
         </div>
       ) : null}
 
-      <div style={{ ...card(), marginTop: 18 }}>
+      <div style={{ ...pageCard(), marginTop: 18 }}>
         <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
           Selection Context
         </div>
@@ -361,7 +443,14 @@ export default function TrustCommandCentrePage() {
           }}
         >
           <div>
-            <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000, marginBottom: 6 }}>
+            <div
+              style={{
+                fontSize: 12,
+                color: "#64748B",
+                fontWeight: 1000,
+                marginBottom: 6,
+              }}
+            >
               Clan ID
             </div>
             <input
@@ -379,7 +468,14 @@ export default function TrustCommandCentrePage() {
           </div>
 
           <div>
-            <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000, marginBottom: 6 }}>
+            <div
+              style={{
+                fontSize: 12,
+                color: "#64748B",
+                fontWeight: 1000,
+                marginBottom: 6,
+              }}
+            >
               User ID
             </div>
             <input
@@ -396,7 +492,7 @@ export default function TrustCommandCentrePage() {
             />
           </div>
 
-          <button type="button" onClick={() => void load()} style={btn(true)}>
+          <button type="button" onClick={() => void load()} style={btn(true, loading)}>
             {loading ? "Loading..." : "Reload"}
           </button>
 
@@ -404,41 +500,19 @@ export default function TrustCommandCentrePage() {
             type="button"
             onClick={() => void applyRecomputeNow()}
             disabled={recomputeBusy || userId <= 0}
-            style={{
-              ...btn(false),
-              opacity: recomputeBusy || userId <= 0 ? 0.6 : 1,
-            }}
+            style={btn(false, recomputeBusy || userId <= 0)}
           >
             {recomputeBusy ? "Applying..." : "Apply Recompute"}
           </button>
+
+          <button type="button" onClick={clearFilters} style={btn(false)}>
+            Clear Filters
+          </button>
         </div>
 
-        <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <Link
-            to={`/app/trust-analytics${
-              effectiveClanId > 0 || userId > 0
-                ? `?${new URLSearchParams({
-                    ...(effectiveClanId > 0 ? { clan_id: String(effectiveClanId) } : {}),
-                    ...(userId > 0 ? { user_id: String(userId) } : {}),
-                  }).toString()}`
-                : ""
-            }`}
-            style={btn(false)}
-          >
-            Selected User Analytics
-          </Link>
-
-          <Link to="/app/trust" style={btn(false)}>
-            Community Standing
-          </Link>
-
-          <Link to="/app/trust-slip" style={btn(false)}>
-            TrustSlip
-          </Link>
-        </div>
-
-        <div style={{ marginTop: 12, color: "#6B7A88", lineHeight: 1.8 }}>
-          Recompute changes trust state. Use it carefully for admin correction and protocol review.
+        <div style={{ marginTop: 14, color: "#6B7A88", lineHeight: 1.8 }}>
+          Clan filter narrows recent trust events. User filter loads explainability,
+          evidence snapshot, graph, and recompute preview for that specific user.
         </div>
       </div>
 
@@ -450,32 +524,28 @@ export default function TrustCommandCentrePage() {
           gap: 18,
         }}
       >
-        <div style={card()}>
+        <div style={pageCard()}>
           <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
             SELECTED CLAN
           </div>
-          <div style={metricValueStyle()}>
-            {effectiveClanId > 0 ? effectiveClanId : "—"}
-          </div>
+          <div style={metricValueStyle()}>{effectiveClanId > 0 ? effectiveClanId : "—"}</div>
         </div>
 
-        <div style={card()}>
+        <div style={pageCard()}>
           <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
             SELECTED USER
           </div>
-          <div style={metricValueStyle()}>
-            {userId > 0 ? userId : "—"}
-          </div>
+          <div style={metricValueStyle()}>{userId > 0 ? userId : "—"}</div>
         </div>
 
-        <div style={card()}>
+        <div style={pageCard()}>
           <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
             FILTERED TRUST EVENTS
           </div>
           <div style={metricValueStyle()}>{filteredEvents.length}</div>
         </div>
 
-        <div style={card()}>
+        <div style={pageCard()}>
           <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
             GRAPH EDGES
           </div>
@@ -493,28 +563,28 @@ export default function TrustCommandCentrePage() {
           gap: 18,
         }}
       >
-        <div style={card()}>
+        <div style={pageCard()}>
           <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
             SUPPORT GIVEN
           </div>
           <div style={metricValueStyle()}>{n(graphSummary?.support_given_count)}</div>
         </div>
 
-        <div style={card()}>
+        <div style={pageCard()}>
           <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
             GUARANTEES GIVEN
           </div>
           <div style={metricValueStyle()}>{n(graphSummary?.guarantees_given_count)}</div>
         </div>
 
-        <div style={card()}>
+        <div style={pageCard()}>
           <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
             BORROWER SUPPORT
           </div>
           <div style={metricValueStyle()}>{n(graphSummary?.borrower_support_count)}</div>
         </div>
 
-        <div style={card()}>
+        <div style={pageCard()}>
           <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
             FUNDS MOBILISED
           </div>
@@ -530,21 +600,21 @@ export default function TrustCommandCentrePage() {
           gap: 18,
         }}
       >
-        <div style={card()}>
+        <div style={pageCard()}>
           <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
             NETWORK BREADTH
           </div>
           <div style={metricValueStyle()}>{safeStr(graphSummary?.network_breadth, "—")}</div>
         </div>
 
-        <div style={card()}>
+        <div style={pageCard()}>
           <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
             NETWORK QUALITY
           </div>
           <div style={metricValueStyle()}>{safeStr(graphSummary?.network_quality, "—")}</div>
         </div>
 
-        <div style={card()}>
+        <div style={pageCard()}>
           <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
             GUARANTEE INTEGRITY
           </div>
@@ -553,7 +623,7 @@ export default function TrustCommandCentrePage() {
           </div>
         </div>
 
-        <div style={card()}>
+        <div style={pageCard()}>
           <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
             CCI SCORE / BAND
           </div>
@@ -571,7 +641,7 @@ export default function TrustCommandCentrePage() {
           gap: 18,
         }}
       >
-        <div style={card()}>
+        <div style={pageCard()}>
           <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
             Behaviour Metrics
           </div>
@@ -588,10 +658,10 @@ export default function TrustCommandCentrePage() {
             <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
               {Object.entries(behaviour)
                 .slice(0, 10)
-                .map(([k, v]) => (
-                  <div key={k} style={softCard()}>
+                .map(([key, value]) => (
+                  <div key={key} style={softCard()}>
                     <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                      {k}
+                      {key}
                     </div>
                     <pre
                       style={{
@@ -602,7 +672,7 @@ export default function TrustCommandCentrePage() {
                         fontSize: 12,
                       }}
                     >
-                      {prettyValue(v)}
+                      {prettyValue(value)}
                     </pre>
                   </div>
                 ))}
@@ -610,7 +680,7 @@ export default function TrustCommandCentrePage() {
           )}
         </div>
 
-        <div style={card()}>
+        <div style={pageCard()}>
           <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
             Exposure Snapshot
           </div>
@@ -623,10 +693,10 @@ export default function TrustCommandCentrePage() {
             <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
               {Object.entries(exposure)
                 .slice(0, 10)
-                .map(([k, v]) => (
-                  <div key={k} style={softCard()}>
+                .map(([key, value]) => (
+                  <div key={key} style={softCard()}>
                     <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                      {k}
+                      {key}
                     </div>
                     <pre
                       style={{
@@ -637,7 +707,7 @@ export default function TrustCommandCentrePage() {
                         fontSize: 12,
                       }}
                     >
-                      {prettyValue(v)}
+                      {prettyValue(value)}
                     </pre>
                   </div>
                 ))}
@@ -654,7 +724,7 @@ export default function TrustCommandCentrePage() {
           gap: 18,
         }}
       >
-        <div style={card()}>
+        <div style={pageCard()}>
           <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
             Trust Why
           </div>
@@ -665,7 +735,7 @@ export default function TrustCommandCentrePage() {
             </div>
           ) : !trustWhy ? (
             <div style={{ marginTop: 12, color: "#6B7A88", lineHeight: 1.8 }}>
-              Trust why data not available.
+              Trust explainability data not available.
             </div>
           ) : (
             <div style={{ marginTop: 14 }}>
@@ -684,7 +754,7 @@ export default function TrustCommandCentrePage() {
           )}
         </div>
 
-        <div style={card()}>
+        <div style={pageCard()}>
           <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
             Evidence Snapshot
           </div>
@@ -723,7 +793,7 @@ export default function TrustCommandCentrePage() {
           gap: 18,
         }}
       >
-        <div style={card()}>
+        <div style={pageCard()}>
           <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
             Graph Signals
           </div>
@@ -774,7 +844,7 @@ export default function TrustCommandCentrePage() {
           )}
         </div>
 
-        <div style={card()}>
+        <div style={pageCard()}>
           <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
             Recompute Preview
           </div>
@@ -813,7 +883,7 @@ export default function TrustCommandCentrePage() {
           gap: 18,
         }}
       >
-        <div style={card()}>
+        <div style={pageCard()}>
           <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
             Top Event Types
           </div>
@@ -832,7 +902,7 @@ export default function TrustCommandCentrePage() {
           </div>
         </div>
 
-        <div style={card()}>
+        <div style={pageCard()}>
           <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
             Recent Trust Events
           </div>
@@ -859,7 +929,7 @@ export default function TrustCommandCentrePage() {
                       {safeStr(row.event_type, "event")}
                     </div>
                     <div style={{ color: "#64748B", fontSize: 13 }}>
-                      {safeStr(row.created_at, "—")}
+                      {safeDateTime(row.created_at)}
                     </div>
                   </div>
 
@@ -881,7 +951,13 @@ export default function TrustCommandCentrePage() {
 
                   {meta ? (
                     <details style={{ marginTop: 10 }}>
-                      <summary style={{ cursor: "pointer", fontWeight: 900, color: "#0B1F33" }}>
+                      <summary
+                        style={{
+                          cursor: "pointer",
+                          fontWeight: 900,
+                          color: "#0B1F33",
+                        }}
+                      >
                         Meta
                       </summary>
                       <pre
@@ -911,7 +987,7 @@ export default function TrustCommandCentrePage() {
           gap: 18,
         }}
       >
-        <div style={card()}>
+        <div style={pageCard()}>
           <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
             Graph Edge Counts
           </div>
@@ -923,14 +999,16 @@ export default function TrustCommandCentrePage() {
               Object.entries(graphEdgeCounts).map(([label, count]) => (
                 <div key={label} style={softCard()}>
                   <div style={{ fontWeight: 1000, color: "#0B1F33" }}>{label}</div>
-                  <div style={{ marginTop: 6, color: "#64748B" }}>{safeStr(count)} edge(s)</div>
+                  <div style={{ marginTop: 6, color: "#64748B" }}>
+                    {safeStr(count)} edge(s)
+                  </div>
                 </div>
               ))
             )}
           </div>
         </div>
 
-        <div style={card()}>
+        <div style={pageCard()}>
           <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
             Key Graph Edges
           </div>
