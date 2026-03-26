@@ -2,13 +2,32 @@ import React from "react";
 import { Link } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 
-function card(bg = "#FFFFFF"): React.CSSProperties {
+function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 22,
-    border: "1px solid rgba(11,31,51,0.08)",
+    borderRadius: 24,
+    border: "1px solid rgba(11,31,51,0.10)",
     background: bg,
     boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
     padding: 22,
+  };
+}
+
+function softCard(bg = "#F8FBFF"): React.CSSProperties {
+  return {
+    borderRadius: 18,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 16,
+    boxShadow: "0 10px 24px rgba(15,23,42,0.035)",
+  };
+}
+
+function innerCard(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 16,
   };
 }
 
@@ -29,107 +48,280 @@ function actionLink(primary = false): React.CSSProperties {
   };
 }
 
-function bandInfo(score: number) {
-  if (score >= 80) return { band: "A", label: "Ready for support request", bg: "#ECFDF5", tone: "#166534" };
-  if (score >= 65) return { band: "B", label: "Likely acceptable", bg: "#EFF6FF", tone: "#1D4ED8" };
-  if (score >= 50) return { band: "C", label: "Borderline – improve signals", bg: "#FFF7ED", tone: "#C2410C" };
-  if (score >= 35) return { band: "D", label: "Weak – proceed carefully", bg: "#FEF2F2", tone: "#B91C1C" };
-  return { band: "E", label: "Not recommended", bg: "#F8FAFC", tone: "#475569" };
+function sectionLabel(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#4F6B8A",
+    fontWeight: 1000,
+    letterSpacing: 0.45,
+    textTransform: "uppercase",
+  };
 }
 
-export default function LoanReadinessPage() {
-  const score = 45;
-  const band = bandInfo(score);
+const strongerSignals = [
+  "Your trust position is visible and understandable.",
+  "Your TrustSlip is ready to show when needed.",
+  "Your pool participation or money movement is clear.",
+  "Your support request is specific, realistic, and time-bound.",
+  "Your workbench details are prepared before asking others to help.",
+];
 
+const weakerSignals = [
+  "Your trust position is unclear or weak.",
+  "Your request is vague, rushed, or inconsistent.",
+  "Your money path is not clear enough for others to understand.",
+  "You are asking before preparing the practical details.",
+  "Your visible actions do not yet support the size of the request.",
+];
+
+export default function LoanReadinessPage() {
   return (
-    <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+    <div style={{ maxWidth: 1120, margin: "0 auto", paddingBottom: 30 }}>
       <PageTopNav
         title="Loan Readiness"
-        subtitle="Use this score to understand whether your current visible signals make support more realistic."
+        subtitle="Use this page to judge whether your visible signals make a support request more realistic."
       />
 
-      <div style={{ ...card(band.bg), marginTop: 18 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
-          <div>
-            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 1000 }}>READINESS SCORE</div>
-            <div style={{ marginTop: 8, fontSize: 48, fontWeight: 1000, color: "#0B1F33" }}>
-              {score}
-            </div>
-            <div style={{ marginTop: 8, fontWeight: 1000, color: band.tone }}>
-              Band {band.band} — {band.label}
-            </div>
+      <div
+        style={{
+          ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
+          marginTop: 18,
+        }}
+      >
+        <div style={sectionLabel()}>Readiness guidance</div>
+
+        <div
+          style={{
+            marginTop: 10,
+            fontSize: 30,
+            fontWeight: 1000,
+            color: "#0B1F33",
+            lineHeight: 1.15,
+          }}
+        >
+          Use readiness before you ask people for support
+        </div>
+
+        <div
+          style={{
+            marginTop: 10,
+            color: "#475569",
+            lineHeight: 1.8,
+            maxWidth: 860,
+          }}
+        >
+          Loan readiness is a member-facing guidance surface. It helps you judge
+          whether your current visible trust, money flow, and preparation are
+          strong enough to make a support request feel realistic.
+        </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            display: "flex",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
+          <Link to="/app/loan-suggestions" style={actionLink(true)}>
+            Open Guided Suggestions
+          </Link>
+          <Link to="/app/loan-workbench" style={actionLink(false)}>
+            Open Workbench
+          </Link>
+          <Link to="/app/trust" style={actionLink(false)}>
+            Open Trust
+          </Link>
+        </div>
+      </div>
+
+      <div
+        style={{
+          ...pageCard("#FFFDF5"),
+          marginTop: 18,
+          border: "1px solid rgba(214,175,71,0.25)",
+        }}
+      >
+        <div style={{ fontWeight: 1000, color: "#92400E" }}>
+          Live readiness score
+        </div>
+
+        <div
+          style={{
+            marginTop: 8,
+            color: "#475569",
+            lineHeight: 1.8,
+          }}
+        >
+          A live readiness score is future-only until it is fully wired to
+          recorded trust and money events. For now, use the readiness guide
+          below instead of relying on a fake number.
+        </div>
+      </div>
+
+      <div
+        style={{
+          marginTop: 18,
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 18,
+        }}
+      >
+        <div style={pageCard()}>
+          <div
+            style={{
+              fontSize: 18,
+              fontWeight: 1000,
+              color: "#0B1F33",
+            }}
+          >
+            What improves readiness
+          </div>
+
+          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+            {strongerSignals.map((item, index) => (
+              <div key={index} style={innerCard("#F8FBFF")}>
+                <div
+                  style={{
+                    color: "#475569",
+                    lineHeight: 1.8,
+                    fontSize: 14,
+                  }}
+                >
+                  {item}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={pageCard()}>
+          <div
+            style={{
+              fontSize: 18,
+              fontWeight: 1000,
+              color: "#0B1F33",
+            }}
+          >
+            What weakens readiness
+          </div>
+
+          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+            {weakerSignals.map((item, index) => (
+              <div key={index} style={innerCard("#FFFFFF")}>
+                <div
+                  style={{
+                    color: "#475569",
+                    lineHeight: 1.8,
+                    fontSize: 14,
+                  }}
+                >
+                  {item}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div
+        style={{
+          marginTop: 18,
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 18,
+        }}
+      >
+        <div style={softCard("#FFFFFF")}>
+          <div
+            style={{
+              fontSize: 18,
+              fontWeight: 1000,
+              color: "#0B1F33",
+            }}
+          >
+            What this page is for
           </div>
 
           <div
             style={{
-              minWidth: 220,
-              borderRadius: 18,
-              background: "#FFFFFF",
-              border: "1px solid rgba(11,31,51,0.08)",
-              padding: 16,
+              marginTop: 12,
+              color: "#475569",
+              lineHeight: 1.9,
             }}
           >
-            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 1000 }}>RECOMMENDED THRESHOLD</div>
-            <div style={{ marginTop: 8, fontWeight: 1000, fontSize: 26, color: "#0B1F33" }}>
-              60+
-            </div>
-            <div style={{ marginTop: 6, color: "#64748b", lineHeight: 1.6 }}>
-              Below this, members may still support you, but hesitation is more likely.
-            </div>
-          </div>
-        </div>
-
-        <div style={{ marginTop: 16, color: "#475569", lineHeight: 1.8 }}>
-          Your current score suggests that support is still possible, but stronger visible signals would improve confidence.
-        </div>
-      </div>
-
-      <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
-        <div style={card()}>
-          <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-            Score guide
-          </div>
-          <div style={{ marginTop: 12, color: "#475569", lineHeight: 1.9 }}>
-            <b>80–100:</b> Strong readiness. Good position to proceed.
-            <br />
-            <b>65–79:</b> Reasonable readiness. Likely acceptable.
-            <br />
-            <b>50–64:</b> Borderline. Improve some visible signals first.
-            <br />
-            <b>35–49:</b> Weak. Proceed carefully and expect hesitation.
-            <br />
-            <b>0–34:</b> Too weak for a confident request.
-          </div>
-        </div>
-
-        <div style={card()}>
-          <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-            Why this matters
-          </div>
-          <div style={{ marginTop: 12, color: "#475569", lineHeight: 1.8 }}>
             Readiness does not approve or reject a support request by itself.
-            It helps you think more realistically before proceeding and avoids unnecessary weak requests.
+            It helps you think realistically before proceeding and reduces weak
+            or badly timed requests.
+          </div>
+        </div>
+
+        <div style={softCard("#FFFFFF")}>
+          <div
+            style={{
+              fontSize: 18,
+              fontWeight: 1000,
+              color: "#0B1F33",
+            }}
+          >
+            Best preparation order
+          </div>
+
+          <div
+            style={{
+              marginTop: 12,
+              color: "#475569",
+              lineHeight: 1.9,
+            }}
+          >
+            Start with trust clarity, then money path clarity, then request
+            clarity. After that, move into suggestions and workbench before
+            asking for help directly.
           </div>
         </div>
       </div>
 
-      <div style={card()}>
-        <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+      <div style={{ ...pageCard(), marginTop: 18 }}>
+        <div
+          style={{
+            fontSize: 18,
+            fontWeight: 1000,
+            color: "#0B1F33",
+          }}
+        >
           Suggested next step
         </div>
-        <div style={{ marginTop: 10, color: "#475569", lineHeight: 1.8 }}>
-          Improve your visible participation, then use guided suggestions before asking people directly.
+
+        <div
+          style={{
+            marginTop: 10,
+            color: "#475569",
+            lineHeight: 1.8,
+          }}
+        >
+          Improve your visible preparation, then use the guided support tools
+          before making the request itself.
         </div>
 
-        <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <Link to="/loan-suggestions" style={actionLink(true)}>
+        <div
+          style={{
+            marginTop: 16,
+            display: "flex",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
+          <Link to="/app/loan-suggestions" style={actionLink(true)}>
             Open Guided Suggestions
           </Link>
-          <Link to="/payment/pool" style={actionLink(false)}>
-            Deposit to Pool
+          <Link to="/app/payment/pool" style={actionLink(false)}>
+            Money In
           </Link>
-          <Link to="/loan-workbench" style={actionLink(false)}>
+          <Link to="/app/loan-workbench" style={actionLink(false)}>
             Open Workbench
+          </Link>
+          <Link to="/app/community" style={actionLink(false)}>
+            Community Home
           </Link>
         </div>
       </div>
