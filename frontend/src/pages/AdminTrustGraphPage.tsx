@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
-import { getAdminTrustGraph } from "../lib/api";
+import { getAdminTrustGraph, getSelectedClanId } from "../lib/api";
 
 function safeStr(x: any, fallback = "—"): string {
   const s = String(x ?? "").trim();
@@ -12,26 +13,26 @@ function n(x: any): number {
   return Number.isFinite(v) ? v : 0;
 }
 
-function card(): React.CSSProperties {
+function card(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 22,
     border: "1px solid rgba(11,31,51,0.08)",
-    background: "#FFFFFF",
+    background: bg,
     boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
     padding: 22,
   };
 }
 
-function softCard(): React.CSSProperties {
+function softCard(bg = "#F8FAFC"): React.CSSProperties {
   return {
     borderRadius: 16,
     border: "1px solid rgba(11,31,51,0.08)",
-    background: "#F8FAFC",
+    background: bg,
     padding: 16,
   };
 }
 
-function btn(primary = false): React.CSSProperties {
+function btn(primary = false, disabled = false): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
@@ -39,12 +40,13 @@ function btn(primary = false): React.CSSProperties {
     padding: "11px 14px",
     borderRadius: 14,
     border: primary ? "none" : "1px solid rgba(11,31,51,0.10)",
-    background: primary ? "#0B63D1" : "#FFFFFF",
+    background: disabled ? "#CBD5E1" : primary ? "#0B63D1" : "#FFFFFF",
     color: primary ? "#FFFFFF" : "#0B1F33",
     textDecoration: "none",
     fontWeight: 1000,
     fontSize: 14,
-    cursor: "pointer",
+    cursor: disabled ? "not-allowed" : "pointer",
+    opacity: disabled ? 0.72 : 1,
   };
 }
 
@@ -71,6 +73,16 @@ function metricValueStyle(): React.CSSProperties {
   };
 }
 
+function sectionLabel(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#64748B",
+    fontWeight: 1000,
+    letterSpacing: 0.2,
+    textTransform: "uppercase",
+  };
+}
+
 function prettyValue(v: any): string {
   if (v == null) return "—";
   if (typeof v === "string") return v;
@@ -82,23 +94,29 @@ function prettyValue(v: any): string {
 }
 
 export default function AdminTrustGraphPage() {
-  const [userId, setUserId] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const selectedClanId = n(getSelectedClanId());
+  const queryClanId = n(searchParams.get("clan_id"));
+  const effectiveClanId = queryClanId || selectedClanId || 0;
+  const userId = n(searchParams.get("user_id"));
+
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<any>(null);
   const [err, setErr] = useState("");
 
-  async function load() {
+  const load = useCallback(async () => {
     setErr("");
     setData(null);
 
     try {
-      if (!userId || Number(userId) <= 0) {
-        throw new Error("Enter a valid user ID.");
+      if (!userId || userId <= 0) {
+        return;
       }
 
       setLoading(true);
 
-      const res = await getAdminTrustGraph(Number(userId), {
+      const res = await getAdminTrustGraph(userId, {
         include_clans: true,
         limit_events: 500,
       });
@@ -109,17 +127,50 @@ export default function AdminTrustGraphPage() {
     } finally {
       setLoading(false);
     }
+  }, [userId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  function updateQuery(next: { clan_id?: number | null; user_id?: number | null }) {
+    const p = new URLSearchParams(searchParams.toString());
+
+    if (next.clan_id == null || next.clan_id <= 0) p.delete("clan_id");
+    else p.set("clan_id", String(next.clan_id));
+
+    if (next.user_id == null || next.user_id <= 0) p.delete("user_id");
+    else p.set("user_id", String(next.user_id));
+
+    setSearchParams(p);
   }
 
-  const nodes = Array.isArray(data?.nodes) ? data.nodes : [];
-  const edges = Array.isArray(data?.edges) ? data.edges : [];
+  const queryString = useMemo(() => {
+    const p = new URLSearchParams();
+    if (effectiveClanId > 0) p.set("clan_id", String(effectiveClanId));
+    if (userId > 0) p.set("user_id", String(userId));
+    return p.toString();
+  }, [effectiveClanId, userId]);
 
-  const rootUser = data?.command_centre?.root_user || {};
+  const nodes = Array.isArray(data?.nodes) ? data.nodes : [];
+  const rawEdges = Array.isArray(data?.edges) ? data.edges : [];
+
+  const rootUser = data?.command_centre?.root_user || data?.root_user || {};
   const summary = data?.summary || {};
   const cci = data?.cci || {};
   const commandStats = data?.command_centre?.stats || {};
   const commandSignals = data?.command_centre?.signals || {};
-  const edgeTypeCounts = data?.command_centre?.edge_type_counts || summary?.edge_type_counts || {};
+
+  const filteredEdges = useMemo(() => {
+    let rows = rawEdges.slice();
+
+    const hasClanContext = rows.some((edge: any) => n(edge?.clan_id) > 0);
+    if (effectiveClanId > 0 && hasClanContext) {
+      rows = rows.filter((edge: any) => n(edge?.clan_id) === effectiveClanId);
+    }
+
+    return rows;
+  }, [rawEdges, effectiveClanId]);
 
   const clanNodes = useMemo(
     () => nodes.filter((x: any) => safeStr(x?.node_type) === "clan"),
@@ -132,29 +183,86 @@ export default function AdminTrustGraphPage() {
   );
 
   const recentEdges = useMemo(
-    () => edges.filter((x: any) => safeStr(x?.status) === "recent"),
-    [edges]
+    () => filteredEdges.filter((x: any) => safeStr(x?.status) === "recent"),
+    [filteredEdges]
   );
 
   const stressedEdges = useMemo(
-    () => edges.filter((x: any) => safeStr(x?.status) === "stressed"),
-    [edges]
+    () => filteredEdges.filter((x: any) => safeStr(x?.status) === "stressed"),
+    [filteredEdges]
   );
 
+  const edgeTypeCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+
+    for (const edge of filteredEdges) {
+      const key = safeStr(edge?.edge_type || edge?.edge_label || "edge");
+      counts[key] = (counts[key] || 0) + 1;
+    }
+
+    return counts;
+  }, [filteredEdges]);
+
   const topEdges = useMemo(() => {
-    return edges.slice().sort((a: any, b: any) => {
+    return filteredEdges.slice().sort((a: any, b: any) => {
       const aw = Number(a?.weight ?? 0);
       const bw = Number(b?.weight ?? 0);
       return bw - aw;
     });
-  }, [edges]);
+  }, [filteredEdges]);
 
   return (
-    <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+    <div style={{ maxWidth: 1200, margin: "0 auto", paddingBottom: 30 }}>
       <PageTopNav
         title="Trust Graph"
-        subtitle="Use this page to inspect a user’s visible trust relationships, event history, and connected community context."
+        subtitle="Inspect a user’s visible trust relationships, connected community context, and edge structure."
       />
+
+      <div style={{ ...card("#F8FBFF"), marginTop: 18 }}>
+        <div style={sectionLabel()}>Command Center</div>
+
+        <div
+          style={{
+            marginTop: 12,
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 14,
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 34, fontWeight: 1000, color: "#0B1F33" }}>
+              Trust Graph
+            </div>
+            <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
+              Admin-only graph view for user nodes, clan nodes, relationship edges,
+              summary metrics, and command-center signals.
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <Link
+              to={`/app/command-center${queryString ? `?${queryString}` : ""}`}
+              style={btn(false)}
+            >
+              Command Center
+            </Link>
+            <Link
+              to={`/app/command-center/trust-analytics${queryString ? `?${queryString}` : ""}`}
+              style={btn(false)}
+            >
+              Trust Analytics
+            </Link>
+            <Link
+              to={`/app/command-center/trust-graph${queryString ? `?${queryString}` : ""}`}
+              style={btn(true)}
+            >
+              Trust Graph
+            </Link>
+          </div>
+        </div>
+      </div>
 
       <div style={{ ...card(), marginTop: 18 }}>
         <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
@@ -171,14 +279,39 @@ export default function AdminTrustGraphPage() {
           }}
         >
           <input
-            value={userId}
-            onChange={(e) => setUserId(e.target.value)}
+            value={userId || ""}
+            onChange={(e) =>
+              updateQuery({
+                clan_id: effectiveClanId || null,
+                user_id: n(e.target.value) || null,
+              })
+            }
             placeholder="User ID"
             style={inputStyle(180)}
           />
 
-          <button type="button" onClick={load} style={btn(true)}>
+          <input
+            value={effectiveClanId || ""}
+            onChange={(e) =>
+              updateQuery({
+                clan_id: n(e.target.value) || null,
+                user_id: userId || null,
+              })
+            }
+            placeholder="Clan ID"
+            style={inputStyle(160)}
+          />
+
+          <button type="button" onClick={() => void load()} style={btn(true, loading)}>
             {loading ? "Loading..." : "Load Graph"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSearchParams(new URLSearchParams())}
+            style={btn(false)}
+          >
+            Clear Filters
           </button>
         </div>
 
@@ -197,6 +330,11 @@ export default function AdminTrustGraphPage() {
             {err}
           </div>
         ) : null}
+
+        <div style={{ marginTop: 14, color: "#6B7A88", lineHeight: 1.8 }}>
+          User ID is required. Clan ID is optional and narrows edge display when
+          clan-specific edge context exists.
+        </div>
       </div>
 
       {data ? (
@@ -247,10 +385,10 @@ export default function AdminTrustGraphPage() {
 
             <div style={card()}>
               <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                TOTAL EDGES
+                FILTERED EDGES
               </div>
               <div style={metricValueStyle()}>
-                {n(commandStats?.edge_total || edges.length)}
+                {filteredEdges.length}
               </div>
               <div style={{ marginTop: 6, color: "#64748B" }}>
                 Relationship and support links
@@ -310,7 +448,7 @@ export default function AdminTrustGraphPage() {
                 {n(summary?.funds_mobilised_count)}
               </div>
               <div style={{ marginTop: 6, color: "#64748B" }}>
-                Distinct loans this user helped mobilise
+                Distinct loans helped by this user
               </div>
             </div>
           </div>
@@ -373,9 +511,9 @@ export default function AdminTrustGraphPage() {
                 How to read this graph
               </div>
               <div style={{ marginTop: 12, color: "#475569", lineHeight: 1.8 }}>
-                This view now reflects the new trust-graph structure:
-                user nodes, clan nodes, relationship edges, summary metrics,
-                CCI interpretation, and command-centre signals.
+                This view reflects the new trust-graph structure: user nodes, clan
+                nodes, relationship edges, summary metrics, CCI interpretation,
+                and command-center signals.
               </div>
 
               <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
@@ -411,7 +549,7 @@ export default function AdminTrustGraphPage() {
 
             <div style={card()}>
               <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-                Command Centre Signals
+                Command Center Signals
               </div>
 
               <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
@@ -468,13 +606,13 @@ export default function AdminTrustGraphPage() {
                 {clanNodes.length === 0 ? (
                   <div style={{ color: "#7A8D9F" }}>No connected clan context found.</div>
                 ) : (
-                  clanNodes.map((c: any, idx: number) => (
+                  clanNodes.map((clanNode: any, idx: number) => (
                     <div key={idx} style={softCard()}>
                       <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
-                        {safeStr(c?.display_label, `Clan #${idx + 1}`)}
+                        {safeStr(clanNode?.display_label, `Clan #${idx + 1}`)}
                       </div>
                       <div style={{ marginTop: 6, color: "#64748B" }}>
-                        Node ID: {safeStr(c?.node_id)}
+                        Node ID: {safeStr(clanNode?.node_id)}
                       </div>
                     </div>
                   ))
@@ -491,10 +629,12 @@ export default function AdminTrustGraphPage() {
                 {Object.keys(edgeTypeCounts || {}).length === 0 ? (
                   <div style={{ color: "#7A8D9F" }}>No edge counts available.</div>
                 ) : (
-                  Object.entries(edgeTypeCounts).map(([k, v]) => (
-                    <div key={k} style={softCard()}>
-                      <div style={{ fontWeight: 1000, color: "#0B1F33" }}>{k}</div>
-                      <div style={{ marginTop: 6, color: "#64748B" }}>{safeStr(v)} edge(s)</div>
+                  Object.entries(edgeTypeCounts).map(([key, value]) => (
+                    <div key={key} style={softCard()}>
+                      <div style={{ fontWeight: 1000, color: "#0B1F33" }}>{key}</div>
+                      <div style={{ marginTop: 6, color: "#64748B" }}>
+                        {safeStr(value)} edge(s)
+                      </div>
                     </div>
                   ))
                 )}
@@ -548,7 +688,13 @@ export default function AdminTrustGraphPage() {
                     </div>
 
                     <details style={{ marginTop: 10 }}>
-                      <summary style={{ cursor: "pointer", fontWeight: 900, color: "#0B1F33" }}>
+                      <summary
+                        style={{
+                          cursor: "pointer",
+                          fontWeight: 900,
+                          color: "#0B1F33",
+                        }}
+                      >
                         Edge details
                       </summary>
                       <pre
@@ -594,7 +740,9 @@ export default function AdminTrustGraphPage() {
               <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
                 UNIQUE COUNTERPARTIES
               </div>
-              <div style={metricValueStyle()}>{safeStr(summary?.unique_counterparties)}</div>
+              <div style={metricValueStyle()}>
+                {safeStr(summary?.unique_counterparties)}
+              </div>
             </div>
 
             <div style={card()}>
