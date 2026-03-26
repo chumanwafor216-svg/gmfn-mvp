@@ -76,7 +76,7 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
-function actionBtn(primary = false): React.CSSProperties {
+function actionBtn(primary = false, disabled = false): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
@@ -84,13 +84,14 @@ function actionBtn(primary = false): React.CSSProperties {
     padding: "10px 14px",
     borderRadius: 14,
     border: primary ? "none" : "1px solid rgba(11,31,51,0.10)",
-    background: primary ? "#0B63D1" : "#FFFFFF",
+    background: disabled ? "#CBD5E1" : primary ? "#0B63D1" : "#FFFFFF",
     color: primary ? "#FFFFFF" : "#0B1F33",
     fontWeight: 1000,
     fontSize: 14,
     textDecoration: "none",
-    cursor: "pointer",
+    cursor: disabled ? "not-allowed" : "pointer",
     boxShadow: primary ? "0 10px 22px rgba(11,99,209,0.16)" : "none",
+    opacity: disabled ? 0.7 : 1,
   };
 }
 
@@ -126,6 +127,21 @@ function apiBase(): string {
   return String(raw || "").trim().replace(/\/+$/, "");
 }
 
+function apiOrigin(): string {
+  const base = apiBase();
+
+  if (base.startsWith("http://") || base.startsWith("https://")) {
+    try {
+      const u = new URL(base);
+      return `${u.protocol}//${u.host}`;
+    } catch {
+      return window.location.origin;
+    }
+  }
+
+  return window.location.origin;
+}
+
 function getAccessTokenMaybe(): string {
   try {
     return (
@@ -144,10 +160,33 @@ async function apiGet(path: string) {
   const res = await fetch(`${apiBase()}${path}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
+
   if (!res.ok) {
     throw new Error(`Request failed: ${res.status}`);
   }
+
   return res.json();
+}
+
+async function apiDownload(path: string, filename: string) {
+  const token = getAccessTokenMaybe();
+  const res = await fetch(`${apiBase()}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+
+  if (!res.ok) {
+    throw new Error(`Download failed: ${res.status}`);
+  }
+
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
 }
 
 function cciTone(score: number | null): "green" | "yellow" | "red" | "neutral" {
@@ -166,6 +205,7 @@ function cciToneStyles(tone: "green" | "yellow" | "red" | "neutral") {
       badge: "Fair to deal with",
     };
   }
+
   if (tone === "yellow") {
     return {
       bg: "linear-gradient(180deg, #FFFDF5 0%, #FFFBEB 100%)",
@@ -174,6 +214,7 @@ function cciToneStyles(tone: "green" | "yellow" | "red" | "neutral") {
       badge: "Growing, but needs care",
     };
   }
+
   if (tone === "red") {
     return {
       bg: "linear-gradient(180deg, #FFF5F5 0%, #FEF2F2 100%)",
@@ -182,6 +223,7 @@ function cciToneStyles(tone: "green" | "yellow" | "red" | "neutral") {
       badge: "Needs caution right now",
     };
   }
+
   return {
     bg: "linear-gradient(180deg, #FAFBFC 0%, #F8FAFC 100%)",
     border: "1px solid rgba(148,163,184,0.18)",
@@ -197,6 +239,7 @@ export default function TrustSlipPage() {
   const [packMeta, setPackMeta] = useState<PackMeta | null>(null);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState<"" | "evidence" | "timeline">("");
 
   useEffect(() => {
     (async () => {
@@ -278,6 +321,9 @@ export default function TrustSlipPage() {
   const verifyUrl = hasTrustSlipCode
     ? `/app/trust-slip/verify?code=${encodeURIComponent(trustSlipCode)}`
     : "";
+  const qrUrl = hasTrustSlipCode
+    ? `${apiOrigin()}/trust-slips/verify/${encodeURIComponent(trustSlipCode)}/qr.png`
+    : "";
   const slipStatus = safeStr(trustSlip?.status || "active");
   const packId = safeStr(packMeta?.pack_id || "Pending");
   const latestReason = safeStr(
@@ -288,6 +334,29 @@ export default function TrustSlipPage() {
   const latestNote = safeStr(
     trustMe?.last_change?.note || "A fuller note will appear when available."
   );
+  const issuedReason = safeStr(
+    trustSlip?.issued_reason || trustSlip?.reason || "Not yet stated"
+  );
+  const snapshotVersion = safeStr(
+    trustSlip?.snapshot_version || packMeta?.protocol_version || "Pending"
+  );
+
+  async function handleDownload(kind: "evidence" | "timeline") {
+    try {
+      setErr("");
+      setDownloading(kind);
+
+      if (kind === "evidence") {
+        await apiDownload("/trust/me/evidence-pack.zip", "trust-evidence-pack.zip");
+      } else {
+        await apiDownload("/trust/me/timeline.pdf", "trust-timeline.pdf");
+      }
+    } catch (e: any) {
+      setErr(String(e?.message || e || "Download failed."));
+    } finally {
+      setDownloading("");
+    }
+  }
 
   return (
     <div style={{ maxWidth: 1180, margin: "0 auto", paddingBottom: 30 }}>
@@ -335,542 +404,626 @@ export default function TrustSlipPage() {
         ) : null}
       </div>
 
-      <div
-        style={{
-          marginTop: 18,
-          display: "grid",
-          gridTemplateColumns: "1.05fr 0.95fr",
-          gap: 18,
-          alignItems: "stretch",
-        }}
-      >
-        <div style={pageCard()}>
-          <div style={sectionLabel()}>Holder</div>
-
-          <div
-            style={{
-              marginTop: 12,
-              color: "#0B1F33",
-              fontWeight: 1000,
-              fontSize: 30,
-              lineHeight: 1.2,
-            }}
-          >
-            {displayName}
-          </div>
-
-          <div
-            style={{
-              marginTop: 10,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "8px 12px",
-              borderRadius: 999,
-              background: "#EEF5FF",
-              border: "1px solid rgba(11,99,209,0.14)",
-              color: "#18406B",
-              fontSize: 14,
-              fontWeight: 900,
-            }}
-          >
-            GMFN ID: {safeStr(me?.gmfn_id || "Pending")}
-          </div>
-
-          <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
-            <div style={innerCard("#FFFFFF")}>
-              <div style={sectionLabel()}>TrustSlip code</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontWeight: 1000,
-                  fontSize: 20,
-                }}
-              >
-                {hasTrustSlipCode ? trustSlipCode : "Not issued yet"}
-              </div>
-            </div>
-
-            <div style={innerCard("#FFFFFF")}>
-              <div style={sectionLabel()}>Pack reference</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontWeight: 1000,
-                  fontSize: 18,
-                }}
-              >
-                {packId}
-              </div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#64748B",
-                  fontSize: 13,
-                  lineHeight: 1.7,
-                }}
-              >
-                Quote this when you need to refer to your evidence pack.
-              </div>
-            </div>
-          </div>
+      {loading ? (
+        <div style={{ ...pageCard(), marginTop: 18 }}>
+          <div style={{ color: "#64748B", lineHeight: 1.8 }}>Loading TrustSlip...</div>
         </div>
-
-        <div
-          style={{
-            ...pageCard(),
-            background: toneStyle.bg,
-            border: toneStyle.border,
-          }}
-        >
-          <div style={sectionLabel()}>CCI reading carried by this TrustSlip</div>
-
+      ) : (
+        <>
           <div
             style={{
-              marginTop: 14,
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              alignItems: "flex-start",
-              flexWrap: "wrap",
+              marginTop: 18,
+              display: "grid",
+              gridTemplateColumns: "1.05fr 0.95fr",
+              gap: 18,
+              alignItems: "stretch",
             }}
           >
-            <div>
+            <div style={pageCard()}>
+              <div style={sectionLabel()}>Holder</div>
+
               <div
                 style={{
-                  fontSize: 38,
-                  fontWeight: 1000,
-                  lineHeight: 1,
-                  color: toneStyle.text,
+                  marginTop: 12,
+                  display: "grid",
+                  gridTemplateColumns: "1fr auto",
+                  gap: 16,
+                  alignItems: "start",
                 }}
               >
-                {cciClass}
+                <div>
+                  <div
+                    style={{
+                      color: "#0B1F33",
+                      fontWeight: 1000,
+                      fontSize: 30,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {displayName}
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 10,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "8px 12px",
+                      borderRadius: 999,
+                      background: "#EEF5FF",
+                      border: "1px solid rgba(11,99,209,0.14)",
+                      color: "#18406B",
+                      fontSize: 14,
+                      fontWeight: 900,
+                    }}
+                  >
+                    GMFN ID: {safeStr(me?.gmfn_id || "Pending")}
+                  </div>
+                </div>
+
+                {hasTrustSlipCode ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    <img
+                      src={qrUrl}
+                      alt="TrustSlip QR"
+                      style={{
+                        width: 104,
+                        height: 104,
+                        borderRadius: 12,
+                        border: "1px solid rgba(11,31,51,0.10)",
+                        background: "#FFFFFF",
+                        padding: 4,
+                      }}
+                    />
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "#64748B",
+                        fontWeight: 700,
+                        textAlign: "center",
+                      }}
+                    >
+                      Scan to verify
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
+                <div style={innerCard("#FFFFFF")}>
+                  <div style={sectionLabel()}>TrustSlip code</div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B1F33",
+                      fontWeight: 1000,
+                      fontSize: 20,
+                    }}
+                  >
+                    {hasTrustSlipCode ? trustSlipCode : "Not issued yet"}
+                  </div>
+                </div>
+
+                <div style={innerCard("#FFFFFF")}>
+                  <div style={sectionLabel()}>Pack reference</div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B1F33",
+                      fontWeight: 1000,
+                      fontSize: 18,
+                    }}
+                  >
+                    {packId}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#64748B",
+                      fontSize: 13,
+                      lineHeight: 1.7,
+                    }}
+                  >
+                    Quote this when you need to refer to your evidence pack.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                ...pageCard(),
+                background: toneStyle.bg,
+                border: toneStyle.border,
+              }}
+            >
+              <div style={sectionLabel()}>CCI reading carried by this TrustSlip</div>
+
+              <div
+                style={{
+                  marginTop: 14,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  alignItems: "flex-start",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      fontSize: 38,
+                      fontWeight: 1000,
+                      lineHeight: 1,
+                      color: toneStyle.text,
+                    }}
+                  >
+                    {cciClass}
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 10,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      padding: "6px 12px",
+                      borderRadius: 999,
+                      background: "rgba(255,255,255,0.75)",
+                      border: toneStyle.border,
+                      fontSize: 13,
+                      fontWeight: 900,
+                      color: toneStyle.text,
+                    }}
+                  >
+                    {toneStyle.badge}
+                  </div>
+                </div>
+
+                <div style={{ textAlign: "right", minWidth: 90 }}>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 1000,
+                      letterSpacing: 0.3,
+                      color: toneStyle.text,
+                      opacity: 0.8,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Score
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 6,
+                      fontSize: 24,
+                      fontWeight: 1000,
+                      color: toneStyle.text,
+                    }}
+                  >
+                    {cciScoreNum === null ? "—" : String(Math.round(cciScoreNum))}
+                  </div>
+                </div>
               </div>
 
               <div
                 style={{
                   marginTop: 10,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  padding: "6px 12px",
-                  borderRadius: 999,
-                  background: "rgba(255,255,255,0.75)",
-                  border: toneStyle.border,
-                  fontSize: 13,
-                  fontWeight: 900,
+                  fontSize: 14,
+                  lineHeight: 1.8,
+                  color: "#64748B",
+                }}
+              >
+                {tone === "green"
+                  ? "People can confidently rely on your word."
+                  : tone === "yellow"
+                  ? "People see potential, but will watch your consistency."
+                  : tone === "red"
+                  ? "People may be careful before relying on your word right now."
+                  : "Your trust position is still being prepared."}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 10,
+                  fontSize: 14,
+                  lineHeight: 1.8,
+                  color: "#64748B",
+                }}
+              >
+                {tone === "red"
+                  ? "A few consistent actions can quickly improve this."
+                  : "Keep showing consistency across your network."}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 10,
+                  fontSize: 14,
+                  lineHeight: 1.8,
                   color: toneStyle.text,
+                  opacity: 0.9,
                 }}
               >
-                {toneStyle.badge}
+                {cciReason}
               </div>
-            </div>
 
-            <div style={{ textAlign: "right", minWidth: 90 }}>
               <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 1000,
-                  letterSpacing: 0.3,
-                  color: toneStyle.text,
-                  opacity: 0.8,
-                  textTransform: "uppercase",
-                }}
+                style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}
               >
-                Score
-              </div>
-              <div
-                style={{
-                  marginTop: 6,
-                  fontSize: 24,
-                  fontWeight: 1000,
-                  color: toneStyle.text,
-                }}
-              >
-                {cciScoreNum === null ? "—" : String(Math.round(cciScoreNum))}
-              </div>
-            </div>
-          </div>
+                {hasTrustSlipCode ? (
+                  <Link to={verifyUrl} style={actionBtn(true)}>
+                    Verify TrustSlip
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    style={actionBtn(true, true)}
+                  >
+                    TrustSlip not ready yet
+                  </button>
+                )}
 
-          <div
-            style={{
-              marginTop: 10,
-              fontSize: 14,
-              lineHeight: 1.8,
-              color: "#64748B",
-            }}
-          >
-            {tone === "green"
-              ? "People can confidently rely on your word."
-              : tone === "yellow"
-              ? "People see potential, but will watch your consistency."
-              : tone === "red"
-              ? "People may be careful before relying on your word right now."
-              : "Your trust position is still being prepared."}
-          </div>
-
-          <div
-            style={{
-              marginTop: 10,
-              fontSize: 14,
-              lineHeight: 1.8,
-              color: "#64748B",
-            }}
-          >
-            {tone === "red"
-              ? "A few consistent actions can quickly improve this."
-              : "Keep showing consistency across your network."}
-          </div>
-
-          <div
-            style={{
-              marginTop: 10,
-              fontSize: 14,
-              lineHeight: 1.8,
-              color: toneStyle.text,
-              opacity: 0.9,
-            }}
-          >
-            {cciReason}
-          </div>
-
-          <div
-            style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}
-          >
-            {hasTrustSlipCode ? (
-              <Link to={verifyUrl} style={actionBtn(true)}>
-                Verify TrustSlip
-              </Link>
-            ) : (
-              <button
-                type="button"
-                disabled
-                style={{ ...actionBtn(true), opacity: 0.65, cursor: "not-allowed" }}
-              >
-                TrustSlip not ready yet
-              </button>
-            )}
-
-            <Link to="/app/trust" style={actionBtn(false)}>
-              See why this changed
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      <div
-        style={{
-          marginTop: 18,
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: 14,
-        }}
-      >
-        <div style={softCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Trust limit</div>
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 30,
-              fontWeight: 1000,
-              color: "#0B1F33",
-            }}
-          >
-            {trustLimit}
-          </div>
-          <div style={{ marginTop: 6, color: "#64748B", fontSize: 14 }}>
-            {currency}
-          </div>
-        </div>
-
-        <div style={softCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Status</div>
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 30,
-              fontWeight: 1000,
-              color: "#0B1F33",
-              textTransform: "capitalize",
-            }}
-          >
-            {slipStatus}
-          </div>
-          <div style={{ marginTop: 6, color: "#64748B", fontSize: 14 }}>
-            Current TrustSlip state.
-          </div>
-        </div>
-
-        <div style={softCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Last checked</div>
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 20,
-              fontWeight: 1000,
-              color: "#0B1F33",
-              lineHeight: 1.5,
-            }}
-          >
-            {safeDateTime(
-              trustSlip?.last_verified_at ||
-                packMeta?.generated_at ||
-                packMeta?.generated_at_utc
-            )}
-          </div>
-          <div style={{ marginTop: 6, color: "#64748B", fontSize: 14 }}>
-            Most recent visible verification time.
-          </div>
-        </div>
-
-        <div style={softCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Visibility level</div>
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 20,
-              fontWeight: 1000,
-              color: "#0B1F33",
-              textTransform: "capitalize",
-            }}
-          >
-            {safeStr(trustSlip?.snapshot_visibility_level || "Standard")}
-          </div>
-          <div style={{ marginTop: 6, color: "#64748B", fontSize: 14 }}>
-            What level of detail this TrustSlip is carrying.
-          </div>
-        </div>
-      </div>
-
-      <div
-        style={{
-          marginTop: 18,
-          display: "grid",
-          gridTemplateColumns: "0.95fr 1.05fr",
-          gap: 18,
-        }}
-      >
-        <div style={pageCard()}>
-          <div style={sectionLabel()}>What this means in simple words</div>
-
-          <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
-            <div style={innerCard("#FCFEFF")}>
-              <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}>
-                This is not a bank score
-              </div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#64748B",
-                  lineHeight: 1.8,
-                  fontSize: 14,
-                }}
-              >
-                It reflects how fair, dependable, and support-aware you have been
-                among people and communities that already know you.
-              </div>
-            </div>
-
-            <div style={innerCard("#FCFEFF")}>
-              <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}>
-                It carries your trust forward
-              </div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#64748B",
-                  lineHeight: 1.8,
-                  fontSize: 14,
-                }}
-              >
-                Your TrustSlip gathers your current reading so that it can be shown
-                clearly when you need support, trade, or verification.
-              </div>
-            </div>
-
-            <div style={innerCard("#FCFEFF")}>
-              <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}>
-                It depends on your actions
-              </div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#64748B",
-                  lineHeight: 1.8,
-                  fontSize: 14,
-                }}
-              >
-                Fair repayment, support reliability, and consistency across the
-                network shape what this page says about you.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div style={pageCard()}>
-          <div style={sectionLabel()}>
-            Latest trust change carried into this record
-          </div>
-
-          <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
-            <div style={softCard("#FFFFFF")}>
-              <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}>
-                Latest source
-              </div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#64748B",
-                  fontSize: 14,
-                  lineHeight: 1.8,
-                }}
-              >
-                {latestReason}
-              </div>
-            </div>
-
-            <div style={softCard("#FFFFFF")}>
-              <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}>
-                Note
-              </div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#64748B",
-                  fontSize: 14,
-                  lineHeight: 1.8,
-                }}
-              >
-                {latestNote}
-              </div>
-            </div>
-
-            <div style={softCard("#FFFFFF")}>
-              <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}>
-                Time
-              </div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#64748B",
-                  fontSize: 14,
-                  lineHeight: 1.8,
-                }}
-              >
-                {safeDateTime(trustMe?.last_change?.created_at)}
-              </div>
-            </div>
-
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <a
-                href={`${apiBase()}/trust/me/evidence-pack.zip`}
-                style={actionBtn(true)}
-              >
-                Download Evidence Pack
-              </a>
-
-              <a
-                href={`${apiBase()}/trust/me/timeline.pdf`}
-                style={actionBtn(false)}
-              >
-                Download Timeline PDF
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ ...pageCard(), marginTop: 18 }}>
-        <div style={sectionLabel()}>Next useful actions</div>
-
-        <div
-          style={{
-            marginTop: 14,
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: 12,
-          }}
-        >
-          <div style={innerCard("#FCFEFF")}>
-            <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}>
-              Verify this page outwardly
-            </div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#64748B",
-                fontSize: 14,
-                lineHeight: 1.8,
-              }}
-            >
-              Use the verify page when you want another person to confirm this
-              TrustSlip clearly.
-            </div>
-            <div style={{ marginTop: 12 }}>
-              {hasTrustSlipCode ? (
-                <Link to={verifyUrl} style={actionBtn(true)}>
-                  Open Verify Page
+                <Link to="/app/trust" style={actionBtn(false)}>
+                  See why this changed
                 </Link>
-              ) : (
-                <button
-                  type="button"
-                  disabled
-                  style={{ ...actionBtn(true), opacity: 0.65, cursor: "not-allowed" }}
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: 18,
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 14,
+            }}
+          >
+            <div style={softCard("#FFFFFF")}>
+              <div style={sectionLabel()}>Trust limit</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  fontSize: 30,
+                  fontWeight: 1000,
+                  color: "#0B1F33",
+                }}
+              >
+                {trustLimit}
+              </div>
+              <div style={{ marginTop: 6, color: "#64748B", fontSize: 14 }}>
+                {currency}
+              </div>
+            </div>
+
+            <div style={softCard("#FFFFFF")}>
+              <div style={sectionLabel()}>Status</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  fontSize: 30,
+                  fontWeight: 1000,
+                  color: "#0B1F33",
+                  textTransform: "capitalize",
+                }}
+              >
+                {slipStatus}
+              </div>
+              <div style={{ marginTop: 6, color: "#64748B", fontSize: 14 }}>
+                Current TrustSlip state.
+              </div>
+            </div>
+
+            <div style={softCard("#FFFFFF")}>
+              <div style={sectionLabel()}>Last checked</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  fontSize: 20,
+                  fontWeight: 1000,
+                  color: "#0B1F33",
+                  lineHeight: 1.5,
+                }}
+              >
+                {safeDateTime(
+                  trustSlip?.last_verified_at ||
+                    packMeta?.generated_at ||
+                    packMeta?.generated_at_utc
+                )}
+              </div>
+              <div style={{ marginTop: 6, color: "#64748B", fontSize: 14 }}>
+                Most recent visible verification time.
+              </div>
+            </div>
+
+            <div style={softCard("#FFFFFF")}>
+              <div style={sectionLabel()}>Visibility level</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  fontSize: 20,
+                  fontWeight: 1000,
+                  color: "#0B1F33",
+                  textTransform: "capitalize",
+                }}
+              >
+                {safeStr(trustSlip?.snapshot_visibility_level || "Standard")}
+              </div>
+              <div style={{ marginTop: 6, color: "#64748B", fontSize: 14 }}>
+                What level of detail this TrustSlip is carrying.
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: 18,
+              display: "grid",
+              gridTemplateColumns: "0.95fr 1.05fr",
+              gap: 18,
+            }}
+          >
+            <div style={pageCard()}>
+              <div style={sectionLabel()}>What this means in simple words</div>
+
+              <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+                <div style={innerCard("#FCFEFF")}>
+                  <div
+                    style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}
+                  >
+                    This is not a bank score
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#64748B",
+                      lineHeight: 1.8,
+                      fontSize: 14,
+                    }}
+                  >
+                    It reflects how fair, dependable, and support-aware you have
+                    been among people and communities that already know you.
+                  </div>
+                </div>
+
+                <div style={innerCard("#FCFEFF")}>
+                  <div
+                    style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}
+                  >
+                    It carries your trust forward
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#64748B",
+                      lineHeight: 1.8,
+                      fontSize: 14,
+                    }}
+                  >
+                    Your TrustSlip gathers your current reading so that it can be
+                    shown clearly when you need support, trade, or verification.
+                  </div>
+                </div>
+
+                <div style={innerCard("#FCFEFF")}>
+                  <div
+                    style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}
+                  >
+                    It depends on your actions
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#64748B",
+                      lineHeight: 1.8,
+                      fontSize: 14,
+                    }}
+                  >
+                    Fair repayment, support reliability, and consistency across
+                    the network shape what this page says about you.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style={pageCard()}>
+              <div style={sectionLabel()}>
+                Latest trust change carried into this record
+              </div>
+
+              <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+                <div style={softCard("#FFFFFF")}>
+                  <div
+                    style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}
+                  >
+                    Latest source
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#64748B",
+                      fontSize: 14,
+                      lineHeight: 1.8,
+                    }}
+                  >
+                    {latestReason}
+                  </div>
+                </div>
+
+                <div style={softCard("#FFFFFF")}>
+                  <div
+                    style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}
+                  >
+                    Note
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#64748B",
+                      fontSize: 14,
+                      lineHeight: 1.8,
+                    }}
+                  >
+                    {latestNote}
+                  </div>
+                </div>
+
+                <div style={softCard("#FFFFFF")}>
+                  <div
+                    style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}
+                  >
+                    Slip metadata
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      display: "grid",
+                      gap: 8,
+                      color: "#64748B",
+                      fontSize: 14,
+                      lineHeight: 1.8,
+                    }}
+                  >
+                    <div>
+                      <strong style={{ color: "#0B1F33" }}>Issued reason:</strong>{" "}
+                      {issuedReason}
+                    </div>
+                    <div>
+                      <strong style={{ color: "#0B1F33" }}>Snapshot version:</strong>{" "}
+                      {snapshotVersion}
+                    </div>
+                    <div>
+                      <strong style={{ color: "#0B1F33" }}>Last change time:</strong>{" "}
+                      {safeDateTime(trustMe?.last_change?.created_at)}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    onClick={() => handleDownload("evidence")}
+                    disabled={downloading !== ""}
+                    style={actionBtn(true, downloading !== "")}
+                  >
+                    {downloading === "evidence"
+                      ? "Downloading..."
+                      : "Download Evidence Pack"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDownload("timeline")}
+                    disabled={downloading !== ""}
+                    style={actionBtn(false, downloading !== "")}
+                  >
+                    {downloading === "timeline"
+                      ? "Downloading..."
+                      : "Download Timeline PDF"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ ...pageCard(), marginTop: 18 }}>
+            <div style={sectionLabel()}>Next useful actions</div>
+
+            <div
+              style={{
+                marginTop: 14,
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: 12,
+              }}
+            >
+              <div style={innerCard("#FCFEFF")}>
+                <div
+                  style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}
                 >
-                  TrustSlip not ready yet
-                </button>
-              )}
-            </div>
-          </div>
+                  Verify this page outwardly
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#64748B",
+                    fontSize: 14,
+                    lineHeight: 1.8,
+                  }}
+                >
+                  Use the verify page when you want another person to confirm
+                  this TrustSlip clearly.
+                </div>
+                <div style={{ marginTop: 12 }}>
+                  {hasTrustSlipCode ? (
+                    <Link to={verifyUrl} style={actionBtn(true)}>
+                      Open Verify Page
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      style={actionBtn(true, true)}
+                    >
+                      TrustSlip not ready yet
+                    </button>
+                  )}
+                </div>
+              </div>
 
-          <div style={innerCard("#FCFEFF")}>
-            <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}>
-              Read the fuller trust story
-            </div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#64748B",
-                fontSize: 14,
-                lineHeight: 1.8,
-              }}
-            >
-              Open your trust page to understand what shaped this reading.
-            </div>
-            <div style={{ marginTop: 12 }}>
-              <Link to="/app/trust" style={actionBtn(false)}>
-                Open Trust Page
-              </Link>
-            </div>
-          </div>
+              <div style={innerCard("#FCFEFF")}>
+                <div
+                  style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}
+                >
+                  Read the fuller trust story
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#64748B",
+                    fontSize: 14,
+                    lineHeight: 1.8,
+                  }}
+                >
+                  Open your trust page to understand what shaped this reading.
+                </div>
+                <div style={{ marginTop: 12 }}>
+                  <Link to="/app/trust" style={actionBtn(false)}>
+                    Open Trust Page
+                  </Link>
+                </div>
+              </div>
 
-          <div style={innerCard("#FCFEFF")}>
-            <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}>
-              Keep building it
-            </div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#64748B",
-                fontSize: 14,
-                lineHeight: 1.8,
-              }}
-            >
-              Fair repayment, dependable support, and consistency are what make
-              this record stronger over time.
+              <div style={innerCard("#FCFEFF")}>
+                <div
+                  style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}
+                >
+                  Keep building it
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#64748B",
+                    fontSize: 14,
+                    lineHeight: 1.8,
+                  }}
+                >
+                  Fair repayment, dependable support, and consistency are what
+                  make this record stronger over time.
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {loading ? (
-        <div style={{ ...pageCard(), marginTop: 18 }}>
-          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-            Loading TrustSlip...
-          </div>
-        </div>
-      ) : null}
+        </>
+      )}
     </div>
   );
 }
