@@ -2,6 +2,14 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 
+type GuideBlock = {
+  key: string;
+  title: string;
+  text: string;
+  linkTo: string;
+  linkLabel: string;
+};
+
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 26,
@@ -24,6 +32,16 @@ function detailCard(): React.CSSProperties {
     padding: 22,
     position: "relative",
     overflow: "hidden",
+  };
+}
+
+function softCard(): React.CSSProperties {
+  return {
+    borderRadius: 18,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: "#FFFFFF",
+    padding: 16,
+    boxShadow: "0 12px 30px rgba(15,23,42,0.04)",
   };
 }
 
@@ -57,7 +75,7 @@ function sectionLabel(): React.CSSProperties {
   };
 }
 
-const blocks = [
+const blocks: GuideBlock[] = [
   {
     key: "1",
     title: "My Identity in Trust Terms",
@@ -168,7 +186,7 @@ const blocks = [
     text:
       "Communities can respond quickly in urgent situations.\n\nWhat it means:\nWhen time matters, visible trust helps people act faster.\n\nWhy it matters:\nEmergencies often do not wait for formal paperwork or full cash readiness.\n\nIn simple terms:\nTrust can speed up help where delay would be harmful.",
     linkTo: "/app/community",
-    linkLabel: "Open Community",
+    linkLabel: "Open Community Home",
   },
   {
     key: "15",
@@ -176,7 +194,7 @@ const blocks = [
     text:
       "Support across countries becomes safer and clearer.\n\nWhat it means:\nPeople abroad can support trusted people at home with better visibility and less blind risk.\n\nWhy it matters:\nDiaspora support is often large, but uncertainty remains a major barrier.\n\nIn simple terms:\nGMFN helps distant support become more structured and more confident.",
     linkTo: "/app/community",
-    linkLabel: "Open Community",
+    linkLabel: "Open Community Home",
   },
   {
     key: "16",
@@ -184,7 +202,7 @@ const blocks = [
     text:
       "Contribution systems become stronger and more reliable.\n\nWhat it means:\nGMFN can strengthen contribution cultures such as ROSCA, ajo, esusu, stokvel, tanda, susu, hui, and similar systems.\n\nWhy it matters:\nThese systems already work through trust. GMFN helps protect and structure that trust.\n\nIn simple terms:\nIt supports savings culture by making contribution reliability easier to see and remember.",
     linkTo: "/app/community",
-    linkLabel: "Open Community",
+    linkLabel: "Open Community Home",
   },
   {
     key: "17",
@@ -224,7 +242,7 @@ const blocks = [
     text:
       "Trust turns communities into economic systems.\n\nWhat it means:\nWhen trust becomes visible, communities can coordinate trade, support, savings, and opportunity more powerfully.\n\nWhy it matters:\nThis is bigger than one user or one transaction.\n\nIn simple terms:\nGMFN helps communities act like organised economic engines, not scattered individuals.",
     linkTo: "/app/community",
-    linkLabel: "Open Community",
+    linkLabel: "Open Community Home",
   },
 ];
 
@@ -232,7 +250,7 @@ export default function MyGMFNAndIPage() {
   const [activeKey, setActiveKey] = useState<string | null>(blocks[0].key);
 
   return (
-    <div style={{ maxWidth: 1180, margin: "0 auto" }}>
+    <div style={{ maxWidth: 980, margin: "0 auto", paddingBottom: 36 }}>
       <PageTopNav
         title="My GMFN and I"
         subtitle="Understand in a simple way how GMFN works for you, your community, your reputation, and your real-world opportunities."
@@ -279,7 +297,7 @@ export default function MyGMFNAndIPage() {
           />
 
           <div style={{ position: "relative", zIndex: 1 }}>
-            <div style={sectionLabel()}>Core understanding</div>
+            <div style={sectionLabel()}>Primary guide</div>
 
             <div
               style={{
@@ -309,6 +327,83 @@ export default function MyGMFNAndIPage() {
               backing becomes visible. I do not use GMFN to become trusted. I
               use GMFN to make my existing trust real, visible, and useful.
             </div>
+
+            <div
+              style={{
+                marginTop: 16,
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+              }}
+            >
+              <Link to="/app/dashboard" style={actionLink(true)}>
+                Open Dashboard
+              </Link>
+              <Link to="/app/community" style={actionLink(false)}>
+                Open Community Home
+              </Link>
+              <a
+                href="/GSN_FINAL_WHITE.pdf"
+                target="_blank"
+                rel="noreferrer"
+                style={actionLink(false)}
+              >
+                PDF fallback
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        style={{
+          marginTop: 18,
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: 14,
+        }}
+      >
+        <div style={softCard()}>
+          <div style={sectionLabel()}>How to use this page</div>
+          <div
+            style={{
+              marginTop: 8,
+              color: "#475569",
+              fontSize: 14,
+              lineHeight: 1.75,
+            }}
+          >
+            Open one section at a time. Read it fully. Then use the action button
+            to move into the related page.
+          </div>
+        </div>
+
+        <div style={softCard()}>
+          <div style={sectionLabel()}>Guide rule</div>
+          <div
+            style={{
+              marginTop: 8,
+              color: "#475569",
+              fontSize: 14,
+              lineHeight: 1.75,
+            }}
+          >
+            This is the main guide page. The PDF is only a fallback when needed.
+          </div>
+        </div>
+
+        <div style={softCard()}>
+          <div style={sectionLabel()}>Sections</div>
+          <div
+            style={{
+              marginTop: 8,
+              color: "#0B1F33",
+              fontSize: 28,
+              fontWeight: 1000,
+              lineHeight: 1,
+            }}
+          >
+            {blocks.length}
           </div>
         </div>
       </div>
@@ -320,12 +415,12 @@ export default function MyGMFNAndIPage() {
           gap: 14,
         }}
       >
-        {blocks.map((b, idx) => {
-          const open = activeKey === b.key;
+        {blocks.map((block, idx) => {
+          const open = activeKey === block.key;
 
           return (
             <div
-              key={b.key}
+              key={block.key}
               style={{
                 ...detailCard(),
                 padding: 0,
@@ -340,7 +435,7 @@ export default function MyGMFNAndIPage() {
               <button
                 type="button"
                 onClick={() =>
-                  setActiveKey((prev) => (prev === b.key ? null : b.key))
+                  setActiveKey((prev) => (prev === block.key ? null : block.key))
                 }
                 style={{
                   width: "100%",
@@ -399,7 +494,7 @@ export default function MyGMFNAndIPage() {
                         lineHeight: 1.3,
                       }}
                     >
-                      {b.title}
+                      {block.title}
                     </div>
                   </div>
                 </div>
@@ -433,7 +528,7 @@ export default function MyGMFNAndIPage() {
                       whiteSpace: "pre-wrap",
                     }}
                   >
-                    {b.text}
+                    {block.text}
                   </div>
 
                   <div
@@ -444,8 +539,8 @@ export default function MyGMFNAndIPage() {
                       flexWrap: "wrap",
                     }}
                   >
-                    <Link to={b.linkTo} style={actionLink(true)}>
-                      {b.linkLabel}
+                    <Link to={block.linkTo} style={actionLink(true)}>
+                      {block.linkLabel}
                     </Link>
 
                     <button
