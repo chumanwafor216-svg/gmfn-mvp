@@ -155,10 +155,29 @@ export async function getMe() {
 }
 
 export async function activateApprovedMember(payload: {
-  gmfn_id: string;
+  gmfn_id?: string | null;
+  request_id?: string | number | null;
   password: string;
+  confirm_password?: string | null;
 }): Promise<any> {
-  return httpJson("/auth/activate-approved-member", "POST", payload);
+  const cleaned: Record<string, any> = {
+    password: String(payload?.password || ""),
+  };
+
+  const gmfnId = String(payload?.gmfn_id || "").trim().toUpperCase();
+  const requestId =
+    payload?.request_id == null ? "" : String(payload?.request_id).trim();
+  const confirmPassword = String(payload?.confirm_password || "");
+
+  if (gmfnId) cleaned.gmfn_id = gmfnId;
+  if (requestId) cleaned.request_id = requestId;
+  if (confirmPassword) cleaned.confirm_password = confirmPassword;
+
+  if (!cleaned.gmfn_id && !cleaned.request_id) {
+    throw new Error("gmfn_id or request_id is required");
+  }
+
+  return httpJson("/auth/activate-approved-member", "POST", cleaned);
 }
 export async function activateMembership(payload: {
   gmfn_id: string;
