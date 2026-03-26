@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import PageTopNav from "../components/PageTopNav";
 import { getJoinApprovalStatus } from "../lib/api";
 
 type ApprovalStatus = {
@@ -8,6 +9,9 @@ type ApprovalStatus = {
   gmfn_id?: string | null;
   next_step?: string | null;
   message?: string | null;
+  community_name?: string | null;
+  community_code?: string | null;
+  marketplace_name?: string | null;
 };
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
@@ -52,12 +56,41 @@ function safeStr(x: any, fallback = ""): string {
   return s || fallback;
 }
 
-function normalizedStatus(value?: string | null): "approved" | "pending" | "rejected" | "unknown" {
+function normalizedStatus(
+  value?: string | null
+): "approved" | "pending" | "rejected" | "unknown" {
   const raw = safeStr(value).toLowerCase();
 
-  if (raw === "approved") return "approved";
-  if (raw === "pending") return "pending";
-  if (raw === "rejected" || raw === "reject") return "rejected";
+  if (
+    raw === "approved" ||
+    raw === "approve" ||
+    raw.includes("approved") ||
+    raw.includes("ready") ||
+    raw.includes("issued") ||
+    raw.includes("activated")
+  ) {
+    return "approved";
+  }
+
+  if (
+    raw === "pending" ||
+    raw.includes("pending") ||
+    raw.includes("review") ||
+    raw.includes("waiting")
+  ) {
+    return "pending";
+  }
+
+  if (
+    raw === "rejected" ||
+    raw === "reject" ||
+    raw.includes("reject") ||
+    raw.includes("declin") ||
+    raw.includes("denied")
+  ) {
+    return "rejected";
+  }
+
   return "unknown";
 }
 
@@ -163,6 +196,11 @@ export default function JoinApprovalPage() {
 
   return (
     <div style={{ padding: 20, maxWidth: 760, margin: "0 auto", paddingBottom: 30 }}>
+      <PageTopNav
+        title="Join Approval"
+        subtitle="Review the outcome of your community join request and continue to the right next step."
+      />
+
       <div
         style={{
           ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
@@ -179,7 +217,7 @@ export default function JoinApprovalPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Join approval</div>
+            <div style={sectionLabel()}>Approval status</div>
             <div
               style={{
                 marginTop: 8,
@@ -272,6 +310,19 @@ export default function JoinApprovalPage() {
                 <strong>Request ID:</strong> {safeStr(data.request_id || requestId || "—")}
               </div>
 
+              {safeStr(data.community_name || data.marketplace_name || "") ? (
+                <div>
+                  <strong>Community:</strong>{" "}
+                  {safeStr(data.community_name || data.marketplace_name || "—")}
+                </div>
+              ) : null}
+
+              {safeStr(data.community_code || "") ? (
+                <div>
+                  <strong>Community ID:</strong> {safeStr(data.community_code)}
+                </div>
+              ) : null}
+
               {status === "approved" ? (
                 <div>
                   <strong>GMFN ID:</strong> {safeStr(data.gmfn_id || "Pending issuance")}
@@ -326,7 +377,7 @@ export default function JoinApprovalPage() {
                     })
                   }
                 >
-                  Continue Onboarding
+                  Continue Activation
                 </button>
               ) : null}
 
