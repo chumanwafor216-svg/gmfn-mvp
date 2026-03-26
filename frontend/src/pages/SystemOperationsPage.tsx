@@ -27,6 +27,28 @@ function prettyValue(v: any): string {
   }
 }
 
+function safeDateTime(x: any): string {
+  const raw = String(x || "").trim();
+  if (!raw) return "—";
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return raw;
+  return d.toLocaleString();
+}
+
+function firstValue(obj: any, paths: string[]): any {
+  for (const path of paths) {
+    const value = path.split(".").reduce((acc, key) => {
+      if (acc == null) return undefined;
+      return acc[key];
+    }, obj);
+
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      return value;
+    }
+  }
+  return null;
+}
+
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
@@ -121,6 +143,7 @@ export default function SystemOperationsPage() {
 
   useEffect(() => {
     void load();
+
     const timer = window.setInterval(() => {
       void load({ silent: true });
     }, 20000);
@@ -128,33 +151,55 @@ export default function SystemOperationsPage() {
     return () => window.clearInterval(timer);
   }, []);
 
+  const healthStatus = safeStr(
+    firstValue(health, ["status", "health", "state"]),
+    "unknown"
+  ).toLowerCase();
+
   const healthOk = useMemo(() => {
-    const status = safeStr(health?.status || "").toLowerCase();
-    return health?.ok === true || status === "ok" || status === "healthy";
-  }, [health]);
+    return health?.ok === true || healthStatus === "ok" || healthStatus === "healthy";
+  }, [health, healthStatus]);
 
   const protocolStage = safeStr(
-    protocol?.stage || protocol?.status || protocol?.phase || "—"
+    firstValue(protocol, ["stage", "status", "phase"]),
+    "—"
   );
 
   const pilotStatus = safeStr(
-    readiness?.overall_status || readiness?.status || readiness?.phase || "—"
+    firstValue(readiness, ["overall_status", "status", "phase"]),
+    "—"
   );
 
   const blockedCount = n(
-    readiness?.blocked_count || readiness?.blocked || readiness?.blocked_items
+    firstValue(readiness, [
+      "blocked_count",
+      "blocked",
+      "blocked_items",
+      "summary.blocked_count",
+    ])
   );
 
   const checksCount = useMemo(() => {
-    const checks = readiness?.checks;
+    const checks = firstValue(readiness, ["checks", "summary.checks"]);
     return Array.isArray(checks) ? checks.length : 0;
   }, [readiness]);
+
+  const updatedAt = safeDateTime(
+    firstValue(readiness, [
+      "updated_at",
+      "generated_at",
+      "as_of",
+      "summary.generated_at",
+    ]) ||
+      firstValue(protocol, ["updated_at", "generated_at", "as_of"]) ||
+      firstValue(health, ["updated_at", "generated_at", "as_of"])
+  );
 
   return (
     <div style={{ maxWidth: 1260, margin: "0 auto", paddingBottom: 30 }}>
       <PageTopNav
         title="System Operations"
-        subtitle="Admin-only monitoring for platform condition, protocol progress, and pilot readiness."
+        subtitle="Admin-only monitoring for platform condition, protocol stage, and pilot readiness."
       />
 
       <div
@@ -242,6 +287,9 @@ export default function SystemOperationsPage() {
       <div style={{ ...pageCard("#F8FBFF"), marginTop: 18 }}>
         <div style={{ color: "#64748B", fontSize: 13 }}>
           Last refresh: <b>{lastLoaded || "—"}</b>
+        </div>
+        <div style={{ marginTop: 6, color: "#64748B", fontSize: 13 }}>
+          Last updated source time: <b>{updatedAt}</b>
         </div>
       </div>
 
@@ -420,6 +468,35 @@ export default function SystemOperationsPage() {
               pilot readiness. Deep trust behaviour review belongs in Trust
               Analytics, graph interpretation belongs in Trust Graph, and risk
               concentration belongs in Safety & Risk.
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: 18,
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 18,
+            }}
+          >
+            <div style={softCard("#FFFFFF")}>
+              <div style={{ fontWeight: 1000, color: "#0B1F33", fontSize: 18 }}>
+                What belongs here
+              </div>
+              <div style={{ marginTop: 8, color: "#475569", lineHeight: 1.8 }}>
+                Platform health, protocol state, pilot readiness, and other
+                system-level operational observations.
+              </div>
+            </div>
+
+            <div style={softCard("#FFFFFF")}>
+              <div style={{ fontWeight: 1000, color: "#0B1F33", fontSize: 18 }}>
+                What does not belong here
+              </div>
+              <div style={{ marginTop: 8, color: "#475569", lineHeight: 1.8 }}>
+                Personal member settings, everyday user actions, trust graph
+                analysis details, or exposure review logic.
+              </div>
             </div>
           </div>
         </>
