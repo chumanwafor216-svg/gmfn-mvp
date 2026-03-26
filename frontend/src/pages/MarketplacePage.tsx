@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   getMarketplaceShops,
   getMe,
@@ -13,6 +13,11 @@ type ClanItem = {
   id?: number;
   name?: string;
   display_name?: string;
+  description?: string | null;
+  community_id?: string | null;
+  marketplace_id?: string | null;
+  gmfn_id?: string | null;
+  clan_code?: string | null;
 };
 
 type ShopItem = {
@@ -100,23 +105,24 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
   };
 }
 
-function btn(primary = false): React.CSSProperties {
+function btn(primary = false, disabled = false): React.CSSProperties {
   return {
     border: primary
       ? "1px solid rgba(11,99,209,0.22)"
       : "1px solid rgba(11,31,51,0.10)",
-    background: primary ? "#0B63D1" : "#FFFFFF",
+    background: disabled ? "#CBD5E1" : primary ? "#0B63D1" : "#FFFFFF",
     color: primary ? "#FFFFFF" : "#0B1F33",
     borderRadius: 12,
     padding: "10px 13px",
     fontSize: 14,
     fontWeight: 900,
-    cursor: "pointer",
+    cursor: disabled ? "not-allowed" : "pointer",
     textDecoration: "none",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
+    opacity: disabled ? 0.82 : 1,
   };
 }
 
@@ -141,6 +147,12 @@ function safeStr(x: any): string {
 
 function formatClanName(c: ClanItem): string {
   return safeStr(c.display_name || c.name || "Community");
+}
+
+function formatClanRef(c: ClanItem): string {
+  return safeStr(
+    c.community_id || c.marketplace_id || c.gmfn_id || c.clan_code || c.id || ""
+  );
 }
 
 function formatMemberNameFromShop(shop: ShopItem): string {
@@ -188,9 +200,13 @@ function normalizeStatus(v?: string | null): string {
   return safeStr(v).toLowerCase();
 }
 
-export default function MarketplacePage() {
-  const navigate = useNavigate();
+function parseArray<T>(value: any): T[] {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.items)) return value.items;
+  return [];
+}
 
+export default function MarketplacePage() {
   const [loading, setLoading] = useState(true);
   const [switchingClan, setSwitchingClan] = useState(false);
   const [error, setError] = useState("");
@@ -209,21 +225,39 @@ export default function MarketplacePage() {
     setError("");
 
     try {
-      const currentClanId =
-        typeof activeClanId === "number" ? activeClanId : getSelectedClanId();
-
-      const [meRes, clansRes, shopsRes, demandRes] = await Promise.all([
+      const [meRes, clansRes] = await Promise.all([
         getMe().catch(() => null),
         listMyClans().catch(() => []),
+      ]);
+
+      const clanRows = parseArray<ClanItem>(clansRes);
+      let resolvedClanId =
+        typeof activeClanId === "number" && activeClanId > 0
+          ? activeClanId
+          : Number(getSelectedClanId() || 0) || null;
+
+      if (
+        resolvedClanId &&
+        !clanRows.some((clan) => Number(clan.id || 0) === Number(resolvedClanId))
+      ) {
+        resolvedClanId = null;
+      }
+
+      if (!resolvedClanId && clanRows.length > 0 && clanRows[0]?.id) {
+        resolvedClanId = Number(clanRows[0].id);
+        await selectClan(resolvedClanId).catch(() => null);
+      }
+
+      const [shopsRes, demandRes] = await Promise.all([
         getMarketplaceShops().catch(() => []),
         listMarketplaceRequests().catch(() => []),
       ]);
 
       setMe(meRes || null);
-      setClans(Array.isArray(clansRes) ? clansRes : []);
-      setSelectedClanId(currentClanId ?? null);
-      setShops(Array.isArray(shopsRes) ? shopsRes : []);
-      setDemands(Array.isArray(demandRes) ? demandRes : []);
+      setClans(clanRows);
+      setSelectedClanId(resolvedClanId ?? null);
+      setShops(parseArray<ShopItem>(shopsRes));
+      setDemands(parseArray<DemandItem>(demandRes));
     } catch (err: any) {
       setError(err?.message || "Failed to load marketplace.");
     } finally {
@@ -249,16 +283,39 @@ export default function MarketplacePage() {
   }
 
   const activeClan = useMemo(() => {
-    return clans.find((c) => Number(c.id) === Number(selectedClanId)) || null;
+    return clans.find((c) => Number(c.id || 0) === Number(selectedClanId || 0)) || null;
   }, [clans, selectedClanId]);
+
+  const filteredShopsByCommunity = useMemo(() => {
+    if (!selectedClanId) return shops;
+
+    const hasClanData = shops.some((shop) => Number(shop.clan_id || 0) > 0);
+    if (!hasClanData) return shops;
+
+    return shops.filter(
+      (shop) => Number(shop.clan_id || 0) === Number(selectedClanId)
+    );
+  }, [shops, selectedClanId]);
+
+  const filteredDemandsByCommunity = useMemo(() => {
+    if (!selectedClanId) return demands;
+
+    const hasClanData = demands.some((demand) => Number(demand.clan_id || 0) > 0);
+    if (!hasClanData) return demands;
+
+    return demands.filter(
+      (demand) => Number(demand.clan_id || 0) === Number(selectedClanId)
+    );
+  }, [demands, selectedClanId]);
 
   const memberCards = useMemo(() => {
     const map = new Map<string, MemberCommerceCard>();
 
-    for (const shop of shops) {
+    for (const shop of filteredShopsByCommunity) {
       const gmfnId = formatMemberIdFromShop(shop);
       const memberName = formatMemberNameFromShop(shop);
-      const key = gmfnId || `shop-${shop.id || Math.random()}`;
+      const fallbackKey = `shop-${safeStr(shop.id || shop.name || shop.title)}`;
+      const key = gmfnId || fallbackKey;
 
       if (!map.has(key)) {
         map.set(key, {
@@ -275,15 +332,21 @@ export default function MarketplacePage() {
       }
     }
 
-    for (const d of demands) {
-      const status = normalizeStatus(d.status);
-      if (status && ["cancelled", "canceled", "fulfilled", "closed"].includes(status)) {
+    for (const demand of filteredDemandsByCommunity) {
+      const status = normalizeStatus(demand.status);
+      if (
+        status &&
+        ["cancelled", "canceled", "fulfilled", "closed"].includes(status)
+      ) {
         continue;
       }
 
-      const gmfnId = formatMemberIdFromDemand(d);
-      const memberName = formatMemberNameFromDemand(d);
-      const key = gmfnId || `demand-${d.id || Math.random()}`;
+      const gmfnId = formatMemberIdFromDemand(demand);
+      const memberName = formatMemberNameFromDemand(demand);
+      const fallbackKey = `demand-${safeStr(
+        demand.id || demand.title || demand.product_name || demand.item_name
+      )}`;
+      const key = gmfnId || fallbackKey;
 
       if (!map.has(key)) {
         map.set(key, {
@@ -292,12 +355,13 @@ export default function MarketplacePage() {
           gmfnId,
           shop: null,
           demandCount: 1,
-          latestDemandTitle: demandTitle(d),
+          latestDemandTitle: demandTitle(demand),
         });
       } else {
         const current = map.get(key)!;
         current.demandCount += 1;
-        current.latestDemandTitle = current.latestDemandTitle || demandTitle(d);
+        current.latestDemandTitle =
+          current.latestDemandTitle || demandTitle(demand);
       }
     }
 
@@ -309,7 +373,7 @@ export default function MarketplacePage() {
       if (b.demandCount !== a.demandCount) return b.demandCount - a.demandCount;
       return a.memberName.localeCompare(b.memberName);
     });
-  }, [shops, demands]);
+  }, [filteredShopsByCommunity, filteredDemandsByCommunity]);
 
   const filteredCards = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -345,6 +409,11 @@ export default function MarketplacePage() {
     };
   }, [memberCards]);
 
+  const myGmfnId = safeStr(me?.gmfn_id || "");
+  const activeClanName = activeClan ? formatClanName(activeClan) : "No community selected";
+  const activeClanRef = activeClan ? formatClanRef(activeClan) : "";
+  const activeClanDescription = safeStr(activeClan?.description || "");
+
   return (
     <div
       style={{
@@ -356,14 +425,13 @@ export default function MarketplacePage() {
       <div style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}>
         <div
           style={{
-            display: "flex",
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 1.1fr) minmax(280px, 0.9fr)",
             gap: 18,
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            flexWrap: "wrap",
+            alignItems: "stretch",
           }}
         >
-          <div style={{ maxWidth: 760 }}>
+          <div style={softCard("#FFFFFF")}>
             <div
               style={{
                 display: "inline-flex",
@@ -391,7 +459,7 @@ export default function MarketplacePage() {
                 color: "#0B1F33",
               }}
             >
-              Browse members, shops, and demand
+              {activeClanName}
             </h1>
 
             <div
@@ -402,14 +470,46 @@ export default function MarketplacePage() {
                 maxWidth: 760,
               }}
             >
-              Browse people first. Each shop is tied to one global identity.
-              Demand remains identity-based, so members can ask for help even
-              without opening a shop.
+              This is one selected community surface. Browse members first, then
+              open linked shops or visible demand in this community context.
             </div>
 
             <div
               style={{
                 marginTop: 14,
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
+              {activeClanRef ? (
+                <span style={badge(true)}>Community ref: {activeClanRef}</span>
+              ) : null}
+              <span style={badge(false)}>
+                Visible members: {summary.membersVisible}
+              </span>
+              <span style={badge(false)}>
+                Linked shops: {summary.shopsLinked}
+              </span>
+            </div>
+
+            {activeClanDescription ? (
+              <div
+                style={{
+                  marginTop: 12,
+                  color: "#64748B",
+                  lineHeight: 1.7,
+                  fontSize: 14,
+                  maxWidth: 720,
+                }}
+              >
+                {activeClanDescription}
+              </div>
+            ) : null}
+
+            <div
+              style={{
+                marginTop: 16,
                 display: "flex",
                 gap: 10,
                 flexWrap: "wrap",
@@ -418,21 +518,15 @@ export default function MarketplacePage() {
               <Link to="/app/community" style={btn(true)}>
                 Community Home
               </Link>
-              <Link to="/app/demand-box" style={btn(false)}>
-                Demand Box
+              <Link to="/create" style={btn(false)}>
+                Create Community
               </Link>
             </div>
           </div>
 
-          <div
-            style={{
-              minWidth: 260,
-              flex: "0 1 320px",
-              ...softCard("#FFFFFF"),
-            }}
-          >
+          <div style={softCard("#FFFFFF")}>
             <div style={{ fontSize: 13, fontWeight: 900, color: "#64748B" }}>
-              Active community
+              Selected community
             </div>
 
             <div
@@ -443,7 +537,7 @@ export default function MarketplacePage() {
                 color: "#0B1F33",
               }}
             >
-              {activeClan ? formatClanName(activeClan) : "No community selected"}
+              {activeClanName}
             </div>
 
             <div
@@ -454,7 +548,7 @@ export default function MarketplacePage() {
                 fontSize: 14,
               }}
             >
-              Visibility comes from the communities you belong to.
+              Marketplace visibility comes from the community you select here.
             </div>
 
             <div style={{ marginTop: 14 }}>
@@ -484,6 +578,19 @@ export default function MarketplacePage() {
                 )}
               </select>
             </div>
+
+            {switchingClan ? (
+              <div
+                style={{
+                  marginTop: 10,
+                  color: "#64748B",
+                  fontSize: 13,
+                  lineHeight: 1.6,
+                }}
+              >
+                Switching community...
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -492,7 +599,121 @@ export default function MarketplacePage() {
         style={{
           marginTop: 18,
           display: "grid",
-          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: 14,
+        }}
+      >
+        <div style={card("#FFFFFF")}>
+          <div style={{ fontWeight: 900, color: "#0B1F33" }}>Invite and entry</div>
+          <div style={{ marginTop: 8, color: "#64748B", lineHeight: 1.6 }}>
+            Invite access stays at community level. Use Community Home for join
+            sharing and guide-supported entry.
+          </div>
+          <div
+            style={{
+              marginTop: 12,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <Link to="/app/community" style={btn(false)}>
+              Open Invite Tools
+            </Link>
+            <Link to="/create" style={btn(false)}>
+              Create Community
+            </Link>
+          </div>
+        </div>
+
+        <div style={card("#FFFFFF")}>
+          <div style={{ fontWeight: 900, color: "#0B1F33" }}>Money and Support</div>
+          <div style={{ marginTop: 8, color: "#64748B", lineHeight: 1.6 }}>
+            Follow the selected community’s money flow and support pathways from
+            here.
+          </div>
+          <div
+            style={{
+              marginTop: 12,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <Link to="/app/payment/pool" style={btn(false)}>
+              Money In
+            </Link>
+            <Link to="/app/withdrawal-instructions" style={btn(false)}>
+              Money Out
+            </Link>
+            <Link to="/app/loans" style={btn(false)}>
+              Loans
+            </Link>
+          </div>
+        </div>
+
+        <div style={card("#FFFFFF")}>
+          <div style={{ fontWeight: 900, color: "#0B1F33" }}>Demand in this community</div>
+          <div style={{ marginTop: 8, color: "#64748B", lineHeight: 1.6 }}>
+            Demand stays identity-based, but what you see here belongs to this
+            selected community context.
+          </div>
+          <div
+            style={{
+              marginTop: 12,
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
+            <span style={badge(true)}>
+              Open signals: {summary.demandTotal}
+            </span>
+            <span style={badge(false)}>
+              Members with demand: {summary.demandMembers}
+            </span>
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <Link to="/app/demand-box" style={btn(false)}>
+              Open Demand Box
+            </Link>
+          </div>
+        </div>
+
+        <div style={card("#FFFFFF")}>
+          <div style={{ fontWeight: 900, color: "#0B1F33" }}>Shop and spotlight</div>
+          <div style={{ marginTop: 8, color: "#64748B", lineHeight: 1.6 }}>
+            Spotlight is shop-based. Use shop tools to shape what becomes visible
+            through this marketplace.
+          </div>
+          <div
+            style={{
+              marginTop: 12,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <Link to="/app/shop-control" style={btn(false)}>
+              My Shop Tools
+            </Link>
+            {myGmfnId ? (
+              <Link
+                to={`/app/shop/${encodeURIComponent(myGmfnId)}`}
+                style={btn(false)}
+              >
+                Open My Shop
+              </Link>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      <div
+        style={{
+          marginTop: 18,
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(0, 1fr))",
           gap: 14,
         }}
       >
@@ -579,7 +800,7 @@ export default function MarketplacePage() {
                 color: "#0B1F33",
               }}
             >
-              Member directory
+              Member → shop map
             </div>
             <div
               style={{
@@ -589,7 +810,8 @@ export default function MarketplacePage() {
                 maxWidth: 760,
               }}
             >
-              Browse people first. Shop and demand appear under each member.
+              Members appear first. Linked shop access and visible demand signals
+              sit under each member record.
             </div>
           </div>
 
@@ -668,10 +890,13 @@ export default function MarketplacePage() {
             }}
           >
             {filteredCards.map((item) => {
-              const shopName = safeStr(item.shop?.name || item.shop?.title || "No shop yet");
+              const shopName = safeStr(
+                item.shop?.name || item.shop?.title || "No shop yet"
+              );
               const category = safeStr(item.shop?.category || "General");
               const shopDescription = safeStr(item.shop?.description || "");
               const canOpenShop = !!item.shop && !!item.gmfnId;
+              const isMe = !!myGmfnId && item.gmfnId === myGmfnId;
 
               return (
                 <div key={item.key} style={card("#FFFFFF")}>
@@ -698,12 +923,15 @@ export default function MarketplacePage() {
                       <div
                         style={{
                           marginTop: 6,
-                          color: "#64748B",
-                          fontSize: 13,
-                          fontWeight: 800,
+                          display: "flex",
+                          gap: 8,
+                          flexWrap: "wrap",
                         }}
                       >
-                        {item.gmfnId || "GMFN ID pending"}
+                        <span style={badge(false)}>
+                          {item.gmfnId || "GMFN ID pending"}
+                        </span>
+                        {isMe ? <span style={badge(true)}>You</span> : null}
                       </div>
                     </div>
 
@@ -712,7 +940,12 @@ export default function MarketplacePage() {
                     </span>
                   </div>
 
-                  <div style={{ marginTop: 14, ...softCard(item.shop ? "#F8FBFF" : "#FCFCFD") }}>
+                  <div
+                    style={{
+                      marginTop: 14,
+                      ...softCard(item.shop ? "#F8FBFF" : "#FCFCFD"),
+                    }}
+                  >
                     <div
                       style={{
                         fontSize: 13,
@@ -761,26 +994,6 @@ export default function MarketplacePage() {
                             {shopDescription}
                           </div>
                         ) : null}
-
-                        <div
-                          style={{
-                            marginTop: 10,
-                            display: "grid",
-                            gap: 6,
-                            color: "#64748B",
-                            fontSize: 13,
-                          }}
-                        >
-                          <div>
-                            Seller: {item.memberName}
-                          </div>
-                          <div>
-                            GMFN ID: {item.gmfnId || "—"}
-                          </div>
-                          <div>
-                            WhatsApp: {safeStr(item.shop?.whatsapp_number || "—")}
-                          </div>
-                        </div>
                       </>
                     ) : (
                       <div
@@ -790,7 +1003,7 @@ export default function MarketplacePage() {
                           lineHeight: 1.6,
                         }}
                       >
-                        This member has not opened a shop yet.
+                        This member does not have a visible shop here yet.
                       </div>
                     )}
                   </div>
@@ -866,19 +1079,13 @@ export default function MarketplacePage() {
                       >
                         Open Shop
                       </Link>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => navigate("/app/shop-control")}
-                        style={btn(false)}
-                      >
-                        Create Shop
-                      </button>
-                    )}
+                    ) : null}
 
-                    <Link to="/app/community" style={btn(false)}>
-                      Community Home
-                    </Link>
+                    {isMe ? (
+                      <Link to="/app/shop-control" style={btn(false)}>
+                        My Shop Tools
+                      </Link>
+                    ) : null}
                   </div>
                 </div>
               );
@@ -886,87 +1093,6 @@ export default function MarketplacePage() {
           </div>
         )}
       </div>
-
-      <div style={{ marginTop: 18, ...pageCard("#FFFFFF") }}>
-        <div
-          style={{
-            fontSize: 18,
-            fontWeight: 1000,
-            color: "#0B1F33",
-          }}
-        >
-          Community portals
-        </div>
-
-        <div
-          style={{
-            marginTop: 8,
-            color: "#64748B",
-            lineHeight: 1.7,
-            maxWidth: 860,
-          }}
-        >
-          Invite and money stay at community level, not inside individual shops.
-        </div>
-
-        <div
-          style={{
-            marginTop: 16,
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: 14,
-          }}
-        >
-          <div style={softCard("#F8FBFF")}>
-            <div style={{ fontWeight: 900, color: "#0B1F33" }}>Invite</div>
-            <div style={{ marginTop: 8, color: "#64748B", lineHeight: 1.6 }}>
-              Manage invites for your communities.
-            </div>
-            <div style={{ marginTop: 12 }}>
-              <Link to="/app/clans" style={btn(false)}>
-                Open Invites
-              </Link>
-            </div>
-          </div>
-
-          <div style={softCard("#F8FBFF")}>
-            <div style={{ fontWeight: 900, color: "#0B1F33" }}>Money In</div>
-            <div style={{ marginTop: 8, color: "#64748B", lineHeight: 1.6 }}>
-              Add money through the community structure.
-            </div>
-            <div style={{ marginTop: 12 }}>
-              <Link to="/app/payment/pool" style={btn(false)}>
-                Open Money In
-              </Link>
-            </div>
-          </div>
-
-          <div style={softCard("#F8FBFF")}>
-            <div style={{ fontWeight: 900, color: "#0B1F33" }}>Money Out</div>
-            <div style={{ marginTop: 8, color: "#64748B", lineHeight: 1.6 }}>
-              Withdraw through the same structured community path.
-            </div>
-            <div style={{ marginTop: 12 }}>
-              <Link to="/app/withdrawal-instructions" style={btn(false)}>
-                Open Money Out
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {me ? (
-        <div
-          style={{
-            marginTop: 18,
-            color: "#64748B",
-            fontSize: 13,
-            lineHeight: 1.6,
-          }}
-        >
-          Signed in as {safeStr(me?.full_name || me?.nickname || me?.email || "member")}
-        </div>
-      ) : null}
     </div>
   );
 }
