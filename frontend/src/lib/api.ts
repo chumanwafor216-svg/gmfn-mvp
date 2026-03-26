@@ -24,9 +24,9 @@ export function setAccessToken(tok: string | null) {
   if (!tok) localStorage.removeItem(ACCESS_TOKEN_KEY);
   else localStorage.setItem(ACCESS_TOKEN_KEY, tok);
 }
-
 export function logout(): void {
   setAccessToken(null);
+  setSelectedClanId(null);
 }
 
 export function getSelectedClanId(): number | null {
@@ -160,18 +160,15 @@ export async function activateApprovedMember(payload: {
 }): Promise<any> {
   return httpJson("/auth/activate-approved-member", "POST", payload);
 }
-
 export async function activateMembership(payload: {
   gmfn_id: string;
   password: string;
   confirm_password: string;
 }) {
   const cleaned = {
-    gmfn_id: String(payload.gmfn_id || "")
-      .replace(/^GMFN ID:\s*/i, "")
-      .trim(),
-    password: String(payload.password || ""),
-    confirm_password: String(payload.confirm_password || ""),
+    gmfn_id: String(payload?.gmfn_id || "").trim().toUpperCase(),
+    password: String(payload?.password || ""),
+    confirm_password: String(payload?.confirm_password || ""),
   };
 
   const res = await fetch("http://127.0.0.1:8012/auth/activate-membership", {
@@ -257,6 +254,13 @@ export async function getClanInviteLink(clanId: number): Promise<any> {
   return httpJson(
     `/clans/${encodeURIComponent(String(clanId))}/invite-link`,
     "GET"
+  );
+}
+
+export async function createClanInvite(clanId: number): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(clanId))}/invite`,
+    "POST"
   );
 }
 
@@ -994,3 +998,175 @@ export async function voteOnJoinRequest(
     { vote }
   );
 }
+
+export type MarketplaceRequestItem = {
+  id: number;
+  user_id: number;
+  title: string;
+  description?: string | null;
+  category?: string | null;
+  urgency?: string | null;
+  area?: string | null;
+  whatsapp_number?: string | null;
+  payment_mode?: string | null;
+  allow_trust_credit?: boolean;
+  status: string;
+  created_at: string;
+  expires_at?: string | null;
+
+  requester_name?: string | null;
+  requester_nickname?: string | null;
+  requester_gmfn_id?: string | null;
+  requester_email?: string | null;
+  requester_trust_score?: number | null;
+  requester_trust_band?: string | null;
+
+  is_mine?: boolean;
+  mine?: boolean;
+};
+
+export async function listMarketplaceRequests(params?: {
+  status?: string;
+  category?: string;
+  urgency?: string;
+  area?: string;
+  mine_only?: boolean;
+  clan_id?: number | null;
+  limit?: number;
+}): Promise<MarketplaceRequestItem[]> {
+  const effectiveClanId =
+    params?.clan_id === undefined ? getSelectedClanId() : params?.clan_id;
+
+  return httpJson(
+    `/marketplace/requests${buildQuery({
+      status: params?.status,
+      category: params?.category,
+      urgency: params?.urgency,
+      area: params?.area,
+      mine_only:
+        typeof params?.mine_only === "boolean" ? params.mine_only : undefined,
+      clan_id: effectiveClanId ?? undefined,
+      limit: params?.limit ?? 100,
+    })}`,
+    "GET"
+  );
+}
+
+export async function getMarketplaceRequests(params?: {
+  status?: string;
+  category?: string;
+  urgency?: string;
+  area?: string;
+  mine_only?: boolean;
+  clan_id?: number | null;
+  limit?: number;
+}): Promise<MarketplaceRequestItem[]> {
+  return listMarketplaceRequests(params);
+}
+
+export async function createMarketplaceRequest(payload: {
+  title: string;
+  description?: string;
+  category?: string;
+  urgency?: string;
+  area?: string;
+  whatsapp_number?: string;
+  expires_in_hours?: number;
+  payment_mode?: string;
+  allow_trust_credit?: boolean;
+  clan_id?: number | null;
+}): Promise<MarketplaceRequestItem> {
+  const effectiveClanId =
+    payload?.clan_id === undefined ? getSelectedClanId() : payload?.clan_id;
+
+  return httpJson("/marketplace/requests", "POST", {
+    ...payload,
+    clan_id: effectiveClanId ?? undefined,
+  });
+}
+
+export async function getMarketplaceRequest(
+  requestId: number,
+  clanId?: number | null
+): Promise<MarketplaceRequestItem> {
+  const effectiveClanId =
+    clanId === undefined ? getSelectedClanId() : clanId;
+
+  return httpJson(
+    `/marketplace/requests/${encodeURIComponent(String(requestId))}${buildQuery({
+      clan_id: effectiveClanId ?? undefined,
+    })}`,
+    "GET"
+  );
+}
+
+export async function updateMarketplaceRequestStatus(
+  requestId: number,
+  status: "fulfilled" | "cancelled"
+): Promise<MarketplaceRequestItem> {
+  return httpJson(
+    `/marketplace/requests/${encodeURIComponent(String(requestId))}/status`,
+    "POST",
+    { status }
+  );
+}
+export type TrustEventsQuery = {
+  clan_id?: number;
+  user_id?: number;
+  actor_user_id?: number;
+  subject_user_id?: number;
+  loan_id?: number;
+  event_type?: string;
+  limit?: number;
+};
+
+export async function listTrustEvents(params?: TrustEventsQuery): Promise<any> {
+  return getTrustEvents({
+    clan_id: params?.clan_id,
+    user_id:
+      params?.user_id ??
+      params?.actor_user_id ??
+      params?.subject_user_id,
+    loan_id: params?.loan_id,
+    limit: params?.limit ?? 200,
+  });
+}
+
+export async function getMyTrustGraph(): Promise<any> {
+  const me = await getMe();
+  const userId = Number(me?.id || 0);
+  if (!userId) {
+    throw new Error("Unable to resolve current user for trust graph");
+  }
+  return getAdminTrustGraph(userId, {
+    include_clans: true,
+    limit_events: 500,
+  });
+}
+
+export async function getTrustGraphByUserId(userId: number): Promise<any> {
+  return getAdminTrustGraph(userId, {
+    include_clans: true,
+    limit_events: 500,
+  });
+}
+
+export async function getTrustGraphByGmfnId(gmfnId: string): Promise<any> {
+  const cleaned = String(gmfnId || "").trim();
+  if (!cleaned) {
+    throw new Error("GMFN ID is required");
+  }
+
+  const me = await getMe();
+  const myGmfnId = String(me?.gmfn_id || "").trim();
+
+  if (myGmfnId && myGmfnId.toUpperCase() === cleaned.toUpperCase()) {
+    return getMyTrustGraph();
+  }
+
+  throw new Error(
+    "Trust graph lookup by GMFN ID is not wired in api.ts yet. Use user ID for now."
+  );
+}
+
+export type TrustGraphNodeOut = any;

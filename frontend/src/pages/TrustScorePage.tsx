@@ -39,12 +39,6 @@ function asNum(x: any): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-function fmtMoney(x: any): string {
-  const n = Number(x);
-  if (!Number.isFinite(n)) return String(x ?? "").trim() || "0.00";
-  return n.toFixed(2);
-}
-
 function displayName(me: MeLite | null): string {
   const n1 = safeStr(me?.nickname).trim();
   if (n1) return n1;
@@ -232,8 +226,8 @@ export default function TrustScorePage() {
 
   const trustMeaning = [
     "Trust standing reflects visible behaviour inside the community trust system.",
-    "Repayment, support completion, and other verified activities can gradually influence this standing.",
-    "The purpose is not shame. The purpose is clarity, accountability, and stronger community trust.",
+    "Repayment, support completion, and other verified activity can gradually influence this standing.",
+    "The purpose is clarity, accountability, and stronger community confidence.",
   ];
 
   return (
@@ -255,8 +249,7 @@ export default function TrustScorePage() {
             Community Standing
           </div>
           <div style={{ marginTop: 10, color: "#6B7A88", lineHeight: 1.8 }}>
-            Understand your trust position, what it means, and how it may help across
-            community finance.
+            Understand your trust position, what it means, and how it can support community finance.
           </div>
 
           <div
@@ -284,6 +277,7 @@ export default function TrustScorePage() {
               >
                 TRUST POSITION
               </div>
+
               <div style={{ marginTop: 10, fontSize: 34, fontWeight: 1000, color: "#0B1F33" }}>
                 {name}
               </div>
@@ -322,6 +316,7 @@ export default function TrustScorePage() {
               <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
                 What this means
               </div>
+
               <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                 {trustMeaning.map((text, i) => (
                   <div
@@ -374,8 +369,7 @@ export default function TrustScorePage() {
               Guided next step
             </div>
             <div style={{ marginTop: 10, color: "#6B7A88", lineHeight: 1.9 }}>
-              If you want to present an executive view of your trust position, open the
-              TrustSlip.
+              If you want a portable summary of your trust position, open the TrustSlip.
             </div>
             <div style={{ marginTop: 14 }}>
               <Link to="/app/trust-slip" style={actionLink(false)}>

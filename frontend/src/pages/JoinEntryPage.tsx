@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { submitJoinRequest } from "../lib/api";
 
 function card(): React.CSSProperties {
@@ -132,16 +132,91 @@ function noticeStyle(kind: "success" | "error" | "info"): React.CSSProperties {
   };
 }
 
+function cleanText(value: any): string {
+  return String(value || "").trim();
+}
+
+function looksLikeSystemId(value: string): boolean {
+  const v = cleanText(value).toUpperCase();
+  if (!v) return false;
+  if (v.startsWith("GMFN-U-")) return true;
+  if (v.startsWith("GMFN-C-")) return true;
+  return false;
+}
+
+function decodeFriendly(value: string): string {
+  return cleanText(value).replace(/\+/g, " ");
+}
+
+function emailPrefix(value: string): string {
+  const raw = cleanText(value);
+  if (!raw.includes("@")) return raw;
+  return raw.split("@")[0].trim();
+}
+
+function humanInviterLabel(rawInviter: string): string {
+  const v = decodeFriendly(rawInviter);
+  if (!v) return "A known GMFN member";
+
+  if (looksLikeSystemId(v)) {
+    return "A known GMFN member";
+  }
+
+  if (v.includes("@")) {
+    const prefix = emailPrefix(v);
+    return prefix || "A known GMFN member";
+  }
+
+  return v;
+}
+
 export default function JoinEntryPage() {
+  const { clanId } = useParams();
   const [searchParams] = useSearchParams();
 
   const inviteCode = useMemo(() => {
-    return String(
-      searchParams.get("code") ||
+    return cleanText(
+      searchParams.get("invite") ||
+        searchParams.get("code") ||
         searchParams.get("invite_code") ||
         ""
-    ).trim();
+    );
   }, [searchParams]);
+
+  const communityName = useMemo(() => {
+    return decodeFriendly(
+      searchParams.get("community_name") ||
+        searchParams.get("clan_name") ||
+        "this GMFN community"
+    );
+  }, [searchParams]);
+
+  const marketplaceName = useMemo(() => {
+    return decodeFriendly(searchParams.get("marketplace_name") || "");
+  }, [searchParams]);
+
+  const inviterNameRaw = useMemo(() => {
+    return cleanText(
+      searchParams.get("inviter_name") ||
+        searchParams.get("invited_by") ||
+        searchParams.get("sender_name") ||
+        ""
+    );
+  }, [searchParams]);
+
+  const inviterLabel = useMemo(() => {
+    return humanInviterLabel(inviterNameRaw);
+  }, [inviterNameRaw]);
+
+  const communityCode = useMemo(() => {
+    return cleanText(searchParams.get("community_code") || "");
+  }, [searchParams]);
+
+  const routeLabel = useMemo(() => {
+    const routeFromPath = cleanText(clanId || "");
+    if (routeFromPath) return routeFromPath;
+    return cleanText(searchParams.get("community_route") || "");
+  }, [clanId, searchParams]);
 
   const [firstName, setFirstName] = useState("");
   const [surname, setSurname] = useState("");
@@ -162,13 +237,13 @@ export default function JoinEntryPage() {
     setSuccess(null);
 
     try {
-      const safeInviteCode = String(inviteCode || "").trim();
-      const safeFirstName = String(firstName || "").trim();
-      const safeSurname = String(surname || "").trim();
-      const safePhone = String(phone || "").trim();
-      const safeCountry = String(country || "").trim();
-      const safeBusinessName = String(businessName || "").trim();
-      const safeNote = String(note || "").trim();
+      const safeInviteCode = cleanText(inviteCode);
+      const safeFirstName = cleanText(firstName);
+      const safeSurname = cleanText(surname);
+      const safePhone = cleanText(phone);
+      const safeCountry = cleanText(country);
+      const safeBusinessName = cleanText(businessName);
+      const safeNote = cleanText(note);
 
       if (!safeInviteCode) {
         throw new Error("Invite code is missing from this join link.");
@@ -227,10 +302,10 @@ export default function JoinEntryPage() {
               lineHeight: 1.08,
               fontWeight: 1000,
               color: "#0B1F33",
-              maxWidth: 760,
+              maxWidth: 860,
             }}
           >
-            Join a GMFN Community
+            Join an Existing GMFN Community
           </div>
 
           <div
@@ -239,11 +314,11 @@ export default function JoinEntryPage() {
               fontSize: 18,
               lineHeight: 1.8,
               color: "#35516B",
-              maxWidth: 940,
+              maxWidth: 980,
             }}
           >
-            This path is for people invited by a member into an existing GMFN
-            community. Admission is trust-based and is not automatic.
+            This path is for people invited by a known member into an existing
+            GMFN community. Admission is trust-based and is not automatic.
           </div>
         </div>
 
@@ -251,7 +326,7 @@ export default function JoinEntryPage() {
           style={{
             marginTop: 18,
             display: "grid",
-            gridTemplateColumns: "0.9fr 1.1fr",
+            gridTemplateColumns: "0.95fr 1.05fr",
             gap: 18,
           }}
         >
@@ -266,7 +341,7 @@ export default function JoinEntryPage() {
                 color: "#0B1F33",
               }}
             >
-              What this request means
+              Community join request
             </div>
 
             <div
@@ -278,7 +353,53 @@ export default function JoinEntryPage() {
               }}
             >
               You are not creating a public account here. You are submitting a
-              request to be considered for admission into an existing community.
+              request to be considered for admission into an existing
+              community.
+            </div>
+
+            <div style={{ marginTop: 18, ...softCard() }}>
+              <div
+                style={{
+                  fontWeight: 1000,
+                  color: "#0B1F33",
+                  fontSize: 15,
+                }}
+              >
+                Invitation context
+              </div>
+
+              <div
+                style={{
+                  marginTop: 10,
+                  color: "#35516B",
+                  lineHeight: 1.85,
+                  fontSize: 14,
+                }}
+              >
+                <div>
+                  <strong style={{ color: "#0B1F33" }}>Community:</strong>{" "}
+                  {communityName || "This GMFN community"}
+                </div>
+
+                {marketplaceName ? (
+                  <div>
+                    <strong style={{ color: "#0B1F33" }}>Community market:</strong>{" "}
+                    {marketplaceName}
+                  </div>
+                ) : null}
+
+                <div>
+                  <strong style={{ color: "#0B1F33" }}>Invited by:</strong>{" "}
+                  {inviterLabel}
+                </div>
+
+                {routeLabel ? (
+                  <div>
+                    <strong style={{ color: "#0B1F33" }}>Community route:</strong>{" "}
+                    {routeLabel}
+                  </div>
+                ) : null}
+              </div>
             </div>
 
             <div style={{ marginTop: 18, ...softCard() }}>
@@ -326,9 +447,10 @@ export default function JoinEntryPage() {
                   fontSize: 14,
                 }}
               >
-                Once you submit, your request goes to the relevant community for
-                review. If approved, GMFN will issue your institutional identity
-                and you will then be invited to activate your account properly.
+                Once you submit, your request goes to {communityName || "the community"} for
+                review. If approved, GMFN will issue your institutional
+                identity and you will then be invited to activate your account
+                properly.
               </div>
             </div>
 
@@ -355,6 +477,18 @@ export default function JoinEntryPage() {
               >
                 {inviteCode || "No invite code was detected in this link."}
               </div>
+
+              {communityCode ? (
+                <div
+                  style={{
+                    marginTop: 10,
+                    fontSize: 12,
+                    color: "#94A3B8",
+                  }}
+                >
+                  Community reference recorded securely.
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -408,7 +542,12 @@ export default function JoinEntryPage() {
 
                 <div style={{ marginTop: 6 }}>
                   <strong>Community:</strong>{" "}
-                  {String(success?.request?.clan_name || "Pending community")}
+                  {String(
+                    success?.community_name ||
+                      success?.request?.clan_name ||
+                      communityName ||
+                      "Pending community"
+                  )}
                 </div>
               </div>
             ) : null}

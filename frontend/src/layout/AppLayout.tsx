@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 
 function shell(): React.CSSProperties {
@@ -35,22 +35,41 @@ function brandBox(): React.CSSProperties {
   };
 }
 
-function sectionTitle(): React.CSSProperties {
+function groupBox(): React.CSSProperties {
   return {
-    fontSize: 12,
+    borderRadius: 18,
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.05)",
+    padding: 10,
+  };
+}
+
+function groupHeader(active = false): React.CSSProperties {
+  return {
+    width: "100%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    padding: "10px 12px",
+    borderRadius: 14,
+    border: active
+      ? "1px solid rgba(255,255,255,0.10)"
+      : "1px solid rgba(255,255,255,0.04)",
+    background: active ? "rgba(11,99,209,0.28)" : "rgba(255,255,255,0.03)",
+    color: "#FFFFFF",
     fontWeight: 1000,
-    letterSpacing: "0.05em",
-    textTransform: "uppercase",
-    color: "rgba(255,255,255,0.72)",
-    marginTop: 6,
+    fontSize: 14,
+    cursor: "pointer",
+    textAlign: "left",
   };
 }
 
 function navItem(active = false): React.CSSProperties {
   return {
     display: "block",
-    padding: "12px 14px",
-    borderRadius: 14,
+    padding: "11px 12px",
+    borderRadius: 12,
     textDecoration: "none",
     fontWeight: 900,
     fontSize: 14,
@@ -86,172 +105,192 @@ function isActive(pathname: string, to: string): boolean {
   return pathname === to || pathname.startsWith(`${to}/`);
 }
 
+type NavLinkItem = {
+  label: string;
+  to: string;
+};
+
+type NavGroup = {
+  key: string;
+  label: string;
+  hint?: string;
+  adminOnly?: boolean;
+  items: NavLinkItem[];
+};
+
 export default function AppLayout() {
   const location = useLocation();
+  const isAdmin =
+    (localStorage.getItem("gmfn_role") || "").toLowerCase() === "admin";
+
+  const groups: NavGroup[] = useMemo(
+    () => [
+      {
+        key: "home",
+        label: "Home",
+        hint: "Start from your main workspace.",
+        items: [{ label: "Dashboard", to: "/app/dashboard" }],
+      },
+      {
+        key: "community",
+        label: "Community",
+        hint: "Open your current community or manage membership and invites.",
+        items: [
+          { label: "Community Overview", to: "/app/community" },
+          { label: "Manage Community", to: "/app/clans" },
+        ],
+      },
+      {
+        key: "market",
+        label: "Marketplace",
+        hint: "Browse people, shops, and requests across your communities.",
+        items: [
+          { label: "Browse Marketplace", to: "/app/marketplace" },
+          { label: "Demand Box", to: "/app/demand-box" },
+          { label: "Shop Control", to: "/app/shop-control" },
+        ],
+      },
+      {
+        key: "money",
+        label: "Money and Support",
+        hint: "Follow loans, readiness, workbench, and earnings.",
+        items: [
+          { label: "Loans and Support", to: "/app/loans" },
+          { label: "Guarantor Earnings", to: "/app/guarantor-earnings" },
+          { label: "Support Readiness", to: "/app/loan-readiness" },
+          { label: "Helpful Suggestions", to: "/app/loan-suggestions" },
+          { label: "Workbench", to: "/app/loan-workbench" },
+        ],
+      },
+      {
+        key: "trust",
+        label: "Trust and Identity",
+        hint: "See trust position, trust tools, and updates.",
+        items: [
+          { label: "My Trust", to: "/app/trust" },
+          { label: "TrustSlip", to: "/app/trust-slip" },
+          { label: "Trust Activity", to: "/app/trust-analytics" },
+          { label: "Trust Operations", to: "/app/trust-command-centre" },
+          { label: "Notifications", to: "/app/notifications" },
+        ],
+      },
+      {
+        key: "identity",
+        label: "My GSN",
+        hint: "Understand your place in the network.",
+        items: [{ label: "My GMFN and I", to: "/app/my-gmfn-and-i" }],
+      },
+      {
+        key: "system",
+        label: "System Tools",
+        hint: "Internal controls and review tools.",
+        adminOnly: true,
+        items: [
+          { label: "System Operations", to: "/app/system-operations" },
+          { label: "Safety and Risk", to: "/app/admin/exposure" },
+          { label: "Relationship Graph", to: "/app/admin/trust-graph" },
+        ],
+      },
+    ],
+    []
+  );
+
+  const firstOpenGroup = useMemo(() => {
+    const found = groups.find((group) =>
+      group.items.some((item) => isActive(location.pathname, item.to))
+    );
+    return found?.key || "home";
+  }, [groups, location.pathname]);
+
+  const [openGroup, setOpenGroup] = useState<string>(firstOpenGroup);
+
+  React.useEffect(() => {
+    setOpenGroup(firstOpenGroup);
+  }, [firstOpenGroup]);
+
+  function toggleGroup(key: string) {
+    setOpenGroup((prev) => (prev === key ? "" : key));
+  }
 
   return (
     <div style={shell()}>
       <aside style={sidebar()}>
         <div style={brandBox()}>
           <div style={{ fontSize: 12, fontWeight: 1000, letterSpacing: "0.06em" }}>
-            TRUST INFRASTRUCTURE WORKSPACE
+            GLOBAL SUPPORT NETWORK
+          </div>
+
+          <div
+            style={{
+              marginTop: 8,
+              color: "rgba(255,255,255,0.78)",
+              fontSize: 13,
+              lineHeight: 1.7,
+            }}
+          >
+            GSN connects identity, trust, community, and market activity in one
+            network.
           </div>
         </div>
 
-        <div>
-          <div style={sectionTitle()}>Main</div>
-          <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
-            <Link
-              to="/app/dashboard"
-              style={navItem(isActive(location.pathname, "/app/dashboard"))}
-            >
-              Dashboard
-            </Link>
-          </div>
-        </div>
+        {groups.map((group) => {
+          if (group.adminOnly && !isAdmin) return null;
 
-        <div>
-          <div style={sectionTitle()}>My Community</div>
-          <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
-            <Link
-              to="/app/community"
-              style={navItem(isActive(location.pathname, "/app/community"))}
-            >
-              Community Home
-            </Link>
-            <Link
-              to="/app/clans"
-              style={navItem(isActive(location.pathname, "/app/clans"))}
-            >
-              My Communities
-            </Link>
-          </div>
-        </div>
+          const isOpen = openGroup === group.key;
+          const hasActiveChild = group.items.some((item) =>
+            isActive(location.pathname, item.to)
+          );
 
-        <div>
-          <div style={sectionTitle()}>Support & Finances</div>
-          <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
-            <Link
-              to="/app/loans"
-              style={navItem(isActive(location.pathname, "/app/loans"))}
-            >
-              Finances
-            </Link>
-            <Link
-              to="/app/guarantor-earnings"
-              style={navItem(isActive(location.pathname, "/app/guarantor-earnings"))}
-            >
-              Guarantor Earnings
-            </Link>
-            <Link
-              to="/app/loan-readiness"
-              style={navItem(isActive(location.pathname, "/app/loan-readiness"))}
-            >
-              Support Readiness
-            </Link>
-            <Link
-              to="/app/loan-suggestions"
-              style={navItem(isActive(location.pathname, "/app/loan-suggestions"))}
-            >
-              Guided Suggestions
-            </Link>
-            <Link
-              to="/app/loan-workbench"
-              style={navItem(isActive(location.pathname, "/app/loan-workbench"))}
-            >
-              Workbench
-            </Link>
-          </div>
-        </div>
+          return (
+            <div key={group.key} style={groupBox()}>
+              <button
+                type="button"
+                onClick={() => toggleGroup(group.key)}
+                style={groupHeader(isOpen || hasActiveChild)}
+              >
+                <span>{group.label}</span>
+                <span style={{ fontSize: 12, opacity: 0.8 }}>
+                  {isOpen ? "Hide" : "Open"}
+                </span>
+              </button>
 
-        <div>
-          <div style={sectionTitle()}>Trust Infrastructure</div>
-          <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
-            <Link
-              to="/app/trust"
-              style={navItem(isActive(location.pathname, "/app/trust"))}
-            >
-              Community Standing
-            </Link>
-            <Link
-              to="/app/trust-slip"
-              style={navItem(isActive(location.pathname, "/app/trust-slip"))}
-            >
-              TrustSlip
-            </Link>
-            <Link
-              to="/app/trust-analytics"
-              style={navItem(isActive(location.pathname, "/app/trust-analytics"))}
-            >
-              Trust Event Analytics
-            </Link>
-            <Link
-              to="/app/trust-command-centre"
-              style={navItem(isActive(location.pathname, "/app/trust-command-centre"))}
-            >
-              Trust Operations Centre
-            </Link>
-            <Link
-              to="/app/my-gmfn-and-i"
-              style={navItem(isActive(location.pathname, "/app/my-gmfn-and-i"))}
-            >
-              My GMFN and I
-            </Link>
-            <Link
-              to="/app/identity"
-              style={navItem(isActive(location.pathname, "/app/identity"))}
-            >
-              Identity Integrity
-            </Link>
-            <Link
-              to="/app/notifications"
-              style={navItem(isActive(location.pathname, "/app/notifications"))}
-            >
-              Notifications
-            </Link>
-          </div>
-        </div>
+              {group.hint ? (
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "rgba(255,255,255,0.75)",
+                    fontSize: 12,
+                    lineHeight: 1.6,
+                    padding: "0 4px",
+                  }}
+                >
+                  {group.hint}
+                </div>
+              ) : null}
 
-        <div>
-          <div style={sectionTitle()}>Community Activity</div>
-          <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
-            <Link
-              to="/app/marketplace"
-              style={navItem(isActive(location.pathname, "/app/marketplace"))}
-            >
-              Marketplace
-            </Link>
-          </div>
+              {isOpen ? (
+                <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                  {group.items.map((item) => (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      style={navItem(isActive(location.pathname, item.to))}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
 
-          <div style={noteBox()}>
-            Marketplace access is community-scoped. Enter through your communities,
-            then open the marketplace view that belongs to the community you want to work in.
-          </div>
-        </div>
-
-        <div>
-          <div style={sectionTitle()}>Operations</div>
-          <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
-            <Link
-              to="/app/system-operations"
-              style={navItem(isActive(location.pathname, "/app/system-operations"))}
-            >
-              System Operations
-            </Link>
-            <Link
-              to="/app/admin/exposure"
-              style={navItem(isActive(location.pathname, "/app/admin/exposure"))}
-            >
-              Safety & Risk
-            </Link>
-            <Link
-              to="/app/admin/trust-graph"
-              style={navItem(isActive(location.pathname, "/app/admin/trust-graph"))}
-            >
-              Relationship Graph
-            </Link>
-          </div>
-        </div>
+                  {group.key === "market" ? (
+                    <div style={noteBox()}>
+                      One identity stays the same across communities. Shops are
+                      global per identity, while Demand Box remains identity-based.
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
       </aside>
 
       <main style={content()}>

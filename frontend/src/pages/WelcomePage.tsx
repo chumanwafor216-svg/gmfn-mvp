@@ -172,9 +172,9 @@ export default function WelcomePage() {
             }}
           >
             GMFN is not an open social platform. Entry follows existing trust
-            relationships and community rules. From here, choose whether you are
-            joining an existing community through an invitation, activating an
-            already approved membership, or creating a new community path.
+            relationships and community rules. From here, continue to sign in,
+            activate an already approved membership, or enter the workspace to
+            create and manage a community through the proper route.
           </div>
         </div>
 
@@ -197,7 +197,7 @@ export default function WelcomePage() {
                 color: "#0B1F33",
               }}
             >
-              Join a Community
+              Join an Existing Community
             </div>
 
             <div
@@ -209,7 +209,8 @@ export default function WelcomePage() {
               }}
             >
               Use this path if a member you already know has invited you into an
-              existing GMFN community.
+              existing GMFN community and your joining process is already under
+              way.
             </div>
 
             <div
@@ -240,9 +241,8 @@ export default function WelcomePage() {
                 }}
               >
                 Receiving an invitation does not by itself guarantee admission.
-                You may be invited to begin the joining process, but final entry
-                still depends on the approval rules already set inside that
-                community.
+                Final entry still depends on the approval rules already set
+                inside that community.
               </div>
             </div>
 
@@ -255,16 +255,8 @@ export default function WelcomePage() {
             >
               <button
                 type="button"
-                onClick={() => navigate("/join")}
-                style={primaryBtn()}
-              >
-                Continue to Join Path
-              </button>
-
-              <button
-                type="button"
                 onClick={() => navigate("/activate")}
-                style={secondaryBtn()}
+                style={primaryBtn()}
               >
                 I have been approved — Activate Membership
               </button>
@@ -290,7 +282,7 @@ export default function WelcomePage() {
                 color: "#0B1F33",
               }}
             >
-              Create a Community
+              Create or Manage a Community
             </div>
 
             <div
@@ -301,9 +293,9 @@ export default function WelcomePage() {
                 fontSize: 15,
               }}
             >
-              Use this path if you are coming from public awareness, campaign, or
-              advert entry and want to establish a new GMFN community as a
-              founder.
+              Use this path if you are coming from public awareness, campaign,
+              or advert entry and want to establish or manage a GMFN community
+              through the main workspace.
             </div>
 
             <div
@@ -333,9 +325,8 @@ export default function WelcomePage() {
                   fontSize: 14,
                 }}
               >
-                This route is for creating a new community, becoming its first
-                responsible member, and activating the future join-link path for
-                those you will later invite into that network.
+                This route is for entering the workspace properly, then creating
+                a new community or managing one you already control.
               </div>
             </div>
 
@@ -348,18 +339,18 @@ export default function WelcomePage() {
             >
               <button
                 type="button"
-                onClick={() => navigate("/create")}
+                onClick={() => navigate("/login")}
                 style={primaryBtn()}
               >
-                Continue to Create Path
+                Continue to Sign In
               </button>
 
               <button
                 type="button"
-                onClick={() => navigate("/login")}
+                onClick={() => navigate("/activate")}
                 style={secondaryBtn()}
               >
-                I already have access — Sign in
+                Activate Approved Membership
               </button>
             </div>
           </div>

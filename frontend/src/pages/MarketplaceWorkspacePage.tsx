@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 import {
   getClanInviteLink,
@@ -11,7 +11,7 @@ import {
 } from "../lib/api";
 
 function safeStr(x: any): string {
-  return String(x ?? "");
+  return String(x ?? "").trim();
 }
 
 function safeNum(x: any): number {
@@ -19,22 +19,63 @@ function safeNum(x: any): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-function card(): React.CSSProperties {
+function apiBase(): string {
+  const raw =
+    (typeof import.meta !== "undefined" &&
+      (import.meta as any)?.env &&
+      (import.meta as any).env.VITE_API_BASE_URL) ||
+    "/api";
+  return String(raw || "").trim().replace(/\/+$/, "");
+}
+
+function apiOrigin(): string {
+  const base = apiBase();
+
+  if (base.startsWith("http://") || base.startsWith("https://")) {
+    try {
+      const u = new URL(base);
+      return `${u.protocol}//${u.host}`;
+    } catch {
+      return "http://127.0.0.1:8012";
+    }
+  }
+
+  return "http://127.0.0.1:8012";
+}
+
+function resolveImageSrc(src?: string | null): string {
+  const raw = String(src || "").trim();
+  if (!raw) return "";
+  if (
+    raw.startsWith("http://") ||
+    raw.startsWith("https://") ||
+    raw.startsWith("blob:")
+  ) {
+    return raw;
+  }
+  if (raw.startsWith("/")) {
+    return `${apiOrigin()}${raw}`;
+  }
+  return `${apiOrigin()}/${raw.replace(/^\/+/, "")}`;
+}
+
+function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 22,
     border: "1px solid rgba(11,31,51,0.08)",
-    background: "#FFFFFF",
-    boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
-    padding: 22,
+    background: bg,
+    boxShadow: "0 12px 30px rgba(15,23,42,0.05)",
+    padding: 18,
+    overflow: "hidden",
   };
 }
 
-function softCard(): React.CSSProperties {
+function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     borderRadius: 16,
     border: "1px solid rgba(11,31,51,0.08)",
-    background: "#F8FAFC",
-    padding: 16,
+    background: bg,
+    padding: 14,
   };
 }
 
@@ -43,22 +84,38 @@ function btn(primary = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "11px 14px",
-    borderRadius: 14,
-    border: primary ? "none" : "1px solid rgba(11,31,51,0.10)",
+    padding: "10px 12px",
+    borderRadius: 12,
+    border: "1px solid rgba(11,31,51,0.10)",
     background: primary ? "#0B63D1" : "#FFFFFF",
     color: primary ? "#FFFFFF" : "#0B1F33",
-    fontWeight: 1000,
+    fontWeight: 900,
     cursor: "pointer",
     fontSize: 14,
     textDecoration: "none",
+    gap: 8,
+  };
+}
+
+function badge(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: 999,
+    padding: "6px 10px",
+    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
+    color: primary ? "#0B63D1" : "#475569",
+    fontSize: 12,
+    fontWeight: 900,
+    whiteSpace: "nowrap",
   };
 }
 
 function muted(): React.CSSProperties {
   return {
     color: "#64748B",
-    lineHeight: 1.75,
+    lineHeight: 1.7,
     fontSize: 14,
   };
 }
@@ -68,6 +125,132 @@ function sectionTitle(): React.CSSProperties {
     fontSize: 18,
     fontWeight: 1000,
     color: "#0B1F33",
+  };
+}
+
+type CommunityTrustState = {
+  classText: string;
+  scoreText: string;
+  tone: "green" | "yellow" | "red" | "neutral";
+  statusText: string;
+};
+
+function getCommunityTrustState(source: any): CommunityTrustState {
+  const rawScore =
+    source?.community_cci_score ??
+    source?.cci_score ??
+    source?.trust_score ??
+    source?.community_trust_score ??
+    null;
+
+  const rawClass =
+    source?.community_cci_class ??
+    source?.cci_class ??
+    source?.trust_class ??
+    source?.community_trust_class ??
+    "";
+
+  const scoreNum =
+    rawScore === null || rawScore === undefined || String(rawScore).trim() === ""
+      ? null
+      : Number(rawScore);
+
+  const classText = String(rawClass || "").trim().toUpperCase();
+
+  if (classText) {
+    return {
+      classText,
+      scoreText:
+        scoreNum === null || Number.isNaN(scoreNum)
+          ? "—"
+          : String(Math.round(scoreNum)),
+      tone:
+        classText === "A" || classText === "A+" || classText === "B"
+          ? "green"
+          : classText === "C"
+            ? "yellow"
+            : "red",
+      statusText:
+        classText === "A" || classText === "A+"
+          ? "Healthy"
+          : classText === "B"
+            ? "Stable"
+            : classText === "C"
+              ? "Needs attention"
+              : "At risk",
+    };
+  }
+
+  if (scoreNum !== null && !Number.isNaN(scoreNum)) {
+    if (scoreNum >= 75) {
+      return {
+        classText: "A",
+        scoreText: String(Math.round(scoreNum)),
+        tone: "green",
+        statusText: "Healthy",
+      };
+    }
+    if (scoreNum >= 55) {
+      return {
+        classText: "B",
+        scoreText: String(Math.round(scoreNum)),
+        tone: "green",
+        statusText: "Stable",
+      };
+    }
+    if (scoreNum >= 35) {
+      return {
+        classText: "C",
+        scoreText: String(Math.round(scoreNum)),
+        tone: "yellow",
+        statusText: "Needs attention",
+      };
+    }
+    return {
+      classText: "D",
+      scoreText: String(Math.round(scoreNum)),
+      tone: "red",
+      statusText: "At risk",
+    };
+  }
+
+  return {
+    classText: "Pending",
+    scoreText: "—",
+    tone: "neutral",
+    statusText: "Preparing",
+  };
+}
+
+function communityToneStyles(tone: "green" | "yellow" | "red" | "neutral") {
+  if (tone === "green") {
+    return {
+      bg: "#F0FDF4",
+      border: "1px solid rgba(34,197,94,0.18)",
+      text: "#166534",
+    };
+  }
+
+  if (tone === "yellow") {
+    return {
+      bg: "#FFFBEB",
+      border: "1px solid rgba(245,158,11,0.18)",
+      text: "#92400E",
+    };
+  }
+
+  if (tone === "red") {
+    return {
+      bg: "#FEF2F2",
+      border: "1px solid rgba(239,68,68,0.18)",
+      text: "#991B1B",
+    };
+  }
+
+  return {
+    bg: "#F8FAFC",
+    border: "1px solid rgba(148,163,184,0.18)",
+    text: "#334155",
   };
 }
 
@@ -84,11 +267,9 @@ export default function MarketplaceWorkspacePage() {
   const [msg, setMsg] = useState("");
 
   const [inviteOpen, setInviteOpen] = useState(true);
-  const [governanceOpen, setGovernanceOpen] = useState(true);
-  const [membersOpen, setMembersOpen] = useState(true);
-  const [moneyOpen, setMoneyOpen] = useState(false);
-  const [cciOpen, setCciOpen] = useState(false);
-  const [eventsOpen, setEventsOpen] = useState(false);
+  const [moneyOpen, setMoneyOpen] = useState(true);
+  const [alertsOpen, setAlertsOpen] = useState(true);
+  const [membersOpen, setMembersOpen] = useState(false);
 
   const [inviteInfo, setInviteInfo] = useState<any>(null);
   const [joinRequests, setJoinRequests] = useState<any[]>([]);
@@ -104,7 +285,7 @@ export default function MarketplaceWorkspacePage() {
   useEffect(() => {
     async function loadAll() {
       if (!activeClanId) {
-        setErr("No marketplace selected.");
+        setErr("No community selected.");
         return;
       }
 
@@ -123,7 +304,7 @@ export default function MarketplaceWorkspacePage() {
         setJoinRequests(Array.isArray(joinRes) ? joinRes : joinRes?.items || []);
         setMembers(Array.isArray(membersRes) ? membersRes : membersRes?.items || []);
       } catch (e: any) {
-        setErr(String(e?.message || e || "Unable to load marketplace workspace."));
+        setErr(String(e?.message || e || "Unable to load community page."));
       } finally {
         setBusy(false);
       }
@@ -132,11 +313,41 @@ export default function MarketplaceWorkspacePage() {
     void loadAll();
   }, [activeClanId]);
 
-  const marketName = useMemo(() => {
+  const communityName = useMemo(() => {
     if (inviteInfo?.marketplace_name) return safeStr(inviteInfo.marketplace_name);
     if (inviteInfo?.clan_name) return safeStr(inviteInfo.clan_name);
-    const firstMemberClanName = "";
-    return firstMemberClanName;
+    if (inviteInfo?.community_name) return safeStr(inviteInfo.community_name);
+    return "Community";
+  }, [inviteInfo]);
+
+  const communityIdentity = useMemo(() => {
+    return safeStr(
+      inviteInfo?.community_id ||
+        inviteInfo?.marketplace_id ||
+        inviteInfo?.clan_code ||
+        inviteInfo?.gmfn_id ||
+        activeClanId ||
+        ""
+    );
+  }, [inviteInfo, activeClanId]);
+
+  const communityPicture = useMemo(() => {
+    return safeStr(
+      inviteInfo?.community_image_url ||
+        inviteInfo?.marketplace_image_url ||
+        inviteInfo?.image_url ||
+        inviteInfo?.image ||
+        ""
+    );
+  }, [inviteInfo]);
+
+  const communityDescription = useMemo(() => {
+    return safeStr(
+      inviteInfo?.community_description ||
+        inviteInfo?.marketplace_description ||
+        inviteInfo?.description ||
+        ""
+    );
   }, [inviteInfo]);
 
   const inviteLink = useMemo(() => {
@@ -146,32 +357,89 @@ export default function MarketplaceWorkspacePage() {
         inviteInfo?.link ||
         inviteInfo?.invite_link ||
         ""
-    ).trim();
+    );
   }, [inviteInfo]);
 
   const inviteCode = useMemo(() => {
-    return safeStr(inviteInfo?.invite_code || inviteInfo?.code || "").trim();
+    return safeStr(inviteInfo?.invite_code || inviteInfo?.code || "");
   }, [inviteInfo]);
 
+  const shopViewLink = useMemo(() => {
+    return safeStr(
+      inviteInfo?.shop_view_url ||
+        inviteInfo?.shop_link ||
+        inviteInfo?.shop_profile_url ||
+        inviteInfo?.public_shop_url ||
+        ""
+    );
+  }, [inviteInfo]);
+
+  const pendingCount = useMemo(() => {
+    return joinRequests.filter(
+      (x) => safeStr(x?.status).toLowerCase() === "pending"
+    ).length;
+  }, [joinRequests]);
+
+  const communityTrust = useMemo(
+    () => getCommunityTrustState(inviteInfo),
+    [inviteInfo]
+  );
+  const trustTone = useMemo(
+    () => communityToneStyles(communityTrust.tone),
+    [communityTrust.tone]
+  );
+
+  const memberRows = useMemo(() => {
+    return members.map((member: any, idx: number) => {
+      const displayName =
+        safeStr(
+          member?.display_name ||
+            member?.full_name ||
+            member?.nickname ||
+            member?.email
+        ) || `Member ${idx + 1}`;
+
+      const gmfnId = safeStr(
+        member?.gmfn_id ||
+          member?.member_gmfn_id ||
+          member?.user?.gmfn_id
+      );
+
+      const shopName = safeStr(
+        member?.shop_name ||
+          member?.marketplace_shop_name ||
+          member?.shop?.name
+      );
+
+      return {
+        raw: member,
+        key: safeNum(member?.id) || idx,
+        displayName,
+        gmfnId,
+        shopName,
+        role: safeStr(member?.role || member?.membership_role || "member"),
+      };
+    });
+  }, [members]);
+
   function copyInviteMessage() {
-    const title = safeStr(marketName || "this marketplace").trim();
+    const title = safeStr(communityName || "this community");
     const text = [
       `Hello,`,
       ``,
       `You are invited to begin the request-to-join process for ${title}.`,
-      `GMFN helps trusted people trade, support each other, and build visible trust across distance.`,
       `Admission is not automatic. Existing members still review and vote according to community rules.`,
       ``,
-      `Use this link to begin:`,
+      `Use this community link to begin:`,
       inviteLink || "(invite link unavailable)",
     ].join("\n");
 
     safeCopy(text);
-    setMsg("Invite message copied.");
+    setMsg("Community invite message copied.");
   }
 
-  function shareWhatsApp() {
-    const title = safeStr(marketName || "this marketplace").trim();
+  function shareWhatsAppJoin() {
+    const title = safeStr(communityName || "this community");
     const text = [
       `You are invited to begin the request-to-join process for ${title}.`,
       `Admission is not automatic. Members still review and vote.`,
@@ -184,8 +452,16 @@ export default function MarketplaceWorkspacePage() {
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
+  function copyShopViewLink() {
+    if (!shopViewLink) return;
+    safeCopy(shopViewLink);
+    setMsg("Community shop-view link copied.");
+  }
+
   function openShopForMember(member: any) {
-    const gmfnId = safeStr(member?.gmfn_id || "").trim();
+    const gmfnId = safeStr(
+      member?.gmfn_id || member?.member_gmfn_id || member?.user?.gmfn_id
+    );
     if (!gmfnId) {
       setMsg("This member does not yet have a visible GMFN shop identity.");
       return;
@@ -193,23 +469,15 @@ export default function MarketplaceWorkspacePage() {
     navigate(`/app/shop/${encodeURIComponent(gmfnId)}`);
   }
 
-  const pendingCount = joinRequests.filter(
-    (x) => safeStr(x?.status).toLowerCase() === "pending"
-  ).length;
-
   return (
-    <div style={{ maxWidth: 1180, margin: "0 auto" }}>
-      <PageTopNav
-        title={marketName || "Marketplace Workspace"}
-        subtitle="Governance, members and shops, invitations, trust signals, and operating actions for this marketplace."
-      />
+    <div style={{ maxWidth: 1100, margin: "0 auto", paddingBottom: 36 }}>
+      <PageTopNav title={communityName} subtitle="Individual community page." />
 
       {err ? (
         <div
           style={{
-            ...card(),
+            ...pageCard("#FEF2F2"),
             marginTop: 18,
-            background: "#FEF2F2",
             border: "1px solid #FECACA",
             color: "#991B1B",
             fontWeight: 900,
@@ -222,9 +490,8 @@ export default function MarketplaceWorkspacePage() {
       {msg ? (
         <div
           style={{
-            ...card(),
+            ...pageCard("#ECFDF5"),
             marginTop: 18,
-            background: "#ECFDF5",
             border: "1px solid #A7F3D0",
             color: "#065F46",
             fontWeight: 900,
@@ -234,377 +501,605 @@ export default function MarketplaceWorkspacePage() {
         </div>
       ) : null}
 
-      <div style={{ ...card(), marginTop: 18 }}>
+      <div style={{ ...pageCard(), marginTop: 18 }}>
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1.05fr 0.95fr",
+            gridTemplateColumns: "0.9fr 1.1fr",
             gap: 16,
-            alignItems: "start",
+            alignItems: "stretch",
           }}
         >
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 1000, color: "#64748B" }}>
-              MARKETPLACE IDENTITY
+          <div style={softCard("#FCFEFF")}>
+            {communityPicture ? (
+              <img
+                src={resolveImageSrc(communityPicture)}
+                alt={communityName}
+                style={{
+                  width: "100%",
+                  height: 220,
+                  objectFit: "cover",
+                  borderRadius: 16,
+                  border: "1px solid rgba(11,31,51,0.08)",
+                  display: "block",
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: "100%",
+                  height: 220,
+                  borderRadius: 16,
+                  border: "1px solid rgba(11,31,51,0.08)",
+                  background: "linear-gradient(180deg, #EAF2FF 0%, #DCEBFF 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 18,
+                }}
+              >
+                Community Picture
+              </div>
+            )}
+          </div>
+
+          <div style={softCard("#FFFFFF")}>
+            <div style={{ fontSize: 13, color: "#64748B", fontWeight: 900 }}>
+              Community identity
             </div>
 
             <div
               style={{
-                marginTop: 8,
-                fontSize: 32,
-                lineHeight: 1.12,
-                fontWeight: 1000,
+                marginTop: 10,
                 color: "#0B1F33",
+                fontWeight: 1000,
+                fontSize: 30,
+                lineHeight: 1.15,
               }}
             >
-              {marketName || "Unnamed Marketplace"}
+              {communityName}
             </div>
 
-            <div style={{ marginTop: 12, ...muted() }}>
-              This is the operational governance space for this marketplace. Notifications may surface on the dashboard first, but action is taken here.
+            <div
+              style={{
+                marginTop: 10,
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
+              <span style={badge(true)}>
+                Community ID: {communityIdentity || "Pending"}
+              </span>
+              <span style={badge(false)}>Members: {memberRows.length}</span>
+              <span style={badge(false)}>Alerts: {pendingCount}</span>
             </div>
 
-            <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <div style={softCard()}>
-                <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                  CLAN / MARKETPLACE ID
-                </div>
-                <div style={{ marginTop: 6, fontWeight: 1000, color: "#0B1F33" }}>
-                  {activeClanId || "—"}
-                </div>
-              </div>
-
-              <div style={softCard()}>
-                <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                  PENDING GOVERNANCE ACTIONS
-                </div>
-                <div style={{ marginTop: 6, fontWeight: 1000, color: "#0B1F33" }}>
-                  {pendingCount}
-                </div>
-              </div>
-
-              <div style={softCard()}>
-                <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                  MEMBERS / SHOPS
-                </div>
-                <div style={{ marginTop: 6, fontWeight: 1000, color: "#0B1F33" }}>
-                  {members.length}
-                </div>
-              </div>
+            <div
+              style={{
+                marginTop: 14,
+                color: "#64748B",
+                fontSize: 14,
+                lineHeight: 1.75,
+                maxWidth: 560,
+              }}
+            >
+              {communityDescription ||
+                "This is the dedicated page for this one community. Its invite links, alerts, money and support routes, and community-specific controls live here."}
             </div>
-          </div>
 
-          <div style={softCard()}>
-            <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-              GOVERNANCE NOTE
-            </div>
-            <div style={{ marginTop: 10, ...muted() }}>
-              Membership review, join approvals, member removal decisions, and trust-facing marketplace actions should all point back to this workspace.
+            <div
+              style={{
+                marginTop: 16,
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+              }}
+            >
+              <Link to="/app/community" style={btn(false)}>
+                Back to Community Home
+              </Link>
+              <Link to="/app/clans" style={btn(false)}>
+                Communities
+              </Link>
             </div>
           </div>
         </div>
       </div>
 
-      <div style={{ marginTop: 18, display: "grid", gap: 18 }}>
-        <div style={card()}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <div style={sectionTitle()}>Governance</div>
-            <button type="button" onClick={() => setGovernanceOpen((v) => !v)} style={btn(false)}>
-              {governanceOpen ? "Hide" : "Open"}
-            </button>
-          </div>
-
-          {governanceOpen ? (
-            <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
-              <div style={softCard()}>
-                <div style={{ fontWeight: 1000, color: "#0B1F33" }}>Notification Board</div>
-                <div style={{ marginTop: 8, ...muted() }}>
-                  Action items from this marketplace should appear here, and also surface on the dashboard with the marketplace name clearly attached.
-                </div>
-
-                <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-                  {joinRequests.length === 0 ? (
-                    <div style={{ color: "#64748B" }}>No governance notifications yet.</div>
-                  ) : (
-                    joinRequests.map((req: any, idx: number) => (
-                      <div key={safeNum(req?.id) || idx} style={softCard()}>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            gap: 12,
-                            alignItems: "center",
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          <div>
-                            <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
-                              Membership request #{safeNum(req?.id) || "—"}
-                            </div>
-                            <div style={{ marginTop: 6, ...muted() }}>
-                              Status: {safeStr(req?.status || "pending")} • Marketplace:{" "}
-                              {safeStr(req?.clan_name || marketName || "—")}
-                            </div>
-                          </div>
-
-                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                            <button type="button" style={btn(true)}>
-                              Approve
-                            </button>
-                            <button type="button" style={btn(false)}>
-                              Reject
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              <div style={softCard()}>
-                <div style={{ fontWeight: 1000, color: "#0B1F33" }}>Voting</div>
-                <div style={{ marginTop: 8, ...muted() }}>
-                  Voting belongs here. This includes member admission votes and future member-removal votes. Dashboard notifications should point members back here.
-                </div>
-              </div>
-            </div>
-          ) : null}
+      <div
+        style={{
+          ...pageCard(trustTone.bg),
+          marginTop: 18,
+          border: trustTone.border,
+        }}
+      >
+        <div style={{ fontSize: 13, color: trustTone.text, fontWeight: 900 }}>
+          Community trust reading
         </div>
 
-        <div style={card()}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <div style={sectionTitle()}>Invite</div>
-            <button type="button" onClick={() => setInviteOpen((v) => !v)} style={btn(false)}>
-              {inviteOpen ? "Hide" : "Open"}
-            </button>
+        <div
+          style={{
+            marginTop: 12,
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "flex-start",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontSize: 40,
+                fontWeight: 1000,
+                lineHeight: 1,
+                color: trustTone.text,
+              }}
+            >
+              {communityTrust.classText}
+            </div>
+
+            <div
+              style={{
+                marginTop: 10,
+                display: "inline-flex",
+                padding: "7px 12px",
+                borderRadius: 999,
+                background: "#FFFFFF",
+                border: trustTone.border,
+                color: trustTone.text,
+                fontSize: 13,
+                fontWeight: 900,
+              }}
+            >
+              Score: {communityTrust.scoreText}
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                color: trustTone.text,
+                fontWeight: 900,
+                fontSize: 18,
+              }}
+            >
+              {communityTrust.statusText}
+            </div>
           </div>
 
-          {inviteOpen ? (
-            <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
-              <div style={softCard()}>
-                <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>INVITE CODE</div>
-                <div style={{ marginTop: 8, fontWeight: 1000, color: "#0B1F33" }}>
-                  {inviteCode || "Invite code not available yet."}
-                </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={() => setAlertsOpen((v) => !v)}
+              style={btn(false)}
+            >
+              {alertsOpen ? "Hide Alerts" : "Open Alerts"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMembersOpen((v) => !v)}
+              style={btn(false)}
+            >
+              {membersOpen ? "Hide Members" : "Open Members"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ ...pageCard(), marginTop: 18 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={sectionTitle()}>Invite package</div>
+          <button
+            type="button"
+            onClick={() => setInviteOpen((v) => !v)}
+            style={btn(false)}
+          >
+            {inviteOpen ? "Hide" : "Open"}
+          </button>
+        </div>
+
+        {inviteOpen ? (
+          <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
+            <div style={softCard("#F8FBFF")}>
+              <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>
+                Join this community
               </div>
 
-              <div style={softCard()}>
-                <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>INVITE LINK</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    fontWeight: 1000,
-                    color: "#0B1F33",
-                    wordBreak: "break-word",
-                  }}
-                >
-                  {inviteLink || "Invite link not available yet."}
+              <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                <div>
+                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>
+                    Invite code
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 6,
+                      color: "#0B1F33",
+                      fontWeight: 1000,
+                    }}
+                  >
+                    {inviteCode || "Invite code not available yet."}
+                  </div>
                 </div>
 
-                <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>
+                    Invite link
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 6,
+                      color: "#0B1F33",
+                      fontWeight: 1000,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {inviteLink || "Invite link not available yet."}
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <button
                     type="button"
                     onClick={() => {
                       safeCopy(inviteLink);
-                      setMsg("Invite link copied.");
+                      setMsg("Community invite link copied.");
                     }}
                     style={btn(true)}
                   >
-                    Copy Invite Link
+                    Copy Join Link
                   </button>
 
-                  <button type="button" onClick={copyInviteMessage} style={btn(false)}>
-                    Copy Message
+                  <button
+                    type="button"
+                    onClick={copyInviteMessage}
+                    style={btn(false)}
+                  >
+                    Copy Join Message
                   </button>
 
-                  <button type="button" onClick={shareWhatsApp} style={btn(false)}>
+                  <button
+                    type="button"
+                    onClick={shareWhatsAppJoin}
+                    style={btn(false)}
+                  >
                     Send via WhatsApp
                   </button>
                 </div>
               </div>
             </div>
-          ) : null}
+
+            <div style={softCard("#F8FBFF")}>
+              <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>
+                View shop from this community
+              </div>
+
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#64748B",
+                  lineHeight: 1.7,
+                }}
+              >
+                Share the viewing link for this community’s shop-facing surface.
+              </div>
+
+              <div
+                style={{
+                  marginTop: 10,
+                  color: "#0B1F33",
+                  fontWeight: 1000,
+                  wordBreak: "break-word",
+                }}
+              >
+                {shopViewLink || "Shop view link not available yet."}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "flex",
+                  gap: 10,
+                  flexWrap: "wrap",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={copyShopViewLink}
+                  style={btn(false)}
+                >
+                  Copy Shop View Link
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      <div style={{ ...pageCard(), marginTop: 18 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={sectionTitle()}>Money & Support</div>
+          <button
+            type="button"
+            onClick={() => setMoneyOpen((v) => !v)}
+            style={btn(false)}
+          >
+            {moneyOpen ? "Hide" : "Open"}
+          </button>
         </div>
 
-        <div style={card()}>
+        {moneyOpen ? (
           <div
             style={{
+              marginTop: 16,
               display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              alignItems: "center",
+              gap: 10,
               flexWrap: "wrap",
             }}
           >
-            <div style={sectionTitle()}>Members and Shops</div>
-            <button type="button" onClick={() => setMembersOpen((v) => !v)} style={btn(false)}>
-              {membersOpen ? "Hide" : "Open"}
+            <button
+              type="button"
+              style={btn(false)}
+              onClick={() => navigate("/app/payment/pool")}
+            >
+              Money In
+            </button>
+            <button
+              type="button"
+              style={btn(false)}
+              onClick={() => navigate("/app/withdrawal-instructions")}
+            >
+              Money Out
+            </button>
+            <button
+              type="button"
+              style={btn(false)}
+              onClick={() => navigate("/app/loans")}
+            >
+              Loans
+            </button>
+            <button
+              type="button"
+              style={btn(false)}
+              onClick={() => navigate("/app/loan-readiness")}
+            >
+              Readiness
+            </button>
+            <button
+              type="button"
+              style={btn(false)}
+              onClick={() => navigate("/app/loan-workbench")}
+            >
+              Workbench
+            </button>
+            <button
+              type="button"
+              style={btn(false)}
+              onClick={() => navigate("/app/guarantor-earnings")}
+            >
+              Earnings
+            </button>
+            <button
+              type="button"
+              style={btn(false)}
+              onClick={() => navigate("/app/loan-suggestions")}
+            >
+              Suggestions
             </button>
           </div>
+        ) : null}
+      </div>
 
-          {membersOpen ? (
-            <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
-              {members.length === 0 ? (
-                <div style={{ color: "#64748B" }}>No members found yet.</div>
-              ) : (
-                members.map((member: any, idx: number) => {
-                  const name = safeStr(member?.email || member?.gmfn_id || `Member ${idx + 1}`);
-                  const shopName = safeStr(member?.shop_name || "");
-                  const gmfnId = safeStr(member?.gmfn_id || "");
+      <div style={{ ...pageCard(), marginTop: 18 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={sectionTitle()}>Alert system</div>
+          <button
+            type="button"
+            onClick={() => setAlertsOpen((v) => !v)}
+            style={btn(false)}
+          >
+            {alertsOpen ? "Hide" : "Open"}
+          </button>
+        </div>
 
-                  return (
-                    <div key={safeNum(member?.id) || idx} style={softCard()}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          gap: 12,
-                          alignItems: "center",
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <div>
-                          <div style={{ fontWeight: 1000, color: "#0B1F33", fontSize: 17 }}>
-                            {name}
-                          </div>
-                          <div style={{ marginTop: 6, ...muted() }}>
-                            Shop: {shopName || "Shop identity not yet visible"}
-                          </div>
-                          <div style={{ marginTop: 4, color: "#0B63D1", fontWeight: 1000, fontSize: 13 }}>
-                            {gmfnId ? `GMFN ID: ${gmfnId}` : "GMFN ID not yet available"}
-                          </div>
-                        </div>
-
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          <button type="button" onClick={() => setSelectedMember(member)} style={btn(false)}>
-                            View Row
-                          </button>
-                          <button type="button" onClick={() => openShopForMember(member)} style={btn(true)}>
-                            Open Shop
-                          </button>
-                        </div>
+        {alertsOpen ? (
+          <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
+            {joinRequests.length === 0 ? (
+              <div style={{ color: "#64748B" }}>No community alerts yet.</div>
+            ) : (
+              joinRequests.map((req: any, idx: number) => (
+                <div key={safeNum(req?.id) || idx} style={softCard("#F8FBFF")}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
+                        Membership request #{safeNum(req?.id) || "—"}
+                      </div>
+                      <div style={{ marginTop: 6, ...muted() }}>
+                        Status: {safeStr(req?.status || "pending")}
                       </div>
                     </div>
-                  );
-                })
-              )}
 
-              {selectedMember ? (
-                <div style={softCard()}>
-                  <div style={{ fontWeight: 1000, color: "#0B1F33" }}>Selected Member / Shop Row</div>
-                  <div style={{ marginTop: 10, ...muted() }}>
-                    Member: {safeStr(selectedMember?.email || "—")}
-                  </div>
-                  <div style={{ ...muted() }}>
-                    GMFN ID: {safeStr(selectedMember?.gmfn_id || "—")}
-                  </div>
-                  <div style={{ ...muted() }}>
-                    Role: {safeStr(selectedMember?.role || "user")}
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <Link
+                        to={`/app/community/${activeClanId}/join-requests`}
+                        style={btn(true)}
+                      >
+                        Open Requests
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-
-        <div style={card()}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <div style={sectionTitle()}>Money</div>
-            <button type="button" onClick={() => setMoneyOpen((v) => !v)} style={btn(false)}>
-              {moneyOpen ? "Hide" : "Open"}
-            </button>
+              ))
+            )}
           </div>
+        ) : null}
+      </div>
 
-          {moneyOpen ? (
-            <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button type="button" style={btn(true)} onClick={() => navigate("/app/payment/pool")}>
-                Add Money
-              </button>
-              <button type="button" style={btn(false)} onClick={() => navigate("/app/withdrawal-instructions")}>
-                Withdraw
-              </button>
-              <button type="button" style={btn(false)} onClick={() => navigate("/app/loan-workbench")}>
-                Loan Workbench
-              </button>
-            </div>
-          ) : null}
-        </div>
-
-        <div style={card()}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
+      <div style={{ ...pageCard(), marginTop: 18 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={sectionTitle()}>Members</div>
+          <button
+            type="button"
+            onClick={() => setMembersOpen((v) => !v)}
+            style={btn(false)}
           >
-            <div style={sectionTitle()}>CCI Board</div>
-            <button type="button" onClick={() => setCciOpen((v) => !v)} style={btn(false)}>
-              {cciOpen ? "Hide" : "Open"}
-            </button>
-          </div>
-
-          {cciOpen ? (
-            <div style={{ marginTop: 16, ...muted() }}>
-              This is the community-level CCI area. It should later show how healthy the marketplace is in trust, participation, cooperation, and repayment culture.
-            </div>
-          ) : null}
+            {membersOpen ? "Hide" : "Open"}
+          </button>
         </div>
 
-        <div style={card()}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <div style={sectionTitle()}>Events</div>
-            <button type="button" onClick={() => setEventsOpen((v) => !v)} style={btn(false)}>
-              {eventsOpen ? "Hide" : "Open"}
-            </button>
-          </div>
+        {membersOpen ? (
+          <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
+            {memberRows.length === 0 ? (
+              <div style={{ color: "#64748B" }}>No members found yet.</div>
+            ) : (
+              memberRows.map((member, idx) => (
+                <div
+                  key={member.key || idx}
+                  style={{
+                    borderRadius: 14,
+                    border: "1px solid rgba(11,31,51,0.08)",
+                    background: "#FFFFFF",
+                    padding: 14,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 12,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontWeight: 1000,
+                        color: "#0B1F33",
+                        fontSize: 16,
+                      }}
+                    >
+                      {member.displayName}
+                    </div>
 
-          {eventsOpen ? (
-            <div style={{ marginTop: 16, ...muted() }}>
-              This section is for marketplace/community events, announcements, and future group activity coordination.
-            </div>
-          ) : null}
-        </div>
+                    <div style={{ marginTop: 6, ...muted() }}>
+                      Shop: {member.shopName || "No visible shop yet"}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 4,
+                        color: "#0B63D1",
+                        fontWeight: 1000,
+                        fontSize: 13,
+                      }}
+                    >
+                      {member.gmfnId
+                        ? `GMFN ID: ${member.gmfnId}`
+                        : "GMFN ID not yet available"}
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMember(member.raw)}
+                      style={btn(false)}
+                    >
+                      View Row
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => openShopForMember(member.raw)}
+                      style={btn(true)}
+                    >
+                      Shop Gallery
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+
+            {selectedMember ? (
+              <div style={{ ...softCard("#F8FBFF"), marginTop: 4 }}>
+                <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
+                  Selected member
+                </div>
+                <div style={{ marginTop: 10, ...muted() }}>
+                  Member:{" "}
+                  {safeStr(
+                    selectedMember?.display_name ||
+                      selectedMember?.full_name ||
+                      selectedMember?.nickname ||
+                      selectedMember?.email ||
+                      "—"
+                  )}
+                </div>
+                <div style={muted()}>
+                  GMFN ID:{" "}
+                  {safeStr(
+                    selectedMember?.gmfn_id ||
+                      selectedMember?.member_gmfn_id ||
+                      selectedMember?.user?.gmfn_id ||
+                      "—"
+                  )}
+                </div>
+                <div style={muted()}>
+                  Role:{" "}
+                  {safeStr(
+                    selectedMember?.role ||
+                      selectedMember?.membership_role ||
+                      "member"
+                  )}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {busy ? (
-        <div style={{ marginTop: 18, color: "#64748B", fontWeight: 1000 }}>
-          Loading marketplace workspace...
+        <div style={{ marginTop: 18, color: "#64748B", fontWeight: 900 }}>
+          Loading community page...
         </div>
       ) : null}
     </div>

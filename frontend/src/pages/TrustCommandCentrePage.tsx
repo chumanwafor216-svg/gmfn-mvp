@@ -166,8 +166,8 @@ export default function TrustCommandCentrePage() {
       const items = Array.isArray(eventsRes)
         ? eventsRes
         : Array.isArray(eventsRes?.items)
-          ? eventsRes.items
-          : [];
+        ? eventsRes.items
+        : [];
 
       setEvents(items);
       setExposure(exposureRes || null);
@@ -205,9 +205,7 @@ export default function TrustCommandCentrePage() {
       const out = await applyAdminTrustRecompute(userId);
       setMsg(
         safeStr(
-          out?.detail ||
-            out?.message ||
-            "Trust recompute applied successfully."
+          out?.detail || out?.message || "Trust recompute applied successfully."
         )
       );
       await load();
@@ -253,13 +251,16 @@ export default function TrustCommandCentrePage() {
   const graphCci = graph?.cci || {};
   const graphStats = graph?.command_centre?.stats || {};
   const graphSignals = graph?.command_centre?.signals || {};
-  const graphEdgeCounts = graph?.command_centre?.edge_type_counts || graphSummary?.edge_type_counts || {};
+  const graphEdgeCounts =
+    graph?.command_centre?.edge_type_counts || graphSummary?.edge_type_counts || {};
 
   const graphEdges = Array.isArray(graph?.edges) ? graph.edges : [];
   const graphNodes = Array.isArray(graph?.nodes) ? graph.nodes : [];
 
   const topGraphEdges = useMemo(() => {
-    return graphEdges.slice().sort((a: any, b: any) => Number(b?.weight ?? 0) - Number(a?.weight ?? 0));
+    return graphEdges
+      .slice()
+      .sort((a: any, b: any) => Number(b?.weight ?? 0) - Number(a?.weight ?? 0));
   }, [graphEdges]);
 
   function updateQuery(next: { clan_id?: number | null; user_id?: number | null }) {
@@ -297,7 +298,7 @@ export default function TrustCommandCentrePage() {
             </div>
             <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
               Central trust operations view for behaviour metrics, explainability,
-              evidence, exposure, graph signals, support counts, and recent trust-event activity.
+              evidence, exposure, graph signals, and recent trust-event activity.
             </div>
           </div>
 
@@ -414,10 +415,14 @@ export default function TrustCommandCentrePage() {
 
         <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
           <Link
-            to={`/app/trust-analytics${effectiveClanId > 0 || userId > 0 ? `?${new URLSearchParams({
-              ...(effectiveClanId > 0 ? { clan_id: String(effectiveClanId) } : {}),
-              ...(userId > 0 ? { user_id: String(userId) } : {}),
-            }).toString()}` : ""}`}
+            to={`/app/trust-analytics${
+              effectiveClanId > 0 || userId > 0
+                ? `?${new URLSearchParams({
+                    ...(effectiveClanId > 0 ? { clan_id: String(effectiveClanId) } : {}),
+                    ...(userId > 0 ? { user_id: String(userId) } : {}),
+                  }).toString()}`
+                : ""
+            }`}
             style={btn(false)}
           >
             Selected User Analytics
@@ -467,9 +472,7 @@ export default function TrustCommandCentrePage() {
           <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
             FILTERED TRUST EVENTS
           </div>
-          <div style={metricValueStyle()}>
-            {filteredEvents.length}
-          </div>
+          <div style={metricValueStyle()}>{filteredEvents.length}</div>
         </div>
 
         <div style={card()}>
@@ -494,36 +497,28 @@ export default function TrustCommandCentrePage() {
           <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
             SUPPORT GIVEN
           </div>
-          <div style={metricValueStyle()}>
-            {n(graphSummary?.support_given_count)}
-          </div>
+          <div style={metricValueStyle()}>{n(graphSummary?.support_given_count)}</div>
         </div>
 
         <div style={card()}>
           <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
             GUARANTEES GIVEN
           </div>
-          <div style={metricValueStyle()}>
-            {n(graphSummary?.guarantees_given_count)}
-          </div>
+          <div style={metricValueStyle()}>{n(graphSummary?.guarantees_given_count)}</div>
         </div>
 
         <div style={card()}>
           <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
             BORROWER SUPPORT
           </div>
-          <div style={metricValueStyle()}>
-            {n(graphSummary?.borrower_support_count)}
-          </div>
+          <div style={metricValueStyle()}>{n(graphSummary?.borrower_support_count)}</div>
         </div>
 
         <div style={card()}>
           <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
             FUNDS MOBILISED
           </div>
-          <div style={metricValueStyle()}>
-            {n(graphSummary?.funds_mobilised_count)}
-          </div>
+          <div style={metricValueStyle()}>{n(graphSummary?.funds_mobilised_count)}</div>
         </div>
       </div>
 
@@ -539,18 +534,14 @@ export default function TrustCommandCentrePage() {
           <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
             NETWORK BREADTH
           </div>
-          <div style={metricValueStyle()}>
-            {safeStr(graphSummary?.network_breadth, "—")}
-          </div>
+          <div style={metricValueStyle()}>{safeStr(graphSummary?.network_breadth, "—")}</div>
         </div>
 
         <div style={card()}>
           <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
             NETWORK QUALITY
           </div>
-          <div style={metricValueStyle()}>
-            {safeStr(graphSummary?.network_quality, "—")}
-          </div>
+          <div style={metricValueStyle()}>{safeStr(graphSummary?.network_quality, "—")}</div>
         </div>
 
         <div style={card()}>
@@ -595,24 +586,26 @@ export default function TrustCommandCentrePage() {
             </div>
           ) : (
             <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
-              {Object.entries(behaviour).slice(0, 10).map(([k, v]) => (
-                <div key={k} style={softCard()}>
-                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                    {k}
+              {Object.entries(behaviour)
+                .slice(0, 10)
+                .map(([k, v]) => (
+                  <div key={k} style={softCard()}>
+                    <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
+                      {k}
+                    </div>
+                    <pre
+                      style={{
+                        marginTop: 6,
+                        color: "#0B1F33",
+                        fontWeight: 900,
+                        whiteSpace: "pre-wrap",
+                        fontSize: 12,
+                      }}
+                    >
+                      {prettyValue(v)}
+                    </pre>
                   </div>
-                  <pre
-                    style={{
-                      marginTop: 6,
-                      color: "#0B1F33",
-                      fontWeight: 900,
-                      whiteSpace: "pre-wrap",
-                      fontSize: 12,
-                    }}
-                  >
-                    {prettyValue(v)}
-                  </pre>
-                </div>
-              ))}
+                ))}
             </div>
           )}
         </div>
@@ -628,24 +621,26 @@ export default function TrustCommandCentrePage() {
             </div>
           ) : (
             <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
-              {Object.entries(exposure).slice(0, 10).map(([k, v]) => (
-                <div key={k} style={softCard()}>
-                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                    {k}
+              {Object.entries(exposure)
+                .slice(0, 10)
+                .map(([k, v]) => (
+                  <div key={k} style={softCard()}>
+                    <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
+                      {k}
+                    </div>
+                    <pre
+                      style={{
+                        marginTop: 6,
+                        color: "#0B1F33",
+                        fontWeight: 900,
+                        whiteSpace: "pre-wrap",
+                        fontSize: 12,
+                      }}
+                    >
+                      {prettyValue(v)}
+                    </pre>
                   </div>
-                  <pre
-                    style={{
-                      marginTop: 6,
-                      color: "#0B1F33",
-                      fontWeight: 900,
-                      whiteSpace: "pre-wrap",
-                      fontSize: 12,
-                    }}
-                  >
-                    {prettyValue(v)}
-                  </pre>
-                </div>
-              ))}
+                ))}
             </div>
           )}
         </div>

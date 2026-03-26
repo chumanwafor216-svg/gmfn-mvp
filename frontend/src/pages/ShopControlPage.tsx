@@ -217,11 +217,30 @@ export default function ShopControlPage() {
         setClans(items);
 
         const storedSelected = Number(getSelectedClanId() || 0);
-        if (storedSelected > 0) {
+
+        if (
+          storedSelected > 0 &&
+          items.some((c: any) => Number(c?.id || c?.clan_id || 0) === storedSelected)
+        ) {
           setSelectedClanId(storedSelected);
+
+          try {
+            await selectClan(storedSelected);
+          } catch {
+            // ignore sync error
+          }
         } else if (items.length > 0) {
           const firstId = Number(items[0]?.id || items[0]?.clan_id || 0);
-          if (firstId > 0) setSelectedClanId(firstId);
+
+          if (firstId > 0) {
+            setSelectedClanId(firstId);
+
+            try {
+              await selectClan(firstId);
+            } catch {
+              // ignore sync error
+            }
+          }
         }
       } finally {
         setLoadingBoot(false);
@@ -231,6 +250,7 @@ export default function ShopControlPage() {
 
   async function refreshShops(clanId?: number | null) {
     const effectiveClanId = Number(clanId || selectedClanId || 0);
+
     if (!effectiveClanId) {
       setShops([]);
       return;
@@ -277,8 +297,8 @@ export default function ShopControlPage() {
       setBroadcasts([]);
       return;
     }
-    refreshShops(selectedClanId);
-    refreshBroadcasts(selectedClanId);
+    void refreshShops(selectedClanId);
+    void refreshBroadcasts(selectedClanId);
   }, [selectedClanId]);
 
   const selectedClan = useMemo(() => {
@@ -288,15 +308,18 @@ export default function ShopControlPage() {
   }, [clans, selectedClanId]);
 
   const myShop = useMemo(() => {
+    if (!shops.length) return null;
+
     const myGmfnId = String(me?.gmfn_id || "").trim();
-    if (!myGmfnId) return null;
+    if (!myGmfnId) return shops[0] || null;
 
     return (
-      shops.find(
-        (s) =>
-          String(s?.gmfn_id || "").trim() === myGmfnId ||
-          String(s?.owner_gmfn_id || "").trim() === myGmfnId
-      ) || null
+      shops.find((shop) => {
+        const shopOwnerId = String(
+          shop?.gmfn_id || shop?.owner_gmfn_id || ""
+        ).trim();
+        return shopOwnerId === myGmfnId;
+      }) || null
     );
   }, [shops, me]);
 

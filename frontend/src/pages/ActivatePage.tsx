@@ -137,7 +137,11 @@ export default function ActivatePage() {
   const [searchParams] = useSearchParams();
 
   const presetGmfnId = useMemo(() => {
-    return String(searchParams.get("gmfn_id") || searchParams.get("gmfnId") || "").trim();
+    return String(
+      searchParams.get("gmfn_id") || searchParams.get("gmfnId") || ""
+    )
+      .trim()
+      .toUpperCase();
   }, [searchParams]);
 
   const [gmfnId, setGmfnId] = useState(presetGmfnId);
@@ -176,16 +180,22 @@ export default function ActivatePage() {
         throw new Error("Passwords do not match.");
       }
 
-      await activateMembership({
+      const res = await activateMembership({
         gmfn_id: safeGmfnId,
         password: safePassword,
         confirm_password: safeConfirmPassword,
       });
 
+      if (!res?.access_token) {
+        throw new Error(res?.message || "Unable to activate account.");
+      }
+
+      localStorage.setItem("access_token", res.access_token);
       setSuccess("Activation successful. Entering workspace...");
+
       setTimeout(() => {
         navigate("/app/dashboard", { replace: true });
-      }, 700);
+      }, 500);
     } catch (e: any) {
       setErr(String(e?.message || "Unable to activate account."));
     } finally {

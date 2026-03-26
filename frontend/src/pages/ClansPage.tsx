@@ -1,575 +1,790 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import PageTopNav from "../components/PageTopNav";
+import { Link } from "react-router-dom";
 import {
   createClan,
-  getClanInviteLink,
+  createClanInvite,
+  getCommunityJoinRequests,
   getSelectedClanId,
   listMyClans,
-  safeCopy,
-  setSelectedClanId,
+  selectClan,
 } from "../lib/api";
 
-function safeStr(x: any): string {
-  return String(x ?? "");
-}
+type CommunityItem = {
+  id?: number;
+  name?: string | null;
+  display_name?: string | null;
+  title?: string | null;
+  description?: string | null;
+  invite_code?: string | null;
+  invite_link?: string | null;
+  invite_url?: string | null;
+  community_id?: string | null;
+  marketplace_id?: string | null;
+  gmfn_id?: string | null;
+  clan_code?: string | null;
+  members?: any[];
+  memberships?: any[];
+  member_rows?: any[];
+  created_at?: string | null;
+};
 
-function card(): React.CSSProperties {
+type JoinRequestItem = {
+  id?: number;
+  clan_id?: number;
+  clan_name?: string | null;
+  applicant_name?: string | null;
+  applicant_nickname?: string | null;
+  applicant_email?: string | null;
+  applicant_gmfn_id?: string | null;
+  status?: string | null;
+  approvals?: number;
+  required_approvals?: number;
+  created_at?: string | null;
+};
+
+type InviteState = {
+  code?: string | null;
+  link?: string | null;
+  shareText?: string | null;
+  expiresAt?: string | null;
+  guideUrl?: string | null;
+  packagedShareText?: string | null;
+};
+
+function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 22,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: "#FFFFFF",
-    boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
-    padding: 22,
+    borderRadius: 24,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: bg,
+    padding: 20,
+    boxShadow:
+      "0 22px 54px rgba(15,23,42,0.07), 0 2px 8px rgba(15,23,42,0.03)",
+    overflow: "hidden",
   };
 }
 
-function btn(primary = false): React.CSSProperties {
+function card(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    borderRadius: 18,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 16,
+    boxShadow: "0 12px 30px rgba(15,23,42,0.05)",
+  };
+}
+
+function softCard(bg = "#F8FBFF"): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 14,
+  };
+}
+
+function btn(primary = false, disabled = false): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "11px 14px",
-    borderRadius: 14,
-    border: primary ? "none" : "1px solid rgba(11,31,51,0.10)",
-    background: primary ? "#0B63D1" : "#FFFFFF",
+    gap: 8,
+    padding: "10px 13px",
+    borderRadius: 12,
+    border: primary
+      ? "1px solid rgba(11,99,209,0.22)"
+      : "1px solid rgba(11,31,51,0.10)",
+    background: disabled ? "#CBD5E1" : primary ? "#0B63D1" : "#FFFFFF",
     color: primary ? "#FFFFFF" : "#0B1F33",
-    fontWeight: 1000,
-    cursor: "pointer",
-    fontSize: 14,
+    fontWeight: 900,
     textDecoration: "none",
-  };
-}
-
-function softCard(): React.CSSProperties {
-  return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: "#F8FAFC",
-    padding: 16,
-  };
-}
-
-function inputStyle(): React.CSSProperties {
-  return {
-    width: "100%",
-    padding: 12,
-    borderRadius: 12,
-    border: "1px solid #CBD5E1",
-    boxSizing: "border-box",
+    cursor: disabled ? "not-allowed" : "pointer",
+    opacity: disabled ? 0.86 : 1,
     fontSize: 14,
   };
 }
 
-function textareaStyle(rows = 3): React.CSSProperties {
+function badge(primary = false): React.CSSProperties {
   return {
-    width: "100%",
-    padding: 12,
-    borderRadius: 12,
-    border: "1px solid #CBD5E1",
-    boxSizing: "border-box",
-    fontSize: 14,
-    resize: "vertical",
-    minHeight: rows * 26,
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: 999,
+    padding: "6px 10px",
+    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
+    color: primary ? "#0B63D1" : "#475569",
+    fontSize: 12,
+    fontWeight: 900,
+    whiteSpace: "nowrap",
   };
 }
 
-function helperText(): React.CSSProperties {
-  return {
-    marginTop: 6,
-    color: "#6B7A88",
-    lineHeight: 1.75,
-    fontSize: 13,
-  };
+function safeStr(x: any): string {
+  return String(x ?? "").trim();
 }
 
-type ClanItem = {
-  id?: number;
-  clan_id?: number;
-  name?: string;
-  description?: string | null;
-  marketplace_name?: string | null;
-  marketplace_description?: string | null;
-};
+function safeDateTime(x: any): string {
+  const raw = String(x || "").trim();
+  if (!raw) return "";
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return raw;
+  return d.toLocaleString();
+}
 
-type InviteInfo = {
-  invite_code?: string;
-  invite_created_at?: string | null;
-  invite_expires_at?: string | null;
-  invite_max_uses?: number | null;
-  invite_uses?: number | null;
-  invite_link?: string;
-  invite_url?: string;
-  url?: string;
-  link?: string;
-  invite_text?: string;
-};
+function communityName(item: any): string {
+  return safeStr(item?.display_name || item?.name || item?.title || "Community");
+}
+
+function communityIdentity(item: any): string {
+  return safeStr(
+    item?.community_id ||
+      item?.marketplace_id ||
+      item?.gmfn_id ||
+      item?.clan_code ||
+      item?.id ||
+      "Pending"
+  );
+}
+
+function extractMembers(community: any): any[] {
+  return Array.isArray(community?.members)
+    ? community.members
+    : Array.isArray(community?.member_rows)
+    ? community.member_rows
+    : Array.isArray(community?.memberships)
+    ? community.memberships
+    : [];
+}
+
+function appOrigin(): string {
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin;
+  }
+  return "";
+}
+
+function buildGuideUrl(): string {
+  return `${appOrigin()}/GSN_FINAL_WHITE.pdf`;
+}
+
+function buildInviteState(raw: any): InviteState {
+  const code = safeStr(raw?.code || raw?.invite_code || "");
+  const link = safeStr(raw?.link || raw?.invite_link || raw?.invite_url || "");
+  const shareText = safeStr(raw?.share_text || raw?.message || "");
+  const expiresAt = safeStr(raw?.expires_at || raw?.expiry || "");
+  const guideUrl = buildGuideUrl();
+
+  const packagedShareText = [
+    shareText || "You are invited to join our GSN community.",
+    link ? `Join here: ${link}` : "",
+    "",
+    "Before you enter, see what GSN can do for you:",
+    guideUrl,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return {
+    code,
+    link,
+    shareText,
+    expiresAt,
+    guideUrl,
+    packagedShareText,
+  };
+}
 
 export default function ClansPage() {
-  const navigate = useNavigate();
+  const [communities, setCommunities] = useState<CommunityItem[]>([]);
+  const [selectedCommunityId, setSelectedCommunityId] = useState<number>(0);
+  const [loadingCommunities, setLoadingCommunities] = useState(false);
 
-  const [items, setItems] = useState<ClanItem[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [inviteBusy, setInviteBusy] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [err, setErr] = useState("");
+  const [requests, setRequests] = useState<JoinRequestItem[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
 
-  const [showCreate, setShowCreate] = useState(false);
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteState, setInviteState] = useState<InviteState | null>(null);
+  const [copied, setCopied] = useState("");
 
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [marketplaceName, setMarketplaceName] = useState("");
-  const [marketplaceDescription, setMarketplaceDescription] = useState("");
+  const [communityNameInput, setCommunityNameInput] = useState("");
+  const [communityDescriptionInput, setCommunityDescriptionInput] = useState("");
+  const [creatingCommunity, setCreatingCommunity] = useState(false);
 
-  const [createdClan, setCreatedClan] = useState<ClanItem | null>(null);
-
-  const [inviteInfo, setInviteInfo] = useState<InviteInfo | null>(null);
-  const [inviteMessage, setInviteMessage] = useState("");
-
-  async function load() {
-    setErr("");
+  async function loadCommunities(preferredId?: number) {
+    setLoadingCommunities(true);
     try {
-      const res = await listMyClans().catch(() => ({ items: [] }));
-      const rows = Array.isArray(res) ? res : res?.items || [];
-      setItems(rows);
-    } catch (e: any) {
-      setErr(String(e?.message || e || "Unable to load communities."));
+      const res = await listMyClans().catch(() => []);
+      const rows: CommunityItem[] = Array.isArray(res)
+        ? res
+        : Array.isArray((res as any)?.items)
+        ? (res as any).items
+        : [];
+
+      setCommunities(rows);
+
+      const storedId = Number(getSelectedClanId() || 0);
+      const fallbackId = Number(preferredId || storedId || rows?.[0]?.id || 0);
+
+      setSelectedCommunityId(fallbackId || 0);
+    } finally {
+      setLoadingCommunities(false);
     }
   }
 
-  useEffect(() => {
-    void load();
-  }, []);
-
-  const selectedClanId = useMemo(
-    () => Number(getSelectedClanId() || 0),
-    [items, createdClan, inviteInfo]
-  );
-
-  const selectedClan = useMemo(() => {
-    if (!selectedClanId) return null;
-    return (
-      items.find((x) => Number(x?.id || x?.clan_id || 0) === selectedClanId) ||
-      (createdClan &&
-      Number(createdClan?.id || createdClan?.clan_id || 0) === selectedClanId
-        ? createdClan
-        : null)
-    );
-  }, [items, createdClan, selectedClanId]);
-
-  const inviteLink = useMemo(() => {
-    return safeStr(
-      inviteInfo?.invite_url ||
-        inviteInfo?.url ||
-        inviteInfo?.link ||
-        inviteInfo?.invite_link ||
-        ""
-    ).trim();
-  }, [inviteInfo]);
-
-  function suggestedMarketplaceName(): string {
-    const clanName = safeStr(name).trim();
-    if (!clanName) return "";
-    return `${clanName} Marketplace`;
-  }
-
-  function buildInviteMessage(clan: ClanItem | null, link: string): string {
-    const clanName = safeStr(clan?.name || "our GMFN community").trim();
-    const marketplace = safeStr(clan?.marketplace_name || "").trim();
-    const expiresAt = safeStr(inviteInfo?.invite_expires_at || "").trim();
-
-    return [
-      `Hello,`,
-      ``,
-      `You are invited to begin the request-to-join process for ${clanName}.`,
-      marketplace ? `Community / market identity: ${marketplace}.` : "",
-      `GMFN is a trust-based community infrastructure for structured support, credibility, and economic coordination.`,
-      `This invitation is not automatic admission. Final acceptance still depends on community approval.`,
-      expiresAt ? `This invitation expires on: ${expiresAt}` : "",
-      ``,
-      link ? `Use this link to begin: ${link}` : `Invite link will appear here once generated.`,
-    ]
-      .filter(Boolean)
-      .join("\n");
-  }
-
-  async function loadInviteForClan(clan: ClanItem | null) {
-    const clanId = Number(clan?.id || clan?.clan_id || 0);
+  async function loadRequests(clanId: number) {
     if (!clanId) {
-      setInviteInfo(null);
-      setInviteMessage("");
+      setRequests([]);
       return;
     }
 
-    setInviteBusy(true);
-    setErr("");
-
+    setLoadingRequests(true);
     try {
-      const out = await getClanInviteLink(clanId);
-      setInviteInfo(out || null);
-
-      const link = safeStr(
-        out?.invite_url || out?.url || out?.link || out?.invite_link || ""
-      ).trim();
-
-      setInviteMessage(buildInviteMessage(clan, link));
-    } catch (e: any) {
-      setInviteInfo(null);
-      setInviteMessage(buildInviteMessage(clan, ""));
-      setErr(String(e?.message || e || "Unable to load invite link."));
+      const res = await getCommunityJoinRequests(clanId).catch(() => ({ items: [] }));
+      const rows: JoinRequestItem[] = Array.isArray(res)
+        ? res
+        : Array.isArray((res as any)?.items)
+        ? (res as any).items
+        : [];
+      setRequests(rows);
     } finally {
-      setInviteBusy(false);
+      setLoadingRequests(false);
     }
   }
 
   useEffect(() => {
-    if (selectedClan) {
-      void loadInviteForClan(selectedClan);
-    } else {
-      setInviteInfo(null);
-      setInviteMessage("");
-    }
-  }, [selectedClanId]);
+    loadCommunities();
+  }, []);
 
-  async function handleCreate() {
-    setBusy(true);
-    setErr("");
-    setMsg("");
-    setCreatedClan(null);
-    setInviteInfo(null);
-    setInviteMessage("");
+  useEffect(() => {
+    if (!selectedCommunityId) {
+      setRequests([]);
+      return;
+    }
+    loadRequests(selectedCommunityId);
+  }, [selectedCommunityId]);
+
+  const selectedCommunity = useMemo(() => {
+    return (
+      communities.find((item) => Number(item?.id || 0) === selectedCommunityId) ||
+      null
+    );
+  }, [communities, selectedCommunityId]);
+
+  const pendingRequests = useMemo(() => {
+    return requests.filter(
+      (item) => safeStr(item?.status || "").toLowerCase() === "pending"
+    );
+  }, [requests]);
+
+  const selectedMembers = useMemo(() => {
+    return extractMembers(selectedCommunity);
+  }, [selectedCommunity]);
+
+  async function handleSelectCommunity(clanId: number) {
+    if (!clanId) return;
+    try {
+      await selectClan(clanId).catch(() => null);
+    } finally {
+      setSelectedCommunityId(clanId);
+      setInviteState(null);
+    }
+  }
+
+  async function handleCreateInvite() {
+    if (!selectedCommunityId) return;
+    setInviteLoading(true);
+    try {
+      const res = await createClanInvite(selectedCommunityId).catch(() => null);
+      setInviteState(buildInviteState(res));
+    } finally {
+      setInviteLoading(false);
+    }
+  }
+
+  async function copyText(value: string, tag: string) {
+    const text = safeStr(value);
+    if (!text) return;
 
     try {
-      const trimmedName = name.trim();
-      const trimmedDescription = description.trim();
-      const trimmedMarketplaceName =
-        marketplaceName.trim() || suggestedMarketplaceName();
-      const trimmedMarketplaceDescription = marketplaceDescription.trim();
+      await navigator.clipboard.writeText(text);
+      setCopied(tag);
+      window.setTimeout(() => setCopied(""), 1400);
+    } catch {}
+  }
 
-      if (!trimmedName) {
-        throw new Error("Enter a community name.");
+  function shareViaWhatsApp() {
+    const text = safeStr(inviteState?.packagedShareText || "");
+    if (!text) return;
+
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(text)}`,
+      "_blank"
+    );
+  }
+
+  async function handleCreateCommunity(e: React.FormEvent) {
+    e.preventDefault();
+
+    const name = safeStr(communityNameInput);
+    const description = safeStr(communityDescriptionInput);
+
+    if (!name) return;
+
+    setCreatingCommunity(true);
+    try {
+      const res = await createClan({
+        name,
+        description: description || undefined,
+      }).catch(() => null);
+
+      const newId = Number((res as any)?.id || 0);
+      await loadCommunities(newId || undefined);
+
+      if (newId) {
+        await selectClan(newId).catch(() => null);
+        setSelectedCommunityId(newId);
       }
 
-      const out = await createClan({
-        name: trimmedName,
-        description: trimmedDescription || null,
-        marketplace_name: trimmedMarketplaceName || null,
-        marketplace_description: trimmedMarketplaceDescription || null,
-      });
-
-      const clanId = Number(out?.id || out?.clan_id || 0);
-      if (!clanId) {
-        throw new Error("Community was created but no ID was returned.");
-      }
-
-      setSelectedClanId(clanId);
-
-      const created: ClanItem = {
-        id: clanId,
-        name: out?.name || trimmedName,
-        description: out?.description || trimmedDescription,
-        marketplace_name:
-          out?.marketplace_name ||
-          trimmedMarketplaceName ||
-          suggestedMarketplaceName(),
-        marketplace_description:
-          out?.marketplace_description || trimmedMarketplaceDescription,
-      };
-
-      setCreatedClan(created);
-      setMsg("Community created successfully.");
-
-      setName("");
-      setDescription("");
-      setMarketplaceName("");
-      setMarketplaceDescription("");
-      setShowCreate(true);
-
-      await load();
-      await loadInviteForClan(created);
-    } catch (e: any) {
-      setErr(String(e?.message || e || "Unable to create community."));
+      setCommunityNameInput("");
+      setCommunityDescriptionInput("");
+      setInviteState(null);
     } finally {
-      setBusy(false);
+      setCreatingCommunity(false);
     }
   }
 
-  function handleOpenCommunity(clan: any) {
-    const clanId = Number(clan?.id || clan?.clan_id || 0);
-    if (!clanId) return;
-
-    setSelectedClanId(clanId);
-    navigate(`/app/community/${clanId}`);
-  }
-
-  function handleOpenJoinRequests(clan: any) {
-    const clanId = Number(clan?.id || clan?.clan_id || 0);
-    if (!clanId) return;
-
-    setSelectedClanId(clanId);
-    navigate(`/app/community/${clanId}/join-requests`);
-  }
-
-  function handleSelectCommunity(clan: ClanItem) {
-    const clanId = Number(clan?.id || clan?.clan_id || 0);
-    if (!clanId) return;
-
-    setSelectedClanId(clanId);
-    setCreatedClan(clan);
-    setMsg(`Selected ${safeStr(clan?.name)}.`);
-  }
-
-  function whatsappShare(text: string) {
-    const wa = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(wa, "_blank", "noopener,noreferrer");
-  }
-
-  function fmtDate(value: any): string {
-    const s = safeStr(value).trim();
-    if (!s) return "—";
-    return s;
-  }
+  const communityCount = communities.length;
+  const selectedCommunityMemberCount = selectedMembers.length;
 
   return (
-    <div style={{ maxWidth: 1180, margin: "0 auto" }}>
-      <PageTopNav
-        title="My Communities"
-        subtitle="Open a community, create a new one, and manage its invitation flow."
-      />
-
-      {err ? (
-        <div
-          style={{
-            ...card(),
-            marginTop: 18,
-            background: "#FEF2F2",
-            border: "1px solid #FECACA",
-            color: "#991B1B",
-            fontWeight: 900,
-          }}
-        >
-          {err}
-        </div>
-      ) : null}
-
-      {msg ? (
-        <div
-          style={{
-            ...card(),
-            marginTop: 18,
-            background: "#ECFDF5",
-            border: "1px solid #A7F3D0",
-            color: "#065F46",
-            fontWeight: 900,
-          }}
-        >
-          {msg}
-        </div>
-      ) : null}
-
-      <div style={{ ...card(), marginTop: 18 }}>
-        <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-          Existing Communities
-        </div>
-
-        <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
-          {items.length === 0 ? (
-            <div style={{ color: "#6B7A88" }}>No communities found yet.</div>
-          ) : null}
-
-          {items.map((clan: ClanItem, idx: number) => {
-            const clanId = Number(clan?.id || clan?.clan_id || 0);
-            const active = selectedClanId > 0 && clanId === selectedClanId;
-
-            return (
-              <div key={clanId || idx} style={softCard()}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 12,
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <div>
-                    <div
-                      style={{
-                        fontWeight: 1000,
-                        fontSize: 18,
-                        color: "#0B1F33",
-                      }}
-                    >
-                      {safeStr(clan?.name || `Community ${idx + 1}`)}
-                    </div>
-
-                    <div style={{ marginTop: 6, color: "#64748b" }}>
-                      {safeStr(clan?.description || "Community workspace")}
-                    </div>
-
-                    {safeStr(clan?.marketplace_name).trim() ? (
-                      <div
-                        style={{
-                          marginTop: 8,
-                          color: "#0B63D1",
-                          fontWeight: 1000,
-                          fontSize: 13,
-                        }}
-                      >
-                        Community / Market: {safeStr(clan?.marketplace_name)}
-                      </div>
-                    ) : null}
-
-                    {active ? (
-                      <div
-                        style={{
-                          marginTop: 8,
-                          fontSize: 12,
-                          fontWeight: 1000,
-                          color: "#0B63D1",
-                        }}
-                      >
-                        CURRENTLY SELECTED
-                      </div>
-                    ) : null}
-                  </div>
-
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    <button
-                      type="button"
-                      onClick={() => handleSelectCommunity(clan)}
-                      style={btn(false)}
-                    >
-                      Select
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleOpenCommunity(clan)}
-                      style={btn(false)}
-                    >
-                      Open Community
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleOpenJoinRequests(clan)}
-                      style={btn(false)}
-                    >
-                      Join Requests
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div style={{ ...card(), marginTop: 18 }}>
+    <div
+      style={{
+        maxWidth: 1160,
+        margin: "0 auto",
+        paddingBottom: 36,
+        display: "grid",
+        gap: 18,
+      }}
+    >
+      <div
+        style={{
+          ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
+          marginTop: 18,
+        }}
+      >
         <div
           style={{
             display: "flex",
+            gap: 18,
             justifyContent: "space-between",
-            gap: 10,
-            alignItems: "center",
+            alignItems: "flex-start",
             flexWrap: "wrap",
           }}
         >
-          <div>
-            <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-              Create New Community
+          <div style={{ maxWidth: 760 }}>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                borderRadius: 999,
+                padding: "8px 12px",
+                border: "1px solid rgba(11,99,209,0.14)",
+                background: "rgba(11,99,209,0.06)",
+                color: "#0B63D1",
+                fontWeight: 900,
+                fontSize: 12,
+                letterSpacing: 0.4,
+                textTransform: "uppercase",
+              }}
+            >
+              Communities
             </div>
-            <div style={helperText()}>
-              Start a new community and define the community / market identity once here.
+
+            <h1
+              style={{
+                margin: "14px 0 8px",
+                fontSize: 30,
+                lineHeight: 1.15,
+                color: "#0B1F33",
+              }}
+            >
+              Choose or create a community
+            </h1>
+
+            <div
+              style={{
+                color: "#475569",
+                fontSize: 15,
+                lineHeight: 1.7,
+                maxWidth: 760,
+              }}
+            >
+              This page is for community selection and setup. Keep it simple:
+              choose the community you want to work with, create a new one when
+              needed, and handle invite and requests for the selected community.
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setShowCreate((v) => !v)}
-            style={btn(false)}
+          <div
+            style={{
+              minWidth: 240,
+              flex: "0 1 300px",
+              ...softCard("#FFFFFF"),
+            }}
           >
-            {showCreate ? "Hide" : "Open"}
-          </button>
-        </div>
-
-        {showCreate ? (
-          <div style={{ marginTop: 18, display: "grid", gap: 14 }}>
-            <div style={softCard()}>
-              <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
-                Community Identity
-              </div>
-              <div style={helperText()}>
-                This is the name and description of the community itself.
-              </div>
-
-              <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Community name"
-                  style={inputStyle()}
-                />
-
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Short community description"
-                  rows={3}
-                  style={textareaStyle(3)}
-                />
-              </div>
+            <div style={{ fontSize: 13, color: "#64748B", fontWeight: 900 }}>
+              Quick links
             </div>
 
-            <div style={softCard()}>
-              <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
-                Community / Market Identity
-              </div>
-              <div style={helperText()}>
-                Use this only if you want a separate display label. Otherwise it can match the community name.
-              </div>
-
-              <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
-                <input
-                  value={marketplaceName}
-                  onChange={(e) => setMarketplaceName(e.target.value)}
-                  placeholder={suggestedMarketplaceName() || "Community / market name"}
-                  style={inputStyle()}
-                />
-
-                <textarea
-                  value={marketplaceDescription}
-                  onChange={(e) => setMarketplaceDescription(e.target.value)}
-                  placeholder="Short community / market description"
-                  rows={3}
-                  style={textareaStyle(3)}
-                />
-              </div>
-            </div>
-
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button
-                type="button"
-                onClick={handleCreate}
-                disabled={busy}
-                style={btn(true)}
-              >
-                {busy ? "Creating..." : "Create Community"}
-              </button>
+            <div
+              style={{
+                marginTop: 12,
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+              }}
+            >
+              <Link to="/app/community" style={btn(false)}>
+                Community Home
+              </Link>
+              <Link to="/app/dashboard" style={btn(true)}>
+                Dashboard
+              </Link>
             </div>
           </div>
-        ) : null}
+        </div>
       </div>
 
-      {selectedClan ? (
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+          gap: 14,
+        }}
+      >
+        <div style={card("#FFFFFF")}>
+          <div style={{ fontSize: 13, color: "#64748B", fontWeight: 800 }}>
+            My communities
+          </div>
+          <div
+            style={{
+              marginTop: 8,
+              fontSize: 28,
+              fontWeight: 1000,
+              color: "#0B1F33",
+            }}
+          >
+            {communityCount}
+          </div>
+        </div>
+
+        <div style={card("#FFFFFF")}>
+          <div style={{ fontSize: 13, color: "#64748B", fontWeight: 800 }}>
+            Selected community members
+          </div>
+          <div
+            style={{
+              marginTop: 8,
+              fontSize: 28,
+              fontWeight: 1000,
+              color: "#0B1F33",
+            }}
+          >
+            {selectedCommunityMemberCount}
+          </div>
+        </div>
+
+        <div style={card("#FFFFFF")}>
+          <div style={{ fontSize: 13, color: "#64748B", fontWeight: 800 }}>
+            Pending join requests
+          </div>
+          <div
+            style={{
+              marginTop: 8,
+              fontSize: 28,
+              fontWeight: 1000,
+              color: "#0B1F33",
+            }}
+          >
+            {pendingRequests.length}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ ...pageCard("#FFFFFF") }}>
         <div
           style={{
-            ...card(),
-            marginTop: 18,
-            background: "linear-gradient(180deg,#F8FBFF,#FFFFFF)",
+            display: "grid",
+            gridTemplateColumns: "1.1fr 0.9fr",
+            gap: 16,
+            alignItems: "start",
           }}
         >
+          <div style={softCard("#FFFFFF")}>
+            <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+              My communities
+            </div>
+            <div
+              style={{
+                marginTop: 6,
+                color: "#64748B",
+                fontSize: 14,
+                lineHeight: 1.7,
+              }}
+            >
+              Select one community to make it active.
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                display: "grid",
+                gap: 10,
+              }}
+            >
+              {loadingCommunities ? (
+                <div style={{ color: "#64748B", lineHeight: 1.7 }}>
+                  Loading your communities...
+                </div>
+              ) : communities.length === 0 ? (
+                <div style={card("#F8FBFF")}>
+                  <div
+                    style={{
+                      color: "#0B1F33",
+                      fontWeight: 1000,
+                      fontSize: 17,
+                    }}
+                  >
+                    No community yet
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#64748B",
+                      lineHeight: 1.7,
+                      fontSize: 14,
+                    }}
+                  >
+                    Create your first community on the right.
+                  </div>
+                </div>
+              ) : (
+                communities.map((item, idx) => {
+                  const id = Number(item?.id || 0);
+                  const isActive = id === selectedCommunityId;
+                  const memberCount = extractMembers(item).length;
+
+                  return (
+                    <div
+                      key={`${id || "community"}-${idx}`}
+                      style={{
+                        ...card("#FFFFFF"),
+                        border: isActive
+                          ? "1px solid rgba(11,99,209,0.24)"
+                          : "1px solid rgba(11,31,51,0.08)",
+                        boxShadow: isActive
+                          ? "0 12px 28px rgba(11,99,209,0.08)"
+                          : "0 12px 30px rgba(15,23,42,0.05)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: 12,
+                          flexWrap: "wrap",
+                          alignItems: "center",
+                        }}
+                      >
+                        <div style={{ minWidth: 220, flex: 1 }}>
+                          <div
+                            style={{
+                              color: "#0B1F33",
+                              fontWeight: 1000,
+                              fontSize: 17,
+                            }}
+                          >
+                            {communityName(item)}
+                          </div>
+
+                          <div
+                            style={{
+                              marginTop: 8,
+                              color: "#64748B",
+                              fontSize: 14,
+                              lineHeight: 1.7,
+                            }}
+                          >
+                            {safeStr(
+                              item?.description ||
+                                "Community governance and relationship layer."
+                            )}
+                          </div>
+
+                          <div
+                            style={{
+                              marginTop: 10,
+                              display: "flex",
+                              gap: 8,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <span style={badge(true)}>
+                              ID: {communityIdentity(item)}
+                            </span>
+                            <span style={badge(false)}>
+                              {memberCount} member{memberCount === 1 ? "" : "s"}
+                            </span>
+                            {isActive ? <span style={badge(false)}>Active</span> : null}
+                          </div>
+                        </div>
+
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 10,
+                            flexWrap: "wrap",
+                            justifyContent: "flex-end",
+                          }}
+                        >
+                          <button
+                            type="button"
+                            style={isActive ? btn(true) : btn(false)}
+                            onClick={() => handleSelectCommunity(id)}
+                          >
+                            {isActive ? "Selected" : "Select"}
+                          </button>
+
+                          <Link
+                            to={id ? `/community/${id}` : "/app/community"}
+                            style={btn(false)}
+                          >
+                            Open Workspace
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          <div style={softCard("#FFFFFF")}>
+            <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+              Create community
+            </div>
+            <div
+              style={{
+                marginTop: 6,
+                color: "#64748B",
+                fontSize: 14,
+                lineHeight: 1.7,
+              }}
+            >
+              Start a new community with a clear name and short description.
+            </div>
+
+            <form
+              onSubmit={handleCreateCommunity}
+              style={{
+                marginTop: 14,
+                display: "grid",
+                gap: 12,
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 14,
+                    marginBottom: 6,
+                  }}
+                >
+                  Community name
+                </div>
+                <input
+                  value={communityNameInput}
+                  onChange={(e) => setCommunityNameInput(e.target.value)}
+                  placeholder="Enter community name"
+                  style={{
+                    width: "100%",
+                    borderRadius: 12,
+                    border: "1px solid rgba(11,31,51,0.12)",
+                    padding: "12px 14px",
+                    outline: "none",
+                    fontSize: 14,
+                    color: "#0B1F33",
+                    background: "#FFFFFF",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              <div>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 14,
+                    marginBottom: 6,
+                  }}
+                >
+                  Short description
+                </div>
+                <textarea
+                  value={communityDescriptionInput}
+                  onChange={(e) => setCommunityDescriptionInput(e.target.value)}
+                  placeholder="Describe what this community represents"
+                  rows={4}
+                  style={{
+                    width: "100%",
+                    borderRadius: 12,
+                    border: "1px solid rgba(11,31,51,0.12)",
+                    padding: "12px 14px",
+                    outline: "none",
+                    fontSize: 14,
+                    color: "#0B1F33",
+                    background: "#FFFFFF",
+                    boxSizing: "border-box",
+                    resize: "vertical",
+                  }}
+                />
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  flexWrap: "wrap",
+                }}
+              >
+                <button
+                  type="submit"
+                  style={btn(true, creatingCommunity || !safeStr(communityNameInput))}
+                  disabled={creatingCommunity || !safeStr(communityNameInput)}
+                >
+                  {creatingCommunity ? "Creating..." : "Create community"}
+                </button>
+
+                <Link to="/app/community" style={btn(false)}>
+                  Open Community Home
+                </Link>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 16,
+        }}
+      >
+        <div style={pageCard("#FFFFFF")}>
           <div
             style={{
               display: "flex",
@@ -581,210 +796,546 @@ export default function ClansPage() {
           >
             <div>
               <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-                Invite Members
+                Membership requests
               </div>
-              <div style={helperText()}>
-                Generate or reload the join link for the selected community, then share it with the right message.
+              <div
+                style={{
+                  marginTop: 6,
+                  color: "#64748B",
+                  fontSize: 14,
+                  lineHeight: 1.7,
+                }}
+              >
+                Review people asking to join the selected community.
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => void loadInviteForClan(selectedClan)}
-              style={btn(false)}
-            >
-              {inviteBusy ? "Loading..." : "Reload Invite Link"}
-            </button>
-          </div>
-
-          <div style={{ ...softCard(), marginTop: 16 }}>
-            <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
-              Selected Community
-            </div>
-
-            <div style={{ marginTop: 10, color: "#0B63D1", fontWeight: 1000 }}>
-              {safeStr(selectedClan?.name || "Unnamed community")}
-            </div>
-
-            <div style={{ marginTop: 8, color: "#64748b", lineHeight: 1.7 }}>
-              {safeStr(
-                selectedClan?.marketplace_name || "Community / market name not yet defined."
-              )}
-            </div>
+            <span style={badge(false)}>{pendingRequests.length} pending</span>
           </div>
 
           <div
             style={{
-              marginTop: 16,
+              marginTop: 14,
               display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 16,
+              gap: 10,
             }}
           >
-            <div style={softCard()}>
-              <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
-                Invite Link
+            {!selectedCommunityId ? (
+              <div style={{ color: "#64748B", lineHeight: 1.7 }}>
+                Select a community to view membership requests.
               </div>
+            ) : loadingRequests ? (
+              <div style={{ color: "#64748B", lineHeight: 1.7 }}>
+                Loading membership requests...
+              </div>
+            ) : pendingRequests.length === 0 ? (
+              <div style={card("#F8FBFF")}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 1000,
+                    fontSize: 16,
+                  }}
+                >
+                  No pending requests
+                </div>
 
-              <div style={{ marginTop: 10, color: "#64748b", fontSize: 13 }}>
-                Code
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#64748B",
+                    lineHeight: 1.7,
+                    fontSize: 14,
+                  }}
+                >
+                  New join requests will appear here.
+                </div>
               </div>
-              <div
-                style={{
-                  marginTop: 4,
-                  fontWeight: 1000,
-                  color: "#0B1F33",
-                  wordBreak: "break-word",
-                }}
-              >
-                {safeStr(inviteInfo?.invite_code || "—")}
-              </div>
+            ) : (
+              pendingRequests.slice(0, 4).map((item, idx) => (
+                <div key={`${item.id || "request"}-${idx}`} style={card("#FFFFFF")}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      flexWrap: "wrap",
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 220 }}>
+                      <div
+                        style={{
+                          color: "#0B1F33",
+                          fontWeight: 1000,
+                          fontSize: 16,
+                        }}
+                      >
+                        {safeStr(
+                          item?.applicant_name ||
+                            item?.applicant_nickname ||
+                            item?.applicant_email ||
+                            "Applicant"
+                        )}
+                      </div>
 
-              <div style={{ marginTop: 12, color: "#64748b", fontSize: 13 }}>
-                Link
-              </div>
-              <div
-                style={{
-                  marginTop: 4,
-                  fontWeight: 1000,
-                  color: "#0B1F33",
-                  wordBreak: "break-word",
-                }}
-              >
-                {inviteLink || "Invite link not available yet."}
-              </div>
+                      <div
+                        style={{
+                          marginTop: 8,
+                          color: "#64748B",
+                          fontSize: 14,
+                          lineHeight: 1.7,
+                        }}
+                      >
+                        {safeStr(item?.applicant_email || "No email provided")}
+                      </div>
 
-              <div style={{ marginTop: 12, color: "#64748b", fontSize: 13 }}>
-                Created
-              </div>
-              <div style={{ marginTop: 4, color: "#0B1F33" }}>
-                {fmtDate(inviteInfo?.invite_created_at)}
-              </div>
+                      <div
+                        style={{
+                          marginTop: 10,
+                          display: "flex",
+                          gap: 8,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <span style={badge(true)}>
+                          {Number(item?.approvals || 0)} /{" "}
+                          {Number(item?.required_approvals || 0)} approvals
+                        </span>
 
-              <div style={{ marginTop: 12, color: "#64748b", fontSize: 13 }}>
-                Expires
-              </div>
-              <div style={{ marginTop: 4, color: "#0B1F33" }}>
-                {fmtDate(inviteInfo?.invite_expires_at)}
-              </div>
-            </div>
+                        {safeStr(item?.applicant_gmfn_id) ? (
+                          <span style={badge(false)}>
+                            {safeStr(item?.applicant_gmfn_id)}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
 
-            <div style={softCard()}>
-              <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
-                Share Message
-              </div>
-
-              <div style={helperText()}>
-                This is the sender-facing message block you can copy or send out together with the join link.
-              </div>
-
-              <div style={{ marginTop: 12 }}>
-                <textarea
-                  value={inviteMessage}
-                  onChange={(e) => setInviteMessage(e.target.value)}
-                  rows={8}
-                  style={textareaStyle(8)}
-                />
-              </div>
-            </div>
+                    <Link
+                      to={
+                        selectedCommunityId
+                          ? `/app/community/${selectedCommunityId}/join-requests`
+                          : "/app/community"
+                      }
+                      style={btn(true)}
+                    >
+                      Open requests
+                    </Link>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
+        </div>
 
+        <div style={pageCard("#FFFFFF")}>
           <div
             style={{
-              marginTop: 16,
               display: "flex",
-              gap: 10,
+              justifyContent: "space-between",
+              gap: 12,
+              alignItems: "center",
               flexWrap: "wrap",
             }}
           >
-            <button
-              type="button"
-              onClick={() => {
-                if (!inviteLink) return;
-                safeCopy(inviteLink);
-                setMsg("Invite link copied.");
-              }}
-              style={btn(true)}
-            >
-              Copy Invite Link
-            </button>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+                Invitation
+              </div>
+              <div
+                style={{
+                  marginTop: 6,
+                  color: "#64748B",
+                  fontSize: 14,
+                  lineHeight: 1.7,
+                }}
+              >
+                Create and share an invite for the selected community.
+              </div>
+            </div>
 
             <button
               type="button"
-              onClick={() => {
-                safeCopy(inviteMessage);
-                setMsg("Invitation message copied.");
-              }}
-              style={btn(false)}
+              style={btn(true, !selectedCommunityId || inviteLoading)}
+              onClick={handleCreateInvite}
+              disabled={!selectedCommunityId || inviteLoading}
             >
-              Copy Message
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                const payload = inviteMessage || inviteLink;
-                if (!payload) return;
-                whatsappShare(payload);
-              }}
-              style={btn(false)}
-            >
-              Send via WhatsApp
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleOpenCommunity(selectedClan)}
-              style={btn(false)}
-            >
-              Open Community
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleOpenJoinRequests(selectedClan)}
-              style={btn(false)}
-            >
-              Open Join Requests
+              {inviteLoading ? "Creating..." : "Create invite"}
             </button>
           </div>
-        </div>
-      ) : null}
 
-      {createdClan && !selectedClan ? (
-        <div
-          style={{
-            ...card(),
-            marginTop: 18,
-            background: "linear-gradient(180deg,#F8FBFF,#FFFFFF)",
-          }}
-        >
-          <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-            Community Created
+          <div
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gap: 10,
+            }}
+          >
+            {!selectedCommunityId ? (
+              <div style={{ color: "#64748B", lineHeight: 1.7 }}>
+                Select a community to create an invitation.
+              </div>
+            ) : inviteState?.link || inviteState?.code ? (
+              <div style={card("#F8FBFF")}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 1000,
+                    fontSize: 16,
+                  }}
+                >
+                  Invitation ready
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#64748B",
+                    fontSize: 14,
+                    lineHeight: 1.7,
+                  }}
+                >
+                  This invite now includes the GSN guide so the person you are
+                  inviting can understand what GSN is for before entering.
+                </div>
+
+                <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+                  {inviteState?.code ? (
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "#64748B",
+                          fontWeight: 900,
+                          marginBottom: 6,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        Invite code
+                      </div>
+                      <div
+                        style={{
+                          borderRadius: 12,
+                          border: "1px solid rgba(11,31,51,0.08)",
+                          background: "#FFFFFF",
+                          padding: "12px 14px",
+                          color: "#0B1F33",
+                          fontWeight: 900,
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {inviteState.code}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {inviteState?.link ? (
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "#64748B",
+                          fontWeight: 900,
+                          marginBottom: 6,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        Invite link
+                      </div>
+                      <div
+                        style={{
+                          borderRadius: 12,
+                          border: "1px solid rgba(11,31,51,0.08)",
+                          background: "#FFFFFF",
+                          padding: "12px 14px",
+                          color: "#0B1F33",
+                          fontWeight: 700,
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {inviteState.link}
+                      </div>
+                    </div>
+                  ) : null}
+                  <div style={{ marginTop: 10 }}>
+                    <div style={{ fontSize: 12, fontWeight: 900, color: "#64748B" }}>
+                      GSN Guide
+                  </div>
+
+                  <a
+                    href="/app/my-gmfn-and-i"
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      display: "inline-block",
+                      marginTop: 6,
+                      color: "#0B63D1",
+                      fontWeight: 900,
+                      textDecoration: "none",
+                    }}
+                  >
+                    Open Guide (What GSN Can Do)
+                  </a>
+                </div>
+                  {inviteState?.guideUrl ? (
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "#64748B",
+                          fontWeight: 900,
+                          marginBottom: 6,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        GSN guide attached
+                      </div>
+                      <div
+                        style={{
+                          borderRadius: 12,
+                          border: "1px solid rgba(11,31,51,0.08)",
+                          background: "#FFFFFF",
+                          padding: "12px 14px",
+                          color: "#0B1F33",
+                          fontWeight: 700,
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {inviteState.guideUrl}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {inviteState?.expiresAt ? (
+                    <div
+                      style={{
+                        color: "#64748B",
+                        fontSize: 12,
+                        fontWeight: 700,
+                      }}
+                    >
+                      Expires: {safeDateTime(inviteState.expiresAt)}
+                    </div>
+                  ) : null}
+
+                  {inviteState?.packagedShareText ? (
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "#64748B",
+                          fontWeight: 900,
+                          marginBottom: 6,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        Full share package
+                      </div>
+                      <div
+                        style={{
+                          borderRadius: 12,
+                          border: "1px solid rgba(11,31,51,0.08)",
+                          background: "#FFFFFF",
+                          padding: "12px 14px",
+                          color: "#0B1F33",
+                          fontWeight: 700,
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word",
+                          lineHeight: 1.7,
+                        }}
+                      >
+                        {inviteState.packagedShareText}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 10,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    {inviteState?.link ? (
+                      <button
+                        type="button"
+                        style={btn(false)}
+                        onClick={() => copyText(inviteState.link || "", "link")}
+                      >
+                        {copied === "link" ? "Copied link" : "Copy link"}
+                      </button>
+                    ) : null}
+
+                    {inviteState?.packagedShareText ? (
+                      <button
+                        type="button"
+                        style={btn(false)}
+                        onClick={() =>
+                          copyText(inviteState.packagedShareText || "", "package")
+                        }
+                      >
+                        {copied === "package"
+                          ? "Copied full package"
+                          : "Copy full invite package"}
+                      </button>
+                    ) : null}
+
+                    {inviteState?.guideUrl ? (
+                      <a
+                        href={inviteState.guideUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={btn(false)}
+                      >
+                        Open GSN guide
+                      </a>
+                    ) : null}
+
+                    {inviteState?.packagedShareText ? (
+                      <button
+                        type="button"
+                        style={btn(true)}
+                        onClick={shareViaWhatsApp}
+                      >
+                        Share on WhatsApp
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={card("#F8FBFF")}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 1000,
+                    fontSize: 16,
+                  }}
+                >
+                  No active invite yet
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#64748B",
+                    lineHeight: 1.7,
+                    fontSize: 14,
+                  }}
+                >
+                  Create an invite when you are ready to bring someone in.
+                </div>
+              </div>
+            )}
           </div>
-
-          <div style={{ marginTop: 12, color: "#475569", lineHeight: 1.8 }}>
-            <b>{safeStr(createdClan?.name)}</b> is ready. Select it above if you want to manage its invite link now.
-          </div>
-        </div>
-      ) : null}
-
-      <div style={{ ...card(), marginTop: 18 }}>
-        <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-          Invitation Channel
-        </div>
-        <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
-          Invite only people already known and trusted by the community.
         </div>
       </div>
 
-      <div style={{ ...card(), marginTop: 18 }}>
-        <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-          Community Social Space
+      <div style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+              Selected community summary
+            </div>
+            <div
+              style={{
+                marginTop: 6,
+                color: "#64748B",
+                fontSize: 14,
+                lineHeight: 1.7,
+              }}
+            >
+              For full member browsing and shop access, continue in Community Home.
+            </div>
+          </div>
+
+          <Link to="/app/community" style={btn(true)}>
+            Open Community Home
+          </Link>
         </div>
-        <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
-          Social events, outings, and informal updates remain linked through the
-          community WhatsApp space.
+
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gap: 10,
+          }}
+        >
+          {!selectedCommunity ? (
+            <div style={{ color: "#64748B", lineHeight: 1.7 }}>
+              Select a community to see its summary.
+            </div>
+          ) : (
+            <div style={card("#F8FBFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 1000,
+                  fontSize: 17,
+                }}
+              >
+                {communityName(selectedCommunity)}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 10,
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                }}
+              >
+                <span style={badge(true)}>
+                  ID: {communityIdentity(selectedCommunity)}
+                </span>
+                <span style={badge(false)}>
+                  Members: {selectedMembers.length}
+                </span>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 12,
+                  color: "#64748B",
+                  fontSize: 14,
+                  lineHeight: 1.7,
+                }}
+              >
+                {safeStr(
+                  selectedCommunity?.description ||
+                    "Community governance and relationship layer."
+                )}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 14,
+                  display: "flex",
+                  gap: 10,
+                  flexWrap: "wrap",
+                }}
+              >
+                <Link
+                  to={selectedCommunityId ? `/community/${selectedCommunityId}` : "/app/community"}
+                  style={btn(false)}
+                >
+                  Open Workspace
+                </Link>
+
+                <Link to="/app/community" style={btn(false)}>
+                  Open Community Home
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

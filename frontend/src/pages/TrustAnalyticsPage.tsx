@@ -51,20 +51,22 @@ function n(x: any): number {
 
 function card(): React.CSSProperties {
   return {
-    border: "1px solid #e5e7eb",
-    borderRadius: 12,
-    padding: 12,
-    background: "#ffffff",
+    borderRadius: 20,
+    border: "1px solid rgba(11,31,51,0.08)",
+    padding: 16,
+    background: "#FFFFFF",
+    boxShadow: "0 12px 30px rgba(15,23,42,0.05)",
   };
 }
 
 function inputStyle(width = 160): React.CSSProperties {
   return {
-    padding: 8,
-    borderRadius: 8,
-    border: "1px solid #d1d5db",
+    padding: "10px 12px",
+    borderRadius: 10,
+    border: "1px solid rgba(11,31,51,0.14)",
     width,
     boxSizing: "border-box",
+    background: "#FFFFFF",
   };
 }
 
@@ -72,11 +74,20 @@ function buttonStyle(primary = false): React.CSSProperties {
   return {
     padding: "10px 12px",
     borderRadius: 10,
-    border: primary ? "none" : "1px solid #d1d5db",
-    background: primary ? "#111827" : "#ffffff",
-    color: primary ? "#ffffff" : "#111827",
-    fontWeight: 700,
+    border: primary ? "none" : "1px solid rgba(11,31,51,0.14)",
+    background: primary ? "#0B63D1" : "#FFFFFF",
+    color: primary ? "#FFFFFF" : "#0B1F33",
+    fontWeight: 900,
     cursor: "pointer",
+  };
+}
+
+function sectionLabel(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#64748B",
+    fontWeight: 1000,
+    letterSpacing: 0.2,
   };
 }
 
@@ -152,7 +163,7 @@ export default function TrustAnalyticsPage() {
 
       const list = safeEvents(res);
       setEvents(list);
-      setMsg(`Loaded ${list.length} event(s) ✅`);
+      setMsg(`Loaded ${list.length} event(s).`);
     } catch (e: any) {
       setErr(e?.message || String(e));
       setEvents([]);
@@ -177,7 +188,7 @@ export default function TrustAnalyticsPage() {
     ].join("\n");
 
     navigator.clipboard.writeText(text);
-    toast.success("Audit summary copied ✅");
+    toast.success("Audit summary copied");
   }
 
   function setQuery(next: Record<string, string | null>) {
@@ -221,13 +232,18 @@ export default function TrustAnalyticsPage() {
           alignItems: "center",
         }}
       >
-        <h2 style={{ margin: 0 }}>Trust Event Analytics</h2>
-        <Link to="/app/dashboard">← Back to Dashboard</Link>
-      </div>
+        <div>
+          <div style={{ fontSize: 30, fontWeight: 1000, color: "#0B1F33" }}>
+            Trust Event Analytics
+          </div>
+          <div style={{ color: "#6B7A88", marginTop: 8, lineHeight: 1.7 }}>
+            Filter trust events by community, user, loan, and audit mode to explain why a decision happened.
+          </div>
+        </div>
 
-      <div style={{ color: "#6b7280", marginTop: 8, marginBottom: 12 }}>
-        Filter trust events by clan, user, loan, and audit mode. Useful for explaining why a
-        decision happened and for reviewing admin or bulk trust-event operations.
+        <Link to="/app/dashboard" style={{ color: "#0B63D1", fontWeight: 900, textDecoration: "none" }}>
+          Back to Dashboard
+        </Link>
       </div>
 
       {auditOn && auditCounts?.latest ? (
@@ -236,10 +252,11 @@ export default function TrustAnalyticsPage() {
             position: "sticky",
             top: 0,
             zIndex: 10,
-            background: "#fff7ed",
-            border: "1px solid #fed7aa",
-            padding: 10,
-            borderRadius: 10,
+            background: "#FFF7ED",
+            border: "1px solid #FED7AA",
+            padding: 12,
+            borderRadius: 14,
+            marginTop: 14,
             marginBottom: 12,
           }}
         >
@@ -249,20 +266,19 @@ export default function TrustAnalyticsPage() {
               justifyContent: "space-between",
               gap: 12,
               flexWrap: "wrap",
+              alignItems: "center",
             }}
           >
-            <div>
-              <b>Audit mode</b> · latest: <b>{auditCounts.latest.event_type}</b>
+            <div style={{ color: "#9A3412", fontWeight: 900 }}>
+              Audit mode · latest: {auditCounts.latest.event_type}
             </div>
             <button type="button" onClick={copyAuditSummary} style={buttonStyle(false)}>
               Copy audit summary
             </button>
           </div>
 
-          <div style={{ fontSize: 12, marginTop: 6, color: "#6b7280" }}>
-            attempted: <b>{auditCounts.attempted ?? "—"}</b> · ok:{" "}
-            <b>{auditCounts.ok ?? "—"}</b> · failed:{" "}
-            <b>{auditCounts.failed ?? "—"}</b>
+          <div style={{ fontSize: 12, marginTop: 8, color: "#7C2D12" }}>
+            attempted: <b>{auditCounts.attempted ?? "—"}</b> · ok: <b>{auditCounts.ok ?? "—"}</b> · failed: <b>{auditCounts.failed ?? "—"}</b>
           </div>
         </div>
       ) : null}
@@ -270,9 +286,11 @@ export default function TrustAnalyticsPage() {
       {msg ? (
         <div
           style={{
-            background: "#d1fae5",
-            padding: 10,
-            borderRadius: 8,
+            background: "#ECFDF5",
+            border: "1px solid #A7F3D0",
+            color: "#065F46",
+            padding: 12,
+            borderRadius: 12,
             marginBottom: 10,
           }}
         >
@@ -283,9 +301,11 @@ export default function TrustAnalyticsPage() {
       {err ? (
         <div
           style={{
-            background: "#fee2e2",
-            padding: 10,
-            borderRadius: 8,
+            background: "#FEF2F2",
+            border: "1px solid #FECACA",
+            color: "#991B1B",
+            padding: 12,
+            borderRadius: 12,
             marginBottom: 10,
           }}
         >
@@ -294,8 +314,11 @@ export default function TrustAnalyticsPage() {
       ) : null}
 
       <div style={{ ...card(), marginBottom: 12 }}>
+        <div style={sectionLabel()}>FILTERS</div>
+
         <div
           style={{
+            marginTop: 12,
             display: "flex",
             gap: 12,
             flexWrap: "wrap",
@@ -303,7 +326,7 @@ export default function TrustAnalyticsPage() {
           }}
         >
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>Clan ID</div>
+            <div style={{ fontSize: 12, color: "#6B7280" }}>Clan ID</div>
             <input
               type="number"
               value={clanId || ""}
@@ -317,7 +340,7 @@ export default function TrustAnalyticsPage() {
           </div>
 
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>
+            <div style={{ fontSize: 12, color: "#6B7280" }}>
               User ID (actor or subject)
             </div>
             <input
@@ -333,7 +356,7 @@ export default function TrustAnalyticsPage() {
           </div>
 
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>Loan ID</div>
+            <div style={{ fontSize: 12, color: "#6B7280" }}>Loan ID</div>
             <input
               type="number"
               value={loanId ?? ""}
@@ -346,7 +369,7 @@ export default function TrustAnalyticsPage() {
             />
           </div>
 
-          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <label style={{ display: "flex", gap: 8, alignItems: "center", fontWeight: 700, color: "#0B1F33" }}>
             <input
               type="checkbox"
               checked={auditOn}
@@ -367,7 +390,7 @@ export default function TrustAnalyticsPage() {
       </div>
 
       {filtered.length === 0 ? (
-        <div style={{ color: "#6b7280" }}>No events found for this filter.</div>
+        <div style={{ color: "#6B7280" }}>No events found for this filter.</div>
       ) : (
         <div style={{ display: "grid", gap: 10 }}>
           {filtered.slice(0, 100).map((e, idx) => {
@@ -394,10 +417,13 @@ export default function TrustAnalyticsPage() {
                     justifyContent: "space-between",
                     gap: 12,
                     flexWrap: "wrap",
+                    alignItems: "center",
                   }}
                 >
-                  <div style={{ fontWeight: 700 }}>{e.event_type ?? "event"}</div>
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>
+                  <div style={{ fontWeight: 900, color: "#0B1F33" }}>
+                    {e.event_type ?? "event"}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#6B7280" }}>
                     {e.created_at ? new Date(e.created_at).toLocaleString() : "—"}
                   </div>
                 </div>
@@ -419,8 +445,19 @@ export default function TrustAnalyticsPage() {
                 </div>
 
                 <details style={{ marginTop: 10 }} open={isFirstAudit}>
-                  <summary style={{ cursor: "pointer" }}>Meta</summary>
-                  <pre style={{ marginTop: 8, whiteSpace: "pre-wrap" }}>
+                  <summary style={{ cursor: "pointer", fontWeight: 800 }}>Meta</summary>
+                  <pre
+                    style={{
+                      marginTop: 8,
+                      whiteSpace: "pre-wrap",
+                      background: "#F8FBFF",
+                      border: "1px solid rgba(11,31,51,0.08)",
+                      borderRadius: 12,
+                      padding: 12,
+                      color: "#334155",
+                      fontSize: 12,
+                    }}
+                  >
                     {meta ? JSON.stringify(meta, null, 2) : "—"}
                   </pre>
                 </details>
