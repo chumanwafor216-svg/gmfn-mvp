@@ -130,7 +130,7 @@ function actionBtn(primary = false, disabled = false): React.CSSProperties {
   };
 }
 
-function smallBtn(primary = false): React.CSSProperties {
+function smallBtn(primary = false, disabled = false): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
@@ -140,13 +140,14 @@ function smallBtn(primary = false): React.CSSProperties {
     border: primary
       ? "1px solid rgba(11,99,209,0.22)"
       : "1px solid rgba(11,31,51,0.12)",
-    background: primary ? "#0B63D1" : "#FFFFFF",
+    background: disabled ? "#CBD5E1" : primary ? "#0B63D1" : "#FFFFFF",
     color: primary ? "#FFFFFF" : "#0B1F33",
     fontWeight: 900,
     textDecoration: "none",
-    cursor: "pointer",
+    cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 13,
     gap: 8,
+    opacity: disabled ? 0.85 : 1,
   };
 }
 
@@ -193,18 +194,6 @@ function readStoredImage(key: string, fallbackSrc: string): string {
   } catch {
     return fallbackSrc;
   }
-}
-
-function writeStoredImage(key: string, value: string) {
-  try {
-    localStorage.setItem(key, value);
-  } catch {}
-}
-
-function removeStoredImage(key: string) {
-  try {
-    localStorage.removeItem(key);
-  } catch {}
 }
 
 function apiBase(): string {
@@ -441,6 +430,7 @@ function urgencyLabel(value?: string | null): string {
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const selectedClanId = Number(getSelectedClanId() || 0);
 
   const [me, setMe] = useState<any>(null);
   const [trustSlip, setTrustSlip] = useState<any>(null);
@@ -449,6 +439,7 @@ export default function DashboardPage() {
   const [spotlights, setSpotlights] = useState<SpotlightItem[]>([]);
   const [spotlightLoading, setSpotlightLoading] = useState(false);
   const [spotlightIndex, setSpotlightIndex] = useState(0);
+  const [showSpotlight, setShowSpotlight] = useState(true);
 
   const [pendingRequests, setPendingRequests] = useState<JoinRequestItem[]>([]);
   const [pendingRequestsLoading, setPendingRequestsLoading] = useState(false);
@@ -459,8 +450,6 @@ export default function DashboardPage() {
   const [demandItems, setDemandItems] = useState<DemandItem[]>([]);
   const [demandLoading, setDemandLoading] = useState(false);
 
-  const [showPictureTools, setShowPictureTools] = useState(false);
-  const [showGsnGuidePrompt, setShowGsnGuidePrompt] = useState(true);
   const [marketWisdomIndex, setMarketWisdomIndex] = useState(0);
   const [activeWisdom, setActiveWisdom] = useState<MarketWisdomPair | null>(
     null
@@ -507,15 +496,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     (async () => {
-      const clanId = Number(getSelectedClanId() || 0);
-      if (!clanId) {
+      if (!selectedClanId) {
         setPendingRequests([]);
         return;
       }
 
       setPendingRequestsLoading(true);
       try {
-        const res = await getCommunityJoinRequests(clanId).catch(() => ({
+        const res = await getCommunityJoinRequests(selectedClanId).catch(() => ({
           items: [],
         }));
 
@@ -534,7 +522,7 @@ export default function DashboardPage() {
         setPendingRequestsLoading(false);
       }
     })();
-  }, []);
+  }, [selectedClanId]);
 
   useEffect(() => {
     (async () => {
@@ -582,58 +570,10 @@ export default function DashboardPage() {
     return () => window.clearInterval(timer);
   }, []);
 
-  function applyAvatarFile(file?: File | null) {
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = String(reader.result || "");
-      if (!result) return;
-      setAvatarSrc(result);
-      writeStoredImage(avatarStorageKey, result);
-    };
-    reader.readAsDataURL(file);
-  }
-
-  function onUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    applyAvatarFile(e.target.files?.[0] || null);
-    e.currentTarget.value = "";
-  }
-
-  function onTakePicture(e: React.ChangeEvent<HTMLInputElement>) {
-    applyAvatarFile(e.target.files?.[0] || null);
-    e.currentTarget.value = "";
-  }
-
-  function removeAvatar() {
-    setAvatarSrc(fallbackAvatar);
-    removeStoredImage(avatarStorageKey);
-  }
-
-  function shareGsnGuide() {
-    const base =
-      typeof window !== "undefined" ? window.location.origin : "";
-    const guideUrl = `${base}/GSN_FINAL_WHITE.pdf`;
-    const text = `See what GSN can do for you:\n\n${guideUrl}`;
-
-    window.open(
-      `https://wa.me/?text=${encodeURIComponent(text)}`,
-      "_blank"
-    );
-  }
-
   const activeSpotlight = useMemo(() => {
     if (spotlights.length === 0) return null;
     return spotlights[spotlightIndex % spotlights.length] || spotlights[0];
   }, [spotlights, spotlightIndex]);
-
-  const spotlightImageSrc = String(
-    activeSpotlight?.image_url || activeSpotlight?.image || ""
-  ).trim();
-
-  const myShopLink = String(me?.gmfn_id || "").trim()
-    ? `/app/shop/${encodeURIComponent(String(me?.gmfn_id || "").trim())}`
-    : "";
 
   const cci = useMemo(() => getCciState(me), [me]);
   const cciTone = useMemo(() => cciToneStyles(cci.tone), [cci.tone]);
@@ -661,38 +601,48 @@ export default function DashboardPage() {
     cci.tone,
   ]);
 
-  function openSpotlightShop() {
-    const gmfnId = String(activeSpotlight?.author_gmfn_id || "").trim();
-    if (!gmfnId) return;
-    navigate(`/app/shop/${encodeURIComponent(gmfnId)}`);
-  }
-
   const greetingName = safeStr(
     me?.display_name || me?.nickname || me?.email || "Member"
   );
   const profileName = safeStr(me?.display_name || me?.nickname || "Member");
   const gmfnId = safeStr(me?.gmfn_id || "Pending");
-  const trustSlipCode = safeStr(trustSlip?.code || "").trim();
+  const trustSlipCode = safeStr(trustSlip?.code || "");
+  const spotlightImageSrc = safeStr(
+    activeSpotlight?.image_url || activeSpotlight?.image || ""
+  );
 
-  const myDemandItems = useMemo(() => {
-    return demandItems.filter((item) => {
-      const mineId = safeStr(me?.gmfn_id || "");
-      const itemId = safeStr(item.requester_gmfn_id || "");
-      return !!mineId && !!itemId && mineId === itemId;
-    });
-  }, [demandItems, me?.gmfn_id]);
+  const myShopLink = safeStr(me?.gmfn_id)
+    ? `/app/shop/${encodeURIComponent(safeStr(me?.gmfn_id))}`
+    : "/app/shop-control";
 
   const unreadCount = useMemo(
     () => notices.filter((n) => !n?.is_read).length,
     [notices]
   );
 
-  const quickActions = useMemo(() => {
-    return [
-      { label: "My Shop", to: myShopLink || "/app/shop-control" },
-      { label: "What GSN Can Do", to: "/GSN_FINAL_WHITE.pdf" },
-    ] as Array<{ label: string; to: string; primary?: boolean }>;
-  }, [myShopLink]);
+  const myDemandItems = useMemo(() => {
+    const mineId = safeStr(me?.gmfn_id || "");
+    if (!mineId) return [];
+
+    return demandItems.filter(
+      (item) => safeStr(item.requester_gmfn_id || "") === mineId
+    );
+  }, [demandItems, me?.gmfn_id]);
+
+  const joinRequestsLink = selectedClanId
+    ? `/app/community/${selectedClanId}/join-requests`
+    : "/app/community";
+
+  const quickLinks = useMemo(
+    () => [
+      { label: "Community Home", to: "/app/community", primary: true },
+      { label: "My Shop", to: myShopLink },
+      { label: "Trust", to: "/app/trust" },
+      { label: "Demand Box", to: "/app/demand-box" },
+      { label: "Create Community", to: "/create" },
+    ],
+    [myShopLink]
+  );
 
   const attentionItems = useMemo(() => {
     return [
@@ -709,7 +659,7 @@ export default function DashboardPage() {
           pendingRequests.length > 0
             ? "Community action needed"
             : "No pending request",
-        to: "/app/clans",
+        to: joinRequestsLink,
       },
       {
         title: "Your demand posts",
@@ -723,8 +673,17 @@ export default function DashboardPage() {
     unreadCount,
     pendingRequests.length,
     pendingRequestsLoading,
+    joinRequestsLink,
     myDemandItems.length,
   ]);
+
+  const latestNotice = notices.length > 0 ? notices[0] : null;
+
+  function openSpotlightShop() {
+    const spotlightGmfnId = safeStr(activeSpotlight?.author_gmfn_id || "");
+    if (!spotlightGmfnId) return;
+    navigate(`/app/shop/${encodeURIComponent(spotlightGmfnId)}`);
+  }
 
   return (
     <div
@@ -744,14 +703,13 @@ export default function DashboardPage() {
       >
         <div
           style={{
-            display: "flex",
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 1.2fr) minmax(280px, 0.8fr)",
             gap: 18,
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            flexWrap: "wrap",
+            alignItems: "start",
           }}
         >
-          <div style={{ maxWidth: 760 }}>
+          <div>
             <div style={sectionLabel()}>Dashboard</div>
 
             <h1
@@ -775,9 +733,9 @@ export default function DashboardPage() {
                 maxWidth: 760,
               }}
             >
-              This is your simple starting page. Begin from your identity, check
-              what needs attention, then move into Community Home, your shop,
-              demand, or trust.
+              This is your starting page. Check your trust position, review what
+              needs attention, then move into Community Home, your shop, demand,
+              or trust.
             </div>
 
             <div
@@ -788,42 +746,21 @@ export default function DashboardPage() {
                 flexWrap: "wrap",
               }}
             >
-              {quickActions.map((item) => {
-                const isGuideFile =
-                  item.to.endsWith(".pdf") || item.to.endsWith(".docx");
-
-                return isGuideFile ? (
-                  <a
-                    key={item.label}
-                    href={item.to}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={item.primary ? actionBtn(true) : actionBtn(false)}
-                  >
-                    {item.label}
-                  </a>
-                ) : (
-                  <Link
-                    key={item.label}
-                    to={item.to}
-                    style={item.primary ? actionBtn(true) : actionBtn(false)}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
+              {quickLinks.map((item) => (
+                <Link
+                  key={item.label}
+                  to={item.to}
+                  style={item.primary ? actionBtn(true) : actionBtn(false)}
+                >
+                  {item.label}
+                </Link>
+              ))}
             </div>
           </div>
 
-          <div
-            style={{
-              minWidth: 240,
-              flex: "0 1 290px",
-              ...softCard("#FFFFFF"),
-            }}
-          >
+          <div style={softCard("#FFFFFF")}>
             <div style={{ fontSize: 13, color: "#64748B", fontWeight: 900 }}>
-              Today’s signal
+              Today’s Signal / Market Wisdom
             </div>
 
             <div
@@ -858,229 +795,46 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {showGsnGuidePrompt ? (
-        <div
-          style={{
-            ...pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
-            border: "1px solid rgba(11,99,209,0.14)",
-            boxShadow: "0 18px 40px rgba(11,99,209,0.08)",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 14,
-              alignItems: "flex-start",
-              flexWrap: "wrap",
-            }}
-          >
-            <div style={{ flex: 1, minWidth: 260 }}>
-              <div style={sectionLabel()}>Start here</div>
-
-              <div
-                style={{
-                  marginTop: 8,
-                  fontSize: 22,
-                  fontWeight: 1000,
-                  color: "#0B1F33",
-                  lineHeight: 1.3,
-                }}
-              >
-                Do you know what GSN can do for you?
-              </div>
-
-              <div
-                style={{
-                  marginTop: 10,
-                  color: "#64748B",
-                  fontSize: 14,
-                  lineHeight: 1.85,
-                  maxWidth: 760,
-                }}
-              >
-                Before you continue, open the GSN guide and see how trust can
-                support trade, loans, savings groups, work, reputation, Demand
-                Box, Spotlight, and community opportunity across the network.
-              </div>
-
-              <div
-                style={{
-                  marginTop: 16,
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
-                }}
-              >
-                <a
-                  href="/GSN_FINAL_WHITE.pdf"
-                  target="_blank"
-                  rel="noreferrer"
-                  style={smallBtn(true)}
-                >
-                  Read What GSN Can Do
-                </a>
-
-                <button
-                  type="button"
-                  style={smallBtn(false)}
-                  onClick={shareGsnGuide}
-                >
-                  Forward to a Friend
-                </button>
-
-                <button
-                  type="button"
-                  style={smallBtn(false)}
-                  onClick={() => setShowGsnGuidePrompt(false)}
-                >
-                  Continue to Dashboard
-                </button>
-              </div>
-            </div>
-
-            <div
-              style={{
-                minWidth: 180,
-                maxWidth: 220,
-                ...innerCard("#FFFFFF"),
-                boxShadow: "0 10px 24px rgba(15,23,42,0.04)",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 1000,
-                  color: "#4F6B8A",
-                  textTransform: "uppercase",
-                  letterSpacing: 0.4,
-                }}
-              >
-                Included in the guide
-              </div>
-
-              <div
-                style={{
-                  marginTop: 10,
-                  display: "grid",
-                  gap: 8,
-                  color: "#0B1F33",
-                  fontSize: 14,
-                  lineHeight: 1.6,
-                }}
-              >
-                <div>• Trade before payment</div>
-                <div>• Loans and support</div>
-                <div>• Trust savings / ROSCA</div>
-                <div>• Spotlight visibility</div>
-                <div>• Demand Box access</div>
-                <div>• One identity across communities</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "0.9fr 1.1fr",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
           gap: 16,
           alignItems: "stretch",
         }}
       >
         <div style={pageCard("#FFFFFF")}>
-          <div style={sectionLabel()}>My identity</div>
+          <div style={sectionLabel()}>Identity preview</div>
 
           <div
             style={{
               marginTop: 14,
               display: "grid",
-              gridTemplateColumns: "140px 1fr",
+              gridTemplateColumns: "120px 1fr",
               gap: 16,
               alignItems: "start",
             }}
           >
-            <div>
-              <div
+            <div
+              style={{
+                width: 120,
+                height: 150,
+                borderRadius: 22,
+                overflow: "hidden",
+                border: "1px solid rgba(11,31,51,0.12)",
+                background: "linear-gradient(180deg, #E7F0FF 0%, #DDEBFF 100%)",
+              }}
+            >
+              <img
+                src={avatarSrc}
+                alt="Profile"
                 style={{
-                  width: 140,
-                  height: 180,
-                  borderRadius: 22,
-                  overflow: "hidden",
-                  border: "1px solid rgba(11,31,51,0.12)",
-                  background:
-                    "linear-gradient(180deg, #E7F0FF 0%, #DDEBFF 100%)",
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  display: "block",
                 }}
-              >
-                <img
-                  src={avatarSrc}
-                  alt="Profile"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    display: "block",
-                  }}
-                />
-              </div>
-
-              <div
-                style={{
-                  marginTop: 10,
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                }}
-              >
-                <button
-                  type="button"
-                  style={smallBtn(false)}
-                  onClick={() => setShowPictureTools((v) => !v)}
-                >
-                  {showPictureTools ? "Hide tools" : "Picture tools"}
-                </button>
-              </div>
-
-              {showPictureTools ? (
-                <div
-                  style={{
-                    marginTop: 10,
-                    display: "flex",
-                    gap: 8,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <label style={smallBtn(true)}>
-                    Upload
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={onUpload}
-                      style={{ display: "none" }}
-                    />
-                  </label>
-
-                  <label style={smallBtn(false)}>
-                    Take
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={onTakePicture}
-                      style={{ display: "none" }}
-                    />
-                  </label>
-
-                  <button
-                    type="button"
-                    style={smallBtn(false)}
-                    onClick={removeAvatar}
-                  >
-                    Remove
-                  </button>
-                </div>
-              ) : null}
+              />
             </div>
 
             <div>
@@ -1114,9 +868,30 @@ export default function DashboardPage() {
                   lineHeight: 1.8,
                 }}
               >
-                Your identity travels with you across the communities you belong
-                to. Start from Community Home to see your communities, members,
-                and shop access clearly.
+                One identity follows you across the communities you belong to.
+                Use Community Home for your private control surface.
+              </div>
+
+              <div
+                style={{
+                  marginTop: 14,
+                  display: "flex",
+                  gap: 10,
+                  flexWrap: "wrap",
+                }}
+              >
+                <Link
+                  to="/app/community"
+                  style={smallBtn(true) as React.CSSProperties}
+                >
+                  Open Community Home
+                </Link>
+                <Link
+                  to={myShopLink}
+                  style={smallBtn(false) as React.CSSProperties}
+                >
+                  Open My Shop
+                </Link>
               </div>
             </div>
           </div>
@@ -1128,7 +903,7 @@ export default function DashboardPage() {
             border: cciTone.border,
           }}
         >
-          <div style={sectionLabel()}>Trust standing</div>
+          <div style={sectionLabel()}>Trust quick summary</div>
 
           <div
             style={{
@@ -1262,7 +1037,7 @@ export default function DashboardPage() {
           style={{
             marginTop: 14,
             display: "grid",
-            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
             gap: 14,
           }}
         >
@@ -1307,7 +1082,7 @@ export default function DashboardPage() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
           gap: 16,
           alignItems: "stretch",
         }}
@@ -1323,7 +1098,7 @@ export default function DashboardPage() {
             }}
           >
             <div>
-              <div style={sectionLabel()}>Notifications</div>
+              <div style={sectionLabel()}>Notifications preview</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1332,7 +1107,7 @@ export default function DashboardPage() {
                   fontSize: 14,
                 }}
               >
-                Your latest update appears here first.
+                Your latest updates appear here first.
               </div>
             </div>
 
@@ -1376,12 +1151,25 @@ export default function DashboardPage() {
               >
                 {noticesLoading
                   ? "Loading your latest updates..."
-                  : notices.length > 0
-                  ? `${notificationSourceLabel(notices[0]?.kind)}: ${safeStr(
-                      notices[0]?.title || notices[0]?.message || "New update"
+                  : latestNotice
+                  ? `${notificationSourceLabel(latestNotice.kind)}: ${safeStr(
+                      latestNotice.title || latestNotice.message || "New update"
                     )}`
                   : "Demand, trust, approvals, spotlight, assistant prompts, and money updates will appear here."}
               </div>
+
+              {latestNotice?.created_at ? (
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#64748B",
+                    fontSize: 12,
+                    fontWeight: 700,
+                  }}
+                >
+                  {safeDateTime(latestNotice.created_at)}
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -1483,143 +1271,170 @@ export default function DashboardPage() {
       </div>
 
       <div style={pageCard("#FFFFFF")}>
-        <div>
-          <div style={sectionLabel()}>Spotlight preview</div>
-          <div
-            style={{
-              marginTop: 8,
-              color: "#64748B",
-              lineHeight: 1.7,
-              fontSize: 14,
-            }}
-          >
-            Spotlight comes from shop owners inside your visible community network.
-          </div>
-        </div>
-
-        {spotlightLoading ? (
-          <div style={{ marginTop: 14, color: "#64748B" }}>
-            Loading spotlight...
-          </div>
-        ) : activeSpotlight ? (
-          <div
-            style={{
-              marginTop: 14,
-              display: "grid",
-              gridTemplateColumns: spotlightImageSrc ? "0.9fr 1.1fr" : "1fr",
-              gap: 16,
-              alignItems: "stretch",
-            }}
-          >
-            {spotlightImageSrc ? (
-              <div
-                style={{
-                  width: "100%",
-                  minHeight: 220,
-                  borderRadius: 18,
-                  overflow: "hidden",
-                  background: "#EAF2FF",
-                  border: "1px solid rgba(11,31,51,0.08)",
-                }}
-              >
-                <img
-                  src={resolveSpotlightImageSrc(spotlightImageSrc)}
-                  alt={safeStr(
-                    activeSpotlight.title || activeSpotlight.message || "Spotlight"
-                  )}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    minHeight: 220,
-                    objectFit: "cover",
-                    display: "block",
-                  }}
-                />
-              </div>
-            ) : null}
-
-            <div style={softCard("#FCFEFF")}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 1000,
-                  fontSize: 22,
-                  lineHeight: 1.3,
-                }}
-              >
-                {safeStr(
-                  activeSpotlight.title ||
-                    activeSpotlight.message ||
-                    "Community Spotlight"
-                )}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#64748B",
-                  fontSize: 14,
-                  lineHeight: 1.8,
-                }}
-              >
-                {safeStr(activeSpotlight.body || activeSpotlight.message || "")}
-              </div>
-
-              <div style={{ marginTop: 12, display: "grid", gap: 6 }}>
-                <div style={{ color: "#64748B", fontSize: 14 }}>
-                  Seller:{" "}
-                  {safeStr(
-                    activeSpotlight.source_shop_name ||
-                      activeSpotlight.author_name ||
-                      "Community seller"
-                  )}
-                </div>
-
-                <div style={{ color: "#64748B", fontSize: 14 }}>
-                  Trust: {safeStr(activeSpotlight.trust_band || "Trusted Member")}
-                </div>
-
-                <div style={{ color: "#64748B", fontSize: 14 }}>
-                  Posted: {safeDateTime(activeSpotlight.created_at) || "—"}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  marginTop: 14,
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
-                }}
-              >
-                <button
-                  type="button"
-                  style={smallBtn(true)}
-                  onClick={openSpotlightShop}
-                  disabled={!String(activeSpotlight.author_gmfn_id || "").trim()}
-                >
-                  Open shop
-                </button>
-
-                <Link
-                  to="/app/marketplace"
-                  style={smallBtn(false) as React.CSSProperties}
-                >
-                  Open marketplace
-                </Link>
-              </div>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Spotlight display</div>
+            <div
+              style={{
+                marginTop: 8,
+                color: "#64748B",
+                lineHeight: 1.7,
+                fontSize: 14,
+              }}
+            >
+              Spotlight comes from shops visible in your current community
+              network.
             </div>
           </div>
-        ) : (
-          <div style={{ marginTop: 14, color: "#64748B" }}>
-            No active spotlight is available yet.
-          </div>
-        )}
+
+          <button
+            type="button"
+            onClick={() => setShowSpotlight((prev) => !prev)}
+            style={smallBtn(false)}
+          >
+            {showSpotlight ? "Collapse" : "Open"}
+          </button>
+        </div>
+
+        {showSpotlight ? (
+          spotlightLoading ? (
+            <div style={{ marginTop: 14, color: "#64748B" }}>
+              Loading spotlight...
+            </div>
+          ) : activeSpotlight ? (
+            <div
+              style={{
+                marginTop: 14,
+                display: "grid",
+                gridTemplateColumns: spotlightImageSrc
+                  ? "minmax(260px, 0.9fr) minmax(0, 1.1fr)"
+                  : "1fr",
+                gap: 16,
+                alignItems: "stretch",
+              }}
+            >
+              {spotlightImageSrc ? (
+                <div
+                  style={{
+                    width: "100%",
+                    minHeight: 220,
+                    borderRadius: 18,
+                    overflow: "hidden",
+                    background: "#EAF2FF",
+                    border: "1px solid rgba(11,31,51,0.08)",
+                  }}
+                >
+                  <img
+                    src={resolveSpotlightImageSrc(spotlightImageSrc)}
+                    alt={safeStr(
+                      activeSpotlight.title ||
+                        activeSpotlight.message ||
+                        "Spotlight"
+                    )}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      minHeight: 220,
+                      objectFit: "cover",
+                      display: "block",
+                    }}
+                  />
+                </div>
+              ) : null}
+
+              <div style={softCard("#FCFEFF")}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 1000,
+                    fontSize: 22,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {safeStr(
+                    activeSpotlight.title ||
+                      activeSpotlight.message ||
+                      "Community Spotlight"
+                  )}
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#64748B",
+                    fontSize: 14,
+                    lineHeight: 1.8,
+                  }}
+                >
+                  {safeStr(activeSpotlight.body || activeSpotlight.message || "")}
+                </div>
+
+                <div style={{ marginTop: 12, display: "grid", gap: 6 }}>
+                  <div style={{ color: "#64748B", fontSize: 14 }}>
+                    Seller:{" "}
+                    {safeStr(
+                      activeSpotlight.source_shop_name ||
+                        activeSpotlight.author_name ||
+                        "Community seller"
+                    )}
+                  </div>
+
+                  <div style={{ color: "#64748B", fontSize: 14 }}>
+                    Trust: {safeStr(activeSpotlight.trust_band || "Trusted Member")}
+                  </div>
+
+                  <div style={{ color: "#64748B", fontSize: 14 }}>
+                    Posted: {safeDateTime(activeSpotlight.created_at) || "—"}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 14,
+                    display: "flex",
+                    gap: 10,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <button
+                    type="button"
+                    style={smallBtn(
+                      true,
+                      !safeStr(activeSpotlight.author_gmfn_id || "")
+                    )}
+                    onClick={openSpotlightShop}
+                    disabled={!safeStr(activeSpotlight.author_gmfn_id || "")}
+                  >
+                    Open shop
+                  </button>
+
+                  <Link
+                    to="/app/marketplace"
+                    style={smallBtn(false) as React.CSSProperties}
+                  >
+                    Open marketplace
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ marginTop: 14, color: "#64748B" }}>
+              No active spotlight is available yet.
+            </div>
+          )
+        ) : null}
       </div>
 
-
       <div style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>Socials</div>
+        <div style={sectionLabel()}>What GSN is for</div>
 
         <div
           style={{
@@ -1627,9 +1442,11 @@ export default function DashboardPage() {
             color: "#0B1F33",
             fontWeight: 1000,
             fontSize: 20,
+            lineHeight: 1.35,
           }}
         >
-          Coming soon
+          GSN makes existing trust visible, structured, and usable in economic
+          life.
         </div>
 
         <div
@@ -1638,10 +1455,28 @@ export default function DashboardPage() {
             color: "#64748B",
             fontSize: 14,
             lineHeight: 1.8,
+            maxWidth: 760,
           }}
         >
-          Social and community interaction space will come later, after the core
-          trust, approval, demand, and market workflow is fully stabilised.
+          For the full explanation, open My GMFN and I. That is the main guide
+          page for understanding how identity, trust, demand, spotlight, and
+          community work together.
+        </div>
+
+        <div
+          style={{
+            marginTop: 14,
+            display: "flex",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
+          <Link
+            to="/app/my-gmfn-and-i"
+            style={smallBtn(true) as React.CSSProperties}
+          >
+            Open My GMFN and I
+          </Link>
         </div>
       </div>
     </div>
