@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import PageTopNav from "../components/PageTopNav";
 import { getCommunityJoinRequests, voteOnJoinRequest } from "../lib/api";
 
 type JoinRequestItem = {
@@ -62,13 +63,22 @@ type VoteResponse = {
   request?: JoinRequestItem;
 };
 
-function pageCard(): React.CSSProperties {
+function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     border: "1px solid rgba(11,31,51,0.08)",
-    borderRadius: 18,
-    background: "#fff",
+    borderRadius: 20,
+    background: bg,
     padding: 18,
     boxShadow: "0 12px 30px rgba(15,23,42,0.05)",
+  };
+}
+
+function softCard(bg = "#F8FBFF"): React.CSSProperties {
+  return {
+    border: "1px solid rgba(11,31,51,0.08)",
+    borderRadius: 16,
+    background: bg,
+    padding: 14,
   };
 }
 
@@ -85,19 +95,37 @@ function actionBtn(primary = false, disabled = false): React.CSSProperties {
     fontWeight: 900,
     cursor: disabled ? "not-allowed" : "pointer",
     textDecoration: "none",
+    opacity: disabled ? 0.78 : 1,
   };
 }
 
-function safeStr(x: any): string {
-  return String(x ?? "");
+function sectionLabel(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#4F6B8A",
+    fontWeight: 1000,
+    letterSpacing: 0.45,
+    textTransform: "uppercase",
+  };
+}
+
+function safeStr(x: any, fallback = ""): string {
+  const s = String(x ?? "").trim();
+  return s || fallback;
+}
+
+function safeDateTime(x: any): string {
+  const raw = String(x || "").trim();
+  if (!raw) return "—";
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return raw;
+  return d.toLocaleString();
 }
 
 function friendlyStatus(value: any): string {
-  const raw = safeStr(value).trim().toLowerCase();
-  if (!raw) return "pending";
-  if (raw === "approved") return "approved";
-  if (raw === "reject") return "rejected";
-  if (raw === "rejected") return "rejected";
+  const raw = safeStr(value, "pending").toLowerCase();
+  if (raw === "approve" || raw === "approved") return "approved";
+  if (raw === "reject" || raw === "rejected") return "rejected";
   return raw;
 }
 
@@ -116,7 +144,9 @@ function copyText(text: string) {
   area.select();
   try {
     document.execCommand("copy");
-  } catch {}
+  } catch {
+    // ignore
+  }
   document.body.removeChild(area);
 }
 
@@ -131,21 +161,22 @@ export default function CommunityJoinRequestsPage() {
   const [success, setSuccess] = useState("");
   const [activationPack, setActivationPack] = useState<ApprovalResult | null>(null);
 
+  const clanNum = Number(clanId || 0);
+
   async function load() {
     try {
       setLoading(true);
       setError("");
 
-      const clanNum = Number(clanId || 0);
       if (!clanNum) {
-        throw new Error("Invalid community ID");
+        throw new Error("Invalid community ID.");
       }
 
       const data = await getCommunityJoinRequests(clanNum);
       const rows = Array.isArray(data) ? data : data?.items || [];
       setItems(rows);
     } catch (err: any) {
-      setError(err?.message || "Failed to load join requests");
+      setError(err?.message || "Failed to load join requests.");
       setItems([]);
     } finally {
       setLoading(false);
@@ -156,6 +187,24 @@ export default function CommunityJoinRequestsPage() {
     if (!clanId) return;
     void load();
   }, [clanId]);
+
+  const selectedCommunityName = useMemo(() => {
+    const first = items[0];
+    return safeStr(first?.clan_name || first?.marketplace_name || `Community ${clanNum}`);
+  }, [items, clanNum]);
+
+  const summary = useMemo(() => {
+    const pending = items.filter((item) => friendlyStatus(item.status) === "pending").length;
+    const approved = items.filter((item) => friendlyStatus(item.status) === "approved").length;
+    const rejected = items.filter((item) => friendlyStatus(item.status) === "rejected").length;
+
+    return {
+      total: items.length,
+      pending,
+      approved,
+      rejected,
+    };
+  }, [items]);
 
   async function handleVote(requestId: number, vote: "approve" | "reject") {
     try {
@@ -179,63 +228,83 @@ export default function CommunityJoinRequestsPage() {
 
       await load();
     } catch (err: any) {
-      setError(err?.message || "Vote failed");
+      setError(err?.message || "Vote failed.");
     } finally {
       setBusyId(null);
     }
   }
 
   function goBack() {
-    if (window.history.length > 1) {
-      navigate(-1);
-      return;
-    }
-    navigate("/app/clans");
+    navigate("/app/community");
   }
 
   return (
-    <div style={{ padding: 20, maxWidth: 980, margin: "0 auto" }}>
+    <div style={{ padding: 20, maxWidth: 980, margin: "0 auto", paddingBottom: 30 }}>
+      <PageTopNav
+        title="Community Join Requests"
+        subtitle="Review incoming requests for the selected community and decide whether to approve or reject them."
+      />
+
       <div
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 12,
-          alignItems: "center",
-          flexWrap: "wrap",
-          marginBottom: 16,
+          ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
+          marginTop: 18,
         }}
       >
-        <div>
-          <h2 style={{ margin: 0 }}>Incoming Join Requests</h2>
-          <p style={{ marginTop: 8, color: "#64748B" }}>
-            Review and respond to pending requests for this community.
-          </p>
+        <div style={sectionLabel()}>Selected community</div>
+
+        <div
+          style={{
+            marginTop: 10,
+            fontSize: 30,
+            fontWeight: 1000,
+            color: "#0B1F33",
+            lineHeight: 1.15,
+          }}
+        >
+          {selectedCommunityName}
         </div>
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div
+          style={{
+            marginTop: 8,
+            color: "#64748B",
+            lineHeight: 1.8,
+          }}
+        >
+          This page belongs to the community control flow. Review pending requests here, then return to Community Home or the selected marketplace when finished.
+        </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            display: "flex",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
           <button type="button" onClick={goBack} style={actionBtn(false)}>
-            ← Back
+            Community Home
           </button>
-          <button type="button" onClick={() => void load()} style={actionBtn(false)}>
+
+          <Link to="/app/marketplace" style={actionBtn(false)}>
+            Marketplace
+          </Link>
+
+          <button type="button" onClick={() => void load()} style={actionBtn(true)}>
             Refresh
           </button>
         </div>
       </div>
 
-      {loading ? (
-        <div style={pageCard()}>
-          <strong>Loading...</strong>
-        </div>
-      ) : null}
-
       {error ? (
         <div
           style={{
-            ...pageCard(),
-            background: "#FEF2F2",
+            ...pageCard("#FEF2F2"),
+            marginTop: 18,
             border: "1px solid #FECACA",
             color: "#991B1B",
-            marginBottom: 16,
+            fontWeight: 900,
           }}
         >
           {error}
@@ -245,11 +314,10 @@ export default function CommunityJoinRequestsPage() {
       {success ? (
         <div
           style={{
-            ...pageCard(),
-            background: "#ECFDF5",
+            ...pageCard("#ECFDF5"),
+            marginTop: 18,
             border: "1px solid #A7F3D0",
             color: "#065F46",
-            marginBottom: 16,
             fontWeight: 900,
           }}
         >
@@ -257,13 +325,48 @@ export default function CommunityJoinRequestsPage() {
         </div>
       ) : null}
 
+      <div
+        style={{
+          marginTop: 18,
+          display: "grid",
+          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+          gap: 14,
+        }}
+      >
+        <div style={softCard("#FFFFFF")}>
+          <div style={sectionLabel()}>Total</div>
+          <div style={{ marginTop: 8, fontSize: 26, fontWeight: 1000, color: "#0B1F33" }}>
+            {summary.total}
+          </div>
+        </div>
+
+        <div style={softCard("#FFFFFF")}>
+          <div style={sectionLabel()}>Pending</div>
+          <div style={{ marginTop: 8, fontSize: 26, fontWeight: 1000, color: "#0B1F33" }}>
+            {summary.pending}
+          </div>
+        </div>
+
+        <div style={softCard("#FFFFFF")}>
+          <div style={sectionLabel()}>Approved</div>
+          <div style={{ marginTop: 8, fontSize: 26, fontWeight: 1000, color: "#0B1F33" }}>
+            {summary.approved}
+          </div>
+        </div>
+
+        <div style={softCard("#FFFFFF")}>
+          <div style={sectionLabel()}>Rejected</div>
+          <div style={{ marginTop: 8, fontSize: 26, fontWeight: 1000, color: "#0B1F33" }}>
+            {summary.rejected}
+          </div>
+        </div>
+      </div>
+
       {activationPack?.gmfn_id ? (
         <div
           style={{
-            ...pageCard(),
-            background: "#F8FBFF",
-            border: "1px solid rgba(11,31,51,0.08)",
-            marginBottom: 16,
+            ...pageCard("#F8FBFF"),
+            marginTop: 18,
           }}
         >
           <div style={{ fontWeight: 1000, fontSize: 18, color: "#0B1F33" }}>
@@ -284,12 +387,10 @@ export default function CommunityJoinRequestsPage() {
               <strong>GMFN ID:</strong> {safeStr(activationPack.gmfn_id)}
             </div>
             <div>
-              <strong>Community:</strong>{" "}
-              {safeStr(activationPack.community_name || "—")}
+              <strong>Community:</strong> {safeStr(activationPack.community_name || "—")}
             </div>
             <div>
-              <strong>Community ID:</strong>{" "}
-              {safeStr(activationPack.community_code || "—")}
+              <strong>Community ID:</strong> {safeStr(activationPack.community_code || "—")}
             </div>
             <div>
               <strong>Invited by:</strong>{" "}
@@ -322,6 +423,7 @@ export default function CommunityJoinRequestsPage() {
                 fontWeight: 1000,
                 color: "#64748B",
                 marginBottom: 8,
+                letterSpacing: 0.35,
               }}
             >
               ACTIVATION MESSAGE
@@ -342,7 +444,14 @@ export default function CommunityJoinRequestsPage() {
             </pre>
           </div>
 
-          <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              marginTop: 14,
+              flexWrap: "wrap",
+            }}
+          >
             <button
               type="button"
               style={actionBtn(true)}
@@ -362,13 +471,19 @@ export default function CommunityJoinRequestsPage() {
         </div>
       ) : null}
 
+      {loading ? (
+        <div style={{ ...pageCard(), marginTop: 18 }}>
+          <strong>Loading...</strong>
+        </div>
+      ) : null}
+
       {!loading && !error && !items.length ? (
-        <div style={pageCard()}>
+        <div style={{ ...pageCard(), marginTop: 18 }}>
           <strong>No join requests yet.</strong>
         </div>
       ) : null}
 
-      <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
+      <div style={{ display: "grid", gap: 12, marginTop: 18 }}>
         {items.map((item) => {
           const status = friendlyStatus(item.status);
           const isPending = status === "pending";
@@ -376,8 +491,8 @@ export default function CommunityJoinRequestsPage() {
 
           return (
             <div key={item.id} style={pageCard()}>
-              <div style={{ marginBottom: 8 }}>
-                <strong>Request #{item.id}</strong>
+              <div style={{ marginBottom: 8, fontWeight: 1000, color: "#0B1F33" }}>
+                Request #{item.id}
               </div>
 
               <div style={{ fontSize: 14, lineHeight: 1.7, color: "#334155" }}>
@@ -393,34 +508,26 @@ export default function CommunityJoinRequestsPage() {
                   wants to join <strong>{safeStr(item.clan_name || "this community")}</strong>.
                 </div>
 
-                <div style={{ marginTop: 10 }}>
-                  Community ID: {safeStr(item.community_code || "-")}
-                </div>
-                <div>
-                  Community / Market:{" "}
-                  {safeStr(item.marketplace_name || item.clan_name || "-")}
-                </div>
-                <div>Invite code: {safeStr(item.invite_code || "-")}</div>
-                <div>Status: {status}</div>
-                <div>
-                  Submitted:{" "}
-                  {item.created_at ? new Date(item.created_at).toLocaleString() : "-"}
-                </div>
-                <div>
-                  Decided:{" "}
-                  {item.decided_at ? new Date(item.decided_at).toLocaleString() : "-"}
-                </div>
-                <div>Approvals: {Number(item.approvals || 0)}</div>
-                <div>Rejects: {Number(item.rejects || 0)}</div>
-                <div>Total votes: {Number(item.total_votes || 0)}</div>
-                <div>Active members: {Number(item.active_member_count || 0)}</div>
-                <div>Required approvals: {Number(item.required_approvals || 0)}</div>
-
-                {safeStr(item.applicant_gmfn_id || "").trim() ? (
+                <div style={{ marginTop: 10, display: "grid", gap: 4 }}>
+                  <div>Community ID: {safeStr(item.community_code || "-")}</div>
                   <div>
-                    Applicant GMFN ID: {safeStr(item.applicant_gmfn_id)}
+                    Community / Market:{" "}
+                    {safeStr(item.marketplace_name || item.clan_name || "-")}
                   </div>
-                ) : null}
+                  <div>Invite code: {safeStr(item.invite_code || "-")}</div>
+                  <div>Status: {status}</div>
+                  <div>Submitted: {safeDateTime(item.created_at)}</div>
+                  <div>Decided: {safeDateTime(item.decided_at)}</div>
+                  <div>Approvals: {Number(item.approvals || 0)}</div>
+                  <div>Rejects: {Number(item.rejects || 0)}</div>
+                  <div>Total votes: {Number(item.total_votes || 0)}</div>
+                  <div>Active members: {Number(item.active_member_count || 0)}</div>
+                  <div>Required approvals: {Number(item.required_approvals || 0)}</div>
+
+                  {safeStr(item.applicant_gmfn_id || "") ? (
+                    <div>Applicant GMFN ID: {safeStr(item.applicant_gmfn_id)}</div>
+                  ) : null}
+                </div>
               </div>
 
               {!isPending ? (
@@ -437,7 +544,14 @@ export default function CommunityJoinRequestsPage() {
                   This request has already been {status}.
                 </div>
               ) : (
-                <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    marginTop: 14,
+                    flexWrap: "wrap",
+                  }}
+                >
                   <button
                     type="button"
                     onClick={() => handleVote(item.id, "approve")}
