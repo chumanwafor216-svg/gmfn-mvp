@@ -8,6 +8,14 @@ function safeStr(x: any, fallback = "—"): string {
   return s || fallback;
 }
 
+function safeDateTime(x: any): string {
+  const raw = String(x || "").trim();
+  if (!raw) return "—";
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return raw;
+  return d.toLocaleString();
+}
+
 function readPath(obj: any, path: string): any {
   return path.split(".").reduce((acc, key) => {
     if (acc == null) return undefined;
@@ -154,15 +162,10 @@ export default function ExposureAdminPage() {
 
   const riskFlags = useMemo(() => {
     const value =
-      firstValue(data, [
-        "risk_flags",
-        "summary.risk_flags",
-        "flags",
-        "alerts",
-      ]) || [];
+      firstValue(data, ["risk_flags", "summary.risk_flags", "flags", "alerts"]) || [];
 
     if (Array.isArray(value)) {
-      return value.map((x) => safeStr(x)).filter(Boolean);
+      return value;
     }
 
     return [];
@@ -216,6 +219,9 @@ export default function ExposureAdminPage() {
             </Link>
             <Link to="/app/command-center/exposure" style={actionLink(true)}>
               Safety & Risk
+            </Link>
+            <Link to="/app/command-center/system-operations" style={actionLink(false)}>
+              System Operations
             </Link>
           </div>
         </div>
@@ -302,7 +308,7 @@ export default function ExposureAdminPage() {
                   lineHeight: 1.5,
                 }}
               >
-                {safeStr(summary.updatedAt)}
+                {safeDateTime(summary.updatedAt)}
               </div>
             </div>
           </div>
@@ -368,7 +374,9 @@ export default function ExposureAdminPage() {
               <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
                 {riskFlags.map((flag, idx) => (
                   <div key={idx} style={softCard("#FFFFFF")}>
-                    <div style={{ color: "#0B1F33", fontWeight: 900 }}>{flag}</div>
+                    <div style={{ color: "#0B1F33", fontWeight: 900 }}>
+                      {typeof flag === "string" ? flag : prettyValue(flag)}
+                    </div>
                   </div>
                 ))}
               </div>
