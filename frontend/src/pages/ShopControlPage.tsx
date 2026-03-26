@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   createMarketplaceFeed,
   createMarketplaceProduct,
@@ -13,6 +13,47 @@ import {
   selectClan,
   uploadMarketplaceImageFile,
 } from "../lib/api";
+
+type ClanItem = {
+  id?: number;
+  clan_id?: number;
+  name?: string;
+  marketplace_name?: string | null;
+  description?: string | null;
+};
+
+type ShopItem = {
+  id?: number;
+  name?: string;
+  description?: string | null;
+  gmfn_id?: string | null;
+  owner_gmfn_id?: string | null;
+  owner_display_name?: string | null;
+  whatsapp_number?: string | null;
+  telegram_handle?: string | null;
+};
+
+type BroadcastItem = {
+  id?: number;
+  message?: string | null;
+  image_url?: string | null;
+  author_gmfn_id?: string | null;
+  created_at?: string | null;
+  expires_at?: string | null;
+  source_clan_name?: string | null;
+};
+
+function pageCard(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    borderRadius: 24,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: bg,
+    padding: 20,
+    boxShadow:
+      "0 22px 54px rgba(15,23,42,0.07), 0 2px 8px rgba(15,23,42,0.03)",
+    overflow: "hidden",
+  };
+}
 
 function card(bg = "#FFFFFF"): React.CSSProperties {
   return {
@@ -87,6 +128,16 @@ function tiny(): React.CSSProperties {
   };
 }
 
+function sectionLabel(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#4F6B8A",
+    fontWeight: 1000,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  };
+}
+
 function apiBase(): string {
   const raw =
     (typeof import.meta !== "undefined" &&
@@ -131,41 +182,18 @@ function resolveMediaUrl(value?: string | null): string {
 }
 
 function safeStr(x: any): string {
-  return String(x ?? "");
+  return String(x ?? "").trim();
 }
 
-type ClanItem = {
-  id?: number;
-  clan_id?: number;
-  name?: string;
-  marketplace_name?: string | null;
-  description?: string | null;
-};
-
-type ShopItem = {
-  id?: number;
-  name?: string;
-  description?: string | null;
-  gmfn_id?: string | null;
-  owner_gmfn_id?: string | null;
-  owner_display_name?: string | null;
-  whatsapp_number?: string | null;
-  telegram_handle?: string | null;
-};
-
-type BroadcastItem = {
-  id?: number;
-  message?: string | null;
-  image_url?: string | null;
-  author_gmfn_id?: string | null;
-  created_at?: string | null;
-  expires_at?: string | null;
-  source_clan_name?: string | null;
-};
+function safeDateTime(x: any): string {
+  const raw = String(x || "").trim();
+  if (!raw) return "";
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return raw;
+  return d.toLocaleString();
+}
 
 export default function ShopControlPage() {
-  const navigate = useNavigate();
-
   const [me, setMe] = useState<any>(null);
   const [clans, setClans] = useState<ClanItem[]>([]);
   const [selectedClanId, setSelectedClanId] = useState<number | null>(null);
@@ -271,6 +299,7 @@ export default function ShopControlPage() {
 
   async function refreshBroadcasts(clanId?: number | null) {
     const effectiveClanId = Number(clanId || selectedClanId || 0);
+
     if (!effectiveClanId) {
       setBroadcasts([]);
       return;
@@ -297,47 +326,54 @@ export default function ShopControlPage() {
       setBroadcasts([]);
       return;
     }
+
     void refreshShops(selectedClanId);
     void refreshBroadcasts(selectedClanId);
   }, [selectedClanId]);
 
   const selectedClan = useMemo(() => {
     return (
-      clans.find((c) => Number(c.id || c.clan_id || 0) === Number(selectedClanId || 0)) || null
+      clans.find(
+        (c) => Number(c.id || c.clan_id || 0) === Number(selectedClanId || 0)
+      ) || null
     );
   }, [clans, selectedClanId]);
 
   const myShop = useMemo(() => {
     if (!shops.length) return null;
 
-    const myGmfnId = String(me?.gmfn_id || "").trim();
+    const myGmfnId = safeStr(me?.gmfn_id || "");
     if (!myGmfnId) return shops[0] || null;
 
     return (
       shops.find((shop) => {
-        const shopOwnerId = String(
-          shop?.gmfn_id || shop?.owner_gmfn_id || ""
-        ).trim();
+        const shopOwnerId = safeStr(shop?.gmfn_id || shop?.owner_gmfn_id || "");
         return shopOwnerId === myGmfnId;
       }) || null
     );
   }, [shops, me]);
 
   const activeMySpotlight = useMemo(() => {
-    const myGmfnId = String(me?.gmfn_id || "").trim();
+    const myGmfnId = safeStr(me?.gmfn_id || "");
     if (!myGmfnId) return null;
 
     return (
       broadcasts.find(
-        (b) => String(b?.author_gmfn_id || "").trim() === myGmfnId
+        (b) => safeStr(b?.author_gmfn_id || "") === myGmfnId
       ) || null
     );
   }, [broadcasts, me]);
 
   const myShopReady = Boolean(myShop?.id);
-  const myShopLink = String(me?.gmfn_id || "").trim()
-    ? `/app/shop/${encodeURIComponent(String(me?.gmfn_id || "").trim())}`
+  const myShopLink = safeStr(me?.gmfn_id || "")
+    ? `/app/shop/${encodeURIComponent(safeStr(me?.gmfn_id || ""))}`
     : "";
+
+  const selectedCommunityLabel = safeStr(
+    selectedClan?.marketplace_name ||
+      selectedClan?.name ||
+      (selectedClanId ? `Community ${selectedClanId}` : "Not selected")
+  );
 
   useEffect(() => {
     if (!myShop) {
@@ -348,13 +384,13 @@ export default function ShopControlPage() {
       return;
     }
 
-    setShopName(String(myShop?.name || ""));
-    setShopDescription(String(myShop?.description || ""));
-    setShopWhatsapp(String(myShop?.whatsapp_number || ""));
-    setShopTelegram(String(myShop?.telegram_handle || ""));
+    setShopName(safeStr(myShop?.name || ""));
+    setShopDescription(safeStr(myShop?.description || ""));
+    setShopWhatsapp(safeStr(myShop?.whatsapp_number || ""));
+    setShopTelegram(safeStr(myShop?.telegram_handle || ""));
   }, [myShop]);
 
-  async function openCommunityMarketplace(clanId: number) {
+  async function handleSelectClanContext(clanId: number) {
     try {
       setSwitchingClanId(clanId);
       await selectClan(clanId);
@@ -370,7 +406,7 @@ export default function ShopControlPage() {
     setErr("");
     setMsg("");
 
-    const trimmedName = String(shopName || "").trim();
+    const trimmedName = safeStr(shopName || "");
     if (!trimmedName) {
       setErr("Shop name is required.");
       return;
@@ -386,9 +422,9 @@ export default function ShopControlPage() {
       await createMarketplaceShop({
         clan_id: selectedClanId,
         name: trimmedName,
-        description: String(shopDescription || "").trim() || null,
-        whatsapp_number: String(shopWhatsapp || "").trim() || null,
-        telegram_handle: String(shopTelegram || "").trim() || null,
+        description: safeStr(shopDescription || "") || null,
+        whatsapp_number: safeStr(shopWhatsapp || "") || null,
+        telegram_handle: safeStr(shopTelegram || "") || null,
       });
 
       await refreshShops(selectedClanId);
@@ -410,9 +446,9 @@ export default function ShopControlPage() {
     setUploadingProductImage(true);
     try {
       const res = await uploadMarketplaceImageFile(file, selectedClanId || undefined);
-      const uploadedUrl = String(
+      const uploadedUrl = safeStr(
         res?.image_url || res?.url || res?.file_url || res?.path || ""
-      ).trim();
+      );
 
       if (!uploadedUrl) {
         throw new Error("Product image upload failed.");
@@ -437,9 +473,9 @@ export default function ShopControlPage() {
     setUploadingSpotlightImage(true);
     try {
       const res = await uploadMarketplaceImageFile(file, selectedClanId || undefined);
-      const uploadedUrl = String(
+      const uploadedUrl = safeStr(
         res?.image_url || res?.url || res?.file_url || res?.path || ""
-      ).trim();
+      );
 
       if (!uploadedUrl) {
         throw new Error("Spotlight image upload failed.");
@@ -458,9 +494,9 @@ export default function ShopControlPage() {
     setErr("");
     setMsg("");
 
-    const trimmedName = String(productName || "").trim();
-    const trimmedPrice = String(productPrice || "").trim();
-    const trimmedImage = String(productImageUrl || "").trim();
+    const trimmedName = safeStr(productName || "");
+    const trimmedPrice = safeStr(productPrice || "");
+    const trimmedImage = safeStr(productImageUrl || "");
 
     if (!trimmedName) {
       setErr("Product name is required.");
@@ -493,9 +529,9 @@ export default function ShopControlPage() {
         clan_id: selectedClanId,
         shop_id: Number(myShop.id),
         name: trimmedName,
-        description: String(productDescription || "").trim() || null,
+        description: safeStr(productDescription || "") || null,
         price: trimmedPrice,
-        currency: String(productCurrency || "NGN").trim() || "NGN",
+        currency: safeStr(productCurrency || "NGN") || "NGN",
         image_url: trimmedImage,
       });
 
@@ -516,7 +552,7 @@ export default function ShopControlPage() {
     setErr("");
     setMsg("");
 
-    const trimmedMessage = String(spotlightMessage || "").trim();
+    const trimmedMessage = safeStr(spotlightMessage || "");
     if (!trimmedMessage) {
       setErr("Spotlight message is required.");
       return;
@@ -535,12 +571,14 @@ export default function ShopControlPage() {
     setSavingSpotlight(true);
     try {
       const hoursNum = Math.max(1, Number(spotlightHours || 24) || 24);
-      const expiresAt = new Date(Date.now() + hoursNum * 60 * 60 * 1000).toISOString();
+      const expiresAt = new Date(
+        Date.now() + hoursNum * 60 * 60 * 1000
+      ).toISOString();
 
       await createMarketplaceFeed({
         clan_id: selectedClanId,
         message: trimmedMessage,
-        image_url: String(spotlightImageUrl || "").trim() || null,
+        image_url: safeStr(spotlightImageUrl || "") || null,
         expires_at: expiresAt,
       });
 
@@ -576,12 +614,132 @@ export default function ShopControlPage() {
 
   return (
     <div style={{ maxWidth: 1180, margin: "0 auto", paddingBottom: 30 }}>
-      <div style={{ ...card("#F8FBFF"), marginTop: 18 }}>
-        <div style={{ fontSize: 30, fontWeight: 1000, color: "#0B1F33" }}>
-          Shop Control
-        </div>
-        <div style={{ marginTop: 6, color: "#6B7A88", lineHeight: 1.7 }}>
-          Institutional control surface for shop identity, product publication, and spotlight.
+      <div
+        style={{
+          ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
+          marginTop: 18,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            gap: 18,
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ maxWidth: 760 }}>
+            <div style={sectionLabel()}>Shop control</div>
+
+            <div style={{ marginTop: 10, fontSize: 30, fontWeight: 1000, color: "#0B1F33" }}>
+              One global shop, prepared through your selected community context
+            </div>
+
+            <div
+              style={{
+                marginTop: 8,
+                color: "#6B7A88",
+                lineHeight: 1.7,
+                fontSize: 14,
+                maxWidth: 760,
+              }}
+            >
+              This is your private shop control surface. Use it to maintain your
+              shop identity, publish products, and manage spotlight visibility.
+              Community selection here controls visibility context, not ownership
+              of multiple separate shops.
+            </div>
+
+            <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <Link to="/app/dashboard" style={btn(false)}>
+                Dashboard
+              </Link>
+
+              <Link to="/app/community" style={btn(false)}>
+                Community Home
+              </Link>
+
+              <Link to="/app/marketplace" style={btn(false)}>
+                Marketplace
+              </Link>
+
+              {myShopLink ? (
+                <Link to={myShopLink} style={btn(true)}>
+                  Open My Shop
+                </Link>
+              ) : (
+                <button type="button" style={btn(true, true)} disabled>
+                  Open My Shop
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div
+            style={{
+              minWidth: 240,
+              flex: "0 1 320px",
+              ...softCard("#FFFFFF"),
+            }}
+          >
+            <div style={tiny()}>Current context</div>
+
+            <div
+              style={{
+                marginTop: 10,
+                fontSize: 18,
+                fontWeight: 1000,
+                color: "#0B1F33",
+              }}
+            >
+              {selectedCommunityLabel}
+            </div>
+
+            <div
+              style={{
+                marginTop: 8,
+                color: "#64748B",
+                fontSize: 14,
+                lineHeight: 1.7,
+              }}
+            >
+              Shop stays tied to your identity. This selected community decides
+              where product and spotlight visibility is being prepared right now.
+            </div>
+
+            <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  padding: "6px 10px",
+                  borderRadius: 999,
+                  background: "rgba(11,99,209,0.08)",
+                  color: "#0B63D1",
+                  fontSize: 12,
+                  fontWeight: 900,
+                }}
+              >
+                Shop ready: {myShopReady ? "Yes" : "No"}
+              </div>
+
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  padding: "6px 10px",
+                  borderRadius: 999,
+                  background: "rgba(100,116,139,0.10)",
+                  color: "#475569",
+                  fontSize: 12,
+                  fontWeight: 900,
+                }}
+              >
+                Spotlight live: {activeMySpotlight ? "Yes" : "No"}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -614,71 +772,47 @@ export default function ShopControlPage() {
       ) : null}
 
       <div style={{ ...card(), marginTop: 18 }}>
-        <div style={tiny()}>NAVIGATION</div>
-
-        <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <Link to="/app/dashboard" style={btn(false)}>
-            Dashboard
-          </Link>
-
-          <Link to="/app/marketplace" style={btn(false)}>
-            Marketplace
-          </Link>
-
-          <Link to="/app/community" style={btn(false)}>
-            Community Home
-          </Link>
-
-          {myShopLink ? (
-            <button type="button" style={btn(true)} onClick={() => navigate(myShopLink)}>
-              Open My Shop
-            </button>
-          ) : (
-            <button type="button" style={btn(true, true)} disabled>
-              Open My Shop
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div style={{ ...card(), marginTop: 18 }}>
         <div style={tiny()}>SELECT COMMUNITY</div>
 
         {loadingBoot ? (
           <div style={{ marginTop: 14, color: "#64748B" }}>Loading communities...</div>
         ) : clans.length === 0 ? (
-          <div style={{ marginTop: 14, color: "#64748B" }}>No communities available yet.</div>
+          <div style={{ marginTop: 14, color: "#64748B" }}>
+            No communities available yet.
+          </div>
         ) : (
           <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            {clans.map((c) => {
-              const clanId = Number(c.id || c.clan_id || 0);
+            {clans.map((clan) => {
+              const clanId = Number(clan.id || clan.clan_id || 0);
               const active = clanId === selectedClanId;
+
               return (
                 <button
                   key={clanId}
                   type="button"
                   style={btn(active, switchingClanId === clanId)}
                   disabled={switchingClanId === clanId}
-                  onClick={() => openCommunityMarketplace(clanId)}
+                  onClick={() => handleSelectClanContext(clanId)}
                 >
                   {switchingClanId === clanId
                     ? "Opening..."
-                    : safeStr(c.marketplace_name || c.name || `Community ${clanId}`)}
+                    : safeStr(clan.marketplace_name || clan.name || `Community ${clanId}`)}
                 </button>
               );
             })}
           </div>
         )}
 
-        <div style={{ marginTop: 14, color: "#64748B", fontSize: 14, lineHeight: 1.7 }}>
-          Selected marketplace:{" "}
-          <strong style={{ color: "#0B1F33" }}>
-            {safeStr(
-              selectedClan?.marketplace_name ||
-                selectedClan?.name ||
-                (selectedClanId ? `Community ${selectedClanId}` : "Not selected")
-            )}
-          </strong>
+        <div
+          style={{
+            marginTop: 14,
+            color: "#64748B",
+            fontSize: 14,
+            lineHeight: 1.7,
+          }}
+        >
+          Selected visibility context:{" "}
+          <strong style={{ color: "#0B1F33" }}>{selectedCommunityLabel}</strong>
         </div>
       </div>
 
@@ -757,9 +891,13 @@ export default function ShopControlPage() {
                     <strong style={{ color: "#0B1F33" }}>Owner identity:</strong>{" "}
                     {safeStr(myShop.gmfn_id || myShop.owner_gmfn_id || "—")}
                   </div>
+                  <div>
+                    <strong style={{ color: "#0B1F33" }}>Display name:</strong>{" "}
+                    {safeStr(myShop.owner_display_name || "—")}
+                  </div>
                 </>
               ) : (
-                "No active shop loaded for your identity in the selected marketplace yet."
+                "No active shop loaded for your identity in the selected community context yet."
               )}
             </div>
           </div>
@@ -813,7 +951,9 @@ export default function ShopControlPage() {
             />
 
             <label style={btn(false, uploadingProductImage)}>
-              {uploadingProductImage ? "Uploading Product Image..." : "Upload Product Image"}
+              {uploadingProductImage
+                ? "Uploading Product Image..."
+                : "Upload Product Image"}
               <input
                 type="file"
                 accept="image/*"
@@ -823,7 +963,7 @@ export default function ShopControlPage() {
               />
             </label>
 
-            {String(productImageUrl || "").trim() ? (
+            {safeStr(productImageUrl || "") ? (
               <div
                 style={{
                   border: "1px solid rgba(11,31,51,0.10)",
@@ -832,7 +972,14 @@ export default function ShopControlPage() {
                   padding: 10,
                 }}
               >
-                <div style={{ fontSize: 12, fontWeight: 1000, color: "#64748B", marginBottom: 8 }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 1000,
+                    color: "#64748B",
+                    marginBottom: 8,
+                  }}
+                >
                   Product Preview
                 </div>
 
@@ -880,6 +1027,22 @@ export default function ShopControlPage() {
                 {savingProduct ? "Saving Product..." : "Save Product"}
               </button>
             </div>
+
+            <div
+              style={{
+                marginTop: 6,
+                borderRadius: 12,
+                border: "1px solid rgba(11,31,51,0.08)",
+                background: "#F8FBFF",
+                padding: 12,
+                color: "#64748B",
+                fontSize: 13,
+                lineHeight: 1.7,
+              }}
+            >
+              Product publication is active now. Product editing and deletion are
+              not part of this current control surface.
+            </div>
           </div>
         </div>
 
@@ -902,7 +1065,9 @@ export default function ShopControlPage() {
             />
 
             <label style={btn(false, uploadingSpotlightImage)}>
-              {uploadingSpotlightImage ? "Uploading Spotlight Image..." : "Upload Spotlight Image"}
+              {uploadingSpotlightImage
+                ? "Uploading Spotlight Image..."
+                : "Upload Spotlight Image"}
               <input
                 type="file"
                 accept="image/*"
@@ -912,7 +1077,7 @@ export default function ShopControlPage() {
               />
             </label>
 
-            {String(spotlightImageUrl || "").trim() ? (
+            {safeStr(spotlightImageUrl || "") ? (
               <div
                 style={{
                   border: "1px solid rgba(11,31,51,0.10)",
@@ -921,7 +1086,14 @@ export default function ShopControlPage() {
                   padding: 10,
                 }}
               >
-                <div style={{ fontSize: 12, fontWeight: 1000, color: "#64748B", marginBottom: 8 }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 1000,
+                    color: "#64748B",
+                    marginBottom: 8,
+                  }}
+                >
                   Spotlight Preview
                 </div>
 
@@ -1012,12 +1184,40 @@ export default function ShopControlPage() {
                       activeMySpotlight.source_clan_name ||
                         selectedClan?.marketplace_name ||
                         selectedClan?.name ||
-                        "Selected marketplace"
+                        "Selected community"
                     )}
                   </div>
+                  <div>
+                    <strong style={{ color: "#0B1F33" }}>Expires:</strong>{" "}
+                    {safeDateTime(activeMySpotlight.expires_at) || "—"}
+                  </div>
+                  {safeStr(activeMySpotlight.image_url || "") ? (
+                    <div
+                      style={{
+                        marginTop: 10,
+                        width: "100%",
+                        height: 160,
+                        borderRadius: 12,
+                        overflow: "hidden",
+                        background: "#EAF2FF",
+                        border: "1px solid rgba(11,31,51,0.08)",
+                      }}
+                    >
+                      <img
+                        src={resolveMediaUrl(activeMySpotlight.image_url)}
+                        alt="Active spotlight"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          display: "block",
+                        }}
+                      />
+                    </div>
+                  ) : null}
                 </>
               ) : (
-                "No active spotlight loaded for your identity in this marketplace yet."
+                "No active spotlight loaded for your identity in this community context yet."
               )}
             </div>
           </div>
