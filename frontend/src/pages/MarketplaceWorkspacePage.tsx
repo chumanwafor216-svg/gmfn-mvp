@@ -79,7 +79,7 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
   };
 }
 
-function btn(primary = false): React.CSSProperties {
+function btn(primary = false, disabled = false): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
@@ -87,13 +87,14 @@ function btn(primary = false): React.CSSProperties {
     padding: "10px 12px",
     borderRadius: 12,
     border: "1px solid rgba(11,31,51,0.10)",
-    background: primary ? "#0B63D1" : "#FFFFFF",
+    background: disabled ? "#CBD5E1" : primary ? "#0B63D1" : "#FFFFFF",
     color: primary ? "#FFFFFF" : "#0B1F33",
     fontWeight: 900,
-    cursor: "pointer",
+    cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
     textDecoration: "none",
     gap: 8,
+    opacity: disabled ? 0.72 : 1,
   };
 }
 
@@ -125,6 +126,16 @@ function sectionTitle(): React.CSSProperties {
     fontSize: 18,
     fontWeight: 1000,
     color: "#0B1F33",
+  };
+}
+
+function sectionLabel(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#4F6B8A",
+    fontWeight: 1000,
+    letterSpacing: 0.45,
+    textTransform: "uppercase",
   };
 }
 
@@ -168,16 +179,16 @@ function getCommunityTrustState(source: any): CommunityTrustState {
         classText === "A" || classText === "A+" || classText === "B"
           ? "green"
           : classText === "C"
-            ? "yellow"
-            : "red",
+          ? "yellow"
+          : "red",
       statusText:
         classText === "A" || classText === "A+"
           ? "Healthy"
           : classText === "B"
-            ? "Stable"
-            : classText === "C"
-              ? "Needs attention"
-              : "At risk",
+          ? "Stable"
+          : classText === "C"
+          ? "Needs attention"
+          : "At risk",
     };
   }
 
@@ -266,6 +277,8 @@ export default function MarketplaceWorkspacePage() {
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
 
+  const [privateBlocksLocked, setPrivateBlocksLocked] = useState(false);
+
   const [inviteOpen, setInviteOpen] = useState(true);
   const [moneyOpen, setMoneyOpen] = useState(true);
   const [alertsOpen, setAlertsOpen] = useState(true);
@@ -292,17 +305,40 @@ export default function MarketplaceWorkspacePage() {
       setBusy(true);
       setErr("");
       setMsg("");
+      setPrivateBlocksLocked(false);
 
       try {
-        const [inviteRes, joinRes, membersRes] = await Promise.all([
-          getClanInviteLink(activeClanId).catch(() => null),
-          listJoinRequests(activeClanId).catch(() => ({ items: [] })),
-          listClanMembers(activeClanId).catch(() => ({ items: [] })),
+        const [inviteRes, joinRes, membersRes] = await Promise.allSettled([
+          getClanInviteLink(activeClanId),
+          listJoinRequests(activeClanId),
+          listClanMembers(activeClanId),
         ]);
 
-        setInviteInfo(inviteRes || null);
-        setJoinRequests(Array.isArray(joinRes) ? joinRes : joinRes?.items || []);
-        setMembers(Array.isArray(membersRes) ? membersRes : membersRes?.items || []);
+        if (inviteRes.status === "fulfilled") {
+          setInviteInfo(inviteRes.value || null);
+        } else {
+          throw new Error("Unable to load community workspace.");
+        }
+
+        if (joinRes.status === "fulfilled") {
+          setJoinRequests(
+            Array.isArray(joinRes.value) ? joinRes.value : joinRes.value?.items || []
+          );
+        } else {
+          setJoinRequests([]);
+          setPrivateBlocksLocked(true);
+        }
+
+        if (membersRes.status === "fulfilled") {
+          setMembers(
+            Array.isArray(membersRes.value)
+              ? membersRes.value
+              : membersRes.value?.items || []
+          );
+        } else {
+          setMembers([]);
+          setPrivateBlocksLocked(true);
+        }
       } catch (e: any) {
         setErr(String(e?.message || e || "Unable to load community page."));
       } finally {
@@ -374,6 +410,13 @@ export default function MarketplaceWorkspacePage() {
     );
   }, [inviteInfo]);
 
+  const guideUrl = useMemo(() => {
+    if (typeof window !== "undefined" && window.location?.origin) {
+      return `${window.location.origin}/GSN_FINAL_WHITE.pdf`;
+    }
+    return "/GSN_FINAL_WHITE.pdf";
+  }, []);
+
   const pendingCount = useMemo(() => {
     return joinRequests.filter(
       (x) => safeStr(x?.status).toLowerCase() === "pending"
@@ -388,6 +431,10 @@ export default function MarketplaceWorkspacePage() {
     () => communityToneStyles(communityTrust.tone),
     [communityTrust.tone]
   );
+
+  const communityHomeLink = useMemo(() => {
+    return activeClanId ? `/app/community/${activeClanId}` : "/app/community";
+  }, [activeClanId]);
 
   const memberRows = useMemo(() => {
     return members.map((member: any, idx: number) => {
@@ -432,6 +479,9 @@ export default function MarketplaceWorkspacePage() {
       ``,
       `Use this community link to begin:`,
       inviteLink || "(invite link unavailable)",
+      ``,
+      `Guide:`,
+      guideUrl,
     ].join("\n");
 
     safeCopy(text);
@@ -444,6 +494,7 @@ export default function MarketplaceWorkspacePage() {
       `You are invited to begin the request-to-join process for ${title}.`,
       `Admission is not automatic. Members still review and vote.`,
       inviteLink,
+      `Guide: ${guideUrl}`,
     ]
       .filter(Boolean)
       .join("\n\n");
@@ -456,6 +507,20 @@ export default function MarketplaceWorkspacePage() {
     if (!shopViewLink) return;
     safeCopy(shopViewLink);
     setMsg("Community shop-view link copied.");
+  }
+
+  function copyShopViewMessage() {
+    const title = safeStr(communityName || "this community");
+    const text = [
+      `Take a look at shops visible from ${title}.`,
+      shopViewLink || "(shop view link unavailable)",
+      `Guide: ${guideUrl}`,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+    safeCopy(text);
+    setMsg("Community shop-view message copied.");
   }
 
   function openShopForMember(member: any) {
@@ -471,7 +536,7 @@ export default function MarketplaceWorkspacePage() {
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", paddingBottom: 36 }}>
-      <PageTopNav title={communityName} subtitle="Individual community page." />
+      <PageTopNav title={communityName} subtitle="Community workspace." />
 
       {err ? (
         <div
@@ -502,8 +567,11 @@ export default function MarketplaceWorkspacePage() {
       ) : null}
 
       <div style={{ ...pageCard(), marginTop: 18 }}>
+        <div style={sectionLabel()}>Community profile</div>
+
         <div
           style={{
+            marginTop: 14,
             display: "grid",
             gridTemplateColumns: "0.9fr 1.1fr",
             gap: 16,
@@ -587,7 +655,7 @@ export default function MarketplaceWorkspacePage() {
               }}
             >
               {communityDescription ||
-                "This is the dedicated page for this one community. Its invite links, alerts, money and support routes, and community-specific controls live here."}
+                "This is the dedicated page for this one community. Its invite links, money and support routes, demand, spotlight, and member-to-shop mapping should stay clear here."}
             </div>
 
             <div
@@ -598,11 +666,14 @@ export default function MarketplaceWorkspacePage() {
                 flexWrap: "wrap",
               }}
             >
-              <Link to="/app/community" style={btn(false)}>
-                Back to Community Home
+              <Link to={communityHomeLink} style={btn(false)}>
+                Community Home
+              </Link>
+              <Link to="/app/marketplace" style={btn(false)}>
+                Marketplace
               </Link>
               <Link to="/app/clans" style={btn(false)}>
-                Communities
+                Create Community
               </Link>
             </div>
           </div>
@@ -699,7 +770,7 @@ export default function MarketplaceWorkspacePage() {
             flexWrap: "wrap",
           }}
         >
-          <div style={sectionTitle()}>Invite package</div>
+          <div style={sectionTitle()}>Action layer</div>
           <button
             type="button"
             onClick={() => setInviteOpen((v) => !v)}
@@ -713,7 +784,7 @@ export default function MarketplaceWorkspacePage() {
           <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
             <div style={softCard("#F8FBFF")}>
               <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>
-                Join this community
+                Invite package
               </div>
 
               <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
@@ -748,6 +819,22 @@ export default function MarketplaceWorkspacePage() {
                   </div>
                 </div>
 
+                <div>
+                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>
+                    Guide
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 6,
+                      color: "#0B1F33",
+                      fontWeight: 1000,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {guideUrl}
+                  </div>
+                </div>
+
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <button
                     type="button"
@@ -755,7 +842,8 @@ export default function MarketplaceWorkspacePage() {
                       safeCopy(inviteLink);
                       setMsg("Community invite link copied.");
                     }}
-                    style={btn(true)}
+                    style={btn(true, !inviteLink)}
+                    disabled={!inviteLink}
                   >
                     Copy Join Link
                   </button>
@@ -776,6 +864,31 @@ export default function MarketplaceWorkspacePage() {
                     Send via WhatsApp
                   </button>
                 </div>
+              </div>
+            </div>
+
+            <div style={softCard("#F8FBFF")}>
+              <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>
+                Localized routes
+              </div>
+
+              <div
+                style={{
+                  marginTop: 10,
+                  display: "flex",
+                  gap: 10,
+                  flexWrap: "wrap",
+                }}
+              >
+                <Link to="/app/demand-box" style={btn(false)}>
+                  Demand
+                </Link>
+                <Link to="/app/marketplace" style={btn(false)}>
+                  Spotlight
+                </Link>
+                <Link to="/app/clans" style={btn(false)}>
+                  Create Community
+                </Link>
               </div>
             </div>
 
@@ -817,8 +930,18 @@ export default function MarketplaceWorkspacePage() {
                   type="button"
                   onClick={copyShopViewLink}
                   style={btn(false)}
+                  disabled={!shopViewLink}
                 >
                   Copy Shop View Link
+                </button>
+
+                <button
+                  type="button"
+                  onClick={copyShopViewMessage}
+                  style={btn(false)}
+                  disabled={!shopViewLink}
+                >
+                  Copy Shop View Message
                 </button>
               </div>
             </div>
@@ -908,6 +1031,24 @@ export default function MarketplaceWorkspacePage() {
         ) : null}
       </div>
 
+      {privateBlocksLocked ? (
+        <div
+          style={{
+            ...pageCard("#FFFDF5"),
+            marginTop: 18,
+            border: "1px solid rgba(214,175,71,0.25)",
+          }}
+        >
+          <div style={{ fontWeight: 1000, color: "#92400E" }}>
+            Some private community blocks require sign-in
+          </div>
+          <div style={{ marginTop: 8, color: "#475569", lineHeight: 1.8 }}>
+            Invite details are visible here, but full alerts and member mapping may
+            require signed-in community access.
+          </div>
+        </div>
+      ) : null}
+
       <div style={{ ...pageCard(), marginTop: 18 }}>
         <div
           style={{
@@ -918,7 +1059,7 @@ export default function MarketplaceWorkspacePage() {
             flexWrap: "wrap",
           }}
         >
-          <div style={sectionTitle()}>Alert system</div>
+          <div style={sectionTitle()}>Community alerts</div>
           <button
             type="button"
             onClick={() => setAlertsOpen((v) => !v)}
@@ -979,7 +1120,7 @@ export default function MarketplaceWorkspacePage() {
             flexWrap: "wrap",
           }}
         >
-          <div style={sectionTitle()}>Members</div>
+          <div style={sectionTitle()}>Members → Shop mapping</div>
           <button
             type="button"
             onClick={() => setMembersOpen((v) => !v)}
@@ -1021,7 +1162,7 @@ export default function MarketplaceWorkspacePage() {
                     </div>
 
                     <div style={{ marginTop: 6, ...muted() }}>
-                      Shop: {member.shopName || "No visible shop yet"}
+                      {member.shopName ? `Shop: ${member.shopName}` : "No shop yet"}
                     </div>
 
                     <div
