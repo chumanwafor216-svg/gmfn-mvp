@@ -12,10 +12,7 @@ function safeStr(x: any, fallback = ""): string {
 function normalizeMerchantMessage(x: any): string {
   const s = safeStr(x);
   if (!s) return "";
-  return s
-    .replace(/â€”|â€"|â€“/g, "-")
-    .replace(/\s+/g, " ")
-    .trim();
+  return s.replace(/â€”|â€"|â€“/g, "-").replace(/\s+/g, " ").trim();
 }
 
 function card(bg = "#FFFFFF"): React.CSSProperties {
