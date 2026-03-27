@@ -22,19 +22,37 @@ type Props = {
   title?: string;
   subtitle?: string;
   dashboardTo?: string;
+  backTo?: string;
 };
 
 export default function PageTopNav({
   title,
   subtitle,
-  dashboardTo = "/dashboard",
+  dashboardTo = "/app/dashboard",
+  backTo,
 }: Props) {
   const navigate = useNavigate();
 
+  function goBack() {
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+
+    navigate(backTo || dashboardTo, { replace: true });
+  }
+
   return (
     <div style={{ marginBottom: 18 }}>
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-        <button onClick={() => navigate(-1)} style={btn(false)}>
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          flexWrap: "wrap",
+          alignItems: "center",
+        }}
+      >
+        <button type="button" onClick={goBack} style={btn(false)}>
           ← Back
         </button>
 
@@ -44,13 +62,26 @@ export default function PageTopNav({
       </div>
 
       {title ? (
-        <div style={{ marginTop: 16, fontSize: 32, fontWeight: 1000, color: "#0B1F33" }}>
+        <div
+          style={{
+            marginTop: 16,
+            fontSize: 32,
+            fontWeight: 1000,
+            color: "#0B1F33",
+          }}
+        >
           {title}
         </div>
       ) : null}
 
       {subtitle ? (
-        <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
+        <div
+          style={{
+            marginTop: 8,
+            color: "#6B7A88",
+            lineHeight: 1.8,
+          }}
+        >
           {subtitle}
         </div>
       ) : null}
