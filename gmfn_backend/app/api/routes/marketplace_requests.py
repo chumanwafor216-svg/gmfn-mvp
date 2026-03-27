@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.db.database import get_db
-from app.db.models import MarketplaceRequest, User
+from app.db.models import ClanMembership, MarketplaceRequest, User
 from app.schemas.marketplace_requests import (
     MarketplaceRequestCreate,
     MarketplaceRequestOut,
@@ -67,6 +67,62 @@ def _active_request_count(db: Session, user_id: int) -> int:
     )
 
 
+def _visible_user_ids_for_marketplace_requests(
+    db: Session,
+    current_user_id: int,
+    clan_id: int | None = None,
+) -> list[int]:
+    """
+    System-level visibility rule for Demand Box:
+
+    - Request ownership is user-level (one member creates the request)
+    - Visibility is membership-driven
+    - If clan_id is provided, show requests from users visible in that community only
+    - If clan_id is not provided, show requests from users who share any community
+      with the current user
+    """
+    if clan_id is not None:
+        membership_in_target = (
+            db.query(ClanMembership)
+            .filter(
+                ClanMembership.user_id == current_user_id,
+                ClanMembership.clan_id == clan_id,
+            )
+            .first()
+        )
+        if not membership_in_target:
+            return []
+
+        rows = (
+            db.query(ClanMembership.user_id)
+            .filter(ClanMembership.clan_id == clan_id)
+            .distinct()
+            .all()
+        )
+        return [row[0] for row in rows]
+
+    my_clan_rows = (
+        db.query(ClanMembership.clan_id)
+        .filter(ClanMembership.user_id == current_user_id)
+        .distinct()
+        .all()
+    )
+    my_clan_ids = [row[0] for row in my_clan_rows]
+    if not my_clan_ids:
+        return [current_user_id]
+
+    rows = (
+        db.query(ClanMembership.user_id)
+        .filter(ClanMembership.clan_id.in_(my_clan_ids))
+        .distinct()
+        .all()
+    )
+    visible_ids = [row[0] for row in rows]
+    if current_user_id not in visible_ids:
+        visible_ids.append(current_user_id)
+    return visible_ids
+
+
 def _to_out(
     row: MarketplaceRequest,
     user: User | None = None,
@@ -105,6 +161,8 @@ def create_marketplace_request(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    from app.services.notification_service import create_notification
+
     _cleanup_expired_requests(db)
 
     active_count = _active_request_count(db, current_user.id)
@@ -135,6 +193,35 @@ def create_marketplace_request(
     db.add(row)
     db.commit()
     db.refresh(row)
+
+    visible_user_ids = _visible_user_ids_for_marketplace_requests(
+        db=db,
+        current_user_id=current_user.id,
+        clan_id=None,
+    )
+
+    for uid in visible_user_ids:
+        if uid == current_user.id:
+            continue
+
+        create_notification(
+            db,
+            user_id=uid,
+            kind="demand_new",
+            title="New request near you",
+            message=f"{current_user.email} needs: {payload.title}",
+            action_url="/app/demand-box",
+            action_label="View request",
+        )
+        create_notification(
+        db,
+        user_id=current_user.id,
+        kind="demand_posted",
+        title="Your request is live",
+        message=f"Your request '{payload.title}' is now visible.",
+        action_url="/app/demand-box",
+        action_label="View your post",
+    )
     return _to_out(row, current_user)
 
 
@@ -147,11 +234,24 @@ def list_marketplace_requests(
     urgency: str | None = Query(default=None),
     area: str | None = Query(default=None),
     mine_only: bool = Query(default=False),
+    clan_id: int | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=200),
 ):
     _cleanup_expired_requests(db)
 
     q = db.query(MarketplaceRequest).join(User, User.id == MarketplaceRequest.user_id)
+
+    if mine_only:
+        q = q.filter(MarketplaceRequest.user_id == current_user.id)
+    else:
+        visible_user_ids = _visible_user_ids_for_marketplace_requests(
+            db=db,
+            current_user_id=current_user.id,
+            clan_id=clan_id,
+        )
+        if not visible_user_ids:
+            return []
+        q = q.filter(MarketplaceRequest.user_id.in_(visible_user_ids))
 
     status_raw = str(status or "open").strip().lower()
     if status_raw == "open":
@@ -162,9 +262,6 @@ def list_marketplace_requests(
         )
     elif status_raw != "all":
         q = q.filter(MarketplaceRequest.status == status_raw)
-
-    if mine_only:
-        q = q.filter(MarketplaceRequest.user_id == current_user.id)
 
     if category:
         q = q.filter(MarketplaceRequest.category.ilike(f"%{category.strip()}%"))
@@ -185,13 +282,25 @@ def get_marketplace_request(
     request_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    clan_id: int | None = Query(default=None),
 ):
     _cleanup_expired_requests(db)
+
+    visible_user_ids = _visible_user_ids_for_marketplace_requests(
+        db=db,
+        current_user_id=current_user.id,
+        clan_id=clan_id,
+    )
+    if not visible_user_ids:
+        raise HTTPException(status_code=404, detail="Request not found")
 
     row = (
         db.query(MarketplaceRequest)
         .join(User, User.id == MarketplaceRequest.user_id)
-        .filter(MarketplaceRequest.id == request_id)
+        .filter(
+            MarketplaceRequest.id == request_id,
+            MarketplaceRequest.user_id.in_(visible_user_ids),
+        )
         .first()
     )
     if not row:

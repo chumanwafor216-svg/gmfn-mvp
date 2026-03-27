@@ -6,7 +6,7 @@ from decimal import Decimal
 import json
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
-from sqlalchemy import or_
+from sqlalchemy import false, or_
 from sqlalchemy.orm import Session
 
 from app.db.models import ClanMembership, Loan, LoanGuarantor, TrustEvent, User
@@ -700,6 +700,7 @@ def _aggregate_edges(raw_edges: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     )
     return finalized
 
+
 def _build_summary(
     *,
     root_user_id: int,
@@ -895,6 +896,7 @@ def _build_summary(
         "edge_type_counts": dict(edge_type_counts),
     }
 
+
 def build_trust_graph(
     db: Session,
     user_id: int,
@@ -942,16 +944,21 @@ def build_trust_graph(
 
     related_loan_ids = sorted(set(borrower_loan_ids + guarantor_loan_ids))
 
-    trust_events_query = db.query(TrustEvent).filter(
-        or_(
-            TrustEvent.actor_user_id == root_user_id,
-            TrustEvent.subject_user_id == root_user_id,
-            TrustEvent.loan_id.in_(related_loan_ids) if related_loan_ids else False,
-        )
+    loan_clause = (
+        TrustEvent.loan_id.in_(related_loan_ids)
+        if related_loan_ids
+        else false()
     )
 
     trust_events = (
-        trust_events_query
+        db.query(TrustEvent)
+        .filter(
+            or_(
+                TrustEvent.actor_user_id == root_user_id,
+                TrustEvent.subject_user_id == root_user_id,
+                loan_clause,
+            )
+        )
         .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
         .limit(max(1, min(int(limit_events), 2000)))
         .all()
@@ -961,6 +968,7 @@ def build_trust_graph(
     for event in trust_events:
         meta = _parse_meta(event)
         ids = _extract_common_ids(event, meta)
+
         for key in [
             "actor_user_id",
             "subject_user_id",

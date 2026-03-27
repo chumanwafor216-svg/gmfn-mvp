@@ -1,4 +1,3 @@
-# app/api/routes/trust_recompute.py
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -8,9 +7,16 @@ from app.core.auth import get_current_user
 from app.db.database import get_db
 from app.db.models import User
 from app.services.trust_events_query_service import list_recent_for_subject
-from app.services.trust_recompute_service import apply_recomputed_trust_for_user, recompute_trust_for_user
+from app.services.trust_recompute_service import (
+    apply_recomputed_trust_for_user,
+    recompute_trust_for_user,
+)
 
 router = APIRouter(tags=["trust-recompute"])
+
+
+def _is_admin(user: User) -> bool:
+    return ((getattr(user, "role", "") or "").lower() == "admin")
 
 
 @router.get("/trust/recompute/me")
@@ -37,8 +43,12 @@ def admin_recompute_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if (current_user.role or "").lower() != "admin":
+    if not _is_admin(current_user):
         raise HTTPException(status_code=403, detail="Admin only")
+
+    target = db.get(User, int(user_id))
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
 
     r = recompute_trust_for_user(db, user_id=int(user_id), limit=limit)
     return {
@@ -61,8 +71,12 @@ def admin_apply_recompute_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if (current_user.role or "").lower() != "admin":
+    if not _is_admin(current_user):
         raise HTTPException(status_code=403, detail="Admin only")
+
+    target = db.get(User, int(user_id))
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
 
     return apply_recomputed_trust_for_user(
         db,
@@ -81,13 +95,13 @@ def admin_trust_evidence_snapshot(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Visa-grade single snapshot:
+    Single admin evidence snapshot:
     - current stored trust fields
-    - recomputed trust (live)
+    - recomputed trust
     - diff
-    - last 10 TrustEvents (reason/note)
+    - recent TrustEvents
     """
-    if (current_user.role or "").lower() != "admin":
+    if not _is_admin(current_user):
         raise HTTPException(status_code=403, detail="Admin only")
 
     u = db.get(User, int(user_id))
@@ -98,7 +112,6 @@ def admin_trust_evidence_snapshot(
 
     current_score = getattr(u, "trust_score", None)
     current_band = getattr(u, "trust_band", None)
-
     current_score_str = str(current_score) if current_score is not None else None
 
     diff = {
@@ -106,17 +119,26 @@ def admin_trust_evidence_snapshot(
         "stored_band": current_band,
         "recomputed_score": recomputed.score,
         "recomputed_band": recomputed.band,
-        "match": (current_score_str == recomputed.score) and (current_band == recomputed.band),
+        "match": (current_score_str == recomputed.score)
+        and (current_band == recomputed.band),
     }
 
-    recent_events = list_recent_for_subject(db, subject_user_id=int(user_id), limit=10)
+    recent_events = list_recent_for_subject(
+        db,
+        subject_user_id=int(user_id),
+        limit=10,
+    )
 
     return {
         "user_id": int(user_id),
         "current": {
             "trust_score": current_score_str,
             "trust_band": current_band,
-            "trust_score_updated_at": getattr(u, "trust_score_updated_at", None),
+            "trust_score_updated_at": (
+                getattr(u, "trust_score_updated_at", None).isoformat()
+                if getattr(u, "trust_score_updated_at", None) is not None
+                else None
+            ),
         },
         "recomputed": {
             "score": recomputed.score,

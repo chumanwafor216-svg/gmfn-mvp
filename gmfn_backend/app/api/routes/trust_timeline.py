@@ -1,4 +1,3 @@
-# app/api/routes/trust_timeline.py
 from __future__ import annotations
 
 from typing import Any, Dict
@@ -9,7 +8,6 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_current_user
 from app.db.database import get_db
 from app.db.models import User
-
 from app.services.trust_timeline_service import list_trust_timeline
 
 router = APIRouter(prefix="/trust", tags=["trust"])
@@ -35,14 +33,21 @@ def my_trust_timeline(
     current_user: User = Depends(get_current_user),
     limit: int = 50,
 ) -> Dict[str, Any]:
+    lim = max(1, min(int(limit or 50), 200))
+
     items = list_trust_timeline(
         db,
         user_id=int(current_user.id),
-        limit=int(limit),
+        limit=lim,
         audience="user",
         hide_zero_deltas_for_user=True,
     )
-    return {"user_id": int(current_user.id), "items": items, "total": len(items)}
+
+    return {
+        "user_id": int(current_user.id),
+        "items": items,
+        "total": len(items),
+    }
 
 
 @router.get("/timeline/{user_id}")
@@ -53,13 +58,26 @@ def user_trust_timeline_admin(
     limit: int = 50,
 ) -> Dict[str, Any]:
     _require_admin(current_user)
-    if user_id <= 0:
+
+    if int(user_id) <= 0:
         raise HTTPException(status_code=400, detail="Invalid user_id")
+
+    lim = max(1, min(int(limit or 50), 200))
+
+    target = db.get(User, int(user_id))
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+
     items = list_trust_timeline(
         db,
         user_id=int(user_id),
-        limit=int(limit),
+        limit=lim,
         audience="admin",
         hide_zero_deltas_for_user=False,
     )
-    return {"user_id": int(user_id), "items": items, "total": len(items)}
+
+    return {
+        "user_id": int(user_id),
+        "items": items,
+        "total": len(items),
+    }

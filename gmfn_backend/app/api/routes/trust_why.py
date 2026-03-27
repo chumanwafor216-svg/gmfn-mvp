@@ -1,4 +1,3 @@
-# app/api/routes/trust_why.py
 from __future__ import annotations
 
 import hashlib
@@ -43,11 +42,16 @@ def _latest_event_time(db: Session, user_id: int) -> Optional[datetime]:
 def _build_pack_id(*, user_id: int, based_on_event_at: Optional[datetime]) -> str:
     """
     Deterministic Pack ID:
-    - Stable for a given "latest event timestamp"
-    - Changes when the timeline changes (new TrustEvent)
+    - Stable for a given latest event timestamp
+    - Changes when the timeline changes
     """
     if based_on_event_at is None:
-        based_on_event_at = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        based_on_event_at = datetime.now(timezone.utc).replace(
+            hour=0,
+            minute=0,
+            second=0,
+            microsecond=0,
+        )
 
     ts = based_on_event_at.astimezone(timezone.utc)
     day = ts.strftime("%Y%m%d")
@@ -57,33 +61,33 @@ def _build_pack_id(*, user_id: int, based_on_event_at: Optional[datetime]) -> st
     return f"TP-U{user_id}-{day}-{digest}"
 
 
-def _safe_meta(meta_json: Optional[str]) -> dict[str, Any]:
-    if not meta_json:
+def _safe_meta(raw: Any) -> dict[str, Any]:
+    if raw is None:
         return {}
-    try:
-        v = json.loads(meta_json)
-        return v if isinstance(v, dict) else {}
-    except Exception:
-        return {}
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, str):
+        try:
+            v = json.loads(raw)
+            return v if isinstance(v, dict) else {}
+        except Exception:
+            return {}
+    return {}
 
 
 def _infer_delta(event_type: str) -> Optional[Decimal]:
     """
-    Deterministic delta mapping aligned with the current policy.
+    Deterministic delta mapping aligned with current policy.
 
-    IMPORTANT:
-    - This is a "policy delta estimate" for explainability.
-    - The source of truth remains the deterministic trust engine
-      (apply_trust_score + compute_trust_breakdown).
+    This is only an explainability estimate.
+    Source of truth remains the deterministic trust engine.
     """
     t = (event_type or "").lower()
 
-    # Repayment-only trust growth policy
-    if t in {"repayment.confirmed", "loan.repaid", "repayment.completed"}:
+    if t in {"repayment.confirmed", "loan.repaid", "repayment.completed", "loan_fully_repaid"}:
         return Decimal("0.10")
 
-    # Guarantor benefit (if you emit explicit guarantor repayment events)
-    if t in {"guarantor.repayment.confirmed", "guarantor.support.confirmed"}:
+    if t in {"guarantor.repayment.confirmed", "guarantor.support.confirmed", "guarantor_success"}:
         return Decimal("0.03")
 
     return None
@@ -91,10 +95,13 @@ def _infer_delta(event_type: str) -> Optional[Decimal]:
 
 def _delta_rule(event_type: str) -> Optional[str]:
     t = (event_type or "").lower()
-    if t in {"repayment.confirmed", "loan.repaid", "repayment.completed"}:
+
+    if t in {"repayment.confirmed", "loan.repaid", "repayment.completed", "loan_fully_repaid"}:
         return "repayment-only-policy:borrower:+0.10"
-    if t in {"guarantor.repayment.confirmed", "guarantor.support.confirmed"}:
+
+    if t in {"guarantor.repayment.confirmed", "guarantor.support.confirmed", "guarantor_success"}:
         return "repayment-only-policy:guarantor:+0.03"
+
     return None
 
 
@@ -104,29 +111,33 @@ def _checksum(*, pack_id: str, latest_event_at: Optional[datetime], event_ids: l
     return hashlib.sha256(seed.encode("utf-8")).hexdigest()
 
 
+def _serialize_dt(value: Any) -> Any:
+    if isinstance(value, datetime):
+        return _to_aware(value).isoformat() if _to_aware(value) else None
+    return value
+
+
 def _mode_redact_event(e: dict[str, Any], mode: ExplainMode) -> dict[str, Any]:
+    out = dict(e)
+
     if mode == "detailed":
-        return e
+        return out
 
-    # standard: remove actor identifiers + internal ids if you want; keep loan/clan ids
     if mode == "standard":
-        e.pop("actor_user_id", None)
-        e.pop("meta", None)  # keep only reason/note (already extracted)
-        return e
+        out.pop("actor_user_id", None)
+        out.pop("meta", None)
+        return out
 
-    # minimal: keep only what a merchant can see safely
-    # (no loan ids, no clan ids, no notes)
     if mode == "minimal":
-        keep = {
-            "id": e.get("id"),
-            "event_type": e.get("event_type"),
-            "delta": e.get("delta"),
-            "delta_rule": e.get("delta_rule"),
-            "created_at": e.get("created_at"),
+        return {
+            "id": out.get("id"),
+            "event_type": out.get("event_type"),
+            "delta": out.get("delta"),
+            "delta_rule": out.get("delta_rule"),
+            "created_at": out.get("created_at"),
         }
-        return keep
 
-    return e
+    return out
 
 
 @router.get("/me/why")
@@ -168,7 +179,6 @@ def trust_why_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
-    # Low-effort privacy win: self-only (tighten later to self+admin if needed)
     if int(user_id) != int(current_user.id):
         raise HTTPException(status_code=403, detail="Not allowed")
 
@@ -178,11 +188,9 @@ def trust_why_user(
     if not u:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Deterministic recompute snapshot
     apply_trust_score(db, user_id=int(user_id))
     breakdown = compute_trust_breakdown(db, user_id=int(user_id))
 
-    # Deterministic pack metadata
     latest_event_at = _latest_event_time(db, int(user_id))
     pack_id = _build_pack_id(user_id=int(user_id), based_on_event_at=latest_event_at)
 
@@ -203,36 +211,33 @@ def trust_why_user(
     events_out: list[dict[str, Any]] = []
     event_ids: list[int] = []
 
-    # Optional “policy score estimate” timeline (not the canonical score)
     policy_timeline: list[dict[str, Any]] = []
     running = Decimal("0")
 
-    # For grouping
     grouped: dict[str, dict[str, Any]] = {}
 
-    # Reverse for forward timeline if needed
     forward_rows = list(reversed(rows)) if include_policy_timeline else []
 
     for e in rows:
         event_ids.append(int(e.id))
 
-        meta = _safe_meta(getattr(e, "meta_json", None))
+        meta = _safe_meta(getattr(e, "meta", None) or getattr(e, "meta_json", None))
         delta_val = _infer_delta(e.event_type)
         delta_str = str(delta_val) if delta_val is not None else None
 
         ev = {
-            "id": e.id,
+            "id": int(e.id),
             "event_type": e.event_type,
             "delta": delta_str,
             "delta_rule": _delta_rule(e.event_type),
             "clan_id": e.clan_id,
             "loan_id": e.loan_id,
             "guarantor_id": e.guarantor_id,
-            "actor_user_id": e.actor_user_id,
-            "subject_user_id": e.subject_user_id,
+            "actor_user_id": int(e.actor_user_id),
+            "subject_user_id": int(e.subject_user_id),
             "reason": meta.get("reason"),
             "note": meta.get("note"),
-            "created_at": e.created_at,
+            "created_at": _serialize_dt(getattr(e, "created_at", None)),
             "meta": meta if mode == "detailed" else None,
         }
 
@@ -243,19 +248,21 @@ def trust_why_user(
             d = _infer_delta(e.event_type)
             if d is not None:
                 running += d
+
             policy_timeline.append(
                 {
                     "event_id": int(e.id),
                     "event_type": e.event_type,
                     "delta": str(d) if d is not None else None,
                     "policy_score_estimate": str(running),
-                    "created_at": e.created_at,
+                    "created_at": _serialize_dt(getattr(e, "created_at", None)),
                 }
             )
 
     if group_by_loan:
         for e in rows:
             key = str(e.loan_id) if e.loan_id is not None else "none"
+
             if key not in grouped:
                 grouped[key] = {
                     "loan_id": e.loan_id,
@@ -263,25 +270,32 @@ def trust_why_user(
                     "delta_total": Decimal("0"),
                     "last_event_at": None,
                 }
+
             grouped[key]["events"] += 1
+
             d = _infer_delta(e.event_type)
             if d is not None:
                 grouped[key]["delta_total"] += d
+
             t = _to_aware(getattr(e, "created_at", None))
             last = grouped[key]["last_event_at"]
             if last is None or (t is not None and t > last):
                 grouped[key]["last_event_at"] = t
 
-    checksum = _checksum(pack_id=pack_id, latest_event_at=latest_event_at, event_ids=event_ids)
+    checksum = _checksum(
+        pack_id=pack_id,
+        latest_event_at=latest_event_at,
+        event_ids=event_ids,
+    )
 
-    out = {
+    out: dict[str, Any] = {
         "user_id": int(user_id),
         "mode": mode,
         "protocol_version": PROTOCOL_VERSION,
         "pack_id": pack_id,
         "latest_event_at": latest_event_at.isoformat() if latest_event_at else None,
         "checksum": checksum,
-        "computed": breakdown,  # canonical engine output
+        "computed": breakdown,
         "events": events_out,
         "links": {
             "me": "/auth/me",
@@ -305,4 +319,4 @@ def trust_why_user(
             for v in grouped.values()
         ]
 
-    return out 
+    return out

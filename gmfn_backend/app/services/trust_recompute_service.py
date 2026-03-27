@@ -1,4 +1,3 @@
-# app/services/trust_recompute_service.py
 from __future__ import annotations
 
 import json
@@ -11,7 +10,6 @@ from sqlalchemy.orm import Session
 
 from app.db.models import TrustEvent
 from app.services.trust_band_service import compute_trust_band
-
 
 BORROWER_REPAYMENT_DELTA = Decimal("0.10")
 GUARANTOR_REPAYMENT_DELTA = Decimal("0.03")
@@ -26,10 +24,14 @@ def _safe_meta(meta_json: Optional[str]) -> dict[str, Any]:
     if not meta_json:
         return {}
     try:
-        v = json.loads(meta_json)
-        return v if isinstance(v, dict) else {}
+        value = json.loads(meta_json)
+        return value if isinstance(value, dict) else {}
     except Exception:
         return {}
+
+
+def _score_to_user_int(score: Decimal) -> int:
+    return int(score.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
 
 @dataclass(frozen=True)
@@ -53,9 +55,10 @@ def recompute_trust_for_user(
         .filter(TrustEvent.subject_user_id == int(user_id))
         .order_by(TrustEvent.id.asc())
     )
+
     if limit is not None:
-        lim = max(1, min(int(limit), 50000))
-        q = q.limit(lim)
+        safe_limit = max(1, min(int(limit), 50000))
+        q = q.limit(safe_limit)
 
     rows = q.all()
 
@@ -68,30 +71,32 @@ def recompute_trust_for_user(
         counts[et] = counts.get(et, 0) + 1
 
         meta = _safe_meta(getattr(ev, "meta_json", None))
-        role = (meta.get("role") or "").strip().lower()
+        role = str(meta.get("role") or "").strip().lower()
 
         delta = Decimal("0")
+        et_lower = et.lower()
 
         if role == "borrower":
-            if "repay" in et.lower():
+            if "repay" in et_lower:
                 delta = BORROWER_REPAYMENT_DELTA
         elif role == "guarantor":
-            if "repay" in et.lower():
+            if "repay" in et_lower:
                 delta = GUARANTOR_REPAYMENT_DELTA
         else:
-            etl = et.lower()
-            if "repay" in etl:
-                if "guarantor" in etl:
+            if "repay" in et_lower:
+                if "guarantor" in et_lower:
                     delta = GUARANTOR_REPAYMENT_DELTA
                 else:
                     delta = BORROWER_REPAYMENT_DELTA
 
         if delta != Decimal("0"):
             score = _qd(score + delta)
-            delta_by_type[et] = str(_qd(Decimal(delta_by_type.get(et, "0")) + delta))
+            current_total = Decimal(delta_by_type.get(et, "0"))
+            delta_by_type[et] = str(_qd(current_total + delta))
 
     last_event_id = rows[-1].id if rows else None
-    band = compute_trust_band(score)
+    final_score = _qd(score)
+    band = compute_trust_band(final_score)
 
     breakdown = {
         "ruleset": {
@@ -102,15 +107,16 @@ def recompute_trust_for_user(
         },
         "counts_by_event_type": counts,
         "delta_by_event_type": delta_by_type,
-        # apply-idempotency markers:
         "last_event_id_used": last_event_id,
         "event_count_used": len(rows),
         "computed_band": band,
+        "computed_score": str(final_score),
+        "computed_score_int": _score_to_user_int(final_score),
     }
 
     return TrustRecomputeResult(
         user_id=int(user_id),
-        score=str(_qd(score)),
+        score=str(final_score),
         band=band,
         breakdown=breakdown,
         event_count=len(rows),
@@ -122,8 +128,8 @@ def _safe_json_dict(s: Optional[str]) -> dict[str, Any]:
     if not s:
         return {}
     try:
-        v = json.loads(s)
-        return v if isinstance(v, dict) else {}
+        value = json.loads(s)
+        return value if isinstance(value, dict) else {}
     except Exception:
         return {}
 
@@ -139,12 +145,18 @@ def apply_recomputed_trust_for_user(
 ) -> dict[str, Any]:
     """
     Apply recomputed trust to user row.
+
     Idempotent when no new events:
-    - if stored breakdown has same last_event_id_used + event_count_used, it's a NO-OP (unless force=1)
+    - if stored breakdown has same last_event_id_used + event_count_used,
+      it is a NO-OP unless force=True.
     """
     from app.db.models import User  # lazy import
 
-    r = recompute_trust_for_user(db, user_id=int(user_id), limit=limit)
+    result = recompute_trust_for_user(
+        db,
+        user_id=int(user_id),
+        limit=limit,
+    )
 
     user = db.get(User, int(user_id))
     if not user:
@@ -154,26 +166,32 @@ def apply_recomputed_trust_for_user(
     existing_last = existing_breakdown.get("last_event_id_used")
     existing_count = existing_breakdown.get("event_count_used")
 
-    is_same_inputs = (existing_last == r.last_event_id) and (existing_count == r.event_count)
+    is_same_inputs = (
+        existing_last == result.last_event_id
+        and existing_count == result.event_count
+    )
 
     before = {
-        "trust_score": str(getattr(user, "trust_score", None)) if getattr(user, "trust_score", None) is not None else None,
+        "trust_score": (
+            str(getattr(user, "trust_score", None))
+            if getattr(user, "trust_score", None) is not None
+            else None
+        ),
         "trust_band": getattr(user, "trust_band", None),
         "trust_score_updated_at": getattr(user, "trust_score_updated_at", None),
         "last_event_id_used": existing_last,
         "event_count_used": existing_count,
     }
 
-    # NO-OP when no new events (unless force)
     if (not dry_run) and (not force) and is_same_inputs:
         return {
-            "user_id": r.user_id,
+            "user_id": result.user_id,
             "computed": {
-                "score": r.score,
-                "band": r.band,
-                "event_count": r.event_count,
-                "last_event_id": r.last_event_id,
-                "breakdown": r.breakdown,
+                "score": result.score,
+                "band": result.band,
+                "event_count": result.event_count,
+                "last_event_id": result.last_event_id,
+                "breakdown": result.breakdown,
             },
             "noop": True,
             "applied": False,
@@ -181,12 +199,17 @@ def apply_recomputed_trust_for_user(
             "after": before,
         }
 
-    new_score_dec = Decimal(r.score)
-    new_breakdown_json = json.dumps(r.breakdown, separators=(",", ":"), ensure_ascii=True)
+    new_score_dec = Decimal(result.score)
+    new_score_int = _score_to_user_int(new_score_dec)
+    new_breakdown_json = json.dumps(
+        result.breakdown,
+        separators=(",", ":"),
+        ensure_ascii=True,
+    )
 
     if not dry_run:
-        user.trust_score = new_score_dec
-        user.trust_band = r.band
+        user.trust_score = new_score_int
+        user.trust_band = result.band
         user.trust_breakdown_json = new_breakdown_json
         if set_updated_at:
             user.trust_score_updated_at = datetime.now(timezone.utc)
@@ -195,21 +218,24 @@ def apply_recomputed_trust_for_user(
         db.refresh(user)
 
     after = {
-        "trust_score": str(new_score_dec),
-        "trust_band": r.band,
-        "trust_score_updated_at": getattr(user, "trust_score_updated_at", None) if not dry_run else None,
-        "last_event_id_used": r.last_event_id,
-        "event_count_used": r.event_count,
+        "trust_score": str(new_score_int),
+        "trust_band": result.band,
+        "trust_score_updated_at": (
+            getattr(user, "trust_score_updated_at", None) if not dry_run else None
+        ),
+        "last_event_id_used": result.last_event_id,
+        "event_count_used": result.event_count,
     }
 
     return {
-        "user_id": r.user_id,
+        "user_id": result.user_id,
         "computed": {
-            "score": r.score,
-            "band": r.band,
-            "event_count": r.event_count,
-            "last_event_id": r.last_event_id,
-            "breakdown": r.breakdown,
+            "score": result.score,
+            "score_int": new_score_int,
+            "band": result.band,
+            "event_count": result.event_count,
+            "last_event_id": result.last_event_id,
+            "breakdown": result.breakdown,
         },
         "noop": False,
         "applied": (not dry_run),

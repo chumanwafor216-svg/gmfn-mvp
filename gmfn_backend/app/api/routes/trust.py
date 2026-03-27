@@ -1,4 +1,3 @@
-# app/api/routes/trust.py
 from __future__ import annotations
 
 import hashlib
@@ -11,7 +10,12 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.core.constants import PROTOCOL_VERSION
-from app.core.trust_policy import infer_delta_str, policy_version, rule_kind, rule_label
+from app.core.trust_policy import (
+    infer_delta_str,
+    policy_version,
+    rule_kind,
+    rule_label,
+)
 from app.db.database import get_db
 from app.db.models import TrustEvent, User
 from app.services.trust_score_service import apply_trust_score, compute_trust_breakdown
@@ -40,12 +44,16 @@ def _latest_event_time(db: Session, user_id: int) -> Optional[datetime]:
 def _build_pack_id(*, user_id: int, based_on_event_at: Optional[datetime]) -> str:
     """
     Deterministic Pack ID:
-    - Stable for a given "latest event timestamp"
-    - Changes when the timeline changes (new TrustEvent)
+    - Stable for a given latest TrustEvent timestamp
+    - Changes when the timeline changes
     """
     if based_on_event_at is None:
-        # Still deterministic (per-day) when user has no events.
-        based_on_event_at = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        based_on_event_at = datetime.now(timezone.utc).replace(
+            hour=0,
+            minute=0,
+            second=0,
+            microsecond=0,
+        )
 
     ts = based_on_event_at.astimezone(timezone.utc)
     day = ts.strftime("%Y%m%d")
@@ -55,14 +63,18 @@ def _build_pack_id(*, user_id: int, based_on_event_at: Optional[datetime]) -> st
     return f"TP-U{user_id}-{day}-{digest}"
 
 
-def _safe_meta(meta_json: Optional[str]) -> dict[str, Any]:
-    if not meta_json:
+def _safe_meta(raw: Any) -> dict[str, Any]:
+    if raw is None:
         return {}
-    try:
-        v = json.loads(meta_json)
-        return v if isinstance(v, dict) else {}
-    except Exception:
-        return {}
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, str):
+        try:
+            v = json.loads(raw)
+            return v if isinstance(v, dict) else {}
+        except Exception:
+            return {}
+    return {}
 
 
 @router.get("/score/explained")
@@ -72,7 +84,7 @@ def get_my_trust_score_explained(
 ):
     """
     Friendly, explainable trust score.
-    Trust increases ONLY when a loan is fully repaid.
+    Trust increases only when a loan is fully repaid.
     """
     apply_trust_score(db, user_id=int(current_user.id))
     return compute_trust_breakdown(db, user_id=int(current_user.id))
@@ -101,7 +113,7 @@ def get_my_evidence_pack_meta(
     Evidence Pack metadata:
     - pack_id (deterministic)
     - timestamps
-    - standard evidence endpoints (UI can deep-link)
+    - standard evidence endpoints
     """
     uid = int(current_user.id)
     based_on_event_at = _latest_event_time(db, uid)
@@ -119,7 +131,7 @@ def get_my_evidence_pack_meta(
             "trust_evidence_pack_pdf": "/trust/me/evidence-pack.pdf",
             "trust_timeline": "/trust/me/timeline?limit=50",
         },
-        "note": "Quote this Pack ID when speaking to a merchant/admin during the pilot.",
+        "note": "Quote this Pack ID when speaking to a merchant or admin during the pilot.",
     }
 
 
@@ -131,10 +143,8 @@ def trust_why_user(
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
     """
-    Explainable trust change feed for a user (audit surface).
-
-    NOTE: Access control can be tightened later (admin/self only).
-    For MVP/dev, this returns explainability for inspection/audit.
+    Explainable trust change feed for a user.
+    Access control can be tightened later if needed.
     """
     lim = max(1, min(int(limit or 10), 50))
 
@@ -155,13 +165,13 @@ def trust_why_user(
 
     events_out: list[dict[str, Any]] = []
     for e in rows:
-        meta = _safe_meta(getattr(e, "meta_json", None))
+        meta = _safe_meta(getattr(e, "meta", None) or getattr(e, "meta_json", None))
         events_out.append(
             {
                 "id": int(e.id),
                 "event_type": e.event_type,
                 "delta": infer_delta_str(e.event_type),
-                "delta_rule": (rule_label(e.event_type) or None),
+                "delta_rule": rule_label(e.event_type) or None,
                 "clan_id": e.clan_id,
                 "loan_id": e.loan_id,
                 "guarantor_id": e.guarantor_id,
@@ -188,17 +198,15 @@ def trust_me(
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
     """
-    A1: Single visa-friendly trust endpoint.
-    Returns current trust snapshot + last change (reason/note/delta) in one payload.
+    Single trust snapshot endpoint.
+    Returns current trust snapshot + last change in one payload.
     Must never crash.
     """
     uid = int(current_user.id)
 
-    # Ensure user trust fields are up-to-date (deterministic from TrustEvents)
     apply_trust_score(db, user_id=uid)
     breakdown = compute_trust_breakdown(db, user_id=uid)
 
-    # Latest TrustEvent for explainability
     last: Optional[TrustEvent] = (
         db.query(TrustEvent)
         .filter(TrustEvent.subject_user_id == uid)
@@ -206,7 +214,6 @@ def trust_me(
         .first()
     )
 
-    # Default last_change (always present for screenshot consistency)
     last_change: Dict[str, Any] = {
         "event_type": None,
         "delta": None,
@@ -221,7 +228,7 @@ def trust_me(
     }
 
     if last is not None:
-        meta = _safe_meta(getattr(last, "meta_json", None))
+        meta = _safe_meta(getattr(last, "meta", None) or getattr(last, "meta_json", None))
         et = getattr(last, "event_type", None) or ""
         last_change = {
             "event_type": getattr(last, "event_type", None),
@@ -236,9 +243,12 @@ def trust_me(
             "policy_version": policy_version(),
         }
 
-    # Safe identity confidence (derived only; must never crash /trust/me)
     try:
-        event_count = int(db.query(TrustEvent).filter(TrustEvent.subject_user_id == uid).count())
+        event_count = int(
+            db.query(TrustEvent)
+            .filter(TrustEvent.subject_user_id == uid)
+            .count()
+        )
     except Exception:
         event_count = None
 
@@ -258,10 +268,19 @@ def trust_me(
         "invite_join_events": invite_join_events,
     }
 
+    score_value = (
+        breakdown.get("standing_score")
+        or breakdown.get("score")
+        or breakdown.get("trust_score")
+        or "0.00"
+    )
+    band_value = breakdown.get("band")
+
     return {
         "user_id": uid,
         "email": getattr(current_user, "email", None),
-        "trust_score": str(breakdown.get("score") or "0.00"),
+        "trust_score": str(score_value),
+        "trust_band": band_value,
         "computed": breakdown,
         "last_change": last_change,
         "policy_note": "Trust is rule-based and increases only when a loan is fully repaid.",

@@ -1,0 +1,6 @@
+﻿{
+  "files.exclude": {
+    "**/*QUARANTINED*": true,
+    "**/gmfn_backend*QUARANTINED*": true
+  }
+}

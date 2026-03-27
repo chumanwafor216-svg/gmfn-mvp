@@ -72,3 +72,31 @@ def seed_my_assistant_notifications(
         db,
         user_id=int(current_user.id),
     )
+def create_notification(
+    db,
+    *,
+    user_id: int,
+    kind: str,
+    title: str,
+    message: str,
+    action_url: str | None = None,
+    action_label: str | None = None,
+):
+    from app.db.models import Notification
+    from datetime import datetime, timezone
+
+    row = Notification(
+        user_id=user_id,
+        kind=kind,
+        title=title,
+        message=message,
+        action_url=action_url,
+        action_label=action_label,
+        is_read=False,
+        created_at=datetime.now(timezone.utc),
+    )
+
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return row    

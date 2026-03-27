@@ -29,6 +29,9 @@ def get_trust_graph(
 ) -> Dict[str, Any]:
     _require_admin(current_user)
 
+    if int(user_id) <= 0:
+        raise HTTPException(status_code=400, detail="Invalid user_id")
+
     try:
         return build_trust_graph(
             db,

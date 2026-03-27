@@ -1287,7 +1287,7 @@ export default function DashboardPage() {
                 marginTop: 8,
                 color: "#64748B",
                 lineHeight: 1.7,
-                fontSize: 14,
+                fontSize: 10,
               }}
             >
               Spotlight comes from shops visible in your current community
@@ -1317,7 +1317,7 @@ export default function DashboardPage() {
                 gridTemplateColumns: spotlightImageSrc
                   ? "minmax(260px, 0.9fr) minmax(0, 1.1fr)"
                   : "1fr",
-                gap: 16,
+                gap: 20,
                 alignItems: "stretch",
               }}
             >
@@ -1326,7 +1326,7 @@ export default function DashboardPage() {
                   style={{
                     width: "100%",
                     minHeight: 220,
-                    borderRadius: 18,
+                    borderRadius: 48,
                     overflow: "hidden",
                     background: "#EAF2FF",
                     border: "1px solid rgba(11,31,51,0.08)",

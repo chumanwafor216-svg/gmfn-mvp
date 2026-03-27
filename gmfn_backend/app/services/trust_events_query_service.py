@@ -1,4 +1,3 @@
-# app/services/trust_events_query_service.py
 from __future__ import annotations
 
 import json
@@ -9,18 +8,22 @@ from sqlalchemy.orm import Session
 from app.db.models import TrustEvent
 
 
-def _safe_meta(meta_json: Optional[str]) -> Dict[str, Any]:
-    if not meta_json:
+def _safe_meta(raw: Any) -> Dict[str, Any]:
+    if raw is None:
         return {}
-    try:
-        v = json.loads(meta_json)
-        return v if isinstance(v, dict) else {}
-    except Exception:
-        return {}
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, str):
+        try:
+            v = json.loads(raw)
+            return v if isinstance(v, dict) else {}
+        except Exception:
+            return {}
+    return {}
 
 
 def _row_out(e: TrustEvent) -> Dict[str, Any]:
-    meta = _safe_meta(getattr(e, "meta_json", None))
+    meta = _safe_meta(getattr(e, "meta", None) or getattr(e, "meta_json", None))
 
     return {
         "id": int(getattr(e, "id", 0) or 0),
@@ -37,7 +40,12 @@ def _row_out(e: TrustEvent) -> Dict[str, Any]:
     }
 
 
-def list_recent_for_subject(db: Session, *, subject_user_id: int, limit: int = 50) -> List[Dict[str, Any]]:
+def list_recent_for_subject(
+    db: Session,
+    *,
+    subject_user_id: int,
+    limit: int = 50,
+) -> List[Dict[str, Any]]:
     lim = max(1, min(int(limit or 50), 200))
 
     rows: List[TrustEvent] = (
@@ -48,11 +56,14 @@ def list_recent_for_subject(db: Session, *, subject_user_id: int, limit: int = 5
         .all()
     )
 
-    # return newest first (screenshot-friendly)
     return [_row_out(e) for e in rows]
 
 
-def list_recent_admin(db: Session, *, limit: int = 50) -> List[Dict[str, Any]]:
+def list_recent_admin(
+    db: Session,
+    *,
+    limit: int = 50,
+) -> List[Dict[str, Any]]:
     lim = max(1, min(int(limit or 50), 200))
 
     rows: List[TrustEvent] = (

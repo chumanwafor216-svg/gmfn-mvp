@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
-
+from app.services.notification_service import create_notification
 from app.core.auth import get_current_user, get_password_hash
 from app.core.clan_auth import ensure_membership, get_current_clan_membership
 from app.core.dev_guard import require_dev_mode
@@ -513,7 +513,6 @@ def _build_activation_package(
             "join_request_id": int(join_request.id),
         },
     }
-
 def _approve_join_request(
     db: Session,
     *,
@@ -563,6 +562,25 @@ def _approve_join_request(
     db.commit()
     db.refresh(join_request)
 
+    create_notification(
+        db,
+        user_id=int(applicant.id),
+        kind="approval_success",
+        title="You were approved",
+        message="You can now activate your GMFN account.",
+        action_url="/activate-membership",
+        action_label="Activate",
+    )
+    
+    create_notification(
+        db,
+        user_id=int(applicant.id),
+        kind="trust_update",
+        title="Your trust has changed",
+        message="Your approval has updated your trust standing.",
+        action_url="/app/trust",
+        action_label="View Trust",
+    )
     return {
         "ok": True,
         "status": "approved",
@@ -1053,6 +1071,27 @@ def create_join_request(
     db.commit()
     db.refresh(join_request)
 
+    admins = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.clan_id == int(clan.id),
+            ClanMembership.role == "admin",
+            ClanMembership.left_at.is_(None),
+        )
+        .all()
+    )
+
+    for admin in admins:
+        create_notification(
+            db,
+            user_id=int(admin.user_id),
+            kind="approval_request",
+            title="New join request",
+            message=f"{payload.first_name} wants to join {clan.name}",
+            action_url=f"/app/community/{clan.id}/join-requests",
+            action_label="Review",
+        )
+
     return {
         "ok": True,
         "message": "Join request submitted. Admission is subject to community approval.",
@@ -1077,7 +1116,6 @@ def create_join_request(
             "invite_id": int(invite_row.id) if invite_row else None,
         },
     }
-
 
 @router.get("/{clan_id}/join-requests", response_model=dict[str, Any])
 def list_join_requests(

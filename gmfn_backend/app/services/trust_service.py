@@ -7,7 +7,15 @@ from sqlalchemy.orm import Session
 
 from app.core.trust_event_types import TrustEventType
 from app.db.models import TrustEvent
-from app.services.trust_events_services import log_trust_event as canonical_log_trust_event
+from app.services.trust_events_services import (
+    log_trust_event as canonical_log_trust_event,
+)
+
+
+def _event_name(value: Union[str, TrustEventType]) -> str:
+    if isinstance(value, TrustEventType):
+        return str(value.value)
+    return str(value)
 
 
 def log_trust_event(
@@ -27,8 +35,8 @@ def log_trust_event(
         clan_id=int(clan_id),
         actor_user_id=int(actor_user_id),
         subject_user_id=int(subject_user_id),
-        loan_id=loan_id,
-        guarantor_id=guarantor_id,
+        loan_id=int(loan_id) if loan_id is not None else None,
+        guarantor_id=int(guarantor_id) if guarantor_id is not None else None,
         meta=meta,
         commit=True,
         refresh=True,
@@ -57,7 +65,7 @@ def log_loan_repaid_event(
         actor_user_id=int(borrower_user_id),
         subject_user_id=int(guarantor_user_id),
         loan_id=int(loan_id),
-        guarantor_id=guarantor_id,
+        guarantor_id=int(guarantor_id) if guarantor_id is not None else None,
         meta=payload,
         commit=True,
         refresh=True,
@@ -86,7 +94,7 @@ def log_loan_defaulted_event(
         actor_user_id=int(borrower_user_id),
         subject_user_id=int(affected_user_id),
         loan_id=int(loan_id),
-        guarantor_id=guarantor_id,
+        guarantor_id=int(guarantor_id) if guarantor_id is not None else None,
         meta=payload,
         commit=True,
         refresh=True,
@@ -140,12 +148,13 @@ def list_trust_events(
     if loan_id is not None:
         q = q.filter(TrustEvent.loan_id == int(loan_id))
 
-    limit = min(max(int(limit), 1), 200)
+    safe_limit = min(max(int(limit), 1), 200)
+    safe_offset = max(int(offset), 0)
 
     return (
         q.order_by(TrustEvent.id.desc())
-        .offset(int(offset))
-        .limit(limit)
+        .offset(safe_offset)
+        .limit(safe_limit)
         .all()
     )
 
@@ -183,31 +192,38 @@ def compute_cci_score_v1(
     invited_successfully = 0
     score = 0
 
-    for ev in events:
-        event_type = str(ev.event_type)
+    ev_guarantor_approved = _event_name(TrustEventType.GUARANTOR_APPROVED)
+    ev_guarantor_declined = _event_name(TrustEventType.GUARANTOR_DECLINED)
+    ev_guarantor_expired = _event_name(TrustEventType.GUARANTOR_EXPIRED)
+    ev_loan_repaid = _event_name(TrustEventType.LOAN_REPAID)
+    ev_loan_defaulted = _event_name(TrustEventType.LOAN_DEFAULTED)
+    ev_invite_accepted = _event_name(TrustEventType.INVITE_ACCEPTED)
 
-        if event_type == str(TrustEventType.GUARANTOR_APPROVED):
+    for ev in events:
+        event_type = _event_name(ev.event_type)
+
+        if event_type == ev_guarantor_approved:
             approved += 1
             score += 3
 
-        elif event_type == str(TrustEventType.GUARANTOR_DECLINED):
+        elif event_type == ev_guarantor_declined:
             declined += 1
             score -= 2
 
-        elif event_type == str(TrustEventType.GUARANTOR_EXPIRED):
+        elif event_type == ev_guarantor_expired:
             if int(ev.actor_user_id) == int(user_id):
                 no_response += 1
                 score -= 1
 
-        elif event_type == str(TrustEventType.LOAN_REPAID):
+        elif event_type == ev_loan_repaid:
             repaid += 1
             score += 5
 
-        elif event_type == str(TrustEventType.LOAN_DEFAULTED):
+        elif event_type == ev_loan_defaulted:
             defaulted += 1
             score -= 6
 
-        elif event_type == str(TrustEventType.INVITE_ACCEPTED):
+        elif event_type == ev_invite_accepted:
             invited_successfully += 1
             score += 2
 

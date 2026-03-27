@@ -1,15 +1,23 @@
-# app/services/trust_band_service.py
 from __future__ import annotations
 
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
+
+
+def _d(x) -> Decimal:
+    try:
+        if isinstance(x, Decimal):
+            return x
+        return Decimal(str(x))
+    except (InvalidOperation, TypeError, ValueError):
+        return Decimal("0")
 
 
 def compute_trust_band(score: Decimal) -> str:
     """
-    Pure deterministic mapping: trust_score -> trust_band label.
-    Tweak thresholds later, but keep deterministic.
+    Deterministic mapping: trust_score -> trust_band label.
+    Safe against bad inputs.
     """
-    s = Decimal(score)
+    s = _d(score)
 
     if s < Decimal("0.10"):
         return "Bronze"
@@ -18,4 +26,3 @@ def compute_trust_band(score: Decimal) -> str:
     if s < Decimal("1.00"):
         return "Gold"
     return "Platinum"
-    

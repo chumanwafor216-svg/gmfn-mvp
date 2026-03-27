@@ -1,0 +1,79 @@
+from logging.config import fileConfig
+import os
+
+from alembic import context
+from sqlalchemy import engine_from_config, pool
+
+from app.db.base import Base
+from app.db import models  # noqa: F401  (ensure core models are registered)
+from app.db import bank_models  # noqa: F401  (ensure bank models are registered)
+
+
+# Alembic Config object
+config = context.config
+
+# Configure logging
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
+
+# Metadata for autogenerate
+target_metadata = Base.metadata
+
+
+def run_migrations_offline() -> None:
+    """Run migrations in 'offline' mode."""
+    url = os.getenv("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
+
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+    )
+
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+def run_migrations_online() -> None:
+    """Run migrations in 'online' mode.
+
+    If a connection is injected via config.attributes['connection'],
+    use it. Otherwise create an engine from alembic.ini (overridden by env if provided).
+    """
+    # If a test injected a connection, use it
+    connection = config.attributes.get("connection", None)
+
+    # Prefer env var DATABASE_URL if present (Docker / deploy)
+    db_url = os.getenv("DATABASE_URL")
+    if db_url:
+        config.set_main_option("sqlalchemy.url", db_url)
+
+    if connection is not None:
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+        )
+        with context.begin_transaction():
+            context.run_migrations()
+        return
+
+    connectable = engine_from_config(
+        config.get_section(config.config_ini_section, {}),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
+
+    with connectable.connect() as connection:
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+        )
+        with context.begin_transaction():
+            context.run_migrations()
+
+
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()

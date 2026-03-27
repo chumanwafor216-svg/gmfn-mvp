@@ -1,5 +1,3 @@
-# app/api/routes/trust_timeline_pdf.py
-
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
@@ -7,22 +5,22 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
 
-from app.deps import get_db
 from app.core.auth import get_current_user
+from app.db.database import get_db
 from app.services.trust_timeline_pdf_service import build_trust_timeline_pdf
 from app.services.trust_slips_services import get_trust_slip_payload
 
-# pack meta is optional — if service/route doesn't exist, we still render the PDF
 try:
-    from app.services.trust_evidence_pack_service import get_evidence_pack_meta_for_user  # type: ignore
+    from app.services.trust_evidence_pack_service import (  # type: ignore
+        build_trust_evidence_pack_zip_with_meta,
+    )
 except Exception:
-    get_evidence_pack_meta_for_user = None  # type: ignore
+    build_trust_evidence_pack_zip_with_meta = None  # type: ignore
 
-# optional explained score for "why did my trust change?"
 try:
-    from app.services.trust_score_service import get_trust_score_explained_for_user  # type: ignore
+    from app.services.trust_score_service import compute_trust_score_explained  # type: ignore
 except Exception:
-    get_trust_score_explained_for_user = None  # type: ignore
+    compute_trust_score_explained = None  # type: ignore
 
 router = APIRouter(prefix="/trust/me", tags=["trust"])
 
@@ -30,7 +28,8 @@ router = APIRouter(prefix="/trust/me", tags=["trust"])
 def _safe_str(x: Any) -> Optional[str]:
     if x is None:
         return None
-    return str(x)
+    s = str(x).strip()
+    return s or None
 
 
 def _safe_visibility_level(current_user: Any, requested_level: Optional[str]) -> str:
@@ -54,12 +53,9 @@ def download_my_trust_timeline_pdf(
     current_user: Any = Depends(get_current_user),
 ) -> Response:
     """
-    Authenticated Trust Timeline PDF snapshot ("Why did my trust change?").
-
-    Evidence alignment:
-    - binds PDF export to saved merchant visibility policy by default
-    - optional ?level=minimal|standard|detailed override for controlled export
+    Authenticated Trust Timeline PDF snapshot.
     """
+
     user_id = int(getattr(current_user, "id"))
     visibility_level = _safe_visibility_level(current_user, level)
 
@@ -67,9 +63,12 @@ def download_my_trust_timeline_pdf(
     protocol_version = None
     footer = None
 
-    if get_evidence_pack_meta_for_user:
+    if build_trust_evidence_pack_zip_with_meta:
         try:
-            meta = get_evidence_pack_meta_for_user(db, user_id=user_id)  # type: ignore
+            _zip_bytes, meta = build_trust_evidence_pack_zip_with_meta(
+                db,
+                user_id=user_id,
+            )
             if isinstance(meta, dict):
                 pack_id = _safe_str(meta.get("pack_id"))
                 protocol_version = _safe_str(meta.get("protocol_version"))
@@ -79,16 +78,24 @@ def download_my_trust_timeline_pdf(
 
     score = None
     last_change: Optional[Dict[str, Any]] = None
-    if get_trust_score_explained_for_user:
+
+    if compute_trust_score_explained:
         try:
-            explained = get_trust_score_explained_for_user(db, user_id=user_id)  # type: ignore
+            explained = compute_trust_score_explained(db, user_id=user_id)
             if isinstance(explained, dict):
-                score = _safe_str(explained.get("score"))
-                last_change = (
-                    explained.get("last_change")
-                    if isinstance(explained.get("last_change"), dict)
-                    else None
+                score = _safe_str(
+                    explained.get("standing_score")
+                    or explained.get("score")
+                    or explained.get("trust_score")
                 )
+
+                last_change = {
+                    "event_type": None,
+                    "delta": None,
+                    "reason": None,
+                    "note": None,
+                    "created_at": None,
+                }
         except Exception:
             pass
 
@@ -103,7 +110,7 @@ def download_my_trust_timeline_pdf(
     pdf = build_trust_timeline_pdf(
         db,
         user_id=user_id,
-        limit=max(1, min(int(limit), 300)),
+        limit=max(1, min(int(limit or 200), 300)),
         audience="admin" if audience == "admin" else "user",
         pack_id=pack_id,
         protocol_version=protocol_version,
@@ -117,10 +124,18 @@ def download_my_trust_timeline_pdf(
         "Content-Disposition": f'attachment; filename="{filename}"',
         "X-GMFN-Merchant-Visibility-Level": visibility_level,
         "X-GMFN-TrustSlip-Code": str(trustslip_summary.get("code") or ""),
-        "X-GMFN-CCI-Score": str(trustslip_summary.get("cci_score") or ""),
+        "X-GMFN-CCI-Score": str(
+            trustslip_summary.get("cci_score")
+            or trustslip_summary.get("trust_score")
+            or ""
+        ),
     }
 
-    return Response(content=pdf, media_type="application/pdf", headers=headers)
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers=headers,
+    )
 
 
 @router.get("/trust-timeline.pdf")
@@ -132,7 +147,7 @@ def download_my_trust_timeline_pdf_alias(
     current_user: Any = Depends(get_current_user),
 ) -> Response:
     """
-    Alias endpoint for stability (some UIs expect this naming).
+    Alias endpoint for stability.
     """
     return download_my_trust_timeline_pdf(
         limit=limit,

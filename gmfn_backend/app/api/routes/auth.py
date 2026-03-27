@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import secrets
 from datetime import datetime, timedelta, timezone
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -30,6 +30,11 @@ class UserOut(BaseModel):
     email: EmailStr
     role: str
     gmfn_id: Optional[str] = None
+
+    cci_score: Optional[float] = None
+    cci_class: Optional[str] = None
+    cci_reason: Optional[str] = None
+    cci_tone: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -236,6 +241,145 @@ def _is_user_approved_somewhere(db: Session, user: User) -> bool:
     return membership_exists
 
 
+def _cci_tone_from_score(score: Optional[float]) -> str:
+    if score is None:
+        return "neutral"
+    if score >= 75:
+        return "green"
+    if score >= 55:
+        return "green"
+    if score >= 35:
+        return "yellow"
+    return "red"
+
+
+def _cci_class_from_score(score: Optional[float]) -> str:
+    if score is None:
+        return "Pending"
+    if score >= 75:
+        return "A"
+    if score >= 55:
+        return "B"
+    if score >= 35:
+        return "C"
+    return "D"
+
+
+def _build_cci_reason(
+    *,
+    score: Optional[float],
+    strengths: list[str],
+    pressures: list[str],
+) -> str:
+    if score is None:
+        return "Your community integrity reading is being prepared."
+
+    if strengths and pressures:
+        return (
+            f"You are showing strength in {strengths[0].replace('_', ' ')}, "
+            f"but there is still pressure around {pressures[0].replace('_', ' ')}."
+        )
+
+    if strengths:
+        return (
+            f"You are showing strength in {strengths[0].replace('_', ' ')} "
+            "across your network."
+        )
+
+    if pressures:
+        return (
+            f"There is caution around {pressures[0].replace('_', ' ')} "
+            "in your recent network activity."
+        )
+
+    if score >= 75:
+        return "You have been fair and dependable across communities."
+    if score >= 55:
+        return "You are generally fair to deal with and still growing stronger."
+    if score >= 35:
+        return "You are building your record, but more consistency is needed."
+    return "Recent signals suggest caution before depending heavily on this record."
+
+
+def _extract_user_cci_payload(db: Session, user_id: int) -> dict[str, Any]:
+    """
+    Global CCI is tied to the PERSON identity (User.id / GMFN ID),
+    not to a shop and not to a single clan.
+    """
+    try:
+        from app.services.trust_graph_service import build_trust_graph
+
+        graph = build_trust_graph(
+            db,
+            user_id=int(user_id),
+            include_clans=True,
+            limit_events=500,
+        )
+
+        cci = graph.get("cci") or {}
+        explain = cci.get("explain") or {}
+
+        raw_score = (
+            cci.get("cci_score")
+            or cci.get("score")
+            or cci.get("value")
+            or graph.get("summary", {}).get("graph_score")
+        )
+
+        score: Optional[float]
+        try:
+            score = float(raw_score) if raw_score is not None else None
+        except Exception:
+            score = None
+
+        strengths = explain.get("strengths") or []
+        pressures = explain.get("pressures") or []
+
+        raw_class = (
+            cci.get("cci_band")
+            or cci.get("band")
+            or cci.get("cci_class")
+            or _cci_class_from_score(score)
+        )
+
+        cci_class = str(raw_class or _cci_class_from_score(score)).upper()
+        cci_tone = _cci_tone_from_score(score)
+        cci_reason = _build_cci_reason(
+            score=score,
+            strengths=[str(x) for x in strengths],
+            pressures=[str(x) for x in pressures],
+        )
+
+        return {
+            "cci_score": round(score, 2) if score is not None else None,
+            "cci_class": cci_class,
+            "cci_reason": cci_reason,
+            "cci_tone": cci_tone,
+        }
+
+    except Exception:
+        return {
+            "cci_score": None,
+            "cci_class": "Pending",
+            "cci_reason": "Your community integrity reading is being prepared.",
+            "cci_tone": "neutral",
+        }
+
+
+def _build_me_payload(db: Session, user: User) -> dict[str, Any]:
+    cci_payload = _extract_user_cci_payload(db, int(user.id))
+    return {
+        "id": int(user.id),
+        "email": user.email,
+        "role": str(getattr(user, "role", "user") or "user"),
+        "gmfn_id": getattr(user, "gmfn_id", None),
+        "cci_score": cci_payload.get("cci_score"),
+        "cci_class": cci_payload.get("cci_class"),
+        "cci_reason": cci_payload.get("cci_reason"),
+        "cci_tone": cci_payload.get("cci_tone"),
+    }
+
+
 @router.post("/register", response_model=UserOut, status_code=201)
 def register(payload: UserCreate, db: Session = Depends(get_db)):
     raise HTTPException(
@@ -419,7 +563,8 @@ def me(
         current_user = _ensure_user_gmfn_id(db, current_user)
     except Exception:
         pass
-    return current_user
+
+    return _build_me_payload(db, current_user)
 
 
 @router.get("/approved-member/{gmfn_id}", response_model=dict[str, object])
@@ -483,7 +628,7 @@ def dev_create_user(payload: DevUserCreate, db: Session = Depends(get_db)):
 
     db.refresh(user)
     user = _ensure_user_gmfn_id(db, user)
-    return user
+    return _build_me_payload(db, user)
 
 
 @router.post(
@@ -509,7 +654,7 @@ def dev_reset_password(payload: DevResetPassword, db: Session = Depends(get_db))
     except Exception:
         pass
 
-    return user
+    return _build_me_payload(db, user)
 
 
 @router.post(

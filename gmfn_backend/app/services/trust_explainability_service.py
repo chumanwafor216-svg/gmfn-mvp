@@ -24,20 +24,6 @@ def _decimal_str(value: Any) -> str:
     return str(_to_decimal(value))
 
 
-def _event_delta(event: TrustEvent) -> Decimal:
-    for attr in ("delta", "points_delta", "score_delta", "trust_delta"):
-        if hasattr(event, attr):
-            return _to_decimal(getattr(event, attr))
-    return Decimal("0")
-
-
-def _event_meta(event: TrustEvent) -> Dict[str, Any]:
-    meta = getattr(event, "meta", None)
-    if isinstance(meta, dict):
-        return _normalize_meta(meta)
-    return {}
-
-
 def _normalize_meta(value: Any) -> Any:
     if isinstance(value, Decimal):
         return str(value)
@@ -50,6 +36,27 @@ def _normalize_meta(value: Any) -> Any:
     if isinstance(value, list):
         return [_normalize_meta(v) for v in value]
     return value
+
+
+def _event_delta(event: TrustEvent) -> Decimal:
+    meta = _event_meta(event)
+
+    for attr in ("delta", "points_delta", "score_delta", "trust_delta"):
+        if hasattr(event, attr):
+            return _to_decimal(getattr(event, attr))
+
+    for key in ("delta", "points_delta", "score_delta", "trust_delta"):
+        if key in meta:
+            return _to_decimal(meta.get(key))
+
+    return Decimal("0")
+
+
+def _event_meta(event: TrustEvent) -> Dict[str, Any]:
+    meta = getattr(event, "meta", None)
+    if isinstance(meta, dict):
+        return _normalize_meta(meta)
+    return {}
 
 
 def _event_created_at_iso(event: TrustEvent) -> str:
@@ -98,7 +105,7 @@ def build_trust_explainability(
 ) -> Dict[str, Any]:
     rows: List[TrustEvent] = (
         db.query(TrustEvent)
-        .filter(TrustEvent.user_id == user_id)
+        .filter(TrustEvent.subject_user_id == int(user_id))
         .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
         .limit(max(1, min(recent_limit, 100)))
         .all()
@@ -106,7 +113,7 @@ def build_trust_explainability(
 
     all_rows: Iterable[TrustEvent] = (
         db.query(TrustEvent)
-        .filter(TrustEvent.user_id == user_id)
+        .filter(TrustEvent.subject_user_id == int(user_id))
         .order_by(TrustEvent.created_at.asc(), TrustEvent.id.asc())
         .all()
     )
@@ -131,7 +138,8 @@ def build_trust_explainability(
         recent_events.append(
             {
                 "id": int(getattr(row, "id")),
-                "user_id": int(getattr(row, "user_id")),
+                "subject_user_id": int(getattr(row, "subject_user_id")),
+                "actor_user_id": int(getattr(row, "actor_user_id")),
                 "event_type": str(getattr(row, "event_type", "trust.event")),
                 "delta": _decimal_str(_event_delta(row)),
                 "created_at": _event_created_at_iso(row),
@@ -142,7 +150,7 @@ def build_trust_explainability(
         )
 
     return {
-        "user_id": user_id,
+        "user_id": int(user_id),
         "current_score": _decimal_str(current_score),
         "band": _band_for_score(current_score),
         "latest_reason": latest_reason,
@@ -159,10 +167,10 @@ def build_recent_trust_events_admin(
     user_id: Optional[int] = None,
     event_type: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
-    q = db.query(TrustEvent, User).outerjoin(User, User.id == TrustEvent.user_id)
+    q = db.query(TrustEvent, User).outerjoin(User, User.id == TrustEvent.subject_user_id)
 
     if user_id is not None:
-        q = q.filter(TrustEvent.user_id == user_id)
+        q = q.filter(TrustEvent.subject_user_id == int(user_id))
 
     if event_type:
         q = q.filter(TrustEvent.event_type == event_type)
@@ -179,7 +187,8 @@ def build_recent_trust_events_admin(
         out.append(
             {
                 "id": int(getattr(event, "id")),
-                "user_id": int(getattr(event, "user_id")),
+                "subject_user_id": int(getattr(event, "subject_user_id")),
+                "actor_user_id": int(getattr(event, "actor_user_id")),
                 "user_label": _user_label(user),
                 "event_type": str(getattr(event, "event_type", "trust.event")),
                 "delta": _decimal_str(_event_delta(event)),
@@ -195,36 +204,35 @@ def build_recent_trust_events_admin(
 def log_trust_event_with_meta(
     db: Session,
     *,
-    user_id: int,
+    actor_user_id: int,
+    subject_user_id: int,
     event_type: str,
     delta: Decimal | str | int | float,
+    clan_id: Optional[int] = None,
+    loan_id: Optional[int] = None,
+    guarantor_id: Optional[int] = None,
     reason: Optional[str] = None,
     note: Optional[str] = None,
     meta: Optional[Dict[str, Any]] = None,
 ) -> TrustEvent:
     payload: Dict[str, Any] = dict(meta or {})
     if reason is not None:
-      payload["reason"] = reason
+        payload["reason"] = reason
     if note is not None:
-      payload["note"] = note
+        payload["note"] = note
 
+    payload["delta"] = str(_to_decimal(delta))
     payload = _normalize_meta(payload)
 
     event = TrustEvent(
-        user_id=user_id,
         event_type=event_type,
+        clan_id=clan_id,
+        loan_id=loan_id,
+        guarantor_id=guarantor_id,
+        actor_user_id=int(actor_user_id),
+        subject_user_id=int(subject_user_id),
         meta=payload,
     )
-
-    # support several possible column names safely
-    if hasattr(event, "delta"):
-        setattr(event, "delta", _to_decimal(delta))
-    elif hasattr(event, "points_delta"):
-        setattr(event, "points_delta", _to_decimal(delta))
-    elif hasattr(event, "score_delta"):
-        setattr(event, "score_delta", _to_decimal(delta))
-    elif hasattr(event, "trust_delta"):
-        setattr(event, "trust_delta", _to_decimal(delta))
 
     db.add(event)
     db.flush()
