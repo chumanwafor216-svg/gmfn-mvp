@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import Mark from "../assets/gmfn-mark.svg";
 import Wordmark from "../assets/gmfn-wordmark.svg";
@@ -32,13 +32,22 @@ function topPattern(): string {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-function panel(): React.CSSProperties {
+function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 22,
     border: "1px solid rgba(11,31,51,0.08)",
-    background: "#FFFFFF",
+    background: bg,
     padding: 24,
     boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
+  };
+}
+
+function softCard(bg = "#F8FBFF"): React.CSSProperties {
+  return {
+    borderRadius: 18,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 18,
   };
 }
 
@@ -60,9 +69,49 @@ function button(primary?: boolean): React.CSSProperties {
   };
 }
 
+function sectionLabel(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#5B7693",
+    fontWeight: 1000,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  };
+}
+
+function safeStr(x: any, fallback = ""): string {
+  const s = String(x ?? "").trim();
+  return s || fallback;
+}
+
 export default function RegisterPage() {
   const nav = useNavigate();
+  const location = useLocation();
   const pattern = topPattern();
+
+  const state =
+    (location.state as {
+      create_entry?: {
+        clan_name?: string;
+        clan_description?: string;
+        email?: string;
+      };
+    }) || {};
+
+  const createEntry = state.create_entry || {};
+
+  const communityName = safeStr(createEntry.clan_name);
+  const communityDescription = safeStr(createEntry.clan_description);
+  const founderEmail = safeStr(createEntry.email);
+  const hasCreateEntry = !!communityName || !!communityDescription || !!founderEmail;
+
+  function continueToLogin() {
+    nav("/login", {
+      state: {
+        create_entry: createEntry,
+      },
+    });
+  }
 
   return (
     <div style={{ minHeight: "100vh", background: "#F8FBFE" }}>
@@ -81,9 +130,7 @@ export default function RegisterPage() {
             <img src={Wordmark} alt="GSN wordmark" style={{ height: 30, width: "auto" }} />
           </div>
 
-          <div style={{ fontSize: 13, fontWeight: 1000, color: "#5B7693", letterSpacing: 1 }}>
-            REGISTRATION
-          </div>
+          <div style={sectionLabel()}>Founder registration</div>
 
           <h1
             style={{
@@ -97,7 +144,7 @@ export default function RegisterPage() {
               letterSpacing: -1,
             }}
           >
-            Registration is community-guided in this pilot phase.
+            Founder registration should follow the public create entry, not replace it.
           </h1>
 
           <p
@@ -109,74 +156,200 @@ export default function RegisterPage() {
               maxWidth: 980,
             }}
           >
-            New participants typically join through an invitation link shared by a trusted community member.
-            If you already have access, sign in. If you were sent an invitation, continue through the invitation route.
+            This page is the founder registration handoff. It should confirm the
+            community details already entered and route you onward without becoming a
+            second create form.
           </p>
         </div>
       </div>
 
       <div style={{ maxWidth: 1180, margin: "0 auto", padding: 24 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20 }}>
-          <div style={panel()}>
-            <div style={{ fontSize: 14, fontWeight: 1000, color: "#0B1F33" }}>
-              Existing member
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.05fr 0.95fr",
+            gap: 24,
+            alignItems: "start",
+          }}
+        >
+          <div style={pageCard()}>
+            <div style={sectionLabel()}>Create entry summary</div>
+
+            <div
+              style={{
+                marginTop: 12,
+                fontSize: 28,
+                fontWeight: 1000,
+                color: "#0B1F33",
+                lineHeight: 1.15,
+              }}
+            >
+              {hasCreateEntry ? "Your public create entry is captured." : "No create entry details detected yet."}
             </div>
-            <p style={{ marginTop: 12, marginBottom: 0, color: "#5F768D", lineHeight: 1.85 }}>
-              Sign in if your community access is already active.
-            </p>
+
+            <div
+              style={{
+                marginTop: 12,
+                color: "#5F768D",
+                lineHeight: 1.85,
+                fontSize: 15,
+              }}
+            >
+              Review the community details below, then continue through the secure
+              access route that already exists in this build.
+            </div>
+
+            <div style={{ marginTop: 18, display: "grid", gap: 14 }}>
+              <div style={softCard()}>
+                <div style={{ ...sectionLabel(), color: "#64748B", letterSpacing: 0.4 }}>
+                  Community name
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    fontWeight: 1000,
+                    color: "#0B1F33",
+                    fontSize: 18,
+                  }}
+                >
+                  {communityName || "Not yet provided"}
+                </div>
+              </div>
+
+              <div style={softCard()}>
+                <div style={{ ...sectionLabel(), color: "#64748B", letterSpacing: 0.4 }}>
+                  Short description
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#5F768D",
+                    lineHeight: 1.8,
+                    fontSize: 14,
+                  }}
+                >
+                  {communityDescription || "No short description was passed from create entry."}
+                </div>
+              </div>
+
+              <div style={softCard()}>
+                <div style={{ ...sectionLabel(), color: "#64748B", letterSpacing: 0.4 }}>
+                  Founder email
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    fontWeight: 1000,
+                    color: "#0B1F33",
+                    fontSize: 18,
+                  }}
+                >
+                  {founderEmail || "Not yet provided"}
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div style={panel()}>
-            <div style={{ fontSize: 14, fontWeight: 1000, color: "#0B1F33" }}>
-              Invite-based entry
-            </div>
-            <p style={{ marginTop: 12, marginBottom: 0, color: "#5F768D", lineHeight: 1.85 }}>
-              If someone shared an invitation with you, continue using that invitation link.
-            </p>
-          </div>
+          <div style={pageCard()}>
+            <div style={sectionLabel()}>Next step</div>
 
-          <div style={panel()}>
-            <div style={{ fontSize: 14, fontWeight: 1000, color: "#0B1F33" }}>
-              Community coordination
+            <div
+              style={{
+                marginTop: 12,
+                fontSize: 24,
+                fontWeight: 1000,
+                color: "#0B1F33",
+              }}
+            >
+              Continue through secure access routing
             </div>
-            <p style={{ marginTop: 12, marginBottom: 0, color: "#5F768D", lineHeight: 1.85 }}>
-              New member onboarding remains community-led in this pilot release.
-            </p>
+
+            <div
+              style={{
+                marginTop: 10,
+                color: "#5F768D",
+                lineHeight: 1.85,
+              }}
+            >
+              In this build, founder continuation should move through the secure
+              access route that already exists, rather than duplicating a second
+              public registration workflow here.
+            </div>
+
+            <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
+              <button onClick={continueToLogin} style={button(true)}>
+                Continue to Sign In
+              </button>
+
+              <Link to="/activate-membership" style={button(false)}>
+                Activate Approved Membership
+              </Link>
+
+              <Link to="/create" style={button(false)}>
+                Back to Create Entry
+              </Link>
+
+              <Link to="/welcome" style={button(false)}>
+                Back to Welcome
+              </Link>
+            </div>
+
+            <div
+              style={{
+                marginTop: 18,
+                padding: 16,
+                borderRadius: 16,
+                background: "#FFFDF5",
+                border: "1px solid rgba(214,175,71,0.25)",
+                color: "#5F768D",
+                lineHeight: 1.8,
+                fontSize: 14,
+              }}
+            >
+              This page should remain a clean handoff page. Community creation belongs
+              to public create entry, and private community control belongs after
+              proper access.
+            </div>
           </div>
         </div>
 
         <div
           style={{
             marginTop: 28,
-            ...panel(),
+            ...pageCard(),
             display: "grid",
-            gridTemplateColumns: "1.05fr 0.95fr",
-            gap: 24,
-            alignItems: "center",
+            gridTemplateColumns: "1fr 1fr 1fr",
+            gap: 20,
           }}
         >
           <div>
-            <div style={{ fontSize: 16, fontWeight: 1000, color: "#0B1F33" }}>
-              Choose your next step
+            <div style={{ fontSize: 14, fontWeight: 1000, color: "#0B1F33" }}>
+              Public create entry first
             </div>
-            <div style={{ marginTop: 10, color: "#5F768D", lineHeight: 1.85 }}>
-              The fastest route is to sign in if your access has already been created.
-              Otherwise, continue only with a trusted invite from your community.
-            </div>
+            <p style={{ marginTop: 12, marginBottom: 0, color: "#5F768D", lineHeight: 1.85 }}>
+              Founder details should begin in the public create page, not be scattered
+              across multiple public surfaces.
+            </p>
           </div>
 
-          <div style={{ display: "grid", gap: 12 }}>
-            <button onClick={() => nav("/login")} style={button(true)}>
-              Sign in
-            </button>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 1000, color: "#0B1F33" }}>
+              Secure access next
+            </div>
+            <p style={{ marginTop: 12, marginBottom: 0, color: "#5F768D", lineHeight: 1.85 }}>
+              After public create entry, secure sign-in and activation routes take over
+              before private community management appears.
+            </p>
+          </div>
 
-            <Link to="/welcome" style={button(false)}>
-              Back to welcome
-            </Link>
-
-            <Link to="/cover" style={button(false)}>
-              Cover page
-            </Link>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 1000, color: "#0B1F33" }}>
+              No duplicate public workflow
+            </div>
+            <p style={{ marginTop: 12, marginBottom: 0, color: "#5F768D", lineHeight: 1.85 }}>
+              This page should confirm and route, not ask for the same community details
+              all over again.
+            </p>
           </div>
         </div>
       </div>
