@@ -1,16 +1,36 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getAccessToken, getMe, loginAndStore } from "../lib/api";
 
-function card(): React.CSSProperties {
+function pageShell(): React.CSSProperties {
+  return {
+    minHeight: "100vh",
+    display: "grid",
+    placeItems: "center",
+    background: "#EEF5FB",
+    padding: "24px 18px",
+    boxSizing: "border-box",
+  };
+}
+
+function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     width: "100%",
-    maxWidth: 560,
+    maxWidth: 760,
     padding: 30,
     borderRadius: 24,
-    background: "#FFFFFF",
+    background: bg,
     border: "1px solid rgba(11,31,51,0.08)",
     boxShadow: "0 18px 50px rgba(15,23,42,0.08)",
+  };
+}
+
+function softCard(bg = "#F8FBFF"): React.CSSProperties {
+  return {
+    borderRadius: 18,
+    background: bg,
+    border: "1px solid rgba(11,31,51,0.08)",
+    padding: 18,
   };
 }
 
@@ -39,6 +59,7 @@ function primaryBtn(disabled = false): React.CSSProperties {
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 15,
+    opacity: disabled ? 0.82 : 1,
   };
 }
 
@@ -108,10 +129,44 @@ function noticeStyle(
   };
 }
 
+function labelText(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#64748B",
+    fontWeight: 1000,
+    letterSpacing: 0.2,
+    textTransform: "uppercase",
+  };
+}
+
+function safeStr(x: any): string {
+  return String(x ?? "").trim();
+}
+
 export default function LoginPage() {
   const nav = useNavigate();
+  const location = useLocation();
 
-  const [email, setEmail] = useState("admin@test.com");
+  const routeState =
+    (location.state as {
+      from?: { pathname?: string; search?: string };
+      create_entry?: {
+        clan_name?: string;
+        clan_description?: string;
+        email?: string;
+      };
+    }) || {};
+
+  const founderContext = routeState.create_entry || {};
+  const founderEmail = safeStr(founderContext.email || "");
+  const founderCommunityName = safeStr(founderContext.clan_name || "");
+
+  const redirectTarget =
+    routeState.from?.pathname && routeState.from.pathname !== "/login"
+      ? `${routeState.from.pathname}${routeState.from.search || ""}`
+      : "/app/dashboard";
+
+  const [email, setEmail] = useState(founderEmail || "admin@test.com");
   const [password, setPassword] = useState("pass1234");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -123,13 +178,13 @@ export default function LoginPage() {
         if (!getAccessToken()) return;
         const me = await getMe();
         if (me?.id) {
-          nav("/app/dashboard", { replace: true });
+          nav(redirectTarget, { replace: true });
         }
       } catch {
         // ignore stale token during test phase
       }
     })();
-  }, [nav]);
+  }, [nav, redirectTarget]);
 
   async function onSubmit(e?: React.FormEvent) {
     if (e) e.preventDefault();
@@ -139,7 +194,7 @@ export default function LoginPage() {
     setMsg(null);
 
     try {
-      const u = String(email || "").trim();
+      const u = safeStr(email);
       const p = String(password || "");
 
       if (!u) throw new Error("Enter your email.");
@@ -149,7 +204,7 @@ export default function LoginPage() {
 
       setMsg("Sign-in successful. Opening workspace...");
       setTimeout(() => {
-        nav("/app/dashboard", { replace: true });
+        nav(redirectTarget, { replace: true });
       }, 500);
     } catch (e: any) {
       setErr(
@@ -176,132 +231,177 @@ export default function LoginPage() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "grid",
-        placeItems: "center",
-        background: "#EEF5FB",
-        padding: "24px 18px",
-        boxSizing: "border-box",
-      }}
-    >
-      <div style={card()}>
+    <div style={pageShell()}>
+      <div style={{ width: "100%", maxWidth: 760, display: "grid", gap: 18 }}>
         <div
           style={{
-            fontSize: 32,
-            fontWeight: 1000,
-            color: "#0B1F33",
-            lineHeight: 1.1,
+            ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
+            maxWidth: "100%",
           }}
         >
-          GMFN Sign In
-        </div>
+          <div style={labelText()}>Sign in</div>
 
-        <div
-          style={{
-            marginTop: 10,
-            color: "#5F768D",
-            lineHeight: 1.75,
-            fontSize: 15,
-          }}
-        >
-          Sign in with your approved email and password. If your community has
-          already approved you and you have been issued a GMFN ID, activate your
-          membership first before signing in.
-        </div>
+          <div
+            style={{
+              marginTop: 10,
+              fontSize: 32,
+              fontWeight: 1000,
+              color: "#0B1F33",
+              lineHeight: 1.1,
+            }}
+          >
+            Sign in with an active GMFN account
+          </div>
 
-        <div style={{ marginTop: 18, ...noticeStyle("warning") }}>
-          <div style={{ fontWeight: 1000, marginBottom: 8 }}>
-            Approved members
-          </div>
-          <div>
-            If you have already been approved through the join request process,
-            use <strong>Activate Membership</strong> first. That step will bind
-            your GMFN ID to your password and open your entry path into the
-            workspace.
-          </div>
-        </div>
-
-        <div style={{ marginTop: 16, ...noticeStyle("info") }}>
-          <div style={{ fontWeight: 1000, marginBottom: 8 }}>
-            Current test defaults
-          </div>
-          <div>
-            Email: <strong>admin@test.com</strong>
-          </div>
-          <div>
-            Password: <strong>pass1234</strong>
+          <div
+            style={{
+              marginTop: 10,
+              color: "#5F768D",
+              lineHeight: 1.75,
+              fontSize: 15,
+            }}
+          >
+            Use this page only if your access is already active. If your community
+            has approved you but you have not activated yet, complete membership
+            activation first.
           </div>
         </div>
 
-        {err ? (
-          <div style={{ marginTop: 16, ...noticeStyle("error") }}>{err}</div>
-        ) : null}
+        {founderEmail || founderCommunityName ? (
+          <div style={{ ...softCard("#FFFFFF"), maxWidth: "100%" }}>
+            <div style={labelText()}>Founder continuation</div>
 
-        {msg ? (
-          <div style={{ marginTop: 16, ...noticeStyle("success") }}>{msg}</div>
-        ) : null}
-
-        <form onSubmit={onSubmit} style={{ marginTop: 18 }}>
-          <div style={{ display: "grid", gap: 12 }}>
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
-              autoComplete="username"
-              style={inputStyle()}
-            />
-
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              autoComplete="current-password"
-              style={inputStyle()}
-            />
-          </div>
-
-          <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-            <button type="submit" disabled={busy} style={primaryBtn(busy)}>
-              {busy ? "Signing in..." : "Enter Workspace"}
-            </button>
-
-            <button
-              type="button"
-              onClick={clearBrowserSession}
+            <div
               style={{
-                ...primaryBtn(false),
-                background: "#FFFFFF",
+                marginTop: 10,
                 color: "#0B1F33",
-                border: "1px solid rgba(11,31,51,0.10)",
+                fontWeight: 1000,
+                fontSize: 20,
               }}
             >
-              Clear Old Test Session
-            </button>
+              Create entry details carried forward
+            </div>
+
+            <div
+              style={{
+                marginTop: 10,
+                display: "grid",
+                gap: 6,
+                color: "#5F768D",
+                lineHeight: 1.75,
+                fontSize: 14,
+              }}
+            >
+              {founderCommunityName ? (
+                <div>
+                  <strong style={{ color: "#0B1F33" }}>Community:</strong>{" "}
+                  {founderCommunityName}
+                </div>
+              ) : null}
+
+              {founderEmail ? (
+                <div>
+                  <strong style={{ color: "#0B1F33" }}>Founder email:</strong>{" "}
+                  {founderEmail}
+                </div>
+              ) : null}
+            </div>
           </div>
-        </form>
+        ) : null}
 
-        <div
-          style={{
-            marginTop: 18,
-            display: "flex",
-            gap: 10,
-            flexWrap: "wrap",
-          }}
-        >
-          <Link to="/activate" style={secondaryLink()}>
-            Activate Membership
-          </Link>
+        <div style={{ ...pageCard(), maxWidth: "100%" }}>
+          <div style={{ ...noticeStyle("warning"), marginBottom: 16 }}>
+            <div style={{ fontWeight: 1000, marginBottom: 8 }}>
+              Approved members
+            </div>
+            <div>
+              If you have already been approved through the join request process,
+              use <strong>Activate Membership</strong> first. That step binds
+              your GMFN ID to your password and opens your entry path into the
+              workspace.
+            </div>
+          </div>
 
-          <Link to="/welcome" style={secondaryLink()}>
-            Welcome
-          </Link>
+          <div style={{ ...noticeStyle("info"), marginBottom: 16 }}>
+            <div style={{ fontWeight: 1000, marginBottom: 8 }}>
+              Current test defaults
+            </div>
+            <div>
+              Email: <strong>admin@test.com</strong>
+            </div>
+            <div>
+              Password: <strong>pass1234</strong>
+            </div>
+          </div>
 
-          <Link to="/cover" style={secondaryLink()}>
-            Cover
-          </Link>
+          {err ? (
+            <div style={{ marginBottom: 16, ...noticeStyle("error") }}>{err}</div>
+          ) : null}
+
+          {msg ? (
+            <div style={{ marginBottom: 16, ...noticeStyle("success") }}>{msg}</div>
+          ) : null}
+
+          <form onSubmit={onSubmit}>
+            <div style={{ display: "grid", gap: 12 }}>
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email"
+                autoComplete="username"
+                style={inputStyle()}
+              />
+
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                autoComplete="current-password"
+                style={inputStyle()}
+              />
+            </div>
+
+            <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
+              <button type="submit" disabled={busy} style={primaryBtn(busy)}>
+                {busy ? "Signing in..." : "Enter Workspace"}
+              </button>
+
+              <button
+                type="button"
+                onClick={clearBrowserSession}
+                style={{
+                  ...primaryBtn(false),
+                  background: "#FFFFFF",
+                  color: "#0B1F33",
+                  border: "1px solid rgba(11,31,51,0.10)",
+                }}
+              >
+                Clear Old Test Session
+              </button>
+            </div>
+          </form>
+
+          <div
+            style={{
+              marginTop: 18,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <Link to="/activate-membership" style={secondaryLink()}>
+              Activate Membership
+            </Link>
+
+            <Link to="/welcome" style={secondaryLink()}>
+              Welcome
+            </Link>
+
+            <Link to="/cover" style={secondaryLink()}>
+              Cover
+            </Link>
+          </div>
         </div>
       </div>
     </div>
