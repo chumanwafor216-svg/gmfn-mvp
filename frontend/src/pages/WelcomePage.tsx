@@ -1,10 +1,19 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-function card(): React.CSSProperties {
+function pageShell(): React.CSSProperties {
+  return {
+    minHeight: "100vh",
+    background: "#F5FAFE",
+    padding: "34px 22px",
+    boxSizing: "border-box",
+  };
+}
+
+function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
-    background: "#FFFFFF",
+    background: bg,
     border: "1px solid rgba(11,31,51,0.08)",
     boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
     padding: 24,
@@ -81,6 +90,7 @@ function labelText(): React.CSSProperties {
     color: "#64748B",
     fontWeight: 1000,
     letterSpacing: 0.2,
+    textTransform: "uppercase",
   };
 }
 
@@ -113,14 +123,7 @@ export default function WelcomePage() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#F5FAFE",
-        padding: "34px 22px",
-        boxSizing: "border-box",
-      }}
-    >
+    <div style={pageShell()}>
       <div style={{ maxWidth: 1120, margin: "0 auto" }}>
         <div
           style={{
@@ -143,13 +146,13 @@ export default function WelcomePage() {
             <Link to="/login" style={secondaryLink()}>
               Login
             </Link>
-            <Link to="/activate" style={secondaryLink()}>
+            <Link to="/activate-membership" style={secondaryLink()}>
               Activate Membership
             </Link>
           </div>
         </div>
 
-        <div style={{ ...card(), padding: 30 }}>
+        <div style={{ ...pageCard(), padding: 30 }}>
           <div
             style={{
               fontSize: 42,
@@ -171,10 +174,28 @@ export default function WelcomePage() {
               maxWidth: 940,
             }}
           >
-            GMFN is not an open social platform. Entry follows existing trust
-            relationships and community rules. From here, continue to sign in,
-            activate an already approved membership, or enter the workspace to
-            create and manage a community through the proper route.
+            GMFN entry follows real trust relationships and structured community
+            rules. From here, choose the correct public path: join an existing
+            community by invitation, create a new community, sign in if you
+            already have access, or activate an already approved membership.
+          </div>
+
+          <div
+            style={{
+              marginTop: 16,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <a
+              href="/GSN_FINAL_WHITE.pdf"
+              target="_blank"
+              rel="noreferrer"
+              style={secondaryLink()}
+            >
+              Understand GSN first
+            </a>
           </div>
         </div>
 
@@ -187,7 +208,7 @@ export default function WelcomePage() {
           }}
         >
           <div style={actionCard(true)}>
-            <div style={labelText()}>JOIN PATH</div>
+            <div style={labelText()}>Join path</div>
 
             <div
               style={{
@@ -209,8 +230,8 @@ export default function WelcomePage() {
               }}
             >
               Use this path if a member you already know has invited you into an
-              existing GMFN community and your joining process is already under
-              way.
+              existing GMFN community and you want to submit a proper join
+              request.
             </div>
 
             <div
@@ -255,24 +276,24 @@ export default function WelcomePage() {
             >
               <button
                 type="button"
-                onClick={() => navigate("/activate")}
+                onClick={() => navigate("/join")}
                 style={primaryBtn()}
               >
-                I have been approved — Activate Membership
+                Continue to Join Entry
               </button>
 
               <button
                 type="button"
-                onClick={() => navigate("/login")}
+                onClick={() => navigate("/activate-membership")}
                 style={secondaryBtn()}
               >
-                I already have access — Sign in
+                I have been approved — Activate Membership
               </button>
             </div>
           </div>
 
           <div style={actionCard()}>
-            <div style={labelText()}>CREATE PATH</div>
+            <div style={labelText()}>Create path</div>
 
             <div
               style={{
@@ -282,7 +303,7 @@ export default function WelcomePage() {
                 color: "#0B1F33",
               }}
             >
-              Create or Manage a Community
+              Create a New Community
             </div>
 
             <div
@@ -293,9 +314,9 @@ export default function WelcomePage() {
                 fontSize: 15,
               }}
             >
-              Use this path if you are coming from public awareness, campaign,
-              or advert entry and want to establish or manage a GMFN community
-              through the main workspace.
+              Use this path if you are entering publicly and want to begin the
+              founder route for a new GMFN community through the proper create
+              entry.
             </div>
 
             <div
@@ -325,8 +346,9 @@ export default function WelcomePage() {
                   fontSize: 14,
                 }}
               >
-                This route is for entering the workspace properly, then creating
-                a new community or managing one you already control.
+                This route begins from public create entry, then continues into
+                founder registration and activation before private community
+                control surfaces become available.
               </div>
             </div>
 
@@ -339,18 +361,18 @@ export default function WelcomePage() {
             >
               <button
                 type="button"
-                onClick={() => navigate("/login")}
+                onClick={() => navigate("/create")}
                 style={primaryBtn()}
               >
-                Continue to Sign In
+                Continue to Create Entry
               </button>
 
               <button
                 type="button"
-                onClick={() => navigate("/activate")}
+                onClick={() => navigate("/login")}
                 style={secondaryBtn()}
               >
-                Activate Approved Membership
+                I already have access — Sign in
               </button>
             </div>
           </div>
@@ -359,7 +381,7 @@ export default function WelcomePage() {
         <div
           style={{
             marginTop: 18,
-            ...card(),
+            ...pageCard(),
             display: "grid",
             gridTemplateColumns: "1fr 1fr 1fr",
             gap: 16,
@@ -437,7 +459,7 @@ export default function WelcomePage() {
         <div
           style={{
             marginTop: 18,
-            ...card(),
+            ...pageCard(),
             background: "#F8FBFF",
           }}
         >
@@ -462,7 +484,7 @@ export default function WelcomePage() {
           >
             If your join request has already been approved and you have been
             issued a GMFN ID, go straight to membership activation to set your
-            password and enter the workspace.
+            password and enter your personal surfaces.
           </div>
 
           <div
@@ -473,7 +495,7 @@ export default function WelcomePage() {
               flexWrap: "wrap",
             }}
           >
-            <Link to="/activate" style={secondaryLink()}>
+            <Link to="/activate-membership" style={secondaryLink()}>
               Activate Membership
             </Link>
 
@@ -499,7 +521,7 @@ export default function WelcomePage() {
             Go to Login
           </Link>
 
-          <Link to="/activate" style={secondaryLink()}>
+          <Link to="/activate-membership" style={secondaryLink()}>
             Activate Membership
           </Link>
         </div>
