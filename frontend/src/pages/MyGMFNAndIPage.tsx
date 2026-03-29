@@ -1,561 +1,1034 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 
+const PDF_FALLBACK_TO = "/GSN_FINAL_WHITE.pdf";
+
+type EntryMode = "general" | "create" | "invite" | "approved" | "existing";
+
 type GuideBlock = {
-  key: string;
   title: string;
   text: string;
-  linkTo: string;
-  linkLabel: string;
 };
+
+type RouteBlock = {
+  title: string;
+  text: string;
+};
+
+type BenefitBlock = {
+  no: number;
+  title: string;
+  text: string;
+};
+
+const FIXED_RULES: GuideBlock[] = [
+  {
+    title: "One person, one global identity",
+    text: "Each user carries one global GMFN ID across the system. Identity should not split from one community to another.",
+  },
+  {
+    title: "One identity, one global shop",
+    text: "One identity carries one global shop. Shop visibility may appear across surfaces, but the underlying shop remains attached to the same identity.",
+  },
+  {
+    title: "Demand follows identity",
+    text: "Demand belongs to the person asking. It is identity-based, not a separate anonymous layer.",
+  },
+  {
+    title: "Spotlight follows shop",
+    text: "Spotlight belongs to the shop surface. It is not the same as demand, and it should not be confused with it.",
+  },
+  {
+    title: "Community Home is private control",
+    text: "Community Home is owner-only. It is not the public browsing surface and not the marketplace itself.",
+  },
+  {
+    title: "Marketplace is a selected-community surface",
+    text: "Marketplace reflects the selected community context. Shop Gallery is the viewing surface for a shop.",
+  },
+  {
+    title: "Admin belongs only in Command Center",
+    text: "Administrative tools must stay in Command Center. Member pages should stay clean and member-facing.",
+  },
+];
+
+const READING_BLOCKS: GuideBlock[] = [
+  {
+    title: "Identity",
+    text: "The identity layer explains who is participating. It should be stable, portable, and properly issued rather than casually self-assigned.",
+  },
+  {
+    title: "Trust",
+    text: "Trust summaries help explain how the identity is currently standing. They should be readable, calm, and easy to act on.",
+  },
+  {
+    title: "Community",
+    text: "Community is where participation, approvals, relationships, and visibility become structured. It is not just a social feed.",
+  },
+  {
+    title: "Demand",
+    text: "Demand shows what a person needs. It stays attached to the identity of the requester.",
+  },
+  {
+    title: "Spotlight",
+    text: "Spotlight shows what a shop wants to present. It is shop-based visibility, not the same thing as personal demand.",
+  },
+  {
+    title: "Marketplace and shop",
+    text: "Marketplace is the selected community market surface. Shop Gallery is the member and public viewing surface for a shop.",
+  },
+];
+
+const ENTRY_PATHS: RouteBlock[] = [
+  {
+    title: "General public path",
+    text: "Cover → Welcome → My GMFN and I or Login → Dashboard",
+  },
+  {
+    title: "Founder / create path",
+    text: "Cover → Create Entry → GMFN issuance → Dashboard",
+  },
+  {
+    title: "Invited join path",
+    text: "Cover → Join Entry → Pending Approval → Activation → GMFN issuance → Dashboard",
+  },
+  {
+    title: "Existing user path",
+    text: "Cover or Welcome → Login → Dashboard",
+  },
+];
+
+const GMFN_21_THINGS: BenefitBlock[] = [
+  {
+    no: 1,
+    title: "Gives you one global GMFN ID",
+    text: "You receive one identity that stays with you across visible communities.",
+  },
+  {
+    no: 2,
+    title: "Attaches one global shop to your identity",
+    text: "Your shop remains tied to your identity instead of becoming a separate broken surface.",
+  },
+  {
+    no: 3,
+    title: "Lets you appear properly in communities",
+    text: "You can participate in communities through a structured membership and trust path.",
+  },
+  {
+    no: 4,
+    title: "Shows your immediate Open Trust reading",
+    text: "You can see how you are currently standing in the community you are operating in now.",
+  },
+  {
+    no: 5,
+    title: "Shows your CCI reading",
+    text: "You can see your cross-community integrity reading across visible communities.",
+  },
+  {
+    no: 6,
+    title: "Gives you a TrustSlip",
+    text: "You can hold a trust verification surface without confusing it with the main trust explanation page.",
+  },
+  {
+    no: 7,
+    title: "Gives you a QR verification path",
+    text: "A QR code helps others verify the TrustSlip more easily.",
+  },
+  {
+    no: 8,
+    title: "Lets you post demand as yourself",
+    text: "Your requests stay identity-based and connected to the person asking.",
+  },
+  {
+    no: 9,
+    title: "Lets your shop appear in spotlight",
+    text: "Spotlight gives shop-based visibility without merging it into demand.",
+  },
+  {
+    no: 10,
+    title: "Lets your shop appear in marketplace",
+    text: "Your shop can become visible in the selected community surface.",
+  },
+  {
+    no: 11,
+    title: "Gives you a Shop Gallery surface",
+    text: "Other members and the public can view your shop in a dedicated viewing surface.",
+  },
+  {
+    no: 12,
+    title: "Gives you Community Home access",
+    text: "When appropriate, you can work through the private owner-facing community surface.",
+  },
+  {
+    no: 13,
+    title: "Lets communities invite and review entry properly",
+    text: "Entry can move through invite, join, approval, and activation instead of informal confusion.",
+  },
+  {
+    no: 14,
+    title: "Shows you notifications that matter",
+    text: "You can see important updates for trust, join requests, demand, spotlight, and money movement.",
+  },
+  {
+    no: 15,
+    title: "Supports loans and support pathways",
+    text: "You can move into support, readiness, and related economic tools from one workspace.",
+  },
+  {
+    no: 16,
+    title: "Supports pool payment guidance",
+    text: "You can see the payment route connected to your support or pool activity.",
+  },
+  {
+    no: 17,
+    title: "Supports withdrawal guidance",
+    text: "You can follow structured withdrawal instructions where available.",
+  },
+  {
+    no: 18,
+    title: "Supports readiness and workbench tools",
+    text: "You can review readiness, suggestions, and workbench movement where those tools apply.",
+  },
+  {
+    no: 19,
+    title: "Shows guarantor earnings where relevant",
+    text: "You can see guarantor-related earnings in the correct place instead of scattered surfaces.",
+  },
+  {
+    no: 20,
+    title: "Helps protect identity integrity",
+    text: "The system gives a place to understand identity consistency and risk signals.",
+  },
+  {
+    no: 21,
+    title: "Gives you one guided dashboard",
+    text: "You start from a calmer home page that helps you move into trust, community, demand, marketplace, and shop in a structured way.",
+  },
+];
+
+function readStorage(key: string): string | null {
+  try {
+    if (typeof window === "undefined") return null;
+    const value = window.localStorage.getItem(key);
+    return value == null ? null : String(value);
+  } catch {
+    return null;
+  }
+}
+
+function hasAccessToken(): boolean {
+  return Boolean(String(readStorage("access_token") || "").trim());
+}
+
+function getEntryMode(): EntryMode | null {
+  const raw = String(readStorage("gmfn_entry_mode") || "").trim().toLowerCase();
+
+  if (
+    raw === "general" ||
+    raw === "create" ||
+    raw === "invite" ||
+    raw === "approved" ||
+    raw === "existing"
+  ) {
+    return raw as EntryMode;
+  }
+
+  return null;
+}
+
+function pageShell(): React.CSSProperties {
+  return {
+    minHeight: "100vh",
+    background: "#F4F8FC",
+    padding: "24px 18px 42px",
+    boxSizing: "border-box",
+  };
+}
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 26,
-    border: "1px solid rgba(11,31,51,0.10)",
     background: bg,
-    boxShadow:
-      "0 22px 54px rgba(15,23,42,0.07), 0 2px 8px rgba(15,23,42,0.03)",
-    padding: 22,
-    position: "relative",
-    overflow: "hidden",
-  };
-}
-
-function detailCard(): React.CSSProperties {
-  return {
-    borderRadius: 24,
     border: "1px solid rgba(11,31,51,0.08)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #FBFDFF 100%)",
-    boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
+    boxShadow:
+      "0 18px 44px rgba(15,23,42,0.05), 0 2px 10px rgba(15,23,42,0.02)",
     padding: 22,
-    position: "relative",
-    overflow: "hidden",
   };
 }
 
-function softCard(): React.CSSProperties {
+function softPanel(): React.CSSProperties {
+  return {
+    borderRadius: 20,
+    background: "#F8FBFF",
+    border: "1px solid rgba(11,31,51,0.08)",
+    padding: 18,
+  };
+}
+
+function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 18,
+    background: bg,
     border: "1px solid rgba(11,31,51,0.08)",
-    background: "#FFFFFF",
     padding: 16,
-    boxShadow: "0 12px 30px rgba(15,23,42,0.04)",
   };
 }
 
-function actionLink(primary = false): React.CSSProperties {
+function chip(): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    minHeight: 34,
+    padding: "7px 12px",
+    borderRadius: 999,
+    background: "rgba(11,99,209,0.08)",
+    color: "#0B63D1",
+    fontSize: 12,
+    fontWeight: 900,
+    letterSpacing: 0.2,
+  };
+}
+
+function utilityLink(): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "11px 14px",
-    borderRadius: 14,
-    border: primary ? "none" : "1px solid rgba(11,31,51,0.10)",
-    background: primary
-      ? "linear-gradient(180deg, #1677E6 0%, #0B63D1 100%)"
-      : "#FFFFFF",
-    color: primary ? "#FFFFFF" : "#0B1F33",
+    minHeight: 40,
+    padding: "9px 12px",
+    borderRadius: 12,
+    background: "#FFFFFF",
+    color: "#0B1F33",
     textDecoration: "none",
-    fontWeight: 1000,
+    fontWeight: 800,
+    border: "1px solid rgba(11,31,51,0.10)",
     fontSize: 14,
-    cursor: "pointer",
-    boxShadow: primary ? "0 10px 22px rgba(11,99,209,0.16)" : "none",
+    whiteSpace: "nowrap",
   };
 }
 
-function sectionLabel(): React.CSSProperties {
+function primaryBtn(): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 46,
+    padding: "12px 16px",
+    borderRadius: 16,
+    background: "#0B63D1",
+    color: "#FFFFFF",
+    textDecoration: "none",
+    fontWeight: 900,
+    border: "none",
+    fontSize: 15,
+    whiteSpace: "nowrap",
+  };
+}
+
+function secondaryBtn(): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 46,
+    padding: "12px 16px",
+    borderRadius: 16,
+    background: "#FFFFFF",
+    color: "#0B1F33",
+    textDecoration: "none",
+    fontWeight: 800,
+    border: "1px solid rgba(11,31,51,0.10)",
+    fontSize: 15,
+    whiteSpace: "nowrap",
+  };
+}
+
+function backBtn(): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 40,
+    padding: "10px 14px",
+    borderRadius: 12,
+    background: "#FFFFFF",
+    color: "#0B1F33",
+    textDecoration: "none",
+    fontWeight: 800,
+    border: "1px solid rgba(11,31,51,0.10)",
+    cursor: "pointer",
+    fontSize: 14,
+  };
+}
+
+function labelText(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#4F6B8A",
-    fontWeight: 1000,
-    letterSpacing: 0.5,
+    color: "#64748B",
+    fontWeight: 900,
+    letterSpacing: 0.3,
     textTransform: "uppercase",
   };
 }
 
-const blocks: GuideBlock[] = [
-  {
-    key: "1",
-    title: "My Identity in Trust Terms",
-    text:
-      "GMFN reflects who I am in trust terms.\n\nWhat it means:\nMy reputation is no longer hidden only in people’s memories, private conversations, or assumptions. It becomes visible and structured.\n\nWhy it matters:\nInstead of starting from zero every time I enter a new community, market, or transaction, my integrity can travel with me.\n\nIn simple terms:\nGMFN helps people see not just my name, but the trust meaning attached to my identity.",
-    linkTo: "/app/trust",
-    linkLabel: "Open Trust",
-  },
-  {
-    key: "2",
-    title: "Trust as Savings",
-    text:
-      "Every good action becomes stored reliability.\n\nWhat it means:\nGMFN helps me build trust savings, not cash savings. Every fulfilled promise, repayment, and helpful action becomes part of what I have built.\n\nWhy it matters:\nWhen I need support later, I do not start from zero. My past reliability already exists as usable value.\n\nIn simple terms:\nTrust behaves like a stored reserve that I can draw from when opportunity or difficulty comes.",
-    linkTo: "/app/trust",
-    linkLabel: "View Trust",
-  },
-  {
-    key: "3",
-    title: "My Actions Become Record",
-    text:
-      "Repayments, behaviour, and support become visible evidence.\n\nWhat it means:\nGMFN turns meaningful actions into record instead of letting them disappear.\n\nWhy it matters:\nA person should not have to depend only on storytelling or memory when their behaviour can be shown through evidence.\n\nIn simple terms:\nGood conduct stops being invisible. It becomes part of my record.",
-    linkTo: "/app/trust-slip",
-    linkLabel: "Open TrustSlip",
-  },
-  {
-    key: "4",
-    title: "My Trust Becomes Visible",
-    text:
-      "Others can see my reliability before dealing with me.\n\nWhat it means:\nGMFN makes trust readable before decisions happen.\n\nWhy it matters:\nThis reduces blind judgment and improves decision quality in trade, support, and community dealings.\n\nIn simple terms:\nInstead of asking only, 'Who is this?', people can also ask, 'How dependable is this person?'",
-    linkTo: "/app/trust",
-    linkLabel: "Open Trust",
-  },
-  {
-    key: "5",
-    title: "Cross-Community Integrity",
-    text:
-      "My trust works across all communities I belong to.\n\nWhat it means:\nGMFN does not trap my reputation inside one group. It can be read across communities.\n\nWhy it matters:\nPeople often belong to several markets, associations, circles, and support networks. Trust should move with them.\n\nIn simple terms:\nMy integrity is portable, not locked in one place.",
-    linkTo: "/app/trust",
-    linkLabel: "Open Trust",
-  },
-  {
-    key: "6",
-    title: "My TrustSlip",
-    text:
-      "My trust becomes usable through TrustSlip.\n\nWhat it means:\nTrustSlip is the form my trust takes when it needs to be presented and used.\n\nWhy it matters:\nIt turns invisible reputation into something actionable for support, release-before-payment, and structured trust decisions.\n\nIn simple terms:\nTrustSlip is not money. It is trust expressed in a usable form.",
-    linkTo: "/app/trust-slip",
-    linkLabel: "Open TrustSlip",
-  },
-  {
-    key: "7",
-    title: "Release Before Payment",
-    text:
-      "Trade can happen based on trust, not only upfront cash.\n\nWhat it means:\nA person may receive goods or services based on visible social backing and known reliability.\n\nWhy it matters:\nThis reflects how many real markets already work informally, but with more structure and clarity.\n\nIn simple terms:\nGMFN helps trust unlock trade before full payment is completed.",
-    linkTo: "/app/trust-slip",
-    linkLabel: "Open TrustSlip",
-  },
-  {
-    key: "8",
-    title: "Trusted Buying and Selling",
-    text:
-      "Trade decisions are based on visible trust.\n\nWhat it means:\nBuying and selling can be supported by identity, record, and community-backed confidence.\n\nWhy it matters:\nThis reduces weak transactions and improves confidence between buyers and sellers.\n\nIn simple terms:\nTrade becomes safer when people can see who they are dealing with.",
-    linkTo: "/app/marketplace",
-    linkLabel: "Open Marketplace",
-  },
-  {
-    key: "9",
-    title: "Cross-Community Trade",
-    text:
-      "Trade extends beyond one group into many communities.\n\nWhat it means:\nA person’s credibility does not need to restart from zero every time they enter another community or market.\n\nWhy it matters:\nThis helps expand opportunity beyond local boundaries.\n\nIn simple terms:\nGMFN helps trust move across communities so trade can grow wider.",
-    linkTo: "/app/marketplace",
-    linkLabel: "Open Marketplace",
-  },
-  {
-    key: "10",
-    title: "Fraud Reduction",
-    text:
-      "People see who they are dealing with before acting.\n\nWhat it means:\nGMFN introduces a trust visibility layer before a transaction or support decision happens.\n\nWhy it matters:\nFraud thrives where people act blindly.\n\nIn simple terms:\nThe clearer the person is, the harder it is for deception to hide.",
-    linkTo: "/app/trust-slip/verify",
-    linkLabel: "Verify Trust",
-  },
-  {
-    key: "11",
-    title: "Spotlight Visibility",
-    text:
-      "Your shop can be seen without extra effort.\n\nWhat it means:\nSpotlight helps push visibility toward the member’s shop inside shared communities.\n\nWhy it matters:\nPeople need not rely only on manual promotion every time.\n\nIn simple terms:\nGMFN can advertise trusted members and their shops more naturally within the network.",
-    linkTo: "/app/marketplace",
-    linkLabel: "Open Marketplace",
-  },
-  {
-    key: "12",
-    title: "Reputation-Based Visibility",
-    text:
-      "Visibility is tied to trust, not noise.\n\nWhat it means:\nGMFN is not meant to become a loud marketplace of random shouting.\n\nWhy it matters:\nCommunities need meaningful visibility, not empty visibility.\n\nIn simple terms:\nThe system is stronger when attention is tied to integrity and relevance.",
-    linkTo: "/app/trust",
-    linkLabel: "Open Trust",
-  },
-  {
-    key: "13",
-    title: "People-Backed Loans",
-    text:
-      "Loans are supported by people, not collateral.\n\nWhat it means:\nSupport can come through human backing, social knowledge, and visible reliability.\n\nWhy it matters:\nMany capable people are locked out because they lack formal collateral, not because they lack character.\n\nIn simple terms:\nGMFN helps trust become part of financial access.",
-    linkTo: "/app/loans",
-    linkLabel: "Open Loans",
-  },
-  {
-    key: "14",
-    title: "Emergency Support",
-    text:
-      "Communities can respond quickly in urgent situations.\n\nWhat it means:\nWhen time matters, visible trust helps people act faster.\n\nWhy it matters:\nEmergencies often do not wait for formal paperwork or full cash readiness.\n\nIn simple terms:\nTrust can speed up help where delay would be harmful.",
-    linkTo: "/app/community",
-    linkLabel: "Open Community Home",
-  },
-  {
-    key: "15",
-    title: "Diaspora Trust Bridge",
-    text:
-      "Support across countries becomes safer and clearer.\n\nWhat it means:\nPeople abroad can support trusted people at home with better visibility and less blind risk.\n\nWhy it matters:\nDiaspora support is often large, but uncertainty remains a major barrier.\n\nIn simple terms:\nGMFN helps distant support become more structured and more confident.",
-    linkTo: "/app/community",
-    linkLabel: "Open Community Home",
-  },
-  {
-    key: "16",
-    title: "Trust Savings (ROSCA)",
-    text:
-      "Contribution systems become stronger and more reliable.\n\nWhat it means:\nGMFN can strengthen contribution cultures such as ROSCA, ajo, esusu, stokvel, tanda, susu, hui, and similar systems.\n\nWhy it matters:\nThese systems already work through trust. GMFN helps protect and structure that trust.\n\nIn simple terms:\nIt supports savings culture by making contribution reliability easier to see and remember.",
-    linkTo: "/app/community",
-    linkLabel: "Open Community Home",
-  },
-  {
-    key: "17",
-    title: "Portable Identity",
-    text:
-      "One identity works everywhere.\n\nWhat it means:\nMy global ID remains mine across communities.\n\nWhy it matters:\nIdentity fragmentation weakens trust portability.\n\nIn simple terms:\nGMFN helps one person remain one person across the whole network.",
-    linkTo: "/app/trust",
-    linkLabel: "Open Trust",
-  },
-  {
-    key: "18",
-    title: "One Global Shop",
-    text:
-      "One shop follows me across all communities.\n\nWhat it means:\nMy shop is tied to my identity, not duplicated separately in every place.\n\nWhy it matters:\nThis creates consistency, traceability, and stronger reputation.\n\nIn simple terms:\nOne person, one identity, one shop — visible across communities they belong to.",
-    linkTo: "/app/shop-control",
-    linkLabel: "Open Shop",
-  },
-  {
-    key: "19",
-    title: "Service-Based Trust",
-    text:
-      "Trust applies beyond trade into real services.\n\nWhat it means:\nGMFN is not just for buying and selling goods. It can support services like labour, transport, care, education, and practical community work.\n\nWhy it matters:\nReal economies are broader than products.\n\nIn simple terms:\nTrust should support services too, not only merchandise.",
-    linkTo: "/app/trust",
-    linkLabel: "Open Trust",
-  },
-  {
-    key: "20",
-    title: "Demand Box",
-    text:
-      "Anyone can request help without owning a shop.\n\nWhat it means:\nDemand Box is identity-based, not shop-based.\n\nWhy it matters:\nNot everyone wants or needs to open a shop, but they may still need help, supply, labour, or urgent support.\n\nIn simple terms:\nA member does not need a shop to be visible in need.",
-    linkTo: "/app/demand-box",
-    linkLabel: "Open Demand Box",
-  },
-  {
-    key: "21",
-    title: "Community Economic Power",
-    text:
-      "Trust turns communities into economic systems.\n\nWhat it means:\nWhen trust becomes visible, communities can coordinate trade, support, savings, and opportunity more powerfully.\n\nWhy it matters:\nThis is bigger than one user or one transaction.\n\nIn simple terms:\nGMFN helps communities act like organised economic engines, not scattered individuals.",
-    linkTo: "/app/community",
-    linkLabel: "Open Community Home",
-  },
-];
+function getContinueTarget(
+  isMemberRoute: boolean,
+  signedIn: boolean,
+  entryMode: EntryMode | null
+): { label: string; to: string } {
+  if (isMemberRoute || signedIn) {
+    return {
+      label: "Open Dashboard",
+      to: "/app/dashboard",
+    };
+  }
+
+  if (entryMode === "create") {
+    return {
+      label: "Continue to Create Entry",
+      to: "/create",
+    };
+  }
+
+  if (entryMode === "invite") {
+    return {
+      label: "Continue to Join Entry",
+      to: "/join",
+    };
+  }
+
+  if (entryMode === "approved") {
+    return {
+      label: "Continue to Activation",
+      to: "/activate-membership",
+    };
+  }
+
+  return {
+    label: "Continue to Login",
+    to: "/login",
+  };
+}
 
 export default function MyGMFNAndIPage() {
-  const [activeKey, setActiveKey] = useState<string | null>(blocks[0].key);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [isCompact, setIsCompact] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 920;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    function handleResize() {
+      setIsCompact(window.innerWidth <= 920);
+    }
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const isMemberRoute = useMemo(
+    () => location.pathname.startsWith("/app/"),
+    [location.pathname]
+  );
+
+  const signedIn = useMemo(() => hasAccessToken(), []);
+  const entryMode = useMemo(() => getEntryMode(), []);
+  const continueTarget = useMemo(
+    () => getContinueTarget(isMemberRoute, signedIn, entryMode),
+    [isMemberRoute, signedIn, entryMode]
+  );
+
+  function goBackPublic() {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+
+    navigate("/welcome");
+  }
 
   return (
-    <div style={{ maxWidth: 980, margin: "0 auto", paddingBottom: 36 }}>
-      <PageTopNav
-        title="My GMFN and I"
-        subtitle="Understand in a simple way how GMFN works for you, your community, your reputation, and your real-world opportunities."
-      />
+    <div style={pageShell()}>
+      <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+        {isMemberRoute ? (
+          <PageTopNav
+            sectionLabel="Guide"
+            title="My GMFN and I"
+            subtitle="A plain-language guide to identity, trust, community, demand, shop, entry flow, and the concrete things GMFN can do for you."
+            homeTo="/app/dashboard"
+            homeLabel="Dashboard"
+            backTo="/app/dashboard"
+            nextLinks={[
+              { label: "Trust", to: "/app/trust" },
+              { label: "Community", to: "/app/community" },
+              { label: "Marketplace", to: "/app/marketplace" },
+            ]}
+            utilityLinks={[
+              { label: "Notifications", to: "/app/notifications" },
+            ]}
+          />
+        ) : (
+          <div
+            style={{
+              marginBottom: 14,
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 10,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <button type="button" onClick={goBackPublic} style={backBtn()}>
+              ← Back
+            </button>
 
-      <div
-        style={{
-          ...pageCard(
-            "linear-gradient(180deg, rgba(248,251,255,1) 0%, rgba(242,248,255,1) 100%)"
-          ),
-          marginTop: 18,
-          padding: 0,
-        }}
-      >
-        <div
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <Link to="/cover" style={utilityLink()}>
+                Cover
+              </Link>
+              <Link to="/welcome" style={utilityLink()}>
+                Welcome
+              </Link>
+              <Link to={continueTarget.to} style={utilityLink()}>
+                {continueTarget.label}
+              </Link>
+            </div>
+          </div>
+        )}
+
+        <section
           style={{
-            position: "relative",
-            padding: "24px 24px 22px",
-            overflow: "hidden",
+            ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
+            padding: isCompact ? 22 : 30,
           }}
         >
-          <div
+          <div style={labelText()}>
+            {isMemberRoute ? "Member guide" : "Public guide"}
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            <span style={chip()}>My GMFN and I</span>
+          </div>
+
+          <h1
             style={{
-              position: "absolute",
-              right: -40,
-              top: -40,
-              width: 180,
-              height: 180,
-              borderRadius: 999,
-              background: "rgba(11,99,209,0.06)",
+              margin: "14px 0 0",
+              fontSize: isCompact ? 32 : 46,
+              lineHeight: 1.06,
+              fontWeight: 900,
+              color: "#0B1F33",
+              maxWidth: 860,
             }}
-          />
+          >
+            A calmer explanation of what the system is doing, what it can do for
+            you, and where you fit into it.
+          </h1>
+
+          <p
+            style={{
+              margin: "14px 0 0",
+              fontSize: 17,
+              lineHeight: 1.82,
+              color: "#35516B",
+              maxWidth: 920,
+            }}
+          >
+            This page is for people who need plain language, guided movement,
+            and lower cognitive burden. It now does two things together: it
+            explains the system, and it clearly shows the practical things GMFN
+            can do for you.
+          </p>
 
           <div
             style={{
-              position: "absolute",
-              right: 80,
-              bottom: -50,
-              width: 140,
-              height: 140,
-              borderRadius: 999,
-              background: "rgba(11,31,51,0.04)",
+              marginTop: 20,
+              display: "flex",
+              gap: 12,
+              flexWrap: "wrap",
             }}
-          />
+          >
+            <Link to={continueTarget.to} style={primaryBtn()}>
+              {continueTarget.label}
+            </Link>
 
-          <div style={{ position: "relative", zIndex: 1 }}>
-            <div style={sectionLabel()}>Primary guide</div>
+            <a
+              href={PDF_FALLBACK_TO}
+              target="_blank"
+              rel="noreferrer"
+              style={secondaryBtn()}
+            >
+              Open PDF fallback
+            </a>
+          </div>
+        </section>
+
+        <section
+          style={{
+            marginTop: 18,
+            display: "grid",
+            gridTemplateColumns: isCompact
+              ? "1fr"
+              : "minmax(0, 1.18fr) minmax(320px, 0.82fr)",
+            gap: 18,
+            alignItems: "start",
+          }}
+        >
+          <div style={pageCard("#FFFFFF")}>
+            <div style={labelText()}>The core idea</div>
 
             <div
               style={{
-                marginTop: 10,
-                fontSize: 30,
-                fontWeight: 1000,
+                marginTop: 12,
                 color: "#0B1F33",
+                fontSize: isCompact ? 25 : 32,
+                fontWeight: 900,
                 lineHeight: 1.15,
-                letterSpacing: -0.3,
                 maxWidth: 820,
               }}
             >
-              You already have trust. GMFN helps you use it.
+              The system is trying to make real trust easier to see, easier to
+              understand, and easier to use.
             </div>
 
             <div
               style={{
-                marginTop: 10,
-                color: "#60758E",
+                marginTop: 12,
+                color: "#5E7288",
                 fontSize: 15,
                 lineHeight: 1.85,
-                maxWidth: 860,
+                maxWidth: 900,
               }}
             >
-              GMFN is not where I come to get money. It is where my reputation
-              becomes usable, my integrity becomes measurable, and my community
-              backing becomes visible. I do not use GMFN to become trusted. I
-              use GMFN to make my existing trust real, visible, and useful.
+              Many people already move through life using trust, relationships,
+              reputation, and community knowledge. GMFN / GSN does not try to
+              replace that reality. It tries to structure it better so that
+              people can move with more clarity, less confusion, and more
+              practical confidence.
             </div>
 
             <div
               style={{
                 marginTop: 16,
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : "repeat(3, minmax(0, 1fr))",
+                gap: 12,
               }}
             >
-              <Link to="/app/dashboard" style={actionLink(true)}>
-                Open Dashboard
-              </Link>
-              <Link to="/app/community" style={actionLink(false)}>
-                Open Community Home
-              </Link>
-              <a
-                href="/GSN_FINAL_WHITE.pdf"
-                target="_blank"
-                rel="noreferrer"
-                style={actionLink(false)}
-              >
-                PDF fallback
-              </a>
+              <div style={innerCard("#F8FBFF")}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 16,
+                  }}
+                >
+                  Plain language
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#5E7288",
+                    fontSize: 14,
+                    lineHeight: 1.75,
+                  }}
+                >
+                  The experience should explain itself clearly instead of
+                  sounding technical or abstract.
+                </div>
+              </div>
+
+              <div style={innerCard("#F8FBFF")}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 16,
+                  }}
+                >
+                  Guided movement
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#5E7288",
+                    fontSize: 14,
+                    lineHeight: 1.75,
+                  }}
+                >
+                  A person should know where to go next without being forced to
+                  interpret too many choices at once.
+                </div>
+              </div>
+
+              <div style={innerCard("#F8FBFF")}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 16,
+                  }}
+                >
+                  Institutional calm
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#5E7288",
+                    fontSize: 14,
+                    lineHeight: 1.75,
+                  }}
+                >
+                  The system should feel trustworthy, ordered, and safe for
+                  unbanked and underbanked users.
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div
-        style={{
-          marginTop: 18,
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: 14,
-        }}
-      >
-        <div style={softCard()}>
-          <div style={sectionLabel()}>How to use this page</div>
+          <div style={pageCard("#F8FBFF")}>
+            <div style={labelText()}>How to use this page</div>
+
+            <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
+              <div style={softPanel()}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontSize: 15,
+                    fontWeight: 900,
+                  }}
+                >
+                  First
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#5E7288",
+                    fontSize: 14,
+                    lineHeight: 1.75,
+                  }}
+                >
+                  Read the fixed rules so you understand what does not change in
+                  the system.
+                </div>
+              </div>
+
+              <div style={softPanel()}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontSize: 15,
+                    fontWeight: 900,
+                  }}
+                >
+                  Then
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#5E7288",
+                    fontSize: 14,
+                    lineHeight: 1.75,
+                  }}
+                >
+                  Read the 21 practical things GMFN can do for you.
+                </div>
+              </div>
+
+              <div style={softPanel()}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontSize: 15,
+                    fontWeight: 900,
+                  }}
+                >
+                  After that
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#5E7288",
+                    fontSize: 14,
+                    lineHeight: 1.75,
+                  }}
+                >
+                  Continue using the route that matches your real stage in the
+                  system.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section
+          style={{
+            marginTop: 18,
+            ...pageCard("#FFFFFF"),
+          }}
+        >
+          <div style={labelText()}>What stays fixed</div>
+
           <div
             style={{
-              marginTop: 8,
-              color: "#475569",
-              fontSize: 14,
-              lineHeight: 1.75,
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "1fr"
+                : "repeat(2, minmax(0, 1fr))",
+              gap: 12,
             }}
           >
-            Open one section at a time. Read it fully. Then use the action button
-            to move into the related page.
-          </div>
-        </div>
-
-        <div style={softCard()}>
-          <div style={sectionLabel()}>Guide rule</div>
-          <div
-            style={{
-              marginTop: 8,
-              color: "#475569",
-              fontSize: 14,
-              lineHeight: 1.75,
-            }}
-          >
-            This is the main guide page. The PDF is only a fallback when needed.
-          </div>
-        </div>
-
-        <div style={softCard()}>
-          <div style={sectionLabel()}>Sections</div>
-          <div
-            style={{
-              marginTop: 8,
-              color: "#0B1F33",
-              fontSize: 28,
-              fontWeight: 1000,
-              lineHeight: 1,
-            }}
-          >
-            {blocks.length}
-          </div>
-        </div>
-      </div>
-
-      <div
-        style={{
-          marginTop: 18,
-          display: "grid",
-          gap: 14,
-        }}
-      >
-        {blocks.map((block, idx) => {
-          const open = activeKey === block.key;
-
-          return (
-            <div
-              key={block.key}
-              style={{
-                ...detailCard(),
-                padding: 0,
-                border: open
-                  ? "1px solid rgba(11,99,209,0.22)"
-                  : "1px solid rgba(11,31,51,0.08)",
-                boxShadow: open
-                  ? "0 20px 46px rgba(11,99,209,0.10), 0 2px 8px rgba(15,23,42,0.03)"
-                  : "0 18px 50px rgba(15,23,42,0.05)",
-              }}
-            >
-              <button
-                type="button"
-                onClick={() =>
-                  setActiveKey((prev) => (prev === block.key ? null : block.key))
-                }
-                style={{
-                  width: "100%",
-                  border: "none",
-                  background: "transparent",
-                  padding: "18px 20px",
-                  textAlign: "left",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 14,
-                }}
-              >
-                <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-                  <div
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      minWidth: 34,
-                      height: 34,
-                      borderRadius: 999,
-                      padding: "0 10px",
-                      background: open
-                        ? "linear-gradient(180deg, #1677E6 0%, #0B63D1 100%)"
-                        : "#F1F5F9",
-                      color: open ? "#FFFFFF" : "#475569",
-                      fontSize: 12,
-                      fontWeight: 1000,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {idx + 1}
-                  </div>
-
-                  <div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "#64748B",
-                        fontWeight: 1000,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.04em",
-                      }}
-                    >
-                      My GMFN and I
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 6,
-                        fontSize: 20,
-                        fontWeight: 1000,
-                        color: "#0B1F33",
-                        lineHeight: 1.3,
-                      }}
-                    >
-                      {block.title}
-                    </div>
-                  </div>
+            {FIXED_RULES.map((item) => (
+              <div key={item.title} style={innerCard("#FCFEFF")}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontSize: 16,
+                    fontWeight: 900,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  {item.title}
                 </div>
 
                 <div
                   style={{
+                    marginTop: 8,
+                    color: "#5E7288",
+                    fontSize: 14,
+                    lineHeight: 1.75,
+                  }}
+                >
+                  {item.text}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section
+          style={{
+            marginTop: 18,
+            ...pageCard("#FFFFFF"),
+          }}
+        >
+          <div style={labelText()}>21 things GMFN can do for you</div>
+
+          <div
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "1fr"
+                : "repeat(3, minmax(0, 1fr))",
+              gap: 12,
+            }}
+          >
+            {GMFN_21_THINGS.map((item) => (
+              <div key={item.no} style={innerCard("#FCFEFF")}>
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minWidth: 34,
+                    height: 34,
+                    borderRadius: 999,
+                    background: "rgba(11,99,209,0.08)",
+                    color: "#0B63D1",
+                    fontWeight: 900,
                     fontSize: 13,
-                    fontWeight: 1000,
-                    color: open ? "#0B63D1" : "#64748B",
-                    whiteSpace: "nowrap",
-                    flexShrink: 0,
                   }}
                 >
-                  {open ? "Close" : "Open"}
+                  {item.no}
                 </div>
-              </button>
 
-              {open ? (
                 <div
                   style={{
-                    borderTop: "1px solid rgba(11,31,51,0.08)",
-                    padding: "0 20px 20px",
+                    marginTop: 10,
+                    color: "#0B1F33",
+                    fontSize: 16,
+                    fontWeight: 900,
+                    lineHeight: 1.35,
                   }}
                 >
-                  <div
-                    style={{
-                      marginTop: 16,
-                      color: "#475569",
-                      lineHeight: 1.95,
-                      fontSize: 16,
-                      whiteSpace: "pre-wrap",
-                    }}
-                  >
-                    {block.text}
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 18,
-                      display: "flex",
-                      gap: 10,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <Link to={block.linkTo} style={actionLink(true)}>
-                      {block.linkLabel}
-                    </Link>
-
-                    <button
-                      type="button"
-                      onClick={() => setActiveKey(null)}
-                      style={actionLink(false)}
-                    >
-                      Close
-                    </button>
-                  </div>
+                  {item.title}
                 </div>
-              ) : null}
-            </div>
-          );
-        })}
+
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#5E7288",
+                    fontSize: 14,
+                    lineHeight: 1.75,
+                  }}
+                >
+                  {item.text}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section
+          style={{
+            marginTop: 18,
+            ...pageCard("#FFFFFF"),
+          }}
+        >
+          <div style={labelText()}>How to read the system</div>
+
+          <div
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "1fr"
+                : "repeat(3, minmax(0, 1fr))",
+              gap: 12,
+            }}
+          >
+            {READING_BLOCKS.map((item) => (
+              <div key={item.title} style={innerCard("#FFFFFF")}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontSize: 16,
+                    fontWeight: 900,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  {item.title}
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#5E7288",
+                    fontSize: 14,
+                    lineHeight: 1.75,
+                  }}
+                >
+                  {item.text}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section
+          style={{
+            marginTop: 18,
+            ...pageCard("#F8FBFF"),
+          }}
+        >
+          <div style={labelText()}>Entry map</div>
+
+          <div
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "1fr"
+                : "repeat(2, minmax(0, 1fr))",
+              gap: 12,
+            }}
+          >
+            {ENTRY_PATHS.map((item) => (
+              <div key={item.title} style={innerCard("#FFFFFF")}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 16,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  {item.title}
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#5E7288",
+                    fontSize: 14,
+                    lineHeight: 1.75,
+                  }}
+                >
+                  {item.text}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section
+          style={{
+            marginTop: 18,
+            ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
+          }}
+        >
+          <div style={labelText()}>Continue</div>
+
+          <div
+            style={{
+              marginTop: 10,
+              color: "#0B1F33",
+              fontSize: isCompact ? 26 : 34,
+              fontWeight: 900,
+              lineHeight: 1.12,
+              maxWidth: 760,
+            }}
+          >
+            Move forward using the route that matches your real stage.
+          </div>
+
+          <div
+            style={{
+              marginTop: 12,
+              color: "#5E7288",
+              fontSize: 15,
+              lineHeight: 1.8,
+              maxWidth: 860,
+            }}
+          >
+            This guide should reduce confusion, not create more of it. Once you
+            understand the main idea and the practical benefits, continue to the
+            correct next step.
+          </div>
+
+          <div
+            style={{
+              marginTop: 18,
+              display: "flex",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <Link to={continueTarget.to} style={primaryBtn()}>
+              {continueTarget.label}
+            </Link>
+
+            {isMemberRoute ? (
+              <Link to="/app/dashboard" style={secondaryBtn()}>
+                Back to Dashboard
+              </Link>
+            ) : (
+              <Link to="/welcome" style={secondaryBtn()}>
+                Back to Welcome
+              </Link>
+            )}
+          </div>
+        </section>
       </div>
     </div>
   );

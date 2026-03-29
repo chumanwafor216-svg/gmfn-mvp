@@ -1,34 +1,121 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+
+const ACCESS_TOKEN_KEY = "access_token";
+const ENTRY_MODE_KEY = "gmfn_entry_mode";
+
+const COVER_TO = "/cover";
+const GUIDE_TO = "/guide";
+const LOGIN_TO = "/login";
+const CREATE_TO = "/create";
+const JOIN_TO = "/join";
+const ACTIVATE_TO = "/activate-membership";
+const DASHBOARD_TO = "/app/dashboard";
+const PDF_FALLBACK_TO = "/GSN_FINAL_WHITE.pdf";
+
+type EntryMode = "general" | "create" | "invite" | "approved" | "existing";
+
+function readStorage(key: string): string | null {
+  try {
+    if (typeof window === "undefined") return null;
+    const value = window.localStorage.getItem(key);
+    return value == null ? null : String(value);
+  } catch {
+    return null;
+  }
+}
+
+function hasAccessToken(): boolean {
+  return Boolean(String(readStorage(ACCESS_TOKEN_KEY) || "").trim());
+}
+
+function getEntryMode(): EntryMode | null {
+  const raw = String(readStorage(ENTRY_MODE_KEY) || "").trim().toLowerCase();
+
+  if (
+    raw === "general" ||
+    raw === "create" ||
+    raw === "invite" ||
+    raw === "approved" ||
+    raw === "existing"
+  ) {
+    return raw as EntryMode;
+  }
+
+  return null;
+}
 
 function pageShell(): React.CSSProperties {
   return {
     minHeight: "100vh",
-    background: "#F5FAFE",
-    padding: "34px 22px",
+    background: "#F4F8FC",
+    padding: "28px 18px 42px",
     boxSizing: "border-box",
   };
 }
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 24,
+    borderRadius: 28,
     background: bg,
     border: "1px solid rgba(11,31,51,0.08)",
-    boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
-    padding: 24,
+    boxShadow:
+      "0 18px 44px rgba(15,23,42,0.05), 0 2px 10px rgba(15,23,42,0.02)",
+    padding: 22,
   };
 }
 
-function actionCard(active = false): React.CSSProperties {
+function softPanel(): React.CSSProperties {
   return {
-    borderRadius: 22,
-    background: active ? "#F8FBFF" : "#FFFFFF",
-    border: active
-      ? "1px solid rgba(11,99,209,0.20)"
-      : "1px solid rgba(11,31,51,0.08)",
-    boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
-    padding: 24,
+    borderRadius: 20,
+    background: "#F8FBFF",
+    border: "1px solid rgba(11,31,51,0.08)",
+    padding: 18,
+  };
+}
+
+function stepCard(): React.CSSProperties {
+  return {
+    borderRadius: 18,
+    background: "#FFFFFF",
+    border: "1px solid rgba(11,31,51,0.08)",
+    padding: 16,
+  };
+}
+
+function utilityLink(): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 40,
+    padding: "9px 12px",
+    borderRadius: 12,
+    background: "#FFFFFF",
+    color: "#0B1F33",
+    textDecoration: "none",
+    fontWeight: 800,
+    border: "1px solid rgba(11,31,51,0.10)",
+    fontSize: 14,
+    whiteSpace: "nowrap",
+  };
+}
+
+function backBtn(): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 40,
+    padding: "10px 14px",
+    borderRadius: 12,
+    background: "#FFFFFF",
+    color: "#0B1F33",
+    textDecoration: "none",
+    fontWeight: 800,
+    border: "1px solid rgba(11,31,51,0.10)",
+    cursor: "pointer",
+    fontSize: 14,
   };
 }
 
@@ -37,13 +124,14 @@ function primaryBtn(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
+    minHeight: 50,
     width: "100%",
-    padding: "14px 18px",
+    padding: "12px 16px",
     borderRadius: 16,
     background: "#0B63D1",
     color: "#FFFFFF",
     textDecoration: "none",
-    fontWeight: 1000,
+    fontWeight: 900,
     border: "none",
     cursor: "pointer",
     fontSize: 15,
@@ -55,32 +143,17 @@ function secondaryBtn(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
+    minHeight: 50,
     width: "100%",
-    padding: "14px 18px",
+    padding: "12px 16px",
     borderRadius: 16,
     background: "#FFFFFF",
     color: "#0B1F33",
     textDecoration: "none",
-    fontWeight: 1000,
+    fontWeight: 800,
     border: "1px solid rgba(11,31,51,0.10)",
     cursor: "pointer",
     fontSize: 15,
-  };
-}
-
-function secondaryLink(): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "10px 12px",
-    borderRadius: 12,
-    background: "#FFFFFF",
-    color: "#0B1F33",
-    textDecoration: "none",
-    fontWeight: 900,
-    border: "1px solid rgba(11,31,51,0.10)",
-    fontSize: 14,
   };
 }
 
@@ -88,43 +161,115 @@ function labelText(): React.CSSProperties {
   return {
     fontSize: 12,
     color: "#64748B",
-    fontWeight: 1000,
-    letterSpacing: 0.2,
+    fontWeight: 900,
+    letterSpacing: 0.3,
     textTransform: "uppercase",
   };
 }
 
-function backBtn(): React.CSSProperties {
+function heroEyebrow(): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
-    justifyContent: "center",
-    padding: "10px 14px",
-    borderRadius: 12,
-    background: "#FFFFFF",
-    color: "#0B1F33",
-    textDecoration: "none",
+    minHeight: 34,
+    padding: "7px 12px",
+    borderRadius: 999,
+    background: "rgba(11,99,209,0.08)",
+    color: "#0B63D1",
+    fontSize: 12,
     fontWeight: 900,
-    border: "1px solid rgba(11,31,51,0.10)",
-    cursor: "pointer",
-    fontSize: 14,
+    letterSpacing: 0.2,
+  };
+}
+
+function loadingCard(): React.CSSProperties {
+  return {
+    ...pageCard("#FFFFFF"),
+    maxWidth: 720,
+    margin: "84px auto 0",
+    textAlign: "center",
+    color: "#5E7288",
+    fontSize: 15,
+    lineHeight: 1.8,
   };
 }
 
 export default function WelcomePage() {
   const navigate = useNavigate();
 
+  const [isCompact, setIsCompact] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 920;
+  });
+
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    function handleResize() {
+      setIsCompact(window.innerWidth <= 920);
+    }
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (hasAccessToken()) {
+      navigate(DASHBOARD_TO, { replace: true });
+      return;
+    }
+
+    const mode = getEntryMode();
+
+    if (mode === "create") {
+      navigate(CREATE_TO, { replace: true });
+      return;
+    }
+
+    if (mode === "invite") {
+      navigate(JOIN_TO, { replace: true });
+      return;
+    }
+
+    if (mode === "approved") {
+      navigate(ACTIVATE_TO, { replace: true });
+      return;
+    }
+
+    if (mode === "existing") {
+      navigate(LOGIN_TO, { replace: true });
+      return;
+    }
+
+    setReady(true);
+  }, [navigate]);
+
   function goBack() {
-    if (window.history.length > 1) {
+    if (typeof window !== "undefined" && window.history.length > 1) {
       navigate(-1);
       return;
     }
-    navigate("/cover");
+
+    navigate(COVER_TO);
+  }
+
+  if (!ready) {
+    return (
+      <div style={pageShell()}>
+        <div style={loadingCard()}>
+          Preparing the correct entry route...
+        </div>
+      </div>
+    );
   }
 
   return (
     <div style={pageShell()}>
-      <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1080, margin: "0 auto" }}>
         <div
           style={{
             marginBottom: 14,
@@ -140,117 +285,306 @@ export default function WelcomePage() {
           </button>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <Link to="/cover" style={secondaryLink()}>
+            <Link to={COVER_TO} style={utilityLink()}>
               Cover
             </Link>
-            <Link to="/login" style={secondaryLink()}>
-              Login
+            <Link to={GUIDE_TO} style={utilityLink()}>
+              My GMFN and I
             </Link>
-            <Link to="/activate-membership" style={secondaryLink()}>
-              Activate Membership
+            <Link to={LOGIN_TO} style={utilityLink()}>
+              Login
             </Link>
           </div>
         </div>
 
-        <div style={{ ...pageCard(), padding: 30 }}>
+        <section
+          style={{
+            ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
+            padding: isCompact ? 22 : 30,
+          }}
+        >
+          <div style={labelText()}>Welcome</div>
+
+          <div style={{ marginTop: 12 }}>
+            <span style={heroEyebrow()}>General public path</span>
+          </div>
+
+          <h1
+            style={{
+              margin: "14px 0 0",
+              fontSize: isCompact ? 32 : 46,
+              lineHeight: 1.06,
+              fontWeight: 900,
+              color: "#0B1F33",
+              maxWidth: 820,
+            }}
+          >
+            Do you need more information on what GSN can do for you?
+          </h1>
+
+          <p
+            style={{
+              margin: "14px 0 0",
+              fontSize: 17,
+              lineHeight: 1.82,
+              color: "#35516B",
+              maxWidth: 900,
+            }}
+          >
+            This page is only for the general public route. Read the guide first
+            if you want a clearer understanding of how identity, trust,
+            community, demand, spotlight, marketplace, and shop surfaces work
+            together. If you already understand the system, continue to login.
+          </p>
+
           <div
             style={{
-              fontSize: 42,
-              lineHeight: 1.08,
-              fontWeight: 1000,
-              color: "#0B1F33",
+              marginTop: 20,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+              gap: 12,
               maxWidth: 760,
             }}
           >
-            Welcome to GMFN.
+            <Link to={GUIDE_TO} style={secondaryBtn()}>
+              Yes — open My GMFN and I
+            </Link>
+
+            <Link to={LOGIN_TO} style={primaryBtn()}>
+              No — continue to login
+            </Link>
           </div>
 
           <div
             style={{
               marginTop: 14,
-              fontSize: 18,
-              lineHeight: 1.8,
-              color: "#35516B",
-              maxWidth: 940,
-            }}
-          >
-            GMFN entry follows real trust relationships and structured community
-            rules. From here, choose the correct public path: join an existing
-            community by invitation, create a new community, sign in if you
-            already have access, or activate an already approved membership.
-          </div>
-
-          <div
-            style={{
-              marginTop: 16,
               display: "flex",
               gap: 10,
               flexWrap: "wrap",
             }}
           >
             <a
-              href="/GSN_FINAL_WHITE.pdf"
+              href={PDF_FALLBACK_TO}
               target="_blank"
               rel="noreferrer"
-              style={secondaryLink()}
+              style={utilityLink()}
             >
-              Understand GSN first
+              PDF fallback
             </a>
           </div>
-        </div>
+        </section>
 
-        <div
+        <section
           style={{
             marginTop: 18,
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            gridTemplateColumns: isCompact
+              ? "1fr"
+              : "minmax(0, 1.05fr) minmax(320px, 0.95fr)",
             gap: 18,
+            alignItems: "start",
           }}
         >
-          <div style={actionCard(true)}>
-            <div style={labelText()}>Join path</div>
+          <div style={pageCard("#FFFFFF")}>
+            <div style={labelText()}>What happens next</div>
 
             <div
               style={{
                 marginTop: 12,
-                fontSize: 24,
-                fontWeight: 1000,
-                color: "#0B1F33",
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : "repeat(3, minmax(0, 1fr))",
+                gap: 12,
               }}
             >
-              Join an Existing Community
-            </div>
+              <div style={stepCard()}>
+                <div
+                  style={{
+                    color: "#0B63D1",
+                    fontSize: 12,
+                    fontWeight: 900,
+                    letterSpacing: 0.3,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Step 1
+                </div>
 
-            <div
-              style={{
-                marginTop: 10,
-                color: "#6B7A88",
-                lineHeight: 1.8,
-                fontSize: 15,
-              }}
-            >
-              Use this path if a member you already know has invited you into an
-              existing GMFN community and you want to submit a proper join
-              request.
-            </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontSize: 14,
+                    fontWeight: 800,
+                    lineHeight: 1.65,
+                  }}
+                >
+                  Read My GMFN and I if you want a calmer explanation first.
+                </div>
+              </div>
 
-            <div
-              style={{
-                marginTop: 18,
-                borderRadius: 16,
-                background: "#F8FBFF",
-                border: "1px solid rgba(11,31,51,0.08)",
-                padding: 16,
-              }}
-            >
+              <div style={stepCard()}>
+                <div
+                  style={{
+                    color: "#0B63D1",
+                    fontSize: 12,
+                    fontWeight: 900,
+                    letterSpacing: 0.3,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Step 2
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontSize: 14,
+                    fontWeight: 800,
+                    lineHeight: 1.65,
+                  }}
+                >
+                  Continue to login when you are ready to enter your account.
+                </div>
+              </div>
+
+              <div style={stepCard()}>
+                <div
+                  style={{
+                    color: "#0B63D1",
+                    fontSize: 12,
+                    fontWeight: 900,
+                    letterSpacing: 0.3,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Step 3
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontSize: 14,
+                    fontWeight: 800,
+                    lineHeight: 1.65,
+                  }}
+                >
+                  After login, you continue directly into your dashboard.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={pageCard("#F8FBFF")}>
+            <div style={labelText()}>Important routing note</div>
+
+            <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
+              <div style={softPanel()}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontSize: 15,
+                    fontWeight: 900,
+                  }}
+                >
+                  Create route is separate
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#5E7288",
+                    fontSize: 14,
+                    lineHeight: 1.75,
+                  }}
+                >
+                  Founder or public create entry should not stop here. That flow
+                  should move from Cover into Create Entry directly.
+                </div>
+              </div>
+
+              <div style={softPanel()}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontSize: 15,
+                    fontWeight: 900,
+                  }}
+                >
+                  Invite route is separate
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#5E7288",
+                    fontSize: 14,
+                    lineHeight: 1.75,
+                  }}
+                >
+                  Invited people should move through Join Entry, Pending
+                  Approval, and Activation — not through this general public
+                  page.
+                </div>
+              </div>
+
+              <div style={softPanel()}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontSize: 15,
+                    fontWeight: 900,
+                  }}
+                >
+                  Existing users should sign in
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#5E7288",
+                    fontSize: 14,
+                    lineHeight: 1.75,
+                  }}
+                >
+                  Once a person already has access, public entry choices should
+                  disappear and login becomes the main route.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section
+          style={{
+            marginTop: 18,
+            ...pageCard("#FFFFFF"),
+          }}
+        >
+          <div style={labelText()}>Why this page is simple</div>
+
+          <div
+            style={{
+              marginTop: 12,
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "1fr"
+                : "repeat(3, minmax(0, 1fr))",
+              gap: 14,
+            }}
+          >
+            <div>
               <div
                 style={{
-                  fontWeight: 1000,
+                  fontWeight: 900,
                   color: "#0B1F33",
-                  fontSize: 15,
+                  fontSize: 16,
                 }}
               >
-                Important
+                Less choice overload
               </div>
 
               <div
@@ -261,81 +595,20 @@ export default function WelcomePage() {
                   fontSize: 14,
                 }}
               >
-                Receiving an invitation does not by itself guarantee admission.
-                Final entry still depends on the approval rules already set
-                inside that community.
+                This page should guide, not overwhelm. It only asks one clear
+                question.
               </div>
             </div>
 
-            <div
-              style={{
-                marginTop: 18,
-                display: "grid",
-                gap: 12,
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => navigate("/join")}
-                style={primaryBtn()}
-              >
-                Continue to Join Entry
-              </button>
-
-              <button
-                type="button"
-                onClick={() => navigate("/activate-membership")}
-                style={secondaryBtn()}
-              >
-                I have been approved — Activate Membership
-              </button>
-            </div>
-          </div>
-
-          <div style={actionCard()}>
-            <div style={labelText()}>Create path</div>
-
-            <div
-              style={{
-                marginTop: 12,
-                fontSize: 24,
-                fontWeight: 1000,
-                color: "#0B1F33",
-              }}
-            >
-              Create a New Community
-            </div>
-
-            <div
-              style={{
-                marginTop: 10,
-                color: "#6B7A88",
-                lineHeight: 1.8,
-                fontSize: 15,
-              }}
-            >
-              Use this path if you are entering publicly and want to begin the
-              founder route for a new GMFN community through the proper create
-              entry.
-            </div>
-
-            <div
-              style={{
-                marginTop: 18,
-                borderRadius: 16,
-                background: "#F8FBFF",
-                border: "1px solid rgba(11,31,51,0.08)",
-                padding: 16,
-              }}
-            >
+            <div>
               <div
                 style={{
-                  fontWeight: 1000,
+                  fontWeight: 900,
                   color: "#0B1F33",
-                  fontSize: 15,
+                  fontSize: 16,
                 }}
               >
-                What this means
+                Plain language first
               </div>
 
               <div
@@ -346,185 +619,36 @@ export default function WelcomePage() {
                   fontSize: 14,
                 }}
               >
-                This route begins from public create entry, then continues into
-                founder registration and activation before private community
-                control surfaces become available.
+                People should not need to decode internal system logic before
+                knowing where to go next.
               </div>
             </div>
 
-            <div
-              style={{
-                marginTop: 18,
-                display: "grid",
-                gap: 12,
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => navigate("/create")}
-                style={primaryBtn()}
+            <div>
+              <div
+                style={{
+                  fontWeight: 900,
+                  color: "#0B1F33",
+                  fontSize: 16,
+                }}
               >
-                Continue to Create Entry
-              </button>
+                Clear next movement
+              </div>
 
-              <button
-                type="button"
-                onClick={() => navigate("/login")}
-                style={secondaryBtn()}
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#6B7A88",
+                  lineHeight: 1.75,
+                  fontSize: 14,
+                }}
               >
-                I already have access — Sign in
-              </button>
+                The right route should feel calm, trustworthy, and easy to
+                continue.
+              </div>
             </div>
           </div>
-        </div>
-
-        <div
-          style={{
-            marginTop: 18,
-            ...pageCard(),
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr 1fr",
-            gap: 16,
-          }}
-        >
-          <div>
-            <div
-              style={{
-                fontWeight: 1000,
-                color: "#0B1F33",
-                fontSize: 16,
-              }}
-            >
-              Trust-based entry
-            </div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#6B7A88",
-                lineHeight: 1.75,
-                fontSize: 14,
-              }}
-            >
-              GMFN begins from real trust networks, not open public membership.
-            </div>
-          </div>
-
-          <div>
-            <div
-              style={{
-                fontWeight: 1000,
-                color: "#0B1F33",
-                fontSize: 16,
-              }}
-            >
-              Approval matters
-            </div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#6B7A88",
-                lineHeight: 1.75,
-                fontSize: 14,
-              }}
-            >
-              Joining an existing community may require approval by the members
-              already inside it.
-            </div>
-          </div>
-
-          <div>
-            <div
-              style={{
-                fontWeight: 1000,
-                color: "#0B1F33",
-                fontSize: 16,
-              }}
-            >
-              Identity is issued properly
-            </div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#6B7A88",
-                lineHeight: 1.75,
-                fontSize: 14,
-              }}
-            >
-              GMFN identity should follow trust approval and structured entry,
-              not casual self-assignment.
-            </div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            marginTop: 18,
-            ...pageCard(),
-            background: "#F8FBFF",
-          }}
-        >
-          <div
-            style={{
-              fontWeight: 1000,
-              color: "#0B1F33",
-              fontSize: 18,
-            }}
-          >
-            Already approved by a community?
-          </div>
-
-          <div
-            style={{
-              marginTop: 8,
-              color: "#6B7A88",
-              lineHeight: 1.75,
-              fontSize: 14,
-              maxWidth: 760,
-            }}
-          >
-            If your join request has already been approved and you have been
-            issued a GMFN ID, go straight to membership activation to set your
-            password and enter your personal surfaces.
-          </div>
-
-          <div
-            style={{
-              marginTop: 16,
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            <Link to="/activate-membership" style={secondaryLink()}>
-              Activate Membership
-            </Link>
-
-            <Link to="/login" style={secondaryLink()}>
-              Go to Login
-            </Link>
-          </div>
-        </div>
-
-        <div
-          style={{
-            marginTop: 18,
-            display: "flex",
-            gap: 10,
-            flexWrap: "wrap",
-          }}
-        >
-          <Link to="/cover" style={secondaryLink()}>
-            Back to Cover
-          </Link>
-
-          <Link to="/login" style={secondaryLink()}>
-            Go to Login
-          </Link>
-
-          <Link to="/activate-membership" style={secondaryLink()}>
-            Activate Membership
-          </Link>
-        </div>
+        </section>
       </div>
     </div>
   );

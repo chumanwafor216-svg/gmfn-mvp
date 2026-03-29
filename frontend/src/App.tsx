@@ -1,18 +1,17 @@
+import React from "react";
 import {
   Routes,
   Route,
   Navigate,
   Outlet,
   useLocation,
+  useParams,
 } from "react-router-dom";
-import InviteInterestPage from "./pages/InviteInterestPage";
-import JoinRequestPendingPage from "./pages/JoinRequestPendingPage";
+
 import CoverPage from "./pages/CoverPage";
 import CreateEntryPage from "./pages/CreateEntryPage";
 import WelcomePage from "./pages/WelcomePage";
-import ActivatePage from "./pages/ActivatePage";
 import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
 import JoinEntryPage from "./pages/JoinEntryPage";
 import DashboardPage from "./pages/DashboardPage";
 import MarketplaceWorkspacePage from "./pages/MarketplaceWorkspacePage";
@@ -20,7 +19,7 @@ import ClansPage from "./pages/ClansPage";
 import CommunityHomePage from "./pages/CommunityHomePage";
 import LoansPage from "./pages/LoansPage";
 import MarketplacePage from "./pages/MarketplacePage";
-import ShopPage from "./pages/ShopPage";
+import ShopGalleryPage from "./pages/ShopGalleryPage";
 import TrustScorePage from "./pages/TrustScorePage";
 import TrustSlipPage from "./pages/TrustSlipPage";
 import TrustSlipVerifyPage from "./pages/TrustSlipVerifyPage";
@@ -45,10 +44,34 @@ import CommunityJoinRequestsPage from "./pages/CommunityJoinRequestsPage";
 import JoinApprovalPage from "./pages/JoinApprovalPage";
 import MemberActivationPage from "./pages/MemberActivationPage";
 import DemandBoxPage from "./pages/DemandBoxPage";
+import JoinRequestPendingPage from "./pages/JoinRequestPendingPage";
 
-function PreserveQueryRedirect({ to }: { to: string }) {
+type EntryMode = "general" | "create" | "invite" | "approved" | "existing";
+
+function PreserveQueryRedirect(props: { to: string }) {
   const location = useLocation();
-  return <Navigate to={`${to}${location.search}`} replace />;
+  return <Navigate to={`${props.to}${location.search}`} replace />;
+}
+
+function RedirectToCover(props: {
+  entry: EntryMode;
+  sourceParam?: string;
+  targetQueryKey?: string;
+}) {
+  const location = useLocation();
+  const params = useParams<Record<string, string | undefined>>();
+
+  const next = new URLSearchParams(location.search);
+  next.set("entry", props.entry);
+
+  if (props.sourceParam && props.targetQueryKey) {
+    const value = params[props.sourceParam];
+    if (value) {
+      next.set(props.targetQueryKey, value);
+    }
+  }
+
+  return <Navigate to={`/cover?${next.toString()}`} replace />;
 }
 
 export default function App() {
@@ -58,20 +81,73 @@ export default function App() {
 
       <Route path="/cover" element={<CoverPage />} />
       <Route path="/welcome" element={<WelcomePage />} />
+      <Route path="/guide" element={<MyGMFNAndIPage />} />
+
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/existing" element={<RedirectToCover entry="existing" />} />
+
+      <Route path="/create" element={<CreateEntryPage />} />
+      <Route
+        path="/register"
+        element={<PreserveQueryRedirect to="/create" />}
+      />
+      <Route path="/founder" element={<RedirectToCover entry="create" />} />
+      <Route
+        path="/public-create"
+        element={<RedirectToCover entry="create" />}
+      />
 
       <Route path="/join" element={<JoinEntryPage />} />
       <Route path="/join/community/:clanId" element={<JoinEntryPage />} />
+      <Route
+        path="/invite/:code"
+        element={
+          <RedirectToCover
+            entry="invite"
+            sourceParam="code"
+            targetQueryKey="invite_code"
+          />
+        }
+      />
+      <Route
+        path="/get-invite/:code"
+        element={
+          <RedirectToCover
+            entry="invite"
+            sourceParam="code"
+            targetQueryKey="invite_code"
+          />
+        }
+      />
 
-      <Route path="/create" element={<CreateEntryPage />} />
+      <Route path="/pending-approval" element={<JoinRequestPendingPage />} />
+      <Route
+        path="/join-request/pending"
+        element={<PreserveQueryRedirect to="/pending-approval" />}
+      />
 
-      <Route path="/activate" element={<ActivatePage />} />
-      <Route path="/activate-membership" element={<MemberActivationPage />} />
-
-      <Route path="/invite/:code" element={<InviteInterestPage />} />
-      <Route path="/join-request/pending" element={<JoinRequestPendingPage />} />
       <Route path="/join-approval/:requestId" element={<JoinApprovalPage />} />
+      <Route path="/approved" element={<RedirectToCover entry="approved" />} />
+      <Route
+        path="/approved/:requestId"
+        element={
+          <RedirectToCover
+            entry="approved"
+            sourceParam="requestId"
+            targetQueryKey="request_id"
+          />
+        }
+      />
+
+      <Route
+        path="/activate"
+        element={<PreserveQueryRedirect to="/activate-membership" />}
+      />
+      <Route
+        path="/activate-membership"
+        element={<MemberActivationPage />}
+      />
+
       <Route path="/t/:code" element={<TrustSlipVerifyPage />} />
       <Route path="/community/:clanId" element={<MarketplaceWorkspacePage />} />
 
@@ -88,7 +164,10 @@ export default function App() {
         <Route path="dashboard" element={<DashboardPage />} />
 
         <Route path="clans" element={<ClansPage />} />
-        <Route path="create-community" element={<Navigate to="/app/clans" replace />} />
+        <Route
+          path="create-community"
+          element={<Navigate to="/app/clans" replace />}
+        />
 
         <Route path="community" element={<CommunityHomePage />} />
         <Route path="community/:clanId" element={<CommunityHomePage />} />
@@ -101,7 +180,10 @@ export default function App() {
         <Route path="money" element={<Navigate to="/app/loans" replace />} />
 
         <Route path="payment/pool" element={<PaymentInstructionsPage />} />
-        <Route path="payment/loans/:loanId" element={<PaymentInstructionsPage />} />
+        <Route
+          path="payment/loans/:loanId"
+          element={<PaymentInstructionsPage />}
+        />
         <Route
           path="withdrawal-instructions"
           element={<WithdrawalInstructionsPage />}
@@ -112,11 +194,15 @@ export default function App() {
         <Route path="guarantor-earnings" element={<GuarantorEarningsPage />} />
 
         <Route path="marketplace" element={<MarketplacePage />} />
-        <Route path="marketplace/demand-box" element={<DemandBoxPage />} />
+        <Route
+          path="marketplace/demand-box"
+          element={<Navigate to="/app/demand-box" replace />}
+        />
         <Route path="demand-box" element={<DemandBoxPage />} />
 
         <Route path="shop-control" element={<ShopControlPage />} />
-        <Route path="shop/:gmfn_id" element={<ShopPage />} />
+        <Route path="shop" element={<Navigate to="/app/shop/me" replace />} />
+        <Route path="shop/:gmfnId" element={<ShopGalleryPage />} />
 
         <Route path="trust" element={<TrustScorePage />} />
         <Route path="trust-slip" element={<TrustSlipPage />} />
@@ -125,6 +211,10 @@ export default function App() {
         <Route path="identity" element={<IdentityIntegrityPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="my-gmfn-and-i" element={<MyGMFNAndIPage />} />
+        <Route
+          path="guide"
+          element={<Navigate to="/app/my-gmfn-and-i" replace />}
+        />
 
         <Route
           path="command-center"
@@ -163,7 +253,9 @@ export default function App() {
         />
         <Route
           path="admin/trust-graph"
-          element={<PreserveQueryRedirect to="/app/command-center/trust-graph" />}
+          element={
+            <PreserveQueryRedirect to="/app/command-center/trust-graph" />
+          }
         />
       </Route>
 

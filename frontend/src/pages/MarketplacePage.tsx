@@ -1,102 +1,75 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import PageTopNav from "../components/PageTopNav";
 import {
+  getClanInviteLink,
+  getCurrentClan,
   getMarketplaceShops,
-  getMe,
+  getPoolMe,
   getSelectedClanId,
-  listMarketplaceRequests,
+  listClanMembers,
   listMyClans,
-  selectClan,
+  safeCopy,
 } from "../lib/api";
 
-type ClanItem = {
+type ClanMember = {
   id?: number;
-  name?: string;
-  display_name?: string;
-  description?: string | null;
-  community_id?: string | null;
-  marketplace_id?: string | null;
+  user_id?: number;
   gmfn_id?: string | null;
-  clan_code?: string | null;
+  display_name?: string | null;
+  nickname?: string | null;
+  first_name?: string | null;
+  surname?: string | null;
+  email?: string | null;
+  phone_e164?: string | null;
 };
 
-type ShopItem = {
+type MarketplaceShop = {
   id?: number;
+  user_id?: number;
+  owner_user_id?: number;
+  gmfn_id?: string | null;
+  owner_gmfn_id?: string | null;
   name?: string | null;
-  title?: string | null;
   description?: string | null;
-  category?: string | null;
   whatsapp_number?: string | null;
   telegram_handle?: string | null;
-  owner_user_id?: number | null;
-  seller_user_id?: number | null;
-  owner_name?: string | null;
-  seller_name?: string | null;
-  owner_full_name?: string | null;
-  seller_full_name?: string | null;
-  owner_display_name?: string | null;
-  seller_display_name?: string | null;
-  owner_gmfn_id?: string | null;
-  seller_gmfn_id?: string | null;
-  gmfn_id?: string | null;
-  created_at?: string | null;
-  clan_id?: number | null;
 };
 
-type DemandItem = {
-  id?: number;
-  title?: string | null;
-  product_name?: string | null;
-  item_name?: string | null;
-  message?: string | null;
-  description?: string | null;
-  member_name?: string | null;
-  requester_name?: string | null;
-  full_name?: string | null;
-  nickname?: string | null;
-  member_gmfn_id?: string | null;
-  requester_gmfn_id?: string | null;
-  gmfn_id?: string | null;
-  owner_gmfn_id?: string | null;
-  user_gmfn_id?: string | null;
-  clan_id?: number | null;
-  status?: string | null;
-  created_at?: string | null;
-};
+function safeStr(x: any): string {
+  return String(x ?? "").trim();
+}
 
-type MemberCommerceCard = {
-  key: string;
-  memberName: string;
-  gmfnId: string;
-  shop: ShopItem | null;
-  demandCount: number;
-  latestDemandTitle?: string;
-};
+function firstTruthy(...values: any[]): string {
+  for (const value of values) {
+    const text = safeStr(value);
+    if (text) return text;
+  }
+  return "";
+}
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.10)",
+    border: "1px solid rgba(11,31,51,0.08)",
     background: bg,
-    boxShadow:
-      "0 22px 54px rgba(15,23,42,0.07), 0 2px 8px rgba(15,23,42,0.03)",
     padding: 20,
-    position: "relative",
+    boxShadow:
+      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
     overflow: "hidden",
   };
 }
 
-function card(bg = "#FFFFFF"): React.CSSProperties {
+function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     borderRadius: 18,
     border: "1px solid rgba(11,31,51,0.08)",
     background: bg,
-    boxShadow: "0 12px 30px rgba(15,23,42,0.05)",
     padding: 16,
   };
 }
 
-function softCard(bg = "#F8FBFF"): React.CSSProperties {
+function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 16,
     border: "1px solid rgba(11,31,51,0.08)",
@@ -105,24 +78,13 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
   };
 }
 
-function btn(primary = false, disabled = false): React.CSSProperties {
+function sectionLabel(): React.CSSProperties {
   return {
-    border: primary
-      ? "1px solid rgba(11,99,209,0.22)"
-      : "1px solid rgba(11,31,51,0.10)",
-    background: disabled ? "#CBD5E1" : primary ? "#0B63D1" : "#FFFFFF",
-    color: primary ? "#FFFFFF" : "#0B1F33",
-    borderRadius: 12,
-    padding: "10px 13px",
-    fontSize: 14,
+    fontSize: 12,
+    color: "#5D7389",
     fontWeight: 900,
-    cursor: disabled ? "not-allowed" : "pointer",
-    textDecoration: "none",
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    opacity: disabled ? 0.82 : 1,
+    letterSpacing: 0.35,
+    textTransform: "uppercase",
   };
 }
 
@@ -131,968 +93,1014 @@ function badge(primary = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     gap: 6,
+    minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
     background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#475569",
+    color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "nowrap",
   };
 }
 
-function safeStr(x: any): string {
-  return String(x ?? "").trim();
+function actionBtn(
+  kind: "primary" | "secondary" | "soft" = "secondary",
+  disabled = false
+): React.CSSProperties {
+  if (kind === "primary") {
+    return {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 42,
+      padding: "10px 14px",
+      borderRadius: 14,
+      border: "none",
+      background: disabled ? "#CBD5E1" : "#0B63D1",
+      color: "#FFFFFF",
+      fontWeight: 900,
+      fontSize: 14,
+      textDecoration: "none",
+      cursor: disabled ? "not-allowed" : "pointer",
+      whiteSpace: "nowrap",
+      opacity: disabled ? 0.86 : 1,
+    };
+  }
+
+  if (kind === "soft") {
+    return {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 40,
+      padding: "9px 12px",
+      borderRadius: 13,
+      border: "1px solid rgba(11,31,51,0.08)",
+      background: "#F8FBFF",
+      color: disabled ? "#94A3B8" : "#24415C",
+      fontWeight: 800,
+      fontSize: 13,
+      textDecoration: "none",
+      cursor: disabled ? "not-allowed" : "pointer",
+      whiteSpace: "nowrap",
+      opacity: disabled ? 0.86 : 1,
+    };
+  }
+
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 42,
+    padding: "10px 14px",
+    borderRadius: 14,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#FFFFFF",
+    color: disabled ? "#94A3B8" : "#0B1F33",
+    fontWeight: 800,
+    fontSize: 14,
+    textDecoration: "none",
+    cursor: disabled ? "not-allowed" : "pointer",
+    whiteSpace: "nowrap",
+    opacity: disabled ? 0.86 : 1,
+  };
 }
 
-function formatClanName(c: ClanItem): string {
-  return safeStr(c.display_name || c.name || "Community");
+function communityImageBox(): React.CSSProperties {
+  return {
+    width: "100%",
+    minHeight: 188,
+    borderRadius: 24,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: "linear-gradient(180deg, #E8F0FF 0%, #DDEBFF 100%)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  };
 }
 
-function formatClanRef(c: ClanItem): string {
-  return safeStr(
-    c.community_id || c.marketplace_id || c.gmfn_id || c.clan_code || c.id || ""
+function getCommunityImage(clan: any): string {
+  return firstTruthy(
+    clan?.image_url,
+    clan?.avatar_url,
+    clan?.photo_url,
+    clan?.cover_image_url,
+    clan?.banner_url
   );
 }
 
-function formatMemberNameFromShop(shop: ShopItem): string {
-  return safeStr(
-    shop.owner_display_name ||
-      shop.seller_display_name ||
-      shop.owner_full_name ||
-      shop.seller_full_name ||
-      shop.owner_name ||
-      shop.seller_name ||
-      "Community Member"
+function getCommunityName(clan: any): string {
+  return firstTruthy(
+    clan?.name,
+    clan?.clan_name,
+    clan?.marketplace_name,
+    "Selected community"
   );
 }
 
-function formatMemberIdFromShop(shop: ShopItem): string {
-  return safeStr(shop.owner_gmfn_id || shop.seller_gmfn_id || shop.gmfn_id || "");
-}
-
-function formatMemberNameFromDemand(d: DemandItem): string {
-  return safeStr(
-    d.member_name ||
-      d.requester_name ||
-      d.full_name ||
-      d.nickname ||
-      "Community Member"
+function getCommunityDescription(clan: any): string {
+  return firstTruthy(
+    clan?.description,
+    clan?.clan_description,
+    clan?.marketplace_description,
+    "This selected community surface shows the current marketplace, visible members, and shop galleries linked to this community."
   );
 }
 
-function formatMemberIdFromDemand(d: DemandItem): string {
-  return safeStr(
-    d.member_gmfn_id ||
-      d.requester_gmfn_id ||
-      d.owner_gmfn_id ||
-      d.user_gmfn_id ||
-      d.gmfn_id ||
-      ""
+function getCommunityGlobalId(clan: any): string {
+  return firstTruthy(
+    clan?.community_global_id,
+    clan?.global_id,
+    clan?.gmfn_id,
+    clan?.clan_code,
+    clan?.code,
+    clan?.marketplace_code,
+    clan?.id ? `COMM-${clan.id}` : "",
+    "Pending"
   );
 }
 
-function demandTitle(d: DemandItem): string {
-  return safeStr(d.title || d.product_name || d.item_name || "Demand request");
+function getCommunityTrustLabel(clan: any): string {
+  return firstTruthy(
+    clan?.community_trust_band,
+    clan?.trust_band,
+    clan?.trust_class,
+    clan?.reputation_band,
+    clan?.status,
+    "Visible community"
+  );
 }
 
-function normalizeStatus(v?: string | null): string {
-  return safeStr(v).toLowerCase();
+function getMemberName(member: ClanMember): string {
+  return firstTruthy(
+    member?.display_name,
+    member?.nickname,
+    [safeStr(member?.first_name), safeStr(member?.surname)]
+      .filter(Boolean)
+      .join(" "),
+    member?.email,
+    member?.phone_e164,
+    "Member"
+  );
 }
 
-function parseArray<T>(value: any): T[] {
-  if (Array.isArray(value)) return value;
-  if (Array.isArray(value?.items)) return value.items;
-  return [];
+function getMemberGmfnId(member: ClanMember): string {
+  return firstTruthy(member?.gmfn_id);
+}
+
+function getShopForMember(
+  member: ClanMember,
+  shops: MarketplaceShop[]
+): MarketplaceShop | null {
+  const memberGmfnId = safeStr(member?.gmfn_id || "").toUpperCase();
+  const memberUserId = Number(member?.user_id || member?.id || 0);
+
+  for (const shop of shops) {
+    const shopGmfn = safeStr(shop?.gmfn_id || shop?.owner_gmfn_id || "").toUpperCase();
+    const shopUserId = Number(shop?.user_id || shop?.owner_user_id || 0);
+
+    if (memberGmfnId && shopGmfn && memberGmfnId === shopGmfn) {
+      return shop;
+    }
+
+    if (memberUserId > 0 && shopUserId > 0 && memberUserId === shopUserId) {
+      return shop;
+    }
+  }
+
+  return null;
+}
+
+function getPoolAmountText(payload: any): string {
+  const candidates = [
+    payload?.available_balance,
+    payload?.balance,
+    payload?.pool_balance,
+    payload?.summary?.available_balance,
+    payload?.summary?.balance,
+    payload?.totals?.available_balance,
+    payload?.totals?.balance,
+    payload?.wallet_balance,
+  ];
+
+  for (const candidate of candidates) {
+    const text = safeStr(candidate);
+    if (text) return text;
+  }
+
+  return "—";
+}
+
+function getPoolCurrency(payload: any): string {
+  return firstTruthy(
+    payload?.currency,
+    payload?.summary?.currency,
+    payload?.totals?.currency,
+    "NGN"
+  );
+}
+
+function getCurrentPageUrl(): string {
+  try {
+    if (typeof window === "undefined") return "";
+    return window.location.href;
+  } catch {
+    return "";
+  }
 }
 
 export default function MarketplacePage() {
+  const [isCompact, setIsCompact] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 980;
+  });
+
+  const [selectedClan, setSelectedClan] = useState<any>(null);
+  const [myClans, setMyClans] = useState<any[]>([]);
+  const [members, setMembers] = useState<ClanMember[]>([]);
+  const [shops, setShops] = useState<MarketplaceShop[]>([]);
+  const [poolInfo, setPoolInfo] = useState<any>(null);
+  const [inviteLink, setInviteLink] = useState<string>("");
   const [loading, setLoading] = useState(true);
-  const [switchingClan, setSwitchingClan] = useState(false);
-  const [error, setError] = useState("");
+  const [copyMessage, setCopyMessage] = useState<string>("");
 
-  const [me, setMe] = useState<any>(null);
-  const [selectedClanId, setSelectedClanId] = useState<number | null>(
-    getSelectedClanId()
-  );
-  const [clans, setClans] = useState<ClanItem[]>([]);
-  const [shops, setShops] = useState<ShopItem[]>([]);
-  const [demands, setDemands] = useState<DemandItem[]>([]);
-  const [query, setQuery] = useState("");
-
-  async function loadAll(activeClanId?: number | null) {
-    setLoading(true);
-    setError("");
-
-    try {
-      const [meRes, clansRes] = await Promise.all([
-        getMe().catch(() => null),
-        listMyClans().catch(() => []),
-      ]);
-
-      const clanRows = parseArray<ClanItem>(clansRes);
-      let resolvedClanId =
-        typeof activeClanId === "number" && activeClanId > 0
-          ? activeClanId
-          : Number(getSelectedClanId() || 0) || null;
-
-      if (
-        resolvedClanId &&
-        !clanRows.some((clan) => Number(clan.id || 0) === Number(resolvedClanId))
-      ) {
-        resolvedClanId = null;
-      }
-
-      if (!resolvedClanId && clanRows.length > 0 && clanRows[0]?.id) {
-        resolvedClanId = Number(clanRows[0].id);
-        await selectClan(resolvedClanId).catch(() => null);
-      }
-
-      const [shopsRes, demandRes] = await Promise.all([
-        getMarketplaceShops().catch(() => []),
-        listMarketplaceRequests().catch(() => []),
-      ]);
-
-      setMe(meRes || null);
-      setClans(clanRows);
-      setSelectedClanId(resolvedClanId ?? null);
-      setShops(parseArray<ShopItem>(shopsRes));
-      setDemands(parseArray<DemandItem>(demandRes));
-    } catch (err: any) {
-      setError(err?.message || "Failed to load marketplace.");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const selectedClanId = Number(getSelectedClanId() || 0);
 
   useEffect(() => {
-    loadAll();
+    if (typeof window === "undefined") return;
+
+    function handleResize() {
+      setIsCompact(window.innerWidth <= 980);
+    }
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  async function handleSelectClan(nextClanId: number) {
-    try {
-      setSwitchingClan(true);
-      await selectClan(nextClanId);
-      setSelectedClanId(nextClanId);
-      await loadAll(nextClanId);
-    } catch (err: any) {
-      setError(err?.message || "Failed to switch community.");
-    } finally {
-      setSwitchingClan(false);
+  useEffect(() => {
+    const timer =
+      copyMessage &&
+      window.setTimeout(() => {
+        setCopyMessage("");
+      }, 2500);
+
+    return () => {
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [copyMessage]);
+
+  useEffect(() => {
+    let alive = true;
+
+    (async () => {
+      setLoading(true);
+
+      try {
+        const [currentClanRes, clansRes] = await Promise.all([
+          getCurrentClan().catch(() => null),
+          listMyClans().catch(() => ({ items: [] })),
+        ]);
+
+        if (!alive) return;
+
+        const clanRows = Array.isArray(clansRes)
+          ? clansRes
+          : Array.isArray(clansRes?.items)
+          ? clansRes.items
+          : [];
+
+        setMyClans(clanRows);
+        setSelectedClan(currentClanRes || clanRows[0] || null);
+      } finally {
+        if (alive) {
+          setLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const communityId = useMemo(() => {
+    return Number(selectedClan?.id || selectedClanId || 0);
+  }, [selectedClan, selectedClanId]);
+
+  useEffect(() => {
+    let alive = true;
+
+    if (!communityId) {
+      setMembers([]);
+      setShops([]);
+      setPoolInfo(null);
+      setInviteLink("");
+      return;
     }
+
+    (async () => {
+      const [membersRes, shopsRes, poolRes, inviteRes] = await Promise.all([
+        listClanMembers(communityId).catch(() => ({ items: [] })),
+        getMarketplaceShops({ clan_id: communityId, limit: 200 }).catch(() => ({
+          items: [],
+        })),
+        getPoolMe("NGN", 20).catch(() => null),
+        getClanInviteLink(communityId).catch(() => null),
+      ]);
+
+      if (!alive) return;
+
+      const memberRows: ClanMember[] = Array.isArray(membersRes)
+        ? membersRes
+        : Array.isArray(membersRes?.items)
+        ? membersRes.items
+        : [];
+
+      const shopRows: MarketplaceShop[] = Array.isArray(shopsRes)
+        ? shopsRes
+        : Array.isArray(shopsRes?.items)
+        ? shopsRes.items
+        : [];
+
+      setMembers(memberRows);
+      setShops(shopRows);
+      setPoolInfo(poolRes);
+
+      const resolvedInviteLink = firstTruthy(
+        inviteRes?.url,
+        inviteRes?.invite_url,
+        inviteRes?.link,
+        inviteRes?.invite_link
+      );
+
+      setInviteLink(resolvedInviteLink);
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [communityId]);
+
+  const communityName = getCommunityName(selectedClan);
+  const communityDescription = getCommunityDescription(selectedClan);
+  const communityGlobalId = getCommunityGlobalId(selectedClan);
+  const communityTrust = getCommunityTrustLabel(selectedClan);
+  const communityImage = getCommunityImage(selectedClan);
+  const poolAmount = getPoolAmountText(poolInfo);
+  const poolCurrency = getPoolCurrency(poolInfo);
+
+  const memberShopRows = useMemo(() => {
+    const rows = members.map((member) => {
+      const shop = getShopForMember(member, shops);
+      const gmfnId = getMemberGmfnId(member);
+      const shopName = firstTruthy(shop?.name, "No visible shop yet");
+
+      return {
+        member,
+        memberName: getMemberName(member),
+        gmfnId,
+        shopName,
+        shop,
+        shopTo: gmfnId ? `/app/shop/${encodeURIComponent(gmfnId)}` : "",
+      };
+    });
+
+    rows.sort((a, b) => a.memberName.localeCompare(b.memberName));
+    return rows;
+  }, [members, shops]);
+
+  function copyInviteLink() {
+    if (!inviteLink) {
+      setCopyMessage("Invite link is not ready yet.");
+      return;
+    }
+
+    safeCopy(inviteLink);
+    setCopyMessage("Invite link copied.");
   }
 
-  const activeClan = useMemo(() => {
-    return clans.find((c) => Number(c.id || 0) === Number(selectedClanId || 0)) || null;
-  }, [clans, selectedClanId]);
-
-  const filteredShopsByCommunity = useMemo(() => {
-    if (!selectedClanId) return shops;
-
-    const hasClanData = shops.some((shop) => Number(shop.clan_id || 0) > 0);
-    if (!hasClanData) return shops;
-
-    return shops.filter(
-      (shop) => Number(shop.clan_id || 0) === Number(selectedClanId)
-    );
-  }, [shops, selectedClanId]);
-
-  const filteredDemandsByCommunity = useMemo(() => {
-    if (!selectedClanId) return demands;
-
-    const hasClanData = demands.some((demand) => Number(demand.clan_id || 0) > 0);
-    if (!hasClanData) return demands;
-
-    return demands.filter(
-      (demand) => Number(demand.clan_id || 0) === Number(selectedClanId)
-    );
-  }, [demands, selectedClanId]);
-
-  const memberCards = useMemo(() => {
-    const map = new Map<string, MemberCommerceCard>();
-
-    for (const shop of filteredShopsByCommunity) {
-      const gmfnId = formatMemberIdFromShop(shop);
-      const memberName = formatMemberNameFromShop(shop);
-      const fallbackKey = `shop-${safeStr(shop.id || shop.name || shop.title)}`;
-      const key = gmfnId || fallbackKey;
-
-      if (!map.has(key)) {
-        map.set(key, {
-          key,
-          memberName,
-          gmfnId,
-          shop,
-          demandCount: 0,
-          latestDemandTitle: undefined,
-        });
-      } else {
-        const current = map.get(key)!;
-        if (!current.shop) current.shop = shop;
-      }
+  function copyTrustLink() {
+    const pageUrl = getCurrentPageUrl();
+    if (!pageUrl) {
+      setCopyMessage("Community link is not available.");
+      return;
     }
 
-    for (const demand of filteredDemandsByCommunity) {
-      const status = normalizeStatus(demand.status);
-      if (
-        status &&
-        ["cancelled", "canceled", "fulfilled", "closed"].includes(status)
-      ) {
-        continue;
-      }
+    safeCopy(pageUrl);
+    setCopyMessage("Community trust link copied.");
+  }
 
-      const gmfnId = formatMemberIdFromDemand(demand);
-      const memberName = formatMemberNameFromDemand(demand);
-      const fallbackKey = `demand-${safeStr(
-        demand.id || demand.title || demand.product_name || demand.item_name
-      )}`;
-      const key = gmfnId || fallbackKey;
-
-      if (!map.has(key)) {
-        map.set(key, {
-          key,
-          memberName,
-          gmfnId,
-          shop: null,
-          demandCount: 1,
-          latestDemandTitle: demandTitle(demand),
-        });
-      } else {
-        const current = map.get(key)!;
-        current.demandCount += 1;
-        current.latestDemandTitle =
-          current.latestDemandTitle || demandTitle(demand);
-      }
+  function copyCommunityId() {
+    if (!communityGlobalId) {
+      setCopyMessage("Community ID is not available.");
+      return;
     }
 
-    return Array.from(map.values()).sort((a, b) => {
-      const aHasShop = a.shop ? 1 : 0;
-      const bHasShop = b.shop ? 1 : 0;
+    safeCopy(communityGlobalId);
+    setCopyMessage("Community ID copied.");
+  }
 
-      if (bHasShop !== aHasShop) return bHasShop - aHasShop;
-      if (b.demandCount !== a.demandCount) return b.demandCount - a.demandCount;
-      return a.memberName.localeCompare(b.memberName);
-    });
-  }, [filteredShopsByCommunity, filteredDemandsByCommunity]);
+  if (loading) {
+    return (
+      <div
+        style={{
+          maxWidth: 1180,
+          margin: "0 auto",
+          paddingBottom: 40,
+          display: "grid",
+          gap: 18,
+        }}
+      >
+        <PageTopNav
+          sectionLabel="Marketplace"
+          title="Selected community marketplace"
+          subtitle="Preparing the selected community surface..."
+          homeTo="/app/dashboard"
+          homeLabel="Dashboard"
+          backTo="/app/community"
+          nextLinks={[
+            { label: "Community Home", to: "/app/community" },
+            { label: "Demand Box", to: "/app/demand-box" },
+            { label: "Notifications", to: "/app/notifications" },
+          ]}
+        />
 
-  const filteredCards = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return memberCards;
+        <section style={pageCard("#FFFFFF")}>
+          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+            Loading selected community...
+          </div>
+        </section>
+      </div>
+    );
+  }
 
-    return memberCards.filter((item) => {
-      const text = [
-        item.memberName,
-        item.gmfnId,
-        item.shop?.name,
-        item.shop?.title,
-        item.shop?.category,
-        item.latestDemandTitle,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
+  if (!communityId || !selectedClan) {
+    return (
+      <div
+        style={{
+          maxWidth: 1180,
+          margin: "0 auto",
+          paddingBottom: 40,
+          display: "grid",
+          gap: 18,
+        }}
+      >
+        <PageTopNav
+          sectionLabel="Marketplace"
+          title="Selected community marketplace"
+          subtitle="Marketplace is the selected community surface. Choose a community first from Community Home."
+          homeTo="/app/dashboard"
+          homeLabel="Dashboard"
+          backTo="/app/community"
+          nextLinks={[
+            { label: "Community Home", to: "/app/community" },
+            { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+          ]}
+        />
 
-      return text.includes(q);
-    });
-  }, [memberCards, query]);
+        <section style={pageCard("#FFFFFF")}>
+          <div style={sectionLabel()}>No selected community</div>
 
-  const summary = useMemo(() => {
-    const withShop = memberCards.filter((m) => !!m.shop).length;
-    const withDemand = memberCards.filter((m) => m.demandCount > 0).length;
-    const demandTotal = memberCards.reduce((sum, m) => sum + m.demandCount, 0);
+          <div
+            style={{
+              marginTop: 12,
+              color: "#0B1F33",
+              fontSize: 28,
+              fontWeight: 900,
+              lineHeight: 1.15,
+              maxWidth: 760,
+            }}
+          >
+            Open Community Home first, then choose the community you want to work with.
+          </div>
 
-    return {
-      membersVisible: memberCards.length,
-      shopsLinked: withShop,
-      demandMembers: withDemand,
-      demandTotal,
-    };
-  }, [memberCards]);
+          <div
+            style={{
+              marginTop: 12,
+              color: "#5F7287",
+              fontSize: 15,
+              lineHeight: 1.8,
+              maxWidth: 860,
+            }}
+          >
+            Community Home remains the private control room. Marketplace is the
+            selected community surface that opens after a community has been chosen.
+          </div>
 
-  const myGmfnId = safeStr(me?.gmfn_id || "");
-  const activeClanName = activeClan ? formatClanName(activeClan) : "No community selected";
-  const activeClanRef = activeClan ? formatClanRef(activeClan) : "";
-  const activeClanDescription = safeStr(activeClan?.description || "");
+          <div
+            style={{
+              marginTop: 18,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <Link to="/app/community" style={actionBtn("primary")}>
+              Open Community Home
+            </Link>
+            <Link to="/app/dashboard" style={actionBtn("secondary")}>
+              Dashboard
+            </Link>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div
       style={{
-        padding: "24px 20px 80px",
-        maxWidth: 1160,
+        maxWidth: 1180,
         margin: "0 auto",
+        paddingBottom: 40,
+        display: "grid",
+        gap: 18,
       }}
     >
-      <div style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}>
+      <PageTopNav
+        sectionLabel="Marketplace"
+        title={communityName}
+        subtitle="This is the selected community surface. Review the community profile, use community actions, and open member shop galleries."
+        homeTo="/app/dashboard"
+        homeLabel="Dashboard"
+        backTo="/app/community"
+        nextLinks={[
+          { label: "Community Home", to: "/app/community" },
+          { label: "Demand Box", to: "/app/demand-box" },
+          { label: "Notifications", to: "/app/notifications" },
+        ]}
+        utilityLinks={[
+          { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+          { label: "Trust", to: "/app/trust" },
+        ]}
+      />
+
+      {copyMessage ? (
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(0, 1.1fr) minmax(280px, 0.9fr)",
-            gap: 18,
-            alignItems: "stretch",
+            ...softCard("#F3FBF5"),
+            color: "#166534",
+            border: "1px solid rgba(34,197,94,0.16)",
+            fontWeight: 800,
           }}
         >
-          <div style={softCard("#FFFFFF")}>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                borderRadius: 999,
-                padding: "8px 12px",
-                border: "1px solid rgba(11,99,209,0.14)",
-                background: "rgba(11,99,209,0.06)",
-                color: "#0B63D1",
-                fontWeight: 900,
-                fontSize: 12,
-                letterSpacing: 0.4,
-                textTransform: "uppercase",
-              }}
-            >
-              Marketplace
+          {copyMessage}
+        </div>
+      ) : null}
+
+      <section
+        style={{
+          display: "grid",
+          gridTemplateColumns: isCompact
+            ? "1fr"
+            : "minmax(0, 1.22fr) minmax(320px, 0.78fr)",
+          gap: 16,
+          alignItems: "stretch",
+        }}
+      >
+        <div style={pageCard("#FFFFFF")}>
+          <div style={sectionLabel()}>Community profile</div>
+
+          <div
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "250px minmax(0, 1fr)",
+              gap: 18,
+              alignItems: "start",
+            }}
+          >
+            <div>
+              <div style={communityImageBox()}>
+                {communityImage ? (
+                  <img
+                    src={communityImage}
+                    alt={communityName}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      minHeight: 188,
+                      objectFit: "cover",
+                      display: "block",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      padding: 18,
+                      textAlign: "center",
+                      color: "#37506A",
+                      fontWeight: 900,
+                      fontSize: 22,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {communityName}
+                  </div>
+                )}
+              </div>
             </div>
 
-            <h1
-              style={{
-                margin: "14px 0 8px",
-                fontSize: 30,
-                lineHeight: 1.15,
-                color: "#0B1F33",
-              }}
+            <div>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: isCompact ? 28 : 34,
+                  lineHeight: 1.08,
+                }}
+              >
+                {communityName}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                }}
+              >
+                <span style={badge(true)}>Community ID: {communityGlobalId}</span>
+                <span style={badge(false)}>Community trust: {communityTrust}</span>
+                <span style={badge(false)}>Members: {members.length}</span>
+                <span style={badge(false)}>Visible shops: {shops.length}</span>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 14,
+                  color: "#5F7287",
+                  fontSize: 15,
+                  lineHeight: 1.8,
+                  maxWidth: 760,
+                }}
+              >
+                {communityDescription}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 16,
+                  display: "flex",
+                  gap: 10,
+                  flexWrap: "wrap",
+                }}
+              >
+                <Link to="/app/trust-slip" style={actionBtn("primary")}>
+                  Merchant Verify
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={copyTrustLink}
+                  style={actionBtn("secondary")}
+                >
+                  Copy Trust Link
+                </button>
+
+                <button
+                  type="button"
+                  onClick={copyCommunityId}
+                  style={actionBtn("secondary")}
+                >
+                  Copy Community ID
+                </button>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 16,
+                  ...innerCard("#F8FBFF"),
+                }}
+              >
+                <div style={sectionLabel()}>What this page does</div>
+
+                <div
+                  style={{
+                    marginTop: 10,
+                    color: "#5F7287",
+                    fontSize: 14,
+                    lineHeight: 1.8,
+                  }}
+                >
+                  This page belongs to the selected community surface. It is not
+                  your private control room. It shows the community profile, visible
+                  members, and each member’s shop gallery link.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}>
+          <div style={sectionLabel()}>Community actions</div>
+
+          <div
+            style={{
+              marginTop: 10,
+              color: "#0B1F33",
+              fontSize: 24,
+              fontWeight: 900,
+              lineHeight: 1.2,
+            }}
+          >
+            Main actions for this selected community.
+          </div>
+
+          <div
+            style={{
+              marginTop: 12,
+              color: "#5F7287",
+              fontSize: 14,
+              lineHeight: 1.8,
+            }}
+          >
+            Use these buttons for invite, demand, spotlight, notification review,
+            and pool-related movement while staying inside the selected community context.
+          </div>
+
+          <div
+            style={{
+              marginTop: 16,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <button
+              type="button"
+              onClick={copyInviteLink}
+              style={actionBtn("primary", !inviteLink)}
+              disabled={!inviteLink}
             >
-              {activeClanName}
-            </h1>
+              Copy Invite Link
+            </button>
+
+            <Link to="/app/demand-box" style={actionBtn("secondary")}>
+              Demand Box
+            </Link>
+
+            <Link to="/app/marketplace?compose=spotlight" style={actionBtn("secondary")}>
+              Spotlight
+            </Link>
+
+            <Link to="/app/notifications" style={actionBtn("secondary")}>
+              Notifications
+            </Link>
+
+            <Link to="/create" style={actionBtn("secondary")}>
+              Create Community
+            </Link>
+          </div>
+
+          <div
+            style={{
+              marginTop: 16,
+              ...softCard("#FFFFFF"),
+            }}
+          >
+            <div style={sectionLabel()}>Money in and money out</div>
 
             <div
               style={{
-                color: "#475569",
-                fontSize: 15,
-                lineHeight: 1.75,
-                maxWidth: 760,
+                marginTop: 10,
+                color: "#0B1F33",
+                fontSize: 22,
+                fontWeight: 900,
+                lineHeight: 1.2,
               }}
             >
-              This is one selected community surface. Browse members first, then
-              open linked shops or visible demand in this community context.
+              Your pool position: {poolAmount} {poolCurrency}
+            </div>
+
+            <div
+              style={{
+                marginTop: 10,
+                color: "#5F7287",
+                fontSize: 14,
+                lineHeight: 1.8,
+              }}
+            >
+              This block shows only your own position in the pool connected to
+              this selected community context, not the balances of everyone else.
             </div>
 
             <div
               style={{
                 marginTop: 14,
                 display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
-              }}
-            >
-              {activeClanRef ? (
-                <span style={badge(true)}>Community ref: {activeClanRef}</span>
-              ) : null}
-              <span style={badge(false)}>
-                Visible members: {summary.membersVisible}
-              </span>
-              <span style={badge(false)}>
-                Linked shops: {summary.shopsLinked}
-              </span>
-            </div>
-
-            {activeClanDescription ? (
-              <div
-                style={{
-                  marginTop: 12,
-                  color: "#64748B",
-                  lineHeight: 1.7,
-                  fontSize: 14,
-                  maxWidth: 720,
-                }}
-              >
-                {activeClanDescription}
-              </div>
-            ) : null}
-
-            <div
-              style={{
-                marginTop: 16,
-                display: "flex",
                 gap: 10,
                 flexWrap: "wrap",
               }}
             >
-              <Link to="/app/community" style={btn(true)}>
-                Community Home
+              <Link to="/app/payment/pool" style={actionBtn("secondary")}>
+                Money In
               </Link>
-              <Link to="/create" style={btn(false)}>
-                Create Community
-              </Link>
-            </div>
-          </div>
 
-          <div style={softCard("#FFFFFF")}>
-            <div style={{ fontSize: 13, fontWeight: 900, color: "#64748B" }}>
-              Selected community
-            </div>
-
-            <div
-              style={{
-                marginTop: 8,
-                fontSize: 18,
-                fontWeight: 1000,
-                color: "#0B1F33",
-              }}
-            >
-              {activeClanName}
-            </div>
-
-            <div
-              style={{
-                marginTop: 8,
-                color: "#64748B",
-                lineHeight: 1.65,
-                fontSize: 14,
-              }}
-            >
-              Marketplace visibility comes from the community you select here.
-            </div>
-
-            <div style={{ marginTop: 14 }}>
-              <select
-                value={selectedClanId ?? ""}
-                onChange={(e) => handleSelectClan(Number(e.target.value))}
-                disabled={switchingClan || clans.length === 0}
-                style={{
-                  width: "100%",
-                  borderRadius: 12,
-                  border: "1px solid rgba(11,31,51,0.12)",
-                  background: "#FFFFFF",
-                  padding: "12px 14px",
-                  fontSize: 14,
-                  color: "#0B1F33",
-                  outline: "none",
-                }}
-              >
-                {clans.length === 0 ? (
-                  <option value="">No communities available</option>
-                ) : (
-                  clans.map((clan) => (
-                    <option key={clan.id} value={clan.id}>
-                      {formatClanName(clan)}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-
-            {switchingClan ? (
-              <div
-                style={{
-                  marginTop: 10,
-                  color: "#64748B",
-                  fontSize: 13,
-                  lineHeight: 1.6,
-                }}
-              >
-                Switching community...
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </div>
-
-      <div
-        style={{
-          marginTop: 18,
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: 14,
-        }}
-      >
-        <div style={card("#FFFFFF")}>
-          <div style={{ fontWeight: 900, color: "#0B1F33" }}>Invite and entry</div>
-          <div style={{ marginTop: 8, color: "#64748B", lineHeight: 1.6 }}>
-            Invite access stays at community level. Use Community Home for join
-            sharing and guide-supported entry.
-          </div>
-          <div
-            style={{
-              marginTop: 12,
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            <Link to="/app/community" style={btn(false)}>
-              Open Invite Tools
-            </Link>
-            <Link to="/create" style={btn(false)}>
-              Create Community
-            </Link>
-          </div>
-        </div>
-
-        <div style={card("#FFFFFF")}>
-          <div style={{ fontWeight: 900, color: "#0B1F33" }}>Money and Support</div>
-          <div style={{ marginTop: 8, color: "#64748B", lineHeight: 1.6 }}>
-            Follow the selected community’s money flow and support pathways from
-            here.
-          </div>
-          <div
-            style={{
-              marginTop: 12,
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            <Link to="/app/payment/pool" style={btn(false)}>
-              Money In
-            </Link>
-            <Link to="/app/withdrawal-instructions" style={btn(false)}>
-              Money Out
-            </Link>
-            <Link to="/app/loans" style={btn(false)}>
-              Loans
-            </Link>
-          </div>
-        </div>
-
-        <div style={card("#FFFFFF")}>
-          <div style={{ fontWeight: 900, color: "#0B1F33" }}>Demand in this community</div>
-          <div style={{ marginTop: 8, color: "#64748B", lineHeight: 1.6 }}>
-            Demand stays identity-based, but what you see here belongs to this
-            selected community context.
-          </div>
-          <div
-            style={{
-              marginTop: 12,
-              display: "flex",
-              gap: 8,
-              flexWrap: "wrap",
-            }}
-          >
-            <span style={badge(true)}>
-              Open signals: {summary.demandTotal}
-            </span>
-            <span style={badge(false)}>
-              Members with demand: {summary.demandMembers}
-            </span>
-          </div>
-          <div style={{ marginTop: 12 }}>
-            <Link to="/app/demand-box" style={btn(false)}>
-              Open Demand Box
-            </Link>
-          </div>
-        </div>
-
-        <div style={card("#FFFFFF")}>
-          <div style={{ fontWeight: 900, color: "#0B1F33" }}>Shop and spotlight</div>
-          <div style={{ marginTop: 8, color: "#64748B", lineHeight: 1.6 }}>
-            Spotlight is shop-based. Use shop tools to shape what becomes visible
-            through this marketplace.
-          </div>
-          <div
-            style={{
-              marginTop: 12,
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            <Link to="/app/shop-control" style={btn(false)}>
-              My Shop Tools
-            </Link>
-            {myGmfnId ? (
               <Link
-                to={`/app/shop/${encodeURIComponent(myGmfnId)}`}
-                style={btn(false)}
+                to="/app/withdrawal-instructions"
+                style={actionBtn("secondary")}
               >
-                Open My Shop
+                Money Out
               </Link>
-            ) : null}
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div
-        style={{
-          marginTop: 18,
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(0, 1fr))",
-          gap: 14,
-        }}
-      >
-        <div style={card("#FFFFFF")}>
-          <div style={{ fontSize: 13, color: "#64748B", fontWeight: 800 }}>
-            Members visible
-          </div>
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 28,
-              fontWeight: 1000,
-              color: "#0B1F33",
-            }}
-          >
-            {summary.membersVisible}
-          </div>
-        </div>
-
-        <div style={card("#FFFFFF")}>
-          <div style={{ fontSize: 13, color: "#64748B", fontWeight: 800 }}>
-            Linked shops
-          </div>
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 28,
-              fontWeight: 1000,
-              color: "#0B1F33",
-            }}
-          >
-            {summary.shopsLinked}
-          </div>
-        </div>
-
-        <div style={card("#FFFFFF")}>
-          <div style={{ fontSize: 13, color: "#64748B", fontWeight: 800 }}>
-            Members with demand
-          </div>
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 28,
-              fontWeight: 1000,
-              color: "#0B1F33",
-            }}
-          >
-            {summary.demandMembers}
-          </div>
-        </div>
-
-        <div style={card("#FFFFFF")}>
-          <div style={{ fontSize: 13, color: "#64748B", fontWeight: 800 }}>
-            Open demand signals
-          </div>
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 28,
-              fontWeight: 1000,
-              color: "#0B1F33",
-            }}
-          >
-            {summary.demandTotal}
-          </div>
-        </div>
-      </div>
-
-      <div style={{ marginTop: 18, ...pageCard("#FFFFFF") }}>
+      <section style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
-            gap: 14,
             justifyContent: "space-between",
+            gap: 12,
             alignItems: "center",
             flexWrap: "wrap",
           }}
         >
           <div>
+            <div style={sectionLabel()}>Members and shop galleries</div>
+
             <div
               style={{
-                fontSize: 18,
-                fontWeight: 1000,
+                marginTop: 10,
                 color: "#0B1F33",
-              }}
-            >
-              Member → shop map
-            </div>
-            <div
-              style={{
-                marginTop: 6,
-                color: "#64748B",
-                lineHeight: 1.65,
-                maxWidth: 760,
-              }}
-            >
-              Members appear first. Linked shop access and visible demand signals
-              sit under each member record.
-            </div>
-          </div>
-
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search member, GMFN ID, shop, or demand"
-            style={{
-              width: 320,
-              maxWidth: "100%",
-              borderRadius: 12,
-              border: "1px solid rgba(11,31,51,0.12)",
-              background: "#FFFFFF",
-              padding: "12px 14px",
-              fontSize: 14,
-              color: "#0B1F33",
-              outline: "none",
-            }}
-          />
-        </div>
-
-        {error ? (
-          <div
-            style={{
-              marginTop: 16,
-              borderRadius: 14,
-              border: "1px solid rgba(220,38,38,0.16)",
-              background: "rgba(220,38,38,0.05)",
-              color: "#991B1B",
-              padding: 14,
-              lineHeight: 1.6,
-            }}
-          >
-            {error}
-          </div>
-        ) : null}
-
-        {loading ? (
-          <div
-            style={{
-              marginTop: 18,
-              color: "#64748B",
-              lineHeight: 1.7,
-            }}
-          >
-            Loading marketplace...
-          </div>
-        ) : filteredCards.length === 0 ? (
-          <div style={{ marginTop: 18, ...softCard("#F8FBFF") }}>
-            <div
-              style={{
-                fontSize: 16,
+                fontSize: 24,
                 fontWeight: 900,
-                color: "#0B1F33",
+                lineHeight: 1.2,
               }}
             >
-              No visible member commerce records yet
+              Open any visible member’s shop gallery from the row below.
             </div>
+
             <div
               style={{
                 marginTop: 8,
-                color: "#64748B",
-                lineHeight: 1.6,
+                color: "#5F7287",
+                fontSize: 14,
+                lineHeight: 1.8,
+                maxWidth: 860,
               }}
             >
-              When members create shops or publish demand, they will appear here.
+              This surface is for viewing. It should not carry shop-control
+              functions. Each row points to the public or member-facing shop gallery
+              for that member.
             </div>
           </div>
-        ) : (
-          <div
-            style={{
-              marginTop: 18,
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-              gap: 14,
-            }}
-          >
-            {filteredCards.map((item) => {
-              const shopName = safeStr(
-                item.shop?.name || item.shop?.title || "No shop yet"
-              );
-              const category = safeStr(item.shop?.category || "General");
-              const shopDescription = safeStr(item.shop?.description || "");
-              const canOpenShop = !!item.shop && !!item.gmfnId;
-              const isMe = !!myGmfnId && item.gmfnId === myGmfnId;
 
-              return (
-                <div key={item.key} style={card("#FFFFFF")}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 12,
-                      alignItems: "flex-start",
-                    }}
-                  >
-                    <div style={{ minWidth: 0 }}>
-                      <div
-                        style={{
-                          fontSize: 18,
-                          fontWeight: 1000,
-                          color: "#0B1F33",
-                          lineHeight: 1.3,
-                        }}
-                      >
-                        {item.memberName}
-                      </div>
+          <span style={badge(false)}>{memberShopRows.length} visible member rows</span>
+        </div>
 
-                      <div
-                        style={{
-                          marginTop: 6,
-                          display: "flex",
-                          gap: 8,
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <span style={badge(false)}>
-                          {item.gmfnId || "GMFN ID pending"}
-                        </span>
-                        {isMe ? <span style={badge(true)}>You</span> : null}
-                      </div>
+        <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
+          {memberShopRows.length === 0 ? (
+            <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+              No member rows are visible yet for this selected community.
+            </div>
+          ) : (
+            memberShopRows.map((row, index) => (
+              <div
+                key={`${row.gmfnId || row.member?.id || index}`}
+                style={innerCard("#FCFEFF")}
+              >
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: isCompact
+                      ? "1fr"
+                      : "minmax(0, 1.2fr) minmax(0, 1fr) auto",
+                    gap: 12,
+                    alignItems: "center",
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        color: "#0B1F33",
+                        fontSize: 17,
+                        fontWeight: 900,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      {row.memberName}
                     </div>
 
-                    <span style={item.shop ? badge(true) : badge(false)}>
-                      {item.shop ? "Shop linked" : "No shop yet"}
-                    </span>
+                    <div
+                      style={{
+                        marginTop: 6,
+                        color: "#64748B",
+                        fontSize: 13,
+                        lineHeight: 1.65,
+                      }}
+                    >
+                      {row.gmfnId ? `GMFN ID: ${row.gmfnId}` : "GMFN ID pending"}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div
+                      style={{
+                        color: "#0B1F33",
+                        fontSize: 15,
+                        fontWeight: 800,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      {row.shopName}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 6,
+                        color: "#64748B",
+                        fontSize: 13,
+                        lineHeight: 1.65,
+                      }}
+                    >
+                      {row.shop
+                        ? "Visible shop gallery is available."
+                        : "No visible shop gallery yet."}
+                    </div>
                   </div>
 
                   <div
                     style={{
-                      marginTop: 14,
-                      ...softCard(item.shop ? "#F8FBFF" : "#FCFCFD"),
+                      display: "flex",
+                      justifyContent: isCompact ? "flex-start" : "flex-end",
                     }}
                   >
-                    <div
-                      style={{
-                        fontSize: 13,
-                        color: "#64748B",
-                        fontWeight: 900,
-                        textTransform: "uppercase",
-                        letterSpacing: 0.3,
-                      }}
-                    >
-                      Shop
-                    </div>
-
-                    {item.shop ? (
-                      <>
-                        <div
-                          style={{
-                            marginTop: 8,
-                            fontSize: 18,
-                            fontWeight: 1000,
-                            color: "#0B1F33",
-                          }}
-                        >
-                          {shopName}
-                        </div>
-
-                        <div
-                          style={{
-                            marginTop: 8,
-                            display: "flex",
-                            gap: 8,
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          <span style={badge(false)}>{category}</span>
-                        </div>
-
-                        {shopDescription ? (
-                          <div
-                            style={{
-                              marginTop: 10,
-                              color: "#475569",
-                              lineHeight: 1.65,
-                              fontSize: 14,
-                            }}
-                          >
-                            {shopDescription}
-                          </div>
-                        ) : null}
-                      </>
+                    {row.shopTo ? (
+                      <Link to={row.shopTo} style={actionBtn("primary")}>
+                        Open Shop Gallery
+                      </Link>
                     ) : (
-                      <div
-                        style={{
-                          marginTop: 8,
-                          color: "#64748B",
-                          lineHeight: 1.6,
-                        }}
+                      <button
+                        type="button"
+                        style={actionBtn("secondary", true)}
+                        disabled
                       >
-                        This member does not have a visible shop here yet.
-                      </div>
+                        No Shop Yet
+                      </button>
                     )}
                   </div>
-
-                  <div style={{ marginTop: 14, ...softCard("#FFFFFF") }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: 12,
-                        alignItems: "center",
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <div>
-                        <div
-                          style={{
-                            fontSize: 13,
-                            color: "#64748B",
-                            fontWeight: 900,
-                            textTransform: "uppercase",
-                            letterSpacing: 0.3,
-                          }}
-                        >
-                          Demand
-                        </div>
-
-                        <div
-                          style={{
-                            marginTop: 6,
-                            fontSize: 16,
-                            fontWeight: 900,
-                            color: "#0B1F33",
-                          }}
-                        >
-                          {item.demandCount > 0
-                            ? `${item.demandCount} active signal${item.demandCount > 1 ? "s" : ""}`
-                            : "No active demand"}
-                        </div>
-                      </div>
-
-                      <Link to="/app/demand-box" style={btn(false)}>
-                        Open Demand
-                      </Link>
-                    </div>
-
-                    {item.latestDemandTitle ? (
-                      <div
-                        style={{
-                          marginTop: 10,
-                          color: "#475569",
-                          lineHeight: 1.6,
-                          fontSize: 14,
-                        }}
-                      >
-                        Latest: {item.latestDemandTitle}
-                      </div>
-                    ) : null}
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 14,
-                      display: "flex",
-                      gap: 10,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    {canOpenShop ? (
-                      <Link
-                        to={`/app/shop/${encodeURIComponent(item.gmfnId)}`}
-                        style={btn(true)}
-                      >
-                        Open Shop
-                      </Link>
-                    ) : null}
-
-                    {isMe ? (
-                      <Link to="/app/shop-control" style={btn(false)}>
-                        My Shop Tools
-                      </Link>
-                    ) : null}
-                  </div>
                 </div>
-              );
-            })}
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      {myClans.length > 1 ? (
+        <section style={pageCard("#FFFFFF")}>
+          <div style={sectionLabel()}>Your wider community context</div>
+
+          <div
+            style={{
+              marginTop: 10,
+              color: "#0B1F33",
+              fontSize: 22,
+              fontWeight: 900,
+              lineHeight: 1.2,
+            }}
+          >
+            You belong to {myClans.length} communities.
           </div>
-        )}
-      </div>
+
+          <div
+            style={{
+              marginTop: 10,
+              color: "#5F7287",
+              fontSize: 14,
+              lineHeight: 1.8,
+              maxWidth: 860,
+            }}
+          >
+            Demand and spotlight remain attached to your identity and shop, while
+            the selected community surface stays community-based. Switch communities
+            from Community Home whenever you want to work inside a different one.
+          </div>
+
+          <div
+            style={{
+              marginTop: 14,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <Link to="/app/community" style={actionBtn("primary")}>
+              Open Community Home
+            </Link>
+            <Link to="/app/dashboard" style={actionBtn("secondary")}>
+              Dashboard
+            </Link>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

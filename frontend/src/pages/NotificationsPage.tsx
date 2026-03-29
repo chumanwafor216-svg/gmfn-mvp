@@ -1,97 +1,168 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getMyNotifications } from "../lib/api";
+import PageTopNav from "../components/PageTopNav";
+import {
+  getCommunityJoinRequests,
+  getMe,
+  getMyNotifications,
+  getSelectedClanId,
+  listMarketplaceRequests,
+  markNotificationRead,
+} from "../lib/api";
 
 type NoticeItem = {
   id?: number;
-  kind?: string | null;
-  title?: string | null;
-  message?: string | null;
+  kind?: string;
+  title?: string;
+  message?: string;
   action_url?: string | null;
   action_label?: string | null;
   is_read?: boolean;
   created_at?: string | null;
 };
 
-type NotificationGroup = {
-  key: string;
-  title: string;
-  items: NoticeItem[];
+type JoinRequestItem = {
+  id?: number;
+  clan_id?: number;
+  clan_name?: string | null;
+  applicant_email?: string | null;
+  status?: string | null;
+  approvals?: number;
+  required_approvals?: number;
+};
+
+type DemandItem = {
+  id?: number;
+  title?: string;
+  description?: string | null;
+  status?: string;
+  urgency?: string | null;
+  requester_name?: string | null;
+  requester_nickname?: string | null;
+  requester_email?: string | null;
+  requester_gmfn_id?: string | null;
+  created_at?: string | null;
+  allow_trust_credit?: boolean;
 };
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 26,
+    borderRadius: 24,
     border: "1px solid rgba(11,31,51,0.08)",
     background: bg,
     padding: 20,
-    boxShadow: "0 16px 36px rgba(15,23,42,0.045)",
-    position: "relative",
-    overflow: "hidden",
+    boxShadow:
+      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
-    borderRadius: 22,
+    borderRadius: 18,
     border: "1px solid rgba(11,31,51,0.08)",
     background: bg,
-    padding: 18,
-    boxShadow: "0 12px 28px rgba(15,23,42,0.04)",
-    position: "relative",
-    overflow: "hidden",
+    padding: 16,
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 18,
-    border: "1px solid rgba(15,23,42,0.06)",
+    borderRadius: 16,
+    border: "1px solid rgba(11,31,51,0.08)",
     background: bg,
-    padding: 16,
-    boxShadow: "0 8px 18px rgba(15,23,42,0.035)",
-    position: "relative",
+    padding: 14,
   };
 }
 
-function smallBtn(primary = false): React.CSSProperties {
+function primaryBtn(disabled = false): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "8px 12px",
-    borderRadius: 12,
-    border: primary ? "none" : "1px solid rgba(11,31,51,0.10)",
-    background: primary
-      ? "linear-gradient(180deg, #1677E6 0%, #0B63D1 100%)"
-      : "#FFFFFF",
-    color: primary ? "#FFFFFF" : "#0B1F33",
+    minHeight: 42,
+    padding: "10px 14px",
+    borderRadius: 14,
+    border: "none",
+    background: disabled ? "#CBD5E1" : "#0B63D1",
+    color: "#FFFFFF",
     fontWeight: 900,
+    fontSize: 14,
     textDecoration: "none",
-    cursor: "pointer",
-    boxShadow: primary ? "0 10px 22px rgba(11,99,209,0.14)" : "none",
+    cursor: disabled ? "not-allowed" : "pointer",
+    whiteSpace: "nowrap",
+    opacity: disabled ? 0.9 : 1,
   };
 }
 
-function topStrip(): React.CSSProperties {
+function secondaryBtn(): React.CSSProperties {
   return {
-    borderRadius: 20,
-    border: "1px solid rgba(11,31,51,0.08)",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 42,
+    padding: "10px 14px",
+    borderRadius: 14,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#FFFFFF",
+    color: "#0B1F33",
+    fontWeight: 800,
+    fontSize: 14,
+    textDecoration: "none",
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+  };
+}
+
+function subtleBtn(disabled = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 36,
+    padding: "8px 12px",
+    borderRadius: 12,
+    border: "1px solid rgba(11,31,51,0.10)",
     background: "#F8FBFF",
-    padding: "14px 18px",
-    boxShadow: "0 10px 24px rgba(15,23,42,0.035)",
-    position: "relative",
-    overflow: "hidden",
+    color: disabled ? "#94A3B8" : "#24415C",
+    fontWeight: 800,
+    fontSize: 13,
+    textDecoration: "none",
+    cursor: disabled ? "not-allowed" : "pointer",
+    whiteSpace: "nowrap",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#4F6B8A",
-    fontWeight: 1000,
-    letterSpacing: 0.5,
+    color: "#5D7389",
+    fontWeight: 900,
+    letterSpacing: 0.35,
     textTransform: "uppercase",
+  };
+}
+
+function badge(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    minHeight: 30,
+    borderRadius: 999,
+    padding: "6px 10px",
+    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
+    color: primary ? "#0B63D1" : "#51657A",
+    fontSize: 12,
+    fontWeight: 900,
+    whiteSpace: "nowrap",
+  };
+}
+
+function statTile(): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: "#FFFFFF",
+    padding: 14,
   };
 }
 
@@ -107,21 +178,13 @@ function safeDateTime(x: any): string {
   return d.toLocaleString();
 }
 
-function safeDate(x: any): Date | null {
-  const raw = String(x || "").trim();
-  if (!raw) return null;
-  const d = new Date(raw);
-  if (Number.isNaN(d.getTime())) return null;
-  return d;
-}
-
 function notificationSourceLabel(kind?: string | null): string {
   const k = String(kind || "").toLowerCase();
 
-  if (k.includes("approval") || k.includes("join")) return "Approval";
   if (k.includes("demand") || k.includes("request")) return "Demand";
   if (k.includes("trust")) return "Trust";
-  if (k.includes("spotlight") || k.includes("marketplace")) return "Marketplace";
+  if (k.includes("approval") || k.includes("join")) return "Approval";
+  if (k.includes("spotlight") || k.includes("marketplace")) return "Spotlight";
   if (k.includes("assistant")) return "Assistant";
   if (k.includes("money") || k.includes("pool") || k.includes("loan")) {
     return "Money";
@@ -130,179 +193,194 @@ function notificationSourceLabel(kind?: string | null): string {
   return "Update";
 }
 
-function fallbackActionUrl(kind?: string | null): string {
-  const k = String(kind || "").toLowerCase();
-
-  if (k.includes("approval") || k.includes("join")) return "/app/community";
-  if (k.includes("demand") || k.includes("request")) return "/app/demand-box";
-  if (k.includes("trust")) return "/app/trust";
-  if (k.includes("money") || k.includes("pool") || k.includes("loan")) {
-    return "/app/loans";
-  }
-  if (k.includes("spotlight") || k.includes("marketplace")) {
-    return "/app/marketplace";
-  }
-  if (k.includes("assistant")) return "/app/dashboard";
-
-  return "/app/dashboard";
-}
-
-function fallbackActionLabel(kind?: string | null): string {
-  const k = String(kind || "").toLowerCase();
-
-  if (k.includes("approval") || k.includes("join")) return "Open Community Home";
-  if (k.includes("demand") || k.includes("request")) return "Open Demand Box";
-  if (k.includes("trust")) return "Open Trust";
-  if (k.includes("money") || k.includes("pool") || k.includes("loan")) {
-    return "Open Loans & Support";
-  }
-  if (k.includes("spotlight") || k.includes("marketplace")) {
-    return "Open Marketplace";
-  }
-  if (k.includes("assistant")) return "Open Dashboard";
-
-  return "Open";
-}
-
-function sourceTone(label: string) {
-  if (label === "Demand") {
-    return {
-      bg: "rgba(11,99,209,0.08)",
-      border: "1px solid rgba(11,99,209,0.18)",
-      text: "#1D4ED8",
-    };
-  }
-  if (label === "Trust") {
-    return {
-      bg: "rgba(5,150,105,0.08)",
-      border: "1px solid rgba(5,150,105,0.18)",
-      text: "#047857",
-    };
-  }
-  if (label === "Approval") {
-    return {
-      bg: "rgba(234,88,12,0.08)",
-      border: "1px solid rgba(234,88,12,0.18)",
-      text: "#C2410C",
-    };
-  }
-  if (label === "Money") {
-    return {
-      bg: "rgba(202,138,4,0.08)",
-      border: "1px solid rgba(202,138,4,0.18)",
-      text: "#A16207",
-    };
-  }
-  if (label === "Marketplace") {
-    return {
-      bg: "rgba(109,40,217,0.08)",
-      border: "1px solid rgba(109,40,217,0.18)",
-      text: "#6D28D9",
-    };
-  }
-  if (label === "Assistant") {
-    return {
-      bg: "rgba(6,182,212,0.08)",
-      border: "1px solid rgba(6,182,212,0.18)",
-      text: "#0E7490",
-    };
-  }
-  return {
-    bg: "rgba(71,85,105,0.08)",
-    border: "1px solid rgba(71,85,105,0.16)",
-    text: "#334155",
-  };
-}
-
-function groupNotifications(items: NoticeItem[]): NotificationGroup[] {
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterdayStart = new Date(todayStart);
-  yesterdayStart.setDate(todayStart.getDate() - 1);
-
-  const groups: NotificationGroup[] = [
-    { key: "today", title: "Today", items: [] },
-    { key: "yesterday", title: "Yesterday", items: [] },
-    { key: "earlier", title: "Earlier", items: [] },
-  ];
-
-  items.forEach((item) => {
-    const d = safeDate(item.created_at);
-
-    if (!d) {
-      groups[2].items.push(item);
-      return;
-    }
-
-    if (d >= todayStart) {
-      groups[0].items.push(item);
-      return;
-    }
-
-    if (d >= yesterdayStart) {
-      groups[1].items.push(item);
-      return;
-    }
-
-    groups[2].items.push(item);
-  });
-
-  return groups.filter((group) => group.items.length > 0);
-}
-
-function isExternalUrl(value: string): boolean {
-  return /^https?:\/\//i.test(value);
+function urgencyLabel(value?: string | null): string {
+  const v = String(value || "").toLowerCase();
+  if (v === "high") return "Urgent";
+  if (v === "low") return "Low pressure";
+  return "Normal";
 }
 
 export default function NotificationsPage() {
   const navigate = useNavigate();
+  const selectedClanId = Number(getSelectedClanId() || 0);
 
-  const [items, setItems] = useState<NoticeItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [isCompact, setIsCompact] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 980;
+  });
+
+  const [me, setMe] = useState<any>(null);
+
+  const [notices, setNotices] = useState<NoticeItem[]>([]);
+  const [loadingNotices, setLoadingNotices] = useState(false);
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
-  const [refreshTick, setRefreshTick] = useState(0);
+  const [busyNoticeId, setBusyNoticeId] = useState<number | null>(null);
+
+  const [pendingRequests, setPendingRequests] = useState<JoinRequestItem[]>([]);
+  const [loadingJoinRequests, setLoadingJoinRequests] = useState(false);
+
+  const [demandItems, setDemandItems] = useState<DemandItem[]>([]);
+  const [loadingDemand, setLoadingDemand] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    function handleResize() {
+      setIsCompact(window.innerWidth <= 980);
+    }
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     (async () => {
-      setLoading(true);
+      const meRes = await getMe().catch(() => null);
+      setMe(meRes);
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      setLoadingNotices(true);
       try {
-        const res = await getMyNotifications(100, showUnreadOnly).catch(() => ({
+        const res = await getMyNotifications(50, false).catch(() => ({
           items: [],
         }));
-        const rows: NoticeItem[] = Array.isArray(res?.items) ? res.items : [];
-        setItems(rows);
+
+        const rows: NoticeItem[] = Array.isArray(res)
+          ? res
+          : Array.isArray(res?.items)
+          ? res.items
+          : [];
+
+        setNotices(rows);
       } finally {
-        setLoading(false);
+        setLoadingNotices(false);
       }
     })();
-  }, [showUnreadOnly, refreshTick]);
+  }, []);
 
+  useEffect(() => {
+    (async () => {
+      if (!selectedClanId) {
+        setPendingRequests([]);
+        return;
+      }
+
+      setLoadingJoinRequests(true);
+      try {
+        const res = await getCommunityJoinRequests(selectedClanId).catch(() => ({
+          items: [],
+        }));
+
+        const rows: JoinRequestItem[] = Array.isArray(res)
+          ? res
+          : Array.isArray(res?.items)
+          ? res.items
+          : [];
+
+        setPendingRequests(
+          rows.filter(
+            (item) => String(item?.status || "").toLowerCase() === "pending"
+          )
+        );
+      } finally {
+        setLoadingJoinRequests(false);
+      }
+    })();
+  }, [selectedClanId]);
+
+  useEffect(() => {
+    (async () => {
+      setLoadingDemand(true);
+      try {
+        const rows = await listMarketplaceRequests({
+          status: "open",
+          mine_only: false,
+          limit: 30,
+        }).catch(() => []);
+
+        setDemandItems(Array.isArray(rows) ? rows : []);
+      } finally {
+        setLoadingDemand(false);
+      }
+    })();
+  }, []);
+
+  const myGmfnId = safeStr(me?.gmfn_id || "");
   const unreadCount = useMemo(
-    () => items.filter((item) => !item?.is_read).length,
-    [items]
+    () => notices.filter((item) => !item?.is_read).length,
+    [notices]
   );
 
-  const todayCount = useMemo(() => {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+  const filteredNotices = useMemo(() => {
+    if (!showUnreadOnly) return notices;
+    return notices.filter((item) => !item?.is_read);
+  }, [notices, showUnreadOnly]);
 
-    return items.filter((item) => {
-      const d = safeDate(item.created_at);
-      return !!d && d >= todayStart;
-    }).length;
-  }, [items]);
+  const myDemandItems = useMemo(() => {
+    if (!myGmfnId) return [];
 
-  const grouped = useMemo(() => groupNotifications(items), [items]);
+    return demandItems.filter(
+      (item) => safeStr(item.requester_gmfn_id || "") === myGmfnId
+    );
+  }, [demandItems, myGmfnId]);
 
-  function openDestination(destination: string) {
-    if (!destination) return;
+  const joinRequestsLink = selectedClanId
+    ? `/app/community/${selectedClanId}/join-requests`
+    : "/app/community";
 
-    if (isExternalUrl(destination)) {
-      window.open(destination, "_blank", "noreferrer");
+  async function handleMarkRead(notice: NoticeItem) {
+    const id = Number(notice?.id || 0);
+    if (!id) return;
+
+    setBusyNoticeId(id);
+    try {
+      await markNotificationRead(id).catch(() => null);
+
+      setNotices((prev) =>
+        prev.map((item) =>
+          Number(item?.id || 0) === id ? { ...item, is_read: true } : item
+        )
+      );
+    } finally {
+      setBusyNoticeId(null);
+    }
+  }
+
+  function handleOpenAction(notice: NoticeItem) {
+    const actionUrl = safeStr(notice?.action_url || "");
+    if (actionUrl) {
+      navigate(actionUrl);
       return;
     }
 
-    navigate(destination);
+    const kind = safeStr(notice?.kind || "").toLowerCase();
+
+    if (kind.includes("join") || kind.includes("approval")) {
+      navigate(joinRequestsLink);
+      return;
+    }
+
+    if (kind.includes("demand") || kind.includes("request")) {
+      navigate("/app/demand-box");
+      return;
+    }
+
+    if (kind.includes("trust")) {
+      navigate("/app/trust");
+      return;
+    }
+
+    if (kind.includes("spotlight") || kind.includes("marketplace")) {
+      navigate("/app/marketplace");
+      return;
+    }
+
+    navigate("/app/dashboard");
   }
 
   return (
@@ -310,437 +388,371 @@ export default function NotificationsPage() {
       style={{
         maxWidth: 1180,
         margin: "0 auto",
-        paddingBottom: 30,
+        paddingBottom: 40,
         display: "grid",
         gap: 18,
       }}
     >
-      <div
-        style={{
-          ...topStrip(),
-          marginTop: 18,
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            right: -26,
-            top: -24,
-            width: 110,
-            height: 110,
-            borderRadius: 999,
-            background: "rgba(11,99,209,0.05)",
-          }}
-        />
+      <PageTopNav
+        sectionLabel="Notifications"
+        title="Notifications"
+        subtitle="This is the detail surface behind the dashboard preview. Review notifications here, then continue into join requests, demand, trust, or marketplace as needed."
+        homeTo="/app/dashboard"
+        homeLabel="Dashboard"
+        backTo="/app/dashboard"
+        nextLinks={[
+          { label: "Demand Box", to: "/app/demand-box" },
+          { label: "Community", to: "/app/community" },
+          { label: "Trust", to: "/app/trust" },
+        ]}
+        utilityLinks={[
+          { label: "Marketplace", to: "/app/marketplace" },
+          { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+        ]}
+      />
 
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <div style={sectionLabel()}>Notifications centre</div>
-
-          <div
-            style={{
-              marginTop: 8,
-              color: "#0B1F33",
-              fontWeight: 1000,
-              fontSize: 24,
-              lineHeight: 1.2,
-            }}
-          >
-            Actionable updates in one place
-          </div>
-
-          <div
-            style={{
-              marginTop: 8,
-              color: "#5A6B7C",
-              fontSize: 14,
-              lineHeight: 1.8,
-              maxWidth: 760,
-            }}
-          >
-            Every notification should help you understand what happened and move
-            you directly to the next useful step.
-          </div>
-        </div>
-      </div>
-
-      <div style={{ ...pageCard(), marginTop: 2 }}>
+      <section style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}>
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr auto",
-            gap: 14,
-            alignItems: "center",
+            gridTemplateColumns: isCompact
+              ? "1fr"
+              : "minmax(0, 1.15fr) minmax(320px, 0.85fr)",
+            gap: 16,
+            alignItems: "stretch",
           }}
         >
           <div>
-            <div style={sectionLabel()}>Summary</div>
+            <div style={sectionLabel()}>Attention summary</div>
 
             <div
               style={{
                 marginTop: 10,
+                color: "#0B1F33",
+                fontWeight: 900,
+                fontSize: isCompact ? 28 : 34,
+                lineHeight: 1.12,
+              }}
+            >
+              {unreadCount} notification{unreadCount === 1 ? "" : "s"} waiting
+            </div>
+
+            <div
+              style={{
+                marginTop: 10,
+                color: "#5F7287",
+                fontSize: 15,
+                lineHeight: 1.82,
+                maxWidth: 780,
+              }}
+            >
+              Open items continue here from the dashboard. Review updates first,
+              then move into the specific working page that needs your attention.
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
                 display: "flex",
-                gap: 10,
+                gap: 8,
                 flexWrap: "wrap",
               }}
             >
-              <div
-                style={{
-                  ...innerCard("#FFFFFF"),
-                  minWidth: 150,
-                  padding: 14,
-                }}
-              >
-                <div
-                  style={{
-                    color: "#5A6B7C",
-                    fontSize: 12,
-                    fontWeight: 900,
-                    textTransform: "uppercase",
-                    letterSpacing: 0.35,
-                  }}
-                >
-                  Total
+              <span style={badge(true)}>
+                Unread: {unreadCount}
+              </span>
+              <span style={badge(false)}>
+                Join requests: {loadingJoinRequests ? "…" : pendingRequests.length}
+              </span>
+              <span style={badge(false)}>
+                Your demand posts: {myDemandItems.length}
+              </span>
+            </div>
+          </div>
+
+          <div style={softCard("#FFFFFF")}>
+            <div style={sectionLabel()}>Related action pages</div>
+
+            <div
+              style={{
+                marginTop: 12,
+                display: "grid",
+                gap: 10,
+              }}
+            >
+              <div style={statTile()}>
+                <div style={{ color: "#5F7287", fontSize: 13, fontWeight: 800 }}>
+                  Join requests
                 </div>
                 <div
                   style={{
-                    marginTop: 8,
+                    marginTop: 6,
                     color: "#0B1F33",
                     fontSize: 24,
-                    fontWeight: 1000,
-                    lineHeight: 1,
+                    fontWeight: 900,
                   }}
                 >
-                  {items.length}
+                  {loadingJoinRequests ? "…" : pendingRequests.length}
+                </div>
+                <div style={{ marginTop: 10 }}>
+                  <Link to={joinRequestsLink} style={secondaryBtn()}>
+                    Open join requests
+                  </Link>
                 </div>
               </div>
 
-              <div
-                style={{
-                  ...innerCard("#FFFFFF"),
-                  minWidth: 150,
-                  padding: 14,
-                }}
-              >
-                <div
-                  style={{
-                    color: "#5A6B7C",
-                    fontSize: 12,
-                    fontWeight: 900,
-                    textTransform: "uppercase",
-                    letterSpacing: 0.35,
-                  }}
-                >
-                  Unread
+              <div style={statTile()}>
+                <div style={{ color: "#5F7287", fontSize: 13, fontWeight: 800 }}>
+                  Demand Box
                 </div>
                 <div
                   style={{
-                    marginTop: 8,
+                    marginTop: 6,
                     color: "#0B1F33",
                     fontSize: 24,
-                    fontWeight: 1000,
-                    lineHeight: 1,
-                  }}
-                >
-                  {unreadCount}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  ...innerCard("#FFFFFF"),
-                  minWidth: 150,
-                  padding: 14,
-                }}
-              >
-                <div
-                  style={{
-                    color: "#5A6B7C",
-                    fontSize: 12,
                     fontWeight: 900,
-                    textTransform: "uppercase",
-                    letterSpacing: 0.35,
                   }}
                 >
-                  Today
+                  {loadingDemand ? "…" : myDemandItems.length}
                 </div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#0B1F33",
-                    fontSize: 24,
-                    fontWeight: 1000,
-                    lineHeight: 1,
-                  }}
-                >
-                  {todayCount}
+                <div style={{ marginTop: 10 }}>
+                  <Link to="/app/demand-box" style={secondaryBtn()}>
+                    Open Demand Box
+                  </Link>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        style={{
+          display: "grid",
+          gridTemplateColumns: isCompact
+            ? "1fr"
+            : "minmax(0, 1.25fr) minmax(320px, 0.75fr)",
+          gap: 16,
+          alignItems: "start",
+        }}
+      >
+        <div style={pageCard("#FFFFFF")}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <div>
+              <div style={sectionLabel()}>Notification list</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#5F7287",
+                  fontSize: 14,
+                  lineHeight: 1.75,
+                }}
+              >
+                Review updates in a calmer list. Open only the one you need.
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={() => setShowUnreadOnly((prev) => !prev)}
+                style={secondaryBtn()}
+              >
+                {showUnreadOnly ? "Show all" : "Show unread only"}
+              </button>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+            {loadingNotices ? (
+              <div style={{ color: "#64748B" }}>Loading notifications...</div>
+            ) : filteredNotices.length === 0 ? (
+              <div style={{ color: "#64748B", lineHeight: 1.75 }}>
+                {showUnreadOnly
+                  ? "No unread notification is waiting right now."
+                  : "No notification is available right now."}
+              </div>
+            ) : (
+              filteredNotices.map((notice, index) => {
+                const noticeId = Number(notice?.id || 0);
+                const isBusy = busyNoticeId === noticeId;
+                const unread = !notice?.is_read;
+
+                return (
+                  <div
+                    key={noticeId || index}
+                    style={{
+                      ...innerCard(unread ? "#F8FBFF" : "#FFFFFF"),
+                      border: unread
+                        ? "1px solid rgba(11,99,209,0.14)"
+                        : "1px solid rgba(11,31,51,0.08)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 10,
+                        alignItems: "flex-start",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <span style={badge(unread)}>
+                          {notificationSourceLabel(notice.kind)}
+                        </span>
+                        {unread ? <span style={badge(false)}>Unread</span> : null}
+                      </div>
+
+                      {notice?.created_at ? (
+                        <div
+                          style={{
+                            color: "#64748B",
+                            fontSize: 12,
+                            fontWeight: 700,
+                          }}
+                        >
+                          {safeDateTime(notice.created_at)}
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 10,
+                        color: "#0B1F33",
+                        fontSize: 17,
+                        fontWeight: 900,
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {safeStr(notice.title || "Update")}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#5F7287",
+                        fontSize: 14,
+                        lineHeight: 1.75,
+                      }}
+                    >
+                      {safeStr(notice.message || "No extra detail is available.")}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 14,
+                        display: "flex",
+                        gap: 10,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleOpenAction(notice)}
+                        style={primaryBtn(false)}
+                      >
+                        {safeStr(notice.action_label || "Open")}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleMarkRead(notice)}
+                        style={subtleBtn(!unread || isBusy || !noticeId)}
+                        disabled={!unread || isBusy || !noticeId}
+                      >
+                        {isBusy ? "Working..." : "Mark as read"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        <div style={pageCard("#FFFFFF")}>
+          <div style={sectionLabel()}>Demand preview</div>
+
+          <div
+            style={{
+              marginTop: 10,
+              color: "#5F7287",
+              fontSize: 14,
+              lineHeight: 1.75,
+            }}
+          >
+            These are your own open demand posts. This preview stays light. The
+            full work continues inside Demand Box.
+          </div>
+
+          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+            {loadingDemand ? (
+              <div style={{ color: "#64748B" }}>Loading demand preview...</div>
+            ) : myDemandItems.length === 0 ? (
+              <div style={{ color: "#64748B", lineHeight: 1.75 }}>
+                You do not have any open demand post right now.
+              </div>
+            ) : (
+              myDemandItems.slice(0, 3).map((item, index) => (
+                <div key={item.id || index} style={innerCard("#FCFEFF")}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 10,
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div style={{ color: "#0B1F33", fontWeight: 900 }}>
+                      {safeStr(item.title || "Need")}
+                    </div>
+
+                    <span style={badge(false)}>{urgencyLabel(item.urgency)}</span>
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#5F7287",
+                      fontSize: 14,
+                      lineHeight: 1.75,
+                    }}
+                  >
+                    {safeStr(item.description || "No extra detail yet.")}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
           <div
             style={{
+              marginTop: 14,
               display: "flex",
               gap: 10,
               flexWrap: "wrap",
-              justifyContent: "flex-end",
             }}
           >
-            <button
-              type="button"
-              style={showUnreadOnly ? smallBtn(true) : smallBtn(false)}
-              onClick={() => setShowUnreadOnly((v) => !v)}
-            >
-              {showUnreadOnly ? "Showing unread only" : "Show unread only"}
-            </button>
-
-            <button
-              type="button"
-              style={smallBtn(false)}
-              onClick={() => setRefreshTick((v) => v + 1)}
-            >
-              Refresh
-            </button>
-
-            <Link to="/app/dashboard" style={smallBtn(false)}>
-              Dashboard
+            <Link to="/app/demand-box" style={primaryBtn(false)}>
+              Open Demand Box
+            </Link>
+            <Link to="/app/marketplace" style={secondaryBtn()}>
+              Marketplace
             </Link>
           </div>
         </div>
-      </div>
-
-      <div style={{ ...pageCard(), marginTop: 2 }}>
-        <div
-          style={{
-            display: "flex",
-            gap: 10,
-            flexWrap: "wrap",
-          }}
-        >
-          <Link to="/app/community" style={smallBtn(false)}>
-            Community Home
-          </Link>
-          <Link to="/app/demand-box" style={smallBtn(false)}>
-            Demand Box
-          </Link>
-          <Link to="/app/trust" style={smallBtn(false)}>
-            Trust
-          </Link>
-          <Link to="/app/marketplace" style={smallBtn(false)}>
-            Marketplace
-          </Link>
-        </div>
-      </div>
-
-      <div style={{ ...pageCard(), marginTop: 2 }}>
-        <div style={sectionLabel()}>Recent notifications</div>
-
-        {loading ? (
-          <div style={{ marginTop: 16, color: "#5A6B7C", lineHeight: 1.8 }}>
-            Loading your notifications...
-          </div>
-        ) : grouped.length === 0 ? (
-          <div style={{ marginTop: 16 }}>
-            <div
-              style={{
-                ...softCard("#FFFFFF"),
-                maxWidth: 760,
-              }}
-            >
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 1000,
-                  fontSize: 20,
-                }}
-              >
-                No notifications right now
-              </div>
-
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#5A6B7C",
-                  fontSize: 14,
-                  lineHeight: 1.8,
-                }}
-              >
-                When trust changes, approvals, demand activity, money updates,
-                or marketplace activity happen, they will appear here.
-              </div>
-
-              <div
-                style={{
-                  marginTop: 14,
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
-                }}
-              >
-                <Link to="/app/dashboard" style={smallBtn(true)}>
-                  Open Dashboard
-                </Link>
-
-                <Link to="/app/demand-box" style={smallBtn(false)}>
-                  Open Demand Box
-                </Link>
-
-                <Link to="/app/community" style={smallBtn(false)}>
-                  Open Community Home
-                </Link>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div style={{ marginTop: 16, display: "grid", gap: 18 }}>
-            {grouped.map((group) => (
-              <div key={group.key} style={{ display: "grid", gap: 10 }}>
-                <div
-                  style={{
-                    color: "#0B1F33",
-                    fontWeight: 1000,
-                    fontSize: 16,
-                  }}
-                >
-                  {group.title}
-                </div>
-
-                {group.items.map((item, idx) => {
-                  const source = notificationSourceLabel(item.kind);
-                  const tone = sourceTone(source);
-                  const destination =
-                    safeStr(item.action_url) || fallbackActionUrl(item.kind);
-                  const actionLabel =
-                    safeStr(item.action_label) || fallbackActionLabel(item.kind);
-
-                  return (
-                    <div
-                      key={`${item.id || "notice"}-${idx}`}
-                      style={{
-                        ...innerCard("#FFFFFF"),
-                        border: item.is_read
-                          ? "1px solid rgba(15,23,42,0.06)"
-                          : "1px solid rgba(11,99,209,0.28)",
-                        boxShadow: item.is_read
-                          ? "0 8px 18px rgba(15,23,42,0.035)"
-                          : "0 10px 22px rgba(11,99,209,0.10)",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          gap: 12,
-                          alignItems: "flex-start",
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <div style={{ flex: 1, minWidth: 260 }}>
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: 8,
-                              alignItems: "center",
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            <div
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                padding: "5px 10px",
-                                borderRadius: 999,
-                                background: tone.bg,
-                                border: tone.border,
-                                color: tone.text,
-                                fontSize: 12,
-                                fontWeight: 1000,
-                              }}
-                            >
-                              {source}
-                            </div>
-
-                            {!item?.is_read ? (
-                              <div
-                                style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  padding: "5px 10px",
-                                  borderRadius: 999,
-                                  background: "rgba(11,99,209,0.08)",
-                                  border: "1px solid rgba(11,99,209,0.18)",
-                                  color: "#0B63D1",
-                                  fontSize: 12,
-                                  fontWeight: 1000,
-                                }}
-                              >
-                                New
-                              </div>
-                            ) : null}
-                          </div>
-
-                          <div
-                            style={{
-                              marginTop: 12,
-                              color: "#0B1F33",
-                              fontWeight: 1000,
-                              fontSize: 18,
-                              lineHeight: 1.5,
-                            }}
-                          >
-                            {safeStr(item.title || item.message || "Notification")}
-                          </div>
-
-                          <div
-                            style={{
-                              marginTop: 8,
-                              color: "#5A6B7C",
-                              fontSize: 14,
-                              lineHeight: 1.8,
-                            }}
-                          >
-                            {safeStr(item.message || item.title || "Open to continue.")}
-                          </div>
-
-                          <div
-                            style={{
-                              marginTop: 10,
-                              color: "#7D8DA1",
-                              fontSize: 12,
-                              fontWeight: 700,
-                            }}
-                          >
-                            {safeDateTime(item.created_at) || "Time unavailable"}
-                          </div>
-                        </div>
-
-                        <div
-                          style={{
-                            display: "flex",
-                            gap: 10,
-                            flexWrap: "wrap",
-                            justifyContent: "flex-end",
-                          }}
-                        >
-                          <button
-                            type="button"
-                            style={smallBtn(true)}
-                            onClick={() => openDestination(destination)}
-                          >
-                            {actionLabel}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      </section>
     </div>
   );
 }

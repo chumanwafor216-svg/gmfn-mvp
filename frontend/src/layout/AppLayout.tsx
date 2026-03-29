@@ -1,113 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 
-function shell(): React.CSSProperties {
-  return {
-    minHeight: "100vh",
-    display: "grid",
-    gridTemplateColumns: "280px 1fr",
-    background: "#EEF5FB",
-  };
-}
-
-function sidebar(): React.CSSProperties {
-  return {
-    background:
-      "radial-gradient(circle at top left, rgba(59,130,246,0.18), transparent 30%), linear-gradient(180deg, #0B1F33 0%, #102F55 100%)",
-    color: "#FFFFFF",
-    padding: 18,
-    display: "flex",
-    flexDirection: "column",
-    gap: 14,
-    position: "sticky",
-    top: 0,
-    height: "100vh",
-    overflowY: "auto",
-  };
-}
-
-function brandBox(): React.CSSProperties {
-  return {
-    borderRadius: 20,
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    padding: 16,
-  };
-}
-
-function groupBox(): React.CSSProperties {
-  return {
-    borderRadius: 18,
-    background: "rgba(255,255,255,0.04)",
-    border: "1px solid rgba(255,255,255,0.05)",
-    padding: 10,
-  };
-}
-
-function groupHeader(active = false): React.CSSProperties {
-  return {
-    width: "100%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-    padding: "10px 12px",
-    borderRadius: 14,
-    border: active
-      ? "1px solid rgba(255,255,255,0.10)"
-      : "1px solid rgba(255,255,255,0.04)",
-    background: active ? "rgba(11,99,209,0.28)" : "rgba(255,255,255,0.03)",
-    color: "#FFFFFF",
-    fontWeight: 1000,
-    fontSize: 14,
-    cursor: "pointer",
-    textAlign: "left",
-  };
-}
-
-function navItem(active = false): React.CSSProperties {
-  return {
-    display: "block",
-    padding: "11px 12px",
-    borderRadius: 12,
-    textDecoration: "none",
-    fontWeight: 900,
-    fontSize: 14,
-    color: "#FFFFFF",
-    background: active ? "#0B63D1" : "rgba(255,255,255,0.05)",
-    border: active
-      ? "1px solid rgba(255,255,255,0.08)"
-      : "1px solid rgba(255,255,255,0.04)",
-  };
-}
-
-function content(): React.CSSProperties {
-  return {
-    padding: 22,
-    overflowX: "hidden",
-  };
-}
-
-function noteBox(): React.CSSProperties {
-  return {
-    marginTop: 8,
-    borderRadius: 14,
-    background: "rgba(255,255,255,0.05)",
-    border: "1px solid rgba(255,255,255,0.06)",
-    padding: 12,
-    color: "rgba(255,255,255,0.78)",
-    fontSize: 12,
-    lineHeight: 1.6,
-  };
-}
-
-function isActive(pathname: string, to: string): boolean {
-  return pathname === to || pathname.startsWith(`${to}/`);
-}
-
 type NavLinkItem = {
   label: string;
   to: string;
+  match?: (pathname: string, search: string) => boolean;
 };
 
 type NavGroup = {
@@ -118,107 +15,780 @@ type NavGroup = {
   items: NavLinkItem[];
 };
 
+type RouteMeta = {
+  section: string;
+  page: string;
+};
+
+function readRole(): string {
+  try {
+    if (typeof window === "undefined") return "";
+    return String(window.localStorage.getItem("gmfn_role") || "")
+      .trim()
+      .toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+function pathOnly(to: string): string {
+  return String(to || "").split("?")[0].split("#")[0] || "/";
+}
+
+function isSpotlightSearch(search: string): boolean {
+  return (
+    search.includes("compose=spotlight") ||
+    search.includes("view=spotlight") ||
+    search.includes("surface=spotlight")
+  );
+}
+
+function isItemActive(
+  item: NavLinkItem,
+  pathname: string,
+  search: string
+): boolean {
+  if (item.match) {
+    return item.match(pathname, search);
+  }
+
+  const base = pathOnly(item.to);
+  return pathname === base || pathname.startsWith(`${base}/`);
+}
+
+function makeDashboardItem(): NavLinkItem {
+  return { label: "Dashboard", to: "/app/dashboard" };
+}
+
+function makeCommunityHomeItem(): NavLinkItem {
+  return { label: "Community Home", to: "/app/community" };
+}
+
+function makeMarketplaceItem(): NavLinkItem {
+  return {
+    label: "Marketplace",
+    to: "/app/marketplace",
+    match: (pathname, search) =>
+      pathname === "/app/marketplace" && !isSpotlightSearch(search),
+  };
+}
+
+function makeShopGalleryItem(myShopGalleryTo: string): NavLinkItem {
+  return {
+    label: "Shop Gallery",
+    to: myShopGalleryTo,
+    match: (pathname) => pathname.startsWith("/app/shop/"),
+  };
+}
+
+function makeSpotlightItem(): NavLinkItem {
+  return {
+    label: "Spotlight",
+    to: "/app/marketplace?compose=spotlight",
+    match: (pathname, search) =>
+      pathname === "/app/marketplace" && isSpotlightSearch(search),
+  };
+}
+
+function makeDemandBoxItem(): NavLinkItem {
+  return { label: "Demand Box", to: "/app/demand-box" };
+}
+
+function buildPrimaryItems(myShopGalleryTo: string): NavLinkItem[] {
+  return [
+    makeDashboardItem(),
+    makeCommunityHomeItem(),
+    makeMarketplaceItem(),
+    makeShopGalleryItem(myShopGalleryTo),
+    makeSpotlightItem(),
+    makeDemandBoxItem(),
+  ];
+}
+
+function buildTrustPassportItems(): NavLinkItem[] {
+  return [
+    { label: "My Trust", to: "/app/trust" },
+    { label: "TrustSlip", to: "/app/trust-slip" },
+  ];
+}
+
+function buildIdentityItems(): NavLinkItem[] {
+  return [
+    { label: "Identity Integrity", to: "/app/identity" },
+    { label: "Notifications", to: "/app/notifications" },
+    { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+  ];
+}
+
+function buildLoansItems(): NavLinkItem[] {
+  return [
+    { label: "Loans and Support", to: "/app/loans" },
+    { label: "Pool Payment", to: "/app/payment/pool" },
+    { label: "Withdrawal Guidance", to: "/app/withdrawal-instructions" },
+    { label: "Support Readiness", to: "/app/loan-readiness" },
+    { label: "Helpful Suggestions", to: "/app/loan-suggestions" },
+    { label: "Workbench", to: "/app/loan-workbench" },
+    { label: "Guarantor Earnings", to: "/app/guarantor-earnings" },
+  ];
+}
+
+function buildAdminItems(): NavLinkItem[] {
+  return [
+    { label: "Command Center Home", to: "/app/command-center" },
+    {
+      label: "Trust Analytics",
+      to: "/app/command-center/trust-analytics",
+    },
+    {
+      label: "System Operations",
+      to: "/app/command-center/system-operations",
+    },
+    { label: "Safety and Risk", to: "/app/command-center/exposure" },
+    {
+      label: "Relationship Graph",
+      to: "/app/command-center/trust-graph",
+    },
+  ];
+}
+
+function getSpecialRouteMeta(
+  pathname: string,
+  search: string
+): RouteMeta | null {
+  if (pathname.startsWith("/app/shop-control")) {
+    return {
+      section: "Private tools",
+      page: "Shop Control",
+    };
+  }
+
+  if (pathname.startsWith("/app/shop/")) {
+    return {
+      section: "Primary surfaces",
+      page: "Shop Gallery",
+    };
+  }
+
+  if (pathname === "/app/marketplace" && isSpotlightSearch(search)) {
+    return {
+      section: "Primary surfaces",
+      page: "Spotlight",
+    };
+  }
+
+  if (
+    pathname.startsWith("/app/community/") &&
+    pathname.includes("/join-requests")
+  ) {
+    return {
+      section: "Primary surfaces",
+      page: "Join Requests",
+    };
+  }
+
+  return null;
+}
+
+function findCurrentRouteMeta(
+  pathname: string,
+  search: string,
+  groups: NavGroup[]
+): RouteMeta {
+  const special = getSpecialRouteMeta(pathname, search);
+  if (special) return special;
+
+  for (const group of groups) {
+    for (const item of group.items) {
+      if (isItemActive(item, pathname, search)) {
+        return {
+          section: group.label,
+          page: item.label,
+        };
+      }
+    }
+  }
+
+  return {
+    section: "GMFN / GSN",
+    page: "Workspace",
+  };
+}
+
+function getPageActions(
+  pathname: string,
+  search: string,
+  myShopGalleryTo: string
+): NavLinkItem[] {
+  if (pathname.startsWith("/app/dashboard")) {
+    return [
+      makeCommunityHomeItem(),
+      makeMarketplaceItem(),
+      makeShopGalleryItem(myShopGalleryTo),
+      makeDemandBoxItem(),
+      { label: "My Trust", to: "/app/trust" },
+      { label: "TrustSlip", to: "/app/trust-slip" },
+      { label: "Notifications", to: "/app/notifications" },
+      { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+    ];
+  }
+
+  if (pathname.startsWith("/app/community")) {
+    return [
+      { label: "Create New Community", to: "/app/clans" },
+      makeMarketplaceItem(),
+      makeDemandBoxItem(),
+      makeSpotlightItem(),
+      { label: "Money In", to: "/app/payment/pool" },
+      { label: "Money Out", to: "/app/withdrawal-instructions" },
+      { label: "Notifications", to: "/app/notifications" },
+    ];
+  }
+
+  if (pathname === "/app/marketplace") {
+    if (isSpotlightSearch(search)) {
+      return [
+        makeMarketplaceItem(),
+        makeDemandBoxItem(),
+        makeCommunityHomeItem(),
+        { label: "Notifications", to: "/app/notifications" },
+      ];
+    }
+
+    return [
+      makeSpotlightItem(),
+      makeDemandBoxItem(),
+      makeCommunityHomeItem(),
+      { label: "TrustSlip", to: "/app/trust-slip" },
+      { label: "Notifications", to: "/app/notifications" },
+    ];
+  }
+
+  if (pathname.startsWith("/app/shop-control")) {
+    return [
+      makeShopGalleryItem(myShopGalleryTo),
+      makeCommunityHomeItem(),
+      makeMarketplaceItem(),
+      makeDemandBoxItem(),
+    ];
+  }
+
+  if (pathname.startsWith("/app/shop/")) {
+    return [
+      makeMarketplaceItem(),
+      makeCommunityHomeItem(),
+      makeDemandBoxItem(),
+      { label: "My Trust", to: "/app/trust" },
+    ];
+  }
+
+  if (pathname.startsWith("/app/trust")) {
+    return [
+      { label: "TrustSlip", to: "/app/trust-slip" },
+      { label: "Identity Integrity", to: "/app/identity" },
+      { label: "Notifications", to: "/app/notifications" },
+      { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+    ];
+  }
+
+  if (pathname.startsWith("/app/notifications")) {
+    return [
+      makeCommunityHomeItem(),
+      makeMarketplaceItem(),
+      makeDemandBoxItem(),
+      { label: "My Trust", to: "/app/trust" },
+    ];
+  }
+
+  if (pathname.startsWith("/app/identity")) {
+    return [
+      { label: "My Trust", to: "/app/trust" },
+      { label: "TrustSlip", to: "/app/trust-slip" },
+      { label: "Notifications", to: "/app/notifications" },
+      { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+    ];
+  }
+
+  return [
+    makeCommunityHomeItem(),
+    makeMarketplaceItem(),
+    makeDemandBoxItem(),
+    { label: "My Trust", to: "/app/trust" },
+  ];
+}
+
+function desktopShell(): React.CSSProperties {
+  return {
+    minHeight: "100vh",
+    display: "grid",
+    gridTemplateColumns: "286px minmax(0, 1fr)",
+    background: "#F4F7FB",
+  };
+}
+
+function mobileShell(): React.CSSProperties {
+  return {
+    minHeight: "100vh",
+    background: "#F4F7FB",
+  };
+}
+
+function sidebar(): React.CSSProperties {
+  return {
+    position: "sticky",
+    top: 0,
+    height: "100vh",
+    overflowY: "auto",
+    padding: 18,
+    color: "#FFFFFF",
+    background:
+      "linear-gradient(180deg, #10253B 0%, #163A5C 100%), radial-gradient(circle at top left, rgba(255,255,255,0.08), transparent 35%)",
+    display: "flex",
+    flexDirection: "column",
+    gap: 14,
+  };
+}
+
+function brandCard(): React.CSSProperties {
+  return {
+    borderRadius: 22,
+    padding: 18,
+    background: "rgba(255,255,255,0.07)",
+    border: "1px solid rgba(255,255,255,0.10)",
+    boxShadow: "0 12px 28px rgba(0,0,0,0.10)",
+  };
+}
+
+function brandEyebrow(): React.CSSProperties {
+  return {
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    color: "rgba(255,255,255,0.78)",
+  };
+}
+
+function brandTitle(): React.CSSProperties {
+  return {
+    marginTop: 8,
+    fontSize: 22,
+    fontWeight: 900,
+    lineHeight: 1.15,
+    color: "#FFFFFF",
+  };
+}
+
+function brandText(): React.CSSProperties {
+  return {
+    marginTop: 10,
+    fontSize: 13,
+    lineHeight: 1.7,
+    color: "rgba(255,255,255,0.78)",
+  };
+}
+
+function noteCard(): React.CSSProperties {
+  return {
+    borderRadius: 18,
+    padding: 14,
+    background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(255,255,255,0.08)",
+  };
+}
+
+function noteTitle(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    fontWeight: 900,
+    letterSpacing: "0.06em",
+    textTransform: "uppercase",
+    color: "rgba(255,255,255,0.72)",
+  };
+}
+
+function noteText(): React.CSSProperties {
+  return {
+    marginTop: 8,
+    fontSize: 13,
+    lineHeight: 1.7,
+    color: "rgba(255,255,255,0.78)",
+  };
+}
+
+function groupCard(): React.CSSProperties {
+  return {
+    borderRadius: 18,
+    padding: 10,
+    background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(255,255,255,0.08)",
+  };
+}
+
+function groupHeader(active = false): React.CSSProperties {
+  return {
+    width: "100%",
+    border: active
+      ? "1px solid rgba(255,255,255,0.14)"
+      : "1px solid rgba(255,255,255,0.08)",
+    background: active ? "rgba(11,99,209,0.28)" : "rgba(255,255,255,0.03)",
+    color: "#FFFFFF",
+    borderRadius: 14,
+    padding: "10px 12px",
+    fontWeight: 800,
+    fontSize: 14,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    cursor: "pointer",
+    textAlign: "left",
+  };
+}
+
+function groupHint(): React.CSSProperties {
+  return {
+    marginTop: 8,
+    padding: "0 4px",
+    fontSize: 12,
+    lineHeight: 1.55,
+    color: "rgba(255,255,255,0.72)",
+  };
+}
+
+function navItem(active = false): React.CSSProperties {
+  return {
+    display: "block",
+    padding: "11px 12px",
+    borderRadius: 12,
+    textDecoration: "none",
+    fontWeight: 800,
+    fontSize: 14,
+    color: "#FFFFFF",
+    background: active ? "#0B63D1" : "rgba(255,255,255,0.04)",
+    border: active
+      ? "1px solid rgba(255,255,255,0.14)"
+      : "1px solid rgba(255,255,255,0.06)",
+  };
+}
+
+function mainContent(isMobile: boolean): React.CSSProperties {
+  return {
+    minWidth: 0,
+    padding: isMobile ? "16px 16px 104px" : "24px 28px 34px",
+    overflowX: "hidden",
+  };
+}
+
+function mobileTopBar(): React.CSSProperties {
+  return {
+    position: "sticky",
+    top: 0,
+    zIndex: 20,
+    display: "grid",
+    gridTemplateColumns: "42px minmax(0, 1fr) 42px",
+    alignItems: "center",
+    gap: 12,
+    padding: "12px 14px",
+    background: "rgba(255,255,255,0.97)",
+    backdropFilter: "blur(10px)",
+    borderBottom: "1px solid rgba(11,31,51,0.08)",
+  };
+}
+
+function mobileIconButton(): React.CSSProperties {
+  return {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#FFFFFF",
+    color: "#0B1F33",
+    fontSize: 20,
+    fontWeight: 800,
+    cursor: "pointer",
+  };
+}
+
+function mobileTopMeta(): React.CSSProperties {
+  return {
+    minWidth: 0,
+  };
+}
+
+function mobileTopEyebrow(): React.CSSProperties {
+  return {
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: "0.06em",
+    textTransform: "uppercase",
+    color: "#6B7A88",
+  };
+}
+
+function mobileTopTitle(): React.CSSProperties {
+  return {
+    marginTop: 2,
+    fontSize: 16,
+    fontWeight: 900,
+    color: "#0B1F33",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  };
+}
+
+function overlayBackdrop(open: boolean, zIndex: number): React.CSSProperties {
+  return {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(11,31,51,0.34)",
+    opacity: open ? 1 : 0,
+    pointerEvents: open ? "auto" : "none",
+    transition: "opacity 0.2s ease",
+    zIndex,
+  };
+}
+
+function drawerPanel(open: boolean): React.CSSProperties {
+  return {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    bottom: 0,
+    width: "84vw",
+    maxWidth: 356,
+    padding: 16,
+    background:
+      "linear-gradient(180deg, #10253B 0%, #163A5C 100%), radial-gradient(circle at top left, rgba(255,255,255,0.08), transparent 35%)",
+    color: "#FFFFFF",
+    overflowY: "auto",
+    transform: open ? "translateX(0)" : "translateX(-100%)",
+    transition: "transform 0.25s ease",
+    zIndex: 25,
+    boxShadow: "12px 0 30px rgba(11,31,51,0.18)",
+  };
+}
+
+function drawerHeader(): React.CSSProperties {
+  return {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 16,
+  };
+}
+
+function overlayCloseButton(dark = false): React.CSSProperties {
+  return {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    border: dark
+      ? "1px solid rgba(255,255,255,0.12)"
+      : "1px solid rgba(11,31,51,0.10)",
+    background: dark ? "rgba(255,255,255,0.08)" : "#FFFFFF",
+    color: dark ? "#FFFFFF" : "#0B1F33",
+    fontSize: 18,
+    cursor: "pointer",
+  };
+}
+
+function drawerSectionTitle(): React.CSSProperties {
+  return {
+    margin: "16px 0 8px",
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    color: "rgba(255,255,255,0.72)",
+  };
+}
+
+function drawerLink(active = false): React.CSSProperties {
+  return {
+    display: "block",
+    padding: "12px 13px",
+    borderRadius: 14,
+    textDecoration: "none",
+    fontWeight: 800,
+    fontSize: 14,
+    color: "#FFFFFF",
+    background: active ? "#0B63D1" : "rgba(255,255,255,0.05)",
+    border: active
+      ? "1px solid rgba(255,255,255,0.14)"
+      : "1px solid rgba(255,255,255,0.08)",
+  };
+}
+
+function actionsPanel(open: boolean): React.CSSProperties {
+  return {
+    position: "fixed",
+    top: 12,
+    right: 12,
+    width: "min(92vw, 360px)",
+    maxHeight: "min(78vh, 620px)",
+    overflowY: "auto",
+    padding: 16,
+    borderRadius: 22,
+    background: "#FFFFFF",
+    border: "1px solid rgba(11,31,51,0.08)",
+    boxShadow: "0 22px 54px rgba(15,23,42,0.16)",
+    transform: open ? "translateY(0)" : "translateY(-12px)",
+    opacity: open ? 1 : 0,
+    pointerEvents: open ? "auto" : "none",
+    transition: "opacity 0.2s ease, transform 0.2s ease",
+    zIndex: 35,
+  };
+}
+
+function actionsTitle(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#64748B",
+    fontWeight: 900,
+    letterSpacing: 0.32,
+    textTransform: "uppercase",
+  };
+}
+
+function actionsLink(active = false): React.CSSProperties {
+  return {
+    display: "block",
+    padding: "12px 13px",
+    borderRadius: 14,
+    textDecoration: "none",
+    fontWeight: 800,
+    fontSize: 14,
+    color: active ? "#0B63D1" : "#0B1F33",
+    background: active ? "rgba(11,99,209,0.08)" : "#F8FBFF",
+    border: active
+      ? "1px solid rgba(11,99,209,0.14)"
+      : "1px solid rgba(11,31,51,0.08)",
+  };
+}
+
+function bottomNav(): React.CSSProperties {
+  return {
+    position: "fixed",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 20,
+    display: "flex",
+    gap: 8,
+    overflowX: "auto",
+    padding: "10px 10px calc(10px + env(safe-area-inset-bottom, 0px))",
+    background: "rgba(255,255,255,0.98)",
+    backdropFilter: "blur(10px)",
+    borderTop: "1px solid rgba(11,31,51,0.08)",
+    WebkitOverflowScrolling: "touch",
+  };
+}
+
+function bottomNavItem(active = false): React.CSSProperties {
+  return {
+    flex: "0 0 auto",
+    minWidth: 92,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 44,
+    padding: "8px 10px",
+    borderRadius: 14,
+    textDecoration: "none",
+    textAlign: "center",
+    fontSize: 12,
+    fontWeight: active ? 900 : 800,
+    color: active ? "#0B63D1" : "#4E6278",
+    background: active ? "rgba(11,99,209,0.10)" : "transparent",
+    border: active
+      ? "1px solid rgba(11,99,209,0.14)"
+      : "1px solid rgba(11,31,51,0.08)",
+    whiteSpace: "nowrap",
+  };
+}
+
 export default function AppLayout() {
   const location = useLocation();
 
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 768;
+  });
+
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
+
   const isAdmin = useMemo(() => {
-    try {
-      return (localStorage.getItem("gmfn_role") || "").toLowerCase() === "admin";
-    } catch {
-      return false;
-    }
+    const role = readRole();
+    return role === "admin" || role === "superadmin";
   }, []);
 
-  const groups: NavGroup[] = useMemo(
-    () => [
+  const myShopGalleryTo = useMemo(() => {
+    if (location.pathname.startsWith("/app/shop/")) {
+      return location.pathname;
+    }
+
+    return "/app/shop/me";
+  }, [location.pathname]);
+
+  const primaryItems = useMemo(
+    () => buildPrimaryItems(myShopGalleryTo),
+    [myShopGalleryTo]
+  );
+
+  const trustPassportItems = useMemo(() => buildTrustPassportItems(), []);
+  const identityItems = useMemo(() => buildIdentityItems(), []);
+  const loansItems = useMemo(() => buildLoansItems(), []);
+  const adminItems = useMemo(() => buildAdminItems(), []);
+
+  const groups = useMemo<NavGroup[]>(() => {
+    const base: NavGroup[] = [
       {
-        key: "home",
-        label: "Home",
-        hint: "Start from your main workspace.",
-        items: [{ label: "Dashboard", to: "/app/dashboard" }],
+        key: "primary",
+        label: "Primary surfaces",
+        hint: "Dashboard leads to Community Home. Community Home leads to Marketplace. Marketplace leads to Shop Gallery. Spotlight and Demand Box stay close to that major movement.",
+        items: primaryItems,
       },
       {
-        key: "community",
-        label: "Community",
-        hint: "Your private community hub and related member tools.",
-        items: [
-          { label: "Community Home", to: "/app/community" },
-          { label: "My Communities", to: "/app/clans" },
-          { label: "My Shop Tools", to: "/app/shop-control" },
-        ],
+        key: "trust-passport",
+        label: "Trust Passport",
+        hint: "Trust-related surfaces are grouped here: My Trust and TrustSlip.",
+        items: trustPassportItems,
       },
       {
-        key: "market",
-        label: "Marketplace",
-        hint: "Work inside community market flow and demand visibility.",
-        items: [
-          { label: "Browse Marketplace", to: "/app/marketplace" },
-          { label: "Demand Box", to: "/app/demand-box" },
-        ],
+        key: "identity",
+        label: "Identity",
+        hint: "Identity integrity, notifications, and the readable guide.",
+        items: identityItems,
       },
       {
-        key: "money",
-        label: "Money and Support",
-        hint: "Loans, readiness, guidance, workbench, and earnings.",
-        items: [
-          { label: "Loans and Support", to: "/app/loans" },
-          { label: "Pool Payment", to: "/app/payment/pool" },
-          { label: "Withdrawal Guidance", to: "/app/withdrawal-instructions" },
-          { label: "Support Readiness", to: "/app/loan-readiness" },
-          { label: "Helpful Suggestions", to: "/app/loan-suggestions" },
-          { label: "Workbench", to: "/app/loan-workbench" },
-          { label: "Guarantor Earnings", to: "/app/guarantor-earnings" },
-        ],
-      },
-      {
-        key: "trust",
-        label: "Trust and Identity",
-        hint: "Member-facing trust, identity, and notice surfaces only.",
-        items: [
-          { label: "My Trust", to: "/app/trust" },
-          { label: "TrustSlip", to: "/app/trust-slip" },
-          { label: "Identity Integrity", to: "/app/identity" },
-          { label: "Notifications", to: "/app/notifications" },
-        ],
-      },
-      {
-        key: "guide",
-        label: "My GSN",
-        hint: "Read the guide and understand how the system works.",
-        items: [{ label: "My GMFN and I", to: "/app/my-gmfn-and-i" }],
+        key: "support",
+        label: "Loans and Support",
+        hint: "Support, readiness, payment guidance, and working tools.",
+        items: loansItems,
       },
       {
         key: "admin",
-        label: "Command Center",
-        hint: "Restricted system oversight, analytics, and admin tools.",
+        label: "Admin Tools",
+        hint: "Restricted oversight and administrative surfaces only.",
         adminOnly: true,
-        items: [
-          { label: "Command Center Home", to: "/app/command-center" },
-          {
-            label: "Trust Analytics",
-            to: "/app/command-center/trust-analytics",
-          },
-          {
-            label: "System Operations",
-            to: "/app/command-center/system-operations",
-          },
-          { label: "Safety and Risk", to: "/app/command-center/exposure" },
-          {
-            label: "Relationship Graph",
-            to: "/app/command-center/trust-graph",
-          },
-        ],
+        items: adminItems,
       },
-    ],
-    []
-  );
+    ];
+
+    return base.filter((group) => !group.adminOnly || isAdmin);
+  }, [primaryItems, trustPassportItems, identityItems, loansItems, adminItems, isAdmin]);
 
   const firstOpenGroup = useMemo(() => {
     const found = groups.find((group) =>
-      group.items.some((item) => isActive(location.pathname, item.to))
+      group.items.some((item) =>
+        isItemActive(item, location.pathname, location.search)
+      )
     );
-    return found?.key || "home";
-  }, [groups, location.pathname]);
+    return found?.key || "primary";
+  }, [groups, location.pathname, location.search]);
 
   const [openGroup, setOpenGroup] = useState<string>(firstOpenGroup);
 
@@ -226,101 +796,388 @@ export default function AppLayout() {
     setOpenGroup(firstOpenGroup);
   }, [firstOpenGroup]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    function handleResize() {
+      setIsMobile(window.innerWidth <= 768);
+    }
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    setIsDrawerOpen(false);
+    setIsActionsOpen(false);
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    if (!isMobile) {
+      setIsDrawerOpen(false);
+      setIsActionsOpen(false);
+    }
+  }, [isMobile]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (!isMobile) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow =
+      isDrawerOpen || isActionsOpen ? "hidden" : previousOverflow || "";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isDrawerOpen, isActionsOpen, isMobile]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!isDrawerOpen && !isActionsOpen) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsDrawerOpen(false);
+        setIsActionsOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isDrawerOpen, isActionsOpen]);
+
   function toggleGroup(key: string) {
     setOpenGroup((prev) => (prev === key ? "" : key));
   }
 
+  function openDrawer() {
+    setIsActionsOpen(false);
+    setIsDrawerOpen(true);
+  }
+
+  function closeDrawer() {
+    setIsDrawerOpen(false);
+  }
+
+  function openActions() {
+    setIsDrawerOpen(false);
+    setIsActionsOpen(true);
+  }
+
+  function closeActions() {
+    setIsActionsOpen(false);
+  }
+
+  const routeMeta = findCurrentRouteMeta(
+    location.pathname,
+    location.search,
+    groups
+  );
+
+  const mobileBottomItems = useMemo<NavLinkItem[]>(
+    () => [
+      makeDashboardItem(),
+      {
+        label: "Community",
+        to: "/app/community",
+        match: (pathname) => pathname.startsWith("/app/community"),
+      },
+      makeMarketplaceItem(),
+      makeShopGalleryItem(myShopGalleryTo),
+      makeSpotlightItem(),
+      {
+        label: "Demand",
+        to: "/app/demand-box",
+        match: (pathname) => pathname.startsWith("/app/demand-box"),
+      },
+    ],
+    [myShopGalleryTo]
+  );
+
+  const mobileDrawerGroups = useMemo<
+    { title: string; items: NavLinkItem[]; adminOnly?: boolean }[]
+  >(
+    () => [
+      {
+        title: "Trust Passport",
+        items: trustPassportItems,
+      },
+      {
+        title: "Identity",
+        items: identityItems,
+      },
+      {
+        title: "Loans and Support",
+        items: loansItems,
+      },
+      {
+        title: "Admin Tools",
+        adminOnly: true,
+        items: adminItems,
+      },
+    ],
+    [trustPassportItems, identityItems, loansItems, adminItems]
+  );
+
+  const pageActions = useMemo(
+    () => getPageActions(location.pathname, location.search, myShopGalleryTo),
+    [location.pathname, location.search, myShopGalleryTo]
+  );
+
   return (
-    <div style={shell()}>
-      <aside style={sidebar()}>
-        <div style={brandBox()}>
-          <div style={{ fontSize: 12, fontWeight: 1000, letterSpacing: "0.06em" }}>
-            GMFN / GSN
-          </div>
-
-          <div
-            style={{
-              marginTop: 8,
-              color: "rgba(255,255,255,0.78)",
-              fontSize: 13,
-              lineHeight: 1.7,
-            }}
+    <div style={isMobile ? mobileShell() : desktopShell()}>
+      {!isMobile ? (
+        <aside style={sidebar()}>
+          <Link
+            to="/app/dashboard"
+            style={{ textDecoration: "none", color: "inherit" }}
           >
-            Trust, identity, community, and market activity arranged into one
-            working system.
+            <div style={brandCard()}>
+              <div style={brandEyebrow()}>GMFN / GSN</div>
+              <div style={brandTitle()}>Member workspace</div>
+              <div style={brandText()}>
+                A guided, structured workspace for dashboard, community home,
+                marketplace, shop gallery, trust passport, identity, and
+                support.
+              </div>
+            </div>
+          </Link>
+
+          <div style={noteCard()}>
+            <div style={noteTitle()}>Movement order</div>
+            <div style={noteText()}>
+              Dashboard leads to Community Home. Community Home leads to the
+              selected Marketplace. Marketplace leads to Shop Gallery. Shop
+              Gallery remains view-only.
+            </div>
           </div>
-        </div>
 
-        {groups.map((group) => {
-          if (group.adminOnly && !isAdmin) return null;
+          <nav style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {groups.map((group) => {
+              const groupActive = group.items.some((item) =>
+                isItemActive(item, location.pathname, location.search)
+              );
+              const expanded = openGroup === group.key || groupActive;
 
-          const isOpen = openGroup === group.key;
-          const hasActiveChild = group.items.some((item) =>
-            isActive(location.pathname, item.to)
-          );
+              return (
+                <div key={group.key} style={groupCard()}>
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(group.key)}
+                    aria-expanded={expanded}
+                    style={groupHeader(groupActive)}
+                  >
+                    <span>{group.label}</span>
+                    <span style={{ fontSize: 16, lineHeight: 1 }}>
+                      {expanded ? "−" : "+"}
+                    </span>
+                  </button>
 
-          return (
-            <div key={group.key} style={groupBox()}>
+                  {expanded ? (
+                    <>
+                      {group.hint ? (
+                        <div style={groupHint()}>{group.hint}</div>
+                      ) : null}
+
+                      <div
+                        style={{
+                          marginTop: 10,
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 8,
+                        }}
+                      >
+                        {group.items.map((item) => (
+                          <Link
+                            key={`${group.key}-${item.label}-${item.to}`}
+                            to={item.to}
+                            style={navItem(
+                              isItemActive(item, location.pathname, location.search)
+                            )}
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+              );
+            })}
+          </nav>
+        </aside>
+      ) : (
+        <>
+          <header style={mobileTopBar()}>
+            <button
+              type="button"
+              onClick={openDrawer}
+              aria-label="Open navigation"
+              style={mobileIconButton()}
+            >
+              ☰
+            </button>
+
+            <div style={mobileTopMeta()}>
+              <div style={mobileTopEyebrow()}>{routeMeta.section}</div>
+              <div style={mobileTopTitle()}>{routeMeta.page}</div>
+            </div>
+
+            <button
+              type="button"
+              onClick={openActions}
+              aria-label="Open page actions"
+              style={mobileIconButton()}
+            >
+              ⋯
+            </button>
+          </header>
+
+          <div style={overlayBackdrop(isDrawerOpen, 24)} onClick={closeDrawer} />
+
+          <aside style={drawerPanel(isDrawerOpen)} aria-hidden={!isDrawerOpen}>
+            <div style={drawerHeader()}>
+              <div>
+                <div style={brandEyebrow()}>GMFN / GSN</div>
+                <div style={{ marginTop: 6, fontSize: 18, fontWeight: 900 }}>
+                  Navigation
+                </div>
+              </div>
+
               <button
                 type="button"
-                onClick={() => toggleGroup(group.key)}
-                style={groupHeader(isOpen || hasActiveChild)}
+                onClick={closeDrawer}
+                aria-label="Close navigation"
+                style={overlayCloseButton(true)}
               >
-                <span>{group.label}</span>
-                <span style={{ fontSize: 12, opacity: 0.8 }}>
-                  {isOpen ? "Hide" : "Open"}
-                </span>
+                ×
               </button>
+            </div>
 
-              {group.hint ? (
+            <div style={brandCard()}>
+              <div style={brandEyebrow()}>Current area</div>
+              <div style={{ marginTop: 8, fontSize: 20, fontWeight: 900 }}>
+                {routeMeta.page}
+              </div>
+              <div style={brandText()}>
+                The bottom bar holds the major movement surfaces. This drawer
+                holds the supporting surfaces.
+              </div>
+            </div>
+
+            {mobileDrawerGroups
+              .filter((group) => !group.adminOnly || isAdmin)
+              .map((group) => (
+                <div key={group.title}>
+                  <div style={drawerSectionTitle()}>{group.title}</div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {group.items.map((item) => (
+                      <Link
+                        key={`${group.title}-${item.label}-${item.to}`}
+                        to={item.to}
+                        style={drawerLink(
+                          isItemActive(item, location.pathname, location.search)
+                        )}
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ))}
+          </aside>
+
+          <div
+            style={overlayBackdrop(isActionsOpen, 34)}
+            onClick={closeActions}
+          />
+
+          <div style={actionsPanel(isActionsOpen)} aria-hidden={!isActionsOpen}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+                marginBottom: 14,
+              }}
+            >
+              <div>
+                <div style={actionsTitle()}>Page tools</div>
                 <div
                   style={{
-                    marginTop: 8,
-                    color: "rgba(255,255,255,0.75)",
-                    fontSize: 12,
-                    lineHeight: 1.6,
-                    padding: "0 4px",
+                    marginTop: 6,
+                    fontSize: 18,
+                    fontWeight: 900,
+                    color: "#0B1F33",
                   }}
                 >
-                  {group.hint}
+                  {routeMeta.page}
                 </div>
-              ) : null}
+              </div>
 
-              {isOpen ? (
-                <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                  {group.items.map((item) => (
-                    <Link
-                      key={item.to}
-                      to={item.to}
-                      style={navItem(isActive(location.pathname, item.to))}
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-
-                  {group.key === "market" ? (
-                    <div style={noteBox()}>
-                      One identity stays the same across communities. The shop
-                      belongs to identity, while Demand Box stays identity-based.
-                    </div>
-                  ) : null}
-
-                  {group.key === "admin" ? (
-                    <div style={noteBox()}>
-                      These tools are restricted. They should not appear in
-                      normal member flow.
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
+              <button
+                type="button"
+                onClick={closeActions}
+                aria-label="Close page actions"
+                style={overlayCloseButton(false)}
+              >
+                ×
+              </button>
             </div>
-          );
-        })}
-      </aside>
 
-      <main style={content()}>
+            <div
+              style={{
+                color: "#5D7389",
+                fontSize: 14,
+                lineHeight: 1.75,
+                marginBottom: 14,
+              }}
+            >
+              These actions are related to the page you are currently using,
+              while the bottom bar keeps the major movement surfaces.
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {pageActions.map((item) => (
+                <Link
+                  key={`page-action-${item.label}-${item.to}`}
+                  to={item.to}
+                  style={actionsLink(
+                    isItemActive(item, location.pathname, location.search)
+                  )}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      <main style={mainContent(isMobile)}>
         <Outlet />
       </main>
+
+      {isMobile ? (
+        <nav style={bottomNav()}>
+          {mobileBottomItems.map((item) => (
+            <Link
+              key={`bottom-${item.label}-${item.to}`}
+              to={item.to}
+              style={bottomNavItem(
+                isItemActive(item, location.pathname, location.search)
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
     </div>
   );
 }

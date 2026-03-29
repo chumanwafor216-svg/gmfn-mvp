@@ -4,7 +4,62 @@ const API_BASE_URL_RAW: string =
     (import.meta as any).env.VITE_API_BASE_URL) ||
   "/api";
 
-const API_BASE_URL = String(API_BASE_URL_RAW || "").trim().replace(/\/+$/, "");
+const API_BASE_URL = String(API_BASE_URL_RAW || "")
+  .trim()
+  .replace(/\/+$/, "");
+
+export type EntryMode =
+  | "general"
+  | "create"
+  | "invite"
+  | "approved"
+  | "existing";
+
+export type WelcomeIntent = "invited" | "founder" | "approved" | "existing";
+
+type RequestOptions = {
+  header_clan_id?: number | null;
+};
+
+class HttpStatusError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "HttpStatusError";
+    this.status = status;
+  }
+}
+
+function canUseStorage(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.localStorage !== "undefined"
+  );
+}
+
+function readStorage(key: string): string | null {
+  try {
+    if (!canUseStorage()) return null;
+    const value = window.localStorage.getItem(key);
+    return value == null ? null : String(value);
+  } catch {
+    return null;
+  }
+}
+
+function writeStorage(key: string, value: string | null): void {
+  try {
+    if (!canUseStorage()) return;
+
+    if (value == null || String(value).trim() === "") {
+      window.localStorage.removeItem(key);
+      return;
+    }
+
+    window.localStorage.setItem(key, String(value));
+  } catch {}
+}
 
 function buildUrl(path: string): string {
   const p = String(path || "").startsWith("/")
@@ -15,23 +70,25 @@ function buildUrl(path: string): string {
 
 const ACCESS_TOKEN_KEY = "access_token";
 const GMFN_SELECTED_CLAN_ID_KEY = "gmfn_selected_clan_id";
+const GMFN_ENTRY_MODE_KEY = "gmfn_entry_mode";
+const GMFN_ENTRY_INVITE_CODE_KEY = "gmfn_entry_invite_code";
+const GMFN_ENTRY_CREATE_CODE_KEY = "gmfn_entry_create_code";
 
 export function getAccessToken(): string | null {
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+  return readStorage(ACCESS_TOKEN_KEY);
 }
 
 export function setAccessToken(tok: string | null) {
-  if (!tok) localStorage.removeItem(ACCESS_TOKEN_KEY);
-  else localStorage.setItem(ACCESS_TOKEN_KEY, tok);
+  writeStorage(ACCESS_TOKEN_KEY, tok);
 }
-export function logout(): void {
-  setAccessToken(null);
-  setSelectedClanId(null);
+
+export function isAuthenticated(): boolean {
+  return Boolean(String(getAccessToken() || "").trim());
 }
 
 export function getSelectedClanId(): number | null {
   try {
-    const raw = localStorage.getItem(GMFN_SELECTED_CLAN_ID_KEY);
+    const raw = readStorage(GMFN_SELECTED_CLAN_ID_KEY);
     const n = Number(raw || "");
     return Number.isFinite(n) && n > 0 ? n : null;
   } catch {
@@ -41,9 +98,103 @@ export function getSelectedClanId(): number | null {
 
 export function setSelectedClanId(clanId: number | null): void {
   try {
-    if (clanId == null) localStorage.removeItem(GMFN_SELECTED_CLAN_ID_KEY);
-    else localStorage.setItem(GMFN_SELECTED_CLAN_ID_KEY, String(clanId));
+    if (clanId == null) writeStorage(GMFN_SELECTED_CLAN_ID_KEY, null);
+    else writeStorage(GMFN_SELECTED_CLAN_ID_KEY, String(clanId));
   } catch {}
+}
+
+export function getEntryMode(): EntryMode | null {
+  const raw = String(readStorage(GMFN_ENTRY_MODE_KEY) || "")
+    .trim()
+    .toLowerCase();
+
+  if (
+    raw === "general" ||
+    raw === "create" ||
+    raw === "invite" ||
+    raw === "approved" ||
+    raw === "existing"
+  ) {
+    return raw as EntryMode;
+  }
+
+  return null;
+}
+
+export function setEntryMode(mode: EntryMode | null): void {
+  writeStorage(GMFN_ENTRY_MODE_KEY, mode);
+}
+
+export function clearEntryMode(): void {
+  writeStorage(GMFN_ENTRY_MODE_KEY, null);
+}
+
+export function getInviteCode(): string | null {
+  const raw = String(readStorage(GMFN_ENTRY_INVITE_CODE_KEY) || "").trim();
+  return raw || null;
+}
+
+export function setInviteCode(code: string | null): void {
+  writeStorage(GMFN_ENTRY_INVITE_CODE_KEY, code);
+}
+
+export function clearInviteCode(): void {
+  writeStorage(GMFN_ENTRY_INVITE_CODE_KEY, null);
+}
+
+export function getCreateCode(): string | null {
+  const raw = String(readStorage(GMFN_ENTRY_CREATE_CODE_KEY) || "").trim();
+  return raw || null;
+}
+
+export function setCreateCode(code: string | null): void {
+  writeStorage(GMFN_ENTRY_CREATE_CODE_KEY, code);
+}
+
+export function clearCreateCode(): void {
+  writeStorage(GMFN_ENTRY_CREATE_CODE_KEY, null);
+}
+
+export function getInviteToken(): string | null {
+  return getInviteCode();
+}
+
+export function setInviteToken(token: string | null): void {
+  setInviteCode(token);
+}
+
+export function clearInviteToken(): void {
+  clearInviteCode();
+}
+
+export function getCreateToken(): string | null {
+  return getCreateCode();
+}
+
+export function setCreateToken(token: string | null): void {
+  setCreateCode(token);
+}
+
+export function clearCreateToken(): void {
+  clearCreateCode();
+}
+
+export function clearPublicEntryState(): void {
+  clearEntryMode();
+  clearInviteCode();
+  clearCreateCode();
+}
+
+export function hasIssuedGmfnId(
+  user: { gmfn_id?: string | null } | null | undefined
+): boolean {
+  return Boolean(String(user?.gmfn_id || "").trim());
+}
+
+export function logout(): void {
+  setAccessToken(null);
+  setSelectedClanId(null);
+  clearPublicEntryState();
 }
 
 async function readTextSafe(res: Response): Promise<string> {
@@ -67,21 +218,70 @@ export async function parseError(res: Response): Promise<string> {
 function buildQuery(params: Record<string, any> | undefined | null): string {
   if (!params) return "";
   const q: string[] = [];
+
   for (const [k, v] of Object.entries(params)) {
+    if (Array.isArray(v)) {
+      for (const item of v) {
+        if (item === undefined || item === null || String(item).trim() === "") {
+          continue;
+        }
+        q.push(
+          `${encodeURIComponent(k)}=${encodeURIComponent(String(item))}`
+        );
+      }
+      continue;
+    }
+
     if (v === undefined || v === null || String(v).trim() === "") continue;
     q.push(`${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`);
   }
+
   return q.length ? `?${q.join("&")}` : "";
 }
 
-async function httpJson(path: string, method: string, body?: any): Promise<any> {
+function buildMarketplaceReadOptions(params?: {
+  clan_id?: number | null;
+  header_clan_id?: number | null;
+}): RequestOptions | undefined {
+  if (!params) return undefined;
+
+  if (Object.prototype.hasOwnProperty.call(params, "header_clan_id")) {
+    return { header_clan_id: params.header_clan_id ?? null };
+  }
+
+  if (Object.prototype.hasOwnProperty.call(params, "clan_id")) {
+    return { header_clan_id: params.clan_id ?? null };
+  }
+
+  return undefined;
+}
+
+async function httpJson(
+  path: string,
+  method: string,
+  body?: any,
+  options?: RequestOptions
+): Promise<any> {
   const headers: Record<string, string> = { Accept: "application/json" };
 
   const tok = getAccessToken();
   if (tok) headers["Authorization"] = `Bearer ${tok}`;
 
-  const clanId = getSelectedClanId();
-  if (clanId) headers["X-Clan-Id"] = String(clanId);
+  const hasExplicitHeaderClanId =
+    !!options &&
+    Object.prototype.hasOwnProperty.call(options, "header_clan_id");
+
+  const effectiveHeaderClanId = hasExplicitHeaderClanId
+    ? options?.header_clan_id ?? null
+    : getSelectedClanId();
+
+  if (
+    effectiveHeaderClanId != null &&
+    Number.isFinite(Number(effectiveHeaderClanId)) &&
+    Number(effectiveHeaderClanId) > 0
+  ) {
+    headers["X-Clan-Id"] = String(effectiveHeaderClanId);
+  }
 
   if (body !== undefined) headers["Content-Type"] = "application/json";
 
@@ -91,7 +291,10 @@ async function httpJson(path: string, method: string, body?: any): Promise<any> 
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 
-  if (!res.ok) throw new Error(await parseError(res));
+  if (!res.ok) {
+    throw new HttpStatusError(res.status, await parseError(res));
+  }
+
   if (res.status === 204) return null;
 
   const txt = await readTextSafe(res);
@@ -102,6 +305,35 @@ async function httpJson(path: string, method: string, body?: any): Promise<any> 
   } catch {
     return txt;
   }
+}
+
+async function httpJsonPaths(
+  paths: string[],
+  method: string,
+  body?: any,
+  options?: RequestOptions
+): Promise<any> {
+  let lastError: unknown = null;
+
+  for (const path of paths) {
+    try {
+      return await httpJson(path, method, body, options);
+    } catch (err) {
+      lastError = err;
+
+      if (
+        err instanceof HttpStatusError &&
+        (err.status === 404 || err.status === 405)
+      ) {
+        continue;
+      }
+
+      throw err;
+    }
+  }
+
+  if (lastError instanceof Error) throw lastError;
+  throw new Error("Request failed");
 }
 
 async function httpForm(path: string, form: Record<string, any>): Promise<any> {
@@ -120,7 +352,7 @@ async function httpForm(path: string, form: Record<string, any>): Promise<any> {
     body: fd.toString(),
   });
 
-  if (!res.ok) throw new Error(await parseError(res));
+  if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
   return await res.json();
 }
 
@@ -177,8 +409,11 @@ export async function activateApprovedMember(payload: {
     throw new Error("gmfn_id or request_id is required");
   }
 
-  return httpJson("/auth/activate-approved-member", "POST", cleaned);
+  const out = await httpJson("/auth/activate-approved-member", "POST", cleaned);
+  if (out?.access_token) setAccessToken(out.access_token);
+  return out;
 }
+
 export async function activateMembership(payload: {
   gmfn_id: string;
   password: string;
@@ -190,21 +425,16 @@ export async function activateMembership(payload: {
     confirm_password: String(payload?.confirm_password || ""),
   };
 
-  const res = await fetch("http://127.0.0.1:8012/auth/activate-membership", {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(cleaned),
-  });
+  const out = await httpJsonPaths(
+    ["/auth/activate-membership", "/entry/activate"],
+    "POST",
+    cleaned
+  );
 
-  if (!res.ok) {
-    throw new Error(await parseError(res));
-  }
-
-  return await res.json();
+  if (out?.access_token) setAccessToken(out.access_token);
+  return out;
 }
+
 export async function getApprovedMemberStatus(gmfnId: string): Promise<any> {
   return httpJson(
     `/auth/approved-member/${encodeURIComponent(String(gmfnId))}`,
@@ -219,7 +449,92 @@ export async function founderSignupWithInvite(payload: {
   clan_name: string;
   clan_description?: string | null;
 }): Promise<any> {
-  return httpJson("/auth/signup-with-invite", "POST", payload);
+  const out = await httpJson("/auth/signup-with-invite", "POST", payload);
+  if (out?.access_token) setAccessToken(out.access_token);
+  return out;
+}
+
+/* =========================
+   PUBLIC GUIDE / ENTRY FLOW
+   ========================= */
+
+export async function getPublicGuide(): Promise<any> {
+  try {
+    return await httpJsonPaths(["/public/guide", "/guide"], "GET");
+  } catch {
+    return {
+      title: "My GMFN and I",
+      detail:
+        "No public guide API endpoint is enabled yet. Render this guide from the frontend page content.",
+      sections: [],
+    };
+  }
+}
+
+export async function getEntryContext(params?: {
+  mode?: EntryMode | string;
+  code?: string | null;
+  invite_code?: string | null;
+  create_code?: string | null;
+}): Promise<any> {
+  const query = buildQuery({
+    mode: params?.mode,
+    code: params?.code,
+    invite_code: params?.invite_code,
+    create_code: params?.create_code,
+  });
+
+  try {
+    return await httpJsonPaths(
+      ["/entry/context" + query, "/public/entry/context" + query],
+      "GET"
+    );
+  } catch {
+    return {
+      entry_mode: params?.mode || getEntryMode() || "general",
+      invite_code: params?.invite_code || params?.code || getInviteCode(),
+      create_code: params?.create_code || params?.code || getCreateCode(),
+      guide_to: "/guide",
+      login_to: "/login",
+    };
+  }
+}
+
+export async function createEntry(payload: Record<string, any>): Promise<any> {
+  const out = await httpJsonPaths(
+    ["/entry/create", "/auth/signup-with-invite"],
+    "POST",
+    payload
+  );
+
+  if (out?.access_token) setAccessToken(out.access_token);
+  return out;
+}
+
+export async function submitJoinEntry(payload: Record<string, any>): Promise<any> {
+  return httpJsonPaths(
+    ["/entry/join", "/clans/join-requests"],
+    "POST",
+    payload
+  );
+}
+
+export async function getPendingApprovalStatus(
+  requestId?: number | string | null
+): Promise<any> {
+  const id = String(requestId ?? "").trim();
+
+  if (!id) {
+    return httpJsonPaths(["/entry/pending", "/pending-entry"], "GET");
+  }
+
+  return httpJsonPaths(
+    [
+      `/entry/pending/${encodeURIComponent(id)}`,
+      `/clans/join-requests/${encodeURIComponent(id)}/status`,
+    ],
+    "GET"
+  );
 }
 
 /* =========================
@@ -685,16 +1000,21 @@ export async function createMarketplaceShop(payload: {
 
 export async function getMarketplaceShops(params?: {
   clan_id?: number | null;
+  header_clan_id?: number | null;
   only_active?: boolean;
   limit?: number;
 }): Promise<any> {
+  const options = buildMarketplaceReadOptions(params);
+
   return httpJson(
     `/marketplace/shops${buildQuery({
       clan_id: params?.clan_id ?? undefined,
       only_active: params?.only_active ?? true,
       limit: params?.limit ?? 50,
     })}`,
-    "GET"
+    "GET",
+    undefined,
+    options
   );
 }
 
@@ -702,13 +1022,18 @@ export async function getMarketplaceShopByGmfnId(
   gmfnId: string,
   params?: {
     clan_id?: number | null;
+    header_clan_id?: number | null;
   }
 ): Promise<any> {
+  const options = buildMarketplaceReadOptions(params);
+
   return httpJson(
     `/marketplace/shops/by-gmfn/${encodeURIComponent(String(gmfnId))}${buildQuery({
       clan_id: params?.clan_id ?? undefined,
     })}`,
-    "GET"
+    "GET",
+    undefined,
+    options
   );
 }
 
@@ -727,11 +1052,14 @@ export async function createMarketplaceProduct(payload: {
 
 export async function getMarketplaceProducts(params?: {
   clan_id?: number | null;
+  header_clan_id?: number | null;
   shop_id?: number | null;
   only_active?: boolean;
   include_reposted?: boolean;
   limit?: number;
 }): Promise<any> {
+  const options = buildMarketplaceReadOptions(params);
+
   return httpJson(
     `/marketplace/products${buildQuery({
       clan_id: params?.clan_id ?? undefined,
@@ -740,7 +1068,9 @@ export async function getMarketplaceProducts(params?: {
       include_reposted: params?.include_reposted ?? true,
       limit: params?.limit ?? 100,
     })}`,
-    "GET"
+    "GET",
+    undefined,
+    options
   );
 }
 
@@ -790,7 +1120,9 @@ export async function createMarketplaceRepost(payload: {
   target_clan_id: number;
 }): Promise<any> {
   return httpJson(
-    `/marketplace/products/${encodeURIComponent(String(payload.product_id))}/repost`,
+    `/marketplace/products/${encodeURIComponent(
+      String(payload.product_id)
+    )}/repost`,
     "POST",
     { target_clan_id: payload.target_clan_id }
   );
@@ -910,10 +1242,7 @@ export async function getTrustWhyMe(): Promise<any> {
 }
 
 export async function getTrustWhyUser(userId: number): Promise<any> {
-  return httpJson(
-    `/trust/why/${encodeURIComponent(String(userId))}`,
-    "GET"
-  );
+  return httpJson(`/trust/why/${encodeURIComponent(String(userId))}`, "GET");
 }
 
 export async function deleteMarketplaceBroadcast(
@@ -949,7 +1278,7 @@ export async function uploadMarketplaceImageFile(
     body: fd,
   });
 
-  if (!res.ok) throw new Error(await parseError(res));
+  if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
   return await res.json();
 }
 
@@ -981,7 +1310,7 @@ export async function uploadMarketplaceVideoFile(
     body: fd,
   });
 
-  if (!res.ok) throw new Error(await parseError(res));
+  if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
   return await res.json();
 }
 
@@ -1108,8 +1437,7 @@ export async function getMarketplaceRequest(
   requestId: number,
   clanId?: number | null
 ): Promise<MarketplaceRequestItem> {
-  const effectiveClanId =
-    clanId === undefined ? getSelectedClanId() : clanId;
+  const effectiveClanId = clanId === undefined ? getSelectedClanId() : clanId;
 
   return httpJson(
     `/marketplace/requests/${encodeURIComponent(String(requestId))}${buildQuery({
@@ -1129,6 +1457,7 @@ export async function updateMarketplaceRequestStatus(
     { status }
   );
 }
+
 export type TrustEventsQuery = {
   clan_id?: number;
   user_id?: number;
