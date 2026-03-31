@@ -204,12 +204,29 @@ async function readTextSafe(res: Response): Promise<string> {
     return "";
   }
 }
-
 export async function parseError(res: Response): Promise<string> {
   const text = await readTextSafe(res);
+
   try {
     const j = JSON.parse(text);
-    return j?.detail || j?.message || text || `HTTP ${res.status}`;
+
+    if (Array.isArray(j?.detail)) {
+      const parts = j.detail
+        .map((item: any) => {
+          const loc = Array.isArray(item?.loc) ? item.loc.join(".") : "";
+          const msg = String(item?.msg || item?.message || "").trim();
+          return [loc, msg].filter(Boolean).join(": ");
+        })
+        .filter(Boolean);
+
+      return parts.join(" | ") || text || `HTTP ${res.status}`;
+    }
+
+    if (j?.detail && typeof j.detail === "object") {
+      return JSON.stringify(j.detail);
+    }
+
+    return String(j?.detail || j?.message || text || `HTTP ${res.status}`);
   } catch {
     return text || `HTTP ${res.status}`;
   }
@@ -290,9 +307,10 @@ async function httpJson(
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-
-  if (!res.ok) {
-    throw new HttpStatusError(res.status, await parseError(res));
+    if (!res.ok) {
+    const message = await parseError(res);
+    console.error(`[API ${method} ${path}] ${res.status}: ${message}`);
+    throw new HttpStatusError(res.status, message);
   }
 
   if (res.status === 204) return null;
@@ -678,6 +696,157 @@ export async function repayLoan(
     payload
   );
 }
+export async function createLoanRequest(payload: {
+  clan_id?: number | null;
+  amount: string | number;
+  currency?: string | null;
+  duration_days?: number | null;
+  purpose?: string | null;
+  note?: string | null;
+}): Promise<any> {
+  const effectiveClanId =
+    payload?.clan_id === undefined ? getSelectedClanId() : payload?.clan_id;
+
+  const cleaned: Record<string, any> = {
+    amount: String(payload?.amount ?? "").trim(),
+  };
+
+  const clanId = Number(effectiveClanId || 0);
+  const currency = String(payload?.currency || "").trim();
+  const durationDays = Number(payload?.duration_days || 0);
+  const purpose = String(payload?.purpose || "").trim();
+  const note = String(payload?.note || "").trim();
+
+  if (!cleaned.amount) {
+    throw new Error("amount is required");
+  }
+
+  if (clanId > 0) {
+    cleaned.clan_id = clanId;
+    cleaned.community_id = clanId;
+  }
+
+  if (currency) {
+    cleaned.currency = currency;
+  }
+
+  if (durationDays > 0) {
+    cleaned.duration_days = durationDays;
+    cleaned.term_days = durationDays;
+    cleaned.duration = durationDays;
+  }
+
+  if (purpose) {
+    cleaned.purpose = purpose;
+    cleaned.title = purpose;
+  }
+
+  if (note) {
+    cleaned.note = note;
+  }
+
+  const options =
+    payload && Object.prototype.hasOwnProperty.call(payload, "clan_id")
+      ? { header_clan_id: payload.clan_id ?? null }
+      : undefined;
+
+  return httpJsonPaths(
+    [
+      "/loans",
+      "/loans/request",
+      "/loan-requests",
+      "/support/loans",
+      "/support/loan-requests",
+    ],
+    "POST",
+    cleaned,
+    options
+  );
+}
+
+export async function requestLoanGuarantor(payload: {
+  loan_id: number;
+  guarantor_user_id?: number | null;
+  guarantor_gmfn_id?: string | null;
+  note?: string | null;
+}): Promise<any> {
+  const loanId = Number(payload?.loan_id || 0);
+  const guarantorUserId = Number(payload?.guarantor_user_id || 0);
+  const guarantorGmfnId = String(payload?.guarantor_gmfn_id || "").trim();
+  const note = String(payload?.note || "").trim();
+
+  if (!loanId) {
+    throw new Error("loan_id is required");
+  }
+
+  if (!guarantorUserId && !guarantorGmfnId) {
+    throw new Error("guarantor_user_id or guarantor_gmfn_id is required");
+  }
+
+  const cleaned: Record<string, any> = {
+    loan_id: loanId,
+  };
+
+  if (guarantorUserId > 0) {
+    cleaned.guarantor_user_id = guarantorUserId;
+    cleaned.user_id = guarantorUserId;
+  }
+
+  if (guarantorGmfnId) {
+    cleaned.guarantor_gmfn_id = guarantorGmfnId;
+    cleaned.gmfn_id = guarantorGmfnId;
+  }
+
+  if (note) {
+    cleaned.note = note;
+  }
+
+  return httpJsonPaths(
+    [
+      `/loans/${encodeURIComponent(String(loanId))}/guarantors`,
+      `/loans/${encodeURIComponent(String(loanId))}/guarantors/request`,
+      `/loans/${encodeURIComponent(String(loanId))}/guarantor-requests`,
+      "/loan-guarantor-requests",
+      "/guarantor-requests",
+    ],
+    "POST",
+    cleaned
+  );
+}
+
+export async function getLoanSupportSuggestions(params?: {
+  clan_id?: number | null;
+  amount?: string | number | null;
+  duration_days?: number | null;
+  limit?: number;
+}): Promise<any> {
+  const effectiveClanId =
+    params?.clan_id === undefined ? getSelectedClanId() : params?.clan_id;
+
+  const durationDays = Number(params?.duration_days || 0);
+
+  const query = buildQuery({
+    clan_id: effectiveClanId ?? undefined,
+    community_id: effectiveClanId ?? undefined,
+    amount:
+      params?.amount == null || String(params.amount).trim() === ""
+        ? undefined
+        : params.amount,
+    duration_days: durationDays > 0 ? durationDays : undefined,
+    term_days: durationDays > 0 ? durationDays : undefined,
+    limit: params?.limit ?? 8,
+  });
+
+  return httpJsonPaths(
+    [
+      `/loans/suggestions${query}`,
+      `/loan-suggestions${query}`,
+      `/support/suggestions${query}`,
+      `/support/loans/suggestions${query}`,
+    ],
+    "GET"
+  );
+}
 
 export async function getPoolMe(
   currency: string = "NGN",
@@ -726,7 +895,183 @@ export async function getLoanWithdrawalInstruction(
     "GET"
   );
 }
+export async function addLoanGuarantorRequest(payload: {
+  loan_id: number;
+  guarantor_user_id: number;
+  pledge_amount: string | number;
+  clan_id?: number | null;
+}): Promise<any> {
+  const loanId = Number(payload?.loan_id || 0);
+  const guarantorUserId = Number(payload?.guarantor_user_id || 0);
+  const pledgeAmount = String(payload?.pledge_amount ?? "").trim();
 
+  if (!loanId) {
+    throw new Error("loan_id is required");
+  }
+
+  if (!guarantorUserId) {
+    throw new Error("guarantor_user_id is required");
+  }
+
+  if (!pledgeAmount) {
+    throw new Error("pledge_amount is required");
+  }
+
+  const options =
+    payload && Object.prototype.hasOwnProperty.call(payload, "clan_id")
+      ? { header_clan_id: payload.clan_id ?? null }
+      : undefined;
+
+  return httpJson(
+    `/loans/${encodeURIComponent(String(loanId))}/guarantors`,
+    "POST",
+    {
+      guarantor_user_id: guarantorUserId,
+      pledge_amount: pledgeAmount,
+    },
+    options
+  );
+}
+
+export async function getLoanGuarantorSuggestions(
+  loanId: number,
+  params?: {
+    clan_id?: number | null;
+    limit?: number;
+  }
+): Promise<any> {
+  const options =
+    params && Object.prototype.hasOwnProperty.call(params, "clan_id")
+      ? { header_clan_id: params.clan_id ?? null }
+      : undefined;
+
+  const query = buildQuery({
+    limit: params?.limit ?? 8,
+  });
+
+  return httpJsonPaths(
+    [
+      `/loans/${encodeURIComponent(String(loanId))}/guarantors/suggestions${query}`,
+      `/loans/${encodeURIComponent(String(loanId))}/guarantor-suggestions${query}`,
+    ],
+    "GET",
+    undefined,
+    options
+  );
+}
+export type LoanGuarantorRow = {
+  id?: number;
+  loan_id?: number;
+  clan_id?: number;
+  guarantor_user_id?: number;
+  pledge_amount?: string | number | null;
+  status?: string | null;
+  responded_at?: string | null;
+  is_locked?: boolean;
+  locked_amount?: string | number | null;
+  released_amount?: string | number | null;
+};
+
+export async function getLoanGuarantors(
+  loanId: number,
+  params?: {
+    clan_id?: number | null;
+  }
+): Promise<{ items: LoanGuarantorRow[]; total: number }> {
+  const options =
+    params && Object.prototype.hasOwnProperty.call(params, "clan_id")
+      ? { header_clan_id: params.clan_id ?? null }
+      : undefined;
+
+  return httpJson(
+    `/loans/${encodeURIComponent(String(loanId))}/guarantors`,
+    "GET",
+    undefined,
+    options
+  );
+}
+
+
+export type LoanGuarantorInboxItem = {
+  id?: number;
+  loan_id?: number;
+  clan_id?: number;
+  guarantor_user_id?: number;
+  pledge_amount?: string | number | null;
+  status?: string | null;
+  responded_at?: string | null;
+  is_locked?: boolean;
+  locked_amount?: string | number | null;
+  released_amount?: string | number | null;
+};
+
+export async function getLoanGuarantorInbox(params?: {
+  clan_id?: number | null;
+  status?: string;
+  limit?: number;
+}): Promise<{ items: LoanGuarantorInboxItem[]; total: number }> {
+  const options =
+    params && Object.prototype.hasOwnProperty.call(params, "clan_id")
+      ? { header_clan_id: params.clan_id ?? null }
+      : undefined;
+
+  return httpJson(
+    `/loans/guarantors/inbox${buildQuery({
+      status: params?.status ?? "pending",
+      limit: params?.limit ?? 50,
+    })}`,
+    "GET",
+    undefined,
+    options
+  );
+}
+
+export async function decideLoanGuarantor(
+  loanId: number,
+  guarantorId: number,
+  payload: {
+    status: "approved" | "declined";
+    clan_id?: number | null;
+    reason?: string | null;
+    note?: string | null;
+  }
+): Promise<any> {
+  const options =
+    payload && Object.prototype.hasOwnProperty.call(payload, "clan_id")
+      ? { header_clan_id: payload.clan_id ?? null }
+      : undefined;
+
+  return httpJson(
+    `/loans/${encodeURIComponent(String(loanId))}/guarantors/${encodeURIComponent(
+      String(guarantorId)
+    )}`,
+    "PATCH",
+    {
+      status: payload.status,
+      reason: payload.reason ?? undefined,
+      note: payload.note ?? undefined,
+    },
+    options
+  );
+}
+export async function cancelLoanRequest(
+  loanId: number,
+  params?: {
+    clan_id?: number | null;
+  }
+): Promise<any> {
+  const options =
+    params && Object.prototype.hasOwnProperty.call(params, "clan_id")
+      ? { header_clan_id: params.clan_id ?? null }
+      : undefined;
+
+  return httpJson(
+    `/loans/${encodeURIComponent(String(loanId))}/cancel`,
+    "POST",
+    undefined,
+    options
+  );
+}
 /* =========================
    TRUST / IDENTITY / NOTIFICATIONS
    ========================= */
@@ -987,15 +1332,81 @@ export async function runBankReconciliation(payload: {
 /* =========================
    MARKETPLACE
    ========================= */
+function normalizeApiDateTime(value: any): string | undefined {
+  const raw = String(value ?? "").trim();
+  if (!raw) return undefined;
 
-export async function createMarketplaceShop(payload: {
+  const dt = new Date(raw);
+  if (!Number.isFinite(dt.getTime())) return undefined;
+
+  return dt.toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
+export async function createMarketplaceBroadcast(payload: {
   clan_id?: number | null;
-  name: string;
-  description?: string | null;
-  whatsapp_number?: string | null;
-  telegram_handle?: string | null;
+  message: string;
+  image_url?: string | null;
+  expires_at?: string | null;
 }): Promise<any> {
-  return httpJson("/marketplace/shops", "POST", payload);
+  const effectiveClanId =
+    payload?.clan_id === undefined ? getSelectedClanId() : payload?.clan_id;
+
+  const clanId = Number(effectiveClanId || 0);
+  const message = String(payload?.message || "").trim();
+  const imageUrl = String(payload?.image_url || "").trim();
+  const expiresAt = normalizeApiDateTime(payload?.expires_at);
+
+  if (!message && !imageUrl) {
+    throw new Error("message or image_url is required");
+  }
+
+  const baseBody: Record<string, any> = {
+    message: message || "Spotlight update",
+  };
+
+  if (imageUrl) {
+    baseBody.image_url = imageUrl;
+  }
+
+  if (expiresAt) {
+    baseBody.expires_at = expiresAt;
+  }
+
+  const options =
+    payload && Object.prototype.hasOwnProperty.call(payload, "clan_id")
+      ? { header_clan_id: payload.clan_id ?? null }
+      : undefined;
+
+  const attempts: Record<string, any>[] = [
+    clanId > 0 ? { ...baseBody, clan_id: clanId } : { ...baseBody },
+    { ...baseBody },
+    {
+      ...baseBody,
+      content: baseBody.message,
+      text: baseBody.message,
+    },
+  ];
+
+  let lastError: unknown = null;
+
+  for (const body of attempts) {
+    try {
+      return await httpJson(
+        "/marketplace/broadcasts",
+        "POST",
+        body,
+        options
+      );
+    } catch (err) {
+      lastError = err;
+      if (!(err instanceof HttpStatusError) || err.status !== 400) {
+        throw err;
+      }
+    }
+  }
+
+  if (lastError instanceof Error) throw lastError;
+  throw new Error("Marketplace broadcast creation failed");
 }
 
 export async function getMarketplaceShops(params?: {
@@ -1074,28 +1485,56 @@ export async function getMarketplaceProducts(params?: {
   );
 }
 
-export async function createMarketplaceBroadcast(payload: {
-  clan_id?: number | null;
-  message: string;
-  image_url?: string | null;
-  expires_at?: string | null;
-}): Promise<any> {
-  return httpJson("/marketplace/broadcasts", "POST", payload);
-}
 
 export async function getMarketplaceBroadcasts(params?: {
   clan_id?: number | null;
   active_only?: boolean;
   limit?: number;
 }): Promise<any> {
-  return httpJson(
-    `/marketplace/broadcasts${buildQuery({
-      clan_id: params?.clan_id ?? undefined,
-      active_only: params?.active_only ?? true,
+  const effectiveClanId =
+    params?.clan_id === undefined ? getSelectedClanId() : params?.clan_id;
+
+  const options =
+    params && Object.prototype.hasOwnProperty.call(params, "clan_id")
+      ? { header_clan_id: params.clan_id ?? null }
+      : undefined;
+
+  const attempts = [
+    {
+      clan_id: effectiveClanId ?? undefined,
+      active_only:
+        typeof params?.active_only === "boolean" ? params.active_only : undefined,
       limit: params?.limit ?? 100,
-    })}`,
-    "GET"
-  );
+    },
+    {
+      clan_id: effectiveClanId ?? undefined,
+      limit: params?.limit ?? 100,
+    },
+    {
+      limit: params?.limit ?? 100,
+    },
+  ];
+
+  let lastError: unknown = null;
+
+  for (const queryParams of attempts) {
+    try {
+      return await httpJson(
+        `/marketplace/broadcasts${buildQuery(queryParams)}`,
+        "GET",
+        undefined,
+        options
+      );
+    } catch (err) {
+      lastError = err;
+      if (!(err instanceof HttpStatusError) || err.status !== 400) {
+        throw err;
+      }
+    }
+  }
+
+  if (lastError instanceof Error) throw lastError;
+  throw new Error("Marketplace broadcasts request failed");
 }
 
 export async function createMarketplaceFeed(payload: {
@@ -1244,7 +1683,6 @@ export async function getTrustWhyMe(): Promise<any> {
 export async function getTrustWhyUser(userId: number): Promise<any> {
   return httpJson(`/trust/why/${encodeURIComponent(String(userId))}`, "GET");
 }
-
 export async function deleteMarketplaceBroadcast(
   broadcastId: number
 ): Promise<any> {
@@ -1260,7 +1698,11 @@ export async function uploadMarketplaceImageFile(
 ): Promise<any> {
   const fd = new FormData();
   fd.append("file", file);
-  if (clanId) fd.append("clan_id", String(clanId));
+
+  const effectiveClanId = Number(clanId ?? getSelectedClanId() ?? 0);
+  if (effectiveClanId > 0) {
+    fd.append("clan_id", String(effectiveClanId));
+  }
 
   const headers: Record<string, string> = {
     Accept: "application/json",
@@ -1269,8 +1711,9 @@ export async function uploadMarketplaceImageFile(
   const tok = getAccessToken();
   if (tok) headers["Authorization"] = `Bearer ${tok}`;
 
-  const selectedClanId = getSelectedClanId();
-  if (selectedClanId) headers["X-Clan-Id"] = String(selectedClanId);
+  if (effectiveClanId > 0) {
+    headers["X-Clan-Id"] = String(effectiveClanId);
+  }
 
   const res = await fetch(buildUrl("/marketplace/media/image"), {
     method: "POST",
@@ -1289,10 +1732,15 @@ export async function uploadMarketplaceVideoFile(
 ): Promise<any> {
   const fd = new FormData();
   fd.append("file", file);
+
   if (durationSeconds != null) {
     fd.append("duration_seconds", String(durationSeconds));
   }
-  if (clanId) fd.append("clan_id", String(clanId));
+
+  const effectiveClanId = Number(clanId ?? getSelectedClanId() ?? 0);
+  if (effectiveClanId > 0) {
+    fd.append("clan_id", String(effectiveClanId));
+  }
 
   const headers: Record<string, string> = {
     Accept: "application/json",
@@ -1301,8 +1749,9 @@ export async function uploadMarketplaceVideoFile(
   const tok = getAccessToken();
   if (tok) headers["Authorization"] = `Bearer ${tok}`;
 
-  const selectedClanId = getSelectedClanId();
-  if (selectedClanId) headers["X-Clan-Id"] = String(selectedClanId);
+  if (effectiveClanId > 0) {
+    headers["X-Clan-Id"] = String(effectiveClanId);
+  }
 
   const res = await fetch(buildUrl("/marketplace/media/video"), {
     method: "POST",
@@ -1313,7 +1762,6 @@ export async function uploadMarketplaceVideoFile(
   if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
   return await res.json();
 }
-
 export async function getJoinApprovalStatus(requestId: number | string) {
   return httpJson(
     `/clans/join-requests/${encodeURIComponent(String(requestId))}/status`,

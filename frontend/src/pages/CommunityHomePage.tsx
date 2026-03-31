@@ -627,6 +627,16 @@ export default function CommunityHomePage() {
     node.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  function clearSpotlightDraft() {
+    setSpotlightImageFile(null);
+    setSpotlightDescription("");
+    setSpotlightTagNumber("");
+    setSpotlightExpiry("");
+
+    // If your file already has a preview state, keep this line too:
+    // setSpotlightPreviewUrl("");
+  }
+
   async function publishSpotlight() {
     if (!selectedClanId) {
       showNotice("error", "Select a community before publishing spotlight.");
@@ -637,7 +647,11 @@ export default function CommunityHomePage() {
     const tagNumber = safeStr(spotlightTagNumber);
     const expiry = safeStr(spotlightExpiry);
 
-    if (!description && !spotlightImageFile) {
+    const combinedMessage = [description, tagNumber ? `Tag: ${tagNumber}` : ""]
+      .filter(Boolean)
+      .join("\n");
+
+    if (!combinedMessage && !spotlightImageFile) {
       showNotice("error", "Add a spotlight description or image first.");
       return;
     }
@@ -652,41 +666,40 @@ export default function CommunityHomePage() {
           spotlightImageFile,
           selectedClanId
         );
+
         imageUrl = firstTruthy(
           uploadRes?.image_url,
           uploadRes?.url,
           uploadRes?.file_url,
-          uploadRes?.path
+          uploadRes?.path,
+          uploadRes?.item?.image_url,
+          uploadRes?.data?.image_url
         );
+
+        if (!imageUrl) {
+          throw new Error(
+            "Image upload completed but the system did not return a usable image link."
+          );
+        }
       }
 
-      const payload: any = {
+      await createMarketplaceBroadcast({
         clan_id: selectedClanId,
-        message: description,
-        description,
-        product_description: description,
+        message: combinedMessage || "Spotlight update",
         image_url: imageUrl || undefined,
         expires_at: expiry || undefined,
-      };
+      });
 
-      if (tagNumber) {
-        payload.tag_number = tagNumber;
-        payload.product_tag_number = tagNumber;
-      }
+      clearSpotlightDraft();
 
-      await createMarketplaceBroadcast(payload);
-
-      setSpotlightDescription("");
-      setSpotlightTagNumber("");
-      setSpotlightExpiry("");
-      setSpotlightImageFile(null);
-
-      await loadSpotlightsForClan(selectedClanId);
-      showNotice("success", "Spotlight gears published successfully.");
+      showNotice(
+        "success",
+        "Spotlight uploaded successfully. It should now appear on the dashboard spotlight screen."
+      );
     } catch (err: any) {
       showNotice(
         "error",
-        safeStr(err?.message) || "Spotlight publish failed."
+        safeStr(err?.message) || "Spotlight upload failed."
       );
     } finally {
       setPublishingSpotlight(false);
