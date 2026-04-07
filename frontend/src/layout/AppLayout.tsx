@@ -1,9 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
+import { getMe } from "../lib/api";
+import WorkspaceSettingsBridge from "../components/WorkspaceSettingsBridge";
+import WorkspaceCompanionBridge from "../components/WorkspaceCompanionBridge";
 
 type NavLinkItem = {
   label: string;
   to: string;
+  disabled?: boolean;
   match?: (pathname: string, search: string) => boolean;
 };
 
@@ -11,13 +15,18 @@ type NavGroup = {
   key: string;
   label: string;
   hint?: string;
-  adminOnly?: boolean;
   items: NavLinkItem[];
 };
 
 type RouteMeta = {
   section: string;
   page: string;
+};
+
+type TaskModeMeta = {
+  title: string;
+  hint: string;
+  actions: NavLinkItem[];
 };
 
 function readRole(): string {
@@ -35,19 +44,13 @@ function pathOnly(to: string): string {
   return String(to || "").split("?")[0].split("#")[0] || "/";
 }
 
-function isSpotlightSearch(search: string): boolean {
-  return (
-    search.includes("compose=spotlight") ||
-    search.includes("view=spotlight") ||
-    search.includes("surface=spotlight")
-  );
-}
-
 function isItemActive(
   item: NavLinkItem,
   pathname: string,
   search: string
 ): boolean {
+  if (item.disabled) return false;
+
   if (item.match) {
     return item.match(pathname, search);
   }
@@ -57,19 +60,27 @@ function isItemActive(
 }
 
 function makeDashboardItem(): NavLinkItem {
-  return { label: "Dashboard", to: "/app/dashboard" };
+  return {
+    label: "Dashboard",
+    to: "/app/dashboard",
+    match: (pathname) => pathname === "/app/dashboard",
+  };
 }
 
-function makeCommunityHomeItem(): NavLinkItem {
-  return { label: "Community Home", to: "/app/community" };
+function makeCommunityItem(): NavLinkItem {
+  return {
+    label: "Community Home",
+    to: "/app/community",
+    match: (pathname) =>
+      pathname === "/app/community" || pathname.startsWith("/app/community/"),
+  };
 }
 
 function makeMarketplaceItem(): NavLinkItem {
   return {
     label: "Marketplace",
     to: "/app/marketplace",
-    match: (pathname, search) =>
-      pathname === "/app/marketplace" && !isSpotlightSearch(search),
+    match: (pathname) => pathname === "/app/marketplace",
   };
 }
 
@@ -81,33 +92,61 @@ function makeShopGalleryItem(myShopGalleryTo: string): NavLinkItem {
   };
 }
 
-function makeSpotlightItem(): NavLinkItem {
+function makeSettingsItem(): NavLinkItem {
   return {
-    label: "Spotlight",
-    to: "/app/marketplace?compose=spotlight",
+    label: "Settings",
+    to: "/app/my-gmfn-and-i?tab=settings",
     match: (pathname, search) =>
-      pathname === "/app/marketplace" && isSpotlightSearch(search),
+      (pathname === "/app/my-gmfn-and-i" && search.includes("tab=settings")) ||
+      pathname === "/app/settings",
   };
 }
 
-function makeDemandBoxItem(): NavLinkItem {
-  return { label: "Demand Box", to: "/app/demand-box" };
+function makeGuideItem(): NavLinkItem {
+  return {
+    label: "My GMFN and I",
+    to: "/app/my-gmfn-and-i",
+    match: (pathname, search) =>
+      pathname === "/app/my-gmfn-and-i" && !search.includes("tab=settings"),
+  };
 }
 
-function buildPrimaryItems(myShopGalleryTo: string): NavLinkItem[] {
-  return [
+function makeAdminItem(): NavLinkItem {
+  return {
+    label: "Admin Tools",
+    to: "/app/command-center",
+    match: (pathname) =>
+      pathname.startsWith("/app/command-center") ||
+      pathname.startsWith("/app/trust-command-centre") ||
+      pathname.startsWith("/app/trust-analytics") ||
+      pathname.startsWith("/app/system-operations") ||
+      pathname.startsWith("/app/admin/exposure") ||
+      pathname.startsWith("/app/admin/trust-graph"),
+  };
+}
+
+function buildPrimaryItems(
+  myShopGalleryTo: string,
+  isAdmin: boolean
+): NavLinkItem[] {
+  const items: NavLinkItem[] = [
     makeDashboardItem(),
-    makeCommunityHomeItem(),
+    makeCommunityItem(),
     makeMarketplaceItem(),
     makeShopGalleryItem(myShopGalleryTo),
-    makeSpotlightItem(),
-    makeDemandBoxItem(),
+    makeSettingsItem(),
   ];
+
+  if (isAdmin) {
+    items.push(makeAdminItem());
+  }
+
+  return items;
 }
 
 function buildTrustPassportItems(): NavLinkItem[] {
   return [
-    { label: "My Trust", to: "/app/trust" },
+    { label: "Trust", to: "/app/trust" },
     { label: "TrustSlip", to: "/app/trust-slip" },
   ];
 }
@@ -116,63 +155,81 @@ function buildIdentityItems(): NavLinkItem[] {
   return [
     { label: "Identity Integrity", to: "/app/identity" },
     { label: "Notifications", to: "/app/notifications" },
-    { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+    makeGuideItem(),
   ];
 }
 
 function buildLoansItems(): NavLinkItem[] {
   return [
-    { label: "Loans and Support", to: "/app/loans" },
-    { label: "Pool Payment", to: "/app/payment/pool" },
-    { label: "Withdrawal Guidance", to: "/app/withdrawal-instructions" },
-    { label: "Support Readiness", to: "/app/loan-readiness" },
-    { label: "Helpful Suggestions", to: "/app/loan-suggestions" },
+    { label: "Loans & Support", to: "/app/loans" },
+    { label: "Money In", to: "/app/payment/pool" },
+    { label: "Money Out", to: "/app/withdrawal-instructions" },
+    { label: "Readiness", to: "/app/loan-readiness" },
+    { label: "Suggestions", to: "/app/loan-suggestions" },
     { label: "Workbench", to: "/app/loan-workbench" },
     { label: "Guarantor Earnings", to: "/app/guarantor-earnings" },
   ];
 }
 
-function buildAdminItems(): NavLinkItem[] {
-  return [
-    { label: "Command Center Home", to: "/app/command-center" },
-    {
-      label: "Trust Analytics",
-      to: "/app/command-center/trust-analytics",
-    },
-    {
-      label: "System Operations",
-      to: "/app/command-center/system-operations",
-    },
-    { label: "Safety and Risk", to: "/app/command-center/exposure" },
-    {
-      label: "Relationship Graph",
-      to: "/app/command-center/trust-graph",
-    },
-  ];
-}
-
-function getSpecialRouteMeta(
-  pathname: string,
-  search: string
-): RouteMeta | null {
-  if (pathname.startsWith("/app/shop-control")) {
+function getTaskModeMeta(pathname: string): TaskModeMeta | null {
+  if (pathname === "/app/demand-box") {
     return {
-      section: "Private tools",
-      page: "Shop Control",
+      title: "Demand Box",
+      hint:
+        "Task focus is active. Finish the demand step first, then return to the wider workspace.",
+      actions: [
+        makeCommunityItem(),
+        makeMarketplaceItem(),
+        makeDashboardItem(),
+      ],
     };
   }
 
-  if (pathname.startsWith("/app/shop/")) {
+  if (pathname === "/app/build-first-circle") {
     return {
-      section: "Primary surfaces",
-      page: "Shop Gallery",
+      title: "Build First Circle",
+      hint:
+        "Task focus is active. Finish the trusted-circle step first, then return to the wider workspace.",
+      actions: [
+        makeCommunityItem(),
+        { label: "Notifications", to: "/app/notifications" },
+        makeDashboardItem(),
+      ],
     };
   }
 
-  if (pathname === "/app/marketplace" && isSpotlightSearch(search)) {
+  if (pathname === "/app/shop-control") {
     return {
-      section: "Primary surfaces",
-      page: "Spotlight",
+      title: "Shop Control",
+      hint:
+        "Task focus is active. Finish the shop update first, then return to the wider workspace.",
+      actions: [
+        makeMarketplaceItem(),
+        makeCommunityItem(),
+        makeDashboardItem(),
+      ],
+    };
+  }
+
+  if (
+    pathname === "/app/loans" ||
+    pathname === "/app/loan-readiness" ||
+    pathname === "/app/loan-suggestions" ||
+    pathname === "/app/loan-workbench" ||
+    pathname === "/app/guarantor-earnings" ||
+    pathname === "/app/payment/pool" ||
+    pathname.startsWith("/app/payment/loans/") ||
+    pathname === "/app/withdrawal-instructions"
+  ) {
+    return {
+      title: "Loans & Support task",
+      hint:
+        "Task focus is active. The app reduces other movement until this money or support step is finished or intentionally left.",
+      actions: [
+        makeMarketplaceItem(),
+        makeCommunityItem(),
+        makeDashboardItem(),
+      ],
     };
   }
 
@@ -181,7 +238,122 @@ function getSpecialRouteMeta(
     pathname.includes("/join-requests")
   ) {
     return {
-      section: "Primary surfaces",
+      title: "Join Requests",
+      hint:
+        "Task focus is active. Finish this community decision step before returning to the wider workspace.",
+      actions: [
+        makeCommunityItem(),
+        makeMarketplaceItem(),
+        makeDashboardItem(),
+      ],
+    };
+  }
+
+  return null;
+}
+
+function getSpecialRouteMeta(
+  pathname: string,
+  search: string,
+  isAdmin: boolean
+): RouteMeta | null {
+  if (pathname.startsWith("/app/shop/")) {
+    return {
+      section: "Main movement",
+      page: "Shop Gallery",
+    };
+  }
+
+  if (pathname === "/app/shop-control") {
+    return {
+      section: "Focused task",
+      page: "Shop Control",
+    };
+  }
+
+  if (pathname === "/app/build-first-circle") {
+    return {
+      section: "Focused task",
+      page: "Build First Circle",
+    };
+  }
+
+  if (pathname === "/app/clans") {
+    return {
+      section: "Community",
+      page: "Create Community",
+    };
+  }
+
+  if (pathname === "/app/demand-box") {
+    return {
+      section: "Focused task",
+      page: "Demand Box",
+    };
+  }
+
+  if (pathname === "/app/notifications") {
+    return {
+      section: "Identity",
+      page: "Action Inbox",
+    };
+  }
+
+  if (pathname === "/app/my-gmfn-and-i" && search.includes("tab=settings")) {
+    return {
+      section: "Main movement",
+      page: "Settings",
+    };
+  }
+
+  if (pathname === "/app/my-gmfn-and-i") {
+    return {
+      section: "Identity",
+      page: "My GMFN and I",
+    };
+  }
+
+  if (isAdmin && pathname.startsWith("/app/command-center")) {
+    if (pathname.startsWith("/app/command-center/trust-analytics")) {
+      return {
+        section: "Main movement",
+        page: "Trust Analytics",
+      };
+    }
+
+    if (pathname.startsWith("/app/command-center/system-operations")) {
+      return {
+        section: "Main movement",
+        page: "System Operations",
+      };
+    }
+
+    if (pathname.startsWith("/app/command-center/exposure")) {
+      return {
+        section: "Main movement",
+        page: "Exposure Admin",
+      };
+    }
+
+    if (pathname.startsWith("/app/command-center/trust-graph")) {
+      return {
+        section: "Main movement",
+        page: "Trust Graph",
+      };
+    }
+
+    return {
+      section: "Main movement",
+      page: "Admin Tools",
+    };
+  }
+
+  if (
+    pathname.startsWith("/app/community/") &&
+    pathname.includes("/join-requests")
+  ) {
+    return {
+      section: "Community",
       page: "Join Requests",
     };
   }
@@ -192,9 +364,18 @@ function getSpecialRouteMeta(
 function findCurrentRouteMeta(
   pathname: string,
   search: string,
-  groups: NavGroup[]
+  groups: NavGroup[],
+  isAdmin: boolean,
+  taskMode: TaskModeMeta | null
 ): RouteMeta {
-  const special = getSpecialRouteMeta(pathname, search);
+  if (taskMode) {
+    return {
+      section: "Focused task",
+      page: taskMode.title,
+    };
+  }
+
+  const special = getSpecialRouteMeta(pathname, search, isAdmin);
   if (special) return special;
 
   for (const group of groups) {
@@ -219,100 +400,126 @@ function getPageActions(
   search: string,
   myShopGalleryTo: string
 ): NavLinkItem[] {
-  if (pathname.startsWith("/app/dashboard")) {
+  if (pathname === "/app/dashboard") {
     return [
-      makeCommunityHomeItem(),
+      makeCommunityItem(),
       makeMarketplaceItem(),
-      makeShopGalleryItem(myShopGalleryTo),
-      makeDemandBoxItem(),
-      { label: "My Trust", to: "/app/trust" },
-      { label: "TrustSlip", to: "/app/trust-slip" },
       { label: "Notifications", to: "/app/notifications" },
+      { label: "Trust Passport", to: "/app/trust" },
+    ];
+  }
+
+  if (pathname === "/app/build-first-circle") {
+    return [
+      makeCommunityItem(),
+      { label: "Notifications", to: "/app/notifications" },
+      makeDashboardItem(),
       { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+    ];
+  }
+
+  if (pathname === "/app/shop-control") {
+    return [
+      makeMarketplaceItem(),
+      makeCommunityItem(),
+      { label: "Shop Gallery", to: myShopGalleryTo },
+      makeDashboardItem(),
     ];
   }
 
   if (pathname.startsWith("/app/community")) {
     return [
-      { label: "Create New Community", to: "/app/clans" },
-      makeMarketplaceItem(),
-      makeDemandBoxItem(),
-      makeSpotlightItem(),
+      { label: "Demand Box", to: "/app/demand-box" },
+      { label: "Notifications", to: "/app/notifications" },
       { label: "Money In", to: "/app/payment/pool" },
       { label: "Money Out", to: "/app/withdrawal-instructions" },
-      { label: "Notifications", to: "/app/notifications" },
     ];
   }
 
   if (pathname === "/app/marketplace") {
-    if (isSpotlightSearch(search)) {
-      return [
-        makeMarketplaceItem(),
-        makeDemandBoxItem(),
-        makeCommunityHomeItem(),
-        { label: "Notifications", to: "/app/notifications" },
-      ];
-    }
-
     return [
-      makeSpotlightItem(),
-      makeDemandBoxItem(),
-      makeCommunityHomeItem(),
-      { label: "TrustSlip", to: "/app/trust-slip" },
+      { label: "Loans & Support", to: "/app/loans" },
       { label: "Notifications", to: "/app/notifications" },
-    ];
-  }
-
-  if (pathname.startsWith("/app/shop-control")) {
-    return [
-      makeShopGalleryItem(myShopGalleryTo),
-      makeCommunityHomeItem(),
-      makeMarketplaceItem(),
-      makeDemandBoxItem(),
+      { label: "Trust", to: "/app/trust" },
+      { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
     ];
   }
 
   if (pathname.startsWith("/app/shop/")) {
     return [
       makeMarketplaceItem(),
-      makeCommunityHomeItem(),
-      makeDemandBoxItem(),
-      { label: "My Trust", to: "/app/trust" },
+      makeCommunityItem(),
+      { label: "Trust", to: "/app/trust" },
+      { label: "Notifications", to: "/app/notifications" },
     ];
   }
 
-  if (pathname.startsWith("/app/trust")) {
+  if (
+    pathname.startsWith("/app/loans") ||
+    pathname.startsWith("/app/loan-readiness") ||
+    pathname.startsWith("/app/loan-suggestions") ||
+    pathname.startsWith("/app/loan-workbench") ||
+    pathname.startsWith("/app/payment") ||
+    pathname.startsWith("/app/withdrawal-instructions") ||
+    pathname.startsWith("/app/guarantor-earnings")
+  ) {
     return [
-      { label: "TrustSlip", to: "/app/trust-slip" },
-      { label: "Identity Integrity", to: "/app/identity" },
+      makeMarketplaceItem(),
+      makeCommunityItem(),
       { label: "Notifications", to: "/app/notifications" },
-      { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+      makeDashboardItem(),
     ];
   }
 
   if (pathname.startsWith("/app/notifications")) {
     return [
-      makeCommunityHomeItem(),
       makeMarketplaceItem(),
-      makeDemandBoxItem(),
-      { label: "My Trust", to: "/app/trust" },
+      makeCommunityItem(),
+      { label: "Loans & Support", to: "/app/loans" },
+      { label: "Demand Box", to: "/app/demand-box" },
     ];
   }
 
-  if (pathname.startsWith("/app/identity")) {
+  if (
+    pathname.startsWith("/app/trust") ||
+    pathname.startsWith("/app/trust-slip") ||
+    pathname.startsWith("/app/identity")
+  ) {
     return [
-      { label: "My Trust", to: "/app/trust" },
-      { label: "TrustSlip", to: "/app/trust-slip" },
       { label: "Notifications", to: "/app/notifications" },
+      makeCommunityItem(),
+      makeMarketplaceItem(),
       { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
     ];
   }
 
+  if (pathname === "/app/my-gmfn-and-i" && search.includes("tab=settings")) {
+    return [
+      makeDashboardItem(),
+      makeCommunityItem(),
+      makeMarketplaceItem(),
+      { label: "Notifications", to: "/app/notifications" },
+    ];
+  }
+
+  if (pathname.startsWith("/app/my-gmfn-and-i")) {
+    return [
+      makeCommunityItem(),
+      makeMarketplaceItem(),
+      { label: "Notifications", to: "/app/notifications" },
+      { label: "Trust", to: "/app/trust" },
+    ];
+  }
+
+  if (pathname.startsWith("/app/command-center")) {
+    return [makeDashboardItem(), makeCommunityItem(), makeMarketplaceItem()];
+  }
+
   return [
-    makeCommunityHomeItem(),
+    makeCommunityItem(),
     makeMarketplaceItem(),
-    makeDemandBoxItem(),
-    { label: "My Trust", to: "/app/trust" },
+    { label: "Notifications", to: "/app/notifications" },
+    { label: "Loans & Support", to: "/app/loans" },
   ];
 }
 
@@ -455,7 +662,7 @@ function groupHint(): React.CSSProperties {
   };
 }
 
-function navItem(active = false): React.CSSProperties {
+function navItem(active = false, disabled = false): React.CSSProperties {
   return {
     display: "block",
     padding: "11px 12px",
@@ -463,18 +670,24 @@ function navItem(active = false): React.CSSProperties {
     textDecoration: "none",
     fontWeight: 800,
     fontSize: 14,
-    color: "#FFFFFF",
+    color: disabled ? "rgba(255,255,255,0.48)" : "#FFFFFF",
     background: active ? "#0B63D1" : "rgba(255,255,255,0.04)",
     border: active
       ? "1px solid rgba(255,255,255,0.14)"
       : "1px solid rgba(255,255,255,0.06)",
+    pointerEvents: disabled ? "none" : "auto",
+    opacity: disabled ? 0.7 : 1,
   };
 }
 
-function mainContent(isMobile: boolean): React.CSSProperties {
+function mainContent(isMobile: boolean, taskMode: boolean): React.CSSProperties {
   return {
     minWidth: 0,
-    padding: isMobile ? "16px 16px 104px" : "24px 28px 34px",
+    padding: isMobile
+      ? taskMode
+        ? "16px 16px 28px"
+        : "16px 16px 120px"
+      : "24px 28px 34px",
     overflowX: "hidden",
   };
 }
@@ -605,7 +818,7 @@ function drawerSectionTitle(): React.CSSProperties {
   };
 }
 
-function drawerLink(active = false): React.CSSProperties {
+function drawerLink(active = false, disabled = false): React.CSSProperties {
   return {
     display: "block",
     padding: "12px 13px",
@@ -613,11 +826,13 @@ function drawerLink(active = false): React.CSSProperties {
     textDecoration: "none",
     fontWeight: 800,
     fontSize: 14,
-    color: "#FFFFFF",
+    color: disabled ? "rgba(255,255,255,0.48)" : "#FFFFFF",
     background: active ? "#0B63D1" : "rgba(255,255,255,0.05)",
     border: active
       ? "1px solid rgba(255,255,255,0.14)"
       : "1px solid rgba(255,255,255,0.08)",
+    pointerEvents: disabled ? "none" : "auto",
+    opacity: disabled ? 0.7 : 1,
   };
 }
 
@@ -652,7 +867,7 @@ function actionsTitle(): React.CSSProperties {
   };
 }
 
-function actionsLink(active = false): React.CSSProperties {
+function actionsLink(active = false, disabled = false): React.CSSProperties {
   return {
     display: "block",
     padding: "12px 13px",
@@ -660,11 +875,13 @@ function actionsLink(active = false): React.CSSProperties {
     textDecoration: "none",
     fontWeight: 800,
     fontSize: 14,
-    color: active ? "#0B63D1" : "#0B1F33",
+    color: disabled ? "#94A3B8" : active ? "#0B63D1" : "#0B1F33",
     background: active ? "rgba(11,99,209,0.08)" : "#F8FBFF",
     border: active
       ? "1px solid rgba(11,99,209,0.14)"
       : "1px solid rgba(11,31,51,0.08)",
+    pointerEvents: disabled ? "none" : "auto",
+    opacity: disabled ? 0.7 : 1,
   };
 }
 
@@ -686,10 +903,10 @@ function bottomNav(): React.CSSProperties {
   };
 }
 
-function bottomNavItem(active = false): React.CSSProperties {
+function bottomNavItem(active = false, disabled = false): React.CSSProperties {
   return {
     flex: "0 0 auto",
-    minWidth: 92,
+    minWidth: 86,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -700,12 +917,14 @@ function bottomNavItem(active = false): React.CSSProperties {
     textAlign: "center",
     fontSize: 12,
     fontWeight: active ? 900 : 800,
-    color: active ? "#0B63D1" : "#4E6278",
+    color: disabled ? "#94A3B8" : active ? "#0B63D1" : "#4E6278",
     background: active ? "rgba(11,99,209,0.10)" : "transparent",
     border: active
       ? "1px solid rgba(11,99,209,0.14)"
       : "1px solid rgba(11,31,51,0.08)",
     whiteSpace: "nowrap",
+    pointerEvents: disabled ? "none" : "auto",
+    opacity: disabled ? 0.7 : 1,
   };
 }
 
@@ -719,82 +938,28 @@ export default function AppLayout() {
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [myGmfnId, setMyGmfnId] = useState<string>("");
 
   const isAdmin = useMemo(() => {
     const role = readRole();
     return role === "admin" || role === "superadmin";
   }, []);
 
-  const myShopGalleryTo = useMemo(() => {
-    if (location.pathname.startsWith("/app/shop/")) {
-      return location.pathname;
-    }
-
-    return "/app/shop/me";
-  }, [location.pathname]);
-
-  const primaryItems = useMemo(
-    () => buildPrimaryItems(myShopGalleryTo),
-    [myShopGalleryTo]
-  );
-
-  const trustPassportItems = useMemo(() => buildTrustPassportItems(), []);
-  const identityItems = useMemo(() => buildIdentityItems(), []);
-  const loansItems = useMemo(() => buildLoansItems(), []);
-  const adminItems = useMemo(() => buildAdminItems(), []);
-
-  const groups = useMemo<NavGroup[]>(() => {
-    const base: NavGroup[] = [
-      {
-        key: "primary",
-        label: "Primary surfaces",
-        hint: "Dashboard leads to Community Home. Community Home leads to Marketplace. Marketplace leads to Shop Gallery. Spotlight and Demand Box stay close to that major movement.",
-        items: primaryItems,
-      },
-      {
-        key: "trust-passport",
-        label: "Trust Passport",
-        hint: "Trust-related surfaces are grouped here: My Trust and TrustSlip.",
-        items: trustPassportItems,
-      },
-      {
-        key: "identity",
-        label: "Identity",
-        hint: "Identity integrity, notifications, and the readable guide.",
-        items: identityItems,
-      },
-      {
-        key: "support",
-        label: "Loans and Support",
-        hint: "Support, readiness, payment guidance, and working tools.",
-        items: loansItems,
-      },
-      {
-        key: "admin",
-        label: "Admin Tools",
-        hint: "Restricted oversight and administrative surfaces only.",
-        adminOnly: true,
-        items: adminItems,
-      },
-    ];
-
-    return base.filter((group) => !group.adminOnly || isAdmin);
-  }, [primaryItems, trustPassportItems, identityItems, loansItems, adminItems, isAdmin]);
-
-  const firstOpenGroup = useMemo(() => {
-    const found = groups.find((group) =>
-      group.items.some((item) =>
-        isItemActive(item, location.pathname, location.search)
-      )
-    );
-    return found?.key || "primary";
-  }, [groups, location.pathname, location.search]);
-
-  const [openGroup, setOpenGroup] = useState<string>(firstOpenGroup);
-
   useEffect(() => {
-    setOpenGroup(firstOpenGroup);
-  }, [firstOpenGroup]);
+    let alive = true;
+
+    (async () => {
+      const me = await getMe().catch(() => null);
+      if (!alive) return;
+
+      const gmfnId = String(me?.gmfn_id || "").trim();
+      setMyGmfnId(gmfnId);
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -808,6 +973,85 @@ export default function AppLayout() {
 
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  const myShopGalleryTo = useMemo(() => {
+    if (location.pathname.startsWith("/app/shop/")) {
+      return location.pathname;
+    }
+
+    if (myGmfnId) {
+      return `/app/shop/${encodeURIComponent(myGmfnId)}`;
+    }
+
+    return "/app/shop/me";
+  }, [location.pathname, myGmfnId]);
+
+  const taskMode = useMemo(
+    () => getTaskModeMeta(location.pathname),
+    [location.pathname]
+  );
+
+  const primaryItems = useMemo(
+    () => buildPrimaryItems(myShopGalleryTo, isAdmin),
+    [myShopGalleryTo, isAdmin]
+  );
+
+  const trustPassportItems = useMemo(() => buildTrustPassportItems(), []);
+  const identityItems = useMemo(() => buildIdentityItems(), []);
+  const loansItems = useMemo(() => buildLoansItems(), []);
+
+  const groups = useMemo<NavGroup[]>(() => {
+    return [
+      {
+        key: "primary",
+        label: "Main movement",
+        hint:
+          "The main routes stay simple: Dashboard, Community Home, Marketplace, Shop Gallery, and Settings.",
+        items: primaryItems,
+      },
+      {
+        key: "trust-passport",
+        label: "Trust Passport",
+        hint:
+          "Trust surfaces stay grouped here instead of competing with the main movement row.",
+        items: trustPassportItems,
+      },
+      {
+        key: "identity",
+        label: "Identity",
+        hint:
+          "Identity integrity, notifications, and the readable guide live here.",
+        items: identityItems,
+      },
+      {
+        key: "support",
+        label: "Loans & Support",
+        hint:
+          "Money, readiness, suggestions, workbench, and support tools stay together here.",
+        items: loansItems,
+      },
+    ];
+  }, [primaryItems, trustPassportItems, identityItems, loansItems]);
+
+  const displayedGroups = useMemo(() => {
+    if (!taskMode) return groups;
+    return groups.filter((group) => group.key === "primary");
+  }, [groups, taskMode]);
+
+  const firstOpenGroup = useMemo(() => {
+    const found = displayedGroups.find((group) =>
+      group.items.some((item) =>
+        isItemActive(item, location.pathname, location.search)
+      )
+    );
+    return found?.key || "primary";
+  }, [displayedGroups, location.pathname, location.search]);
+
+  const [openGroup, setOpenGroup] = useState<string>(firstOpenGroup);
+
+  useEffect(() => {
+    setOpenGroup(firstOpenGroup);
+  }, [firstOpenGroup]);
 
   useEffect(() => {
     setIsDrawerOpen(false);
@@ -826,8 +1070,8 @@ export default function AppLayout() {
     if (!isMobile) return;
 
     const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow =
-      isDrawerOpen || isActionsOpen ? "hidden" : previousOverflow || "";
+    const shouldLock = isDrawerOpen || isActionsOpen;
+    document.body.style.overflow = shouldLock ? "hidden" : "";
 
     return () => {
       document.body.style.overflow = previousOverflow;
@@ -846,6 +1090,7 @@ export default function AppLayout() {
     }
 
     window.addEventListener("keydown", handleKeyDown);
+
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isDrawerOpen, isActionsOpen]);
 
@@ -874,33 +1119,60 @@ export default function AppLayout() {
   const routeMeta = findCurrentRouteMeta(
     location.pathname,
     location.search,
-    groups
+    groups,
+    isAdmin,
+    taskMode
   );
 
-  const mobileBottomItems = useMemo<NavLinkItem[]>(
-    () => [
+  const pageActions = useMemo(
+    () =>
+      taskMode
+        ? taskMode.actions
+        : getPageActions(location.pathname, location.search, myShopGalleryTo),
+    [taskMode, location.pathname, location.search, myShopGalleryTo]
+  );
+
+  const mobileBottomItems = useMemo<NavLinkItem[]>(() => {
+    const items: NavLinkItem[] = [
       makeDashboardItem(),
       {
         label: "Community",
         to: "/app/community",
-        match: (pathname) => pathname.startsWith("/app/community"),
+        match: (pathname) =>
+          pathname === "/app/community" ||
+          pathname.startsWith("/app/community/"),
       },
       makeMarketplaceItem(),
       makeShopGalleryItem(myShopGalleryTo),
-      makeSpotlightItem(),
-      {
-        label: "Demand",
-        to: "/app/demand-box",
-        match: (pathname) => pathname.startsWith("/app/demand-box"),
-      },
-    ],
-    [myShopGalleryTo]
-  );
+      makeSettingsItem(),
+    ];
+
+    if (isAdmin) {
+      const adminItem = makeAdminItem();
+      items.push({
+        label: "Admin",
+        to: adminItem.to,
+        match: adminItem.match,
+        disabled: adminItem.disabled,
+      });
+    }
+
+    return items;
+  }, [myShopGalleryTo, isAdmin]);
 
   const mobileDrawerGroups = useMemo<
-    { title: string; items: NavLinkItem[]; adminOnly?: boolean }[]
-  >(
-    () => [
+    { title: string; items: NavLinkItem[] }[]
+  >(() => {
+    if (taskMode) {
+      return [
+        {
+          title: "Focused task",
+          items: taskMode.actions,
+        },
+      ];
+    }
+
+    return [
       {
         title: "Trust Passport",
         items: trustPassportItems,
@@ -910,22 +1182,11 @@ export default function AppLayout() {
         items: identityItems,
       },
       {
-        title: "Loans and Support",
+        title: "Loans & Support",
         items: loansItems,
       },
-      {
-        title: "Admin Tools",
-        adminOnly: true,
-        items: adminItems,
-      },
-    ],
-    [trustPassportItems, identityItems, loansItems, adminItems]
-  );
-
-  const pageActions = useMemo(
-    () => getPageActions(location.pathname, location.search, myShopGalleryTo),
-    [location.pathname, location.search, myShopGalleryTo]
-  );
+    ];
+  }, [taskMode, trustPassportItems, identityItems, loansItems]);
 
   return (
     <div style={isMobile ? mobileShell() : desktopShell()}>
@@ -939,24 +1200,25 @@ export default function AppLayout() {
               <div style={brandEyebrow()}>GMFN / GSN</div>
               <div style={brandTitle()}>Member workspace</div>
               <div style={brandText()}>
-                A guided, structured workspace for dashboard, community home,
-                marketplace, shop gallery, trust passport, identity, and
-                support.
+                A guided, calmer workspace for community movement, marketplace,
+                shop gallery, trust, identity, and support.
               </div>
             </div>
           </Link>
 
           <div style={noteCard()}>
-            <div style={noteTitle()}>Movement order</div>
+            <div style={noteTitle()}>
+              {taskMode ? "Task focus mode" : "Movement order"}
+            </div>
             <div style={noteText()}>
-              Dashboard leads to Community Home. Community Home leads to the
-              selected Marketplace. Marketplace leads to Shop Gallery. Shop
-              Gallery remains view-only.
+              {taskMode
+                ? taskMode.hint
+                : "Dashboard leads to Community Home. Community Home leads to Marketplace. Marketplace leads to Shop Gallery. Focused tasks temporarily reduce other movement."}
             </div>
           </div>
 
           <nav style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {groups.map((group) => {
+            {displayedGroups.map((group) => {
               const groupActive = group.items.some((item) =>
                 isItemActive(item, location.pathname, location.search)
               );
@@ -995,7 +1257,8 @@ export default function AppLayout() {
                             key={`${group.key}-${item.label}-${item.to}`}
                             to={item.to}
                             style={navItem(
-                              isItemActive(item, location.pathname, location.search)
+                              isItemActive(item, location.pathname, location.search),
+                              !!item.disabled
                             )}
                           >
                             {item.label}
@@ -1058,37 +1321,39 @@ export default function AppLayout() {
             </div>
 
             <div style={brandCard()}>
-              <div style={brandEyebrow()}>Current area</div>
+              <div style={brandEyebrow()}>
+                {taskMode ? "Focused task" : "Current area"}
+              </div>
               <div style={{ marginTop: 8, fontSize: 20, fontWeight: 900 }}>
-                {routeMeta.page}
+                {taskMode ? taskMode.title : routeMeta.page}
               </div>
               <div style={brandText()}>
-                The bottom bar holds the major movement surfaces. This drawer
-                holds the supporting surfaces.
+                {taskMode
+                  ? taskMode.hint
+                  : "The main routes stay simple. This drawer holds the grouped supporting surfaces."}
               </div>
             </div>
 
-            {mobileDrawerGroups
-              .filter((group) => !group.adminOnly || isAdmin)
-              .map((group) => (
-                <div key={group.title}>
-                  <div style={drawerSectionTitle()}>{group.title}</div>
+            {mobileDrawerGroups.map((group) => (
+              <div key={group.title}>
+                <div style={drawerSectionTitle()}>{group.title}</div>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {group.items.map((item) => (
-                      <Link
-                        key={`${group.title}-${item.label}-${item.to}`}
-                        to={item.to}
-                        style={drawerLink(
-                          isItemActive(item, location.pathname, location.search)
-                        )}
-                      >
-                        {item.label}
-                      </Link>
-                    ))}
-                  </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {group.items.map((item) => (
+                    <Link
+                      key={`${group.title}-${item.label}-${item.to}`}
+                      to={item.to}
+                      style={drawerLink(
+                        isItemActive(item, location.pathname, location.search),
+                        !!item.disabled
+                      )}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
                 </div>
-              ))}
+              </div>
+            ))}
           </aside>
 
           <div
@@ -1107,7 +1372,9 @@ export default function AppLayout() {
               }}
             >
               <div>
-                <div style={actionsTitle()}>Page tools</div>
+                <div style={actionsTitle()}>
+                  {taskMode ? "Task actions" : "Page tools"}
+                </div>
                 <div
                   style={{
                     marginTop: 6,
@@ -1116,7 +1383,7 @@ export default function AppLayout() {
                     color: "#0B1F33",
                   }}
                 >
-                  {routeMeta.page}
+                  {taskMode ? taskMode.title : routeMeta.page}
                 </div>
               </div>
 
@@ -1138,8 +1405,9 @@ export default function AppLayout() {
                 marginBottom: 14,
               }}
             >
-              These actions are related to the page you are currently using,
-              while the bottom bar keeps the major movement surfaces.
+              {taskMode
+                ? "This task is in focus. Finish it first or leave it intentionally before moving elsewhere."
+                : "These actions relate to the page you are currently using while the main routes stay cleaner."}
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1148,7 +1416,8 @@ export default function AppLayout() {
                   key={`page-action-${item.label}-${item.to}`}
                   to={item.to}
                   style={actionsLink(
-                    isItemActive(item, location.pathname, location.search)
+                    isItemActive(item, location.pathname, location.search),
+                    !!item.disabled
                   )}
                 >
                   {item.label}
@@ -1159,18 +1428,21 @@ export default function AppLayout() {
         </>
       )}
 
-      <main style={mainContent(isMobile)}>
+      <main style={mainContent(isMobile, !!taskMode)}>
+        <WorkspaceCompanionBridge />
+        <WorkspaceSettingsBridge />
         <Outlet />
       </main>
 
-      {isMobile ? (
+      {isMobile && !taskMode ? (
         <nav style={bottomNav()}>
           {mobileBottomItems.map((item) => (
             <Link
               key={`bottom-${item.label}-${item.to}`}
               to={item.to}
               style={bottomNavItem(
-                isItemActive(item, location.pathname, location.search)
+                isItemActive(item, location.pathname, location.search),
+                !!item.disabled
               )}
             >
               {item.label}

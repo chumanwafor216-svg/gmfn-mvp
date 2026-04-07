@@ -1,294 +1,297 @@
-import React, { useMemo } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
-type NavLinkItem = {
+type PageTopNavLink = {
   label: string;
   to: string;
+  disabled?: boolean;
 };
 
-type Props = {
-  title?: string;
-  subtitle?: string;
+type PageTopNavProps = {
   sectionLabel?: string;
-  backTo?: string;
+  title: string;
+  subtitle?: string;
 
-  // backwards-compatible with earlier usage
-  dashboardTo?: string;
-
-  // preferred generic naming going forward
   homeTo?: string;
   homeLabel?: string;
 
-  nextLinks?: NavLinkItem[];
-  utilityLinks?: NavLinkItem[];
+  dashboardTo?: string;
+  dashboardLabel?: string;
+
+  backTo?: string;
+  backLabel?: string;
+
+  nextLinks?: PageTopNavLink[];
+  utilityLinks?: PageTopNavLink[];
 };
 
-function shell(): React.CSSProperties {
+function shellCard(): React.CSSProperties {
   return {
-    marginBottom: 18,
-    padding: 18,
     borderRadius: 24,
     border: "1px solid rgba(11,31,51,0.08)",
     background: "linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)",
+    padding: 18,
     boxShadow:
       "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
   };
 }
 
-function topRow(): React.CSSProperties {
+function sectionStyle(): React.CSSProperties {
   return {
-    display: "flex",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 12,
-    flexWrap: "wrap",
-  };
-}
-
-function leftActions(): React.CSSProperties {
-  return {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    flexWrap: "wrap",
-  };
-}
-
-function rightRail(): React.CSSProperties {
-  return {
-    display: "grid",
-    gap: 8,
-    justifyItems: "end",
-    maxWidth: "100%",
-  };
-}
-
-function linkCluster(): React.CSSProperties {
-  return {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    flexWrap: "wrap",
-    justifyContent: "flex-end",
-  };
-}
-
-function primaryAction(): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
-    borderRadius: 14,
-    border: "none",
-    background: "#0B63D1",
-    color: "#FFFFFF",
-    textDecoration: "none",
-    fontWeight: 900,
-    fontSize: 14,
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-  };
-}
-
-function secondaryAction(): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
-    borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
-    color: "#0B1F33",
-    textDecoration: "none",
-    fontWeight: 800,
-    fontSize: 14,
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-  };
-}
-
-function chip(): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 34,
-    padding: "7px 11px",
-    borderRadius: 999,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
-    color: "#3E556C",
-    textDecoration: "none",
-    fontWeight: 800,
-    fontSize: 13,
-    whiteSpace: "nowrap",
-  };
-}
-
-function metaLabel(): React.CSSProperties {
-  return {
-    fontSize: 11,
-    color: "#6A7B8C",
+    fontSize: 12,
+    color: "#5D7389",
     fontWeight: 900,
     letterSpacing: 0.35,
     textTransform: "uppercase",
   };
 }
 
-function contentArea(): React.CSSProperties {
+function titleStyle(compact: boolean): React.CSSProperties {
   return {
-    marginTop: 18,
-    display: "grid",
-    gap: 8,
-  };
-}
-
-function titleStyle(): React.CSSProperties {
-  return {
-    margin: 0,
-    fontSize: "clamp(1.55rem, 2.7vw, 2.05rem)",
-    lineHeight: 1.1,
+    marginTop: 8,
     color: "#0B1F33",
+    fontSize: compact ? 28 : 34,
     fontWeight: 900,
+    lineHeight: 1.1,
   };
 }
 
 function subtitleStyle(): React.CSSProperties {
   return {
-    margin: "2px 0 0",
-    maxWidth: 900,
-    color: "#5D7389",
+    marginTop: 10,
+    color: "#5F7287",
     fontSize: 14,
-    lineHeight: 1.75,
+    lineHeight: 1.8,
+    maxWidth: 920,
   };
 }
 
-function normalizeLinks(
-  items: NavLinkItem[] | undefined,
-  pathname: string,
-  excludedPaths: string[],
-  maxCount: number = 3
-): NavLinkItem[] {
-  const excluded = new Set(
-    excludedPaths.map((item) => String(item || "").trim()).filter(Boolean)
-  );
-  const seen = new Set<string>();
-  const out: NavLinkItem[] = [];
-
-  for (const item of items || []) {
-    const label = String(item?.label || "").trim();
-    const to = String(item?.to || "").trim();
-
-    if (!label || !to) continue;
-    if (to === pathname) continue;
-    if (excluded.has(to)) continue;
-    if (seen.has(to)) continue;
-
-    seen.add(to);
-    out.push({ label, to });
-
-    if (out.length >= maxCount) {
-      break;
-    }
+function actionBtn(
+  kind: "primary" | "secondary" = "secondary",
+  disabled = false
+): React.CSSProperties {
+  if (kind === "primary") {
+    return {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 42,
+      padding: "10px 14px",
+      borderRadius: 14,
+      border: "none",
+      background: disabled ? "#CBD5E1" : "#0B63D1",
+      color: "#FFFFFF",
+      fontWeight: 900,
+      fontSize: 14,
+      textDecoration: "none",
+      cursor: disabled ? "not-allowed" : "pointer",
+      whiteSpace: "nowrap",
+      opacity: disabled ? 0.86 : 1,
+      pointerEvents: disabled ? "none" : "auto",
+    };
   }
 
-  return out;
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 42,
+    padding: "10px 14px",
+    borderRadius: 14,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#FFFFFF",
+    color: disabled ? "#94A3B8" : "#0B1F33",
+    fontWeight: 800,
+    fontSize: 14,
+    textDecoration: "none",
+    cursor: disabled ? "not-allowed" : "pointer",
+    whiteSpace: "nowrap",
+    opacity: disabled ? 0.86 : 1,
+    pointerEvents: disabled ? "none" : "auto",
+  };
+}
+
+function chip(disabled = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 36,
+    padding: "8px 12px",
+    borderRadius: 999,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#FFFFFF",
+    color: disabled ? "#94A3B8" : "#24415C",
+    fontWeight: 800,
+    fontSize: 13,
+    textDecoration: "none",
+    whiteSpace: "nowrap",
+    pointerEvents: disabled ? "none" : "auto",
+    opacity: disabled ? 0.72 : 1,
+  };
+}
+
+function inlineBlockTitle(): React.CSSProperties {
+  return {
+    fontSize: 11,
+    color: "#64748B",
+    fontWeight: 900,
+    letterSpacing: 0.28,
+    textTransform: "uppercase",
+    whiteSpace: "nowrap",
+  };
+}
+
+function safeStr(x: any): string {
+  return String(x ?? "").trim();
+}
+
+function pruneLinks(items?: PageTopNavLink[]): PageTopNavLink[] {
+  const seen = new Set<string>();
+
+  return (items || []).filter((item) => {
+    const label = safeStr(item?.label);
+    const to = safeStr(item?.to);
+    const key = `${label}::${to}`;
+
+    if (!label || !to) return false;
+    if (seen.has(key)) return false;
+
+    seen.add(key);
+    return true;
+  });
 }
 
 export default function PageTopNav({
+  sectionLabel,
   title,
   subtitle,
-  sectionLabel,
-  backTo,
-  dashboardTo = "/app/dashboard",
   homeTo,
-  homeLabel,
+  homeLabel = "Dashboard",
+  dashboardTo,
+  dashboardLabel = "Dashboard",
+  backTo,
+  backLabel = "Back",
   nextLinks,
   utilityLinks,
-}: Props) {
-  const navigate = useNavigate();
-  const location = useLocation();
+}: PageTopNavProps) {
+  const [isCompact, setIsCompact] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 980;
+  });
 
-  const resolvedHomeTo = homeTo || dashboardTo || "/app/dashboard";
-  const resolvedHomeLabel =
-    homeLabel || (resolvedHomeTo.startsWith("/app/") ? "Dashboard" : "Home");
+  useEffect(() => {
+    if (typeof window === "undefined") return;
 
-  const excludedPaths = useMemo(() => {
-    return [resolvedHomeTo, backTo || ""];
-  }, [resolvedHomeTo, backTo]);
-
-  const resolvedNextLinks = useMemo(
-    () => normalizeLinks(nextLinks, location.pathname, excludedPaths, 3),
-    [nextLinks, location.pathname, excludedPaths]
-  );
-
-  const resolvedUtilityLinks = useMemo(
-    () => normalizeLinks(utilityLinks, location.pathname, excludedPaths, 3),
-    [utilityLinks, location.pathname, excludedPaths]
-  );
-
-  function goBack() {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      navigate(-1);
-      return;
+    function handleResize() {
+      setIsCompact(window.innerWidth <= 980);
     }
 
-    navigate(backTo || resolvedHomeTo, { replace: true });
-  }
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const resolvedHomeTo = safeStr(homeTo) || safeStr(dashboardTo);
+  const resolvedHomeLabel = safeStr(homeTo) ? homeLabel : dashboardLabel;
+
+  const visibleNextLinks = useMemo(() => pruneLinks(nextLinks), [nextLinks]);
+  const visibleUtilityLinks = useMemo(
+    () => pruneLinks(utilityLinks),
+    [utilityLinks]
+  );
+
+  const hasTopActions = Boolean(resolvedHomeTo || backTo);
+  const hasInlineLinks =
+    visibleNextLinks.length > 0 || visibleUtilityLinks.length > 0;
 
   return (
-    <div style={shell()}>
-      <div style={topRow()}>
-        <div style={leftActions()}>
-          <button type="button" onClick={goBack} style={secondaryAction()}>
-            ← Back
-          </button>
+    <section style={shellCard()}>
+      {sectionLabel ? <div style={sectionStyle()}>{sectionLabel}</div> : null}
 
-          <Link to={resolvedHomeTo} style={primaryAction()}>
-            {resolvedHomeLabel}
-          </Link>
-        </div>
+      <div style={titleStyle(isCompact)}>{title}</div>
 
-        {resolvedNextLinks.length > 0 || resolvedUtilityLinks.length > 0 ? (
-          <div style={rightRail()}>
-            {resolvedNextLinks.length > 0 ? (
-              <div style={linkCluster()}>
-                <span style={metaLabel()}>Where next</span>
-                {resolvedNextLinks.map((item) => (
-                  <Link key={item.to} to={item.to} style={chip()}>
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-            ) : null}
+      {subtitle ? <div style={subtitleStyle()}>{subtitle}</div> : null}
 
-            {resolvedUtilityLinks.length > 0 ? (
-              <div style={linkCluster()}>
-                <span style={metaLabel()}>Related</span>
-                {resolvedUtilityLinks.map((item) => (
-                  <Link key={item.to} to={item.to} style={chip()}>
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
+      {hasTopActions ? (
+        <div
+          style={{
+            marginTop: 16,
+            display: "flex",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
+          {backTo ? (
+            <Link to={backTo} style={actionBtn("secondary")}>
+              ← {backLabel}
+            </Link>
+          ) : null}
 
-      {sectionLabel || title || subtitle ? (
-        <div style={contentArea()}>
-          {sectionLabel ? <div style={metaLabel()}>{sectionLabel}</div> : null}
-
-          {title ? <h1 style={titleStyle()}>{title}</h1> : null}
-
-          {subtitle ? <p style={subtitleStyle()}>{subtitle}</p> : null}
+          {resolvedHomeTo ? (
+            <Link to={resolvedHomeTo} style={actionBtn("primary")}>
+              {resolvedHomeLabel}
+            </Link>
+          ) : null}
         </div>
       ) : null}
-    </div>
+
+      {hasInlineLinks ? (
+        <div
+          style={{
+            marginTop: 16,
+            display: "grid",
+            gap: 10,
+          }}
+        >
+          {visibleNextLinks.length > 0 ? (
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
+              <span style={inlineBlockTitle()}>Where next</span>
+
+              {visibleNextLinks.map((item) => (
+                <Link
+                  key={`next-${item.label}-${item.to}`}
+                  to={item.to}
+                  style={chip(!!item.disabled)}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          ) : null}
+
+          {visibleUtilityLinks.length > 0 ? (
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
+              <span style={inlineBlockTitle()}>Related</span>
+
+              {visibleUtilityLinks.map((item) => (
+                <Link
+                  key={`utility-${item.label}-${item.to}`}
+                  to={item.to}
+                  style={chip(!!item.disabled)}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </section>
   );
 }

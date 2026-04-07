@@ -1037,3 +1037,146 @@ class MarketplaceRequest(Base):
     )
 
     user = relationship("User")
+class UserSettings(Base):
+    __tablename__ = "user_settings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+
+    tone_preset: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="professional-blue",
+        server_default="professional-blue",
+    )
+    text_size: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        default="standard",
+        server_default="standard",
+    )
+    contrast: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        default="standard",
+        server_default="standard",
+    )
+    motion: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        default="normal",
+        server_default="normal",
+    )
+    density: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        default="comfortable",
+        server_default="comfortable",
+    )
+
+    preferred_language: Mapped[str] = mapped_column(
+        String(40),
+        nullable=False,
+        default="English",
+        server_default="English",
+    )
+    preferred_currency: Mapped[str] = mapped_column(
+        String(10),
+        nullable=False,
+        default="NGN",
+        server_default="NGN",
+    )
+
+    trust_share_level: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        default="standard",
+        server_default="standard",
+    )
+
+    show_phone_public: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="0",
+    )
+    show_whatsapp_public: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="1",
+    )
+    show_telegram_public: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="0",
+    )
+    show_shop_public: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="1",
+    )
+
+    preferred_community_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("clans.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    preferred_landing_tab: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        default="guide",
+        server_default="guide",
+    )
+
+    notifications_mode: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        default="summary",
+        server_default="summary",
+    )
+    quiet_notifications: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="0",
+    )
+    sound_enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="0",
+    )
+    unread_first: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="1",
+    )
+    open_actions_directly: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="1",
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )    

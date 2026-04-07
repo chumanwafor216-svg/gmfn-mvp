@@ -1,141 +1,260 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
-import { verifyTrustSlip } from "../lib/api";
+import { Link, useLocation, useParams } from "react-router-dom";
+import PageTopNav from "../components/PageTopNav";
+import * as api from "../lib/api";
 
-type VerifyLevel = "minimal" | "standard" | "detailed";
+type TrustSlipVerifyRecord = {
+  id?: number;
+  code?: string | null;
+  holder_name?: string | null;
+  gmfn_id?: string | null;
+  status?: string | null;
+  verification_status?: string | null;
+  state?: string | null;
+  trust_band?: string | null;
+  trust_class?: string | null;
+  trust_score?: string | number | null;
+  open_trust_band?: string | null;
+  open_trust_class?: string | null;
+  open_trust_score?: string | number | null;
+  community_trust_band?: string | null;
+  community_trust_class?: string | null;
+  community_trust_score?: string | number | null;
+  community_name?: string | null;
+  clan_name?: string | null;
+  marketplace_name?: string | null;
+  issued_at?: string | null;
+  expires_at?: string | null;
+  valid?: boolean | null;
+  verified?: boolean | null;
+  message?: string | null;
+  detail?: string | null;
+};
 
-function safeStr(x: any, fallback = ""): string {
-  const s = String(x ?? "").trim();
-  return s || fallback;
+type VerifyBannerTone = "success" | "warning" | "error" | "info";
+type NoticeTone = "success" | "error";
+
+function safeStr(x: any): string {
+  return String(x ?? "").trim();
 }
 
-function normalizeMerchantMessage(x: any): string {
-  const s = safeStr(x);
-  if (!s) return "";
-  return s.replace(/â€”|â€"|â€“/g, "-").replace(/\s+/g, " ").trim();
+function firstTruthy(...values: any[]): string {
+  for (const value of values) {
+    const text = safeStr(value);
+    if (text) return text;
+  }
+  return "";
 }
 
-function card(bg = "#FFFFFF"): React.CSSProperties {
+function firstNumberLike(...values: any[]): number | null {
+  for (const value of values) {
+    if (value === null || value === undefined || String(value).trim() === "") {
+      continue;
+    }
+    const n = Number(value);
+    if (!Number.isNaN(n)) return n;
+  }
+  return null;
+}
+
+function positiveNumber(value: any): number {
+  const n = Number(value || 0);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function safeDateTime(x: any): string {
+  const raw = safeStr(x);
+  if (!raw) return "";
+  const d = new Date(raw);
+  if (!Number.isFinite(d.getTime())) return raw;
+  return d.toLocaleString();
+}
+
+function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.10)",
+    border: "1px solid rgba(11,31,51,0.08)",
     background: bg,
-    boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
-    padding: 22,
+    padding: 20,
+    boxShadow:
+      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
+    overflow: "hidden",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.10)",
+    border: "1px solid rgba(11,31,51,0.08)",
     background: bg,
     padding: 16,
-    boxShadow: "0 10px 24px rgba(15,23,42,0.035)",
   };
 }
 
-function actionLink(primary = false): React.CSSProperties {
+function innerCard(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 14,
+  };
+}
+
+function statTile(
+  bg = "#FFFFFF",
+  border = "1px solid rgba(11,31,51,0.08)"
+): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    border,
+    background: bg,
+    padding: 14,
+  };
+}
+
+function sectionLabel(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#5D7389",
+    fontWeight: 900,
+    letterSpacing: 0.35,
+    textTransform: "uppercase",
+  };
+}
+
+function badge(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    minHeight: 30,
+    borderRadius: 999,
+    padding: "6px 10px",
+    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
+    color: primary ? "#0B63D1" : "#51657A",
+    fontSize: 12,
+    fontWeight: 900,
+    whiteSpace: "nowrap",
+  };
+}
+
+function actionBtn(
+  kind: "primary" | "secondary" | "soft" = "secondary",
+  disabled = false
+): React.CSSProperties {
+  if (kind === "primary") {
+    return {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 42,
+      padding: "10px 14px",
+      borderRadius: 14,
+      border: "none",
+      background: disabled ? "#CBD5E1" : "#0B63D1",
+      color: "#FFFFFF",
+      fontWeight: 900,
+      fontSize: 14,
+      textDecoration: "none",
+      cursor: disabled ? "not-allowed" : "pointer",
+      whiteSpace: "nowrap",
+      opacity: disabled ? 0.86 : 1,
+    };
+  }
+
+  if (kind === "soft") {
+    return {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 38,
+      padding: "8px 12px",
+      borderRadius: 12,
+      border: "1px solid rgba(11,31,51,0.08)",
+      background: "#F8FBFF",
+      color: disabled ? "#94A3B8" : "#24415C",
+      fontWeight: 800,
+      fontSize: 13,
+      textDecoration: "none",
+      cursor: disabled ? "not-allowed" : "pointer",
+      whiteSpace: "nowrap",
+      opacity: disabled ? 0.86 : 1,
+    };
+  }
+
   return {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "11px 14px",
+    minHeight: 42,
+    padding: "10px 14px",
     borderRadius: 14,
-    border: primary ? "none" : "1px solid rgba(11,31,51,0.10)",
-    background: primary ? "#0B63D1" : "#FFFFFF",
-    color: primary ? "#FFFFFF" : "#0B1F33",
-    textDecoration: "none",
-    fontWeight: 1000,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#FFFFFF",
+    color: disabled ? "#94A3B8" : "#0B1F33",
+    fontWeight: 800,
     fontSize: 14,
-    cursor: "pointer",
-    boxShadow: primary ? "0 10px 22px rgba(11,99,209,0.16)" : "none",
+    textDecoration: "none",
+    cursor: disabled ? "not-allowed" : "pointer",
+    whiteSpace: "nowrap",
+    opacity: disabled ? 0.86 : 1,
   };
 }
 
-function statusBanner(status: string): React.CSSProperties {
-  const s = status.toLowerCase();
+function helperText(): React.CSSProperties {
+  return {
+    color: "#5F7287",
+    fontSize: 14,
+    lineHeight: 1.75,
+  };
+}
 
-  if (
-    s.includes("valid") ||
-    s.includes("active") ||
-    s.includes("ok to release goods")
-  ) {
+function noticeCard(tone: NoticeTone): React.CSSProperties {
+  return {
+    ...softCard(tone === "success" ? "#F3FBF5" : "#FEF2F2"),
+    color: tone === "success" ? "#166534" : "#991B1B",
+    border:
+      tone === "success"
+        ? "1px solid rgba(34,197,94,0.16)"
+        : "1px solid rgba(239,68,68,0.16)",
+    fontWeight: 800,
+  };
+}
+
+function bannerToneStyle(tone: VerifyBannerTone): {
+  bg: string;
+  border: string;
+  text: string;
+} {
+  if (tone === "success") {
     return {
-      borderRadius: 18,
-      background: "linear-gradient(180deg, #F2FCF6 0%, #ECFDF5 100%)",
-      border: "1px solid #A7F3D0",
-      color: "#065F46",
-      padding: 16,
-      fontWeight: 1000,
-      fontSize: 18,
-      boxShadow: "0 10px 24px rgba(16,185,129,0.08)",
+      bg: "#F3FBF5",
+      border: "1px solid rgba(34,197,94,0.16)",
+      text: "#166534",
     };
   }
 
-  if (
-    s.includes("expired") ||
-    s.includes("revoked") ||
-    s.includes("invalid") ||
-    s.includes("do not release") ||
-    s.includes("frozen")
-  ) {
+  if (tone === "warning") {
     return {
-      borderRadius: 18,
-      background: "linear-gradient(180deg, #FFF5F5 0%, #FEF2F2 100%)",
-      border: "1px solid #FECACA",
-      color: "#991B1B",
-      padding: 16,
-      fontWeight: 1000,
-      fontSize: 18,
-      boxShadow: "0 10px 24px rgba(239,68,68,0.08)",
+      bg: "#FFFBEF",
+      border: "1px solid rgba(245,158,11,0.16)",
+      text: "#92400E",
+    };
+  }
+
+  if (tone === "error") {
+    return {
+      bg: "#FFF5F5",
+      border: "1px solid rgba(239,68,68,0.16)",
+      text: "#991B1B",
     };
   }
 
   return {
-    borderRadius: 18,
-    background: "linear-gradient(180deg, #FFF9F1 0%, #FFF7ED 100%)",
-    border: "1px solid #FED7AA",
-    color: "#9A3412",
-    padding: 16,
-    fontWeight: 1000,
-    fontSize: 18,
-    boxShadow: "0 10px 24px rgba(245,158,11,0.08)",
+    bg: "#F8FBFF",
+    border: "1px solid rgba(11,99,209,0.12)",
+    text: "#0B63D1",
   };
-}
-
-function pagePattern(): string {
-  const svg = `
-  <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="320" viewBox="0 0 1600 320">
-    <rect width="1600" height="320" fill="#F8FBFE"/>
-    <g fill="none" stroke="#C7D9EE" stroke-opacity="0.40" stroke-width="2">
-      <path d="M70 170 C180 90, 290 90, 400 170 S620 250, 730 170" />
-      <path d="M900 170 C1010 90, 1120 90, 1230 170 S1450 250, 1560 170" />
-    </g>
-    <g fill="#D6AF47" fill-opacity="0.92">
-      <path d="M70 160 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
-      <path d="M180 96 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
-      <path d="M290 96 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
-      <path d="M400 160 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
-    </g>
-  </svg>`.trim();
-
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-}
-
-function safeLevel(value: string | null): VerifyLevel {
-  if (value === "minimal" || value === "standard" || value === "detailed") {
-    return value;
-  }
-  return "standard";
-}
-
-function safeDateTime(x: any): string {
-  const raw = String(x || "").trim();
-  if (!raw) return "—";
-  const d = new Date(raw);
-  if (Number.isNaN(d.getTime())) return raw;
-  return d.toLocaleString();
 }
 
 function apiBase(): string {
@@ -147,606 +266,782 @@ function apiBase(): string {
   return String(raw || "").trim().replace(/\/+$/, "");
 }
 
+function apiOrigin(): string {
+  const base = apiBase();
+
+  if (base.startsWith("http://") || base.startsWith("https://")) {
+    try {
+      const u = new URL(base);
+      return `${u.protocol}//${u.host}`;
+    } catch {
+      return "http://127.0.0.1:8012";
+    }
+  }
+
+  return "http://127.0.0.1:8012";
+}
+
+function normalizeTrustSlipVerification(raw: any, fallbackCode: string): TrustSlipVerifyRecord | null {
+  if (!raw) return null;
+
+  const src = raw?.item || raw?.trust_slip || raw?.verification || raw;
+
+  return {
+    id: positiveNumber(firstTruthy(src?.id, src?.trust_slip_id)) || undefined,
+    code: firstTruthy(src?.code, src?.trust_slip_code, fallbackCode),
+    holder_name: firstTruthy(
+      src?.holder_name,
+      src?.display_name,
+      src?.name,
+      src?.member_name
+    ),
+    gmfn_id: firstTruthy(src?.gmfn_id),
+    status: firstTruthy(src?.status),
+    verification_status: firstTruthy(src?.verification_status),
+    state: firstTruthy(src?.state),
+    trust_band: firstTruthy(src?.trust_band, src?.trust_class),
+    trust_class: firstTruthy(src?.trust_class, src?.trust_band),
+    trust_score: firstNumberLike(src?.trust_score),
+    open_trust_band: firstTruthy(
+      src?.open_trust_band,
+      src?.community_trust_band,
+      src?.open_trust_class
+    ),
+    open_trust_class: firstTruthy(
+      src?.open_trust_class,
+      src?.community_trust_class,
+      src?.open_trust_band
+    ),
+    open_trust_score: firstNumberLike(
+      src?.open_trust_score,
+      src?.community_trust_score
+    ),
+    community_trust_band: firstTruthy(
+      src?.community_trust_band,
+      src?.open_trust_band
+    ),
+    community_trust_class: firstTruthy(
+      src?.community_trust_class,
+      src?.open_trust_class
+    ),
+    community_trust_score: firstNumberLike(
+      src?.community_trust_score,
+      src?.open_trust_score
+    ),
+    community_name: firstTruthy(
+      src?.community_name,
+      src?.clan_name,
+      src?.marketplace_name
+    ),
+    clan_name: firstTruthy(src?.clan_name),
+    marketplace_name: firstTruthy(src?.marketplace_name),
+    issued_at: firstTruthy(src?.issued_at, src?.created_at),
+    expires_at: firstTruthy(src?.expires_at, src?.expiry_at),
+    valid:
+      typeof src?.valid === "boolean"
+        ? src.valid
+        : typeof src?.is_valid === "boolean"
+        ? src.is_valid
+        : null,
+    verified:
+      typeof src?.verified === "boolean"
+        ? src.verified
+        : typeof src?.is_verified === "boolean"
+        ? src.is_verified
+        : null,
+    message: firstTruthy(src?.message),
+    detail: firstTruthy(src?.detail, src?.description),
+  };
+}
+
+async function callFirstAvailable<T = any>(
+  names: string[],
+  argsSets: any[][]
+): Promise<T | null> {
+  for (const name of names) {
+    const fn = (api as any)[name];
+    if (typeof fn !== "function") continue;
+
+    for (const args of argsSets) {
+      try {
+        const result = await fn(...args);
+        if (result) return result as T;
+      } catch {
+        // try next signature
+      }
+    }
+  }
+
+  return null;
+}
+
+function deriveBanner(record: TrustSlipVerifyRecord | null): {
+  tone: VerifyBannerTone;
+  title: string;
+  detail: string;
+} {
+  if (!record) {
+    return {
+      tone: "error",
+      title: "No readable TrustSlip record was found",
+      detail:
+        "The supplied TrustSlip code did not return a readable verification record from the available verification source.",
+    };
+  }
+
+  const statusText = [
+    safeStr(record.status),
+    safeStr(record.verification_status),
+    safeStr(record.state),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  const expiresAt = safeStr(record.expires_at);
+  const expiresDate = expiresAt ? new Date(expiresAt) : null;
+  const isExpired =
+    expiresDate && Number.isFinite(expiresDate.getTime())
+      ? expiresDate.getTime() < Date.now()
+      : false;
+
+  if (isExpired || statusText.includes("expired")) {
+    return {
+      tone: "warning",
+      title: "This TrustSlip looks expired",
+      detail:
+        "A record was found, but the expiry line suggests that the current verification window may have ended.",
+    };
+  }
+
+  if (
+    record.valid === false ||
+    record.verified === false ||
+    statusText.includes("revoked") ||
+    statusText.includes("invalid") ||
+    statusText.includes("rejected")
+  ) {
+    return {
+      tone: "error",
+      title: "This TrustSlip is not currently valid",
+      detail:
+        "A record was found, but the visible verification state suggests it should not be treated as currently valid.",
+    };
+  }
+
+  if (
+    statusText.includes("pending") ||
+    statusText.includes("preparing") ||
+    statusText.includes("processing")
+  ) {
+    return {
+      tone: "warning",
+      title: "This TrustSlip is still preparing",
+      detail:
+        "A TrustSlip record exists, but the visible state suggests the verification surface is not fully settled yet.",
+    };
+  }
+
+  return {
+    tone: "success",
+    title: "A TrustSlip record was found",
+    detail:
+      "This page is showing the current portable verification surface returned for the supplied TrustSlip code.",
+  };
+}
+
 export default function TrustSlipVerifyPage() {
-  const params = useParams();
-  const [searchParams] = useSearchParams();
+  const params = useParams<{ code?: string }>();
+  const location = useLocation();
 
-  const codeFromParam = safeStr(params.code);
-  const codeFromQuery = safeStr(searchParams.get("code"));
-  const code = codeFromParam || codeFromQuery;
-
-  const level = safeLevel(searchParams.get("level"));
-  const pattern = useMemo(() => pagePattern(), []);
-
-  const qrUrl = code
-    ? `${apiBase()}/trust-slips/verify/${encodeURIComponent(code)}/qr.png?level=${encodeURIComponent(level)}`
-    : "";
-
-  const backendVerifyPageUrl = code
-    ? `${apiBase()}/trust-slips/verify/${encodeURIComponent(code)}/page?level=${encodeURIComponent(level)}`
-    : "";
-
-  const backendLitePageUrl = code
-    ? `${apiBase()}/trust-slips/verify/${encodeURIComponent(code)}/lite?level=${encodeURIComponent(level)}`
-    : "";
-
-  const backendPrintPageUrl = code
-    ? `${apiBase()}/trust-slips/verify/${encodeURIComponent(code)}/print?level=${encodeURIComponent(level)}`
-    : "";
+  const [isCompact, setIsCompact] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 980;
+  });
 
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
-  const [data, setData] = useState<any>(null);
+  const [notice, setNotice] = useState<{
+    tone: NoticeTone;
+    text: string;
+  } | null>(null);
+
+  const [me, setMe] = useState<any>(null);
+  const [currentClan, setCurrentClan] = useState<any>(null);
+  const [record, setRecord] = useState<TrustSlipVerifyRecord | null>(null);
+  const [resolvedCode, setResolvedCode] = useState("");
+  const [loadError, setLoadError] = useState("");
+
+  const isAppRoute = location.pathname.startsWith("/app/");
+  const queryCode = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return safeStr(params.get("code"));
+  }, [location.search]);
+
+  const requestedCode = useMemo(() => {
+    return firstTruthy(params.code, queryCode);
+  }, [params.code, queryCode]);
 
   useEffect(() => {
-    let active = true;
+    if (typeof window === "undefined") return;
+
+    function handleResize() {
+      setIsCompact(window.innerWidth <= 980);
+    }
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (!notice) return;
+
+    const timer = window.setTimeout(() => {
+      setNotice(null);
+    }, 2400);
+
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+
+  useEffect(() => {
+    let alive = true;
 
     (async () => {
       setLoading(true);
-      setErr("");
+      setLoadError("");
 
       try {
-        if (!code) {
-          throw new Error(
-            "TrustSlip code is missing. Open this page with a real TrustSlip code."
+        const [meRes, clanRes] = await Promise.all([
+          (api as any).getMe?.().catch(() => null) ?? Promise.resolve(null),
+          (api as any).getCurrentClan?.().catch(() => null) ?? Promise.resolve(null),
+        ]);
+
+        if (!alive) return;
+        setMe(meRes || null);
+        setCurrentClan(clanRes || null);
+
+        let codeToUse = requestedCode;
+
+        if (!codeToUse && isAppRoute && typeof (api as any).getMyTrustSlip === "function") {
+          const mySlip = await (api as any).getMyTrustSlip().catch(() => null);
+          codeToUse = firstTruthy(mySlip?.code, mySlip?.trust_slip_code);
+          if (!alive) return;
+        }
+
+        setResolvedCode(codeToUse);
+
+        if (!codeToUse) {
+          setRecord(null);
+          setLoadError("No TrustSlip code was supplied.");
+          return;
+        }
+
+        const verifyResult = await callFirstAvailable(
+          [
+            "verifyTrustSlipCode",
+            "verifyTrustSlip",
+            "getTrustSlipVerify",
+            "getTrustSlipVerification",
+            "getTrustSlipByCode",
+            "getTrustSlipPublic",
+            "getTrustSlipPublicByCode",
+          ],
+          [[codeToUse], [{ code: codeToUse }], [codeToUse, { code: codeToUse }]]
+        );
+
+        if (!alive) return;
+
+        const normalized = normalizeTrustSlipVerification(verifyResult, codeToUse);
+        setRecord(normalized);
+
+        if (!normalized) {
+          setLoadError(
+            "The supplied TrustSlip code did not return a readable verification record."
           );
         }
-
-        const res = await verifyTrustSlip(code, level);
-
-        if (active) {
-          setData(res || null);
-        }
-      } catch (e: any) {
-        if (active) {
-          setErr(String(e?.message || e || "Unable to verify TrustSlip."));
-          setData(null);
-        }
       } finally {
-        if (active) {
-          setLoading(false);
-        }
+        if (alive) setLoading(false);
       }
     })();
 
     return () => {
-      active = false;
+      alive = false;
     };
-  }, [code, level]);
+  }, [requestedCode, isAppRoute]);
 
-  const merchantView = data?.merchant_view || {};
-  const merchantSummary = merchantView?.merchant_summary || {};
+  const communityLabel = useMemo(() => {
+    return (
+      firstTruthy(
+        record?.community_name,
+        record?.marketplace_name,
+        record?.clan_name,
+        currentClan?.marketplace_name,
+        currentClan?.name,
+        currentClan?.display_name,
+        currentClan?.title
+      ) || "Not stated"
+    );
+  }, [record, currentClan]);
 
-  const displayName = safeStr(
-    merchantView?.display_name ||
-      merchantSummary?.display_name ||
-      data?.holder_gmfn_id ||
-      "Member"
+  const gmfnId = useMemo(() => {
+    return firstTruthy(record?.gmfn_id, me?.gmfn_id, "Pending");
+  }, [record, me]);
+
+  const holderName = useMemo(() => {
+    return (
+      firstTruthy(
+        record?.holder_name,
+        me?.display_name,
+        me?.nickname,
+        me?.name,
+        me?.first_name,
+        me?.email
+      ) || "Member"
+    );
+  }, [record, me]);
+
+  const visibleBand = firstTruthy(
+    record?.open_trust_band,
+    record?.community_trust_band,
+    record?.trust_band,
+    record?.open_trust_class,
+    record?.community_trust_class,
+    record?.trust_class,
+    "Visible reading"
   );
 
-  const gmfnId = safeStr(
-    merchantView?.gmfn_id ||
-      merchantSummary?.gmfn_id ||
-      data?.holder_gmfn_id ||
-      "N/A"
+  const visibleScore = firstNumberLike(
+    record?.open_trust_score,
+    record?.community_trust_score,
+    record?.trust_score
   );
 
-  const community = safeStr(
-    merchantView?.community || merchantSummary?.community || "—"
-  );
+  const banner = useMemo(() => deriveBanner(record), [record]);
+  const bannerStyle = bannerToneStyle(banner.tone);
 
-  const band = safeStr(merchantView?.band || merchantSummary?.band || "—");
+  const verifyPath = resolvedCode ? `/t/${encodeURIComponent(resolvedCode)}` : "";
+  const verifyUrl =
+    resolvedCode && typeof window !== "undefined"
+      ? `${window.location.origin}${verifyPath}`
+      : "";
 
-  const trustLimit = safeStr(
-    data?.trust_limit ||
-      data?.trust_slip_limit ||
-      merchantSummary?.trust_limit ||
-      merchantView?.trust_limit ||
-      "0.00"
-  );
+  function showNotice(tone: NoticeTone, text: string) {
+    setNotice({ tone, text });
+  }
 
-  const currency = safeStr(
-    data?.currency || merchantSummary?.currency || merchantView?.currency || "NGN"
-  );
+  function copyCode() {
+    if (!resolvedCode) {
+      showNotice("error", "TrustSlip code is not available.");
+      return;
+    }
 
-  const issued = safeDateTime(data?.issued_at || data?.created_at || "");
-  const expires = safeDateTime(data?.expires_at || merchantSummary?.expires_at || "");
-  const effectiveStatus = safeStr(data?.effective_status || data?.status || "unknown");
-  const merchantMessage = normalizeMerchantMessage(
-    data?.merchant_message || effectiveStatus
-  );
+    api.safeCopy(resolvedCode);
+    showNotice("success", "TrustSlip code copied.");
+  }
 
-  const cciScore = safeStr(
-    merchantSummary?.cci_score || merchantView?.cci_score || data?.cci_score || ""
-  );
-  const cciBand = safeStr(
-    merchantSummary?.cci_band || merchantView?.cci_band || data?.cci_band || ""
-  );
-  const visibilityLevel = safeStr(
-    merchantView?.visibility_level || level,
-    "standard"
-  );
-  const verifyCode = safeStr(data?.code || code, "—");
-  const verifyPage = safeStr(data?.verify_page || "", "");
-  const litePage = safeStr(data?.lite_page || "", "");
-  const snapshotVersion = safeStr(data?.snapshot_version, "—");
-  const snapshotChecksum = safeStr(data?.snapshot_checksum, "—");
+  function copyVerifyLink() {
+    if (!verifyUrl) {
+      showNotice("error", "Verify link is not available.");
+      return;
+    }
 
-  return (
-    <div style={{ maxWidth: 1180, margin: "0 auto", padding: 20 }}>
+    api.safeCopy(verifyUrl);
+    showNotice("success", "Verify link copied.");
+  }
+
+  function copyGmfnId() {
+    if (!gmfnId || gmfnId === "Pending") {
+      showNotice("error", "GMFN ID is not available.");
+      return;
+    }
+
+    api.safeCopy(gmfnId);
+    showNotice("success", "GMFN ID copied.");
+  }
+
+  if (loading) {
+    return (
       <div
         style={{
-          backgroundImage: `url("${pattern}")`,
-          backgroundRepeat: "no-repeat",
-          backgroundSize: "cover",
-          backgroundPosition: "center top",
-          borderRadius: 28,
-          border: "1px solid rgba(11,31,51,0.08)",
-          overflow: "hidden",
-          backgroundColor: "#F8FBFE",
-          boxShadow: "0 20px 48px rgba(15,23,42,0.05)",
+          maxWidth: 1080,
+          margin: "0 auto",
+          paddingBottom: 40,
+          display: "grid",
+          gap: 18,
         }}
       >
-        <div style={{ padding: 24 }}>
-          <div style={{ fontSize: 36, fontWeight: 1000, color: "#0B1F33" }}>
-            TrustSlip Verification
-          </div>
-
-          <div style={{ marginTop: 10, color: "#6B7A88", lineHeight: 1.8 }}>
-            Independent confirmation of a community-backed trust record.
-          </div>
-
-          {loading ? (
-            <div style={{ ...card(), marginTop: 18, fontWeight: 900 }}>
-              Loading verification...
-            </div>
-          ) : null}
-
-          {err ? (
+        {isAppRoute ? (
+          <PageTopNav
+            sectionLabel="TrustSlip Verify"
+            title="TrustSlip Verify"
+            subtitle="Preparing the verification page..."
+            homeTo="/app/dashboard"
+            homeLabel="Dashboard"
+            backTo="/app/trust-slip"
+            backLabel="TrustSlip"
+            nextLinks={[
+              { label: "Trust Passport", to: "/app/trust" },
+              { label: "Notifications", to: "/app/notifications" },
+            ]}
+          />
+        ) : (
+          <section
+            style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+          >
+            <div style={sectionLabel()}>TrustSlip verify</div>
             <div
               style={{
-                ...card(),
-                marginTop: 18,
-                background: "#FEF2F2",
-                border: "1px solid #FECACA",
-                color: "#991B1B",
+                marginTop: 10,
+                color: "#0B1F33",
+                fontSize: isCompact ? 28 : 34,
                 fontWeight: 900,
+                lineHeight: 1.1,
               }}
             >
-              {err}
+              Preparing verification page
             </div>
-          ) : null}
+            <div style={{ marginTop: 12, ...helperText() }}>
+              Reading the TrustSlip verification surface...
+            </div>
+          </section>
+        )}
 
-          {!loading && !err && data ? (
-            <>
-              <div style={{ marginTop: 18, ...statusBanner(merchantMessage) }}>
-                {merchantMessage}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 18,
-                  display: "grid",
-                  gridTemplateColumns: "1.15fr 0.85fr",
-                  gap: 18,
-                }}
-              >
-                <div style={card()}>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "#64748B",
-                      fontWeight: 1000,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                    }}
-                  >
-                    Verified TrustSlip
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 12,
-                      fontSize: 30,
-                      fontWeight: 1000,
-                      color: "#0B1F33",
-                    }}
-                  >
-                    {displayName}
-                  </div>
-
-                  <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-                    <div style={{ color: "#475569", lineHeight: 1.8 }}>
-                      <b>GMFN ID:</b> {gmfnId}
-                    </div>
-                    <div style={{ color: "#475569", lineHeight: 1.8 }}>
-                      <b>Community:</b> {community}
-                    </div>
-                    <div style={{ color: "#475569", lineHeight: 1.8 }}>
-                      <b>Band:</b> {band}
-                    </div>
-                    <div style={{ color: "#475569", lineHeight: 1.8 }}>
-                      <b>Trust Limit:</b> {trustLimit} {currency}
-                    </div>
-                    <div style={{ color: "#475569", lineHeight: 1.8 }}>
-                      <b>Issued:</b> {issued}
-                    </div>
-                    <div style={{ color: "#475569", lineHeight: 1.8 }}>
-                      <b>Expires:</b> {expires}
-                    </div>
-                    <div style={{ color: "#475569", lineHeight: 1.8 }}>
-                      <b>Status:</b> {effectiveStatus}
-                    </div>
-                    {cciScore ? (
-                      <div style={{ color: "#475569", lineHeight: 1.8 }}>
-                        <b>CCI:</b> {cciScore}
-                        {cciBand ? ` (Band ${cciBand})` : ""}
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div style={card()}>
-                  <div
-                    style={{
-                      fontSize: 18,
-                      fontWeight: 1000,
-                      color: "#0B1F33",
-                    }}
-                  >
-                    Merchant Guidance
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 12,
-                      color: "#6B7A88",
-                      lineHeight: 1.9,
-                    }}
-                  >
-                    This page confirms whether the TrustSlip is currently valid,
-                    expired, frozen, revoked, or otherwise not suitable for a
-                    trust-based release decision.
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 16,
-                      padding: 14,
-                      borderRadius: 14,
-                      background: "#F8FAFC",
-                      border: "1px solid rgba(11,31,51,0.06)",
-                      color: "#475569",
-                      lineHeight: 1.8,
-                    }}
-                  >
-                    {safeStr(
-                      data?.offline_note ||
-                        "If network drops, screenshot this page and re-check later using the same code."
-                    )}
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 12,
-                      padding: 14,
-                      borderRadius: 14,
-                      background: "#F8FAFC",
-                      border: "1px solid rgba(11,31,51,0.06)",
-                      color: "#475569",
-                      lineHeight: 1.8,
-                    }}
-                  >
-                    {safeStr(
-                      data?.pilot_note ||
-                        "GMFN is non-custodial in MVP. This page confirms TrustSlip validity only."
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  marginTop: 18,
-                  display: "grid",
-                  gridTemplateColumns: "0.95fr 1.05fr",
-                  gap: 18,
-                }}
-              >
-                <div style={card()}>
-                  <div
-                    style={{
-                      fontSize: 18,
-                      fontWeight: 1000,
-                      color: "#0B1F33",
-                    }}
-                  >
-                    Verification Details
-                  </div>
-
-                  <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-                    <div style={{ color: "#475569", lineHeight: 1.8 }}>
-                      <b>Code:</b> {verifyCode}
-                    </div>
-                    <div style={{ color: "#475569", lineHeight: 1.8 }}>
-                      <b>Verified At:</b> {safeDateTime(data?.verified_at)}
-                    </div>
-                    <div style={{ color: "#475569", lineHeight: 1.8 }}>
-                      <b>Visibility Level:</b> {visibilityLevel}
-                    </div>
-                    <div style={{ color: "#475569", lineHeight: 1.8 }}>
-                      <b>Snapshot Version:</b> {snapshotVersion}
-                    </div>
-                    <div
-                      style={{
-                        color: "#475569",
-                        lineHeight: 1.8,
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      <b>Snapshot Checksum:</b> {snapshotChecksum}
-                    </div>
-                  </div>
-                </div>
-
-                <div style={card()}>
-                  <div
-                    style={{
-                      fontSize: 18,
-                      fontWeight: 1000,
-                      color: "#0B1F33",
-                    }}
-                  >
-                    Useful Actions
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 12,
-                      color: "#6B7A88",
-                      lineHeight: 1.8,
-                    }}
-                  >
-                    Use the same code again whenever you want to confirm this
-                    TrustSlip. A fresh check will always reflect the current status.
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 16,
-                      display: "flex",
-                      gap: 10,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <Link to="/app/trust-slip" style={actionLink(true)}>
-                      Open TrustSlip
-                    </Link>
-
-                    <Link to="/app/trust" style={actionLink(false)}>
-                      Open Trust
-                    </Link>
-
-                    <Link to="/app/notifications" style={actionLink(false)}>
-                      Open Notifications
-                    </Link>
-                  </div>
-
-                  {(verifyPage || litePage) ? (
-                    <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
-                      {verifyPage ? (
-                        <div style={softCard("#FFFFFF")}>
-                          <div
-                            style={{
-                              fontSize: 12,
-                              color: "#64748B",
-                              fontWeight: 1000,
-                              letterSpacing: 0.25,
-                            }}
-                          >
-                            VERIFY PAGE
-                          </div>
-                          <div
-                            style={{
-                              marginTop: 8,
-                              color: "#0B1F33",
-                              fontWeight: 900,
-                              wordBreak: "break-word",
-                              lineHeight: 1.7,
-                            }}
-                          >
-                            {verifyPage}
-                          </div>
-                        </div>
-                      ) : null}
-
-                      {litePage ? (
-                        <div style={softCard("#FFFFFF")}>
-                          <div
-                            style={{
-                              fontSize: 12,
-                              color: "#64748B",
-                              fontWeight: 1000,
-                              letterSpacing: 0.25,
-                            }}
-                          >
-                            LITE PAGE
-                          </div>
-                          <div
-                            style={{
-                              marginTop: 8,
-                              color: "#0B1F33",
-                              fontWeight: 900,
-                              wordBreak: "break-word",
-                              lineHeight: 1.7,
-                            }}
-                          >
-                            {litePage}
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-
-              <div style={{ ...card(), marginTop: 18 }}>
-                <div
-                  style={{
-                    fontSize: 18,
-                    fontWeight: 1000,
-                    color: "#0B1F33",
-                  }}
-                >
-                  Verification QR and Certificate Actions
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 14,
-                    display: "grid",
-                    gridTemplateColumns: "0.72fr 1.28fr",
-                    gap: 18,
-                    alignItems: "start",
-                  }}
-                >
-                  <div
-                    style={{
-                      borderRadius: 18,
-                      border: "1px solid rgba(11,31,51,0.08)",
-                      background: "#FFFFFF",
-                      padding: 16,
-                      textAlign: "center",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "#64748B",
-                        fontWeight: 1000,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                      }}
-                    >
-                      QR Code
-                    </div>
-
-                    {qrUrl ? (
-                      <img
-                        src={qrUrl}
-                        alt="TrustSlip QR"
-                        style={{
-                          marginTop: 14,
-                          width: 180,
-                          height: 180,
-                          objectFit: "contain",
-                          borderRadius: 14,
-                          border: "1px solid rgba(11,31,51,0.08)",
-                          background: "#FFFFFF",
-                          padding: 10,
-                        }}
-                      />
-                    ) : null}
-
-                    <div
-                      style={{
-                        marginTop: 10,
-                        color: "#64748B",
-                        fontSize: 13,
-                        lineHeight: 1.7,
-                      }}
-                    >
-                      A merchant can scan this to open the verification page directly.
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      borderRadius: 18,
-                      border: "1px solid rgba(11,31,51,0.08)",
-                      background: "#FFFFFF",
-                      padding: 16,
-                    }}
-                  >
-                    <div
-                      style={{
-                        color: "#0B1F33",
-                        fontWeight: 1000,
-                        fontSize: 18,
-                      }}
-                    >
-                      Certificate-style verification actions
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 10,
-                        color: "#64748B",
-                        fontSize: 14,
-                        lineHeight: 1.8,
-                      }}
-                    >
-                      These links open the formal verification surfaces generated from the backend.
-                      They are useful for merchant display, printing, saving, or lightweight phone checks.
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 16,
-                        display: "flex",
-                        gap: 10,
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <a
-                        href={backendVerifyPageUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={actionLink(true)}
-                      >
-                        Open Certificate View
-                      </a>
-
-                      <a
-                        href={backendPrintPageUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={actionLink(false)}
-                      >
-                        Print / Save PDF
-                      </a>
-
-                      <a
-                        href={backendLitePageUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={actionLink(false)}
-                      >
-                        Open Lite View
-                      </a>
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 16,
-                        padding: 14,
-                        borderRadius: 14,
-                        background: "#F8FAFC",
-                        border: "1px solid rgba(11,31,51,0.06)",
-                        color: "#475569",
-                        lineHeight: 1.8,
-                      }}
-                    >
-                      This verification confirms TrustSlip validity, status, expiry, and visible trust summary.
-                      It is designed for pilot verification and not as a bank guarantee.
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </>
-          ) : null}
-        </div>
+        <section style={pageCard("#FFFFFF")}>
+          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+            Loading TrustSlip verification...
+          </div>
+        </section>
       </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        maxWidth: 1080,
+        margin: "0 auto",
+        paddingBottom: 40,
+        display: "grid",
+        gap: 18,
+      }}
+    >
+      {isAppRoute ? (
+        <PageTopNav
+          sectionLabel="TrustSlip Verify"
+          title="TrustSlip Verify"
+          subtitle="This is the public-facing read surface for the portable TrustSlip verification state."
+          homeTo="/app/dashboard"
+          homeLabel="Dashboard"
+          backTo="/app/trust-slip"
+          backLabel="TrustSlip"
+          nextLinks={[
+            { label: "Trust Passport", to: "/app/trust" },
+            { label: "Notifications", to: "/app/notifications" },
+          ]}
+          utilityLinks={[{ label: "My GMFN and I", to: "/app/my-gmfn-and-i" }]}
+        />
+      ) : (
+        <section
+          style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        >
+          <div style={sectionLabel()}>TrustSlip verify</div>
+
+          <div
+            style={{
+              marginTop: 10,
+              color: "#0B1F33",
+              fontSize: isCompact ? 28 : 34,
+              fontWeight: 900,
+              lineHeight: 1.1,
+            }}
+          >
+            Portable trust verification page
+          </div>
+
+          <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
+            This page is for quick verification. It is not the full trust explanation page.
+          </div>
+
+          <div
+            style={{
+              marginTop: 14,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <Link to="/welcome" style={actionBtn("secondary")}>
+              Welcome
+            </Link>
+            <Link to="/guide" style={actionBtn("secondary")}>
+              My GMFN and I
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
+
+      <section
+        style={{
+          ...pageCard(bannerStyle.bg),
+          border: bannerStyle.border,
+        }}
+      >
+        <div style={sectionLabel()}>Verification result</div>
+
+        <div
+          style={{
+            marginTop: 10,
+            color: bannerStyle.text,
+            fontWeight: 900,
+            fontSize: isCompact ? 24 : 30,
+            lineHeight: 1.15,
+          }}
+        >
+          {banner.title}
+        </div>
+
+        <div style={{ marginTop: 12, ...helperText(), color: "#0B1F33" }}>
+          {loadError || banner.detail}
+        </div>
+
+        <div
+          style={{
+            marginTop: 14,
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
+          }}
+        >
+          <span style={badge(true)}>
+            Code: {resolvedCode || "Not supplied"}
+          </span>
+          <span style={badge(false)}>
+            Status:{" "}
+            {firstTruthy(
+              record?.status,
+              record?.verification_status,
+              record?.state,
+              loadError ? "Unavailable" : "Readable"
+            )}
+          </span>
+        </div>
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div style={sectionLabel()}>Verification summary</div>
+
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+            gap: 12,
+          }}
+        >
+          <div style={innerCard("#FCFEFF")}>
+            <div style={sectionLabel()}>Holder identity</div>
+
+            <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+              <div style={statTile()}>
+                <div style={sectionLabel()}>Holder</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 18,
+                  }}
+                >
+                  {holderName}
+                </div>
+              </div>
+
+              <div style={statTile()}>
+                <div style={sectionLabel()}>GMFN ID</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 16,
+                    lineHeight: 1.25,
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {gmfnId}
+                </div>
+              </div>
+
+              <div style={statTile()}>
+                <div style={sectionLabel()}>Community</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 16,
+                    lineHeight: 1.25,
+                  }}
+                >
+                  {communityLabel}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={innerCard("#FFFFFF")}>
+            <div style={sectionLabel()}>Portable visible state</div>
+
+            <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+              <div style={statTile()}>
+                <div style={sectionLabel()}>Visible band</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 18,
+                    lineHeight: 1.25,
+                  }}
+                >
+                  {visibleBand}
+                </div>
+              </div>
+
+              <div style={statTile()}>
+                <div style={sectionLabel()}>Visible score</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 18,
+                    lineHeight: 1.25,
+                  }}
+                >
+                  {visibleScore === null ? "—" : String(Math.round(visibleScore))}
+                </div>
+              </div>
+
+              <div style={statTile()}>
+                <div style={sectionLabel()}>Issued / expires</div>
+                <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
+                  <div style={{ ...helperText(), color: "#0B1F33" }}>
+                    Issued: {safeDateTime(record?.issued_at) || "—"}
+                  </div>
+                  <div style={{ ...helperText(), color: "#0B1F33" }}>
+                    Expires: {safeDateTime(record?.expires_at) || "Not stated"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {firstTruthy(record?.message, record?.detail) ? (
+          <div style={{ marginTop: 14, ...softCard("#F8FBFF") }}>
+            <div style={sectionLabel()}>System note</div>
+            <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+              {firstTruthy(record?.message, record?.detail)}
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div style={sectionLabel()}>What this page means</div>
+
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+            gap: 12,
+          }}
+        >
+          <div style={innerCard("#F8FBFF")}>
+            <div
+              style={{
+                color: "#0B1F33",
+                fontWeight: 900,
+                fontSize: 15,
+              }}
+            >
+              This page is for quick verification
+            </div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              This is the portable proof surface. It is designed for people who need a quick readable verification state.
+            </div>
+          </div>
+
+          <div style={innerCard("#FFFFFF")}>
+            <div
+              style={{
+                color: "#0B1F33",
+                fontWeight: 900,
+                fontSize: 15,
+              }}
+            >
+              This page is not the full trust story
+            </div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              The full trust explanation still belongs in Trust Passport, where the why, change path, repair path, and trust journey are explained in more detail.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div style={sectionLabel()}>Quick actions</div>
+
+        <div
+          style={{
+            marginTop: 14,
+            display: "flex",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
+          <button
+            type="button"
+            onClick={copyCode}
+            disabled={!resolvedCode}
+            style={actionBtn("primary", !resolvedCode)}
+          >
+            Copy TrustSlip Code
+          </button>
+
+          <button
+            type="button"
+            onClick={copyVerifyLink}
+            disabled={!verifyUrl}
+            style={actionBtn("secondary", !verifyUrl)}
+          >
+            Copy Verify Link
+          </button>
+
+          <button
+            type="button"
+            onClick={copyGmfnId}
+            disabled={!gmfnId || gmfnId === "Pending"}
+            style={actionBtn("secondary", !gmfnId || gmfnId === "Pending")}
+          >
+            Copy GMFN ID
+          </button>
+
+          {isAppRoute ? (
+            <Link to="/app/trust" style={actionBtn("soft")}>
+              Trust Passport
+            </Link>
+          ) : (
+            <Link to="/guide" style={actionBtn("soft")}>
+              My GMFN and I
+            </Link>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

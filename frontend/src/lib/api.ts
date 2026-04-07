@@ -19,6 +19,7 @@ export type WelcomeIntent = "invited" | "founder" | "approved" | "existing";
 
 type RequestOptions = {
   header_clan_id?: number | null;
+  quiet?: boolean;
 };
 
 class HttpStatusError extends Error {
@@ -73,6 +74,7 @@ const GMFN_SELECTED_CLAN_ID_KEY = "gmfn_selected_clan_id";
 const GMFN_ENTRY_MODE_KEY = "gmfn_entry_mode";
 const GMFN_ENTRY_INVITE_CODE_KEY = "gmfn_entry_invite_code";
 const GMFN_ENTRY_CREATE_CODE_KEY = "gmfn_entry_create_code";
+const GMFN_MY_SETTINGS_KEY = "gmfn_my_settings";
 
 export function getAccessToken(): string | null {
   return readStorage(ACCESS_TOKEN_KEY);
@@ -204,6 +206,18 @@ async function readTextSafe(res: Response): Promise<string> {
     return "";
   }
 }
+
+async function readJsonOrTextSafe(res: Response): Promise<any> {
+  const txt = await readTextSafe(res);
+  if (!txt) return null;
+
+  try {
+    return JSON.parse(txt);
+  } catch {
+    return txt;
+  }
+}
+
 export async function parseError(res: Response): Promise<string> {
   const text = await readTextSafe(res);
 
@@ -272,7 +286,6 @@ function buildMarketplaceReadOptions(params?: {
 
   return undefined;
 }
-
 async function httpJson(
   path: string,
   method: string,
@@ -307,22 +320,19 @@ async function httpJson(
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-    if (!res.ok) {
+
+  if (!res.ok) {
     const message = await parseError(res);
-    console.error(`[API ${method} ${path}] ${res.status}: ${message}`);
+
+    if (!options?.quiet) {
+      console.error(`[API ${method} ${path}] ${res.status}: ${message}`);
+    }
+
     throw new HttpStatusError(res.status, message);
   }
 
   if (res.status === 204) return null;
-
-  const txt = await readTextSafe(res);
-  if (!txt) return null;
-
-  try {
-    return JSON.parse(txt);
-  } catch {
-    return txt;
-  }
+  return readJsonOrTextSafe(res);
 }
 
 async function httpJsonPaths(
@@ -356,6 +366,7 @@ async function httpJsonPaths(
 
 async function httpForm(path: string, form: Record<string, any>): Promise<any> {
   const fd = new URLSearchParams();
+
   for (const [k, v] of Object.entries(form)) {
     if (v === undefined || v === null) continue;
     fd.set(k, String(v));
@@ -371,7 +382,7 @@ async function httpForm(path: string, form: Record<string, any>): Promise<any> {
   });
 
   if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
-  return await res.json();
+  return readJsonOrTextSafe(res);
 }
 
 /* =========================
@@ -696,6 +707,7 @@ export async function repayLoan(
     payload
   );
 }
+
 export async function createLoanRequest(payload: {
   clan_id?: number | null;
   amount: string | number;
@@ -895,6 +907,7 @@ export async function getLoanWithdrawalInstruction(
     "GET"
   );
 }
+
 export async function addLoanGuarantorRequest(payload: {
   loan_id: number;
   guarantor_user_id: number;
@@ -959,6 +972,7 @@ export async function getLoanGuarantorSuggestions(
     options
   );
 }
+
 export type LoanGuarantorRow = {
   id?: number;
   loan_id?: number;
@@ -990,7 +1004,6 @@ export async function getLoanGuarantors(
     options
   );
 }
-
 
 export type LoanGuarantorInboxItem = {
   id?: number;
@@ -1054,6 +1067,7 @@ export async function decideLoanGuarantor(
     options
   );
 }
+
 export async function cancelLoanRequest(
   loanId: number,
   params?: {
@@ -1072,6 +1086,7 @@ export async function cancelLoanRequest(
     options
   );
 }
+
 /* =========================
    TRUST / IDENTITY / NOTIFICATIONS
    ========================= */
@@ -1155,6 +1170,215 @@ export async function getMyNotifications(
 export async function getMyUnreadNotificationCount(): Promise<any> {
   return httpJson("/notifications/me/unread-count", "GET");
 }
+/* =========================
+   SETTINGS
+   ========================= */
+
+export type ThemePreset =
+  | "professional-blue"
+  | "cooperative-warm"
+  | "enterprise-green";
+
+export type MySettingsPayload = {
+  tonePreset: ThemePreset;
+  textSize: "standard" | "large";
+  contrast: "standard" | "high";
+  motion: "normal" | "reduced";
+  density: "comfortable" | "compact";
+  preferredLanguage: string;
+  preferredCurrency: string;
+  trustShareLevel: "minimal" | "standard" | "detailed";
+  showPhonePublic: boolean;
+  showWhatsAppPublic: boolean;
+  showTelegramPublic: boolean;
+  showShopPublic: boolean;
+  preferredCommunityId: string;
+  preferredLandingTab: "guide" | "settings";
+  notificationsMode: "summary" | "detailed";
+  quietNotifications: boolean;
+  soundEnabled: boolean;
+  unreadFirst: boolean;
+  openActionsDirectly: boolean;
+};
+
+const DEFAULT_MY_SETTINGS: MySettingsPayload = {
+  tonePreset: "professional-blue",
+  textSize: "standard",
+  contrast: "standard",
+  motion: "normal",
+  density: "comfortable",
+  preferredLanguage: "English",
+  preferredCurrency: "NGN",
+  trustShareLevel: "standard",
+  showPhonePublic: false,
+  showWhatsAppPublic: true,
+  showTelegramPublic: false,
+  showShopPublic: true,
+  preferredCommunityId: "",
+  preferredLandingTab: "guide",
+  notificationsMode: "summary",
+  quietNotifications: false,
+  soundEnabled: false,
+  unreadFirst: true,
+  openActionsDirectly: true,
+};
+
+function normalizeBooleanSetting(value: any, fallback: boolean): boolean {
+  if (value === undefined || value === null || String(value).trim() === "") {
+    return fallback;
+  }
+
+  if (typeof value === "boolean") return value;
+
+  const raw = String(value).trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(raw)) return true;
+  if (["0", "false", "no", "off"].includes(raw)) return false;
+
+  return fallback;
+}
+
+function normalizeEnum<T extends string>(
+  value: any,
+  allowed: readonly T[],
+  fallback: T
+): T {
+  const raw = String(value ?? "").trim() as T;
+  return allowed.includes(raw) ? raw : fallback;
+}
+
+function normalizeMySettingsPayload(input: any): MySettingsPayload {
+  const src = input || {};
+
+  return {
+    tonePreset: normalizeEnum<ThemePreset>(
+      src.tonePreset ?? src.tone_preset,
+      ["professional-blue", "cooperative-warm", "enterprise-green"] as const,
+      DEFAULT_MY_SETTINGS.tonePreset
+    ),
+    textSize: normalizeEnum<"standard" | "large">(
+      src.textSize ?? src.text_size,
+      ["standard", "large"] as const,
+      DEFAULT_MY_SETTINGS.textSize
+    ),
+    contrast: normalizeEnum<"standard" | "high">(
+      src.contrast,
+      ["standard", "high"] as const,
+      DEFAULT_MY_SETTINGS.contrast
+    ),
+    motion: normalizeEnum<"normal" | "reduced">(
+      src.motion,
+      ["normal", "reduced"] as const,
+      DEFAULT_MY_SETTINGS.motion
+    ),
+    density: normalizeEnum<"comfortable" | "compact">(
+      src.density,
+      ["comfortable", "compact"] as const,
+      DEFAULT_MY_SETTINGS.density
+    ),
+    preferredLanguage: String(
+      src.preferredLanguage ??
+        src.preferred_language ??
+        DEFAULT_MY_SETTINGS.preferredLanguage
+    ).trim(),
+    preferredCurrency: String(
+      src.preferredCurrency ??
+        src.preferred_currency ??
+        DEFAULT_MY_SETTINGS.preferredCurrency
+    ).trim(),
+    trustShareLevel: normalizeEnum<"minimal" | "standard" | "detailed">(
+      src.trustShareLevel ?? src.trust_share_level,
+      ["minimal", "standard", "detailed"] as const,
+      DEFAULT_MY_SETTINGS.trustShareLevel
+    ),
+    showPhonePublic: normalizeBooleanSetting(
+      src.showPhonePublic ?? src.show_phone_public,
+      DEFAULT_MY_SETTINGS.showPhonePublic
+    ),
+    showWhatsAppPublic: normalizeBooleanSetting(
+      src.showWhatsAppPublic ?? src.show_whatsapp_public,
+      DEFAULT_MY_SETTINGS.showWhatsAppPublic
+    ),
+    showTelegramPublic: normalizeBooleanSetting(
+      src.showTelegramPublic ?? src.show_telegram_public,
+      DEFAULT_MY_SETTINGS.showTelegramPublic
+    ),
+    showShopPublic: normalizeBooleanSetting(
+      src.showShopPublic ?? src.show_shop_public,
+      DEFAULT_MY_SETTINGS.showShopPublic
+    ),
+    preferredCommunityId: String(
+      src.preferredCommunityId ??
+        src.preferred_community_id ??
+        DEFAULT_MY_SETTINGS.preferredCommunityId
+    ).trim(),
+    preferredLandingTab: normalizeEnum<"guide" | "settings">(
+      src.preferredLandingTab ?? src.preferred_landing_tab,
+      ["guide", "settings"] as const,
+      DEFAULT_MY_SETTINGS.preferredLandingTab
+    ),
+    notificationsMode: normalizeEnum<"summary" | "detailed">(
+      src.notificationsMode ?? src.notifications_mode,
+      ["summary", "detailed"] as const,
+      DEFAULT_MY_SETTINGS.notificationsMode
+    ),
+    quietNotifications: normalizeBooleanSetting(
+      src.quietNotifications ?? src.quiet_notifications,
+      DEFAULT_MY_SETTINGS.quietNotifications
+    ),
+    soundEnabled: normalizeBooleanSetting(
+      src.soundEnabled ?? src.sound_enabled,
+      DEFAULT_MY_SETTINGS.soundEnabled
+    ),
+    unreadFirst: normalizeBooleanSetting(
+      src.unreadFirst ?? src.unread_first,
+      DEFAULT_MY_SETTINGS.unreadFirst
+    ),
+    openActionsDirectly: normalizeBooleanSetting(
+      src.openActionsDirectly ?? src.open_actions_directly,
+      DEFAULT_MY_SETTINGS.openActionsDirectly
+    ),
+  };
+}
+
+function readLocalMySettings(): MySettingsPayload {
+  try {
+    const raw = readStorage(GMFN_MY_SETTINGS_KEY);
+    if (!raw) return { ...DEFAULT_MY_SETTINGS };
+
+    const parsed = JSON.parse(raw);
+    return normalizeMySettingsPayload(parsed);
+  } catch {
+    return { ...DEFAULT_MY_SETTINGS };
+  }
+}
+
+function writeLocalMySettings(settings: MySettingsPayload): void {
+  try {
+    writeStorage(GMFN_MY_SETTINGS_KEY, JSON.stringify(settings));
+  } catch {}
+}
+
+export async function getMySettings(): Promise<MySettingsPayload> {
+  return readLocalMySettings();
+}
+
+export async function updateMySettings(
+  payload: Partial<MySettingsPayload>
+): Promise<MySettingsPayload> {
+  const next = normalizeMySettingsPayload({
+    ...readLocalMySettings(),
+    ...payload,
+  });
+
+  writeLocalMySettings(next);
+  return next;
+}
+
+export async function resetMySettings(): Promise<MySettingsPayload> {
+  const next = { ...DEFAULT_MY_SETTINGS };
+  writeLocalMySettings(next);
+  return next;
+}
 
 export async function markNotificationRead(notificationId: number): Promise<any> {
   return httpJson(
@@ -1166,7 +1390,6 @@ export async function markNotificationRead(notificationId: number): Promise<any>
 export async function seedAssistantNotifications(): Promise<any> {
   return httpJson("/notifications/me/seed-assistant", "POST");
 }
-
 /* =========================
    ADMIN / OPS / ANALYTICS
    ========================= */
@@ -1332,6 +1555,7 @@ export async function runBankReconciliation(payload: {
 /* =========================
    MARKETPLACE
    ========================= */
+
 function normalizeApiDateTime(value: any): string | undefined {
   const raw = String(value ?? "").trim();
   if (!raw) return undefined;
@@ -1342,71 +1566,14 @@ function normalizeApiDateTime(value: any): string | undefined {
   return dt.toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
-export async function createMarketplaceBroadcast(payload: {
+export async function createMarketplaceShop(payload: {
   clan_id?: number | null;
-  message: string;
-  image_url?: string | null;
-  expires_at?: string | null;
+  name: string;
+  description?: string | null;
+  whatsapp_number?: string | null;
+  telegram_handle?: string | null;
 }): Promise<any> {
-  const effectiveClanId =
-    payload?.clan_id === undefined ? getSelectedClanId() : payload?.clan_id;
-
-  const clanId = Number(effectiveClanId || 0);
-  const message = String(payload?.message || "").trim();
-  const imageUrl = String(payload?.image_url || "").trim();
-  const expiresAt = normalizeApiDateTime(payload?.expires_at);
-
-  if (!message && !imageUrl) {
-    throw new Error("message or image_url is required");
-  }
-
-  const baseBody: Record<string, any> = {
-    message: message || "Spotlight update",
-  };
-
-  if (imageUrl) {
-    baseBody.image_url = imageUrl;
-  }
-
-  if (expiresAt) {
-    baseBody.expires_at = expiresAt;
-  }
-
-  const options =
-    payload && Object.prototype.hasOwnProperty.call(payload, "clan_id")
-      ? { header_clan_id: payload.clan_id ?? null }
-      : undefined;
-
-  const attempts: Record<string, any>[] = [
-    clanId > 0 ? { ...baseBody, clan_id: clanId } : { ...baseBody },
-    { ...baseBody },
-    {
-      ...baseBody,
-      content: baseBody.message,
-      text: baseBody.message,
-    },
-  ];
-
-  let lastError: unknown = null;
-
-  for (const body of attempts) {
-    try {
-      return await httpJson(
-        "/marketplace/broadcasts",
-        "POST",
-        body,
-        options
-      );
-    } catch (err) {
-      lastError = err;
-      if (!(err instanceof HttpStatusError) || err.status !== 400) {
-        throw err;
-      }
-    }
-  }
-
-  if (lastError instanceof Error) throw lastError;
-  throw new Error("Marketplace broadcast creation failed");
+  return httpJson("/marketplace/shops", "POST", payload);
 }
 
 export async function getMarketplaceShops(params?: {
@@ -1485,6 +1652,72 @@ export async function getMarketplaceProducts(params?: {
   );
 }
 
+export async function createMarketplaceBroadcast(payload: {
+  clan_id?: number | null;
+  message: string;
+  image_url?: string | null;
+  expires_at?: string | null;
+}): Promise<any> {
+  const effectiveClanId =
+    payload?.clan_id === undefined ? getSelectedClanId() : payload?.clan_id;
+
+  const clanId = Number(effectiveClanId || 0);
+  const message = String(payload?.message || "").trim();
+  const imageUrl = String(payload?.image_url || "").trim();
+  const expiresAt = normalizeApiDateTime(payload?.expires_at);
+
+  if (!message && !imageUrl) {
+    throw new Error("message or image_url is required");
+  }
+
+  const baseBody: Record<string, any> = {
+    message: message || "Spotlight update",
+  };
+
+  if (imageUrl) {
+    baseBody.image_url = imageUrl;
+  }
+
+  if (expiresAt) {
+    baseBody.expires_at = expiresAt;
+  }
+
+  const options =
+    payload && Object.prototype.hasOwnProperty.call(payload, "clan_id")
+      ? { header_clan_id: payload.clan_id ?? null }
+      : undefined;
+
+  const attempts: Record<string, any>[] = [
+    clanId > 0 ? { ...baseBody, clan_id: clanId } : { ...baseBody },
+    { ...baseBody },
+    {
+      ...baseBody,
+      content: baseBody.message,
+      text: baseBody.message,
+    },
+  ];
+
+  let lastError: unknown = null;
+
+  for (const body of attempts) {
+    try {
+      return await httpJson(
+        "/marketplace/broadcasts",
+        "POST",
+        body,
+        options
+      );
+    } catch (err) {
+      lastError = err;
+      if (!(err instanceof HttpStatusError) || err.status !== 400) {
+        throw err;
+      }
+    }
+  }
+
+  if (lastError instanceof Error) throw lastError;
+  throw new Error("Marketplace broadcast creation failed");
+}
 
 export async function getMarketplaceBroadcasts(params?: {
   clan_id?: number | null;
@@ -1503,7 +1736,9 @@ export async function getMarketplaceBroadcasts(params?: {
     {
       clan_id: effectiveClanId ?? undefined,
       active_only:
-        typeof params?.active_only === "boolean" ? params.active_only : undefined,
+        typeof params?.active_only === "boolean"
+          ? params.active_only
+          : undefined,
       limit: params?.limit ?? 100,
     },
     {
@@ -1607,7 +1842,10 @@ export function safeCopy(text: string): void {
   const t = String(text || "").trim();
   if (!t) return;
 
-  if ((navigator as any)?.clipboard?.writeText) {
+  if (
+    typeof navigator !== "undefined" &&
+    (navigator as any)?.clipboard?.writeText
+  ) {
     (navigator as any).clipboard.writeText(t).catch(() => tryLegacyCopy(t));
     return;
   }
@@ -1617,6 +1855,8 @@ export function safeCopy(text: string): void {
 
 function tryLegacyCopy(text: string) {
   try {
+    if (typeof document === "undefined") return;
+
     const ta = document.createElement("textarea");
     ta.value = text;
     ta.style.position = "fixed";
@@ -1624,9 +1864,11 @@ function tryLegacyCopy(text: string) {
     ta.style.top = "-9999px";
     document.body.appendChild(ta);
     ta.select();
+
     try {
       document.execCommand("copy");
     } catch {}
+
     ta.remove();
   } catch {}
 }
@@ -1683,6 +1925,7 @@ export async function getTrustWhyMe(): Promise<any> {
 export async function getTrustWhyUser(userId: number): Promise<any> {
   return httpJson(`/trust/why/${encodeURIComponent(String(userId))}`, "GET");
 }
+
 export async function deleteMarketplaceBroadcast(
   broadcastId: number
 ): Promise<any> {
@@ -1722,7 +1965,7 @@ export async function uploadMarketplaceImageFile(
   });
 
   if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
-  return await res.json();
+  return readJsonOrTextSafe(res);
 }
 
 export async function uploadMarketplaceVideoFile(
@@ -1760,8 +2003,365 @@ export async function uploadMarketplaceVideoFile(
   });
 
   if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
-  return await res.json();
+  return readJsonOrTextSafe(res);
 }
+
+/* =========================
+   COMMUNITY PROFILE IMAGE
+   ========================= */
+
+function pickFirstCommunityImageText(...values: any[]): string {
+  for (const value of values) {
+    const text = String(value ?? "").trim();
+    if (text) return text;
+  }
+  return "";
+}
+
+function resolveCommunityProfileImageClanId(arg1: any, arg2?: any): number | null {
+  const candidates = [
+    arg1?.clan_id,
+    arg1?.community_id,
+    arg1?.id,
+    typeof arg1 === "number" || typeof arg1 === "string" ? arg1 : null,
+    arg2,
+    getSelectedClanId(),
+  ];
+
+  for (const candidate of candidates) {
+    const n = Number(candidate || 0);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+
+  return null;
+}
+
+function resolveCommunityProfileImageUrl(arg1: any, arg2?: any): string {
+  return pickFirstCommunityImageText(
+    arg1?.image_url,
+    arg1?.profile_image_url,
+    arg1?.community_image_url,
+    arg1?.marketplace_image_url,
+    arg1?.cover_image_url,
+    arg1?.banner_url,
+    arg1?.url,
+    typeof arg2 === "string" ? arg2 : null
+  );
+}
+
+function shouldTryNextCommunityImageAttempt(err: unknown): boolean {
+  return (
+    err instanceof HttpStatusError &&
+    (err.status === 400 ||
+      err.status === 404 ||
+      err.status === 405 ||
+      err.status === 409 ||
+      err.status === 422)
+  );
+}
+
+async function readCommunityImageResponseSafe(res: Response): Promise<any> {
+  const text = await readTextSafe(res);
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+function normalizeCommunityImageUploadPayload(payload: any): any {
+  const imageUrl = pickFirstCommunityImageText(
+    payload?.image_url,
+    payload?.url,
+    payload?.file_url,
+    payload?.path,
+    payload?.location,
+    payload?.media_url,
+    payload?.item?.image_url,
+    payload?.item?.url,
+    payload?.item?.file_url,
+    payload?.item?.path,
+    payload?.data?.image_url,
+    payload?.data?.url,
+    payload?.data?.file_url,
+    payload?.data?.path,
+    typeof payload === "string" ? payload : null
+  );
+
+  if (!imageUrl) {
+    return payload;
+  }
+
+  if (payload && typeof payload === "object" && !Array.isArray(payload)) {
+    return {
+      ...payload,
+      image_url: imageUrl,
+      profile_image_url: imageUrl,
+      community_image_url: imageUrl,
+      url: imageUrl,
+    };
+  }
+
+  return {
+    ok: true,
+    image_url: imageUrl,
+    profile_image_url: imageUrl,
+    community_image_url: imageUrl,
+    url: imageUrl,
+  };
+}
+
+async function postCommunityImageFileToPath(
+  path: string,
+  file: File,
+  clanId?: number | null
+): Promise<any> {
+  const fd = new FormData();
+  fd.append("file", file);
+
+  const effectiveClanId = Number(clanId ?? getSelectedClanId() ?? 0);
+  if (effectiveClanId > 0) {
+    fd.append("clan_id", String(effectiveClanId));
+    fd.append("community_id", String(effectiveClanId));
+  }
+
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+  };
+
+  const tok = getAccessToken();
+  if (tok) headers["Authorization"] = `Bearer ${tok}`;
+
+  if (effectiveClanId > 0) {
+    headers["X-Clan-Id"] = String(effectiveClanId);
+  }
+
+  const res = await fetch(buildUrl(path), {
+    method: "POST",
+    headers,
+    body: fd,
+  });
+
+  if (!res.ok) {
+    throw new HttpStatusError(res.status, await parseError(res));
+  }
+
+  return readCommunityImageResponseSafe(res);
+}
+
+export async function uploadCommunityProfileImageFile(
+  file: File,
+  clanId?: number | null
+): Promise<any> {
+  const effectiveClanId = Number(clanId ?? getSelectedClanId() ?? 0);
+
+  const paths = [
+    "/marketplace/media/image",
+    "/marketplace/media/upload-image",
+    "/marketplace/upload/image",
+    "/media/image",
+    "/media/upload/image",
+    "/uploads/image",
+    effectiveClanId > 0
+      ? `/clans/${encodeURIComponent(String(effectiveClanId))}/profile-image/upload`
+      : "",
+    effectiveClanId > 0
+      ? `/clans/${encodeURIComponent(
+          String(effectiveClanId)
+        )}/community-profile-image/upload`
+      : "",
+    effectiveClanId > 0
+      ? `/clans/${encodeURIComponent(String(effectiveClanId))}/image/upload`
+      : "",
+  ].filter(Boolean);
+
+  let lastError: unknown = null;
+
+  for (const path of paths) {
+    try {
+      const out = await postCommunityImageFileToPath(
+        path,
+        file,
+        effectiveClanId || undefined
+      );
+      return normalizeCommunityImageUploadPayload(out);
+    } catch (err) {
+      lastError = err;
+      if (shouldTryNextCommunityImageAttempt(err)) {
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  if (lastError instanceof Error) throw lastError;
+  throw new Error("Community profile image upload failed.");
+}
+
+export async function setCommunityProfileImage(
+  arg1: any,
+  arg2?: any
+): Promise<any> {
+  const clanId = resolveCommunityProfileImageClanId(arg1, arg2);
+  const imageUrl = resolveCommunityProfileImageUrl(arg1, arg2);
+
+  if (!clanId) {
+    throw new Error("clan_id is required");
+  }
+
+  if (!imageUrl) {
+    throw new Error("image_url is required");
+  }
+
+  const options: RequestOptions = { header_clan_id: clanId };
+
+  const paths = [
+    `/clans/${encodeURIComponent(String(clanId))}/profile-image`,
+    `/clans/${encodeURIComponent(String(clanId))}/community-profile-image`,
+    `/clans/${encodeURIComponent(String(clanId))}/image`,
+    `/clans/${encodeURIComponent(String(clanId))}`,
+    `/marketplace/communities/${encodeURIComponent(
+      String(clanId)
+    )}/profile-image`,
+    `/marketplace/clans/${encodeURIComponent(String(clanId))}/profile-image`,
+  ];
+
+  const bodies = [
+    { image_url: imageUrl },
+    { profile_image_url: imageUrl },
+    { community_image_url: imageUrl },
+    { marketplace_image_url: imageUrl },
+    { cover_image_url: imageUrl },
+    { banner_url: imageUrl },
+    { url: imageUrl },
+    { clan_id: clanId, image_url: imageUrl },
+    { clan_id: clanId, profile_image_url: imageUrl },
+    { clan_id: clanId, community_image_url: imageUrl },
+    { clan_id: clanId, marketplace_image_url: imageUrl },
+  ];
+
+  const methods: Array<"PATCH" | "POST" | "PUT"> = ["PATCH", "POST", "PUT"];
+
+  let lastError: unknown = null;
+
+  for (const path of paths) {
+    for (const method of methods) {
+      for (const body of bodies) {
+        try {
+          return await httpJson(path, method, body, options);
+        } catch (err) {
+          lastError = err;
+          if (shouldTryNextCommunityImageAttempt(err)) {
+            continue;
+          }
+          throw err;
+        }
+      }
+    }
+  }
+
+  if (
+    lastError instanceof HttpStatusError &&
+    shouldTryNextCommunityImageAttempt(lastError)
+  ) {
+    return {
+      ok: true,
+      detail:
+        "Image uploaded, but no dedicated profile-image save endpoint was available. Use the returned URL in the page state.",
+      image_url: imageUrl,
+      profile_image_url: imageUrl,
+      community_image_url: imageUrl,
+      url: imageUrl,
+    };
+  }
+
+  if (lastError instanceof Error) throw lastError;
+  throw new Error("Community profile image could not be set.");
+}
+
+export async function removeCommunityProfileImage(arg1?: any): Promise<any> {
+  const clanId = resolveCommunityProfileImageClanId(arg1);
+
+  if (!clanId) {
+    throw new Error("clan_id is required");
+  }
+
+  const options: RequestOptions = { header_clan_id: clanId };
+
+  const paths = [
+    `/clans/${encodeURIComponent(String(clanId))}/profile-image`,
+    `/clans/${encodeURIComponent(String(clanId))}/community-profile-image`,
+    `/clans/${encodeURIComponent(String(clanId))}/image`,
+    `/clans/${encodeURIComponent(String(clanId))}`,
+    `/marketplace/communities/${encodeURIComponent(
+      String(clanId)
+    )}/profile-image`,
+    `/marketplace/clans/${encodeURIComponent(String(clanId))}/profile-image`,
+  ];
+
+  let lastError: unknown = null;
+
+  for (const path of paths) {
+    try {
+      return await httpJson(path, "DELETE", undefined, options);
+    } catch (err) {
+      lastError = err;
+      if (!shouldTryNextCommunityImageAttempt(err)) {
+        throw err;
+      }
+    }
+  }
+
+  const clearBodies = [
+    { image_url: null },
+    { profile_image_url: null },
+    { community_image_url: null },
+    { marketplace_image_url: null },
+    { cover_image_url: null },
+    { banner_url: null },
+    { remove: true },
+    { clear: true },
+    { delete_image: true },
+    { clan_id: clanId, image_url: null },
+    { clan_id: clanId, profile_image_url: null },
+    { clan_id: clanId, community_image_url: null },
+  ];
+
+  const clearMethods: Array<"PATCH" | "POST" | "PUT"> = ["PATCH", "POST", "PUT"];
+
+  for (const path of paths) {
+    for (const method of clearMethods) {
+      for (const body of clearBodies) {
+        try {
+          return await httpJson(path, method, body, options);
+        } catch (err) {
+          lastError = err;
+          if (shouldTryNextCommunityImageAttempt(err)) {
+            continue;
+          }
+          throw err;
+        }
+      }
+    }
+  }
+
+  if (
+    lastError instanceof HttpStatusError &&
+    shouldTryNextCommunityImageAttempt(lastError)
+  ) {
+    return {
+      ok: true,
+      detail:
+        "No dedicated remove endpoint was available, but the UI can clear the current image state.",
+    };
+  }
+
+  if (lastError instanceof Error) throw lastError;
+  throw new Error("Community profile image could not be removed.");
+}
+
 export async function getJoinApprovalStatus(requestId: number | string) {
   return httpJson(
     `/clans/join-requests/${encodeURIComponent(String(requestId))}/status`,
@@ -1931,9 +2531,11 @@ export async function listTrustEvents(params?: TrustEventsQuery): Promise<any> {
 export async function getMyTrustGraph(): Promise<any> {
   const me = await getMe();
   const userId = Number(me?.id || 0);
+
   if (!userId) {
     throw new Error("Unable to resolve current user for trust graph");
   }
+
   return getAdminTrustGraph(userId, {
     include_clans: true,
     limit_events: 500,
@@ -1949,6 +2551,7 @@ export async function getTrustGraphByUserId(userId: number): Promise<any> {
 
 export async function getTrustGraphByGmfnId(gmfnId: string): Promise<any> {
   const cleaned = String(gmfnId || "").trim();
+
   if (!cleaned) {
     throw new Error("GMFN ID is required");
   }

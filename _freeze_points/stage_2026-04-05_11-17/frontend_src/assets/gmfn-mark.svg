@@ -1,0 +1,38 @@
+<svg width="220" height="220" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+
+<defs>
+<linearGradient id="shieldBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" stop-color="#0B3C6F"/>
+<stop offset="100%" stop-color="#0A2E55"/>
+</linearGradient>
+</defs>
+
+<!-- Shield -->
+<path d="M110 12
+L188 40
+V104
+C188 158 150 188 110 204
+C70 188 32 158 32 104
+V40
+Z"
+fill="url(#shieldBlue)"
+stroke="#D4A73F"
+stroke-width="4"/>
+
+<!-- GS Letters -->
+<text x="110" y="95"
+font-size="64"
+font-family="Inter, Arial, sans-serif"
+font-weight="700"
+fill="white"
+text-anchor="middle">GS</text>
+
+<!-- Gold trust network trails -->
+<circle cx="78" cy="142" r="4" fill="#D4A73F"/>
+<circle cx="112" cy="154" r="4" fill="#D4A73F"/>
+<circle cx="142" cy="138" r="4" fill="#D4A73F"/>
+
+<line x1="78" y1="142" x2="112" y2="154" stroke="#D4A73F" stroke-width="2"/>
+<line x1="112" y1="154" x2="142" y2="138" stroke="#D4A73F" stroke-width="2"/>
+
+</svg> 

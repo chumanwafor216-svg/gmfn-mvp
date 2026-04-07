@@ -1,0 +1,685 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import PageTopNav from "../components/PageTopNav";
+import { getCurrentClan, getMe, getSelectedClanId, safeCopy } from "../lib/api";
+
+type CommunityLite = {
+  id?: number;
+  clan_id?: number;
+  name?: string | null;
+  marketplace_name?: string | null;
+};
+
+type PayoutForm = {
+  account_name: string;
+  account_number: string;
+  bank_name: string;
+  country: string;
+  currency: string;
+};
+
+type NextStepState = {
+  title: string;
+  detail: string;
+  today: string;
+  tomorrow: string;
+  ctaLabel: string;
+  ctaTo: string;
+};
+
+const LOCAL_PAYOUT_KEY = "gmfn_payout_account";
+
+function pageCard(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    borderRadius: 24,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: bg,
+    boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
+    padding: 22,
+  };
+}
+
+function softCard(bg = "#F8FBFF"): React.CSSProperties {
+  return {
+    borderRadius: 18,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 16,
+  };
+}
+
+function primaryBtn(disabled = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "11px 14px",
+    minHeight: 42,
+    borderRadius: 14,
+    border: "none",
+    background: disabled ? "#CBD5E1" : "#0B63D1",
+    color: "#FFFFFF",
+    fontWeight: 1000,
+    cursor: disabled ? "not-allowed" : "pointer",
+    fontSize: 14,
+    textDecoration: "none",
+    opacity: disabled ? 0.72 : 1,
+    whiteSpace: "nowrap",
+  };
+}
+
+function secondaryBtn(disabled = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "11px 14px",
+    minHeight: 42,
+    borderRadius: 14,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#FFFFFF",
+    color: disabled ? "#94A3B8" : "#0B1F33",
+    fontWeight: 1000,
+    cursor: disabled ? "not-allowed" : "pointer",
+    fontSize: 14,
+    textDecoration: "none",
+    opacity: disabled ? 0.72 : 1,
+    whiteSpace: "nowrap",
+  };
+}
+
+function inputStyle(): React.CSSProperties {
+  return {
+    padding: 12,
+    borderRadius: 12,
+    border: "1px solid #CBD5E1",
+    background: "#FFFFFF",
+    width: "100%",
+    boxSizing: "border-box",
+    outline: "none",
+    fontSize: 14,
+  };
+}
+
+function sectionLabel(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#4F6B8A",
+    fontWeight: 1000,
+    letterSpacing: 0.45,
+    textTransform: "uppercase",
+  };
+}
+
+function badge(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    minHeight: 30,
+    padding: "6px 10px",
+    borderRadius: 999,
+    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
+    color: primary ? "#0B63D1" : "#475569",
+    fontSize: 12,
+    fontWeight: 1000,
+    whiteSpace: "nowrap",
+  };
+}
+
+function feedbackCard(success: boolean): React.CSSProperties {
+  return {
+    ...pageCard(success ? "#ECFDF5" : "#FEF2F2"),
+    border: success ? "1px solid #A7F3D0" : "1px solid #FECACA",
+    color: success ? "#065F46" : "#991B1B",
+    fontWeight: 900,
+    padding: 14,
+  };
+}
+
+function safeStr(x: any): string {
+  return String(x ?? "").trim();
+}
+
+function detectCurrency(me: any): string {
+  const preferred = safeStr(me?.preferred_currency).toUpperCase();
+  if (preferred) return preferred;
+
+  const country = safeStr(me?.country).toUpperCase();
+  if (country === "GB" || country === "UK") return "GBP";
+  if (country === "NG") return "NGN";
+  if (country === "KE") return "KES";
+  if (country === "GH") return "GHS";
+  return "NGN";
+}
+
+function readLocalPayout(): Partial<PayoutForm> | null {
+  try {
+    if (typeof window === "undefined") return null;
+    const raw = window.localStorage.getItem(LOCAL_PAYOUT_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+
+    return {
+      account_name: safeStr((parsed as any).account_name || ""),
+      account_number: safeStr((parsed as any).account_number || ""),
+      bank_name: safeStr((parsed as any).bank_name || ""),
+      country: safeStr((parsed as any).country || ""),
+      currency: safeStr((parsed as any).currency || ""),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeLocalPayout(form: PayoutForm): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(LOCAL_PAYOUT_KEY, JSON.stringify(form));
+}
+
+function removeLocalPayout(): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(LOCAL_PAYOUT_KEY);
+}
+
+function buildPayoutSummary(form: PayoutForm): string {
+  return [
+    "GMFN Payout Details",
+    `Account Name: ${safeStr(form.account_name || "—")}`,
+    `Account Number / Wallet: ${safeStr(form.account_number || "—")}`,
+    `Bank / Wallet Provider: ${safeStr(form.bank_name || "—")}`,
+    `Country: ${safeStr(form.country || "—")}`,
+    `Currency: ${safeStr(form.currency || "—")}`,
+  ].join("\n");
+}
+
+function getCommunityName(clan: CommunityLite | null): string {
+  return safeStr(clan?.marketplace_name || clan?.name || "");
+}
+
+function renderStepAction(step: NextStepState) {
+  return (
+    <Link to={step.ctaTo} style={primaryBtn(false)}>
+      {step.ctaLabel}
+    </Link>
+  );
+}
+
+export default function PayoutDetailsPage() {
+  const [isCompact, setIsCompact] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 980;
+  });
+
+  const [me, setMe] = useState<any>(null);
+  const [community, setCommunity] = useState<CommunityLite | null>(null);
+  const [loadedFromLocal, setLoadedFromLocal] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+
+  const [form, setForm] = useState<PayoutForm>({
+    account_name: "",
+    account_number: "",
+    bank_name: "",
+    country: "",
+    currency: "NGN",
+  });
+
+  const selectedClanId = Number(getSelectedClanId() || 0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    function handleResize() {
+      setIsCompact(window.innerWidth <= 980);
+    }
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      const [meRes, clanRes] = await Promise.all([
+        getMe().catch(() => null),
+        getCurrentClan().catch(() => null),
+      ]);
+
+      const local = readLocalPayout();
+
+      setMe(meRes || null);
+      setCommunity(clanRes || null);
+      setLoadedFromLocal(Boolean(local));
+
+      setForm({
+        account_name: safeStr(local?.account_name || meRes?.account_name || ""),
+        account_number: safeStr(local?.account_number || meRes?.account_number || ""),
+        bank_name: safeStr(local?.bank_name || meRes?.bank_name || ""),
+        country: safeStr(local?.country || meRes?.country || ""),
+        currency: safeStr(local?.currency || detectCurrency(meRes) || "NGN") || "NGN",
+      });
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!msg && !err) return;
+
+    const timer = window.setTimeout(() => {
+      setMsg("");
+      setErr("");
+    }, 2600);
+
+    return () => window.clearTimeout(timer);
+  }, [msg, err]);
+
+  const selectedCommunityLabel = useMemo(() => {
+    return (
+      getCommunityName(community) ||
+      (selectedClanId ? `Community ${selectedClanId}` : "No community selected")
+    );
+  }, [community, selectedClanId]);
+
+  const completionCount = useMemo(() => {
+    let count = 0;
+    if (safeStr(form.account_name)) count += 1;
+    if (safeStr(form.account_number)) count += 1;
+    if (safeStr(form.bank_name)) count += 1;
+    if (safeStr(form.country)) count += 1;
+    if (safeStr(form.currency)) count += 1;
+    return count;
+  }, [form]);
+
+  const isReady = completionCount >= 5;
+
+  const nextStep = useMemo<NextStepState>(() => {
+    if (!selectedClanId) {
+      return {
+        title: "Choose the community context first",
+        detail:
+          "Payout details belong to the same money path as withdrawals and support. Confirm the community context first whenever possible.",
+        today: "Open Community Home and confirm the community you are working in.",
+        tomorrow:
+          "A clear community context keeps payout movement easier to understand.",
+        ctaLabel: "Open Community Home",
+        ctaTo: "/app/community",
+      };
+    }
+
+    if (!isReady) {
+      return {
+        title: "Complete the payout destination first",
+        detail:
+          "Approved withdrawals should not move until your own payout destination is complete enough for the route to be understood.",
+        today: "Complete the payout fields and save them locally for this pilot build.",
+        tomorrow:
+          "A clear payout destination reduces mistakes and delay when withdrawal begins.",
+        ctaLabel: "Open Withdrawal Instructions",
+        ctaTo: "/app/withdrawal-instructions",
+      };
+    }
+
+    return {
+      title: "Keep the payout destination ready for withdrawal",
+      detail:
+        "Your payout destination is ready enough for the pilot flow. The next step is to use Withdrawal Instructions when the support route is approved.",
+      today: "Review the details and keep them accurate before initiating withdrawal.",
+      tomorrow:
+        "A stable payout destination keeps the money path calmer and more traceable.",
+      ctaLabel: "Open Withdrawal Instructions",
+      ctaTo: "/app/withdrawal-instructions",
+    };
+  }, [selectedClanId, isReady]);
+
+  function update<K extends keyof PayoutForm>(key: K, value: PayoutForm[K]) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function saveLocal() {
+    try {
+      writeLocalPayout(form);
+      setLoadedFromLocal(true);
+      setErr("");
+      setMsg("Payout details saved locally for this pilot build.");
+    } catch {
+      setErr("Payout details could not be saved locally on this device.");
+    }
+  }
+
+  function clearLocal() {
+    try {
+      removeLocalPayout();
+      setLoadedFromLocal(false);
+
+      setForm({
+        account_name: safeStr(me?.account_name || ""),
+        account_number: safeStr(me?.account_number || ""),
+        bank_name: safeStr(me?.bank_name || ""),
+        country: safeStr(me?.country || ""),
+        currency: detectCurrency(me),
+      });
+
+      setErr("");
+      setMsg("Local payout details cleared.");
+    } catch {
+      setErr("Local payout details could not be cleared.");
+    }
+  }
+
+  function copySummary() {
+    safeCopy(buildPayoutSummary(form));
+    setErr("");
+    setMsg("Payout summary copied.");
+  }
+
+  return (
+    <div style={{ maxWidth: 1100, margin: "0 auto", paddingBottom: 30 }}>
+      <PageTopNav
+        sectionLabel="Bank / Wallet Details"
+        title="Bank / Wallet Details"
+        subtitle="This is where approved withdrawals should go after they leave the community settlement account."
+        homeTo="/app/dashboard"
+        homeLabel="Dashboard"
+        backTo="/app/withdrawal-instructions"
+        backLabel="Withdrawal Instructions"
+        nextLinks={[
+          { label: "Loans & Support", to: "/app/loans" },
+          { label: "Withdrawal Instructions", to: "/app/withdrawal-instructions" },
+          { label: "Community Home", to: "/app/community" },
+        ]}
+        utilityLinks={[
+          { label: "Marketplace", to: "/app/marketplace" },
+          { label: "Trust", to: "/app/trust" },
+        ]}
+      />
+
+      {err ? <div style={{ ...feedbackCard(false), marginTop: 18 }}>{err}</div> : null}
+      {msg ? <div style={{ ...feedbackCard(true), marginTop: 18 }}>{msg}</div> : null}
+
+      <section
+        style={{
+          ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
+          marginTop: 18,
+        }}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isCompact
+              ? "1fr"
+              : "minmax(0, 1.08fr) minmax(320px, 0.92fr)",
+            gap: 16,
+            alignItems: "start",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Payout destination</div>
+
+            <div
+              style={{
+                marginTop: 10,
+                fontSize: 30,
+                fontWeight: 1000,
+                color: "#0B1F33",
+                lineHeight: 1.15,
+              }}
+            >
+              {nextStep.title}
+            </div>
+
+            <div style={{ marginTop: 10, color: "#475569", lineHeight: 1.8 }}>
+              GMFN does not hold funds as a custodian. When a withdrawal is processed,
+              money should move from the community settlement account into your own
+              registered payout account or wallet. This page tells the system where
+              your approved funds should go.
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
+              <span style={badge(true)}>Context: {selectedCommunityLabel}</span>
+              <span style={badge(false)}>
+                Readiness: {completionCount}/5 fields complete
+              </span>
+              <span style={badge(false)}>
+                Source: {loadedFromLocal ? "Local pilot continuity" : "Profile defaults"}
+              </span>
+            </div>
+
+            <div
+              style={{
+                marginTop: 16,
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+              }}
+            >
+              {renderStepAction(nextStep)}
+              <Link to="/app/loans" style={secondaryBtn(false)}>
+                Return to Loans & Support
+              </Link>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gap: 12 }}>
+            <div style={softCard("#FFFFFF")}>
+              <div style={sectionLabel()}>Today</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 15,
+                  fontWeight: 900,
+                  lineHeight: 1.65,
+                }}
+              >
+                {nextStep.today}
+              </div>
+            </div>
+
+            <div style={softCard("#FFFFFF")}>
+              <div style={sectionLabel()}>Tomorrow</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 15,
+                  fontWeight: 900,
+                  lineHeight: 1.65,
+                }}
+              >
+                {nextStep.tomorrow}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section style={{ ...pageCard(), marginTop: 18 }}>
+        <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+          Why this matters
+        </div>
+
+        <div style={{ marginTop: 10, color: "#475569", lineHeight: 1.8 }}>
+          GMFN does not hold funds as a custodian. When a withdrawal is processed,
+          money should move from the community settlement account into your own
+          registered payout account. This page tells the system where your approved
+          funds should go.
+        </div>
+      </section>
+
+      <section style={{ ...pageCard(), marginTop: 18 }}>
+        <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+          Payout Account Details
+        </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+            gap: 12,
+          }}
+        >
+          <input
+            value={form.account_name}
+            onChange={(e) => update("account_name", e.target.value)}
+            placeholder="Account name"
+            style={inputStyle()}
+          />
+
+          <input
+            value={form.account_number}
+            onChange={(e) => update("account_number", e.target.value)}
+            placeholder="Account number / wallet number"
+            style={inputStyle()}
+          />
+
+          <input
+            value={form.bank_name}
+            onChange={(e) => update("bank_name", e.target.value)}
+            placeholder="Bank / wallet provider"
+            style={inputStyle()}
+          />
+
+          <input
+            value={form.country}
+            onChange={(e) => update("country", e.target.value)}
+            placeholder="Country"
+            style={inputStyle()}
+          />
+
+          <select
+            value={form.currency}
+            onChange={(e) => update("currency", e.target.value)}
+            style={inputStyle()}
+          >
+            <option value="GBP">GBP</option>
+            <option value="NGN">NGN</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="KES">KES</option>
+            <option value="GHS">GHS</option>
+          </select>
+        </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            color: "#64748b",
+            lineHeight: 1.8,
+          }}
+        >
+          In this pilot build, these details are saved locally on your device for
+          workflow continuity. In the full onboarding flow, these fields should be
+          stored and verified as part of registration.
+        </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            display: "flex",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
+          <button onClick={saveLocal} style={primaryBtn(false)}>
+            Save Payout Details
+          </button>
+
+          <button onClick={copySummary} style={secondaryBtn(false)}>
+            Copy Summary
+          </button>
+
+          <button onClick={clearLocal} style={secondaryBtn(false)}>
+            Clear Local Details
+          </button>
+        </div>
+      </section>
+
+      <section
+        style={{
+          marginTop: 18,
+          display: "grid",
+          gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+          gap: 18,
+        }}
+      >
+        <div style={softCard("#FFFFFF")}>
+          <div style={sectionLabel()}>Current payout readiness</div>
+          <div
+            style={{
+              marginTop: 10,
+              color: "#0B1F33",
+              fontSize: 24,
+              fontWeight: 1000,
+            }}
+          >
+            {isReady ? "Ready for pilot flow" : "Needs completion"}
+          </div>
+
+          <div
+            style={{
+              marginTop: 10,
+              color: "#475569",
+              lineHeight: 1.8,
+            }}
+          >
+            {isReady
+              ? "The core payout fields are complete enough for the pilot withdrawal flow."
+              : "Complete all core payout fields before relying on the withdrawal path."}
+          </div>
+        </div>
+
+        <div style={softCard("#FFFFFF")}>
+          <div style={sectionLabel()}>Stored summary</div>
+          <div
+            style={{
+              marginTop: 10,
+              color: "#475569",
+              lineHeight: 1.8,
+              whiteSpace: "pre-wrap",
+            }}
+          >
+            {buildPayoutSummary(form)}
+          </div>
+        </div>
+      </section>
+
+      <section style={{ ...pageCard(), marginTop: 18 }}>
+        <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+          What happens next
+        </div>
+
+        <div style={{ marginTop: 10, color: "#475569", lineHeight: 1.8 }}>
+          Once your payout destination is complete, return to Withdrawal Instructions
+          when the support route is approved. That page will tell you how approved
+          value should move into this destination.
+        </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            display: "flex",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
+          <Link to="/app/withdrawal-instructions" style={primaryBtn(false)}>
+            Open Withdrawal Instructions
+          </Link>
+          <Link to="/app/loans" style={secondaryBtn(false)}>
+            Return to Loans & Support
+          </Link>
+        </div>
+      </section>
+    </div>
+  );
+}

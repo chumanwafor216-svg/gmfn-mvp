@@ -1,31 +1,472 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
+import * as api from "../lib/api";
 import {
-  getMe,
-  getMyTrustSlip,
-  getSelectedClanId,
-  getTrustScoreExplained,
-} from "../lib/api";
+  buildGuidanceSnapshot,
+  type GuidanceSnapshot,
+} from "../lib/guidance";
 
-type Tone = "green" | "yellow" | "red" | "neutral";
+type NoticeTone = "success" | "error";
 
-type TrustState = {
-  scoreText: string;
-  bandText: string;
-  tone: Tone;
-  heading: string;
-  whyText: string;
-  scopeText: string;
+type CollapseState = {
+  overview: boolean;
+  explainability: boolean;
+  breakdown: boolean;
+  evidence: boolean;
+  routes: boolean;
 };
 
-type CciState = {
-  classText: string;
-  scoreText: string;
-  tone: Tone;
-  statusText: string;
-  whyText: string;
+type ExplainabilityEvent = {
+  id?: number;
+  user_id?: number;
+  event_type?: string | null;
+  delta?: string | null;
+  created_at?: string | null;
+  reason?: string | null;
+  note?: string | null;
+  meta?: Record<string, any> | null;
 };
+
+type TrustExplainability = {
+  user_id?: number | null;
+  current_score?: string | null;
+  band?: string | null;
+  latest_reason?: string | null;
+  latest_note?: string | null;
+  latest_source?: string | null;
+  recent_events?: ExplainabilityEvent[];
+};
+
+type RecomputeRuleset = {
+  borrower_repayment_delta?: string | null;
+  guarantor_repayment_delta?: string | null;
+  precision?: string | null;
+  ordering?: string | null;
+};
+
+type TrustRecompute = {
+  user_id?: number | null;
+  score?: string | null;
+  band?: string | null;
+  event_count?: number | null;
+  last_event_id?: number | null;
+  breakdown?: {
+    ruleset?: RecomputeRuleset | null;
+    counts_by_event_type?: Record<string, number> | null;
+    delta_by_event_type?: Record<string, any> | null;
+    last_event_id_used?: number | null;
+    event_count_used?: number | null;
+    computed_band?: string | null;
+    computed_score?: string | null;
+    computed_score_int?: number | null;
+  } | null;
+};
+
+type MerchantSummary = {
+  gmfn_id?: string | null;
+  code?: string | null;
+  trust_limit?: string | null;
+  currency?: string | null;
+  cci_score?: string | null;
+  cci_band?: string | null;
+  sponsor_count?: number | null;
+  display_name?: string | null;
+  community?: string | null;
+  band?: string | null;
+  expires_at?: string | null;
+  expiry_policy?: string | null;
+  phone_verified?: boolean | null;
+};
+
+type CapacityContext = {
+  available_guarantee_capacity?: string | null;
+  current_locked_guarantees?: string | null;
+  overexposure_ratio?: string | null;
+  risk_level?: string | null;
+  reasons?: string[];
+};
+
+type TrustSlipSummary = {
+  verified?: boolean | null;
+  active?: boolean | null;
+  user_id?: number | null;
+  clan_id?: number | null;
+  gmfn_id?: string | null;
+  display_name?: string | null;
+  community?: string | null;
+  phone_verified?: boolean | null;
+  level?: string | null;
+  band?: string | null;
+  level_label?: string | null;
+  lifetime_trust?: string | null;
+  standing_score?: string | null;
+  trust_score?: string | null;
+  trust_slip_limit?: string | null;
+  trust_limit?: string | null;
+  currency?: string | null;
+  status?: string | null;
+  code?: string | null;
+  created_at?: string | null;
+  issued_at?: string | null;
+  expires_at?: string | null;
+  expiry_policy?: string | null;
+  last_release_at?: string | null;
+  last_full_repayment_at?: string | null;
+  days_since_last_full_repayment?: number | null;
+  cci_score?: string | null;
+  cci_band?: string | null;
+  graph_score?: string | null;
+  active_clan_count?: number | null;
+  sponsor_count?: number | null;
+  unique_counterparties?: number | null;
+  risk_flags?: string[];
+  sponsors?: any[];
+  internal_contacts?: any[];
+  evidence_summary?: {
+    capacity_context?: CapacityContext | null;
+    readiness_context?: Record<string, any> | null;
+  } | null;
+  merchant_summary?: MerchantSummary | null;
+  merchant_visibility_level?: string | null;
+  visibility_options?: string[];
+  is_current?: boolean | null;
+  issued_reason?: string | null;
+  not_a_bank_guarantee?: boolean | null;
+  no_auto_debit?: boolean | null;
+  disclaimer?: string | null;
+  generated_at?: string | null;
+  public_verify_url?: string | null;
+  verification_code?: string | null;
+  verification_token?: string | null;
+  token?: string | null;
+};
+
+type ClanListItem = {
+  id?: number;
+  name?: string | null;
+  description?: string | null;
+  marketplace_name?: string | null;
+  marketplace_description?: string | null;
+  community_code?: string | null;
+};
+
+const TRUST_PASSPORT_UI_STORAGE_KEY = "gmfn.trustPassport.sections.v2";
+
+function safeStr(x: any): string {
+  return String(x ?? "").trim();
+}
+
+function firstTruthy(...values: any[]): string {
+  for (const value of values) {
+    const text = safeStr(value);
+    if (text) return text;
+  }
+  return "";
+}
+
+function positiveNumber(value: any): number {
+  const n = Number(value || 0);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function safeDateTime(x: any): string {
+  const raw = safeStr(x);
+  if (!raw) return "";
+  const d = new Date(raw);
+  if (!Number.isFinite(d.getTime())) return raw;
+  return d.toLocaleString();
+}
+
+function safeCopyText(text: string) {
+  const value = safeStr(text);
+  if (!value) return;
+
+  if (typeof (api as any).safeCopy === "function") {
+    (api as any).safeCopy(value);
+    return;
+  }
+
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    void navigator.clipboard.writeText(value);
+  }
+}
+
+function rowsOf<T = any>(input: any): T[] {
+  if (Array.isArray(input)) return input as T[];
+  if (Array.isArray(input?.items)) return input.items as T[];
+  if (Array.isArray(input?.data?.items)) return input.data.items as T[];
+  if (Array.isArray(input?.results)) return input.results as T[];
+  if (Array.isArray(input?.rows)) return input.rows as T[];
+  return [];
+}
+
+function apiBase(): string {
+  const raw =
+    (typeof import.meta !== "undefined" &&
+      (import.meta as any)?.env &&
+      (import.meta as any).env.VITE_API_BASE_URL) ||
+    "/api";
+  return String(raw || "").trim().replace(/\/+$/, "");
+}
+
+function browserOrigin(): string {
+  try {
+    if (typeof window === "undefined") return "";
+    return String(window.location.origin || "").trim().replace(/\/+$/, "");
+  } catch {
+    return "";
+  }
+}
+
+function dedupeStrings(values: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+
+  for (const value of values) {
+    const text = safeStr(value);
+    if (!text || seen.has(text)) continue;
+    seen.add(text);
+    out.push(text);
+  }
+
+  return out;
+}
+
+function buildApiRoots(): string[] {
+  const base = apiBase();
+  const origin = browserOrigin();
+  const out: string[] = [];
+
+  if (base) out.push(base);
+
+  if (origin) {
+    try {
+      const u = new URL(origin);
+      out.push(`${u.protocol}//${u.hostname}:8012`);
+    } catch {
+      // ignore
+    }
+  }
+
+  out.push("http://127.0.0.1:8012");
+  return dedupeStrings(out.map((item) => item.replace(/\/+$/, "")));
+}
+
+function joinUrl(root: string, path: string): string {
+  const cleanRoot = safeStr(root).replace(/\/+$/, "");
+  const cleanPath = safeStr(path).startsWith("/")
+    ? safeStr(path)
+    : `/${safeStr(path)}`;
+
+  if (cleanPath.startsWith("http://") || cleanPath.startsWith("https://")) {
+    return cleanPath;
+  }
+
+  return `${cleanRoot}${cleanPath}`;
+}
+
+async function fetchFirstJson(
+  paths: string[],
+  methods: Array<"GET" | "POST"> = ["GET"],
+  extraHeaders: Record<string, string> = {}
+): Promise<any | null> {
+  const roots = buildApiRoots();
+  const token =
+    typeof (api as any).getAccessToken === "function"
+      ? (api as any).getAccessToken()
+      : "";
+
+  for (const method of methods) {
+    for (const path of paths) {
+      for (const root of roots) {
+        const url = joinUrl(root, path);
+
+        try {
+          const headers: Record<string, string> = {
+            accept: "application/json",
+            ...extraHeaders,
+          };
+
+          if (method === "POST") {
+            headers["Content-Type"] = "application/json";
+          }
+
+          if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+          }
+
+          const res = await fetch(url, {
+            method,
+            headers,
+            credentials: "include",
+            cache: "no-store",
+            body: method === "POST" ? "{}" : undefined,
+          });
+
+          if (!res.ok) continue;
+
+          const contentType = String(res.headers.get("content-type") || "").toLowerCase();
+          if (!contentType.includes("application/json")) continue;
+
+          return await res.json();
+        } catch {
+          // continue
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+async function callFirstAvailable<T = any>(
+  names: string[],
+  argsSets: any[][]
+): Promise<T | null> {
+  for (const name of names) {
+    const fn = (api as any)[name];
+    if (typeof fn !== "function") continue;
+
+    for (const args of argsSets) {
+      try {
+        const result = await fn(...args);
+        if (result) return result as T;
+      } catch {
+        // try next signature
+      }
+    }
+  }
+
+  return null;
+}
+
+function normalizeExplainability(raw: any): TrustExplainability | null {
+  if (!raw) return null;
+
+  const src = raw?.item || raw?.data || raw;
+  return {
+    user_id: src?.user_id ?? null,
+    current_score: firstTruthy(src?.current_score, src?.score),
+    band: firstTruthy(src?.band),
+    latest_reason: firstTruthy(src?.latest_reason, src?.reason),
+    latest_note: firstTruthy(src?.latest_note, src?.note),
+    latest_source: firstTruthy(src?.latest_source, src?.source),
+    recent_events: Array.isArray(src?.recent_events)
+      ? src.recent_events.map((row: any) => ({
+          id: positiveNumber(row?.id) || undefined,
+          user_id: positiveNumber(row?.user_id) || undefined,
+          event_type: firstTruthy(row?.event_type, row?.type),
+          delta: firstTruthy(row?.delta),
+          created_at: firstTruthy(row?.created_at),
+          reason: firstTruthy(row?.reason),
+          note: firstTruthy(row?.note),
+          meta: row?.meta || null,
+        }))
+      : [],
+  };
+}
+
+function normalizeRecompute(raw: any): TrustRecompute | null {
+  if (!raw) return null;
+
+  const src = raw?.item || raw?.data || raw;
+  return {
+    user_id: src?.user_id ?? null,
+    score: firstTruthy(src?.score),
+    band: firstTruthy(src?.band),
+    event_count: src?.event_count ?? null,
+    last_event_id: src?.last_event_id ?? null,
+    breakdown: src?.breakdown
+      ? {
+          ruleset: src.breakdown?.ruleset
+            ? {
+                borrower_repayment_delta: firstTruthy(
+                  src.breakdown.ruleset?.borrower_repayment_delta
+                ),
+                guarantor_repayment_delta: firstTruthy(
+                  src.breakdown.ruleset?.guarantor_repayment_delta
+                ),
+                precision: firstTruthy(src.breakdown.ruleset?.precision),
+                ordering: firstTruthy(src.breakdown.ruleset?.ordering),
+              }
+            : null,
+          counts_by_event_type: src.breakdown?.counts_by_event_type || {},
+          delta_by_event_type: src.breakdown?.delta_by_event_type || {},
+          last_event_id_used: src.breakdown?.last_event_id_used ?? null,
+          event_count_used: src.breakdown?.event_count_used ?? null,
+          computed_band: firstTruthy(src.breakdown?.computed_band),
+          computed_score: firstTruthy(src.breakdown?.computed_score),
+          computed_score_int: src.breakdown?.computed_score_int ?? null,
+        }
+      : null,
+  };
+}
+
+function normalizeTrustSlipSummary(raw: any): TrustSlipSummary | null {
+  if (!raw) return null;
+
+  const src = raw?.item || raw?.summary || raw?.trust_slip || raw?.data || raw;
+  if (!src || typeof src !== "object") return null;
+
+  return {
+    verified: src?.verified ?? null,
+    active: src?.active ?? null,
+    user_id: src?.user_id ?? null,
+    clan_id: src?.clan_id ?? null,
+    gmfn_id: firstTruthy(src?.gmfn_id),
+    display_name: firstTruthy(src?.display_name),
+    community: firstTruthy(src?.community),
+    phone_verified: src?.phone_verified ?? null,
+    level: firstTruthy(src?.level),
+    band: firstTruthy(src?.band),
+    level_label: firstTruthy(src?.level_label),
+    lifetime_trust: firstTruthy(src?.lifetime_trust),
+    standing_score: firstTruthy(src?.standing_score),
+    trust_score: firstTruthy(src?.trust_score),
+    trust_slip_limit: firstTruthy(src?.trust_slip_limit),
+    trust_limit: firstTruthy(src?.trust_limit),
+    currency: firstTruthy(src?.currency),
+    status: firstTruthy(src?.status),
+    code: firstTruthy(src?.code),
+    created_at: firstTruthy(src?.created_at),
+    issued_at: firstTruthy(src?.issued_at),
+    expires_at: firstTruthy(src?.expires_at),
+    expiry_policy: firstTruthy(src?.expiry_policy),
+    last_release_at: firstTruthy(src?.last_release_at),
+    last_full_repayment_at: firstTruthy(src?.last_full_repayment_at),
+    days_since_last_full_repayment: src?.days_since_last_full_repayment ?? null,
+    cci_score: firstTruthy(src?.cci_score),
+    cci_band: firstTruthy(src?.cci_band),
+    graph_score: firstTruthy(src?.graph_score),
+    active_clan_count: src?.active_clan_count ?? null,
+    sponsor_count: src?.sponsor_count ?? null,
+    unique_counterparties: src?.unique_counterparties ?? null,
+    risk_flags: Array.isArray(src?.risk_flags)
+      ? src.risk_flags.map((item: any) => safeStr(item)).filter(Boolean)
+      : [],
+    sponsors: Array.isArray(src?.sponsors) ? src.sponsors : [],
+    internal_contacts: Array.isArray(src?.internal_contacts)
+      ? src.internal_contacts
+      : [],
+    evidence_summary: src?.evidence_summary || null,
+    merchant_summary: src?.merchant_summary || null,
+    merchant_visibility_level: firstTruthy(src?.merchant_visibility_level),
+    visibility_options: Array.isArray(src?.visibility_options)
+      ? src.visibility_options
+      : [],
+    is_current: src?.is_current ?? null,
+    issued_reason: firstTruthy(src?.issued_reason),
+    not_a_bank_guarantee: src?.not_a_bank_guarantee ?? null,
+    no_auto_debit: src?.no_auto_debit ?? null,
+    disclaimer: firstTruthy(src?.disclaimer),
+    generated_at: firstTruthy(src?.generated_at),
+    public_verify_url: firstTruthy(src?.public_verify_url),
+    verification_code: firstTruthy(src?.verification_code),
+    verification_token: firstTruthy(src?.verification_token),
+    token: firstTruthy(src?.token),
+  };
+}
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
@@ -35,6 +476,7 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
     padding: 20,
     boxShadow:
       "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
+    overflow: "hidden",
   };
 }
 
@@ -56,41 +498,15 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
-function primaryBtn(): React.CSSProperties {
+function statTile(
+  bg = "#FFFFFF",
+  border = "1px solid rgba(11,31,51,0.08)"
+): React.CSSProperties {
   return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
-    borderRadius: 14,
-    border: "none",
-    background: "#0B63D1",
-    color: "#FFFFFF",
-    fontWeight: 900,
-    fontSize: 14,
-    textDecoration: "none",
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-  };
-}
-
-function secondaryBtn(): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
-    borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
-    color: "#0B1F33",
-    fontWeight: 800,
-    fontSize: 14,
-    textDecoration: "none",
-    cursor: "pointer",
-    whiteSpace: "nowrap",
+    borderRadius: 16,
+    border,
+    background: bg,
+    padding: 14,
   };
 }
 
@@ -108,6 +524,7 @@ function badge(primary = false): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
+    gap: 6,
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
@@ -119,341 +536,191 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function safeStr(x: any): string {
-  return String(x ?? "").trim();
-}
-
-function numberOrNull(...values: any[]): number | null {
-  for (const value of values) {
-    if (value === null || value === undefined || String(value).trim() === "") {
-      continue;
-    }
-
-    const num = Number(value);
-    if (!Number.isNaN(num)) return num;
-  }
-
-  return null;
-}
-
-function toStringArray(...values: any[]): string[] {
-  for (const value of values) {
-    if (Array.isArray(value)) {
-      return value
-        .map((item) => String(item ?? "").trim())
-        .filter(Boolean);
-    }
-  }
-
-  return [];
-}
-
-function apiBase(): string {
-  const raw =
-    (typeof import.meta !== "undefined" &&
-      (import.meta as any)?.env &&
-      (import.meta as any).env.VITE_API_BASE_URL) ||
-    "/api";
-
-  return String(raw || "").trim().replace(/\/+$/, "");
-}
-
-function apiOrigin(): string {
-  const base = apiBase();
-
-  if (base.startsWith("http://") || base.startsWith("https://")) {
-    try {
-      const u = new URL(base);
-      return `${u.protocol}//${u.host}`;
-    } catch {
-      return "http://127.0.0.1:8012";
-    }
-  }
-
-  return "http://127.0.0.1:8012";
-}
-
-function toneStyles(tone: Tone) {
-  if (tone === "green") {
+function actionBtn(
+  kind: "primary" | "secondary" | "soft" = "secondary",
+  disabled = false
+): React.CSSProperties {
+  if (kind === "primary") {
     return {
-      bg: "#F3FBF5",
-      border: "1px solid rgba(34,197,94,0.16)",
-      text: "#166534",
-      soft: "rgba(22,101,52,0.08)",
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 42,
+      padding: "10px 14px",
+      borderRadius: 14,
+      border: "none",
+      background: disabled ? "#CBD5E1" : "#0B63D1",
+      color: "#FFFFFF",
+      fontWeight: 900,
+      fontSize: 14,
+      textDecoration: "none",
+      cursor: disabled ? "not-allowed" : "pointer",
+      whiteSpace: "nowrap",
+      opacity: disabled ? 0.86 : 1,
     };
   }
 
-  if (tone === "yellow") {
+  if (kind === "soft") {
     return {
-      bg: "#FFFBEF",
-      border: "1px solid rgba(245,158,11,0.16)",
-      text: "#92400E",
-      soft: "rgba(146,64,14,0.08)",
-    };
-  }
-
-  if (tone === "red") {
-    return {
-      bg: "#FFF5F5",
-      border: "1px solid rgba(239,68,68,0.16)",
-      text: "#991B1B",
-      soft: "rgba(153,27,27,0.08)",
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 38,
+      padding: "8px 12px",
+      borderRadius: 12,
+      border: "1px solid rgba(11,31,51,0.08)",
+      background: "#F8FBFF",
+      color: disabled ? "#94A3B8" : "#24415C",
+      fontWeight: 800,
+      fontSize: 13,
+      textDecoration: "none",
+      cursor: disabled ? "not-allowed" : "pointer",
+      whiteSpace: "nowrap",
+      opacity: disabled ? 0.86 : 1,
     };
   }
 
   return {
-    bg: "#F8FAFC",
-    border: "1px solid rgba(148,163,184,0.16)",
-    text: "#334155",
-    soft: "rgba(51,65,85,0.07)",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 42,
+    padding: "10px 14px",
+    borderRadius: 14,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#FFFFFF",
+    color: disabled ? "#94A3B8" : "#0B1F33",
+    fontWeight: 800,
+    fontSize: 14,
+    textDecoration: "none",
+    cursor: disabled ? "not-allowed" : "pointer",
+    whiteSpace: "nowrap",
+    opacity: disabled ? 0.86 : 1,
   };
 }
 
-function getCciState(me: any): CciState {
-  const rawScore =
-    me?.cci_score ??
-    me?.cross_client_integrity_score ??
-    me?.cross_clan_integrity_score ??
-    me?.cross_community_integrity_score ??
-    null;
+function collapseToggle(): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 38,
+    padding: "8px 12px",
+    borderRadius: 12,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#FFFFFF",
+    color: "#24415C",
+    fontWeight: 800,
+    fontSize: 13,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+  };
+}
 
-  const rawClass =
-    me?.cci_class ??
-    me?.cross_client_integrity_class ??
-    me?.cross_clan_integrity_class ??
-    me?.cross_community_integrity_class ??
-    "";
+function helperText(): React.CSSProperties {
+  return {
+    color: "#5F7287",
+    fontSize: 14,
+    lineHeight: 1.75,
+  };
+}
 
-  const rawWhy =
-    me?.cci_reason ??
-    me?.cross_client_integrity_reason ??
-    me?.cross_clan_integrity_reason ??
-    me?.cross_community_integrity_reason ??
-    "";
+function noticeCard(tone: NoticeTone): React.CSSProperties {
+  return {
+    ...softCard(tone === "success" ? "#F3FBF5" : "#FEF2F2"),
+    color: tone === "success" ? "#166534" : "#991B1B",
+    border:
+      tone === "success"
+        ? "1px solid rgba(34,197,94,0.16)"
+        : "1px solid rgba(239,68,68,0.16)",
+    fontWeight: 800,
+  };
+}
 
-  const scoreNum = numberOrNull(rawScore);
-  const classText = safeStr(rawClass).toUpperCase();
-
-  if (classText) {
-    if (classText === "A" || classText === "A+") {
-      return {
-        classText,
-        scoreText: scoreNum === null ? "—" : String(Math.round(scoreNum)),
-        tone: "green",
-        statusText: "Healthy across your visible communities",
-        whyText: safeStr(rawWhy || "Your cross-community trust position is steady right now."),
-      };
-    }
-
-    if (classText === "B") {
-      return {
-        classText,
-        scoreText: scoreNum === null ? "—" : String(Math.round(scoreNum)),
-        tone: "green",
-        statusText: "Stable and growing",
-        whyText: safeStr(
-          rawWhy || "Keep consistent positive actions across communities."
-        ),
-      };
-    }
-
-    if (classText === "C") {
-      return {
-        classText,
-        scoreText: scoreNum === null ? "—" : String(Math.round(scoreNum)),
-        tone: "yellow",
-        statusText: "Needs attention",
-        whyText: safeStr(
-          rawWhy || "A few better actions can improve your standing."
-        ),
-      };
-    }
-
-    return {
-      classText,
-      scoreText: scoreNum === null ? "—" : String(Math.round(scoreNum)),
-      tone: "red",
-      statusText: "At risk",
-      whyText: safeStr(
-        rawWhy || "Your cross-community trust position needs action and repair."
-      ),
-    };
+function readLocalJSON<T>(key: string, fallback: T): T {
+  try {
+    if (typeof window === "undefined") return fallback;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
   }
+}
 
-  if (scoreNum !== null) {
-    if (scoreNum >= 75) {
-      return {
-        classText: "A",
-        scoreText: String(Math.round(scoreNum)),
-        tone: "green",
-        statusText: "Healthy across your visible communities",
-        whyText: safeStr(rawWhy || "Your cross-community trust position is looking strong."),
-      };
-    }
-
-    if (scoreNum >= 55) {
-      return {
-        classText: "B",
-        scoreText: String(Math.round(scoreNum)),
-        tone: "green",
-        statusText: "Stable and growing",
-        whyText: safeStr(
-          rawWhy || "Keep consistent actions to strengthen your standing."
-        ),
-      };
-    }
-
-    if (scoreNum >= 35) {
-      return {
-        classText: "C",
-        scoreText: String(Math.round(scoreNum)),
-        tone: "yellow",
-        statusText: "Needs attention",
-        whyText: safeStr(
-          rawWhy || "Some recent actions may have reduced your trust strength."
-        ),
-      };
-    }
-
-    return {
-      classText: "D",
-      scoreText: String(Math.round(scoreNum)),
-      tone: "red",
-      statusText: "At risk",
-      whyText: safeStr(rawWhy || "Your cross-community trust position needs urgent improvement."),
-    };
+function writeLocalJSON(key: string, value: any) {
+  try {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore
   }
+}
+
+function defaultCollapseState(): CollapseState {
+  return {
+    overview: false,
+    explainability: false,
+    breakdown: false,
+    evidence: false,
+    routes: false,
+  };
+}
+
+function normalizeCollapseState(raw: any): CollapseState {
+  const base = defaultCollapseState();
 
   return {
-    classText: "Pending",
-    scoreText: "—",
-    tone: "neutral",
-    statusText: "Cross-community reading is being prepared",
-    whyText: "A fuller cross-community explanation will appear when available.",
+    overview: Boolean(raw?.overview ?? base.overview),
+    explainability: Boolean(raw?.explainability ?? base.explainability),
+    breakdown: Boolean(raw?.breakdown ?? base.breakdown),
+    evidence: Boolean(raw?.evidence ?? base.evidence),
+    routes: Boolean(raw?.routes ?? base.routes),
   };
 }
 
-function deriveBandFromScore(scoreNum: number | null): string {
-  if (scoreNum === null) return "Pending";
-  if (scoreNum >= 75) return "Strong";
-  if (scoreNum >= 55) return "Steady";
-  if (scoreNum >= 35) return "Watch";
-  return "At risk";
-}
-
-function getOpenTrustState(
-  explained: any,
-  me: any,
-  selectedClanId: number
-): TrustState {
-  const data = explained?.current ?? explained?.community ?? explained ?? {};
-
-  const scoreNum = numberOrNull(
-    data?.open_trust_score,
-    data?.community_score,
-    data?.trust_score,
-    data?.score,
-    me?.open_trust_score,
-    me?.current_community_trust_score,
-    me?.trust_score
-  );
-
-  const rawBand = safeStr(
-    data?.open_trust_band ||
-      data?.community_band ||
-      data?.trust_band ||
-      data?.band ||
-      data?.class
-  );
-
-  const bandText = rawBand || deriveBandFromScore(scoreNum);
-
-  const whyText = safeStr(
-    data?.open_trust_reason ||
-      data?.community_reason ||
-      data?.trust_reason ||
-      data?.reason ||
-      data?.summary ||
-      data?.explanation ||
-      "This reading reflects how your identity is currently standing inside the community you are working in right now."
-  );
-
-  const communityName = safeStr(
-    data?.community_name || data?.clan_name || data?.selected_community_name
-  );
-
-  const scopeText = communityName
-    ? `This reading reflects your immediate standing in ${communityName}.`
-    : selectedClanId
-    ? `This reading reflects your immediate standing in the currently selected community (Community ${selectedClanId}).`
-    : "Open Trust reflects your immediate standing in the currently selected community. Select a community to make this reading more specific.";
-
-  if (scoreNum !== null) {
-    if (scoreNum >= 75) {
-      return {
-        scoreText: String(Math.round(scoreNum)),
-        bandText,
-        tone: "green",
-        heading: "Healthy in your current community",
-        whyText,
-        scopeText,
-      };
-    }
-
-    if (scoreNum >= 55) {
-      return {
-        scoreText: String(Math.round(scoreNum)),
-        bandText,
-        tone: "green",
-        heading: "Stable in your current community",
-        whyText,
-        scopeText,
-      };
-    }
-
-    if (scoreNum >= 35) {
-      return {
-        scoreText: String(Math.round(scoreNum)),
-        bandText,
-        tone: "yellow",
-        heading: "Needs attention in your current community",
-        whyText,
-        scopeText,
-      };
-    }
-
-    return {
-      scoreText: String(Math.round(scoreNum)),
-      bandText,
-      tone: "red",
-      heading: "At risk in your current community",
-      whyText,
-      scopeText,
-    };
+function absoluteUrl(pathOrUrl: string): string {
+  const raw = safeStr(pathOrUrl);
+  if (!raw) return "";
+  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+  if (typeof window !== "undefined" && raw.startsWith("/")) {
+    return `${window.location.origin}${raw}`;
   }
-
-  return {
-    scoreText: "—",
-    bandText: bandText || "Pending",
-    tone: "neutral",
-    heading: "Community trust reading is being prepared",
-    whyText,
-    scopeText,
-  };
+  return raw;
 }
 
 export default function TrustScorePage() {
-  const selectedClanId = Number(getSelectedClanId() || 0);
+  const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 980;
   });
 
-  const [me, setMe] = useState<any>(null);
-  const [trustSlip, setTrustSlip] = useState<any>(null);
-  const [trustExplained, setTrustExplained] = useState<any>(null);
+  const [collapsed, setCollapsed] = useState<CollapseState>(() =>
+    normalizeCollapseState(
+      readLocalJSON(TRUST_PASSPORT_UI_STORAGE_KEY, defaultCollapseState())
+    )
+  );
+
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [notice, setNotice] = useState<{
+    tone: NoticeTone;
+    text: string;
+  } | null>(null);
+
+  const [me, setMe] = useState<any>(null);
+  const [currentClan, setCurrentClan] = useState<any>(null);
+  const [clansList, setClansList] = useState<ClanListItem[]>([]);
+  const [guidance, setGuidance] = useState<GuidanceSnapshot | null>(null);
+  const [explainability, setExplainability] = useState<TrustExplainability | null>(
+    null
+  );
+  const [recompute, setRecompute] = useState<TrustRecompute | null>(null);
+  const [trustSlipSummary, setTrustSlipSummary] = useState<TrustSlipSummary | null>(
+    null
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -469,67 +736,384 @@ export default function TrustScorePage() {
   }, []);
 
   useEffect(() => {
+    writeLocalJSON(TRUST_PASSPORT_UI_STORAGE_KEY, collapsed);
+  }, [collapsed]);
+
+  useEffect(() => {
+    if (!notice) return;
+
+    const timer = window.setTimeout(() => {
+      setNotice(null);
+    }, 2400);
+
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+
+  async function loadAll() {
+    const clanHeaders: Record<string, string> = {};
+    if (selectedClanId) {
+      clanHeaders["X-Clan-Id"] = String(selectedClanId);
+    }
+
+    const [meRes, clanRes, clansRes, guidanceRes] = await Promise.all([
+      typeof (api as any).getMe === "function"
+        ? (api as any).getMe().catch(() => null)
+        : Promise.resolve(null),
+      typeof (api as any).getCurrentClan === "function"
+        ? (api as any).getCurrentClan().catch(() => null)
+        : Promise.resolve(null),
+      (async () => {
+        const viaFn = await callFirstAvailable(
+          ["listMyClans", "getMyClans"],
+          [[]]
+        );
+        if (viaFn) return viaFn;
+        return fetchFirstJson(["/clans/me"], ["GET"], clanHeaders);
+      })(),
+      buildGuidanceSnapshot().catch(() => null),
+    ]);
+
+    const [explainRes, recomputeRes, trustSlipRes] = await Promise.all([
+      (async () => {
+        const viaFn = await callFirstAvailable(
+          [
+            "getMyTrustExplainability",
+            "getTrustExplainability",
+            "getTrustWhyMe",
+          ],
+          [[{ clan_id: selectedClanId || undefined }], []]
+        );
+
+        if (viaFn) return viaFn;
+
+        return fetchFirstJson(
+          [
+            "/admin/trust-explainability/me",
+            "/admin/trust-explainability/my",
+            "/admin/trust-explainability/get-my-trust-explainability",
+            "/admin/trust_explainability/get_my_trust_explainability",
+            "/trust-explainability/me",
+            "/trust_explainability/me",
+          ],
+          ["GET"],
+          clanHeaders
+        );
+      })(),
+      (async () => {
+        const viaFn = await callFirstAvailable(
+          [
+            "recomputeMyTrust",
+            "recomputeTrustMe",
+            "recomputeMe",
+            "getRecomputeMe",
+          ],
+          [[{ clan_id: selectedClanId || undefined }], [], [selectedClanId || undefined]]
+        );
+
+        if (viaFn) return viaFn;
+
+        return fetchFirstJson(
+          [
+            "/admin/trust-explainability/recompute-me",
+            "/admin/trust-explainability/recompute_me",
+            "/admin/trust_explainability/recompute_me",
+            "/trust-explainability/recompute-me",
+            "/trust_explainability/recompute_me",
+          ],
+          ["POST", "GET"],
+          clanHeaders
+        );
+      })(),
+      (async () => {
+        const viaFn = await callFirstAvailable(
+          [
+            "getMyTrustSlipSummary",
+            "getTrustSlipSummary",
+            "getTrustSlipMeSummary",
+            "getMyTrustSlip",
+          ],
+          [[], [{ clan_id: selectedClanId || undefined }]]
+        );
+
+        if (viaFn) return viaFn;
+
+        return fetchFirstJson(
+          [
+            "/trust-slips/me/summary",
+            "/trust-slips/me-summary",
+            "/trust-slips/summary/me",
+          ],
+          ["GET"],
+          clanHeaders
+        );
+      })(),
+    ]);
+
+    setMe(meRes || null);
+    setCurrentClan(clanRes || null);
+    setClansList(rowsOf<ClanListItem>(clansRes));
+    setGuidance(guidanceRes || null);
+    setExplainability(normalizeExplainability(explainRes));
+    setRecompute(normalizeRecompute(recomputeRes));
+    setTrustSlipSummary(normalizeTrustSlipSummary(trustSlipRes));
+  }
+
+  useEffect(() => {
+    let alive = true;
+
     (async () => {
       setLoading(true);
-      try {
-        const [meRes, slipRes, explainedRes] = await Promise.all([
-          getMe().catch(() => null),
-          getMyTrustSlip().catch(() => null),
-          getTrustScoreExplained().catch(() => null),
-        ]);
 
-        setMe(meRes);
-        setTrustSlip(slipRes);
-        setTrustExplained(explainedRes);
+      try {
+        await loadAll();
       } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
     })();
-  }, []);
 
-  const cci = useMemo(() => getCciState(me), [me]);
-  const cciTone = useMemo(() => toneStyles(cci.tone), [cci.tone]);
+    return () => {
+      alive = false;
+    };
+  }, [selectedClanId]);
 
-  const openTrust = useMemo(
-    () => getOpenTrustState(trustExplained, me, selectedClanId),
-    [trustExplained, me, selectedClanId]
-  );
-  const openTrustTone = useMemo(
-    () => toneStyles(openTrust.tone),
-    [openTrust.tone]
-  );
+  async function handleRefreshTrust() {
+    setRefreshing(true);
 
-  const trustSlipCode = safeStr(trustSlip?.code || "");
+    try {
+      await loadAll();
+      setNotice({
+        tone: "success",
+        text: "Trust reading refreshed.",
+      });
+    } catch {
+      setNotice({
+        tone: "error",
+        text: "Trust reading could not be refreshed right now.",
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
-  const strengths = useMemo(
-    () =>
-      toStringArray(
-        trustExplained?.strengths,
-        trustExplained?.positives,
-        trustExplained?.what_is_helping
+  const matchedClan = useMemo(() => {
+    const currentId = positiveNumber(currentClan?.id || currentClan?.clan_id || selectedClanId);
+    return clansList.find((row) => positiveNumber(row?.id) === currentId) || null;
+  }, [clansList, currentClan, selectedClanId]);
+
+  const memberName = useMemo(() => {
+    return (
+      firstTruthy(
+        trustSlipSummary?.display_name,
+        me?.display_name,
+        me?.nickname,
+        me?.name,
+        me?.first_name,
+        me?.email
+      ) || "Member"
+    );
+  }, [trustSlipSummary, me]);
+
+  const gmfnId = useMemo(() => {
+    return firstTruthy(trustSlipSummary?.gmfn_id, me?.gmfn_id, "Pending");
+  }, [trustSlipSummary, me]);
+
+  const communityName = useMemo(() => {
+    return (
+      firstTruthy(
+        trustSlipSummary?.community,
+        currentClan?.marketplace_name,
+        currentClan?.name,
+        currentClan?.display_name,
+        currentClan?.title,
+        matchedClan?.marketplace_name,
+        matchedClan?.name
+      ) || (selectedClanId ? `Community ${selectedClanId}` : "No selected community")
+    );
+  }, [trustSlipSummary, currentClan, matchedClan, selectedClanId]);
+
+  const communityCode = useMemo(() => {
+    return (
+      firstTruthy(
+        matchedClan?.community_code,
+        currentClan?.community_code,
+        currentClan?.clan_code,
+        selectedClanId
+      ) || "Pending"
+    );
+  }, [matchedClan, currentClan, selectedClanId]);
+
+  const currentBand = useMemo(() => {
+    return firstTruthy(
+      recompute?.breakdown?.computed_band,
+      recompute?.band,
+      explainability?.band,
+      trustSlipSummary?.band,
+      trustSlipSummary?.level,
+      "Pending"
+    );
+  }, [recompute, explainability, trustSlipSummary]);
+
+  const currentScore = useMemo(() => {
+    return firstTruthy(
+      recompute?.breakdown?.computed_score,
+      recompute?.score,
+      explainability?.current_score,
+      trustSlipSummary?.trust_score,
+      "—"
+    );
+  }, [recompute, explainability, trustSlipSummary]);
+
+  const readingTone = useMemo(() => {
+    const raw = safeStr(currentBand).toLowerCase();
+
+    if (
+      raw.includes("gold") ||
+      raw === "a" ||
+      raw === "a+" ||
+      raw === "b" ||
+      raw.includes("healthy")
+    ) {
+      return {
+        bg: "#F3FBF5",
+        border: "1px solid rgba(34,197,94,0.16)",
+        text: "#166534",
+      };
+    }
+
+    if (
+      raw.includes("silver") ||
+      raw.includes("bronze") ||
+      raw === "c"
+    ) {
+      return {
+        bg: "#FFFBEF",
+        border: "1px solid rgba(245,158,11,0.16)",
+        text: "#92400E",
+      };
+    }
+
+    return {
+      bg: "#FFF5F5",
+      border: "1px solid rgba(239,68,68,0.16)",
+      text: "#991B1B",
+    };
+  }, [currentBand]);
+
+  const recentEvents = useMemo(() => {
+    return Array.isArray(explainability?.recent_events)
+      ? explainability.recent_events.slice(0, 10)
+      : [];
+  }, [explainability]);
+
+  const eventCounts = useMemo(() => {
+    const rows = Object.entries(recompute?.breakdown?.counts_by_event_type || {});
+    rows.sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0));
+    return rows.slice(0, 12);
+  }, [recompute]);
+
+  const nextStep = useMemo(() => {
+    return {
+      title: safeStr(
+        guidance?.nextBestStep?.title || "Keep your next trust step clean."
       ),
-    [trustExplained]
-  );
-
-  const watchItems = useMemo(
-    () =>
-      toStringArray(
-        trustExplained?.watch_items,
-        trustExplained?.risks,
-        trustExplained?.what_to_watch
+      detail: safeStr(
+        guidance?.nextBestStep?.detail ||
+          "Use the recent trust explanation and event mix to understand what to repair or protect next."
       ),
-    [trustExplained]
-  );
+      ctaTo: safeStr(guidance?.nextBestStep?.ctaTo || "/app/notifications"),
+      ctaLabel: safeStr(guidance?.nextBestStep?.ctaLabel || "Open Action Inbox"),
+    };
+  }, [guidance]);
 
-  const nextSteps = useMemo(
-    () =>
-      toStringArray(
-        trustExplained?.recommendations,
-        trustExplained?.next_steps,
-        trustExplained?.actions
-      ),
-    [trustExplained]
+  const verifyUrl = useMemo(() => {
+    return absoluteUrl(
+      firstTruthy(
+        trustSlipSummary?.public_verify_url,
+        trustSlipSummary?.verification_code
+          ? `/trust-slips/verify/${encodeURIComponent(
+              safeStr(trustSlipSummary.verification_code)
+            )}/page`
+          : "",
+        trustSlipSummary?.code
+          ? `/trust-slips/verify/${encodeURIComponent(
+              safeStr(trustSlipSummary.code)
+            )}/page`
+          : ""
+      )
+    );
+  }, [trustSlipSummary]);
+
+  const capacityContext = trustSlipSummary?.evidence_summary?.capacity_context || null;
+  const ruleset = recompute?.breakdown?.ruleset || null;
+
+  const trustLimit = firstTruthy(
+    trustSlipSummary?.trust_limit,
+    trustSlipSummary?.trust_slip_limit,
+    "0.00"
   );
+  const trustCurrency = firstTruthy(trustSlipSummary?.currency, "NGN");
+  const graphScore = firstTruthy(trustSlipSummary?.graph_score, "—");
+  const cciScore = firstTruthy(trustSlipSummary?.cci_score, "—");
+  const cciBand = firstTruthy(trustSlipSummary?.cci_band, "—");
+  const levelLabel = firstTruthy(trustSlipSummary?.level_label, "—");
+  const standingScore = firstTruthy(trustSlipSummary?.standing_score, "—");
+  const lifetimeTrust = firstTruthy(trustSlipSummary?.lifetime_trust, "—");
+  const riskFlags = Array.isArray(trustSlipSummary?.risk_flags)
+    ? trustSlipSummary!.risk_flags!
+    : [];
+
+  function toggleSection(key: keyof CollapseState) {
+    setCollapsed((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  }
+
+  function handleCopy(text: string, successText: string, emptyText: string) {
+    const value = safeStr(text);
+    if (!value) {
+      setNotice({ tone: "error", text: emptyText });
+      return;
+    }
+
+    safeCopyText(value);
+    setNotice({ tone: "success", text: successText });
+  }
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          maxWidth: 1180,
+          margin: "0 auto",
+          paddingBottom: 40,
+          display: "grid",
+          gap: 18,
+        }}
+      >
+        <PageTopNav
+          sectionLabel="Trust Passport"
+          title="Trust Passport"
+          subtitle="Preparing the trust passport..."
+          homeTo="/app/dashboard"
+          homeLabel="Dashboard"
+          backTo="/app/dashboard"
+          nextLinks={[
+            { label: "TrustSlip", to: "/app/trust-slip" },
+            { label: "Notifications", to: "/app/notifications" },
+            { label: "Marketplace", to: "/app/marketplace" },
+          ]}
+          utilityLinks={[{ label: "My GMFN and I", to: "/app/my-gmfn-and-i" }]}
+        />
+
+        <section style={pageCard("#FFFFFF")}>
+          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+            Loading Trust Passport...
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -542,39 +1126,37 @@ export default function TrustScorePage() {
       }}
     >
       <PageTopNav
-        sectionLabel="Trust"
-        title="My Trust"
-        subtitle="This page separates your immediate community trust from your cross-community integrity reading, so the two do not get mixed together."
+        sectionLabel="Trust Passport"
+        title="Trust Passport"
+        subtitle="Trust Passport is the full explanation surface: trust score, current band, why trust changed, recent events, and supporting evidence."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
         nextLinks={[
           { label: "TrustSlip", to: "/app/trust-slip" },
-          { label: "Community", to: "/app/community" },
           { label: "Notifications", to: "/app/notifications" },
+          { label: "Marketplace", to: "/app/marketplace" },
         ]}
-        utilityLinks={[
-          { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
-        ]}
+        utilityLinks={[{ label: "My GMFN and I", to: "/app/my-gmfn-and-i" }]}
       />
 
+      {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
+
       <section
-        style={{
-          ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
-        }}
+        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
       >
         <div
           style={{
             display: "grid",
             gridTemplateColumns: isCompact
               ? "1fr"
-              : "minmax(0, 1.15fr) minmax(320px, 0.85fr)",
+              : "minmax(0, 1.08fr) minmax(320px, 0.92fr)",
             gap: 16,
-            alignItems: "stretch",
+            alignItems: "start",
           }}
         >
           <div>
-            <div style={sectionLabel()}>How to read this page</div>
+            <div style={sectionLabel()}>Trust passport overview</div>
 
             <div
               style={{
@@ -585,22 +1167,11 @@ export default function TrustScorePage() {
                 lineHeight: 1.12,
               }}
             >
-              Open Trust is not the same thing as CCI.
+              Full trust reading for {memberName}
             </div>
 
-            <div
-              style={{
-                marginTop: 10,
-                color: "#5F7287",
-                fontSize: 15,
-                lineHeight: 1.82,
-                maxWidth: 820,
-              }}
-            >
-              Open Trust reflects your immediate standing inside the community
-              you are working in right now. CCI, or cross-community integrity,
-              reflects your behaviour across visible communities. They should be
-              read together, but they should not be merged into one score.
+            <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
+              This page is now wired to the real recompute-me and trust explainability responses. It shows the current trust reading, what changed it, the recent events behind it, and the evidence context around exposure and capacity.
             </div>
 
             <div
@@ -611,625 +1182,744 @@ export default function TrustScorePage() {
                 flexWrap: "wrap",
               }}
             >
-              <span style={badge(true)}>
-                {selectedClanId
-                  ? `Selected community: ${selectedClanId}`
-                  : "No community selected"}
-              </span>
-              <span style={badge(false)}>
-                GMFN ID: {safeStr(me?.gmfn_id || "Pending")}
-              </span>
+              <span style={badge(true)}>GMFN ID: {gmfnId}</span>
+              <span style={badge(false)}>Community: {communityName}</span>
+              <span style={badge(false)}>Community ID: {communityCode}</span>
             </div>
-          </div>
-
-          <div style={softCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Trust surfaces</div>
 
             <div
               style={{
-                marginTop: 12,
-                display: "grid",
+                marginTop: 16,
+                display: "flex",
                 gap: 10,
+                flexWrap: "wrap",
               }}
             >
-              <div style={innerCard("#F8FBFF")}>
-                <div
-                  style={{
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    fontSize: 15,
-                  }}
-                >
-                  Open Trust
-                </div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#5F7287",
-                    fontSize: 14,
-                    lineHeight: 1.75,
-                  }}
-                >
-                  Immediate-community reading for the community you are
-                  currently operating in.
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={() => void handleRefreshTrust()}
+                disabled={refreshing}
+                style={actionBtn("primary", refreshing)}
+              >
+                {refreshing ? "Refreshing..." : "Refresh Trust Reading"}
+              </button>
 
-              <div style={innerCard("#F8FBFF")}>
-                <div
-                  style={{
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    fontSize: 15,
-                  }}
-                >
-                  CCI / cross-community integrity
-                </div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#5F7287",
-                    fontSize: 14,
-                    lineHeight: 1.75,
-                  }}
-                >
-                  Broader reading of behaviour and consistency across visible
-                  communities.
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  handleCopy(
+                    gmfnId,
+                    "GMFN ID copied.",
+                    "GMFN ID is not ready yet."
+                  )
+                }
+                style={actionBtn("secondary", !gmfnId || gmfnId === "Pending")}
+                disabled={!gmfnId || gmfnId === "Pending"}
+              >
+                Copy GMFN ID
+              </button>
 
-              <div style={innerCard("#F8FBFF")}>
-                <div
-                  style={{
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    fontSize: 15,
-                  }}
+              {verifyUrl ? (
+                <a
+                  href={verifyUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={actionBtn("secondary")}
                 >
-                  TrustSlip and QR
-                </div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#5F7287",
-                    fontSize: 14,
-                    lineHeight: 1.75,
-                  }}
-                >
-                  Verification surface for sharing and checking the TrustSlip
-                  when it is available.
-                </div>
-              </div>
+                  Open Merchant Verify
+                </a>
+              ) : null}
             </div>
           </div>
-        </div>
-      </section>
-
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: isCompact
-            ? "1fr"
-            : "minmax(0, 1.05fr) minmax(320px, 0.95fr)",
-          gap: 16,
-          alignItems: "start",
-        }}
-      >
-        <div
-          style={{
-            ...pageCard(openTrustTone.bg),
-            border: openTrustTone.border,
-          }}
-        >
-          <div style={sectionLabel()}>Open Trust</div>
 
           <div
             style={{
-              marginTop: 14,
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 16,
-              flexWrap: "wrap",
+              ...softCard(readingTone.bg),
+              border: readingTone.border,
             }}
           >
+            <div style={sectionLabel()}>Current trust posture</div>
+
             <div
               style={{
-                minWidth: 96,
-                minHeight: 96,
-                borderRadius: 24,
-                background: openTrustTone.soft,
-                color: openTrustTone.text,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 34,
+                marginTop: 10,
+                color: readingTone.text,
                 fontWeight: 900,
-                border: openTrustTone.border,
+                fontSize: 22,
+                lineHeight: 1.25,
               }}
             >
-              {openTrust.scoreText}
+              {currentBand}
             </div>
 
-            <div style={{ flex: 1, minWidth: 220 }}>
-              <div
-                style={{
-                  color: openTrustTone.text,
-                  fontWeight: 900,
-                  fontSize: 22,
-                  lineHeight: 1.35,
-                }}
-              >
-                {openTrust.heading}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 8,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  minHeight: 30,
-                  borderRadius: 999,
-                  padding: "6px 10px",
-                  background: "#FFFFFF",
-                  border: openTrustTone.border,
-                  color: openTrustTone.text,
-                  fontWeight: 900,
-                  fontSize: 13,
-                }}
-              >
-                Band: {openTrust.bandText}
-              </div>
-            </div>
-          </div>
-
-          <div
-            style={{
-              marginTop: 16,
-              color: openTrustTone.text,
-              fontSize: 14,
-              lineHeight: 1.8,
-            }}
-          >
-            {openTrust.whyText}
-          </div>
-
-          <div
-            style={{
-              marginTop: 12,
-              color: "#5F7287",
-              fontSize: 13,
-              lineHeight: 1.75,
-            }}
-          >
-            {openTrust.scopeText}
-          </div>
-
-          <div
-            style={{
-              marginTop: 16,
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            <Link to="/app/community" style={primaryBtn()}>
-              Open Community Home
-            </Link>
-            <Link to="/app/notifications" style={secondaryBtn()}>
-              Notifications
-            </Link>
-          </div>
-        </div>
-
-        <div style={pageCard("#FFFFFF")}>
-          <div style={sectionLabel()}>TrustSlip and QR</div>
-
-          {trustSlipCode ? (
-            <>
-              <div
-                style={{
-                  marginTop: 14,
-                  display: "flex",
-                  justifyContent: "center",
-                }}
-              >
-                <img
-                  src={`${apiOrigin()}/trust-slips/verify/${encodeURIComponent(
-                    trustSlipCode
-                  )}/qr.png`}
-                  alt="Trust QR"
-                  style={{
-                    width: 142,
-                    height: 142,
-                    borderRadius: 16,
-                    border: "1px solid rgba(11,31,51,0.10)",
-                    background: "#FFFFFF",
-                    padding: 6,
-                  }}
-                />
-              </div>
-
-              <div
-                style={{
-                  marginTop: 12,
-                  color: "#0B1F33",
-                  fontSize: 15,
-                  fontWeight: 900,
-                  textAlign: "center",
-                }}
-              >
-                Scan to verify your TrustSlip
-              </div>
-
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#64748B",
-                  fontSize: 13,
-                  lineHeight: 1.65,
-                  textAlign: "center",
-                }}
-              >
-                Code: {trustSlipCode}
-              </div>
-            </>
-          ) : (
             <div
               style={{
-                marginTop: 12,
-                color: "#64748B",
-                fontSize: 14,
-                lineHeight: 1.8,
-              }}
-            >
-              Your TrustSlip QR will appear here when available.
-            </div>
-          )}
-
-          <div
-            style={{
-              marginTop: 16,
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            <Link to="/app/trust-slip" style={primaryBtn()}>
-              Open TrustSlip
-            </Link>
-            <Link to="/app/community" style={secondaryBtn()}>
-              Open Trust in community
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: isCompact
-            ? "1fr"
-            : "minmax(0, 1fr) minmax(320px, 0.9fr)",
-          gap: 16,
-          alignItems: "stretch",
-        }}
-      >
-        <div
-          style={{
-            ...pageCard(cciTone.bg),
-            border: cciTone.border,
-          }}
-        >
-          <div style={sectionLabel()}>CCI / cross-community integrity</div>
-
-          <div
-            style={{
-              marginTop: 14,
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 16,
-              flexWrap: "wrap",
-            }}
-          >
-            <div
-              style={{
-                minWidth: 96,
-                minHeight: 96,
-                borderRadius: 24,
-                background: cciTone.soft,
-                color: cciTone.text,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 34,
+                marginTop: 8,
+                color: "#0B1F33",
                 fontWeight: 900,
-                border: cciTone.border,
+                fontSize: 18,
+                lineHeight: 1.25,
               }}
             >
-              {cci.classText}
+              Score: {currentScore}
             </div>
 
-            <div style={{ flex: 1, minWidth: 220 }}>
-              <div
-                style={{
-                  color: cciTone.text,
-                  fontWeight: 900,
-                  fontSize: 22,
-                  lineHeight: 1.35,
-                }}
-              >
-                {cci.statusText}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 8,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  minHeight: 30,
-                  borderRadius: 999,
-                  padding: "6px 10px",
-                  background: "#FFFFFF",
-                  border: cciTone.border,
-                  color: cciTone.text,
-                  fontWeight: 900,
-                  fontSize: 13,
-                }}
-              >
-                Score: {cci.scoreText}
-              </div>
-            </div>
-          </div>
-
-          <div
-            style={{
-              marginTop: 16,
-              color: cciTone.text,
-              fontSize: 14,
-              lineHeight: 1.8,
-            }}
-          >
-            {cci.whyText}
-          </div>
-
-          <div
-            style={{
-              marginTop: 12,
-              color: "#5F7287",
-              fontSize: 13,
-              lineHeight: 1.75,
-            }}
-          >
-            CCI reads behaviour across visible communities. It should not be
-            mistaken for your immediate-community Open Trust reading.
-          </div>
-        </div>
-
-        <div style={pageCard("#FFFFFF")}>
-          <div style={sectionLabel()}>The distinction in plain language</div>
-
-          <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-            <div style={innerCard("#F8FBFF")}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
-                Open Trust
-              </div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#5F7287",
-                  fontSize: 14,
-                  lineHeight: 1.75,
-                }}
-              >
-                How you are standing in the community you are actively working
-                in right now.
-              </div>
+            <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+              {nextStep.title}
             </div>
 
-            <div style={innerCard("#F8FBFF")}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
-                CCI
-              </div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#5F7287",
-                  fontSize: 14,
-                  lineHeight: 1.75,
-                }}
-              >
-                How your identity is behaving across visible communities more
-                broadly.
-              </div>
-            </div>
-
-            <div style={innerCard("#F8FBFF")}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
-                TrustSlip and QR
-              </div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#5F7287",
-                  fontSize: 14,
-                  lineHeight: 1.75,
-                }}
-              >
-                Verification tools for checking or sharing your trust surface
-                when needed.
-              </div>
+            <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+              {nextStep.detail}
             </div>
           </div>
         </div>
       </section>
-
-      {strengths.length > 0 || watchItems.length > 0 || nextSteps.length > 0 ? (
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns: isCompact
-              ? "1fr"
-              : "repeat(3, minmax(0, 1fr))",
-            gap: 16,
-            alignItems: "start",
-          }}
-        >
-          <div style={pageCard("#FFFFFF")}>
-            <div style={sectionLabel()}>What is helping</div>
-
-            <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-              {strengths.length > 0 ? (
-                strengths.map((item, index) => (
-                  <div key={index} style={innerCard("#FCFEFF")}>
-                    <div
-                      style={{
-                        color: "#0B1F33",
-                        fontSize: 14,
-                        lineHeight: 1.7,
-                      }}
-                    >
-                      {item}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div style={{ color: "#64748B", lineHeight: 1.75 }}>
-                  No additional strengths are listed yet.
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div style={pageCard("#FFFFFF")}>
-            <div style={sectionLabel()}>What to watch</div>
-
-            <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-              {watchItems.length > 0 ? (
-                watchItems.map((item, index) => (
-                  <div key={index} style={innerCard("#FCFEFF")}>
-                    <div
-                      style={{
-                        color: "#0B1F33",
-                        fontSize: 14,
-                        lineHeight: 1.7,
-                      }}
-                    >
-                      {item}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div style={{ color: "#64748B", lineHeight: 1.75 }}>
-                  No additional watch item is listed yet.
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div style={pageCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Suggested next steps</div>
-
-            <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-              {nextSteps.length > 0 ? (
-                nextSteps.map((item, index) => (
-                  <div key={index} style={innerCard("#FCFEFF")}>
-                    <div
-                      style={{
-                        color: "#0B1F33",
-                        fontSize: 14,
-                        lineHeight: 1.7,
-                      }}
-                    >
-                      {item}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div style={{ color: "#64748B", lineHeight: 1.75 }}>
-                  No additional next step is listed yet.
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-      ) : null}
 
       <section style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>Continue</div>
-
         <div
           style={{
-            marginTop: 10,
-            color: "#0B1F33",
-            fontWeight: 900,
-            fontSize: isCompact ? 24 : 30,
-            lineHeight: 1.15,
-            maxWidth: 820,
-          }}
-        >
-          Read Open Trust for the current community, read CCI for the broader
-          picture, and use TrustSlip when you need verification.
-        </div>
-
-        <div
-          style={{
-            marginTop: 12,
-            color: "#5F7287",
-            fontSize: 15,
-            lineHeight: 1.82,
-            maxWidth: 900,
-          }}
-        >
-          The point of this page is clarity. The two readings should stay in the
-          right place and should not be mixed together.
-        </div>
-
-        <div
-          style={{
-            marginTop: 16,
             display: "flex",
-            gap: 10,
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
             flexWrap: "wrap",
           }}
         >
-          <Link to="/app/trust-slip" style={primaryBtn()}>
-            Open TrustSlip
-          </Link>
-          <Link to="/app/community" style={secondaryBtn()}>
-            Open Community Home
-          </Link>
-          <Link to="/app/notifications" style={secondaryBtn()}>
-            Notifications
-          </Link>
+          <div>
+            <div style={sectionLabel()}>Trust summary</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              The main trust numbers and structural indicators stay together here.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => toggleSection("overview")}
+            style={collapseToggle()}
+          >
+            {collapsed.overview ? "Open" : "Collapse"}
+          </button>
         </div>
 
-        {loading ? (
+        {!collapsed.overview ? (
           <div
             style={{
               marginTop: 14,
-              color: "#64748B",
-              fontSize: 13,
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "1fr 1fr"
+                : "repeat(6, minmax(0, 1fr))",
+              gap: 12,
             }}
           >
-            Refreshing trust data...
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Current band</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 22,
+                  fontWeight: 900,
+                }}
+              >
+                {currentBand}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Current score</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 22,
+                  fontWeight: 900,
+                }}
+              >
+                {currentScore}
+              </div>
+            </div>
+
+            <div style={statTile("#F8FBFF")}>
+              <div style={sectionLabel()}>CCI</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B63D1",
+                  fontSize: 18,
+                  fontWeight: 900,
+                  lineHeight: 1.25,
+                }}
+              >
+                {cciScore} / {cciBand}
+              </div>
+            </div>
+
+            <div style={statTile("#F8FBFF")}>
+              <div style={sectionLabel()}>Graph score</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B63D1",
+                  fontSize: 18,
+                  fontWeight: 900,
+                }}
+              >
+                {graphScore}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Trust limit</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 18,
+                  fontWeight: 900,
+                  lineHeight: 1.25,
+                }}
+              >
+                {trustLimit} {trustCurrency}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Event count</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 22,
+                  fontWeight: 900,
+                }}
+              >
+                {safeStr(recompute?.event_count ?? "0")}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Level label</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 16,
+                  fontWeight: 900,
+                  lineHeight: 1.25,
+                }}
+              >
+                {levelLabel}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Standing score</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 16,
+                  fontWeight: 900,
+                }}
+              >
+                {standingScore}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Lifetime trust</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 16,
+                  fontWeight: 900,
+                }}
+              >
+                {lifetimeTrust}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Counterparties</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 22,
+                  fontWeight: 900,
+                }}
+              >
+                {safeStr(trustSlipSummary?.unique_counterparties ?? "0")}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Sponsors</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 22,
+                  fontWeight: 900,
+                }}
+              >
+                {safeStr(trustSlipSummary?.sponsor_count ?? "0")}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Active clans</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 22,
+                  fontWeight: 900,
+                }}
+              >
+                {safeStr(trustSlipSummary?.active_clan_count ?? "0")}
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Why did my trust change?</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              This section is driven by the explainability endpoint.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => toggleSection("explainability")}
+            style={collapseToggle()}
+          >
+            {collapsed.explainability ? "Open" : "Collapse"}
+          </button>
+        </div>
+
+        {!collapsed.explainability ? (
+          <div
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+              gap: 12,
+            }}
+          >
+            <div style={innerCard("#FCFEFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 15,
+                }}
+              >
+                Latest explanation
+              </div>
+
+              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                <div style={helperText()}>
+                  Latest reason: {safeStr(explainability?.latest_reason || "No reason returned yet.")}
+                </div>
+                <div style={helperText()}>
+                  Latest note: {safeStr(explainability?.latest_note || "No note returned yet.")}
+                </div>
+                <div style={helperText()}>
+                  Latest source: {safeStr(explainability?.latest_source || "No source returned yet.")}
+                </div>
+              </div>
+            </div>
+
+            <div style={innerCard("#FFFFFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 15,
+                }}
+              >
+                Recent trust events
+              </div>
+
+              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                {recentEvents.length === 0 ? (
+                  <div style={helperText()}>
+                    No recent explainability event is visible right now.
+                  </div>
+                ) : (
+                  recentEvents.slice(0, 6).map((item, index) => (
+                    <div key={`${item.id || index}`} style={innerCard("#F8FBFF")}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: 10,
+                          flexWrap: "wrap",
+                          alignItems: "center",
+                        }}
+                      >
+                        <div
+                          style={{
+                            color: "#0B1F33",
+                            fontWeight: 900,
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          {safeStr(item.event_type || "Trust event")}
+                        </div>
+
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          {safeStr(item.delta) ? (
+                            <span style={badge(true)}>Delta: {safeStr(item.delta)}</span>
+                          ) : null}
+                          {safeStr(item.created_at) ? (
+                            <span style={badge(false)}>
+                              {safeDateTime(item.created_at)}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      {safeStr(item.reason || item.note) ? (
+                        <div style={{ marginTop: 8, ...helperText() }}>
+                          {safeStr(item.reason || item.note)}
+                        </div>
+                      ) : null}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Recomputed breakdown</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              This section is driven by the recompute-me endpoint.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => toggleSection("breakdown")}
+            style={collapseToggle()}
+          >
+            {collapsed.breakdown ? "Open" : "Collapse"}
+          </button>
+        </div>
+
+        {!collapsed.breakdown ? (
+          <div
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+              gap: 12,
+            }}
+          >
+            <div style={innerCard("#FCFEFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 15,
+                }}
+              >
+                Ruleset
+              </div>
+
+              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                <div style={helperText()}>
+                  Borrower repayment delta: {safeStr(ruleset?.borrower_repayment_delta || "—")}
+                </div>
+                <div style={helperText()}>
+                  Guarantor repayment delta: {safeStr(ruleset?.guarantor_repayment_delta || "—")}
+                </div>
+                <div style={helperText()}>
+                  Precision: {safeStr(ruleset?.precision || "—")}
+                </div>
+                <div style={helperText()}>
+                  Ordering: {safeStr(ruleset?.ordering || "—")}
+                </div>
+                <div style={helperText()}>
+                  Computed band: {safeStr(recompute?.breakdown?.computed_band || recompute?.band || "—")}
+                </div>
+                <div style={helperText()}>
+                  Computed score: {safeStr(recompute?.breakdown?.computed_score || recompute?.score || "—")}
+                </div>
+                <div style={helperText()}>
+                  Computed score int: {safeStr(recompute?.breakdown?.computed_score_int ?? "—")}
+                </div>
+              </div>
+            </div>
+
+            <div style={innerCard("#FFFFFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 15,
+                }}
+              >
+                Counts by event type
+              </div>
+
+              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                {eventCounts.length === 0 ? (
+                  <div style={helperText()}>
+                    No event-type count is visible right now.
+                  </div>
+                ) : (
+                  eventCounts.map(([key, value]) => (
+                    <div
+                      key={key}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 10,
+                        alignItems: "center",
+                        borderBottom: "1px solid rgba(11,31,51,0.06)",
+                        paddingBottom: 8,
+                      }}
+                    >
+                      <div style={{ ...helperText(), color: "#0B1F33" }}>{key}</div>
+                      <span style={badge(true)}>{String(value)}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Evidence and institutional context</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Exposure, capacity, risk flags, sponsorship, and trust-slip context stay together here.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => toggleSection("evidence")}
+            style={collapseToggle()}
+          >
+            {collapsed.evidence ? "Open" : "Collapse"}
+          </button>
+        </div>
+
+        {!collapsed.evidence ? (
+          <div
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+              gap: 12,
+            }}
+          >
+            <div style={innerCard("#F8FBFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 15,
+                }}
+              >
+                Capacity context
+              </div>
+
+              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                <div style={helperText()}>
+                  Available guarantee capacity: {safeStr(capacityContext?.available_guarantee_capacity || "0.00")}
+                </div>
+                <div style={helperText()}>
+                  Current locked guarantees: {safeStr(capacityContext?.current_locked_guarantees || "0.00")}
+                </div>
+                <div style={helperText()}>
+                  Overexposure ratio: {safeStr(capacityContext?.overexposure_ratio || "0.00")}
+                </div>
+                <div style={helperText()}>
+                  Risk level: {safeStr(capacityContext?.risk_level || "unknown")}
+                </div>
+              </div>
+            </div>
+
+            <div style={innerCard("#FFFFFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 15,
+                }}
+              >
+                Risk and network context
+              </div>
+
+              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                <div style={helperText()}>
+                  Sponsor count: {safeStr(trustSlipSummary?.sponsor_count ?? "0")}
+                </div>
+                <div style={helperText()}>
+                  Active clan count: {safeStr(trustSlipSummary?.active_clan_count ?? "0")}
+                </div>
+                <div style={helperText()}>
+                  Unique counterparties: {safeStr(trustSlipSummary?.unique_counterparties ?? "0")}
+                </div>
+                <div style={helperText()}>
+                  Phone verified: {String(Boolean(trustSlipSummary?.phone_verified))}
+                </div>
+                <div style={helperText()}>
+                  Risk flags: {riskFlags.length > 0 ? riskFlags.join(", ") : "None visible"}
+                </div>
+              </div>
+            </div>
+
+            <div style={innerCard("#F8FBFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 15,
+                }}
+              >
+                Institutional note
+              </div>
+
+              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                <div style={helperText()}>
+                  TrustSlip status: {safeStr(trustSlipSummary?.status || "—")}
+                </div>
+                <div style={helperText()}>
+                  Issued: {safeDateTime(trustSlipSummary?.issued_at) || "—"}
+                </div>
+                <div style={helperText()}>
+                  Expires: {safeDateTime(trustSlipSummary?.expires_at) || "—"}
+                </div>
+                <div style={helperText()}>
+                  Disclaimer: {safeStr(
+                    trustSlipSummary?.disclaimer ||
+                      "TrustSlip is a portable summary derived from GMFN trust history."
+                  )}
+                </div>
+                <div style={helperText()}>
+                  Not a bank guarantee: {String(Boolean(trustSlipSummary?.not_a_bank_guarantee))}
+                </div>
+                <div style={helperText()}>
+                  No auto-debit: {String(Boolean(trustSlipSummary?.no_auto_debit))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Working routes</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Move from trust explanation into the next page you need.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => toggleSection("routes")}
+            style={collapseToggle()}
+          >
+            {collapsed.routes ? "Open" : "Collapse"}
+          </button>
+        </div>
+
+        {!collapsed.routes ? (
+          <div
+            style={{
+              marginTop: 16,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+              gap: 12,
+            }}
+          >
+            <Link to="/app/trust-slip" style={actionBtn("primary")}>
+              Open TrustSlip
+            </Link>
+
+            {verifyUrl ? (
+              <a
+                href={verifyUrl}
+                target="_blank"
+                rel="noreferrer"
+                style={actionBtn("secondary")}
+              >
+                Open Merchant Verify
+              </a>
+            ) : (
+              <button type="button" style={actionBtn("secondary", true)} disabled>
+                Open Merchant Verify
+              </button>
+            )}
+
+            <Link to={nextStep.ctaTo} style={actionBtn("secondary")}>
+              {nextStep.ctaLabel}
+            </Link>
+
+            <Link to="/app/notifications" style={actionBtn("secondary")}>
+              Action Inbox
+            </Link>
+
+            <Link to="/app/marketplace" style={actionBtn("secondary")}>
+              Marketplace
+            </Link>
+
+            <Link to="/app/my-gmfn-and-i" style={actionBtn("secondary")}>
+              My GMFN and I
+            </Link>
           </div>
         ) : null}
       </section>

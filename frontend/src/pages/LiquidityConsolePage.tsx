@@ -9,7 +9,7 @@ export default function LiquidityConsolePage(){
 
   async function load(){
     if(!clanId) return
-    const res = await listBankCredits(clanId)
+    const res = await listBankCredits({ clan_id: clanId })
     setRows(res || [])
   }
 

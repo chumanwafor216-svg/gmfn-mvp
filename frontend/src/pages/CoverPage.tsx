@@ -185,6 +185,21 @@ function persistEntryState(entryMode: EntryMode, search: string): void {
   writeStorage(ENTRY_CREATE_CODE_KEY, null);
 }
 
+function mergeSearchIntoPath(to: string, currentSearch: string): string {
+  const [basePath, baseQueryRaw = ""] = String(to || "").split("?");
+  const merged = new URLSearchParams(baseQueryRaw);
+  const current = new URLSearchParams(currentSearch);
+
+  current.forEach((value, key) => {
+    if (!merged.has(key)) {
+      merged.append(key, value);
+    }
+  });
+
+  const finalQuery = merged.toString();
+  return finalQuery ? `${basePath}?${finalQuery}` : basePath;
+}
+
 const MODE_CONFIG: Record<EntryMode, ModeConfig> = {
   general: {
     label: "Public entry",
@@ -210,14 +225,15 @@ const MODE_CONFIG: Record<EntryMode, ModeConfig> = {
     description:
       "This entry already knows you are coming through the public create route. Continue directly into Create Entry. No prior login should be required before first-time founder setup.",
     supportText:
-      "After completing the required registration and setup fields, the system should issue one global GMFN ID to that identity and attach one global shop to it.",
+      "After completing the required registration and setup fields, the system should issue one global GMFN ID to that identity and attach one global shop to it. Immediately after GMFN issuance, the next guided step should be Build Your First Circle.",
     primaryLabel: "Continue to Create Entry",
     primaryTo: "/create",
     steps: [
       "Open Create Entry.",
       "Complete the required registration and setup fields.",
       "Receive your global GMFN ID and linked global shop.",
-      "Enter your dashboard.",
+      "Build Your First Circle.",
+      "Then continue into dashboard and wider member surfaces.",
     ],
     showLoginLink: false,
   },
@@ -234,7 +250,8 @@ const MODE_CONFIG: Record<EntryMode, ModeConfig> = {
       "Open Join Entry and submit the required information.",
       "Move into Pending Approval while the request is reviewed.",
       "After approval, continue into activation and final setup.",
-      "Receive your GMFN ID and enter your dashboard.",
+      "Receive your GMFN ID.",
+      "Build Your First Circle before wider movement reopens.",
     ],
     showLoginLink: false,
   },
@@ -251,7 +268,8 @@ const MODE_CONFIG: Record<EntryMode, ModeConfig> = {
       "Open Activation.",
       "Complete your final details and set your password.",
       "Receive your GMFN identity if issuance happens at this stage.",
-      "Enter your dashboard.",
+      "Build Your First Circle.",
+      "Then continue into dashboard and wider member surfaces.",
     ],
     showLoginLink: false,
   },
@@ -404,7 +422,7 @@ export default function CoverPage() {
     [location.pathname, location.search, location.state]
   );
 
-  const signedIn = useMemo(() => isAuthenticated(), []);
+  const signedIn = isAuthenticated();
   const activeMode = MODE_CONFIG[entryMode];
 
   useEffect(() => {
@@ -417,7 +435,12 @@ export default function CoverPage() {
       return;
     }
 
-    navigate(activeMode.primaryTo);
+    navigate(mergeSearchIntoPath(activeMode.primaryTo, location.search), {
+      state:
+        location.state && typeof location.state === "object"
+          ? { ...(location.state as Record<string, unknown>) }
+          : undefined,
+    });
   }
 
   const primaryLabel =

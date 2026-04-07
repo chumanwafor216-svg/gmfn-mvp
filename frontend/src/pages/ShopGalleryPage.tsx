@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import PageTopNav from "../components/PageTopNav";
 import {
+  createMarketplaceRepost,
   getCurrentClan,
   getMarketplaceProducts,
   getMarketplaceShopByGmfnId,
@@ -49,6 +51,8 @@ type ShopProduct = {
   video_url?: string | null;
 };
 
+type FeedbackTone = "success" | "error";
+
 function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
@@ -79,6 +83,30 @@ function positiveNumber(value: any): number | undefined {
   return Number.isFinite(n) && n > 0 ? n : undefined;
 }
 
+function dedupeStrings(values: any[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+
+  for (const value of values) {
+    const text = safeStr(value);
+    if (!text) continue;
+    if (seen.has(text)) continue;
+    seen.add(text);
+    out.push(text);
+  }
+
+  return out;
+}
+
+function rowsOf<T = any>(input: any): T[] {
+  if (Array.isArray(input)) return input as T[];
+  if (Array.isArray(input?.items)) return input.items as T[];
+  if (Array.isArray(input?.data?.items)) return input.data.items as T[];
+  if (Array.isArray(input?.results)) return input.results as T[];
+  if (Array.isArray(input?.rows)) return input.rows as T[];
+  return [];
+}
+
 function apiBase(): string {
   const raw =
     (typeof import.meta !== "undefined" &&
@@ -89,38 +117,77 @@ function apiBase(): string {
   return String(raw || "").trim().replace(/\/+$/, "");
 }
 
-function apiOrigin(): string {
+function browserOrigin(): string {
+  try {
+    if (typeof window === "undefined") return "";
+    return String(window.location.origin || "").trim().replace(/\/+$/, "");
+  } catch {
+    return "";
+  }
+}
+
+function getMediaOrigins(): string[] {
+  const out: string[] = [];
   const base = apiBase();
+  const webOrigin = browserOrigin();
 
   if (base.startsWith("http://") || base.startsWith("https://")) {
     try {
       const u = new URL(base);
-      return `${u.protocol}//${u.host}`;
+      out.push(`${u.protocol}//${u.host}`);
     } catch {
-      return "http://127.0.0.1:8012";
+      // ignore
     }
   }
 
-  return "http://127.0.0.1:8012";
+  if (webOrigin) {
+    out.push(webOrigin);
+
+    try {
+      const u = new URL(webOrigin);
+      if (u.hostname) {
+        out.push(`${u.protocol}//${u.hostname}:8012`);
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  out.push("http://127.0.0.1:8012");
+  out.push("http://localhost:8012");
+
+  return dedupeStrings(out);
 }
 
-function resolveMediaSrc(src: string): string {
+function buildResolvedMediaCandidates(src: string): string[] {
   const raw = safeStr(src);
-  if (!raw) return "";
+  if (!raw) return [];
 
   if (
     raw.startsWith("http://") ||
     raw.startsWith("https://") ||
-    raw.startsWith("blob:")
+    raw.startsWith("blob:") ||
+    raw.startsWith("data:")
   ) {
-    return raw;
+    return [raw];
   }
+
+  const origins = getMediaOrigins();
+  const trimmed = raw.replace(/^\/+/, "");
+  const out: string[] = [];
 
   if (raw.startsWith("/")) {
-    return `${apiOrigin()}${raw}`;
+    for (const origin of origins) {
+      out.push(`${origin}${raw}`);
+    }
+  } else {
+    for (const origin of origins) {
+      out.push(`${origin}/${trimmed}`);
+    }
   }
 
-  return `${apiOrigin()}/${raw.replace(/^\/+/, "")}`;
+  out.push(raw);
+  return dedupeStrings(out);
 }
 
 function normalizeShopRecord(raw: any): ShopRecord | null {
@@ -133,9 +200,7 @@ function normalizeShopRecord(raw: any): ShopRecord | null {
       firstDefined(src?.id, src?.shop_id, src?.marketplace_shop_id)
     ),
     user_id: positiveNumber(firstDefined(src?.user_id)),
-    owner_user_id: positiveNumber(
-      firstDefined(src?.owner_user_id, src?.owner_id)
-    ),
+    owner_user_id: positiveNumber(firstDefined(src?.owner_user_id, src?.owner_id)),
     gmfn_id: firstTruthy(src?.gmfn_id, src?.gmfnId),
     owner_gmfn_id: firstTruthy(
       src?.owner_gmfn_id,
@@ -294,99 +359,20 @@ function getCurrentUrlWithoutHash(): string {
   }
 }
 
-function pageCard(bg = "#FFFFFF"): React.CSSProperties {
-  return {
-    borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 20,
-    boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
-    overflow: "hidden",
-  };
+function normalizeWhatsAppHref(value: string): string {
+  const raw = safeStr(value);
+  if (!raw) return "";
+
+  const digits = raw.replace(/[^\d]/g, "");
+  if (!digits) return "";
+
+  return `https://wa.me/${digits}`;
 }
 
-function innerCard(bg = "#FFFFFF"): React.CSSProperties {
-  return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 14,
-  };
-}
-
-function sectionLabel(): React.CSSProperties {
-  return {
-    fontSize: 12,
-    color: "#5D7389",
-    fontWeight: 900,
-    letterSpacing: 0.35,
-    textTransform: "uppercase",
-  };
-}
-
-function badge(primary = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 6,
-    minHeight: 30,
-    borderRadius: 999,
-    padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
-    fontSize: 12,
-    fontWeight: 900,
-    whiteSpace: "nowrap",
-  };
-}
-
-function primaryBtn(disabled = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
-    borderRadius: 14,
-    border: "none",
-    background: disabled ? "#CBD5E1" : "#0B63D1",
-    color: "#FFFFFF",
-    fontWeight: 900,
-    fontSize: 14,
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
-    opacity: disabled ? 0.86 : 1,
-  };
-}
-
-function mediaBox(): React.CSSProperties {
-  return {
-    width: "100%",
-    minHeight: 230,
-    borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: "linear-gradient(180deg, #E8F0FF 0%, #DDEBFF 100%)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  };
-}
-
-function productImageBox(): React.CSSProperties {
-  return {
-    width: "100%",
-    minHeight: 180,
-    borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: "linear-gradient(180deg, #E8F0FF 0%, #DDEBFF 100%)",
-    overflow: "hidden",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  };
+function normalizeTelegramHref(value: string): string {
+  const raw = safeStr(value).replace(/^@/, "");
+  if (!raw) return "";
+  return `https://t.me/${raw}`;
 }
 
 function dedupeClanIds(values: Array<number | null | undefined>): number[] {
@@ -451,7 +437,8 @@ function mergeShopRecords(candidates: ShopCandidate[]): ShopRecord | null {
   const shops = candidates.map((item) => item.shop);
 
   return {
-    id: Number(shops.find((x) => Number(x?.id || 0) > 0)?.id || 0) || undefined,
+    id:
+      Number(shops.find((x) => Number(x?.id || 0) > 0)?.id || 0) || undefined,
     gmfn_id: firstTruthy(...shops.map((x) => x?.gmfn_id)),
     owner_gmfn_id: firstTruthy(...shops.map((x) => x?.owner_gmfn_id)),
     name: firstTruthy(...shops.map((x) => x?.name)),
@@ -471,6 +458,215 @@ function mergeShopRecords(candidates: ShopCandidate[]): ShopRecord | null {
   };
 }
 
+function pageCard(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    borderRadius: 24,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 20,
+    boxShadow:
+      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
+    overflow: "hidden",
+  };
+}
+
+function innerCard(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 14,
+  };
+}
+
+function softCard(bg = "#F8FBFF"): React.CSSProperties {
+  return {
+    borderRadius: 18,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 16,
+  };
+}
+
+function detailsShell(): React.CSSProperties {
+  return {
+    borderRadius: 18,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: "#FFFFFF",
+    overflow: "hidden",
+  };
+}
+
+function detailsSummary(): React.CSSProperties {
+  return {
+    listStyle: "none",
+    cursor: "pointer",
+    padding: "16px 18px",
+    fontWeight: 900,
+    color: "#0B1F33",
+    fontSize: 16,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  };
+}
+
+function sectionLabel(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#5D7389",
+    fontWeight: 900,
+    letterSpacing: 0.35,
+    textTransform: "uppercase",
+  };
+}
+
+function badge(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    minHeight: 30,
+    borderRadius: 999,
+    padding: "6px 10px",
+    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
+    color: primary ? "#0B63D1" : "#51657A",
+    fontSize: 12,
+    fontWeight: 900,
+    whiteSpace: "nowrap",
+  };
+}
+
+function primaryBtn(disabled = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 42,
+    padding: "10px 14px",
+    borderRadius: 14,
+    border: "none",
+    background: disabled ? "#CBD5E1" : "#0B63D1",
+    color: "#FFFFFF",
+    fontWeight: 900,
+    fontSize: 14,
+    textDecoration: "none",
+    cursor: disabled ? "not-allowed" : "pointer",
+    whiteSpace: "nowrap",
+    opacity: disabled ? 0.86 : 1,
+  };
+}
+
+function secondaryBtn(disabled = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 42,
+    padding: "10px 14px",
+    borderRadius: 14,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#FFFFFF",
+    color: disabled ? "#94A3B8" : "#0B1F33",
+    fontWeight: 800,
+    fontSize: 14,
+    textDecoration: "none",
+    cursor: disabled ? "not-allowed" : "pointer",
+    whiteSpace: "nowrap",
+    opacity: disabled ? 0.86 : 1,
+  };
+}
+
+function mediaBox(): React.CSSProperties {
+  return {
+    width: "100%",
+    minHeight: 230,
+    borderRadius: 24,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: "linear-gradient(180deg, #E8F0FF 0%, #DDEBFF 100%)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  };
+}
+
+function productImageBox(): React.CSSProperties {
+  return {
+    width: "100%",
+    minHeight: 180,
+    borderRadius: 18,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: "linear-gradient(180deg, #E8F0FF 0%, #DDEBFF 100%)",
+    overflow: "hidden",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  };
+}
+
+function statTile(): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: "#FFFFFF",
+    padding: 14,
+  };
+}
+
+function feedbackCard(tone: FeedbackTone): React.CSSProperties {
+  return {
+    ...pageCard(tone === "success" ? "#F3FBF5" : "#FEF2F2"),
+    color: tone === "success" ? "#166534" : "#991B1B",
+    border:
+      tone === "success"
+        ? "1px solid rgba(34,197,94,0.16)"
+        : "1px solid rgba(239,68,68,0.16)",
+    fontWeight: 800,
+    padding: 14,
+  };
+}
+
+function helperText(): React.CSSProperties {
+  return {
+    color: "#5F7287",
+    fontSize: 14,
+    lineHeight: 1.75,
+  };
+}
+
+function RotatingImage(props: {
+  candidates: string[];
+  alt: string;
+  style: React.CSSProperties;
+  fallback: React.ReactNode;
+}) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    setIndex(0);
+  }, [props.candidates.join("|")]);
+
+  const src = props.candidates[index] || "";
+
+  if (!src) return <>{props.fallback}</>;
+
+  return (
+    <img
+      src={src}
+      alt={props.alt}
+      onError={() =>
+        setIndex((prev) => {
+          const next = prev + 1;
+          return next <= props.candidates.length ? next : prev;
+        })
+      }
+      style={props.style}
+    />
+  );
+}
+
 export default function ShopGalleryPage() {
   const params = useParams<{ gmfnId: string }>();
 
@@ -479,13 +675,21 @@ export default function ShopGalleryPage() {
     return window.innerWidth <= 980;
   });
 
+  const [me, setMe] = useState<any>(null);
   const [shop, setShop] = useState<ShopRecord | null>(null);
   const [products, setProducts] = useState<ShopProduct[]>([]);
   const [loading, setLoading] = useState(true);
-  const [copyMessage, setCopyMessage] = useState("");
+  const [feedback, setFeedback] = useState<{
+    tone: FeedbackTone;
+    text: string;
+  } | null>(null);
   const [resolvedGmfnId, setResolvedGmfnId] = useState("");
+  const [selectedCommunityLabel, setSelectedCommunityLabel] = useState("");
+  const [repostingProductId, setRepostingProductId] = useState<number>(0);
 
   const routeGmfnId = safeStr(params.gmfnId || "");
+  const routeMode = safeStr(routeGmfnId).toLowerCase();
+  const isSelfRoute = routeMode === "me" || routeMode === "self";
   const selectedClanId = Number(getSelectedClanId() || 0);
 
   useEffect(() => {
@@ -502,43 +706,39 @@ export default function ShopGalleryPage() {
   }, []);
 
   useEffect(() => {
-    const timer =
-      copyMessage &&
-      window.setTimeout(() => {
-        setCopyMessage("");
-      }, 2400);
+    if (!feedback) return;
 
-    return () => {
-      if (timer) window.clearTimeout(timer);
-    };
-  }, [copyMessage]);
+    const timer = window.setTimeout(() => {
+      setFeedback(null);
+    }, 2400);
+
+    return () => window.clearTimeout(timer);
+  }, [feedback]);
 
   useEffect(() => {
     let alive = true;
 
     (async () => {
-      const normalized = safeStr(routeGmfnId).toLowerCase();
-
-      if (!normalized) {
+      if (!routeMode) {
         if (alive) setResolvedGmfnId("");
         return;
       }
 
-      if (normalized !== "me" && normalized !== "self") {
+      if (!isSelfRoute) {
         if (alive) setResolvedGmfnId(routeGmfnId);
         return;
       }
 
-      const me = await getMe().catch(() => null);
+      const meRes = await getMe().catch(() => null);
       if (!alive) return;
 
-      setResolvedGmfnId(safeStr(me?.gmfn_id || ""));
+      setResolvedGmfnId(safeStr(meRes?.gmfn_id || ""));
     })();
 
     return () => {
       alive = false;
     };
-  }, [routeGmfnId]);
+  }, [routeGmfnId, routeMode, isSelfRoute]);
 
   useEffect(() => {
     let alive = true;
@@ -549,22 +749,40 @@ export default function ShopGalleryPage() {
       try {
         if (!resolvedGmfnId) {
           if (alive) {
+            setMe(null);
             setShop(null);
             setProducts([]);
+            setSelectedCommunityLabel("");
           }
           return;
         }
 
-        const [currentClanRes, myClansRes] = await Promise.all([
+        const [meRes, currentClanRes, myClansRes] = await Promise.all([
+          getMe().catch(() => null),
           getCurrentClan().catch(() => null),
           listMyClans().catch(() => ({ items: [] })),
         ]);
 
-        const myClanRows = Array.isArray(myClansRes)
-          ? myClansRes
-          : Array.isArray((myClansRes as any)?.items)
-          ? (myClansRes as any).items
-          : [];
+        const myClanRows = rowsOf<any>(myClansRes);
+
+        const selectedClanMatch =
+          myClanRows.find(
+            (item: any) =>
+              Number(item?.id || item?.clan_id || 0) === Number(selectedClanId || 0)
+          ) || null;
+
+        const contextLabel = firstTruthy(
+          selectedClanMatch?.marketplace_name,
+          selectedClanMatch?.name,
+          (currentClanRes as any)?.marketplace_name,
+          (currentClanRes as any)?.name,
+          selectedClanId ? `Community ${selectedClanId}` : ""
+        );
+
+        if (alive) {
+          setMe(meRes || null);
+          setSelectedCommunityLabel(contextLabel);
+        }
 
         const clanIds = dedupeClanIds([
           selectedClanId,
@@ -597,11 +815,7 @@ export default function ShopGalleryPage() {
             limit: 200,
           }).catch(() => ({ items: [] }));
 
-          const shopRows = Array.isArray(shopList)
-            ? shopList
-            : Array.isArray((shopList as any)?.items)
-            ? (shopList as any).items
-            : [];
+          const shopRows = rowsOf<any>(shopList);
 
           for (const rawShopRow of shopRows) {
             const shopRow = normalizeShopRecord(rawShopRow);
@@ -645,11 +859,7 @@ export default function ShopGalleryPage() {
             limit: 200,
           }).catch(() => ({ items: [] }));
 
-          const rows = Array.isArray(result)
-            ? result
-            : Array.isArray((result as any)?.items)
-            ? (result as any).items
-            : [];
+          const rows = rowsOf<any>(result);
 
           for (const rawProduct of rows) {
             const product = normalizeProductRecord(rawProduct);
@@ -686,18 +896,90 @@ export default function ShopGalleryPage() {
     resolvedGmfnId
   );
   const trustPassportStatus = firstTruthy(shop?.trust_band, "Visible seller");
-  const shopImage = resolveMediaSrc(getShopImage(shop));
   const shopDescription = firstTruthy(shop?.description);
+
+  const shopImageCandidates = useMemo(
+    () => buildResolvedMediaCandidates(getShopImage(shop)),
+    [shop]
+  );
+
+  const isOwnShop = useMemo(() => {
+    return normalizeGmfn(me?.gmfn_id || "") === normalizeGmfn(ownerGmfnId || "");
+  }, [me, ownerGmfnId]);
+
+  const whatsappHref = useMemo(
+    () => normalizeWhatsAppHref(firstTruthy(shop?.whatsapp_number)),
+    [shop]
+  );
+
+  const telegramHref = useMemo(
+    () => normalizeTelegramHref(firstTruthy(shop?.telegram_handle)),
+    [shop]
+  );
+
+  function showFeedback(tone: FeedbackTone, text: string) {
+    setFeedback({ tone, text });
+  }
 
   function copyShopLink() {
     const url = getCurrentUrlWithoutHash();
     if (!url) {
-      setCopyMessage("Shop link could not be copied.");
+      showFeedback("error", "Shop link could not be copied.");
       return;
     }
 
     safeCopy(url);
-    setCopyMessage("Shop gallery link copied.");
+    showFeedback("success", "Shop gallery link copied.");
+  }
+
+  function copyOwnerIdentity() {
+    if (!ownerGmfnId) {
+      showFeedback("error", "GMFN ID is not available.");
+      return;
+    }
+
+    safeCopy(ownerGmfnId);
+    showFeedback("success", "GMFN ID copied.");
+  }
+
+  async function handleRepostProduct(product: ShopProduct) {
+    const productId = Number(product?.id || 0);
+
+    if (!productId) {
+      showFeedback("error", "This product is missing a usable ID for repost.");
+      return;
+    }
+
+    if (!selectedClanId) {
+      showFeedback(
+        "error",
+        "Select a community first in Community Home before reposting."
+      );
+      return;
+    }
+
+    setRepostingProductId(productId);
+
+    try {
+      await createMarketplaceRepost({
+        product_id: productId,
+        target_clan_id: selectedClanId,
+      });
+
+      showFeedback(
+        "success",
+        selectedCommunityLabel
+          ? `Product reposted to ${selectedCommunityLabel}.`
+          : "Product reposted to your current community context."
+      );
+    } catch (err: any) {
+      showFeedback(
+        "error",
+        safeStr(err?.message) || "Product could not be reposted right now."
+      );
+    } finally {
+      setRepostingProductId(0);
+    }
   }
 
   if (loading) {
@@ -711,19 +993,26 @@ export default function ShopGalleryPage() {
           gap: 18,
         }}
       >
-        <section
-          style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
-        >
-          <div style={sectionLabel()}>Shop Gallery</div>
-          <div
-            style={{
-              marginTop: 12,
-              color: "#0B1F33",
-              fontSize: 34,
-              fontWeight: 900,
-              lineHeight: 1.1,
-            }}
-          >
+        <PageTopNav
+          sectionLabel="Shop Gallery"
+          title="Shop Gallery"
+          subtitle="Preparing the visible shop gallery..."
+          homeTo="/app/dashboard"
+          homeLabel="Dashboard"
+          backTo="/app/marketplace"
+          backLabel="Marketplace"
+          nextLinks={[
+            { label: "Community Home", to: "/app/community" },
+            { label: "Notifications", to: "/app/notifications" },
+          ]}
+          utilityLinks={[
+            { label: "Trust", to: "/app/trust" },
+            { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+          ]}
+        />
+
+        <section style={pageCard("#FFFFFF")}>
+          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
             Preparing shop gallery...
           </div>
         </section>
@@ -742,6 +1031,24 @@ export default function ShopGalleryPage() {
           gap: 18,
         }}
       >
+        <PageTopNav
+          sectionLabel="Shop Gallery"
+          title="Shop Gallery"
+          subtitle="View-only shop surface for visible shop identity and visible shop blocks."
+          homeTo="/app/dashboard"
+          homeLabel="Dashboard"
+          backTo="/app/marketplace"
+          backLabel="Marketplace"
+          nextLinks={[
+            { label: "Community Home", to: "/app/community" },
+            { label: "Notifications", to: "/app/notifications" },
+          ]}
+          utilityLinks={[
+            { label: "Trust", to: "/app/trust" },
+            { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+          ]}
+        />
+
         <section
           style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
         >
@@ -751,9 +1058,9 @@ export default function ShopGalleryPage() {
             style={{
               marginTop: 12,
               color: "#0B1F33",
-              fontSize: 34,
+              fontSize: isCompact ? 30 : 40,
               fontWeight: 900,
-              lineHeight: 1.1,
+              lineHeight: 1.05,
               maxWidth: 760,
             }}
           >
@@ -763,14 +1070,35 @@ export default function ShopGalleryPage() {
           <div
             style={{
               marginTop: 12,
-              color: "#5F7287",
-              fontSize: 15,
-              lineHeight: 1.8,
+              ...helperText(),
               maxWidth: 860,
             }}
           >
-            The gallery will only show when a shop connected to this GMFN
-            identity is visible from the system level.
+            The gallery appears only when a visible system-level shop is connected
+            to the GMFN identity being viewed.
+          </div>
+
+          <div
+            style={{
+              marginTop: 18,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            {isSelfRoute ? (
+              <Link to="/app/shop-control" style={primaryBtn(false)}>
+                Open Shop Control
+              </Link>
+            ) : null}
+
+            <Link to="/app/marketplace" style={secondaryBtn(false)}>
+              Open Marketplace
+            </Link>
+
+            <Link to="/app/community" style={secondaryBtn(false)}>
+              Community Home
+            </Link>
           </div>
         </section>
       </div>
@@ -787,87 +1115,66 @@ export default function ShopGalleryPage() {
         gap: 18,
       }}
     >
-      {copyMessage ? (
-        <div
-          style={{
-            ...pageCard("#F3FBF5"),
-            color: "#166534",
-            border: "1px solid rgba(34,197,94,0.16)",
-            fontWeight: 800,
-            padding: 14,
-          }}
-        >
-          {copyMessage}
-        </div>
-      ) : null}
+      <PageTopNav
+        sectionLabel="Shop Gallery"
+        title={shopName}
+        subtitle="View-only shop gallery for visible shop identity, repost handling, and visible shop blocks."
+        homeTo="/app/dashboard"
+        homeLabel="Dashboard"
+        backTo="/app/marketplace"
+        backLabel="Marketplace"
+        nextLinks={[
+          { label: "Community Home", to: "/app/community" },
+          { label: "Marketplace", to: "/app/marketplace" },
+          { label: "Notifications", to: "/app/notifications" },
+        ]}
+        utilityLinks={[
+          { label: "Trust", to: "/app/trust" },
+          { label: "Demand Box", to: "/app/demand-box" },
+          { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+        ]}
+      />
+
+      {feedback ? <div style={feedbackCard(feedback.tone)}>{feedback.text}</div> : null}
 
       <section
         style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
       >
-        <div style={sectionLabel()}>Shop Gallery</div>
-
-        <div
-          style={{
-            marginTop: 12,
-            color: "#0B1F33",
-            fontSize: isCompact ? 30 : 40,
-            fontWeight: 900,
-            lineHeight: 1.05,
-          }}
-        >
-          {shopName}
-        </div>
-
-        <div
-          style={{
-            marginTop: 10,
-            color: "#5F7287",
-            fontSize: 14,
-            lineHeight: 1.75,
-            maxWidth: 780,
-          }}
-        >
-          View-only shop gallery for members and linked external viewers.
-        </div>
-      </section>
-
-      <section style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "260px minmax(0, 1fr)",
+            gridTemplateColumns: isCompact ? "1fr" : "280px minmax(0, 1fr)",
             gap: 18,
             alignItems: "start",
           }}
         >
           <div>
             <div style={mediaBox()}>
-              {shopImage ? (
-                <img
-                  src={shopImage}
-                  alt={shopName}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    minHeight: 230,
-                    objectFit: "cover",
-                    display: "block",
-                  }}
-                />
-              ) : (
-                <div
-                  style={{
-                    padding: 18,
-                    textAlign: "center",
-                    color: "#37506A",
-                    fontWeight: 900,
-                    fontSize: 20,
-                    lineHeight: 1.3,
-                  }}
-                >
-                  {shopName}
-                </div>
-              )}
+              <RotatingImage
+                candidates={shopImageCandidates}
+                alt={shopName}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  minHeight: 230,
+                  objectFit: "cover",
+                  display: "block",
+                }}
+                fallback={
+                  <div
+                    style={{
+                      padding: 18,
+                      textAlign: "center",
+                      color: "#37506A",
+                      fontWeight: 900,
+                      fontSize: 20,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {shopName}
+                  </div>
+                }
+              />
             </div>
           </div>
 
@@ -878,7 +1185,7 @@ export default function ShopGalleryPage() {
               style={{
                 marginTop: 10,
                 color: "#0B1F33",
-                fontSize: isCompact ? 28 : 34,
+                fontSize: isCompact ? 28 : 36,
                 fontWeight: 900,
                 lineHeight: 1.08,
               }}
@@ -901,9 +1208,7 @@ export default function ShopGalleryPage() {
               <div
                 style={{
                   marginTop: 10,
-                  color: "#5F7287",
-                  fontSize: 14,
-                  lineHeight: 1.8,
+                  ...helperText(),
                   maxWidth: 760,
                 }}
               >
@@ -914,20 +1219,78 @@ export default function ShopGalleryPage() {
             <div
               style={{
                 marginTop: 14,
-                display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr 1fr"
+                  : "repeat(4, minmax(0, 1fr))",
+                gap: 10,
               }}
             >
-              <span style={badge(true)}>GMFN ID: {ownerGmfnId || "Pending"}</span>
-              <span style={badge(false)}>
-                Trust Passport: {trustPassportStatus}
-              </span>
+              <div style={statTile()}>
+                <div style={sectionLabel()}>GMFN ID</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 15,
+                    lineHeight: 1.3,
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {ownerGmfnId || "Pending"}
+                </div>
+              </div>
+
+              <div style={statTile()}>
+                <div style={sectionLabel()}>Trust signal</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 15,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {trustPassportStatus}
+                </div>
+              </div>
+
+              <div style={statTile()}>
+                <div style={sectionLabel()}>Visible blocks</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 20,
+                  }}
+                >
+                  {products.length}
+                </div>
+              </div>
+
+              <div style={statTile()}>
+                <div style={sectionLabel()}>Repost target</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 15,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {selectedCommunityLabel ||
+                    (selectedClanId ? `Community ${selectedClanId}` : "Not selected")}
+                </div>
+              </div>
             </div>
 
             <div
               style={{
-                marginTop: 16,
+                marginTop: 14,
                 display: "flex",
                 gap: 10,
                 flexWrap: "wrap",
@@ -940,133 +1303,224 @@ export default function ShopGalleryPage() {
               >
                 Share Shop Link
               </button>
+
+              <button
+                type="button"
+                onClick={copyOwnerIdentity}
+                style={secondaryBtn(false)}
+              >
+                Copy GMFN ID
+              </button>
+
+              {isOwnShop ? (
+                <Link to="/app/shop-control" style={secondaryBtn(false)}>
+                  Shop Control
+                </Link>
+              ) : null}
+
+              {whatsappHref ? (
+                <a
+                  href={whatsappHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={secondaryBtn(false)}
+                >
+                  WhatsApp
+                </a>
+              ) : null}
+
+              {telegramHref ? (
+                <a
+                  href={telegramHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={secondaryBtn(false)}
+                >
+                  Telegram
+                </a>
+              ) : null}
             </div>
           </div>
         </div>
       </section>
 
       <section style={pageCard("#FFFFFF")}>
+        <div style={sectionLabel()}>Repost handler</div>
+
         <div
           style={{
+            marginTop: 10,
+            ...helperText(),
+            maxWidth: 860,
+          }}
+        >
+          This page is view-only. Repost sends a visible shop block into your current selected community context without changing the original owner identity of the shop.
+        </div>
+
+        <div
+          style={{
+            marginTop: 14,
             display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
+            gap: 8,
             flexWrap: "wrap",
           }}
         >
-          <div>
-            <div style={sectionLabel()}>Visible selling blocks</div>
-
-            <div
-              style={{
-                marginTop: 8,
-                color: "#5F7287",
-                fontSize: 14,
-                lineHeight: 1.8,
-                maxWidth: 860,
-              }}
-            >
-              These are the visible shop blocks for this gallery surface.
-            </div>
-          </div>
-
-          <span style={badge(false)}>{products.length} visible blocks</span>
+          <span style={badge(true)}>
+            Current target:{" "}
+            {selectedCommunityLabel ||
+              (selectedClanId ? `Community ${selectedClanId}` : "Not selected")}
+          </span>
+          <span style={badge(false)}>
+            {isOwnShop ? "You are viewing your own shop" : "You are viewing another member’s shop"}
+          </span>
         </div>
 
         <div
           style={{
             marginTop: 16,
-            display: "grid",
-            gridTemplateColumns: isCompact
-              ? "1fr"
-              : "repeat(2, minmax(0, 1fr))",
-            gap: 14,
+            display: "flex",
+            gap: 10,
+            flexWrap: "wrap",
           }}
         >
-          {products.length === 0 ? (
-            <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-              No visible selling block is available in this shop right now.
-            </div>
-          ) : (
-            products.map((product, index) => {
-              const imageSrc = resolveMediaSrc(firstTruthy(product?.image_url));
+          <Link to="/app/community" style={secondaryBtn(false)}>
+            Community Home
+          </Link>
+          <Link to="/app/marketplace" style={secondaryBtn(false)}>
+            Marketplace
+          </Link>
+          {!selectedClanId ? (
+            <Link to="/app/community" style={primaryBtn(false)}>
+              Select Community First
+            </Link>
+          ) : null}
+        </div>
+      </section>
 
-              return (
-                <div
-                  key={`${product.id || index}`}
-                  style={innerCard("#FCFEFF")}
-                >
-                  <div style={productImageBox()}>
-                    {imageSrc ? (
-                      <img
-                        src={imageSrc}
-                        alt={firstTruthy(product?.name, "Product")}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          minHeight: 180,
-                          objectFit: "cover",
-                          display: "block",
-                        }}
-                      />
-                    ) : (
+      <section style={detailsShell()}>
+        <details open>
+          <summary style={detailsSummary()}>
+            <span>Visible shop blocks</span>
+            <span style={{ color: "#64748B", fontSize: 13 }}>
+              {products.length} block{products.length === 1 ? "" : "s"}
+            </span>
+          </summary>
+
+          <div style={{ padding: "0 18px 18px" }}>
+            {products.length === 0 ? (
+              <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+                No visible shop block is available in this gallery right now.
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "1fr"
+                    : "repeat(2, minmax(0, 1fr))",
+                  gap: 14,
+                }}
+              >
+                {products.map((product, index) => {
+                  const imageCandidates = buildResolvedMediaCandidates(
+                    firstTruthy(product?.image_url)
+                  );
+                  const productId = Number(product?.id || 0);
+                  const reposting = repostingProductId === productId;
+
+                  return (
+                    <div key={`${product.id || index}`} style={innerCard("#FCFEFF")}>
+                      <div style={productImageBox()}>
+                        <RotatingImage
+                          candidates={imageCandidates}
+                          alt={firstTruthy(product?.name, "Product")}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            minHeight: 180,
+                            objectFit: "cover",
+                            display: "block",
+                          }}
+                          fallback={
+                            <div
+                              style={{
+                                padding: 18,
+                                textAlign: "center",
+                                color: "#37506A",
+                                fontWeight: 800,
+                                fontSize: 16,
+                                lineHeight: 1.5,
+                              }}
+                            >
+                              {firstTruthy(product?.name, "Product")}
+                            </div>
+                          }
+                        />
+                      </div>
+
                       <div
                         style={{
-                          padding: 18,
-                          textAlign: "center",
-                          color: "#37506A",
-                          fontWeight: 800,
-                          fontSize: 16,
-                          lineHeight: 1.5,
+                          marginTop: 14,
+                          color: "#0B1F33",
+                          fontSize: 18,
+                          fontWeight: 900,
+                          lineHeight: 1.35,
                         }}
                       >
                         {firstTruthy(product?.name, "Product")}
                       </div>
-                    )}
-                  </div>
 
-                  <div
-                    style={{
-                      marginTop: 14,
-                      color: "#0B1F33",
-                      fontSize: 18,
-                      fontWeight: 900,
-                      lineHeight: 1.35,
-                    }}
-                  >
-                    {firstTruthy(product?.name, "Product")}
-                  </div>
+                      <div
+                        style={{
+                          marginTop: 8,
+                          ...helperText(),
+                        }}
+                      >
+                        {firstTruthy(
+                          product?.description,
+                          "No additional description is visible yet."
+                        )}
+                      </div>
 
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "#5F7287",
-                      fontSize: 14,
-                      lineHeight: 1.75,
-                    }}
-                  >
-                    {firstTruthy(
-                      product?.description,
-                      "No additional description is visible yet."
-                    )}
-                  </div>
+                      <div
+                        style={{
+                          marginTop: 12,
+                          display: "flex",
+                          gap: 8,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <span style={badge(true)}>{displayPrice(product)}</span>
+                      </div>
 
-                  <div
-                    style={{
-                      marginTop: 12,
-                      display: "flex",
-                      gap: 8,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <span style={badge(true)}>{displayPrice(product)}</span>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
+                      <div
+                        style={{
+                          marginTop: 14,
+                          display: "flex",
+                          gap: 10,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => void handleRepostProduct(product)}
+                          disabled={!productId || !selectedClanId || reposting}
+                          style={secondaryBtn(!productId || !selectedClanId || reposting)}
+                        >
+                          {reposting
+                            ? "Reposting..."
+                            : selectedCommunityLabel
+                            ? `Repost to ${selectedCommunityLabel}`
+                            : "Repost"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </details>
       </section>
     </div>
   );

@@ -1,5 +1,12 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useMemo, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  clearPublicEntryState,
+  createEntry,
+  getCreateCode,
+  getMe,
+  isAuthenticated,
+} from "../lib/api";
 
 function pageShell(): React.CSSProperties {
   return {
@@ -100,32 +107,159 @@ function sectionLabel(): React.CSSProperties {
   };
 }
 
+function feedbackCard(success = false): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    padding: 14,
+    border: success ? "1px solid #A7F3D0" : "1px solid #FECACA",
+    background: success ? "#ECFDF5" : "#FEF2F2",
+    color: success ? "#065F46" : "#991B1B",
+    fontWeight: 900,
+  };
+}
+
 function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
 
+function resolveIssuedGmfnId(out: any, me: any): string {
+  return safeStr(
+    me?.gmfn_id ||
+      out?.gmfn_id ||
+      out?.user?.gmfn_id ||
+      out?.member?.gmfn_id ||
+      out?.data?.gmfn_id
+  );
+}
+
+function resolveActivationRequestId(out: any): string {
+  return safeStr(
+    out?.request_id ||
+      out?.join_request_id ||
+      out?.member_request_id ||
+      out?.approval_request_id
+  );
+}
+
 export default function CreateEntryPage() {
   const nav = useNavigate();
+  const location = useLocation();
 
-  const [communityName, setCommunityName] = useState("");
-  const [description, setDescription] = useState("");
-  const [email, setEmail] = useState("");
+  const search = useMemo(
+    () => new URLSearchParams(location.search),
+    [location.search]
+  );
+
+  const stateCreateEntry =
+    (location.state as {
+      create_entry?: {
+        clan_name?: string;
+        clan_description?: string;
+        email?: string;
+        create_code?: string;
+      };
+    } | null)?.create_entry || null;
+
+  const initialCommunityName = safeStr(
+    stateCreateEntry?.clan_name ||
+      search.get("clan_name") ||
+      search.get("community_name") ||
+      ""
+  );
+
+  const initialDescription = safeStr(
+    stateCreateEntry?.clan_description ||
+      search.get("clan_description") ||
+      search.get("community_description") ||
+      ""
+  );
+
+  const initialEmail = safeStr(
+    stateCreateEntry?.email || search.get("email") || ""
+  );
+
+  const createCode = safeStr(
+    stateCreateEntry?.create_code ||
+      search.get("create_code") ||
+      getCreateCode() ||
+      ""
+  );
+
+  const [communityName, setCommunityName] = useState(initialCommunityName);
+  const [description, setDescription] = useState(initialDescription);
+  const [email, setEmail] = useState(initialEmail);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const canContinue = !!safeStr(communityName) && !!safeStr(email);
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!canContinue) return;
+    if (!canContinue || busy) return;
 
-    nav("/register", {
-      state: {
-        create_entry: {
-          clan_name: safeStr(communityName),
-          clan_description: safeStr(description),
-          email: safeStr(email),
-        },
-      },
-    });
+    setError("");
+    setSuccess("");
+    setBusy(true);
+
+    try {
+      const payload: Record<string, any> = {
+        clan_name: safeStr(communityName),
+        clan_description: safeStr(description) || undefined,
+        email: safeStr(email),
+      };
+
+      if (createCode) {
+        payload.create_code = createCode;
+      }
+
+      const out = await createEntry(payload);
+      const me = await getMe().catch(() => null);
+
+      const issuedGmfnId = resolveIssuedGmfnId(out, me);
+      const requestId = resolveActivationRequestId(out);
+      const authenticatedNow = isAuthenticated();
+
+      if (authenticatedNow) {
+        clearPublicEntryState();
+        nav("/app/build-first-circle", { replace: true });
+        return;
+      }
+
+      if (issuedGmfnId || requestId) {
+        clearPublicEntryState();
+
+        const next = new URLSearchParams();
+        if (issuedGmfnId) next.set("gmfn_id", issuedGmfnId);
+        if (requestId) next.set("request_id", requestId);
+
+        nav(
+          next.toString()
+            ? `/activate-membership?${next.toString()}`
+            : "/activate-membership",
+          {
+            replace: true,
+            state: {
+              gmfn_id: issuedGmfnId || undefined,
+              request_id: requestId || undefined,
+            },
+          }
+        );
+        return;
+      }
+
+      setSuccess(
+        safeStr(
+          out?.detail ||
+            out?.message ||
+            "Founder entry was submitted successfully. Continue when activation details are available."
+        )
+      );
+    } catch (err: any) {
+      setError(err?.message || "Founder entry could not be completed.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -157,8 +291,8 @@ export default function CreateEntryPage() {
             }}
           >
             This is the public create entry. Start with a community name, add a
-            short description, then continue into founder registration and
-            activation.
+            short description, and continue into founder creation. If GMFN access
+            is issued here, the next guided step will be Build Your First Circle.
           </div>
 
           <div
@@ -187,6 +321,9 @@ export default function CreateEntryPage() {
             </Link>
           </div>
         </div>
+
+        {error ? <div style={feedbackCard(false)}>{error}</div> : null}
+        {success ? <div style={feedbackCard(true)}>{success}</div> : null}
 
         <div
           style={{
@@ -229,8 +366,12 @@ export default function CreateEntryPage() {
               </div>
 
               <div style={{ marginTop: 4 }}>
-                <button type="submit" style={primaryBtn(!canContinue)} disabled={!canContinue}>
-                  Continue to founder registration
+                <button
+                  type="submit"
+                  style={primaryBtn(!canContinue || busy)}
+                  disabled={!canContinue || busy}
+                >
+                  {busy ? "Continuing..." : "Continue to founder creation"}
                 </button>
               </div>
             </form>
@@ -249,11 +390,11 @@ export default function CreateEntryPage() {
               >
                 1. Start with the community details.
                 <br />
-                2. Continue into registration.
+                2. Complete founder creation.
                 <br />
-                3. Complete activation.
+                3. If GMFN access is issued, move into Build Your First Circle.
                 <br />
-                4. Move into your personal surfaces.
+                4. Then continue into your wider member surfaces.
               </div>
             </div>
 
@@ -282,8 +423,9 @@ export default function CreateEntryPage() {
                   fontSize: 14,
                 }}
               >
-                The main guide is My GMFN and I inside the member flow. The PDF
-                above is only a public fallback here.
+                The guided founder path should stay focused: start, validate,
+                issue GMFN access, build the first circle, then reopen wider
+                movement.
               </div>
             </div>
           </div>

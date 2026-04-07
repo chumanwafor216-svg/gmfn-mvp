@@ -126,7 +126,7 @@ export default function MemberActivationPage() {
       });
 
       setSuccess("Membership activated successfully.");
-      navigate("/app/dashboard", { replace: true });
+      navigate("/app/build-first-circle", { replace: true });
     } catch (err: any) {
       setError(err?.message || "Activation failed.");
     } finally {

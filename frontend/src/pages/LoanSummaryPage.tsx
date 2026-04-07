@@ -1,17 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import toast from "react-hot-toast";
-import { formatMoney } from "../lib/money";
+import PageTopNav from "../components/PageTopNav";
 import {
-  getMe,
-  getLoanSummary,
-  getLoanGuarantors,
   decideLoanGuarantor,
-  getRepayments,
-  
+  getAccessToken,
+  getLoanGuarantors,
+  getLoanSummary,
+  getMe,
+  safeCopy,
 } from "../lib/api";
 
-type MeLite = { id?: number | string; email?: string; role?: string };
+type MeLite = {
+  id?: number | string;
+  email?: string;
+  role?: string;
+};
 
 type LoanSummary = {
   id: number;
@@ -20,6 +23,10 @@ type LoanSummary = {
   amount: number;
   currency?: string;
   guarantors_required?: number;
+  created_at?: string | null;
+  due_at?: string | null;
+  purpose?: string | null;
+  note?: string | null;
 };
 
 type LoanGuarantor = {
@@ -32,13 +39,28 @@ type LoanGuarantor = {
   locked_amount?: number;
 };
 
-type TrustEvent = { id?: number; event_type?: string; created_at?: string; meta_json?: any; meta?: any };
-type Repayment = { id?: number; amount: number; created_at?: string };
+type TrustEvent = {
+  id?: number;
+  event_type?: string;
+  created_at?: string;
+  meta_json?: any;
+  meta?: any;
+};
 
-type Suggestion = { user_id: number; email?: string; cci?: number; recommended_pledge?: number };
+type Repayment = {
+  id?: number;
+  amount: number;
+  created_at?: string;
+};
 
-// Bulk result is typed as unknown in api.ts — we cast here for UI
-type BulkActionResult = { attempted: number; succeeded: number; failed: number };
+type Suggestion = {
+  user_id: number;
+  email?: string;
+  cci?: number;
+  recommended_pledge?: number;
+};
+
+type FeedbackTone = "success" | "error";
 
 function safeItems<T>(res: any): T[] {
   if (!res) return [];
@@ -48,7 +70,22 @@ function safeItems<T>(res: any): T[] {
 }
 
 const n = (x: any) => (Number.isFinite(Number(x)) ? Number(x) : 0);
-const lc = (x: any) => String(x ?? "").toLowerCase();
+const lc = (x: any) => String(x ?? "").toLowerCase().trim();
+const safeStr = (x: any) => String(x ?? "").trim();
+
+function safeDateTime(x: any): string {
+  const raw = safeStr(x);
+  if (!raw) return "—";
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return raw;
+  return d.toLocaleString();
+}
+
+function fmtMoney(value: any, currency: string): string {
+  const amount = Number(value);
+  const text = Number.isFinite(amount) ? amount.toFixed(2) : safeStr(value || "0");
+  return `${text} ${currency}`;
+}
 
 function parseMetaObj(meta: any): Record<string, any> | null {
   if (meta == null) return null;
@@ -57,14 +94,164 @@ function parseMetaObj(meta: any): Record<string, any> | null {
       const s = meta.trim();
       if ((s.startsWith("{") && s.endsWith("}")) || (s.startsWith("[") && s.endsWith("]"))) {
         const parsed = JSON.parse(s);
-        return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
+        return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+          ? parsed
+          : null;
       }
       return null;
     }
-    if (typeof meta === "object" && !Array.isArray(meta)) return meta as Record<string, any>;
+
+    if (typeof meta === "object" && !Array.isArray(meta)) {
+      return meta as Record<string, any>;
+    }
+
     return null;
   } catch {
     return null;
+  }
+}
+
+function pageCard(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    borderRadius: 24,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 20,
+    boxShadow:
+      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
+    overflow: "hidden",
+  };
+}
+
+function softCard(bg = "#F8FBFF"): React.CSSProperties {
+  return {
+    borderRadius: 18,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 16,
+  };
+}
+
+function innerCard(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 14,
+  };
+}
+
+function primaryBtn(disabled = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 42,
+    padding: "10px 14px",
+    borderRadius: 14,
+    border: "none",
+    background: disabled ? "#CBD5E1" : "#0B63D1",
+    color: "#FFFFFF",
+    fontWeight: 900,
+    fontSize: 14,
+    textDecoration: "none",
+    cursor: disabled ? "not-allowed" : "pointer",
+    whiteSpace: "nowrap",
+    opacity: disabled ? 0.86 : 1,
+  };
+}
+
+function secondaryBtn(disabled = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 42,
+    padding: "10px 14px",
+    borderRadius: 14,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#FFFFFF",
+    color: disabled ? "#94A3B8" : "#0B1F33",
+    fontWeight: 800,
+    fontSize: 14,
+    textDecoration: "none",
+    cursor: disabled ? "not-allowed" : "pointer",
+    whiteSpace: "nowrap",
+    opacity: disabled ? 0.86 : 1,
+  };
+}
+
+function sectionLabel(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#5D7389",
+    fontWeight: 900,
+    letterSpacing: 0.35,
+    textTransform: "uppercase",
+  };
+}
+
+function badge(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    minHeight: 30,
+    borderRadius: 999,
+    padding: "6px 10px",
+    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
+    color: primary ? "#0B63D1" : "#51657A",
+    fontSize: 12,
+    fontWeight: 900,
+    whiteSpace: "nowrap",
+  };
+}
+
+function feedbackCard(tone: FeedbackTone): React.CSSProperties {
+  return {
+    ...softCard(tone === "success" ? "#F3FBF5" : "#FEF2F2"),
+    color: tone === "success" ? "#166534" : "#991B1B",
+    border:
+      tone === "success"
+        ? "1px solid rgba(34,197,94,0.16)"
+        : "1px solid rgba(239,68,68,0.16)",
+    fontWeight: 800,
+  };
+}
+
+function authHeaders(clanId?: number) {
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+  };
+
+  const token = getAccessToken();
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  if (Number(clanId || 0) > 0) {
+    headers["X-Clan-Id"] = String(clanId);
+  }
+
+  return headers;
+}
+
+async function fetchJson(path: string, clanId?: number): Promise<any> {
+  const res = await fetch(path, {
+    method: "GET",
+    headers: authHeaders(clanId),
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const message = await res.text().catch(() => "");
+    throw new Error(message || `HTTP ${res.status}`);
+  }
+
+  const text = await res.text().catch(() => "");
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
   }
 }
 
@@ -81,16 +268,71 @@ function statusBadge(status: string) {
     whiteSpace: "nowrap",
   };
 
-  if (s === "approved" || s === "disbursed")
-    return <span style={{ ...base, background: "#ecfdf5", color: "#065f46", borderColor: "#a7f3d0" }}>{s.toUpperCase()}</span>;
-  if (s === "pending")
-    return <span style={{ ...base, background: "#eff6ff", color: "#1e40af", borderColor: "#bfdbfe" }}>{s.toUpperCase()}</span>;
-  if (s === "repaid")
-    return <span style={{ ...base, background: "#f0fdf4", color: "#166534", borderColor: "#bbf7d0" }}>{s.toUpperCase()}</span>;
-  if (s === "rejected")
-    return <span style={{ ...base, background: "#fef2f2", color: "#991b1b", borderColor: "#fecaca" }}>{s.toUpperCase()}</span>;
+  if (s === "approved" || s === "disbursed") {
+    return (
+      <span
+        style={{
+          ...base,
+          background: "#ecfdf5",
+          color: "#065f46",
+          borderColor: "#a7f3d0",
+        }}
+      >
+        {s.toUpperCase()}
+      </span>
+    );
+  }
 
-  return <span style={{ ...base, background: "#f9fafb", color: "#374151" }}>{(status || "UNKNOWN").toUpperCase()}</span>;
+  if (s === "pending") {
+    return (
+      <span
+        style={{
+          ...base,
+          background: "#eff6ff",
+          color: "#1e40af",
+          borderColor: "#bfdbfe",
+        }}
+      >
+        {s.toUpperCase()}
+      </span>
+    );
+  }
+
+  if (s === "repaid") {
+    return (
+      <span
+        style={{
+          ...base,
+          background: "#f0fdf4",
+          color: "#166534",
+          borderColor: "#bbf7d0",
+        }}
+      >
+        {s.toUpperCase()}
+      </span>
+    );
+  }
+
+  if (s === "rejected" || s === "declined") {
+    return (
+      <span
+        style={{
+          ...base,
+          background: "#fef2f2",
+          color: "#991b1b",
+          borderColor: "#fecaca",
+        }}
+      >
+        {(status || "REJECTED").toUpperCase()}
+      </span>
+    );
+  }
+
+  return (
+    <span style={{ ...base, background: "#f9fafb", color: "#374151" }}>
+      {(status || "UNKNOWN").toUpperCase()}
+    </span>
+  );
 }
 
 function guarantorBadge(status: string) {
@@ -105,23 +347,90 @@ function guarantorBadge(status: string) {
     fontWeight: 900,
     whiteSpace: "nowrap",
   };
-  if (s === "approved")
-    return <span style={{ ...base, background: "#ecfdf5", color: "#065f46", borderColor: "#a7f3d0" }}>APPROVED</span>;
-  if (s === "declined")
-    return <span style={{ ...base, background: "#fef2f2", color: "#991b1b", borderColor: "#fecaca" }}>DECLINED</span>;
-  if (s === "expired")
-    return <span style={{ ...base, background: "#f9fafb", color: "#374151", borderColor: "#e5e7eb" }}>EXPIRED</span>;
-  return <span style={{ ...base, background: "#eff6ff", color: "#1e40af", borderColor: "#bfdbfe" }}>PENDING</span>;
+
+  if (s === "approved") {
+    return (
+      <span
+        style={{
+          ...base,
+          background: "#ecfdf5",
+          color: "#065f46",
+          borderColor: "#a7f3d0",
+        }}
+      >
+        APPROVED
+      </span>
+    );
+  }
+
+  if (s === "declined") {
+    return (
+      <span
+        style={{
+          ...base,
+          background: "#fef2f2",
+          color: "#991b1b",
+          borderColor: "#fecaca",
+        }}
+      >
+        DECLINED
+      </span>
+    );
+  }
+
+  if (s === "expired") {
+    return (
+      <span
+        style={{
+          ...base,
+          background: "#f9fafb",
+          color: "#374151",
+          borderColor: "#e5e7eb",
+        }}
+      >
+        EXPIRED
+      </span>
+    );
+  }
+
+  return (
+    <span
+      style={{
+        ...base,
+        background: "#eff6ff",
+        color: "#1e40af",
+        borderColor: "#bfdbfe",
+      }}
+    >
+      PENDING
+    </span>
+  );
 }
 
 function nextStepText(status: string) {
   const s = lc(status);
-  if (s === "pending") return "Next: request guarantors → wait for approvals. When enough guarantors approve, the loan auto-approves.";
-  if (s === "approved") return "Next: the loan is approved. You can begin repayments and generate evidence reports.";
-  if (s === "disbursed") return "Next: repayments should begin according to the schedule.";
-  if (s === "repaid") return "Completed: this loan has been fully repaid.";
-  if (s === "rejected") return "Stopped: this loan was rejected. Create a new request or contact clan admin.";
-  return "Next: review guarantors and events for this loan.";
+
+  if (s === "pending") {
+    return "Next: request guarantors, wait for approvals, and watch the approval count. When enough guarantors approve, the loan can continue.";
+  }
+
+  if (s === "approved") {
+    return "Next: the loan is approved. Repayment and evidence review become the main actions.";
+  }
+
+  if (s === "disbursed") {
+    return "Next: repayments should continue according to the active support path.";
+  }
+
+  if (s === "repaid") {
+    return "Completed: this loan has been fully repaid.";
+  }
+
+  if (s === "rejected" || s === "declined") {
+    return "Stopped: this loan was rejected. Return to preparation before starting a new request.";
+  }
+
+  return "Next: review guarantors, evidence, and repayment state for this loan.";
 }
 
 export default function LoanSummaryPage() {
@@ -135,24 +444,21 @@ export default function LoanSummaryPage() {
   const [repayments, setRepayments] = useState<Repayment[]>([]);
   const [events, setEvents] = useState<TrustEvent[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-
-  const [busy, setBusy] = useState(false);
-  const [repayAmount, setRepayAmount] = useState<number>(100);
-
-  // admin confirm (typed + checkbox + 3s)
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmMode, setConfirmMode] = useState<"approve" | "decline">("approve");
-  const [confirmText, setConfirmText] = useState("");
-  const [confirmChecked, setConfirmChecked] = useState(false);
-  const [confirmCountdown, setConfirmCountdown] = useState(3);
-
-  const confirmPhrase = confirmMode === "approve" ? "APPROVE ALL" : "DECLINE ALL";
-  const isAdmin = lc(me?.role) === "admin";
+  const [loading, setLoading] = useState(true);
+  const [busyDecisionKey, setBusyDecisionKey] = useState("");
+  const [feedback, setFeedback] = useState<{
+    tone: FeedbackTone;
+    text: string;
+  } | null>(null);
 
   const currency = summary?.currency ?? "NGN";
+  const isAdmin = lc(me?.role) === "admin";
+
   const requiredCount = n(summary?.guarantors_required);
   const approvedCount = guarantors.filter((g) => lc(g.status) === "approved").length;
-  const pendingGuarantors = guarantors.filter((g) => lc(g.status) === "pending" && g.id != null);
+  const pendingGuarantors = guarantors.filter(
+    (g) => lc(g.status) === "pending" && g.id != null
+  );
 
   const loanStatus = lc(summary?.status);
   const canActOnGuarantors = loanStatus === "pending";
@@ -168,327 +474,783 @@ export default function LoanSummaryPage() {
     return xs[0] || null;
   }, [events]);
 
-  const latestMeta = useMemo(() => parseMetaObj(latestEvent?.meta_json ?? latestEvent?.meta), [latestEvent]);
-  const latestReason = (latestMeta?.reason ?? "").toString().trim();
-  const latestNote = (latestMeta?.note ?? "").toString().trim();
+  const latestMeta = useMemo(
+    () => parseMetaObj(latestEvent?.meta_json ?? latestEvent?.meta),
+    [latestEvent]
+  );
+
+  const latestReason = safeStr(latestMeta?.reason || "");
+  const latestNote = safeStr(latestMeta?.note || latestMeta?.message || "");
+
+  useEffect(() => {
+    if (!feedback) return;
+
+    const timer = window.setTimeout(() => {
+      setFeedback(null);
+    }, 2600);
+
+    return () => window.clearTimeout(timer);
+  }, [feedback]);
 
   function jumpToAudit() {
     const clan = summary?.clan_id ? String(summary.clan_id) : "1";
-    nav(`/trust-analytics?clan_id=${clan}&loan_id=${summary?.id}&audit=1`);
+    nav(`/app/trust-analytics?clan_id=${clan}&loan_id=${summary?.id}&audit=1`);
   }
-
-  function confirmReady() {
-    return confirmText.trim().toUpperCase() === confirmPhrase && confirmChecked && confirmCountdown === 0;
-  }
-
-  useEffect(() => {
-    if (!confirmOpen) return;
-    setConfirmCountdown(3);
-    const t = setInterval(() => setConfirmCountdown((p) => (p > 0 ? p - 1 : 0)), 1000);
-    return () => clearInterval(t);
-  }, [confirmOpen, confirmMode]);
 
   async function refreshAll() {
+    setLoading(true);
+
     try {
-      const m = await getMe().catch(() => null);
-      if (m) setMe({ id: m.id, email: m.email, role: m.role });
+      const meRes = await getMe().catch(() => null);
+      if (meRes) setMe({ id: meRes.id, email: meRes.email, role: meRes.role });
       else setMe(null);
 
-      const s = (await getLoanSummary(id)) as LoanSummary;
-      setSummary(s);
+      const summaryRes = (await getLoanSummary(id)) as LoanSummary;
+      setSummary(summaryRes);
 
-      const gs = await getLoanGuarantors(id);
-      setGuarantors(safeItems<LoanGuarantor>(gs));
+      const guarantorRes = await getLoanGuarantors(id, {
+        clan_id: summaryRes?.clan_id,
+      }).catch(() => ({ items: [] }));
+      setGuarantors(safeItems<LoanGuarantor>(guarantorRes));
 
-      const rs = await getRepayments(id).catch(() => ({ items: [] }));
-      setRepayments(safeItems<Repayment>(rs));
-
-      // trust events (api.ts signature: getTrustEvents(clanId: number))
-      const ts = { items: [] as any[] };
-      setEvents(safeItems<TrustEvent>(ts).slice(0, 50));
-
-      // suggestions via direct endpoint (no missing api exports)
       try {
-        const res = await fetch(`/api/loans/${Number(s.id)}/guarantors/suggestions?limit=10`);
-        if (!res.ok) throw new Error(await res.text());
-        const data = (await res.json()) as { items: Suggestion[] };
-        setSuggestions(data?.items || []);
+        const repaymentsRes = await fetchJson(
+          `/api/loans/${Number(summaryRes.id)}/repayments`,
+          summaryRes?.clan_id
+        );
+        setRepayments(safeItems<Repayment>(repaymentsRes));
+      } catch {
+        setRepayments([]);
+      }
+
+      try {
+        const suggestionsRes = await fetchJson(
+          `/api/loans/${Number(summaryRes.id)}/guarantors/suggestions?limit=10`,
+          summaryRes?.clan_id
+        );
+        setSuggestions(safeItems<Suggestion>(suggestionsRes));
       } catch {
         setSuggestions([]);
       }
+
+      try {
+        const eventsRes = await fetchJson(
+          `/api/admin/trust-events/recent?limit=20&loan_id=${Number(summaryRes.id)}&clan_id=${Number(
+            summaryRes.clan_id || 0
+          )}`,
+          summaryRes?.clan_id
+        );
+        setEvents(safeItems<TrustEvent>(eventsRes));
+      } catch {
+        setEvents([]);
+      }
     } catch (e: any) {
-      toast.error(e?.message || "Failed to load");
+      setFeedback({
+        tone: "error",
+        text: e?.message || "Failed to load loan summary.",
+      });
+    } finally {
+      setLoading(false);
     }
   }
 
   useEffect(() => {
-    refreshAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!id) return;
+    void refreshAll();
   }, [id]);
 
-  // ONE-CLICK AUTO-ADD (until required met)
-  async function autoAddUntilMet() {
-    if (!summary?.clan_id) return;
+  async function handleGuarantorDecision(
+    guarantor: LoanGuarantor,
+    status: "approved" | "declined"
+  ) {
+    if (!summary?.id || !guarantor?.id) return;
     if (!canActOnGuarantors) {
-      toast.error("Guarantors can only be added while loan is pending.");
-      return;
-    }
-    const need = Math.max(0, requiredCount - approvedCount);
-    if (need <= 0) {
-      toast.success("Already met required approvals ✅");
+      setFeedback({
+        tone: "error",
+        text: "Guarantor decisions are only available while the loan is pending.",
+      });
       return;
     }
 
-    setBusy(true);
+    const key = `${summary.id}-${guarantor.id}-${status}`;
+    setBusyDecisionKey(key);
+
     try {
-      const res = await fetch(`/api/loans/${Number(summary.id)}/guarantors/suggestions?limit=20`);
-      if (!res.ok) throw new Error(await res.text());
-      const data = (await res.json()) as { items: Suggestion[] };
-      const items = data?.items || [];
+      await decideLoanGuarantor(summary.id, Number(guarantor.id), {
+        status,
+        clan_id: summary?.clan_id,
+      });
 
-      const existing = new Set(guarantors.map((g) => Number(g.guarantor_user_id)));
-      const picks = items.filter((s) => !existing.has(Number(s.user_id))).slice(0, need);
+      setFeedback({
+        tone: "success",
+        text:
+          status === "approved"
+            ? "Guarantor approved successfully."
+            : "Guarantor declined successfully.",
+      });
 
-      let added = 0;
-      for (const s of picks) {
-        const pledge =
-          n(s.recommended_pledge) > 0
-            ? n(s.recommended_pledge)
-            : Math.ceil((n(summary.amount) / Math.max(1, requiredCount)) / 100) * 100;
-
-        throw new Error("Add guarantor is disabled in this build.");
-      }
-
-      toast.success(`Auto-added ${added} guarantor(s) ✅`);
       await refreshAll();
     } catch (e: any) {
-      toast.error(e?.message || "Auto-add failed");
+      setFeedback({
+        tone: "error",
+        text: e?.message || "Guarantor decision failed.",
+      });
     } finally {
-      setBusy(false);
+      setBusyDecisionKey("");
     }
-  }
-
-  async function downloadPdf() {
-    if (!summary?.id) return;
-    setBusy(true);
-    try {
-  // PDF download intentionally disabled in this build.
-  // Keep function structure for later enablement.
-  toast.error("PDF download is disabled in this build.");
-  return;
-} finally {
-  setBusy(false);
-} 
   }
 
   function copyLoanAuditLink() {
     if (!summary?.id) return;
-    const p = new URLSearchParams({ clan_id: String(summary.clan_id || 1), loan_id: String(summary.id), audit: "1" });
-    navigator.clipboard.writeText(`${window.location.origin}/trust-analytics?${p.toString()}`);
-    toast.success("Loan + audit link copied ✅");
+
+    const p = new URLSearchParams({
+      clan_id: String(summary.clan_id || 1),
+      loan_id: String(summary.id),
+      audit: "1",
+    });
+
+    safeCopy(`${window.location.origin}/app/trust-analytics?${p.toString()}`);
+    setFeedback({
+      tone: "success",
+      text: "Loan and audit link copied.",
+    });
   }
 
-  async function runBulkAction() {
-    if (!summary) return;
-    if (!isAdmin) return toast.error("Admin only");
-    if (!canActOnGuarantors) return toast.error("Bulk actions only available while loan is pending.");
-    if (!confirmReady()) return toast.error(`Type "${confirmPhrase}", tick checkbox, wait countdown`);
-
-    setBusy(true);
-    try {
-      let res: BulkActionResult;
-
-      if (confirmMode === "approve") {
-        throw new Error("Bulk actions disabled in this build.");
-        toast.success(`Bulk approve ✅ attempted=${res.attempted}, ok=${res.succeeded}, failed=${res.failed}`);
-      } else {
-        throw new Error("Bulk actions disabled in this build.");
-        toast.success(`Bulk decline ✅ attempted=${res.attempted}, ok=${res.succeeded}, failed=${res.failed}`);
-      }
-
-      setConfirmOpen(false);
-      setConfirmText("");
-      setConfirmChecked(false);
-      await refreshAll();
-      jumpToAudit();
-    } catch (e: any) {
-      toast.error(e?.message || "Bulk action failed");
-    } finally {
-      setBusy(false);
-    }
+  function downloadPdf() {
+    setFeedback({
+      tone: "error",
+      text: "PDF download is disabled in this build.",
+    });
   }
 
-  async function onPostRepayment() {
-    if (!summary) return;
-    if (!canRepay) return toast.error("Repayments enabled after approval/disbursement");
-    if (!repayAmount || repayAmount <= 0) return toast.error("Enter a valid amount");
+  const summaryNextStep = useMemo(() => {
+    if (!summary) return "";
+    return nextStepText(summary.status);
+  }, [summary]);
 
-    setBusy(true);
-    try {
-      throw new Error("Repayment post disabled in this build.");
-      toast.success("Repayment posted ✅");
-      await refreshAll();
-      jumpToAudit();
-    } catch (e: any) {
-      toast.error(e?.message || "Repayment failed");
-    } finally {
-      setBusy(false);
-    }
+  if (!id) {
+    return (
+      <div style={{ maxWidth: 1180, margin: "0 auto", paddingBottom: 40 }}>
+        <section style={pageCard("#FFFFFF")}>
+          <div style={{ color: "#991B1B", fontWeight: 800 }}>
+            Invalid loan ID.
+          </div>
+        </section>
+      </div>
+    );
   }
 
-  if (!summary) return <div style={{ padding: 20 }}>Loading…</div>;
+  if (loading && !summary) {
+    return (
+      <div style={{ maxWidth: 1180, margin: "0 auto", paddingBottom: 40 }}>
+        <PageTopNav
+          sectionLabel="Loan Summary"
+          title="Loan Summary"
+          subtitle="Preparing the loan detail surface..."
+          homeTo="/app/dashboard"
+          homeLabel="Dashboard"
+          backTo="/app/loans"
+          backLabel="Loans & Support"
+        />
+
+        <section style={{ ...pageCard("#FFFFFF"), marginTop: 18 }}>
+          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+            Loading loan summary...
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  if (!summary) {
+    return (
+      <div style={{ maxWidth: 1180, margin: "0 auto", paddingBottom: 40 }}>
+        <PageTopNav
+          sectionLabel="Loan Summary"
+          title="Loan Summary"
+          subtitle="This page summarizes one support item."
+          homeTo="/app/dashboard"
+          homeLabel="Dashboard"
+          backTo="/app/loans"
+          backLabel="Loans & Support"
+        />
+
+        {feedback ? (
+          <div style={{ ...feedbackCard(feedback.tone), marginTop: 18 }}>
+            {feedback.text}
+          </div>
+        ) : null}
+
+        <section style={{ ...pageCard("#FFFFFF"), marginTop: 18 }}>
+          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+            Loan summary could not be loaded.
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ padding: 16, maxWidth: 1100 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-        <Link to="/loans">← Back</Link>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button onClick={copyLoanAuditLink}>Copy loan + audit link</button>
-          <button onClick={jumpToAudit}>Open audit</button>
-          <button onClick={downloadPdf} disabled={busy}>Download PDF</button>
-        </div>
-      </div>
+    <div
+      style={{
+        maxWidth: 1180,
+        margin: "0 auto",
+        paddingBottom: 40,
+        display: "grid",
+        gap: 18,
+      }}
+    >
+      <PageTopNav
+        sectionLabel="Loan Summary"
+        title={`Loan #${summary.id}`}
+        subtitle="Review the support item, guarantor progress, evidence trail, and repayment state in one calmer surface."
+        homeTo="/app/dashboard"
+        homeLabel="Dashboard"
+        backTo="/app/loans"
+        backLabel="Loans & Support"
+        nextLinks={[
+          { label: "Open audit", to: `/app/trust-analytics?clan_id=${summary.clan_id || 1}&loan_id=${summary.id}&audit=1` },
+          { label: "Marketplace", to: "/app/marketplace" },
+        ]}
+        utilityLinks={[
+          { label: "Notifications", to: "/app/notifications" },
+          { label: "Trust", to: "/app/trust" },
+        ]}
+      />
 
-      <h2 style={{ marginTop: 10 }}>Loan Summary</h2>
+      {feedback ? <div style={feedbackCard(feedback.tone)}>{feedback.text}</div> : null}
 
-      <div style={{ border: "1px solid #eee", borderRadius: 12, padding: 12 }}>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-          <div><b>ID:</b> {summary.id}</div>
-          <div><b>Status:</b> {statusBadge(summary.status)}</div>
-          <div><b>Amount:</b> {formatMoney(n(summary.amount), currency)}</div>
-          <div><b>Clan:</b> {summary.clan_id ?? "-"}</div>
-        </div>
+      <section
+        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 1.08fr) minmax(320px, 0.92fr)",
+            gap: 16,
+            alignItems: "start",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Summary</div>
 
-        <div style={{ marginTop: 8, fontSize: 13, color: "#6b7280" }}>
-          <b>What happens next:</b> {nextStepText(summary.status)}
-        </div>
+            <div
+              style={{
+                marginTop: 10,
+                color: "#0B1F33",
+                fontSize: 30,
+                fontWeight: 1000,
+                lineHeight: 1.12,
+              }}
+            >
+              {fmtMoney(n(summary.amount), currency)}
+            </div>
 
-        <div style={{ marginTop: 8 }}>
-          <b>Approved:</b> {approvedCount}/{requiredCount} · <b>Pending:</b> {pendingGuarantors.length}
-        </div>
+            <div
+              style={{
+                marginTop: 12,
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
+              {statusBadge(summary.status)}
+              <span style={badge(true)}>
+                Required guarantors: {requiredCount}
+              </span>
+              <span style={badge(false)}>
+                Approved: {approvedCount}
+              </span>
+              <span style={badge(false)}>
+                Pending: {pendingGuarantors.length}
+              </span>
+              <span style={badge(false)}>
+                Clan: {summary.clan_id ?? "-"}
+              </span>
+            </div>
 
-        {(latestNote || latestReason) && (
-          <div style={{ marginTop: 10, padding: 10, borderRadius: 10, border: "1px solid #eee", background: "#fafafa" }}>
-            <div style={{ fontWeight: 800, marginBottom: 4 }}>Latest trust note</div>
-            <div style={{ fontSize: 13 }}>{latestNote || "—"}</div>
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 6 }}>
-              reason: <code>{latestReason || "(auto)"}</code>
+            <div
+              style={{
+                marginTop: 14,
+                color: "#5F7287",
+                lineHeight: 1.8,
+                fontSize: 15,
+                maxWidth: 860,
+              }}
+            >
+              <strong style={{ color: "#0B1F33" }}>What happens next:</strong>{" "}
+              {summaryNextStep}
+            </div>
+
+            <div
+              style={{
+                marginTop: 16,
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+              }}
+            >
+              <button type="button" onClick={copyLoanAuditLink} style={secondaryBtn(false)}>
+                Copy loan + audit link
+              </button>
+              <button type="button" onClick={jumpToAudit} style={secondaryBtn(false)}>
+                Open audit
+              </button>
+              <button type="button" onClick={downloadPdf} style={secondaryBtn(false)}>
+                Download PDF
+              </button>
             </div>
           </div>
-        )}
 
-        <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button onClick={refreshAll} disabled={busy}>Refresh</button>
-          <button onClick={autoAddUntilMet} disabled={busy || !canActOnGuarantors || (requiredCount - approvedCount) <= 0}>
-            Auto-add until met
-          </button>
-          {isAdmin && (
-            <>
-              <button onClick={() => { setConfirmMode("approve"); setConfirmOpen(true); }} disabled={busy || !canActOnGuarantors || pendingGuarantors.length === 0}>
-                Bulk approve (admin)
-              </button>
-              <button onClick={() => { setConfirmMode("decline"); setConfirmOpen(true); }} disabled={busy || !canActOnGuarantors || pendingGuarantors.length === 0}>
-                Bulk decline (admin)
-              </button>
-            </>
-          )}
-        </div>
+          <div style={{ display: "grid", gap: 12 }}>
+            <div style={softCard("#FFFFFF")}>
+              <div style={sectionLabel()}>Today</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 15,
+                  fontWeight: 900,
+                  lineHeight: 1.65,
+                }}
+              >
+                {canActOnGuarantors
+                  ? "Review guarantor progress and keep the pending decisions moving."
+                  : canRepay
+                  ? "Review repayment state and continue with the money path."
+                  : "Review the evidence and status before taking another step."}
+              </div>
+            </div>
 
-        {!canActOnGuarantors && (
-          <div style={{ marginTop: 8, fontSize: 12, color: "#6b7280" }}>
-            Note: Loan is <b>{summary.status}</b>. Guarantor decisions are disabled.
-          </div>
-        )}
-      </div>
-
-      {confirmOpen && (
-        <div style={{ marginTop: 12, padding: 12, borderRadius: 12, background: "#fff7ed", border: "1px solid #fed7aa" }}>
-          <div style={{ fontWeight: 800 }}>Confirm bulk {confirmMode}</div>
-          <div style={{ fontSize: 12, color: "#6b7280", marginTop: 6 }}>
-            Type <b>{confirmPhrase}</b>, tick checkbox, wait countdown to reach 0.
-          </div>
-
-          <input
-            value={confirmText}
-            onChange={(e) => setConfirmText(e.target.value)}
-            placeholder={`Type ${confirmPhrase}`}
-            style={{ marginTop: 8, padding: 8, width: 260, borderRadius: 8, border: "1px solid #ddd" }}
-          />
-
-          <label style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8, fontSize: 12 }}>
-            <input type="checkbox" checked={confirmChecked} onChange={(e) => setConfirmChecked(e.target.checked)} />
-            I understand this will apply to all pending guarantors.
-          </label>
-
-          <div style={{ marginTop: 6, fontSize: 12, color: "#6b7280" }}>
-            Countdown: <b>{confirmCountdown}</b>
-          </div>
-
-          <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
-            <button onClick={runBulkAction} disabled={busy || !confirmReady()} style={{ opacity: confirmReady() ? 1 : 0.6 }}>
-              Confirm
-            </button>
-            <button onClick={() => { setConfirmOpen(false); setConfirmText(""); setConfirmChecked(false); }} disabled={busy}>
-              Cancel
-            </button>
+            <div style={softCard("#FFFFFF")}>
+              <div style={sectionLabel()}>Tomorrow</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 15,
+                  fontWeight: 900,
+                  lineHeight: 1.65,
+                }}
+              >
+                A clearer summary and evidence trail keeps the support path easier
+                to understand and easier to defend.
+              </div>
+            </div>
           </div>
         </div>
-      )}
+      </section>
 
-      <div style={{ marginTop: 16, border: "1px solid #eee", borderRadius: 12, padding: 12 }}>
-        <h3 style={{ marginTop: 0 }}>Guarantors</h3>
+      <section
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1fr) minmax(320px, 0.92fr)",
+          gap: 16,
+          alignItems: "start",
+        }}
+      >
+        <div style={pageCard("#FFFFFF")}>
+          <div style={sectionLabel()}>Guarantors</div>
 
-        {guarantors.length === 0 ? (
-          <div style={{ color: "#6b7280" }}>None yet.</div>
-        ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr>
-                <th style={{ textAlign: "left", padding: 8, borderBottom: "1px solid #eee" }}>Guarantor</th>
-                <th style={{ textAlign: "left", padding: 8, borderBottom: "1px solid #eee" }}>Status</th>
-                <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>Pledge</th>
-                <th style={{ padding: 8, borderBottom: "1px solid #eee" }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {guarantors.map((g, idx) => {
+          <div
+            style={{
+              marginTop: 10,
+              color: "#5F7287",
+              fontSize: 14,
+              lineHeight: 1.75,
+            }}
+          >
+            Review the guarantor rows one by one. Bulk admin action remains
+            intentionally disabled in this build.
+          </div>
+
+          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+            {guarantors.length === 0 ? (
+              <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+                No guarantor has been attached yet.
+              </div>
+            ) : (
+              guarantors.map((g, idx) => {
                 const gStatus = lc(g.status);
                 const canDecide = canActOnGuarantors && g.id != null && gStatus === "pending";
-                return (
-                  <tr key={idx}>
-                    <td style={{ padding: 8, borderBottom: "1px solid #f3f3f3" }}>
-                      {g.guarantor_email ?? `user:${g.guarantor_user_id}`}
-                    </td>
-                    <td style={{ padding: 8, borderBottom: "1px solid #f3f3f3" }}>{guarantorBadge(g.status)}</td>
-                    <td style={{ padding: 8, borderBottom: "1px solid #f3f3f3", textAlign: "right" }}>
-                      {formatMoney(n(g.pledge_amount), currency)}
-                    </td>
-                    <td style={{ padding: 8, borderBottom: "1px solid #f3f3f3", textAlign: "center" }}>
-                      <button onClick={() => decideLoanGuarantor(summary.id, Number(g.id), { status: "approved" })} disabled={busy || !canDecide}>
-                        Approve
-                      </button>
-                      <button onClick={() => decideLoanGuarantor(summary.id, Number(g.id), { status: "declined" })} disabled={busy || !canDecide} style={{ marginLeft: 8 }}>
-                        Decline
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
+                const approveKey = `${summary.id}-${g.id}-approved`;
+                const declineKey = `${summary.id}-${g.id}-declined`;
+                const busyApprove = busyDecisionKey === approveKey;
+                const busyDecline = busyDecisionKey === declineKey;
 
-      <div style={{ marginTop: 16, border: "1px solid #eee", borderRadius: 12, padding: 12 }}>
-        <h3 style={{ marginTop: 0 }}>Post repayment</h3>
-        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
-          Repayments are enabled after approval/disbursement.
+                return (
+                  <div key={idx} style={innerCard("#FCFEFF")}>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "minmax(0, 1fr) auto",
+                        gap: 12,
+                        alignItems: "center",
+                      }}
+                    >
+                      <div>
+                        <div
+                          style={{
+                            color: "#0B1F33",
+                            fontSize: 16,
+                            fontWeight: 900,
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          {safeStr(g.guarantor_email || `user:${g.guarantor_user_id}`)}
+                        </div>
+
+                        <div
+                          style={{
+                            marginTop: 8,
+                            display: "flex",
+                            gap: 8,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          {guarantorBadge(g.status)}
+                          <span style={badge(true)}>
+                            Pledge: {fmtMoney(n(g.pledge_amount), currency)}
+                          </span>
+                          {g.is_locked ? (
+                            <span style={badge(false)}>
+                              Locked: {fmtMoney(n(g.locked_amount), currency)}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 8,
+                          flexWrap: "wrap",
+                          justifyContent: "flex-end",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleGuarantorDecision(g, "approved")}
+                          disabled={!canDecide || busyApprove || busyDecline}
+                          style={primaryBtn(!canDecide || busyApprove || busyDecline)}
+                        >
+                          {busyApprove ? "Approving..." : "Approve"}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleGuarantorDecision(g, "declined")}
+                          disabled={!canDecide || busyApprove || busyDecline}
+                          style={secondaryBtn(!canDecide || busyApprove || busyDecline)}
+                        >
+                          {busyDecline ? "Declining..." : "Decline"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
-        <input type="number" value={repayAmount} onChange={(e) => setRepayAmount(Number(e.target.value))} />
-        <button onClick={onPostRepayment} disabled={busy || !canRepay} style={{ marginLeft: 8 }}>
-          Post repayment
-        </button>
-      </div>
+
+        <div style={{ display: "grid", gap: 16 }}>
+          <div style={pageCard("#FFFFFF")}>
+            <div style={sectionLabel()}>Bulk admin action</div>
+
+            <div
+              style={{
+                marginTop: 10,
+                color: "#5F7287",
+                fontSize: 14,
+                lineHeight: 1.75,
+              }}
+            >
+              {isAdmin
+                ? "Bulk approve and bulk decline remain disabled in this build. Use single-item review until the controlled bulk path is enabled."
+                : "Bulk guarantor actions are admin-only and remain disabled in this build."}
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+              }}
+            >
+              <button type="button" disabled style={secondaryBtn(true)}>
+                Bulk approve disabled
+              </button>
+              <button type="button" disabled style={secondaryBtn(true)}>
+                Bulk decline disabled
+              </button>
+            </div>
+          </div>
+
+          <div style={pageCard("#FFFFFF")}>
+            <div style={sectionLabel()}>Fit suggestions</div>
+
+            <div
+              style={{
+                marginTop: 10,
+                color: "#5F7287",
+                fontSize: 14,
+                lineHeight: 1.75,
+              }}
+            >
+              Suggested guarantor candidates for this loan, when available.
+            </div>
+
+            <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+              {suggestions.length === 0 ? (
+                <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+                  No fit suggestion is visible right now.
+                </div>
+              ) : (
+                suggestions.map((s, index) => (
+                  <div key={index} style={innerCard("#FCFEFF")}>
+                    <div
+                      style={{
+                        color: "#0B1F33",
+                        fontSize: 15,
+                        fontWeight: 900,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      {safeStr(s.email || `user:${s.user_id}`)}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 8,
+                        display: "flex",
+                        gap: 8,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      {Number.isFinite(Number(s.cci)) ? (
+                        <span style={badge(false)}>CCI: {String(s.cci)}</span>
+                      ) : null}
+
+                      {Number.isFinite(Number(s.recommended_pledge)) ? (
+                        <span style={badge(true)}>
+                          Suggested pledge: {fmtMoney(n(s.recommended_pledge), currency)}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1fr) minmax(320px, 0.92fr)",
+          gap: 16,
+          alignItems: "start",
+        }}
+      >
+        <div style={pageCard("#FFFFFF")}>
+          <div style={sectionLabel()}>Repayment evidence</div>
+
+          <div
+            style={{
+              marginTop: 10,
+              color: "#5F7287",
+              fontSize: 14,
+              lineHeight: 1.75,
+            }}
+          >
+            Existing repayment records are shown here. Manual repayment posting
+            from this page remains disabled in this build.
+          </div>
+
+          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+            {repayments.length === 0 ? (
+              <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+                No repayment record is visible yet.
+              </div>
+            ) : (
+              repayments.map((repayment, index) => (
+                <div key={repayment.id || index} style={innerCard("#FCFEFF")}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div
+                      style={{
+                        color: "#0B1F33",
+                        fontSize: 15,
+                        fontWeight: 900,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      Repayment #{safeStr(repayment.id || index + 1)}
+                    </div>
+
+                    <span style={badge(true)}>
+                      {fmtMoney(n(repayment.amount), currency)}
+                    </span>
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#64748B",
+                      fontSize: 13,
+                      lineHeight: 1.7,
+                    }}
+                  >
+                    Posted: {safeDateTime(repayment.created_at)}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div
+            style={{
+              marginTop: 14,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <button
+              type="button"
+              disabled={!canRepay}
+              style={secondaryBtn(!canRepay)}
+              onClick={() =>
+                setFeedback({
+                  tone: "error",
+                  text: canRepay
+                    ? "Manual repayment posting is disabled in this build. Use Loans & Support for the live money path."
+                    : "Repayment becomes the main path after approval or disbursement.",
+                })
+              }
+            >
+              Manual repayment disabled
+            </button>
+
+            <Link to="/app/loans" style={primaryBtn(false)}>
+              Return to Loans & Support
+            </Link>
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gap: 16 }}>
+          <div style={pageCard("#FFFFFF")}>
+            <div style={sectionLabel()}>Latest trust note</div>
+
+            {latestEvent ? (
+              <>
+                <div
+                  style={{
+                    marginTop: 10,
+                    color: "#0B1F33",
+                    fontSize: 15,
+                    fontWeight: 900,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {latestNote || "No explicit note was recorded in the latest event."}
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 10,
+                    color: "#64748B",
+                    fontSize: 13,
+                    lineHeight: 1.75,
+                  }}
+                >
+                  Event type: <strong style={{ color: "#0B1F33" }}>{safeStr(latestEvent.event_type || "—")}</strong>
+                  <br />
+                  Created: <strong style={{ color: "#0B1F33" }}>{safeDateTime(latestEvent.created_at)}</strong>
+                  <br />
+                  Reason code: <strong style={{ color: "#0B1F33" }}>{latestReason || "(auto)"}</strong>
+                </div>
+              </>
+            ) : (
+              <div
+                style={{
+                  marginTop: 10,
+                  color: "#64748B",
+                  fontSize: 14,
+                  lineHeight: 1.8,
+                }}
+              >
+                No trust event evidence is visible from this page right now.
+              </div>
+            )}
+          </div>
+
+          <div style={pageCard("#FFFFFF")}>
+            <div style={sectionLabel()}>Summary facts</div>
+
+            <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+              <div style={innerCard("#FCFEFF")}>
+                <div style={{ color: "#64748B", fontSize: 12, fontWeight: 900 }}>
+                  Amount
+                </div>
+                <div
+                  style={{
+                    marginTop: 6,
+                    color: "#0B1F33",
+                    fontSize: 22,
+                    fontWeight: 1000,
+                  }}
+                >
+                  {fmtMoney(n(summary.amount), currency)}
+                </div>
+              </div>
+
+              <div style={innerCard("#FCFEFF")}>
+                <div style={{ color: "#64748B", fontSize: 12, fontWeight: 900 }}>
+                  Created
+                </div>
+                <div
+                  style={{
+                    marginTop: 6,
+                    color: "#0B1F33",
+                    fontSize: 16,
+                    fontWeight: 900,
+                  }}
+                >
+                  {safeDateTime(summary.created_at)}
+                </div>
+              </div>
+
+              <div style={innerCard("#FCFEFF")}>
+                <div style={{ color: "#64748B", fontSize: 12, fontWeight: 900 }}>
+                  Due
+                </div>
+                <div
+                  style={{
+                    marginTop: 6,
+                    color: "#0B1F33",
+                    fontSize: 16,
+                    fontWeight: 900,
+                  }}
+                >
+                  {safeDateTime(summary.due_at)}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

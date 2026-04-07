@@ -1,0 +1,69 @@
+/* src/index.css */
+
+:root{
+  /* ONLY user-controlled variable (via Settings) */
+  --gmfn-tint: #22c55e;
+  --gmfn-tint-soft: #22c55e;
+
+  /* Fixed professional base */
+  --gmfn-bg: #f3f4f6;                 /* neutral grey */
+  --gmfn-card-bg: rgba(255,255,255,0.92);
+  --gmfn-card-border: rgba(15,23,42,0.10);
+
+  /* Embossed card shadow (subtle) */
+  --gmfn-card-shadow:
+    0 10px 22px rgba(2, 6, 23, 0.07),
+    0 1px 0 rgba(255,255,255,0.65) inset;
+
+  /* Text */
+  --gmfn-text: #0f172a;
+  --gmfn-muted: #64748b;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  background: var(--gmfn-bg);
+  color: var(--gmfn-text);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+}
+
+#root{
+  min-height: 100vh;
+}
+
+/* ---- Watermark layer ----
+   Very faint repeating GMFN text.
+   User can only change tint (via --gmfn-tint).
+*/
+.gmfn-watermark{
+  background: var(--gmfn-bg);
+  position: relative;
+  overflow: hidden;
+}
+
+.gmfn-watermark::before{
+  content: "GMFN  GMFN  GMFN  GMFN  GMFN  GMFN  GMFN  GMFN  GMFN  GMFN  GMFN  GMFN";
+  position: fixed;
+  left: -20vw;
+  top: -10vh;
+  width: 140vw;
+  height: 140vh;
+  transform: rotate(-18deg);
+  pointer-events: none;
+  opacity: 0.055;
+  color: var(--gmfn-tint);
+  font-weight: 1000;
+  letter-spacing: 6px;
+  font-size: 18px;
+  line-height: 64px;
+  white-space: pre-wrap;
+  z-index: 0;
+  filter: blur(0.2px);
+}
+
+/* Utility: ensure real content is above watermark */
+.gmfn-content{
+  position: relative;
+  z-index: 1;
+}

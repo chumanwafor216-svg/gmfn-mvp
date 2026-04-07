@@ -1,3 +1,4 @@
+// FILE: src/pages/BorrowerPreflightPage.tsx
 import React from "react";
 import { Link } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
@@ -12,7 +13,7 @@ function card(): React.CSSProperties {
   };
 }
 
-function statusItem(ok: boolean, title: string, note: string): React.CSSProperties {
+function statusItem(ok: boolean): React.CSSProperties {
   return {
     borderRadius: 16,
     border: "1px solid rgba(11,31,51,0.08)",
@@ -63,10 +64,20 @@ export default function BorrowerPreflightPage() {
   ];
 
   return (
-    <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+    <div style={{ maxWidth: 1100, margin: "0 auto", paddingBottom: 30 }}>
       <PageTopNav
+        sectionLabel="Support Readiness"
         title="Support Readiness"
         subtitle="Use this page to quickly check whether you are in a good position to move toward a support request."
+        homeTo="/app/dashboard"
+        homeLabel="Dashboard"
+        backTo="/app/loans"
+        backLabel="Loans & Support"
+        nextLinks={[
+          { label: "Loan Readiness", to: "/app/loan-readiness" },
+          { label: "Loan Suggestions", to: "/app/loan-suggestions" },
+          { label: "Marketplace", to: "/app/marketplace" },
+        ]}
       />
 
       <div style={{ ...card(), marginTop: 18 }}>
@@ -86,7 +97,7 @@ export default function BorrowerPreflightPage() {
 
         <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
           {checks.map((item, idx) => (
-            <div key={idx} style={statusItem(item.ok, item.title, item.note)}>
+            <div key={idx} style={statusItem(item.ok)}>
               <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
                 {item.ok ? "✓ " : "⚠ "} {item.title}
               </div>
@@ -98,10 +109,10 @@ export default function BorrowerPreflightPage() {
         </div>
 
         <div style={{ marginTop: 18, display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <Link to="/loans" style={actionLink(false)}>
-            Open Finances
+          <Link to="/app/loans" style={actionLink(false)}>
+            Open Loans & Support
           </Link>
-          <Link to="/loan-readiness" style={actionLink(true)}>
+          <Link to="/app/loan-readiness" style={actionLink(true)}>
             Check Loan Readiness
           </Link>
         </div>

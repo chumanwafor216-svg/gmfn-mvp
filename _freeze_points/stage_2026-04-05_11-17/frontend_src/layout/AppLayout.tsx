@@ -1,0 +1,1381 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, Outlet, useLocation } from "react-router-dom";
+import { getMe } from "../lib/api";
+import WorkspaceSettingsBridge from "../components/WorkspaceSettingsBridge";
+import WorkspaceCompanionBridge from "../components/WorkspaceCompanionBridge";
+type NavLinkItem = {
+  label: string;
+  to: string;
+  disabled?: boolean;
+  match?: (pathname: string, search: string) => boolean;
+};
+
+type NavGroup = {
+  key: string;
+  label: string;
+  hint?: string;
+  items: NavLinkItem[];
+};
+
+type RouteMeta = {
+  section: string;
+  page: string;
+};
+
+type TaskModeMeta = {
+  title: string;
+  hint: string;
+  actions: NavLinkItem[];
+};
+
+function readRole(): string {
+  try {
+    if (typeof window === "undefined") return "";
+    return String(window.localStorage.getItem("gmfn_role") || "")
+      .trim()
+      .toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+function pathOnly(to: string): string {
+  return String(to || "").split("?")[0].split("#")[0] || "/";
+}
+
+function isItemActive(
+  item: NavLinkItem,
+  pathname: string,
+  search: string
+): boolean {
+  if (item.disabled) return false;
+
+  if (item.match) {
+    return item.match(pathname, search);
+  }
+
+  const base = pathOnly(item.to);
+  return pathname === base || pathname.startsWith(`${base}/`);
+}
+
+function makeDashboardItem(): NavLinkItem {
+  return {
+    label: "Dashboard",
+    to: "/app/dashboard",
+    match: (pathname) => pathname === "/app/dashboard",
+  };
+}
+
+function makeCommunityItem(): NavLinkItem {
+  return {
+    label: "Community Home",
+    to: "/app/community",
+    match: (pathname) =>
+      pathname === "/app/community" || pathname.startsWith("/app/community/"),
+  };
+}
+
+function makeMarketplaceItem(): NavLinkItem {
+  return {
+    label: "Marketplace",
+    to: "/app/marketplace",
+    match: (pathname) => pathname === "/app/marketplace",
+  };
+}
+
+function makeShopGalleryItem(myShopGalleryTo: string): NavLinkItem {
+  return {
+    label: "Shop Gallery",
+    to: myShopGalleryTo,
+    match: (pathname) => pathname.startsWith("/app/shop/"),
+  };
+}
+
+function makeSettingsItem(): NavLinkItem {
+  return {
+    label: "Settings",
+    to: "/app/my-gmfn-and-i?tab=settings",
+    match: (pathname, search) =>
+      (pathname === "/app/my-gmfn-and-i" && search.includes("tab=settings")) ||
+      pathname === "/app/settings",
+  };
+}
+
+function makeAdminItem(): NavLinkItem {
+  return {
+    label: "Admin Tools",
+    to: "/app/command-center",
+    match: (pathname) =>
+      pathname.startsWith("/app/command-center") ||
+      pathname.startsWith("/app/trust-command-centre") ||
+      pathname.startsWith("/app/trust-analytics") ||
+      pathname.startsWith("/app/system-operations") ||
+      pathname.startsWith("/app/admin/exposure") ||
+      pathname.startsWith("/app/admin/trust-graph"),
+  };
+}
+
+function buildPrimaryItems(
+  myShopGalleryTo: string,
+  isAdmin: boolean
+): NavLinkItem[] {
+  const items: NavLinkItem[] = [
+    makeDashboardItem(),
+    makeCommunityItem(),
+    makeMarketplaceItem(),
+    makeShopGalleryItem(myShopGalleryTo),
+    makeSettingsItem(),
+  ];
+
+  if (isAdmin) {
+    items.push(makeAdminItem());
+  }
+
+  return items;
+}
+
+function buildTrustPassportItems(): NavLinkItem[] {
+  return [
+    { label: "Trust", to: "/app/trust" },
+    { label: "TrustSlip", to: "/app/trust-slip" },
+  ];
+}
+
+function buildIdentityItems(): NavLinkItem[] {
+  return [
+    { label: "Identity Integrity", to: "/app/identity" },
+    { label: "Notifications", to: "/app/notifications" },
+    { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+  ];
+}
+
+function buildLoansItems(): NavLinkItem[] {
+  return [
+    { label: "Loans & Support", to: "/app/loans" },
+    { label: "Money In", to: "/app/payment/pool" },
+    { label: "Money Out", to: "/app/withdrawal-instructions" },
+    { label: "Readiness", to: "/app/loan-readiness" },
+    { label: "Suggestions", to: "/app/loan-suggestions" },
+    { label: "Workbench", to: "/app/loan-workbench" },
+    { label: "Guarantor Earnings", to: "/app/guarantor-earnings" },
+  ];
+}
+
+function getTaskModeMeta(pathname: string): TaskModeMeta | null {
+  if (pathname === "/app/demand-box") {
+    return {
+      title: "Demand Box",
+      hint:
+        "Task focus is active. Finish the demand step first, then return to the wider workspace.",
+      actions: [
+        makeCommunityItem(),
+        makeMarketplaceItem(),
+        makeDashboardItem(),
+      ],
+    };
+  }
+
+  if (
+    pathname === "/app/loans" ||
+    pathname === "/app/loan-readiness" ||
+    pathname === "/app/loan-suggestions" ||
+    pathname === "/app/loan-workbench" ||
+    pathname === "/app/guarantor-earnings" ||
+    pathname === "/app/payment/pool" ||
+    pathname.startsWith("/app/payment/loans/") ||
+    pathname === "/app/withdrawal-instructions"
+  ) {
+    return {
+      title: "Loans & Support task",
+      hint:
+        "Task focus is active. The app reduces other movement until this money or support step is finished or intentionally left.",
+      actions: [
+        makeMarketplaceItem(),
+        makeCommunityItem(),
+        makeDashboardItem(),
+      ],
+    };
+  }
+
+  if (
+    pathname.startsWith("/app/community/") &&
+    pathname.includes("/join-requests")
+  ) {
+    return {
+      title: "Join Requests",
+      hint:
+        "Task focus is active. Finish this community decision step before returning to the wider workspace.",
+      actions: [
+        makeCommunityItem(),
+        makeMarketplaceItem(),
+        makeDashboardItem(),
+      ],
+    };
+  }
+
+  return null;
+}
+
+function getSpecialRouteMeta(
+  pathname: string,
+  search: string,
+  isAdmin: boolean
+): RouteMeta | null {
+  if (pathname.startsWith("/app/shop/")) {
+    return {
+      section: "Primary services",
+      page: "Shop Gallery",
+    };
+  }
+
+  if (pathname === "/app/clans") {
+    return {
+      section: "Community Home",
+      page: "Create Community",
+    };
+  }
+
+  if (pathname === "/app/demand-box") {
+    return {
+      section: "Focused task",
+      page: "Demand Box",
+    };
+  }
+
+  if (pathname === "/app/my-gmfn-and-i" && search.includes("tab=settings")) {
+    return {
+      section: "Primary services",
+      page: "Settings",
+    };
+  }
+
+  if (pathname === "/app/my-gmfn-and-i") {
+    return {
+      section: "Identity",
+      page: "My GMFN and I",
+    };
+  }
+
+  if (isAdmin && pathname.startsWith("/app/command-center")) {
+    if (pathname.startsWith("/app/command-center/trust-analytics")) {
+      return {
+        section: "Primary services",
+        page: "Trust Analytics",
+      };
+    }
+
+    if (pathname.startsWith("/app/command-center/system-operations")) {
+      return {
+        section: "Primary services",
+        page: "System Operations",
+      };
+    }
+
+    if (pathname.startsWith("/app/command-center/exposure")) {
+      return {
+        section: "Primary services",
+        page: "Exposure Admin",
+      };
+    }
+
+    if (pathname.startsWith("/app/command-center/trust-graph")) {
+      return {
+        section: "Primary services",
+        page: "Trust Graph",
+      };
+    }
+
+    return {
+      section: "Primary services",
+      page: "Admin Tools",
+    };
+  }
+
+  if (
+    pathname.startsWith("/app/community/") &&
+    pathname.includes("/join-requests")
+  ) {
+    return {
+      section: "Community Home",
+      page: "Join Requests",
+    };
+  }
+
+  return null;
+}
+
+function findCurrentRouteMeta(
+  pathname: string,
+  search: string,
+  groups: NavGroup[],
+  isAdmin: boolean,
+  taskMode: TaskModeMeta | null
+): RouteMeta {
+  if (taskMode) {
+    return {
+      section: "Focused task",
+      page: taskMode.title,
+    };
+  }
+
+  const special = getSpecialRouteMeta(pathname, search, isAdmin);
+  if (special) return special;
+
+  for (const group of groups) {
+    for (const item of group.items) {
+      if (isItemActive(item, pathname, search)) {
+        return {
+          section: group.label,
+          page: item.label,
+        };
+      }
+    }
+  }
+
+  return {
+    section: "GMFN / GSN",
+    page: "Workspace",
+  };
+}
+
+function getPageActions(
+  pathname: string,
+  search: string,
+  myShopGalleryTo: string
+): NavLinkItem[] {
+  if (pathname.startsWith("/app/dashboard")) {
+    return [
+      makeCommunityItem(),
+      makeMarketplaceItem(),
+      { label: "Notifications", to: "/app/notifications" },
+      { label: "Trust Passport", to: "/app/trust" },
+    ];
+  }
+
+  if (pathname.startsWith("/app/community")) {
+    return [
+      { label: "Demand Box", to: "/app/demand-box" },
+      { label: "Notifications", to: "/app/notifications" },
+      { label: "Money In", to: "/app/payment/pool" },
+      { label: "Money Out", to: "/app/withdrawal-instructions" },
+    ];
+  }
+
+  if (pathname === "/app/marketplace") {
+    return [
+      { label: "Loans & Support", to: "/app/loans" },
+      { label: "Notifications", to: "/app/notifications" },
+      { label: "Trust", to: "/app/trust" },
+      { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+    ];
+  }
+
+  if (pathname.startsWith("/app/shop/")) {
+    return [
+      makeMarketplaceItem(),
+      makeCommunityItem(),
+      { label: "Trust", to: "/app/trust" },
+      { label: "Notifications", to: "/app/notifications" },
+    ];
+  }
+
+  if (
+    pathname.startsWith("/app/loans") ||
+    pathname.startsWith("/app/loan-readiness") ||
+    pathname.startsWith("/app/loan-suggestions") ||
+    pathname.startsWith("/app/loan-workbench") ||
+    pathname.startsWith("/app/payment") ||
+    pathname.startsWith("/app/withdrawal-instructions") ||
+    pathname.startsWith("/app/guarantor-earnings")
+  ) {
+    return [
+      makeMarketplaceItem(),
+      makeCommunityItem(),
+      { label: "Notifications", to: "/app/notifications" },
+      makeDashboardItem(),
+    ];
+  }
+
+  if (pathname.startsWith("/app/notifications")) {
+    return [
+      makeMarketplaceItem(),
+      makeCommunityItem(),
+      { label: "Loans & Support", to: "/app/loans" },
+      { label: "Demand Box", to: "/app/demand-box" },
+    ];
+  }
+
+  if (
+    pathname.startsWith("/app/trust") ||
+    pathname.startsWith("/app/trust-slip") ||
+    pathname.startsWith("/app/identity")
+  ) {
+    return [
+      { label: "Notifications", to: "/app/notifications" },
+      makeCommunityItem(),
+      makeMarketplaceItem(),
+      { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+    ];
+  }
+
+  if (pathname === "/app/my-gmfn-and-i" && search.includes("tab=settings")) {
+    return [
+      makeDashboardItem(),
+      makeCommunityItem(),
+      makeMarketplaceItem(),
+      { label: "Notifications", to: "/app/notifications" },
+    ];
+  }
+
+  if (pathname.startsWith("/app/my-gmfn-and-i")) {
+    return [
+      makeCommunityItem(),
+      makeMarketplaceItem(),
+      { label: "Notifications", to: "/app/notifications" },
+      { label: "Trust", to: "/app/trust" },
+    ];
+  }
+
+  if (pathname.startsWith("/app/command-center")) {
+    return [makeDashboardItem(), makeCommunityItem(), makeMarketplaceItem()];
+  }
+
+  return [
+    makeCommunityItem(),
+    makeMarketplaceItem(),
+    { label: "Notifications", to: "/app/notifications" },
+    { label: "Loans & Support", to: "/app/loans" },
+  ];
+}
+
+function desktopShell(): React.CSSProperties {
+  return {
+    minHeight: "100vh",
+    display: "grid",
+    gridTemplateColumns: "286px minmax(0, 1fr)",
+    background: "#F4F7FB",
+  };
+}
+
+function mobileShell(): React.CSSProperties {
+  return {
+    minHeight: "100vh",
+    background: "#F4F7FB",
+  };
+}
+
+function sidebar(): React.CSSProperties {
+  return {
+    position: "sticky",
+    top: 0,
+    height: "100vh",
+    overflowY: "auto",
+    padding: 18,
+    color: "#FFFFFF",
+    background:
+      "linear-gradient(180deg, #10253B 0%, #163A5C 100%), radial-gradient(circle at top left, rgba(255,255,255,0.08), transparent 35%)",
+    display: "flex",
+    flexDirection: "column",
+    gap: 14,
+  };
+}
+
+function brandCard(): React.CSSProperties {
+  return {
+    borderRadius: 22,
+    padding: 18,
+    background: "rgba(255,255,255,0.07)",
+    border: "1px solid rgba(255,255,255,0.10)",
+    boxShadow: "0 12px 28px rgba(0,0,0,0.10)",
+  };
+}
+
+function brandEyebrow(): React.CSSProperties {
+  return {
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    color: "rgba(255,255,255,0.78)",
+  };
+}
+
+function brandTitle(): React.CSSProperties {
+  return {
+    marginTop: 8,
+    fontSize: 22,
+    fontWeight: 900,
+    lineHeight: 1.15,
+    color: "#FFFFFF",
+  };
+}
+
+function brandText(): React.CSSProperties {
+  return {
+    marginTop: 10,
+    fontSize: 13,
+    lineHeight: 1.7,
+    color: "rgba(255,255,255,0.78)",
+  };
+}
+
+function noteCard(): React.CSSProperties {
+  return {
+    borderRadius: 18,
+    padding: 14,
+    background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(255,255,255,0.08)",
+  };
+}
+
+function noteTitle(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    fontWeight: 900,
+    letterSpacing: "0.06em",
+    textTransform: "uppercase",
+    color: "rgba(255,255,255,0.72)",
+  };
+}
+
+function noteText(): React.CSSProperties {
+  return {
+    marginTop: 8,
+    fontSize: 13,
+    lineHeight: 1.7,
+    color: "rgba(255,255,255,0.78)",
+  };
+}
+
+function groupCard(): React.CSSProperties {
+  return {
+    borderRadius: 18,
+    padding: 10,
+    background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(255,255,255,0.08)",
+  };
+}
+
+function groupHeader(active = false): React.CSSProperties {
+  return {
+    width: "100%",
+    border: active
+      ? "1px solid rgba(255,255,255,0.14)"
+      : "1px solid rgba(255,255,255,0.08)",
+    background: active ? "rgba(11,99,209,0.28)" : "rgba(255,255,255,0.03)",
+    color: "#FFFFFF",
+    borderRadius: 14,
+    padding: "10px 12px",
+    fontWeight: 800,
+    fontSize: 14,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    cursor: "pointer",
+    textAlign: "left",
+  };
+}
+
+function groupHint(): React.CSSProperties {
+  return {
+    marginTop: 8,
+    padding: "0 4px",
+    fontSize: 12,
+    lineHeight: 1.55,
+    color: "rgba(255,255,255,0.72)",
+  };
+}
+
+function navItem(active = false, disabled = false): React.CSSProperties {
+  return {
+    display: "block",
+    padding: "11px 12px",
+    borderRadius: 12,
+    textDecoration: "none",
+    fontWeight: 800,
+    fontSize: 14,
+    color: disabled ? "rgba(255,255,255,0.48)" : "#FFFFFF",
+    background: active ? "#0B63D1" : "rgba(255,255,255,0.04)",
+    border: active
+      ? "1px solid rgba(255,255,255,0.14)"
+      : "1px solid rgba(255,255,255,0.06)",
+    pointerEvents: disabled ? "none" : "auto",
+    opacity: disabled ? 0.7 : 1,
+  };
+}
+
+function mainContent(isMobile: boolean, taskMode: boolean): React.CSSProperties {
+  return {
+    minWidth: 0,
+    padding: isMobile
+      ? taskMode
+        ? "16px 16px 28px"
+        : "16px 16px 104px"
+      : "24px 28px 34px",
+    overflowX: "hidden",
+  };
+}
+
+function mobileTopBar(): React.CSSProperties {
+  return {
+    position: "sticky",
+    top: 0,
+    zIndex: 20,
+    display: "grid",
+    gridTemplateColumns: "42px minmax(0, 1fr) 42px",
+    alignItems: "center",
+    gap: 12,
+    padding: "12px 14px",
+    background: "rgba(255,255,255,0.97)",
+    backdropFilter: "blur(10px)",
+    borderBottom: "1px solid rgba(11,31,51,0.08)",
+  };
+}
+
+function mobileIconButton(): React.CSSProperties {
+  return {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#FFFFFF",
+    color: "#0B1F33",
+    fontSize: 20,
+    fontWeight: 800,
+    cursor: "pointer",
+  };
+}
+
+function mobileTopMeta(): React.CSSProperties {
+  return {
+    minWidth: 0,
+  };
+}
+
+function mobileTopEyebrow(): React.CSSProperties {
+  return {
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: "0.06em",
+    textTransform: "uppercase",
+    color: "#6B7A88",
+  };
+}
+
+function mobileTopTitle(): React.CSSProperties {
+  return {
+    marginTop: 2,
+    fontSize: 16,
+    fontWeight: 900,
+    color: "#0B1F33",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  };
+}
+
+function overlayBackdrop(open: boolean, zIndex: number): React.CSSProperties {
+  return {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(11,31,51,0.34)",
+    opacity: open ? 1 : 0,
+    pointerEvents: open ? "auto" : "none",
+    transition: "opacity 0.2s ease",
+    zIndex,
+  };
+}
+
+function drawerPanel(open: boolean): React.CSSProperties {
+  return {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    bottom: 0,
+    width: "84vw",
+    maxWidth: 356,
+    padding: 16,
+    background:
+      "linear-gradient(180deg, #10253B 0%, #163A5C 100%), radial-gradient(circle at top left, rgba(255,255,255,0.08), transparent 35%)",
+    color: "#FFFFFF",
+    overflowY: "auto",
+    transform: open ? "translateX(0)" : "translateX(-100%)",
+    transition: "transform 0.25s ease",
+    zIndex: 25,
+    boxShadow: "12px 0 30px rgba(11,31,51,0.18)",
+  };
+}
+
+function drawerHeader(): React.CSSProperties {
+  return {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 16,
+  };
+}
+
+function overlayCloseButton(dark = false): React.CSSProperties {
+  return {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    border: dark
+      ? "1px solid rgba(255,255,255,0.12)"
+      : "1px solid rgba(11,31,51,0.10)",
+    background: dark ? "rgba(255,255,255,0.08)" : "#FFFFFF",
+    color: dark ? "#FFFFFF" : "#0B1F33",
+    fontSize: 18,
+    cursor: "pointer",
+  };
+}
+
+function drawerSectionTitle(): React.CSSProperties {
+  return {
+    margin: "16px 0 8px",
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    color: "rgba(255,255,255,0.72)",
+  };
+}
+
+function drawerLink(active = false, disabled = false): React.CSSProperties {
+  return {
+    display: "block",
+    padding: "12px 13px",
+    borderRadius: 14,
+    textDecoration: "none",
+    fontWeight: 800,
+    fontSize: 14,
+    color: disabled ? "rgba(255,255,255,0.48)" : "#FFFFFF",
+    background: active ? "#0B63D1" : "rgba(255,255,255,0.05)",
+    border: active
+      ? "1px solid rgba(255,255,255,0.14)"
+      : "1px solid rgba(255,255,255,0.08)",
+    pointerEvents: disabled ? "none" : "auto",
+    opacity: disabled ? 0.7 : 1,
+  };
+}
+
+function actionsPanel(open: boolean): React.CSSProperties {
+  return {
+    position: "fixed",
+    top: 12,
+    right: 12,
+    width: "min(92vw, 360px)",
+    maxHeight: "min(78vh, 620px)",
+    overflowY: "auto",
+    padding: 16,
+    borderRadius: 22,
+    background: "#FFFFFF",
+    border: "1px solid rgba(11,31,51,0.08)",
+    boxShadow: "0 22px 54px rgba(15,23,42,0.16)",
+    transform: open ? "translateY(0)" : "translateY(-12px)",
+    opacity: open ? 1 : 0,
+    pointerEvents: open ? "auto" : "none",
+    transition: "opacity 0.2s ease, transform 0.2s ease",
+    zIndex: 35,
+  };
+}
+
+function actionsTitle(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#64748B",
+    fontWeight: 900,
+    letterSpacing: 0.32,
+    textTransform: "uppercase",
+  };
+}
+
+function actionsLink(active = false, disabled = false): React.CSSProperties {
+  return {
+    display: "block",
+    padding: "12px 13px",
+    borderRadius: 14,
+    textDecoration: "none",
+    fontWeight: 800,
+    fontSize: 14,
+    color: disabled ? "#94A3B8" : active ? "#0B63D1" : "#0B1F33",
+    background: active ? "rgba(11,99,209,0.08)" : "#F8FBFF",
+    border: active
+      ? "1px solid rgba(11,99,209,0.14)"
+      : "1px solid rgba(11,31,51,0.08)",
+    pointerEvents: disabled ? "none" : "auto",
+    opacity: disabled ? 0.7 : 1,
+  };
+}
+
+function bottomNav(): React.CSSProperties {
+  return {
+    position: "fixed",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 20,
+    display: "flex",
+    gap: 8,
+    overflowX: "auto",
+    padding: "10px 10px calc(10px + env(safe-area-inset-bottom, 0px))",
+    background: "rgba(255,255,255,0.98)",
+    backdropFilter: "blur(10px)",
+    borderTop: "1px solid rgba(11,31,51,0.08)",
+    WebkitOverflowScrolling: "touch",
+  };
+}
+
+function bottomNavItem(active = false, disabled = false): React.CSSProperties {
+  return {
+    flex: "0 0 auto",
+    minWidth: 86,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 44,
+    padding: "8px 10px",
+    borderRadius: 14,
+    textDecoration: "none",
+    textAlign: "center",
+    fontSize: 12,
+    fontWeight: active ? 900 : 800,
+    color: disabled ? "#94A3B8" : active ? "#0B63D1" : "#4E6278",
+    background: active ? "rgba(11,99,209,0.10)" : "transparent",
+    border: active
+      ? "1px solid rgba(11,99,209,0.14)"
+      : "1px solid rgba(11,31,51,0.08)",
+    whiteSpace: "nowrap",
+    pointerEvents: disabled ? "none" : "auto",
+    opacity: disabled ? 0.7 : 1,
+  };
+}
+
+export default function AppLayout() {
+  const location = useLocation();
+
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 768;
+  });
+
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [myGmfnId, setMyGmfnId] = useState<string>("");
+
+  const isAdmin = useMemo(() => {
+    const role = readRole();
+    return role === "admin" || role === "superadmin";
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+
+    (async () => {
+      const me = await getMe().catch(() => null);
+      if (!alive) return;
+
+      const gmfnId = String(me?.gmfn_id || "").trim();
+      setMyGmfnId(gmfnId);
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    function handleResize() {
+      setIsMobile(window.innerWidth <= 768);
+    }
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const myShopGalleryTo = useMemo(() => {
+    if (location.pathname.startsWith("/app/shop/")) {
+      return location.pathname;
+    }
+
+    if (myGmfnId) {
+      return `/app/shop/${encodeURIComponent(myGmfnId)}`;
+    }
+
+    return "/app/shop/me";
+  }, [location.pathname, myGmfnId]);
+
+  const taskMode = useMemo(
+    () => getTaskModeMeta(location.pathname),
+    [location.pathname]
+  );
+
+  const primaryItems = useMemo(
+    () => buildPrimaryItems(myShopGalleryTo, isAdmin),
+    [myShopGalleryTo, isAdmin]
+  );
+
+  const trustPassportItems = useMemo(() => buildTrustPassportItems(), []);
+  const identityItems = useMemo(() => buildIdentityItems(), []);
+  const loansItems = useMemo(() => buildLoansItems(), []);
+
+  const groups = useMemo<NavGroup[]>(() => {
+    return [
+      {
+        key: "primary",
+        label: "Primary services",
+        hint:
+          "Major movement stays simple: Dashboard, Community Home, Marketplace, Shop Gallery, Settings, and Admin Tools when allowed.",
+        items: primaryItems,
+      },
+      {
+        key: "trust-passport",
+        label: "Trust Passport",
+        hint:
+          "Trust surfaces stay grouped here instead of competing with the main movement row.",
+        items: trustPassportItems,
+      },
+      {
+        key: "identity",
+        label: "Identity",
+        hint:
+          "Identity integrity, notifications, and the readable guide live here.",
+        items: identityItems,
+      },
+      {
+        key: "support",
+        label: "Loans & Support",
+        hint:
+          "Money, readiness, suggestions, workbench, and support tools stay together here.",
+        items: loansItems,
+      },
+    ];
+  }, [primaryItems, trustPassportItems, identityItems, loansItems]);
+
+  const displayedGroups = useMemo(() => {
+    if (!taskMode) return groups;
+    return groups.filter((group) => group.key === "primary");
+  }, [groups, taskMode]);
+
+  const firstOpenGroup = useMemo(() => {
+    const found = displayedGroups.find((group) =>
+      group.items.some((item) =>
+        isItemActive(item, location.pathname, location.search)
+      )
+    );
+    return found?.key || "primary";
+  }, [displayedGroups, location.pathname, location.search]);
+
+  const [openGroup, setOpenGroup] = useState<string>(firstOpenGroup);
+
+  useEffect(() => {
+    setOpenGroup(firstOpenGroup);
+  }, [firstOpenGroup]);
+
+  useEffect(() => {
+    setIsDrawerOpen(false);
+    setIsActionsOpen(false);
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    if (!isMobile) {
+      setIsDrawerOpen(false);
+      setIsActionsOpen(false);
+    }
+  }, [isMobile]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (!isMobile) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow =
+      isDrawerOpen || isActionsOpen ? "hidden" : previousOverflow || "";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isDrawerOpen, isActionsOpen, isMobile]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!isDrawerOpen && !isActionsOpen) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsDrawerOpen(false);
+        setIsActionsOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isDrawerOpen, isActionsOpen]);
+
+  function toggleGroup(key: string) {
+    setOpenGroup((prev) => (prev === key ? "" : key));
+  }
+
+  function openDrawer() {
+    setIsActionsOpen(false);
+    setIsDrawerOpen(true);
+  }
+
+  function closeDrawer() {
+    setIsDrawerOpen(false);
+  }
+
+  function openActions() {
+    setIsDrawerOpen(false);
+    setIsActionsOpen(true);
+  }
+
+  function closeActions() {
+    setIsActionsOpen(false);
+  }
+
+  const routeMeta = findCurrentRouteMeta(
+    location.pathname,
+    location.search,
+    groups,
+    isAdmin,
+    taskMode
+  );
+
+  const pageActions = useMemo(
+    () =>
+      taskMode
+        ? taskMode.actions
+        : getPageActions(location.pathname, location.search, myShopGalleryTo),
+    [taskMode, location.pathname, location.search, myShopGalleryTo]
+  );
+
+  const mobileBottomItems = useMemo<NavLinkItem[]>(() => {
+    const items: NavLinkItem[] = [
+      makeDashboardItem(),
+      {
+        label: "Community",
+        to: "/app/community",
+        match: (pathname) =>
+          pathname === "/app/community" ||
+          pathname.startsWith("/app/community/"),
+      },
+      makeMarketplaceItem(),
+      makeShopGalleryItem(myShopGalleryTo),
+      makeSettingsItem(),
+    ];
+
+    if (isAdmin) {
+      const adminItem = makeAdminItem();
+      items.push({
+        label: "Admin",
+        to: adminItem.to,
+        match: adminItem.match,
+        disabled: adminItem.disabled,
+      });
+    }
+
+    return items;
+  }, [myShopGalleryTo, isAdmin]);
+
+  const mobileDrawerGroups = useMemo<
+    { title: string; items: NavLinkItem[] }[]
+  >(() => {
+    if (taskMode) {
+      return [
+        {
+          title: "Focused task",
+          items: taskMode.actions,
+        },
+      ];
+    }
+
+    return [
+      {
+        title: "Trust Passport",
+        items: trustPassportItems,
+      },
+      {
+        title: "Identity",
+        items: identityItems,
+      },
+      {
+        title: "Loans & Support",
+        items: loansItems,
+      },
+    ];
+  }, [taskMode, trustPassportItems, identityItems, loansItems]);
+
+  return (
+    <div style={isMobile ? mobileShell() : desktopShell()}>
+      {!isMobile ? (
+        <aside style={sidebar()}>
+          <Link
+            to="/app/dashboard"
+            style={{ textDecoration: "none", color: "inherit" }}
+          >
+            <div style={brandCard()}>
+              <div style={brandEyebrow()}>GMFN / GSN</div>
+              <div style={brandTitle()}>Member workspace</div>
+              <div style={brandText()}>
+                A guided, calmer workspace for community movement, marketplace,
+                shop gallery, trust, identity, and support.
+              </div>
+            </div>
+          </Link>
+
+          <div style={noteCard()}>
+            <div style={noteTitle()}>
+              {taskMode ? "Task focus mode" : "Movement order"}
+            </div>
+            <div style={noteText()}>
+              {taskMode
+                ? taskMode.hint
+                : "Dashboard leads to Community Home. Community Home leads to Marketplace. Marketplace leads to Shop Gallery. Spotlight and Demand stay inside Community Home."}
+            </div>
+          </div>
+
+          <nav style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {displayedGroups.map((group) => {
+              const groupActive = group.items.some((item) =>
+                isItemActive(item, location.pathname, location.search)
+              );
+              const expanded = openGroup === group.key || groupActive;
+
+              return (
+                <div key={group.key} style={groupCard()}>
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(group.key)}
+                    aria-expanded={expanded}
+                    style={groupHeader(groupActive)}
+                  >
+                    <span>{group.label}</span>
+                    <span style={{ fontSize: 16, lineHeight: 1 }}>
+                      {expanded ? "−" : "+"}
+                    </span>
+                  </button>
+
+                  {expanded ? (
+                    <>
+                      {group.hint ? (
+                        <div style={groupHint()}>{group.hint}</div>
+                      ) : null}
+
+                      <div
+                        style={{
+                          marginTop: 10,
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 8,
+                        }}
+                      >
+                        {group.items.map((item) => (
+                          <Link
+                            key={`${group.key}-${item.label}-${item.to}`}
+                            to={item.to}
+                            style={navItem(
+                              isItemActive(item, location.pathname, location.search),
+                              !!item.disabled
+                            )}
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+              );
+            })}
+          </nav>
+        </aside>
+      ) : (
+        <>
+          <header style={mobileTopBar()}>
+            <button
+              type="button"
+              onClick={openDrawer}
+              aria-label="Open navigation"
+              style={mobileIconButton()}
+            >
+              ☰
+            </button>
+
+            <div style={mobileTopMeta()}>
+              <div style={mobileTopEyebrow()}>{routeMeta.section}</div>
+              <div style={mobileTopTitle()}>{routeMeta.page}</div>
+            </div>
+
+            <button
+              type="button"
+              onClick={openActions}
+              aria-label="Open page actions"
+              style={mobileIconButton()}
+            >
+              ⋯
+            </button>
+          </header>
+
+          <div style={overlayBackdrop(isDrawerOpen, 24)} onClick={closeDrawer} />
+
+          <aside style={drawerPanel(isDrawerOpen)} aria-hidden={!isDrawerOpen}>
+            <div style={drawerHeader()}>
+              <div>
+                <div style={brandEyebrow()}>GMFN / GSN</div>
+                <div style={{ marginTop: 6, fontSize: 18, fontWeight: 900 }}>
+                  Navigation
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeDrawer}
+                aria-label="Close navigation"
+                style={overlayCloseButton(true)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={brandCard()}>
+              <div style={brandEyebrow()}>
+                {taskMode ? "Focused task" : "Current area"}
+              </div>
+              <div style={{ marginTop: 8, fontSize: 20, fontWeight: 900 }}>
+                {taskMode ? taskMode.title : routeMeta.page}
+              </div>
+              <div style={brandText()}>
+                {taskMode
+                  ? taskMode.hint
+                  : "The bottom row holds the major movement surfaces. This drawer holds the grouped supporting surfaces."}
+              </div>
+            </div>
+
+            {mobileDrawerGroups.map((group) => (
+              <div key={group.title}>
+                <div style={drawerSectionTitle()}>{group.title}</div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {group.items.map((item) => (
+                    <Link
+                      key={`${group.title}-${item.label}-${item.to}`}
+                      to={item.to}
+                      style={drawerLink(
+                        isItemActive(item, location.pathname, location.search),
+                        !!item.disabled
+                      )}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </aside>
+
+          <div
+            style={overlayBackdrop(isActionsOpen, 34)}
+            onClick={closeActions}
+          />
+
+          <div style={actionsPanel(isActionsOpen)} aria-hidden={!isActionsOpen}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+                marginBottom: 14,
+              }}
+            >
+              <div>
+                <div style={actionsTitle()}>
+                  {taskMode ? "Task actions" : "Page tools"}
+                </div>
+                <div
+                  style={{
+                    marginTop: 6,
+                    fontSize: 18,
+                    fontWeight: 900,
+                    color: "#0B1F33",
+                  }}
+                >
+                  {taskMode ? taskMode.title : routeMeta.page}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeActions}
+                aria-label="Close page actions"
+                style={overlayCloseButton(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div
+              style={{
+                color: "#5D7389",
+                fontSize: 14,
+                lineHeight: 1.75,
+                marginBottom: 14,
+              }}
+            >
+              {taskMode
+                ? "This task is in focus. Finish it first or leave it intentionally before moving elsewhere."
+                : "These actions relate to the page you are currently using, while the major movement row stays cleaner."}
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {pageActions.map((item) => (
+                <Link
+                  key={`page-action-${item.label}-${item.to}`}
+                  to={item.to}
+                  style={actionsLink(
+                    isItemActive(item, location.pathname, location.search),
+                    !!item.disabled
+                  )}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      <main style={mainContent(isMobile, !!taskMode)}>
+        <Outlet />
+      </main>
+
+      <WorkspaceCompanionBridge />
+      <WorkspaceSettingsBridge />
+      
+      {isMobile && !taskMode ? (
+        <nav style={bottomNav()}>
+          {mobileBottomItems.map((item) => (
+            <Link
+              key={`bottom-${item.label}-${item.to}`}
+              to={item.to}
+              style={bottomNavItem(
+                isItemActive(item, location.pathname, location.search),
+                !!item.disabled
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
+    </div>
+  );
+}

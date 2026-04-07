@@ -1,737 +1,1108 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import PageTopNav from "../components/PageTopNav";
+import {
+  getCurrentClan,
+  getMe,
+  getSelectedClanId,
+  listTrustEvents,
+} from "../lib/api";
 
-import { getSelectedClanId, getTrustEvents } from "../lib/api";
-
-type TrustEvent = {
-  id?: number;
-  event_type?: string;
-  created_at?: string;
-  clan_id?: number;
-  loan_id?: number;
-  actor_user_id?: number;
-  subject_user_id?: number;
-  meta_json?: any;
-  meta?: any;
+type TrustEventRow = {
+  id?: number | string;
+  title?: string | null;
+  message?: string | null;
+  detail?: string | null;
+  description?: string | null;
+  kind?: string | null;
+  type?: string | null;
+  event_type?: string | null;
+  created_at?: string | null;
 };
 
-function safeEvents(res: any): TrustEvent[] {
-  if (!res) return [];
-  if (Array.isArray(res)) return res as TrustEvent[];
-  if (Array.isArray(res.items)) return res.items as TrustEvent[];
+type EventCategory = "built" | "protected" | "weakened" | "repair";
+
+type CollapseState = {
+  overview: boolean;
+  mix: boolean;
+  timeline: boolean;
+  notes: boolean;
+};
+
+const TRUST_ANALYTICS_UI_STORAGE_KEY = "gmfn.trustAnalytics.sections.v1";
+
+function safeStr(x: any): string {
+  return String(x ?? "").trim();
+}
+
+function firstTruthy(...values: any[]): string {
+  for (const value of values) {
+    const text = safeStr(value);
+    if (text) return text;
+  }
+  return "";
+}
+
+function rowsOf<T = any>(input: any): T[] {
+  if (Array.isArray(input)) return input as T[];
+  if (Array.isArray(input?.items)) return input.items as T[];
+  if (Array.isArray(input?.data?.items)) return input.data.items as T[];
+  if (Array.isArray(input?.results)) return input.results as T[];
+  if (Array.isArray(input?.rows)) return input.rows as T[];
   return [];
 }
 
-function parseMeta(event: TrustEvent): any {
-  if (event.meta && typeof event.meta === "object") return event.meta;
-
-  if (event.meta && typeof event.meta === "string") {
-    try {
-      return JSON.parse(event.meta);
-    } catch {
-      return { raw: String(event.meta) };
-    }
-  }
-
-  if (!event.meta_json) return null;
-  if (typeof event.meta_json === "object") return event.meta_json;
-
-  try {
-    return JSON.parse(String(event.meta_json));
-  } catch {
-    return { raw: String(event.meta_json) };
-  }
-}
-
-function n(x: any): number {
-  const v = Number(x);
-  return Number.isFinite(v) ? v : 0;
-}
-
-function safeStr(x: any, fallback = ""): string {
-  const s = String(x ?? "").trim();
-  return s || fallback;
-}
-
-function safeDate(x: any): Date | null {
-  const raw = String(x || "").trim();
-  if (!raw) return null;
-  const d = new Date(raw);
-  if (Number.isNaN(d.getTime())) return null;
-  return d;
-}
-
 function safeDateTime(x: any): string {
-  const d = safeDate(x);
-  if (!d) return safeStr(x, "—");
+  const raw = safeStr(x);
+  if (!raw) return "";
+  const d = new Date(raw);
+  if (!Number.isFinite(d.getTime())) return raw;
   return d.toLocaleString();
 }
 
-function prettyValue(v: any): string {
-  if (v == null) return "—";
-  if (typeof v === "string") return v;
-  try {
-    return JSON.stringify(v, null, 2);
-  } catch {
-    return String(v);
+function daysSince(value: any): number {
+  const raw = safeStr(value);
+  if (!raw) return 9999;
+  const d = new Date(raw);
+  if (!Number.isFinite(d.getTime())) return 9999;
+  return Math.floor((Date.now() - d.getTime()) / 86400000);
+}
+
+function classifyTrustEvent(row: TrustEventRow): EventCategory {
+  const text = [
+    safeStr(row?.event_type),
+    safeStr(row?.kind),
+    safeStr(row?.type),
+    safeStr(row?.title),
+    safeStr(row?.message),
+    safeStr(row?.detail),
+    safeStr(row?.description),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  if (
+    text.includes("paid") ||
+    text.includes("repaid") ||
+    text.includes("verified") ||
+    text.includes("completed") ||
+    text.includes("approved") ||
+    text.includes("contributed") ||
+    text.includes("delivered") ||
+    text.includes("fulfilled") ||
+    text.includes("successful")
+  ) {
+    return "built";
   }
+
+  if (
+    text.includes("responded") ||
+    text.includes("active") ||
+    text.includes("consistent") ||
+    text.includes("participation") ||
+    text.includes("updated") ||
+    text.includes("maintained")
+  ) {
+    return "protected";
+  }
+
+  if (
+    text.includes("late") ||
+    text.includes("overdue") ||
+    text.includes("default") ||
+    text.includes("missed") ||
+    text.includes("declined") ||
+    text.includes("cancelled") ||
+    text.includes("unpaid") ||
+    text.includes("negative")
+  ) {
+    return "weakened";
+  }
+
+  if (
+    text.includes("risk") ||
+    text.includes("warning") ||
+    text.includes("repair") ||
+    text.includes("flag") ||
+    text.includes("dispute") ||
+    text.includes("attention")
+  ) {
+    return "repair";
+  }
+
+  return "protected";
+}
+
+function eventTone(category: EventCategory) {
+  if (category === "built") {
+    return {
+      dot: "#16A34A",
+      bg: "#F3FBF5",
+      label: "Built",
+    };
+  }
+
+  if (category === "weakened") {
+    return {
+      dot: "#DC2626",
+      bg: "#FFF5F5",
+      label: "Weakened",
+    };
+  }
+
+  if (category === "repair") {
+    return {
+      dot: "#D97706",
+      bg: "#FFFBEF",
+      label: "Repair",
+    };
+  }
+
+  return {
+    dot: "#0B63D1",
+    bg: "#F8FBFF",
+    label: "Protected",
+  };
 }
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 22,
+    borderRadius: 24,
     border: "1px solid rgba(11,31,51,0.08)",
-    padding: 18,
     background: bg,
-    boxShadow: "0 12px 30px rgba(15,23,42,0.05)",
+    padding: 20,
+    boxShadow:
+      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
+    overflow: "hidden",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
+    borderRadius: 18,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 16,
+  };
+}
+
+function innerCard(bg = "#FFFFFF"): React.CSSProperties {
+  return {
     borderRadius: 16,
     border: "1px solid rgba(11,31,51,0.08)",
-    padding: 14,
     background: bg,
+    padding: 14,
   };
 }
 
-function inputStyle(width = 160): React.CSSProperties {
+function statTile(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    padding: "10px 12px",
-    borderRadius: 10,
-    border: "1px solid rgba(11,31,51,0.14)",
-    width,
-    boxSizing: "border-box",
-    background: "#FFFFFF",
-    outline: "none",
-  };
-}
-
-function buttonStyle(primary = false, disabled = false): React.CSSProperties {
-  return {
-    padding: "10px 12px",
-    borderRadius: 10,
-    border: primary ? "none" : "1px solid rgba(11,31,51,0.14)",
-    background: disabled ? "#CBD5E1" : primary ? "#0B63D1" : "#FFFFFF",
-    color: primary ? "#FFFFFF" : "#0B1F33",
-    fontWeight: 900,
-    cursor: disabled ? "not-allowed" : "pointer",
-    opacity: disabled ? 0.72 : 1,
+    borderRadius: 16,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 14,
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#64748B",
-    fontWeight: 1000,
-    letterSpacing: 0.2,
+    color: "#5D7389",
+    fontWeight: 900,
+    letterSpacing: 0.35,
     textTransform: "uppercase",
   };
 }
 
+function badge(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    minHeight: 30,
+    borderRadius: 999,
+    padding: "6px 10px",
+    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
+    color: primary ? "#0B63D1" : "#51657A",
+    fontSize: 12,
+    fontWeight: 900,
+    whiteSpace: "nowrap",
+  };
+}
+
+function actionBtn(
+  kind: "primary" | "secondary" | "soft" = "secondary",
+  disabled = false
+): React.CSSProperties {
+  if (kind === "primary") {
+    return {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 42,
+      padding: "10px 14px",
+      borderRadius: 14,
+      border: "none",
+      background: disabled ? "#CBD5E1" : "#0B63D1",
+      color: "#FFFFFF",
+      fontWeight: 900,
+      fontSize: 14,
+      textDecoration: "none",
+      cursor: disabled ? "not-allowed" : "pointer",
+      whiteSpace: "nowrap",
+      opacity: disabled ? 0.86 : 1,
+    };
+  }
+
+  if (kind === "soft") {
+    return {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 38,
+      padding: "8px 12px",
+      borderRadius: 12,
+      border: "1px solid rgba(11,31,51,0.08)",
+      background: "#F8FBFF",
+      color: disabled ? "#94A3B8" : "#24415C",
+      fontWeight: 800,
+      fontSize: 13,
+      textDecoration: "none",
+      cursor: disabled ? "not-allowed" : "pointer",
+      whiteSpace: "nowrap",
+      opacity: disabled ? 0.86 : 1,
+    };
+  }
+
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 42,
+    padding: "10px 14px",
+    borderRadius: 14,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#FFFFFF",
+    color: disabled ? "#94A3B8" : "#0B1F33",
+    fontWeight: 800,
+    fontSize: 14,
+    textDecoration: "none",
+    cursor: disabled ? "not-allowed" : "pointer",
+    whiteSpace: "nowrap",
+    opacity: disabled ? 0.86 : 1,
+  };
+}
+
+function collapseToggle(): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 38,
+    padding: "8px 12px",
+    borderRadius: 12,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#FFFFFF",
+    color: "#24415C",
+    fontWeight: 800,
+    fontSize: 13,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+  };
+}
+
+function helperText(): React.CSSProperties {
+  return {
+    color: "#5F7287",
+    fontSize: 14,
+    lineHeight: 1.75,
+  };
+}
+
+function readLocalJSON<T>(key: string, fallback: T): T {
+  try {
+    if (typeof window === "undefined") return fallback;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeLocalJSON(key: string, value: any) {
+  try {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore
+  }
+}
+
+function defaultCollapseState(): CollapseState {
+  return {
+    overview: false,
+    mix: false,
+    timeline: true,
+    notes: true,
+  };
+}
+
+function normalizeCollapseState(raw: any): CollapseState {
+  const base = defaultCollapseState();
+
+  return {
+    overview: Boolean(raw?.overview ?? base.overview),
+    mix: Boolean(raw?.mix ?? base.mix),
+    timeline: Boolean(raw?.timeline ?? base.timeline),
+    notes: Boolean(raw?.notes ?? base.notes),
+  };
+}
+
 export default function TrustAnalyticsPage() {
-  const loc = useLocation();
-  const nav = useNavigate();
+  const selectedClanId = Number(getSelectedClanId() || 0);
 
-  const qs = useMemo(() => new URLSearchParams(loc.search), [loc.search]);
+  const [isCompact, setIsCompact] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 980;
+  });
 
-  const selectedClanId = n(getSelectedClanId());
-  const clanId = n(qs.get("clan_id")) || selectedClanId || 0;
-  const userId = qs.get("user_id") ? n(qs.get("user_id")) : null;
-  const loanId = qs.get("loan_id") ? n(qs.get("loan_id")) : null;
-  const auditOn = qs.get("audit") === "1";
+  const [collapsed, setCollapsed] = useState<CollapseState>(() =>
+    normalizeCollapseState(
+      readLocalJSON(TRUST_ANALYTICS_UI_STORAGE_KEY, defaultCollapseState())
+    )
+  );
 
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
-  const [events, setEvents] = useState<TrustEvent[]>([]);
-
-  const latestAuditRef = useRef<HTMLDivElement | null>(null);
-
-  function buildRoute(next: {
-    clan_id?: number | null;
-    user_id?: number | null;
-    loan_id?: number | null;
-    audit?: boolean | null;
-  }) {
-    const p = new URLSearchParams();
-
-    if ((next.clan_id ?? 0) > 0) p.set("clan_id", String(next.clan_id));
-    if ((next.user_id ?? 0) > 0) p.set("user_id", String(next.user_id));
-    if ((next.loan_id ?? 0) > 0) p.set("loan_id", String(next.loan_id));
-    if (next.audit) p.set("audit", "1");
-
-    const query = p.toString();
-    return `/app/command-center/trust-analytics${query ? `?${query}` : ""}`;
-  }
-
-  async function loadEvents() {
-    setLoading(true);
-    setErr(null);
-    setMsg(null);
-
-    try {
-      const res = await getTrustEvents({
-        clan_id: clanId || undefined,
-        user_id: userId ?? undefined,
-        loan_id: loanId ?? undefined,
-        limit: 200,
-      });
-
-      const list = safeEvents(res);
-      setEvents(list);
-      setMsg(`Loaded ${list.length} event(s).`);
-    } catch (e: any) {
-      setErr(e?.message || String(e));
-      setEvents([]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function setQuery(next: Record<string, string | null>) {
-    const p = new URLSearchParams(loc.search);
-
-    for (const [k, v] of Object.entries(next)) {
-      if (v == null || v === "") p.delete(k);
-      else p.set(k, v);
-    }
-
-    const query = p.toString();
-    nav(`/app/command-center/trust-analytics${query ? `?${query}` : ""}`);
-  }
-
-  async function copyAuditSummary() {
-    if (!auditCounts?.latest) return;
-
-    const meta = parseMeta(auditCounts.latest) || {};
-    const text = [
-      `audit_event=${auditCounts.latest.event_type ?? "—"}`,
-      `created_at=${auditCounts.latest.created_at ?? "—"}`,
-      `attempted=${meta.attempted ?? meta.total ?? "—"}`,
-      `ok=${meta.ok ?? meta.success ?? "—"}`,
-      `failed=${meta.failed ?? meta.errors ?? "—"}`,
-      `loan_id=${auditCounts.latest.loan_id ?? "—"}`,
-      `actor_user_id=${auditCounts.latest.actor_user_id ?? "—"}`,
-      `subject_user_id=${auditCounts.latest.subject_user_id ?? "—"}`,
-    ].join("\n");
-
-    try {
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        setMsg("Audit summary copied.");
-        return;
-      }
-    } catch {
-      // fall through
-    }
-
-    window.prompt("Copy audit summary:", text);
-  }
+  const [loading, setLoading] = useState(true);
+  const [me, setMe] = useState<any>(null);
+  const [currentClan, setCurrentClan] = useState<any>(null);
+  const [events, setEvents] = useState<TrustEventRow[]>([]);
 
   useEffect(() => {
-    void loadEvents();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loc.search]);
+    if (typeof window === "undefined") return;
 
-  const filtered = useMemo(() => {
-    let list = events.slice();
-
-    if (clanId) list = list.filter((e) => n(e.clan_id) === clanId);
-    if (loanId) list = list.filter((e) => n(e.loan_id) === loanId);
-
-    if (userId) {
-      list = list.filter(
-        (e) => n(e.actor_user_id) === userId || n(e.subject_user_id) === userId
-      );
+    function handleResize() {
+      setIsCompact(window.innerWidth <= 980);
     }
 
-    if (auditOn) {
-      list = list.filter((e) => {
-        const t = safeStr(e.event_type).toUpperCase();
-        return t.includes("AUDIT") || t.startsWith("ADMIN_") || t.startsWith("BULK_");
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    writeLocalJSON(TRUST_ANALYTICS_UI_STORAGE_KEY, collapsed);
+  }, [collapsed]);
+
+  useEffect(() => {
+    let alive = true;
+
+    (async () => {
+      setLoading(true);
+
+      try {
+        const [meRes, clanRes, eventsRes] = await Promise.all([
+          getMe().catch(() => null),
+          getCurrentClan().catch(() => null),
+          listTrustEvents({
+            clan_id: selectedClanId || undefined,
+            limit: 120,
+          }).catch(() => ({ items: [] })),
+        ]);
+
+        if (!alive) return;
+
+        setMe(meRes || null);
+        setCurrentClan(clanRes || null);
+        setEvents(rowsOf<TrustEventRow>(eventsRes));
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [selectedClanId]);
+
+  const operatorName = useMemo(() => {
+    return (
+      firstTruthy(
+        me?.display_name,
+        me?.nickname,
+        me?.name,
+        me?.first_name,
+        me?.email
+      ) || "Operator"
+    );
+  }, [me]);
+
+  const communityLabel = useMemo(() => {
+    return (
+      firstTruthy(
+        currentClan?.marketplace_name,
+        currentClan?.name,
+        currentClan?.display_name,
+        currentClan?.title
+      ) || (selectedClanId ? `Community ${selectedClanId}` : "No selected community")
+    );
+  }, [currentClan, selectedClanId]);
+
+  const roleLabel = useMemo(() => {
+    return (
+      firstTruthy(me?.role, me?.account_role, me?.user_role) || "admin"
+    );
+  }, [me]);
+
+  const normalizedRows = useMemo(() => {
+    return events
+      .map((row, index) => {
+        const category = classifyTrustEvent(row);
+
+        return {
+          id: firstTruthy(row.id, `event-${index}`),
+          label: firstTruthy(
+            row.title,
+            row.message,
+            row.detail,
+            row.description,
+            row.kind,
+            row.type,
+            row.event_type,
+            "Trust event"
+          ),
+          kind: firstTruthy(row.kind, row.type, row.event_type),
+          category,
+          createdAt: safeStr(row.created_at),
+          ageDays: daysSince(row.created_at),
+        };
+      })
+      .sort((a, b) => {
+        const aTime = new Date(a.createdAt || 0).getTime();
+        const bTime = new Date(b.createdAt || 0).getTime();
+        return bTime - aTime;
       });
+  }, [events]);
+
+  const summary = useMemo(() => {
+    let built = 0;
+    let protectedCount = 0;
+    let weakened = 0;
+    let repair = 0;
+    let last7Days = 0;
+    let last30Days = 0;
+
+    for (const row of normalizedRows) {
+      if (row.category === "built") built += 1;
+      if (row.category === "protected") protectedCount += 1;
+      if (row.category === "weakened") weakened += 1;
+      if (row.category === "repair") repair += 1;
+
+      if (row.ageDays <= 7) last7Days += 1;
+      if (row.ageDays <= 30) last30Days += 1;
     }
 
-    list.sort((a, b) => {
-      const da = safeDate(a.created_at)?.getTime() || 0;
-      const db = safeDate(b.created_at)?.getTime() || 0;
-      return db - da;
-    });
+    let trendTitle = "The trust pattern looks steady.";
+    let trendDetail =
+      "Recent signals do not suggest that weakening pressure is dominating the visible pattern right now.";
 
-    return list;
-  }, [events, clanId, loanId, userId, auditOn]);
-
-  const eventTypeSummary = useMemo(() => {
-    const map = new Map<string, number>();
-
-    for (const event of filtered) {
-      const key = safeStr(event.event_type, "unknown_event");
-      map.set(key, (map.get(key) || 0) + 1);
+    if (weakened + repair > built + protectedCount) {
+      trendTitle = "The trust pattern shows weakening pressure.";
+      trendDetail =
+        "Recent weakening and repair signals are heavier than the building and protecting signals in the visible event mix.";
+    } else if (built + protectedCount > 0) {
+      trendTitle = "The trust pattern is building more than weakening.";
+      trendDetail =
+        "Recent built and protected signals are outweighing the weakening side of the visible event mix.";
     }
-
-    return Array.from(map.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 8);
-  }, [filtered]);
-
-  const analyticsSummary = useMemo(() => {
-    const withLoan = filtered.filter((e) => n(e.loan_id) > 0).length;
-    const withMeta = filtered.filter((e) => !!parseMeta(e)).length;
-    const auditEvents = filtered.filter((e) => {
-      const t = safeStr(e.event_type).toUpperCase();
-      return t.includes("AUDIT") || t.startsWith("ADMIN_") || t.startsWith("BULK_");
-    }).length;
 
     return {
-      total: filtered.length,
-      withLoan,
-      withMeta,
-      auditEvents,
+      total: normalizedRows.length,
+      built,
+      protectedCount,
+      weakened,
+      repair,
+      last7Days,
+      last30Days,
+      trendTitle,
+      trendDetail,
     };
-  }, [filtered]);
+  }, [normalizedRows]);
 
-  const auditCounts = useMemo(() => {
-    if (!auditOn) return null;
+  const recentRows = useMemo(() => normalizedRows.slice(0, 10), [normalizedRows]);
 
-    const latest = filtered[0];
-    const meta = latest ? parseMeta(latest) : null;
-    const attempted = meta?.attempted ?? meta?.total ?? null;
-    const ok = meta?.ok ?? meta?.success ?? null;
-    const failed = meta?.failed ?? meta?.errors ?? null;
+  const builtRows = useMemo(
+    () => normalizedRows.filter((row) => row.category === "built").slice(0, 4),
+    [normalizedRows]
+  );
+  const weakenedRows = useMemo(
+    () =>
+      normalizedRows
+        .filter((row) => row.category === "weakened" || row.category === "repair")
+        .slice(0, 4),
+    [normalizedRows]
+  );
 
-    return { attempted, ok, failed, latest };
-  }, [filtered, auditOn]);
+  function toggleSection(key: keyof CollapseState) {
+    setCollapsed((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  }
 
-  useEffect(() => {
-    if (!auditOn) return;
-    if (filtered.length === 0) return;
-
-    const timer = window.setTimeout(() => {
-      latestAuditRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 250);
-
-    return () => window.clearTimeout(timer);
-  }, [auditOn, filtered.length]);
-
-  return (
-    <div style={{ padding: 20, maxWidth: 1100, margin: "0 auto", paddingBottom: 30 }}>
+  if (loading) {
+    return (
       <div
         style={{
-          ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
-          marginTop: 18,
+          maxWidth: 1180,
+          margin: "0 auto",
+          paddingBottom: 40,
+          display: "grid",
+          gap: 18,
         }}
       >
+        <PageTopNav
+          sectionLabel="Trust Analytics"
+          title="Trust Analytics"
+          subtitle="Preparing the trust analytics surface..."
+          homeTo="/app/dashboard"
+          homeLabel="Dashboard"
+          backTo="/app/command-center"
+          backLabel="Command Center"
+          nextLinks={[
+            { label: "System Operations", to: "/app/command-center/system-operations" },
+            { label: "Exposure", to: "/app/command-center/exposure" },
+          ]}
+          utilityLinks={[{ label: "Trust Graph", to: "/app/command-center/trust-graph" }]}
+        />
+
+        <section style={pageCard("#FFFFFF")}>
+          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+            Loading trust analytics...
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        maxWidth: 1180,
+        margin: "0 auto",
+        paddingBottom: 40,
+        display: "grid",
+        gap: 18,
+      }}
+    >
+      <PageTopNav
+        sectionLabel="Trust Analytics"
+        title="Trust Analytics"
+        subtitle="Read the visible trust pattern, signal mix, and recent trend before stepping into deeper operator intervention."
+        homeTo="/app/dashboard"
+        homeLabel="Dashboard"
+        backTo="/app/command-center"
+        backLabel="Command Center"
+        nextLinks={[
+          { label: "System Operations", to: "/app/command-center/system-operations" },
+          { label: "Exposure", to: "/app/command-center/exposure" },
+        ]}
+        utilityLinks={[{ label: "Trust Graph", to: "/app/command-center/trust-graph" }]}
+      />
+
+      <section
+        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.1fr) 320px",
+            gap: 16,
+            alignItems: "start",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Analytics overview</div>
+
+            <div
+              style={{
+                marginTop: 10,
+                color: "#0B1F33",
+                fontWeight: 900,
+                fontSize: isCompact ? 28 : 34,
+                lineHeight: 1.1,
+              }}
+            >
+              Trust pattern view for {operatorName}
+            </div>
+
+            <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
+              This page is for pattern reading. Use it to understand trend and signal mix before jumping into deeper intervention surfaces.
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
+              <span style={badge(true)}>Role: {roleLabel}</span>
+              <span style={badge(false)}>Community: {communityLabel}</span>
+              <span style={badge(false)}>
+                Recent trust events: {summary.total}
+              </span>
+            </div>
+          </div>
+
+          <div style={softCard("#FFFFFF")}>
+            <div style={sectionLabel()}>Current reading</div>
+
+            <div
+              style={{
+                marginTop: 10,
+                color: "#0B1F33",
+                fontWeight: 900,
+                fontSize: 20,
+                lineHeight: 1.25,
+              }}
+            >
+              {summary.trendTitle}
+            </div>
+
+            <div style={{ marginTop: 10, ...helperText() }}>
+              {summary.trendDetail}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
             gap: 12,
-            flexWrap: "wrap",
             alignItems: "center",
+            flexWrap: "wrap",
           }}
         >
           <div>
-            <div style={sectionLabel()}>Command Center</div>
-            <div style={{ fontSize: 30, fontWeight: 1000, color: "#0B1F33", marginTop: 8 }}>
-              Trust Event Analytics
-            </div>
-            <div style={{ color: "#6B7A88", marginTop: 8, lineHeight: 1.7 }}>
-              Filter trust events by community, user, loan, and audit mode to explain
-              why a decision happened.
+            <div style={sectionLabel()}>Signal overview</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              A clean first reading of the visible trust mix.
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <Link to="/app/command-center" style={{ ...buttonStyle(false), textDecoration: "none" }}>
-              Command Center
-            </Link>
-            <Link
-              to={buildRoute({
-                clan_id: clanId || null,
-                user_id: userId,
-                loan_id: loanId,
-                audit: false,
-              })}
-              style={{ ...buttonStyle(true), textDecoration: "none" }}
-            >
-              Trust Analytics
-            </Link>
-            <Link to="/app/command-center/trust-graph" style={{ ...buttonStyle(false), textDecoration: "none" }}>
-              Trust Graph
-            </Link>
-          </div>
+          <button
+            type="button"
+            onClick={() => toggleSection("overview")}
+            style={collapseToggle()}
+          >
+            {collapsed.overview ? "Open" : "Collapse"}
+          </button>
         </div>
-      </div>
 
-      {auditOn && auditCounts?.latest ? (
-        <div
-          style={{
-            position: "sticky",
-            top: 0,
-            zIndex: 10,
-            background: "#FFF7ED",
-            border: "1px solid #FED7AA",
-            padding: 12,
-            borderRadius: 14,
-            marginTop: 14,
-            marginBottom: 12,
-          }}
-        >
+        {!collapsed.overview ? (
           <div
             style={{
-              display: "flex",
-              justifyContent: "space-between",
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "1fr 1fr"
+                : "repeat(6, minmax(0, 1fr))",
               gap: 12,
-              flexWrap: "wrap",
-              alignItems: "center",
             }}
           >
-            <div style={{ color: "#9A3412", fontWeight: 900 }}>
-              Audit mode · latest: {safeStr(auditCounts.latest.event_type, "—")}
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Total</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 24,
+                  fontWeight: 900,
+                }}
+              >
+                {summary.total}
+              </div>
             </div>
-            <button type="button" onClick={copyAuditSummary} style={buttonStyle(false)}>
-              Copy audit summary
-            </button>
+
+            <div style={statTile("#F3FBF5")}>
+              <div style={sectionLabel()}>Built</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#166534",
+                  fontSize: 24,
+                  fontWeight: 900,
+                }}
+              >
+                {summary.built}
+              </div>
+            </div>
+
+            <div style={statTile("#F8FBFF")}>
+              <div style={sectionLabel()}>Protected</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B63D1",
+                  fontSize: 24,
+                  fontWeight: 900,
+                }}
+              >
+                {summary.protectedCount}
+              </div>
+            </div>
+
+            <div style={statTile("#FFF5F5")}>
+              <div style={sectionLabel()}>Weakened</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#991B1B",
+                  fontSize: 24,
+                  fontWeight: 900,
+                }}
+              >
+                {summary.weakened}
+              </div>
+            </div>
+
+            <div style={statTile("#FFFBEF")}>
+              <div style={sectionLabel()}>Repair</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#92400E",
+                  fontSize: 24,
+                  fontWeight: 900,
+                }}
+              >
+                {summary.repair}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Last 7 days</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 24,
+                  fontWeight: 900,
+                }}
+              >
+                {summary.last7Days}
+              </div>
+            </div>
           </div>
+        ) : null}
+      </section>
 
-          <div style={{ fontSize: 12, marginTop: 8, color: "#7C2D12" }}>
-            attempted: <b>{auditCounts.attempted ?? "—"}</b> · ok:{" "}
-            <b>{auditCounts.ok ?? "—"}</b> · failed: <b>{auditCounts.failed ?? "—"}</b>
-          </div>
-        </div>
-      ) : null}
-
-      {msg ? (
+      <section style={pageCard("#FFFFFF")}>
         <div
           style={{
-            background: "#ECFDF5",
-            border: "1px solid #A7F3D0",
-            color: "#065F46",
-            padding: 12,
-            borderRadius: 12,
-            marginBottom: 10,
-          }}
-        >
-          {msg}
-        </div>
-      ) : null}
-
-      {err ? (
-        <div
-          style={{
-            background: "#FEF2F2",
-            border: "1px solid #FECACA",
-            color: "#991B1B",
-            padding: 12,
-            borderRadius: 12,
-            marginBottom: 10,
-          }}
-        >
-          {err}
-        </div>
-      ) : null}
-
-      <div style={{ ...pageCard(), marginBottom: 12 }}>
-        <div style={sectionLabel()}>Filters</div>
-
-        <div
-          style={{
-            marginTop: 12,
             display: "flex",
+            justifyContent: "space-between",
             gap: 12,
+            alignItems: "center",
             flexWrap: "wrap",
-            alignItems: "end",
           }}
         >
-          <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "#6B7280" }}>Clan ID</div>
-            <input
-              type="number"
-              value={clanId || ""}
-              onChange={(e) =>
-                setQuery({
-                  clan_id: e.target.value || null,
-                })
-              }
-              style={inputStyle(140)}
-            />
-          </div>
-
-          <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "#6B7280" }}>
-              User ID (actor or subject)
+          <div>
+            <div style={sectionLabel()}>Signal mix</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              The strongest building side and weakening side signals.
             </div>
-            <input
-              type="number"
-              value={userId ?? ""}
-              onChange={(e) =>
-                setQuery({
-                  user_id: e.target.value || null,
-                })
-              }
-              style={inputStyle(180)}
-            />
           </div>
 
-          <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "#6B7280" }}>Loan ID</div>
-            <input
-              type="number"
-              value={loanId ?? ""}
-              onChange={(e) =>
-                setQuery({
-                  loan_id: e.target.value || null,
-                })
-              }
-              style={inputStyle(140)}
-            />
-          </div>
+          <button
+            type="button"
+            onClick={() => toggleSection("mix")}
+            style={collapseToggle()}
+          >
+            {collapsed.mix ? "Open" : "Collapse"}
+          </button>
+        </div>
 
-          <label
+        {!collapsed.mix ? (
+          <div
             style={{
-              display: "flex",
-              gap: 8,
-              alignItems: "center",
-              fontWeight: 700,
-              color: "#0B1F33",
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+              gap: 12,
             }}
           >
-            <input
-              type="checkbox"
-              checked={auditOn}
-              onChange={(e) => setQuery({ audit: e.target.checked ? "1" : null })}
-            />
-            Audit filter
-          </label>
+            <div style={innerCard("#F8FBFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 15,
+                }}
+              >
+                Stronger positive side
+              </div>
 
-          <button
-            type="button"
-            onClick={loadEvents}
-            disabled={loading}
-            style={buttonStyle(true, loading)}
-          >
-            {loading ? "Loading..." : "Reload events"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              nav(
-                `/app/command-center/trust-analytics${
-                  selectedClanId > 0 ? `?clan_id=${selectedClanId}` : ""
-                }`
-              )
-            }
-            style={buttonStyle(false)}
-          >
-            Reset
-          </button>
-        </div>
-      </div>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-          gap: 12,
-          marginBottom: 12,
-        }}
-      >
-        <div style={softCard()}>
-          <div style={sectionLabel()}>Filtered total</div>
-          <div style={{ marginTop: 8, fontSize: 26, fontWeight: 1000, color: "#0B1F33" }}>
-            {analyticsSummary.total}
-          </div>
-        </div>
-
-        <div style={softCard()}>
-          <div style={sectionLabel()}>With loan</div>
-          <div style={{ marginTop: 8, fontSize: 26, fontWeight: 1000, color: "#0B1F33" }}>
-            {analyticsSummary.withLoan}
-          </div>
-        </div>
-
-        <div style={softCard()}>
-          <div style={sectionLabel()}>With meta</div>
-          <div style={{ marginTop: 8, fontSize: 26, fontWeight: 1000, color: "#0B1F33" }}>
-            {analyticsSummary.withMeta}
-          </div>
-        </div>
-
-        <div style={softCard()}>
-          <div style={sectionLabel()}>Audit-like</div>
-          <div style={{ marginTop: 8, fontSize: 26, fontWeight: 1000, color: "#0B1F33" }}>
-            {analyticsSummary.auditEvents}
-          </div>
-        </div>
-      </div>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "0.9fr 1.1fr",
-          gap: 12,
-          alignItems: "start",
-        }}
-      >
-        <div style={pageCard()}>
-          <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-            Top Event Types
-          </div>
-
-          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-            {eventTypeSummary.length === 0 ? (
-              <div style={{ color: "#6B7A88" }}>No event summary available.</div>
-            ) : (
-              eventTypeSummary.map(([label, count]) => (
-                <div key={label} style={softCard()}>
-                  <div style={{ fontWeight: 1000, color: "#0B1F33" }}>{label}</div>
-                  <div style={{ marginTop: 6, color: "#64748B" }}>{count} event(s)</div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        <div style={pageCard()}>
-          <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-            Recent Trust Events
-          </div>
-
-          {filtered.length === 0 ? (
-            <div style={{ marginTop: 14, color: "#6B7280" }}>
-              No events found for this filter.
+              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                {builtRows.length === 0 ? (
+                  <div style={helperText()}>
+                    No strong built-side event is visible right now.
+                  </div>
+                ) : (
+                  builtRows.map((row) => (
+                    <div key={row.id} style={innerCard("#FFFFFF")}>
+                      <div
+                        style={{
+                          color: "#0B1F33",
+                          fontWeight: 900,
+                          lineHeight: 1.35,
+                        }}
+                      >
+                        {row.label}
+                      </div>
+                      <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                        {safeDateTime(row.createdAt)}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
-          ) : (
-            <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-              {filtered.slice(0, 100).map((event, idx) => {
-                const meta = parseMeta(event);
-                const isFirstAudit = auditOn && idx === 0;
 
-                const actorLink = event.actor_user_id
-                  ? buildRoute({
-                      clan_id: clanId || null,
-                      user_id: n(event.actor_user_id),
-                      loan_id: null,
-                      audit: auditOn,
-                    })
-                  : null;
+            <div style={innerCard("#FFFBEF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 15,
+                }}
+              >
+                Stronger negative or repair side
+              </div>
 
-                const subjectLink = event.subject_user_id
-                  ? buildRoute({
-                      clan_id: clanId || null,
-                      user_id: n(event.subject_user_id),
-                      loan_id: null,
-                      audit: auditOn,
-                    })
-                  : null;
+              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                {weakenedRows.length === 0 ? (
+                  <div style={helperText()}>
+                    No weakened or repair-side event is visible right now.
+                  </div>
+                ) : (
+                  weakenedRows.map((row) => (
+                    <div key={row.id} style={innerCard("#FFFFFF")}>
+                      <div
+                        style={{
+                          color: "#0B1F33",
+                          fontWeight: 900,
+                          lineHeight: 1.35,
+                        }}
+                      >
+                        {row.label}
+                      </div>
+                      <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                        {safeDateTime(row.createdAt)}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </section>
 
-                const loanLink = event.loan_id
-                  ? buildRoute({
-                      clan_id: clanId || null,
-                      user_id: userId,
-                      loan_id: n(event.loan_id),
-                      audit: auditOn,
-                    })
-                  : null;
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Recent trust timeline</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              The latest visible trust movement, in clean order.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => toggleSection("timeline")}
+            style={collapseToggle()}
+          >
+            {collapsed.timeline ? "Open" : "Collapse"}
+          </button>
+        </div>
+
+        {!collapsed.timeline ? (
+          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+            {recentRows.length === 0 ? (
+              <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+                No recent trust event is visible right now.
+              </div>
+            ) : (
+              recentRows.map((row) => {
+                const tone = eventTone(row.category);
 
                 return (
                   <div
-                    key={`${event.id ?? idx}-${event.created_at ?? idx}`}
-                    ref={isFirstAudit ? latestAuditRef : undefined}
-                    style={softCard("#FFFFFF")}
+                    key={row.id}
+                    style={{
+                      ...innerCard(tone.bg),
+                      display: "grid",
+                      gridTemplateColumns: "18px minmax(0, 1fr)",
+                      gap: 12,
+                      alignItems: "start",
+                    }}
                   >
                     <div
                       style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: 12,
-                        flexWrap: "wrap",
-                        alignItems: "center",
+                        width: 12,
+                        height: 12,
+                        borderRadius: 999,
+                        background: tone.dot,
+                        marginTop: 6,
                       }}
-                    >
-                      <div style={{ fontWeight: 900, color: "#0B1F33" }}>
-                        {safeStr(event.event_type, "event")}
-                      </div>
-                      <div style={{ fontSize: 12, color: "#6B7280" }}>
-                        {safeDateTime(event.created_at)}
-                      </div>
-                    </div>
+                    />
 
-                    <div
-                      style={{
-                        marginTop: 8,
-                        display: "flex",
-                        gap: 10,
-                        flexWrap: "wrap",
-                        color: "#64748B",
-                        fontSize: 13,
-                      }}
-                    >
-                      <span>Clan: {safeStr(event.clan_id, "—")}</span>
-                      <span>Loan: {safeStr(event.loan_id, "—")}</span>
-                      <span>Actor: {safeStr(event.actor_user_id, "—")}</span>
-                      <span>Subject: {safeStr(event.subject_user_id, "—")}</span>
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 8,
-                        display: "flex",
-                        gap: 8,
-                        flexWrap: "wrap",
-                        fontSize: 12,
-                      }}
-                    >
-                      {loanLink ? (
-                        <Link to={loanLink} style={{ color: "#0B63D1", fontWeight: 900 }}>
-                          Filter by loan {event.loan_id}
-                        </Link>
-                      ) : null}
-                      {actorLink ? (
-                        <Link to={actorLink} style={{ color: "#0B63D1", fontWeight: 900 }}>
-                          Jump to actor {event.actor_user_id}
-                        </Link>
-                      ) : null}
-                      {subjectLink ? (
-                        <Link to={subjectLink} style={{ color: "#0B63D1", fontWeight: 900 }}>
-                          Jump to subject {event.subject_user_id}
-                        </Link>
-                      ) : null}
-                    </div>
-
-                    <details style={{ marginTop: 10 }} open={isFirstAudit}>
-                      <summary style={{ cursor: "pointer", fontWeight: 800 }}>
-                        Meta
-                      </summary>
-                      <pre
+                    <div>
+                      <div
                         style={{
-                          marginTop: 8,
-                          whiteSpace: "pre-wrap",
-                          background: "#F8FBFF",
-                          border: "1px solid rgba(11,31,51,0.08)",
-                          borderRadius: 12,
-                          padding: 12,
-                          color: "#334155",
-                          fontSize: 12,
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: 10,
+                          alignItems: "center",
+                          flexWrap: "wrap",
                         }}
                       >
-                        {meta ? JSON.stringify(meta, null, 2) : "—"}
-                      </pre>
-                    </details>
+                        <div
+                          style={{
+                            color: "#0B1F33",
+                            fontWeight: 900,
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          {row.label}
+                        </div>
+
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <span style={badge(true)}>{tone.label}</span>
+                          {row.createdAt ? (
+                            <span style={badge(false)}>
+                              {safeDateTime(row.createdAt)}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 );
-              })}
+              })
+            )}
+          </div>
+        ) : null}
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Reading notes</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              What this page is for, and what it is not for.
             </div>
-          )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => toggleSection("notes")}
+            style={collapseToggle()}
+          >
+            {collapsed.notes ? "Open" : "Collapse"}
+          </button>
         </div>
-      </div>
+
+        {!collapsed.notes ? (
+          <div
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+              gap: 12,
+            }}
+          >
+            <div style={innerCard("#F8FBFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 15,
+                }}
+              >
+                Use this page for reading
+              </div>
+              <div style={{ marginTop: 8, ...helperText() }}>
+                This page is for pattern reading, signal mix, and trust trend interpretation.
+              </div>
+            </div>
+
+            <div style={innerCard("#FFFFFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 15,
+                }}
+              >
+                Use other admin pages for action
+              </div>
+              <div style={{ marginTop: 8, ...helperText() }}>
+                Move into System Operations, Exposure, or Trust Graph when the work is live handling, risk review, or structural relationship analysis.
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div style={sectionLabel()}>Where next</div>
+
+        <div
+          style={{
+            marginTop: 14,
+            display: "flex",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
+          <Link to="/app/command-center/system-operations" style={actionBtn("primary")}>
+            System Operations
+          </Link>
+          <Link to="/app/command-center/exposure" style={actionBtn("secondary")}>
+            Exposure
+          </Link>
+          <Link to="/app/command-center/trust-graph" style={actionBtn("secondary")}>
+            Trust Graph
+          </Link>
+          <Link to="/app/command-center" style={actionBtn("soft")}>
+            Command Center
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

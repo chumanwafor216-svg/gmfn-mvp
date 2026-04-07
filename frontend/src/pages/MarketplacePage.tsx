@@ -1,14 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import PageTopNav from "../components/PageTopNav";
 import {
   addLoanGuarantorRequest,
   cancelLoanRequest,
   createLoanRequest,
+  getAccessToken,
   getClanInviteLink,
   getCurrentClan,
   getLoanGuarantorSuggestions,
-  getLoanGuarantors,
   getLoanSummary,
   getMarketplaceShops,
   getMe,
@@ -17,8 +16,52 @@ import {
   listClanMembers,
   listMyClans,
   listMyLoans,
+  removeCommunityProfileImage,
   safeCopy,
+  setCommunityProfileImage,
+  uploadCommunityProfileImageFile,
 } from "../lib/api";
+import {
+  getCommunityMoneySurface,
+  type CommunityMoneySurface,
+} from "../lib/communityMoney";
+
+type CommunityRow = {
+  id?: number;
+  clan_id?: number;
+  name?: string | null;
+  display_name?: string | null;
+  title?: string | null;
+  description?: string | null;
+  marketplace_name?: string | null;
+  marketplace_description?: string | null;
+  invite_code?: string | null;
+  invite_link?: string | null;
+  invite_url?: string | null;
+  community_id?: string | null;
+  community_code?: string | null;
+  marketplace_id?: string | null;
+  gmfn_id?: string | null;
+  clan_code?: string | null;
+  image_url?: string | null;
+  profile_image_url?: string | null;
+  community_image_url?: string | null;
+  marketplace_image_url?: string | null;
+  cover_image_url?: string | null;
+  banner_url?: string | null;
+  logo_url?: string | null;
+  trust_band?: string | null;
+  trust_class?: string | null;
+  community_trust_band?: string | null;
+  reputation_band?: string | null;
+  status?: string | null;
+  community?: any;
+  
+  profile?: any;
+  marketplace?: any;
+  clan?: any;
+  meta?: any;
+};
 
 type ClanMember = {
   id?: number;
@@ -70,26 +113,6 @@ type LoanDraftSummary = {
   decision_at?: string | null;
 };
 
-type LoanGuarantorRow = {
-  id?: number;
-  loan_id?: number;
-  clan_id?: number;
-  guarantor_user_id?: number;
-  pledge_amount?: string | number | null;
-  status?: string | null;
-  responded_at?: string | null;
-  is_locked?: boolean;
-  locked_amount?: string | number | null;
-  released_amount?: string | number | null;
-};
-
-type GuarantorPick = {
-  key: string;
-  userId?: number;
-  gmfnId?: string;
-  name: string;
-};
-
 type SuggestedSupporter = {
   key: string;
   userId?: number;
@@ -100,7 +123,53 @@ type SuggestedSupporter = {
 };
 
 type NoticeTone = "success" | "error";
-type CollapseKey = "profile" | "tools" | "members" | "loan";
+
+type SectionState = {
+  profile: boolean;
+  tools: boolean;
+  members: boolean;
+  support: boolean;
+};
+
+const IMAGE_FIELD_NAMES = [
+  "community_image_url",
+  "marketplace_image_url",
+  "cover_image_url",
+  "banner_url",
+  "profile_picture_url",
+  "profile_image_url",
+  "avatar_url",
+  "photo_url",
+  "image_url",
+  "community_logo_url",
+  "logo_url",
+  "picture_url",
+  "display_picture_url",
+  "icon_url",
+  "image",
+  "photo",
+  "banner",
+  "logo",
+  "avatar",
+  "picture",
+  "dp",
+];
+
+const DEFAULT_SECTION_STATE: SectionState = {
+  profile: true,
+  tools: true,
+  members: false,
+  support: false,
+};
+
+const FINAL_LOAN_STATUSES = new Set([
+  "approved",
+  "repaid",
+  "closed",
+  "completed",
+  "cancelled",
+  "defaulted",
+]);
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -123,16 +192,32 @@ function firstDefined(...values: any[]): any {
   return undefined;
 }
 
+function rowsOf<T = any>(input: any): T[] {
+  if (Array.isArray(input)) return input as T[];
+  if (Array.isArray(input?.items)) return input.items as T[];
+  if (Array.isArray(input?.data?.items)) return input.data.items as T[];
+  if (Array.isArray(input?.results)) return input.results as T[];
+  if (Array.isArray(input?.rows)) return input.rows as T[];
+  return [];
+}
+
 function positiveNumber(value: any): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
-function hasVisibleValue(value: any): boolean {
-  if (value === undefined || value === null) return false;
-  if (typeof value === "string") return value.trim() !== "";
-  if (Array.isArray(value)) return value.length > 0;
-  return true;
+function dedupeStrings(values: any[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+
+  for (const value of values) {
+    const text = safeStr(value);
+    if (!text || seen.has(text)) continue;
+    seen.add(text);
+    out.push(text);
+  }
+
+  return out;
 }
 
 function mergeFirstVisible(...rows: any[]): any {
@@ -142,7 +227,18 @@ function mergeFirstVisible(...rows: any[]): any {
     if (!row || typeof row !== "object") continue;
 
     for (const [key, value] of Object.entries(row)) {
-      if (!hasVisibleValue(out[key]) && hasVisibleValue(value)) {
+      const existing = out[key];
+      const existingVisible =
+        existing !== undefined &&
+        existing !== null &&
+        !(typeof existing === "string" && existing.trim() === "");
+
+      const valueVisible =
+        value !== undefined &&
+        value !== null &&
+        !(typeof value === "string" && String(value).trim() === "");
+
+      if (!existingVisible && valueVisible) {
         out[key] = value;
       }
     }
@@ -151,17 +247,17 @@ function mergeFirstVisible(...rows: any[]): any {
   return out;
 }
 
-function getClanRecordId(row: any): number {
+function getRowId(row: any): number {
   return positiveNumber(row?.id || row?.clan_id || row?.community_id);
 }
 
-function buildSelectedCommunity(currentClan: any, clanRows: any[]): any {
-  const currentId = getClanRecordId(currentClan);
+function buildSelectedCommunity(currentClan: any, clanRows: any[]): CommunityRow | null {
+  const currentId = getRowId(currentClan);
   const matchedRow =
-    clanRows.find((row: any) => getClanRecordId(row) === currentId) || null;
+    clanRows.find((row: any) => getRowId(row) === currentId) || null;
   const firstRow = clanRows[0] || null;
 
-  return {
+  const merged = {
     ...mergeFirstVisible(currentClan, matchedRow, firstRow),
     community: mergeFirstVisible(
       currentClan?.community,
@@ -178,363 +274,29 @@ function buildSelectedCommunity(currentClan: any, clanRows: any[]): any {
       matchedRow?.marketplace,
       firstRow?.marketplace
     ),
-    clan: mergeFirstVisible(
-      currentClan?.clan,
-      matchedRow?.clan,
-      firstRow?.clan
-    ),
-    meta: mergeFirstVisible(
-      currentClan?.meta,
-      matchedRow?.meta,
-      firstRow?.meta
-    ),
+    clan: mergeFirstVisible(currentClan?.clan, matchedRow?.clan, firstRow?.clan),
+    meta: mergeFirstVisible(currentClan?.meta, matchedRow?.meta, firstRow?.meta),
   };
-}
 
-function isTerminalLoanStatus(status: string): boolean {
-  const s = safeStr(status).toLowerCase();
-  return ["approved", "repaid", "cancelled", "defaulted"].includes(s);
-}
-
-function apiBase(): string {
-  const raw =
-    (typeof import.meta !== "undefined" &&
-      (import.meta as any)?.env &&
-      (import.meta as any).env.VITE_API_BASE_URL) ||
-    "/api";
-
-  return String(raw || "").trim().replace(/\/+$/, "");
-}
-
-function apiOrigin(): string {
-  const base = apiBase();
-
-  if (base.startsWith("http://") || base.startsWith("https://")) {
-    try {
-      const u = new URL(base);
-      return `${u.protocol}//${u.host}`;
-    } catch {
-      return "http://127.0.0.1:8012";
-    }
-  }
-
-  return "http://127.0.0.1:8012";
-}
-
-function resolveMediaSrc(src: string): string {
-  const raw = safeStr(src);
-  if (!raw) return "";
-
-  if (
-    raw.startsWith("http://") ||
-    raw.startsWith("https://") ||
-    raw.startsWith("blob:")
-  ) {
-    return raw;
-  }
-
-  if (raw.startsWith("/")) {
-    return `${apiOrigin()}${raw}`;
-  }
-
-  return `${apiOrigin()}/${raw.replace(/^\/+/, "")}`;
-}
-
-function pageCard(bg = "#FFFFFF"): React.CSSProperties {
-  return {
-    borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 20,
-    boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
-    overflow: "hidden",
-  };
-}
-
-function softCard(bg = "#F8FBFF"): React.CSSProperties {
-  return {
-    borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 16,
-  };
-}
-
-function innerCard(bg = "#FFFFFF"): React.CSSProperties {
-  return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 14,
-  };
-}
-
-function sectionLabel(): React.CSSProperties {
-  return {
-    fontSize: 12,
-    color: "#5D7389",
-    fontWeight: 900,
-    letterSpacing: 0.35,
-    textTransform: "uppercase",
-  };
-}
-
-function badge(primary = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 6,
-    minHeight: 30,
-    borderRadius: 999,
-    padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
-    fontSize: 12,
-    fontWeight: 900,
-    whiteSpace: "nowrap",
-  };
-}
-
-function actionBtn(
-  kind: "primary" | "secondary" | "soft" = "secondary",
-  disabled = false
-): React.CSSProperties {
-  if (kind === "primary") {
-    return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 42,
-      padding: "10px 14px",
-      borderRadius: 14,
-      border: "none",
-      background: disabled ? "#CBD5E1" : "#0B63D1",
-      color: "#FFFFFF",
-      fontWeight: 900,
-      fontSize: 14,
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
-      opacity: disabled ? 0.86 : 1,
-    };
-  }
-
-  if (kind === "soft") {
-    return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 40,
-      padding: "9px 12px",
-      borderRadius: 13,
-      border: "1px solid rgba(11,31,51,0.08)",
-      background: "#F8FBFF",
-      color: disabled ? "#94A3B8" : "#24415C",
-      fontWeight: 800,
-      fontSize: 13,
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
-      opacity: disabled ? 0.86 : 1,
-    };
-  }
-
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
-    borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
-    color: disabled ? "#94A3B8" : "#0B1F33",
-    fontWeight: 800,
-    fontSize: 14,
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
-    opacity: disabled ? 0.86 : 1,
-  };
-}
-
-function inputStyle(): React.CSSProperties {
-  return {
-    width: "100%",
-    minHeight: 44,
-    borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
-    padding: "11px 12px",
-    fontSize: 14,
-    color: "#0B1F33",
-    outline: "none",
-    boxSizing: "border-box",
-  };
-}
-
-function textAreaStyle(): React.CSSProperties {
-  return {
-    ...inputStyle(),
-    minHeight: 96,
-    resize: "vertical",
-    lineHeight: 1.6,
-  };
-}
-
-function noticeCard(tone: NoticeTone): React.CSSProperties {
-  return {
-    ...softCard(tone === "success" ? "#F3FBF5" : "#FEF2F2"),
-    color: tone === "success" ? "#166534" : "#991B1B",
-    border:
-      tone === "success"
-        ? "1px solid rgba(34,197,94,0.16)"
-        : "1px solid rgba(239,68,68,0.16)",
-    fontWeight: 800,
-  };
-}
-
-function communityImageBox(): React.CSSProperties {
-  return {
-    width: "100%",
-    minHeight: 188,
-    borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: "linear-gradient(180deg, #E8F0FF 0%, #DDEBFF 100%)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  };
-}
-
-function getCommunityImage(clan: any): string {
-  return firstTruthy(
-    clan?.image_url,
-    clan?.avatar_url,
-    clan?.photo_url,
-    clan?.cover_image_url,
-    clan?.banner_url,
-    clan?.logo_url,
-    clan?.community_logo_url,
-    clan?.profile_picture_url,
-    clan?.image,
-    clan?.community?.image_url,
-    clan?.community?.avatar_url,
-    clan?.community?.photo_url,
-    clan?.community?.cover_image_url,
-    clan?.community?.banner_url,
-    clan?.community?.logo_url,
-    clan?.community?.community_logo_url,
-    clan?.community?.profile_picture_url,
-    clan?.community?.image,
-    clan?.profile?.image_url,
-    clan?.profile?.avatar_url,
-    clan?.profile?.photo_url,
-    clan?.profile?.cover_image_url,
-    clan?.profile?.banner_url,
-    clan?.profile?.logo_url,
-    clan?.profile?.profile_picture_url,
-    clan?.profile?.image,
-    clan?.marketplace?.image_url,
-    clan?.marketplace?.avatar_url,
-    clan?.marketplace?.photo_url,
-    clan?.marketplace?.cover_image_url,
-    clan?.marketplace?.banner_url,
-    clan?.marketplace?.logo_url,
-    clan?.marketplace?.profile_picture_url,
-    clan?.marketplace?.image,
-    clan?.clan?.image_url,
-    clan?.clan?.avatar_url,
-    clan?.clan?.photo_url,
-    clan?.clan?.cover_image_url,
-    clan?.clan?.banner_url,
-    clan?.clan?.logo_url,
-    clan?.clan?.profile_picture_url,
-    clan?.clan?.image,
-    clan?.meta?.image_url,
-    clan?.meta?.avatar_url,
-    clan?.meta?.photo_url,
-    clan?.meta?.cover_image_url,
-    clan?.meta?.banner_url,
-    clan?.meta?.logo_url,
-    clan?.meta?.profile_picture_url,
-    clan?.meta?.image
-  );
-}
-
-function getCommunityName(clan: any): string {
-  return firstTruthy(
-    clan?.name,
-    clan?.clan_name,
-    clan?.marketplace_name,
-    clan?.community_name,
-    clan?.community?.name,
-    clan?.profile?.name,
-    clan?.marketplace?.name,
-    clan?.clan?.name,
-    "Selected community"
-  );
-}
-
-function getCommunityDescription(clan: any): string {
-  return firstTruthy(
-    clan?.description,
-    clan?.clan_description,
-    clan?.marketplace_description,
-    clan?.community?.description,
-    clan?.profile?.description,
-    clan?.marketplace?.description,
-    clan?.clan?.description,
-    clan?.meta?.description,
-    "This selected community surface contains the community identity, the member rows, loan and support actions, and the link to each member’s Shop Gallery."
-  );
-}
-
-function getCommunityGlobalId(clan: any): string {
-  return firstTruthy(
-    clan?.community_global_id,
-    clan?.global_id,
-    clan?.gmfn_id,
-    clan?.clan_code,
-    clan?.code,
-    clan?.marketplace_code,
-    clan?.id ? `COMM-${clan.id}` : "",
-    "Pending"
-  );
-}
-
-function getCommunityTrustLabel(clan: any): string {
-  return firstTruthy(
-    clan?.community_trust_band,
-    clan?.trust_band,
-    clan?.trust_class,
-    clan?.reputation_band,
-    clan?.status,
-    "Visible community"
-  );
+  return getRowId(merged) ? (merged as CommunityRow) : null;
 }
 
 function getMemberName(member: ClanMember): string {
-  return firstTruthy(
-    member?.display_name,
-    member?.nickname,
-    [safeStr(member?.first_name), safeStr(member?.surname)]
-      .filter(Boolean)
-      .join(" "),
-    member?.email,
-    member?.phone_e164,
-    "Member"
+  return (
+    firstTruthy(
+      member?.display_name,
+      member?.nickname,
+      [safeStr(member?.first_name), safeStr(member?.surname)]
+        .filter(Boolean)
+        .join(" "),
+      member?.email,
+      member?.phone_e164
+    ) || "Member"
   );
 }
 
 function getMemberGmfnId(member: ClanMember): string {
   return firstTruthy(member?.gmfn_id);
-}
-
-function getMemberUserId(member: ClanMember): number {
-  return positiveNumber(member?.user_id || member?.id);
 }
 
 function getShopForMember(
@@ -591,13 +353,263 @@ function getPoolCurrency(payload: any): string {
   );
 }
 
-function getCurrentPageUrl(): string {
+function getInviteUrl(payload: any): string {
+  const direct = firstTruthy(
+    payload?.share_link,
+    payload?.invite_url,
+    payload?.invite_link,
+    payload?.url,
+    payload?.link,
+    payload?.api_link
+  );
+
+  if (direct) return direct;
+
+  const code = firstTruthy(payload?.code);
+  if (code && typeof window !== "undefined") {
+    return `${window.location.origin}/join?code=${encodeURIComponent(code)}`;
+  }
+
+  return "";
+}
+
+function apiBase(): string {
+  const raw =
+    (typeof import.meta !== "undefined" &&
+      (import.meta as any)?.env &&
+      (import.meta as any).env.VITE_API_BASE_URL) ||
+    "/api";
+
+  return String(raw || "").trim().replace(/\/+$/, "");
+}
+
+function browserOrigin(): string {
   try {
     if (typeof window === "undefined") return "";
-    return window.location.href;
+    return String(window.location.origin || "").trim().replace(/\/+$/, "");
   } catch {
     return "";
   }
+}
+
+function getMediaOrigins(): string[] {
+  const out: string[] = [];
+  const base = apiBase();
+  const webOrigin = browserOrigin();
+
+  if (base.startsWith("http://") || base.startsWith("https://")) {
+    try {
+      const u = new URL(base);
+      out.push(`${u.protocol}//${u.host}`);
+    } catch {
+      // ignore
+    }
+  }
+
+  if (webOrigin) {
+    out.push(webOrigin);
+
+    try {
+      const u = new URL(webOrigin);
+      if (u.hostname) {
+        out.push(`${u.protocol}//${u.hostname}:8012`);
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  out.push("http://127.0.0.1:8012");
+  out.push("http://localhost:8012");
+
+  return dedupeStrings(out);
+}
+
+function buildResolvedMediaCandidates(src: string): string[] {
+  const raw = safeStr(src);
+  if (!raw) return [];
+
+  if (
+    raw.startsWith("http://") ||
+    raw.startsWith("https://") ||
+    raw.startsWith("blob:") ||
+    raw.startsWith("data:")
+  ) {
+    return [raw];
+  }
+
+  const origins = getMediaOrigins();
+  const trimmed = raw.replace(/^\/+/, "");
+  const out: string[] = [];
+
+  if (raw.startsWith("/")) {
+    for (const origin of origins) out.push(`${origin}${raw}`);
+  } else {
+    for (const origin of origins) out.push(`${origin}/${trimmed}`);
+  }
+
+  out.push(raw);
+  return dedupeStrings(out);
+}
+
+function looksLikeImageKey(key: string, parentKey = ""): boolean {
+  const rawKey = safeStr(key).toLowerCase();
+  const rawParent = safeStr(parentKey).toLowerCase();
+
+  if (!rawKey) return false;
+
+  if (rawKey === "url" && rawParent) {
+    return looksLikeImageKey(rawParent);
+  }
+
+  return IMAGE_FIELD_NAMES.some(
+    (token) =>
+      rawKey === token ||
+      rawKey.endsWith(`_${token}`) ||
+      rawKey.endsWith(`${token}_url`) ||
+      rawKey.includes(token)
+  );
+}
+
+function looksLikeImageValue(value: any): boolean {
+  const raw = safeStr(value).toLowerCase();
+  if (!raw) return false;
+
+  return (
+    raw.startsWith("http://") ||
+    raw.startsWith("https://") ||
+    raw.startsWith("/") ||
+    /\.(png|jpe?g|webp|gif|bmp|svg|avif)(\?|#|$)/.test(raw) ||
+    raw.includes("/media/") ||
+    raw.includes("/images/") ||
+    raw.includes("/uploads/") ||
+    raw.includes("/files/") ||
+    raw.includes("/image/")
+  );
+}
+
+function getNestedImageCandidate(input: any): string {
+  const seen = new Set<any>();
+  const candidates: string[] = [];
+
+  function walk(value: any, depth: number, parentKey = "") {
+    if (value == null || depth > 6) return;
+
+    if (typeof value === "string") {
+      if (looksLikeImageKey(parentKey) && looksLikeImageValue(value)) {
+        candidates.push(value);
+      }
+      return;
+    }
+
+    if (typeof value !== "object") return;
+    if (seen.has(value)) return;
+    seen.add(value);
+
+    if (Array.isArray(value)) {
+      for (const item of value) walk(item, depth + 1, parentKey);
+      return;
+    }
+
+    for (const [key, child] of Object.entries(value)) {
+      if (typeof child === "string") {
+        if (
+          (looksLikeImageKey(key, parentKey) ||
+            (safeStr(key).toLowerCase() === "url" &&
+              looksLikeImageKey(parentKey))) &&
+          looksLikeImageValue(child)
+        ) {
+          candidates.push(child);
+        }
+      } else {
+        walk(child, depth + 1, key);
+      }
+    }
+  }
+
+  walk(input, 0);
+  return safeStr(candidates[0] || "");
+}
+
+function collectLikelyImageFields(row: any): string[] {
+  if (!row || typeof row !== "object") return [];
+
+  const values: string[] = [];
+  for (const field of IMAGE_FIELD_NAMES) {
+    const value = safeStr((row as any)?.[field]);
+    if (value) values.push(value);
+  }
+  return values;
+}
+
+function buildCommunityImageCandidates(
+  community: CommunityRow | null,
+  localUrl: string
+): string[] {
+  const rows = [
+    community,
+    community?.community,
+    community?.profile,
+    community?.marketplace,
+    community?.clan,
+    community?.meta,
+  ];
+
+  const raw = dedupeStrings([
+    safeStr(localUrl),
+    ...rows.flatMap((row) => collectLikelyImageFields(row)),
+    getNestedImageCandidate(community),
+  ]);
+
+  return dedupeStrings(raw.flatMap((item) => buildResolvedMediaCandidates(item)));
+}
+
+function communityName(row: CommunityRow | null | undefined): string {
+  return (
+    firstTruthy(
+      row?.marketplace_name,
+      row?.display_name,
+      row?.name,
+      row?.title
+    ) || "Selected community"
+  );
+}
+
+function communityDescription(row: CommunityRow | null | undefined): string {
+  return (
+    firstTruthy(
+      row?.marketplace_description,
+      row?.description,
+      "This selected community surface contains the community identity, stable tools, member rows, and support movement."
+    )
+  );
+}
+function communityIdentity(row: CommunityRow | null | undefined): string {
+  return (
+    firstTruthy(
+      row?.community_code,
+      row?.community_id,
+      row?.marketplace_id,
+      row?.gmfn_id,
+      row?.clan_code,
+      row?.id
+    ) || "Pending"
+  );
+}
+
+function communityTrustLabel(row: CommunityRow | null | undefined): string {
+  return (
+    firstTruthy(
+      row?.community_trust_band,
+      row?.trust_band,
+      row?.trust_class,
+      row?.reputation_band,
+      row?.status,
+      row?.community?.community_trust_band,
+      row?.community?.trust_band,
+      "Visible community"
+    )
+  );
 }
 
 function normalizeLoan(raw: any): LoanSupportItem | null {
@@ -605,20 +617,9 @@ function normalizeLoan(raw: any): LoanSupportItem | null {
 
   const src = raw?.item || raw?.loan || raw;
 
-  const id = positiveNumber(firstDefined(src?.id, src?.loan_id));
-  const clanId = positiveNumber(firstDefined(src?.clan_id, src?.community_id));
-
-  const role = firstTruthy(
-    src?.role,
-    src?.my_role,
-    src?.participant_role,
-    src?.is_guarantor ? "Guarantor" : "",
-    src?.is_borrower ? "Borrower" : ""
-  );
-
   return {
-    id: id || undefined,
-    clan_id: clanId || undefined,
+    id: positiveNumber(firstDefined(src?.id, src?.loan_id)) || undefined,
+    clan_id: positiveNumber(firstDefined(src?.clan_id, src?.community_id)) || undefined,
     title: firstTruthy(
       src?.title,
       src?.purpose,
@@ -646,7 +647,13 @@ function normalizeLoan(raw: any): LoanSupportItem | null {
       src?.guarantee_name
     ),
     created_at: firstTruthy(src?.created_at, src?.requested_at),
-    role,
+    role: firstTruthy(
+      src?.role,
+      src?.my_role,
+      src?.participant_role,
+      src?.is_guarantor ? "Guarantor" : "",
+      src?.is_borrower ? "Borrower" : ""
+    ),
   };
 }
 
@@ -667,43 +674,6 @@ function normalizeLoanSummary(raw: any): LoanDraftSummary | null {
     due_at: firstTruthy(src?.due_at),
     decision_at: firstTruthy(src?.decision_at),
   };
-}
-
-function normalizeLoanGuarantorRow(raw: any): LoanGuarantorRow | null {
-  if (!raw) return null;
-
-  const src = raw?.item || raw?.guarantor || raw;
-
-  return {
-    id: positiveNumber(firstDefined(src?.id)) || undefined,
-    loan_id: positiveNumber(firstDefined(src?.loan_id)) || undefined,
-    clan_id: positiveNumber(firstDefined(src?.clan_id)) || undefined,
-    guarantor_user_id:
-      positiveNumber(firstDefined(src?.guarantor_user_id)) || undefined,
-    pledge_amount: firstDefined(src?.pledge_amount),
-    status: firstTruthy(src?.status),
-    responded_at: firstTruthy(src?.responded_at),
-    is_locked: Boolean(src?.is_locked),
-    locked_amount: firstDefined(src?.locked_amount),
-    released_amount: firstDefined(src?.released_amount),
-  };
-}
-
-function getLoanAmountText(item: LoanSupportItem): string {
-  const value = safeStr(item?.amount);
-  const currency = safeStr(item?.currency);
-
-  if (!value && !currency) return "Amount pending";
-  if (value && currency) return `${value} ${currency}`;
-  return value || currency || "Amount pending";
-}
-
-function getLoanStatusText(item: LoanSupportItem): string {
-  return firstTruthy(item?.status, "Open");
-}
-
-function getLoanRoleText(item: LoanSupportItem): string {
-  return firstTruthy(item?.role, "Support");
 }
 
 function normalizeSuggestedSupporter(raw: any): SuggestedSupporter | null {
@@ -817,58 +787,414 @@ function computePerGuarantorPledge(total: number, count: number): string {
   return value.toFixed(2);
 }
 
-function guarantorKeyFromParts(userId?: number, gmfnId?: string): string {
-  if (Number(userId || 0) > 0) return `u-${Number(userId)}`;
-  return `g-${safeStr(gmfnId).toUpperCase()}`;
+function getLoanAmountText(item: LoanSupportItem): string {
+  const value = safeStr(item?.amount);
+  const currency = safeStr(item?.currency);
+
+  if (!value && !currency) return "Amount pending";
+  if (value && currency) return `${value} ${currency}`;
+  return value || currency || "Amount pending";
 }
 
+function pageCard(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    borderRadius: 24,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 20,
+    boxShadow:
+      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
+    overflow: "hidden",
+  };
+}
+
+function softCard(bg = "#F8FBFF"): React.CSSProperties {
+  return {
+    borderRadius: 18,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 16,
+  };
+}
+
+function innerCard(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 14,
+  };
+}
+
+function sectionLabel(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#5D7389",
+    fontWeight: 900,
+    letterSpacing: 0.35,
+    textTransform: "uppercase" as const,
+  };
+}
+
+function badge(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    minHeight: 30,
+    borderRadius: 999,
+    padding: "6px 10px",
+    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
+    color: primary ? "#0B63D1" : "#51657A",
+    fontSize: 12,
+    fontWeight: 900,
+    whiteSpace: "nowrap" as const,
+  };
+}
+
+function actionBtn(
+  kind: "primary" | "secondary" | "soft" = "secondary",
+  disabled = false
+): React.CSSProperties {
+  if (kind === "primary") {
+    return {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 42,
+      padding: "10px 14px",
+      borderRadius: 14,
+      border: "none",
+      background: disabled ? "#CBD5E1" : "#0B63D1",
+      color: "#FFFFFF",
+      fontWeight: 900,
+      fontSize: 14,
+      textDecoration: "none",
+      cursor: disabled ? "not-allowed" : "pointer",
+      whiteSpace: "nowrap",
+      opacity: disabled ? 0.86 : 1,
+    };
+  }
+
+  if (kind === "soft") {
+    return {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 38,
+      padding: "8px 12px",
+      borderRadius: 12,
+      border: "1px solid rgba(11,31,51,0.08)",
+      background: "#F8FBFF",
+      color: disabled ? "#94A3B8" : "#24415C",
+      fontWeight: 800,
+      fontSize: 13,
+      textDecoration: "none",
+      cursor: disabled ? "not-allowed" : "pointer",
+      whiteSpace: "nowrap",
+      opacity: disabled ? 0.86 : 1,
+    };
+  }
+
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 42,
+    padding: "10px 14px",
+    borderRadius: 14,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#FFFFFF",
+    color: disabled ? "#94A3B8" : "#0B1F33",
+    fontWeight: 800,
+    fontSize: 14,
+    textDecoration: "none",
+    cursor: disabled ? "not-allowed" : "pointer",
+    whiteSpace: "nowrap",
+    opacity: disabled ? 0.86 : 1,
+  };
+}
+
+function inputStyle(): React.CSSProperties {
+  return {
+    width: "100%",
+    minHeight: 44,
+    borderRadius: 14,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#FFFFFF",
+    padding: "11px 12px",
+    fontSize: 14,
+    color: "#0B1F33",
+    outline: "none",
+    boxSizing: "border-box" as const,
+  };
+}
+
+function textAreaStyle(): React.CSSProperties {
+  return {
+    ...inputStyle(),
+    minHeight: 96,
+    resize: "vertical" as const,
+    lineHeight: 1.6,
+  };
+}
+
+function statTile(): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: "#FFFFFF",
+    padding: 14,
+  };
+}
+
+function noticeCard(tone: NoticeTone): React.CSSProperties {
+  return {
+    ...softCard(tone === "success" ? "#F3FBF5" : "#FEF2F2"),
+    color: tone === "success" ? "#166534" : "#991B1B",
+    border:
+      tone === "success"
+        ? "1px solid rgba(34,197,94,0.16)"
+        : "1px solid rgba(239,68,68,0.16)",
+    fontWeight: 800,
+  };
+}
+
+function helperText(): React.CSSProperties {
+  return {
+    color: "#5F7287",
+    fontSize: 14,
+    lineHeight: 1.75,
+  };
+}
+
+function readLocalString(key: string): string {
+  try {
+    if (typeof window === "undefined") return "";
+    return window.localStorage.getItem(key) || "";
+  } catch {
+    return "";
+  }
+}
+
+function writeLocalString(key: string, value: string) {
+  try {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(key, value);
+  } catch {
+    // ignore
+  }
+}
+
+function removeLocal(key: string) {
+  try {
+    if (typeof window === "undefined") return;
+    window.localStorage.removeItem(key);
+  } catch {
+    // ignore
+  }
+}
+
+function readLocalJSON<T>(key: string, fallback: T): T {
+  try {
+    if (typeof window === "undefined") return fallback;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeLocalJSON(key: string, value: any) {
+  try {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore
+  }
+}
+
+function communityPictureStorageKey(communityId: number): string {
+  return `gmfn.marketplace.communityPicture.${communityId}`;
+}
+
+function communitySectionsStorageKey(communityId: number): string {
+  return `gmfn.marketplace.sections.${communityId}`;
+}
+
+function AuthResolvedImage(props: {
+  candidates: string[];
+  alt: string;
+  clanId?: number;
+  refreshSeed: number;
+  style: React.CSSProperties;
+  fallback: React.ReactNode;
+}) {
+  const [resolvedSrc, setResolvedSrc] = useState("");
+  const candidateKey = useMemo(
+    () => `${props.refreshSeed}::${props.candidates.join("|")}`,
+    [props.refreshSeed, props.candidates]
+  );
+
+  useEffect(() => {
+    let alive = true;
+    let objectUrl = "";
+
+    async function preloadDirect(url: string): Promise<boolean> {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+        img.src = url;
+      });
+    }
+
+    async function run() {
+      setResolvedSrc("");
+
+      const token = getAccessToken();
+      const uniqueCandidates = dedupeStrings(props.candidates);
+
+      for (const candidate of uniqueCandidates) {
+        const url = safeStr(candidate);
+        if (!url) continue;
+
+        try {
+          const headers: Record<string, string> = {};
+          if (token) headers["Authorization"] = `Bearer ${token}`;
+          if (positiveNumber(props.clanId)) {
+            headers["X-Clan-Id"] = String(props.clanId);
+          }
+
+          const res = await fetch(url, {
+            method: "GET",
+            headers,
+            credentials: "include",
+            cache: "no-store",
+          });
+
+          if (res.ok) {
+            const contentType = String(
+              res.headers.get("content-type") || ""
+            ).toLowerCase();
+
+            if (
+              !contentType ||
+              contentType.startsWith("image/") ||
+              contentType.includes("application/octet-stream")
+            ) {
+              const blob = await res.blob();
+
+              if (blob && blob.size > 0) {
+                const nextObjectUrl = URL.createObjectURL(blob);
+
+                if (!alive) {
+                  URL.revokeObjectURL(nextObjectUrl);
+                  return;
+                }
+
+                if (objectUrl) URL.revokeObjectURL(objectUrl);
+                objectUrl = nextObjectUrl;
+                setResolvedSrc(nextObjectUrl);
+                return;
+              }
+            }
+          }
+        } catch {
+          // continue
+        }
+
+        try {
+          const ok = await preloadDirect(url);
+          if (ok) {
+            if (!alive) return;
+            setResolvedSrc(url);
+            return;
+          }
+        } catch {
+          // continue
+        }
+      }
+    }
+
+    void run();
+
+    return () => {
+      alive = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [candidateKey, props.clanId]);
+
+  if (resolvedSrc) {
+    return <img src={resolvedSrc} alt={props.alt} style={props.style} />;
+  }
+
+  return <>{props.fallback}</>;
+}
 export default function MarketplacePage() {
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 980;
   });
 
-  const [me, setMe] = useState<any>(null);
-  const [selectedClan, setSelectedClan] = useState<any>(null);
-  const [members, setMembers] = useState<ClanMember[]>([]);
-  const [shops, setShops] = useState<MarketplaceShop[]>([]);
-  const [poolInfo, setPoolInfo] = useState<any>(null);
-  const [inviteLink, setInviteLink] = useState<string>("");
-  const [loans, setLoans] = useState<LoanSupportItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<{ tone: NoticeTone; text: string } | null>(
     null
   );
 
+  const [me, setMe] = useState<any>(null);
+  const [selectedCommunity, setSelectedCommunity] = useState<CommunityRow | null>(
+    null
+  );
+  const [members, setMembers] = useState<ClanMember[]>([]);
+  const [shops, setShops] = useState<MarketplaceShop[]>([]);
+  const [poolInfo, setPoolInfo] = useState<any>(null);
+  const [inviteLink, setInviteLink] = useState<string>("");
+  const [loans, setLoans] = useState<LoanSupportItem[]>([]);
+  const [moneySurface, setMoneySurface] = useState<CommunityMoneySurface | null>(
+    null
+  );
+
+  const [communityPictureUrl, setCommunityPictureUrl] = useState("");
+  const [communityPictureFileInputKey, setCommunityPictureFileInputKey] =
+    useState(0);
+  const [communityPictureRefreshSeed, setCommunityPictureRefreshSeed] =
+    useState(0);
+  const [uploadingCommunityPicture, setUploadingCommunityPicture] =
+    useState(false);
+  const [removingCommunityPicture, setRemovingCommunityPicture] =
+    useState(false);
+
   const [loanAmount, setLoanAmount] = useState("");
   const [loanDurationDays, setLoanDurationDays] = useState("");
   const [loanPurpose, setLoanPurpose] = useState("");
-  const [selectedGuarantors, setSelectedGuarantors] = useState<GuarantorPick[]>([]);
+  const [selectedSupporters, setSelectedSupporters] = useState<SuggestedSupporter[]>(
+    []
+  );
   const [suggestedSupporters, setSuggestedSupporters] = useState<SuggestedSupporter[]>(
     []
   );
   const [loanDraftId, setLoanDraftId] = useState<number>(0);
-  const [loanDraftSummary, setLoanDraftSummary] = useState<LoanDraftSummary | null>(
-    null
-  );
+  const [loanDraftSummary, setLoanDraftSummary] =
+    useState<LoanDraftSummary | null>(null);
   const [loanSuggestionRaw, setLoanSuggestionRaw] = useState<any>(null);
-  const [loanGuarantorRows, setLoanGuarantorRows] = useState<LoanGuarantorRow[]>([]);
-  const [loadingLoanGuarantorRows, setLoadingLoanGuarantorRows] = useState(false);
-  const [lastApprovalNoticeLoanId, setLastApprovalNoticeLoanId] = useState(0);
 
   const [startingLoanDraft, setStartingLoanDraft] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-  const [sendingGuarantorRequests, setSendingGuarantorRequests] = useState(false);
+  const [sendingGuarantorRequests, setSendingGuarantorRequests] =
+    useState(false);
   const [cancellingLoanDraft, setCancellingLoanDraft] = useState(false);
 
-  const [collapsed, setCollapsed] = useState<Record<CollapseKey, boolean>>({
-    profile: false,
-    tools: true,
-    members: false,
-    loan: false,
-  });
+  const [sectionsOpen, setSectionsOpen] =
+    useState<SectionState>(DEFAULT_SECTION_STATE);
 
   const selectedClanId = Number(getSelectedClanId() || 0);
+  const currentGmfnId = safeStr(me?.gmfn_id || "");
+
+  const activeCommunityId = useMemo(() => {
+    return positiveNumber(selectedCommunity?.id || selectedCommunity?.clan_id);
+  }, [selectedCommunity]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -890,468 +1216,328 @@ export default function MarketplacePage() {
       setNotice(null);
     }, 2800);
 
-    return () => {
-      window.clearTimeout(timer);
-    };
+    return () => window.clearTimeout(timer);
   }, [notice]);
 
-  useEffect(() => {
-    let alive = true;
+  function showNotice(tone: NoticeTone, text: string) {
+    setNotice({ tone, text });
+  }
 
-    (async () => {
-      setLoading(true);
+  function toggleSection(key: keyof SectionState) {
+    setSectionsOpen((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  }
 
-      try {
-        const [meRes, currentClanRes, clansRes] = await Promise.all([
-          getMe().catch(() => null),
-          getCurrentClan().catch(() => null),
-          listMyClans().catch(() => ({ items: [] })),
-        ]);
+  async function loadLoanDraftContext(loanId: number, communityId: number) {
+    const [summaryRes, suggestionsRes] = await Promise.all([
+      getLoanSummary(loanId).catch(() => null),
+      getLoanGuarantorSuggestions(loanId, {
+        clan_id: communityId,
+        limit: 8,
+      }).catch(() => null),
+    ]);
 
-        if (!alive) return;
+    const normalizedSummary = normalizeLoanSummary(summaryRes);
+    const normalizedSuggestions = extractSuggestedSupporters(suggestionsRes);
 
-        const clanRows = Array.isArray(clansRes)
-          ? clansRes
-          : Array.isArray(clansRes?.items)
-          ? clansRes.items
-          : [];
+    setLoanDraftId(loanId);
+    setLoanDraftSummary(normalizedSummary);
+    setLoanSuggestionRaw(suggestionsRes);
+    setSuggestedSupporters(normalizedSuggestions);
 
-        const resolvedClan = buildSelectedCommunity(currentClanRes, clanRows);
-
-        setMe(meRes || null);
-        setSelectedClan(getClanRecordId(resolvedClan) ? resolvedClan : null);
-      } finally {
-        if (alive) {
-          setLoading(false);
-        }
-      }
-    })();
-
-    return () => {
-      alive = false;
+    return {
+      summary: normalizedSummary,
+      suggestions: normalizedSuggestions,
+      suggestionMessage: extractSuggestionMessage(suggestionsRes),
     };
-  }, []);
+  }
 
-  const communityId = useMemo(() => {
-    return Number(getClanRecordId(selectedClan) || selectedClanId || 0);
-  }, [selectedClan, selectedClanId]);
-
-  function clearLoanDraftState(resetInputs = false) {
+  function resetLoanTaskState(opts?: { clearInputs?: boolean }) {
+    setSelectedSupporters([]);
+    setSuggestedSupporters([]);
     setLoanDraftId(0);
     setLoanDraftSummary(null);
     setLoanSuggestionRaw(null);
-    setLoanGuarantorRows([]);
-    setSuggestedSupporters([]);
-    setSelectedGuarantors([]);
-    setLastApprovalNoticeLoanId(0);
 
-    if (resetInputs) {
+    if (opts?.clearInputs) {
       setLoanAmount("");
       setLoanDurationDays("");
       setLoanPurpose("");
     }
   }
 
-  async function reloadLoansForCommunity(currentCommunityId: number) {
-    const loansRes = await listMyLoans().catch(() => []);
-    const loanRows = Array.isArray(loansRes)
-      ? loansRes
-      : Array.isArray((loansRes as any)?.items)
-      ? (loansRes as any).items
-      : [];
-
-    const normalizedLoans = loanRows
-      .map((row: any) => normalizeLoan(row))
-      .filter(Boolean) as LoanSupportItem[];
-
-    const filteredLoans =
-      normalizedLoans.filter((item) => {
-        const loanClanId = Number(item?.clan_id || 0);
-        return loanClanId <= 0 || loanClanId === currentCommunityId;
-      }) || [];
-
-    setLoans(filteredLoans);
-  }
-
-  async function loadLoanDraftContext(loanId: number, currentCommunityId: number) {
-    setLoadingLoanGuarantorRows(true);
+  async function loadPage() {
+    setLoading(true);
 
     try {
-      const [summaryRes, suggestionsRes, guarantorsRes] = await Promise.all([
-        getLoanSummary(loanId).catch(() => null),
-        getLoanGuarantorSuggestions(loanId, {
-          clan_id: currentCommunityId,
-          limit: 8,
-        }).catch(() => null),
-        getLoanGuarantors(loanId, {
-          clan_id: currentCommunityId,
-        }).catch(() => ({ items: [] })),
+      const [meRes, currentClanRes, clanListRes] = await Promise.all([
+        getMe().catch(() => null),
+        getCurrentClan().catch(() => null),
+        listMyClans().catch(() => ({ items: [] })),
       ]);
 
-      const normalizedSummary = normalizeLoanSummary(summaryRes);
-      const normalizedSuggestions = extractSuggestedSupporters(suggestionsRes);
+      const clanRows = rowsOf<any>(clanListRes);
+      const resolvedCommunity = buildSelectedCommunity(currentClanRes, clanRows);
+      const currentCommunityId =
+        positiveNumber(resolvedCommunity?.id || resolvedCommunity?.clan_id) ||
+        selectedClanId;
 
-      const guarantorRows = Array.isArray(guarantorsRes)
-        ? guarantorsRes
-        : Array.isArray((guarantorsRes as any)?.items)
-        ? (guarantorsRes as any).items
-        : [];
+      const [membersRes, shopsRes, poolRes, inviteRes, loansRes] =
+        await Promise.all([
+          currentCommunityId
+            ? listClanMembers(currentCommunityId).catch(() => ({ items: [] }))
+            : Promise.resolve({ items: [] }),
+          currentCommunityId
+            ? getMarketplaceShops({
+                clan_id: currentCommunityId,
+                only_active: true,
+                limit: 200,
+              }).catch(() => ({ items: [] }))
+            : Promise.resolve({ items: [] }),
+          getPoolMe("NGN", 20).catch(() => null),
+          currentCommunityId
+            ? getClanInviteLink(currentCommunityId).catch(() => null)
+            : Promise.resolve(null),
+          listMyLoans().catch(() => []),
+        ]);
 
-      const normalizedGuarantors = guarantorRows
-        .map((row: any) => normalizeLoanGuarantorRow(row))
-        .filter(Boolean) as LoanGuarantorRow[];
+      const memberRows = rowsOf<ClanMember>(membersRes);
+      const shopRows = rowsOf<MarketplaceShop>(shopsRes);
+      const normalizedLoans = rowsOf<any>(loansRes)
+        .map((row) => normalizeLoan(row))
+        .filter(Boolean) as LoanSupportItem[];
 
-      setLoanDraftId(loanId);
-      setLoanDraftSummary(normalizedSummary);
-      setLoanSuggestionRaw(suggestionsRes);
-      setSuggestedSupporters(normalizedSuggestions);
-      setLoanGuarantorRows(normalizedGuarantors);
+      const filteredLoans = normalizedLoans.filter((item) => {
+        const loanClanId = Number(item?.clan_id || 0);
+        return loanClanId <= 0 || loanClanId === currentCommunityId;
+      });
 
-      return {
-        summary: normalizedSummary,
-        suggestions: normalizedSuggestions,
-        guarantors: normalizedGuarantors,
-        suggestionMessage: extractSuggestionMessage(suggestionsRes),
-      };
+      setMe(meRes || null);
+      setSelectedCommunity(resolvedCommunity);
+      setMembers(memberRows);
+      setShops(shopRows);
+      setPoolInfo(poolRes);
+      setInviteLink(getInviteUrl(inviteRes));
+      setLoans(filteredLoans);
     } finally {
-      setLoadingLoanGuarantorRows(false);
+      setLoading(false);
     }
   }
 
   useEffect(() => {
+    void loadPage();
+  }, [selectedClanId]);
+
+  useEffect(() => {
     let alive = true;
 
-    if (!communityId) {
-      setMembers([]);
-      setShops([]);
-      setPoolInfo(null);
-      setInviteLink("");
-      setLoans([]);
-      return;
+    if (!activeCommunityId || !currentGmfnId) {
+      setMoneySurface(null);
+      return () => {
+        alive = false;
+      };
     }
 
     (async () => {
-      const [membersRes, shopsRes, poolRes, inviteRes, loansRes] = await Promise.all([
-        listClanMembers(communityId).catch(() => ({ items: [] })),
-        getMarketplaceShops({ clan_id: communityId, limit: 200 }).catch(() => ({
-          items: [],
-        })),
-        getPoolMe("NGN", 20).catch(() => null),
-        getClanInviteLink(communityId).catch(() => null),
-        listMyLoans().catch(() => []),
-      ]);
+      const surface = await getCommunityMoneySurface(
+        activeCommunityId,
+        currentGmfnId
+      ).catch(() => null);
 
       if (!alive) return;
-
-      const memberRows: ClanMember[] = Array.isArray(membersRes)
-        ? membersRes
-        : Array.isArray(membersRes?.items)
-        ? membersRes.items
-        : [];
-
-      const shopRows: MarketplaceShop[] = Array.isArray(shopsRes)
-        ? shopsRes
-        : Array.isArray(shopsRes?.items)
-        ? shopsRes.items
-        : [];
-
-      const loanRows = Array.isArray(loansRes)
-        ? loansRes
-        : Array.isArray((loansRes as any)?.items)
-        ? (loansRes as any).items
-        : [];
-
-      const normalizedLoans = loanRows
-        .map((row: any) => normalizeLoan(row))
-        .filter(Boolean) as LoanSupportItem[];
-
-      const filteredLoans =
-        normalizedLoans.filter((item) => {
-          const loanClanId = Number(item?.clan_id || 0);
-          return loanClanId <= 0 || loanClanId === communityId;
-        }) || [];
-
-      setMembers(memberRows);
-      setShops(shopRows);
-      setPoolInfo(poolRes);
-      setLoans(filteredLoans);
-
-      const resolvedInviteLink = firstTruthy(
-        inviteRes?.url,
-        inviteRes?.invite_url,
-        inviteRes?.link,
-        inviteRes?.invite_link
-      );
-
-      setInviteLink(resolvedInviteLink);
+      setMoneySurface(surface);
     })();
 
     return () => {
       alive = false;
     };
-  }, [communityId]);
+  }, [activeCommunityId, currentGmfnId]);
 
   useEffect(() => {
-    const status = safeStr(loanDraftSummary?.status).toLowerCase();
-    const inLoanMode = Boolean(loanDraftId && !isTerminalLoanStatus(status));
-
-    if (inLoanMode) {
-      setCollapsed((prev) => ({
-        ...prev,
-        profile: true,
-        tools: true,
-        members: false,
-        loan: false,
-      }));
+    if (!activeCommunityId) {
+      setCommunityPictureUrl("");
+      setSectionsOpen(DEFAULT_SECTION_STATE);
+      return;
     }
-  }, [loanDraftId, loanDraftSummary?.status]);
+
+    const savedPicture = readLocalString(
+      communityPictureStorageKey(activeCommunityId)
+    );
+    const savedSections = readLocalJSON<SectionState | null>(
+      communitySectionsStorageKey(activeCommunityId),
+      null
+    );
+
+    setCommunityPictureUrl(savedPicture || "");
+    setSectionsOpen(savedSections || DEFAULT_SECTION_STATE);
+  }, [activeCommunityId]);
 
   useEffect(() => {
-    const status = safeStr(loanDraftSummary?.status).toLowerCase();
-
-    if (!loanDraftId || !communityId) return;
-    if (isTerminalLoanStatus(status)) return;
-
-    const timer = window.setInterval(() => {
-      (async () => {
-        try {
-          await loadLoanDraftContext(loanDraftId, communityId);
-          await reloadLoansForCommunity(communityId);
-        } catch {
-          // silent background refresh
-        }
-      })();
-    }, 10000);
-
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [loanDraftId, loanDraftSummary?.status, communityId]);
+    if (!activeCommunityId) return;
+    writeLocalJSON(communitySectionsStorageKey(activeCommunityId), sectionsOpen);
+  }, [sectionsOpen, activeCommunityId]);
 
   useEffect(() => {
-    const status = safeStr(loanDraftSummary?.status).toLowerCase();
+    if (!loanDraftId) return;
+    setSectionsOpen((prev) => ({
+      ...prev,
+      members: true,
+      support: true,
+    }));
+  }, [loanDraftId]);
 
-    if (
-      loanDraftId &&
-      status === "approved" &&
-      lastApprovalNoticeLoanId !== loanDraftId
-    ) {
-      showNotice(
-        "success",
-        "Loan approved successfully. You can continue from Loans and Support."
-      );
-      setLastApprovalNoticeLoanId(loanDraftId);
-    }
-  }, [loanDraftId, loanDraftSummary?.status, lastApprovalNoticeLoanId]);
+  const memberName = useMemo(() => {
+    return (
+      firstTruthy(
+        me?.display_name,
+        me?.nickname,
+        me?.name,
+        me?.first_name,
+        me?.email
+      ) || "Member"
+    );
+  }, [me]);
 
-  const myUserId = positiveNumber(me?.id);
-  const myGmfnId = safeStr(me?.gmfn_id || "").toUpperCase();
+  const gmfnId = useMemo(() => {
+    return firstTruthy(me?.gmfn_id, "Pending");
+  }, [me]);
 
-  const communityName = getCommunityName(selectedClan);
-  const communityDescription = getCommunityDescription(selectedClan);
-  const communityGlobalId = getCommunityGlobalId(selectedClan);
-  const communityTrust = getCommunityTrustLabel(selectedClan);
-  const communityImage = getCommunityImage(selectedClan);
-  const resolvedCommunityImage = resolveMediaSrc(communityImage);
   const poolAmount = getPoolAmountText(poolInfo);
   const poolCurrency = getPoolCurrency(poolInfo);
+  const visiblePoolAmount = safeStr(moneySurface?.poolAmount || poolAmount || "—");
+  const visiblePoolCurrency = safeStr(
+    moneySurface?.poolCurrency || poolCurrency || "NGN"
+  );
+
+  const communityImageCandidates = useMemo(() => {
+    return buildCommunityImageCandidates(selectedCommunity, communityPictureUrl);
+  }, [selectedCommunity, communityPictureUrl]);
+
+  const hasCommunityPicture = communityImageCandidates.length > 0;
+
+  const suggestedSupporterMap = useMemo(() => {
+    return new Map<string, SuggestedSupporter>(
+      suggestedSupporters.map((item) => [item.key, item])
+    );
+  }, [suggestedSupporters]);
+
+  const selectedSupporterKeys = useMemo(() => {
+    return new Set(selectedSupporters.map((item) => item.key));
+  }, [selectedSupporters]);
 
   const memberRows = useMemo(() => {
     const rows = members.map((member) => {
       const shop = getShopForMember(member, shops);
-      const gmfnId = getMemberGmfnId(member);
-      const userId = getMemberUserId(member);
-      const memberName = getMemberName(member);
-      const shopName = firstTruthy(shop?.name, "No visible shop yet");
-
-      const isSelf = Boolean(
-        (myUserId > 0 && userId > 0 && myUserId === userId) ||
-          (myGmfnId &&
-            gmfnId &&
-            myGmfnId === safeStr(gmfnId).toUpperCase())
-      );
-
-      const guarantorKey = guarantorKeyFromParts(userId, gmfnId);
+      const gmfn = getMemberGmfnId(member);
+      const userId = positiveNumber(member?.user_id || member?.id);
+      const memberDisplayName = getMemberName(member);
+      const supportKey =
+        userId > 0 ? `u-${userId}` : gmfn ? `g-${gmfn.toUpperCase()}` : "";
 
       return {
         member,
-        memberName,
-        gmfnId,
+        name: memberDisplayName,
+        gmfnId: gmfn,
         userId,
-        isSelf,
-        guarantorKey,
-        shopName,
-        shop,
-        shopTo: gmfnId ? `/app/shop/${encodeURIComponent(gmfnId)}` : "",
+        supportKey,
+        shopName: firstTruthy(shop?.name, "No visible shop yet"),
+        shopTo: gmfn ? `/app/shop/${encodeURIComponent(gmfn)}` : "",
       };
     });
 
-    rows.sort((a, b) => a.memberName.localeCompare(b.memberName));
+    rows.sort((a, b) => a.name.localeCompare(b.name));
     return rows;
-  }, [members, shops, myUserId, myGmfnId]);
+  }, [members, shops]);
 
   const activeLoanCount = useMemo(() => {
     return loans.filter((item) => {
       const status = safeStr(item?.status).toLowerCase();
-      return status !== "closed" && status !== "completed" && status !== "repaid";
+      return !FINAL_LOAN_STATUSES.has(status);
     }).length;
   }, [loans]);
 
-  const selectedGuarantorKeys = useMemo(() => {
-    return new Set(selectedGuarantors.map((item) => item.key));
-  }, [selectedGuarantors]);
+  async function handleUploadCommunityPicture(file: File | null) {
+    if (!file) return;
 
-  const suggestedSupporterKeys = useMemo(() => {
-    return new Set(suggestedSupporters.map((item) => item.key));
-  }, [suggestedSupporters]);
-
-  const memberNameByUserId = useMemo(() => {
-    const map = new Map<number, string>();
-
-    memberRows.forEach((row) => {
-      if (row.userId > 0) {
-        map.set(row.userId, row.memberName);
-      }
-    });
-
-    return map;
-  }, [memberRows]);
-
-  const requiredGuarantorCount = positiveNumber(
-    loanDraftSummary?.guarantors_required
-  );
-
-  const selectableGuarantorCount = useMemo(() => {
-    return memberRows.filter((row) => !row.isSelf && !!row.userId).length;
-  }, [memberRows]);
-
-  const remainingGuarantorsNeeded = useMemo(() => {
-    if (!requiredGuarantorCount) return 0;
-    return Math.max(requiredGuarantorCount - selectedGuarantors.length, 0);
-  }, [requiredGuarantorCount, selectedGuarantors.length]);
-
-  const canSendGuarantorRequests = useMemo(() => {
-    const status = safeStr(loanDraftSummary?.status).toLowerCase();
-
-    if (!loanDraftId) return false;
-    if (status === "approved") return false;
-    if (selectedGuarantors.length === 0) return false;
-    if (requiredGuarantorCount > 0 && remainingGuarantorsNeeded > 0) return false;
-    if (suggestedSupporters.length === 0) return false;
-
-    const unfitSelected = selectedGuarantors.filter(
-      (item) => !suggestedSupporterKeys.has(item.key)
-    );
-
-    return unfitSelected.length === 0;
-  }, [
-    loanDraftId,
-    loanDraftSummary?.status,
-    selectedGuarantors,
-    requiredGuarantorCount,
-    remainingGuarantorsNeeded,
-    suggestedSupporters.length,
-    suggestedSupporterKeys,
-  ]);
-
-  const sendButtonLabel = useMemo(() => {
-    if (sendingGuarantorRequests) return "Sending...";
-    if (!loanDraftId) return "Send Guarantor Requests";
-    if (safeStr(loanDraftSummary?.status).toLowerCase() === "approved") {
-      return "Already Approved";
-    }
-    if (requiredGuarantorCount > 0 && remainingGuarantorsNeeded > 0) {
-      return `Need ${remainingGuarantorsNeeded} more guarantor${
-        remainingGuarantorsNeeded === 1 ? "" : "s"
-      }`;
-    }
-    if (selectedGuarantors.length === 0) {
-      return "Choose Guarantors";
-    }
-    if (suggestedSupporters.length === 0) {
-      return "No Fit Guarantor Yet";
-    }
-    return "Send Guarantor Requests";
-  }, [
-    sendingGuarantorRequests,
-    loanDraftId,
-    loanDraftSummary?.status,
-    requiredGuarantorCount,
-    remainingGuarantorsNeeded,
-    selectedGuarantors.length,
-    suggestedSupporters.length,
-  ]);
-
-  const selectionProgressMessage = useMemo(() => {
-    const status = safeStr(loanDraftSummary?.status).toLowerCase();
-
-    if (!loanDraftId || isTerminalLoanStatus(status)) return "";
-
-    if (requiredGuarantorCount <= 0) {
-      return "This loan draft does not currently need guarantors.";
+    if (!activeCommunityId) {
+      showNotice("error", "Select a community first.");
+      return;
     }
 
-    if (selectedGuarantors.length === 0) {
-      return `You need ${requiredGuarantorCount} guarantor${
-        requiredGuarantorCount === 1 ? "" : "s"
-      }. Select people below or cancel this loan draft.`;
-    }
+    setUploadingCommunityPicture(true);
 
-    if (remainingGuarantorsNeeded > 0) {
-      const base = `You selected ${selectedGuarantors.length} of ${requiredGuarantorCount} required guarantor${
-        requiredGuarantorCount === 1 ? "" : "s"
-      }. ${remainingGuarantorsNeeded} more remaining.`;
+    try {
+      const uploadRes = await uploadCommunityProfileImageFile(file, activeCommunityId);
+      const imageUrl = firstTruthy(
+        uploadRes?.image_url,
+        uploadRes?.profile_image_url,
+        uploadRes?.community_image_url,
+        uploadRes?.url,
+        uploadRes?.file_url,
+        uploadRes?.path,
+        uploadRes?.item?.image_url,
+        uploadRes?.item?.url,
+        uploadRes?.data?.image_url,
+        uploadRes?.data?.url
+      );
 
-      if (selectableGuarantorCount < requiredGuarantorCount) {
-        return `${base} This community currently shows only ${selectableGuarantorCount} selectable guarantor${
-          selectableGuarantorCount === 1 ? "" : "s"
-        } for this requirement. Select more when available or cancel the loan draft.`;
+      if (!imageUrl) {
+        throw new Error(
+          "Upload completed, but the system did not return a usable image link."
+        );
       }
 
-      return `${base} Select more people or cancel the loan draft.`;
+      try {
+        await (setCommunityProfileImage as any)({
+          clan_id: activeCommunityId,
+          image_url: imageUrl,
+        });
+      } catch {
+        await (setCommunityProfileImage as any)(activeCommunityId, imageUrl);
+      }
+
+      setCommunityPictureUrl(imageUrl);
+      writeLocalString(communityPictureStorageKey(activeCommunityId), imageUrl);
+      setCommunityPictureRefreshSeed((x) => x + 1);
+      await loadPage();
+      showNotice("success", "Community picture updated.");
+    } catch (err: any) {
+      showNotice(
+        "error",
+        safeStr(err?.message) || "Community picture upload failed."
+      );
+    } finally {
+      setUploadingCommunityPicture(false);
+      setCommunityPictureFileInputKey((x) => x + 1);
     }
-
-    return `You have selected all ${requiredGuarantorCount} required guarantor${
-      requiredGuarantorCount === 1 ? "" : "s"
-    }. You can now send the guarantor requests.`;
-  }, [
-    loanDraftId,
-    loanDraftSummary?.status,
-    requiredGuarantorCount,
-    selectedGuarantors.length,
-    remainingGuarantorsNeeded,
-    selectableGuarantorCount,
-  ]);
-
-  const loanGuideMessage = useMemo(() => {
-    const status = safeStr(loanDraftSummary?.status).toLowerCase();
-    const messageFromBackend = extractSuggestionMessage(loanSuggestionRaw);
-
-    if (messageFromBackend) return messageFromBackend;
-
-    if (!loanDraftId) {
-      return "Start with amount and duration. Then the app will create the loan draft, calculate whether guarantors are needed, and guide you to the next move.";
-    }
-
-    if (status === "approved") {
-      return "This request has already been covered inside your current support path. No guarantor action is needed now.";
-    }
-
-    if (requiredGuarantorCount > 0) {
-      return `This loan draft needs ${requiredGuarantorCount} guarantor${
-        requiredGuarantorCount === 1 ? "" : "s"
-      }. Use the fit suggestions and the member rows below before sending requests.`;
-    }
-
-    return "Use the member rows and the support tools to continue the next step.";
-  }, [loanDraftId, loanDraftSummary, loanSuggestionRaw, requiredGuarantorCount]);
-
-  function showNotice(tone: NoticeTone, text: string) {
-    setNotice({ tone, text });
   }
 
-  function toggleSection(key: CollapseKey) {
-    setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
+  async function handleRemoveCommunityPicture() {
+    if (!activeCommunityId) {
+      showNotice("error", "Select a community first.");
+      return;
+    }
+
+    setRemovingCommunityPicture(true);
+
+    try {
+      await removeCommunityProfileImage(activeCommunityId);
+      setCommunityPictureUrl("");
+      removeLocal(communityPictureStorageKey(activeCommunityId));
+      setCommunityPictureRefreshSeed((x) => x + 1);
+      await loadPage();
+      showNotice("success", "Community picture removed.");
+    } catch (err: any) {
+      showNotice(
+        "error",
+        safeStr(err?.message) || "Community picture could not be removed."
+      );
+    } finally {
+      setRemovingCommunityPicture(false);
+      setCommunityPictureFileInputKey((x) => x + 1);
+    }
   }
 
   function copyInviteLink() {
@@ -1364,80 +1550,20 @@ export default function MarketplacePage() {
     showNotice("success", "Invite link copied.");
   }
 
-  function copyTrustLink() {
-    const pageUrl = getCurrentPageUrl();
-    if (!pageUrl) {
-      showNotice("error", "Community link is not available.");
-      return;
-    }
-
-    safeCopy(pageUrl);
-    showNotice("success", "Community trust link copied.");
-  }
-
   function copyCommunityId() {
-    if (!communityGlobalId) {
+    const id = communityIdentity(selectedCommunity);
+    if (!id || id === "Pending") {
       showNotice("error", "Community ID is not available.");
       return;
     }
 
-    safeCopy(communityGlobalId);
+    safeCopy(id);
     showNotice("success", "Community ID copied.");
   }
 
-  function toggleGuarantorFromRow(row: {
-    guarantorKey: string;
-    userId: number;
-    gmfnId: string;
-    memberName: string;
-    isSelf: boolean;
-  }) {
-    if (row.isSelf) return;
-    if (!row.userId && !row.gmfnId) return;
-
-    setSelectedGuarantors((prev) => {
-      const exists = prev.some((item) => item.key === row.guarantorKey);
-      if (exists) {
-        return prev.filter((item) => item.key !== row.guarantorKey);
-      }
-
-      return [
-        ...prev,
-        {
-          key: row.guarantorKey,
-          userId: row.userId || undefined,
-          gmfnId: row.gmfnId || undefined,
-          name: row.memberName,
-        },
-      ];
-    });
-  }
-
-  function addSuggestedSupporter(item: SuggestedSupporter) {
-    setSelectedGuarantors((prev) => {
-      if (prev.some((entry) => entry.key === item.key)) {
-        return prev;
-      }
-
-      return [
-        ...prev,
-        {
-          key: item.key,
-          userId: item.userId,
-          gmfnId: item.gmfnId,
-          name: item.name,
-        },
-      ];
-    });
-  }
-
-  function removeSelectedGuarantor(key: string) {
-    setSelectedGuarantors((prev) => prev.filter((item) => item.key !== key));
-  }
-
   async function handleStartLoanDraft() {
-    if (!communityId) {
-      showNotice("error", "Select a community before starting a loan request.");
+    if (!activeCommunityId) {
+      showNotice("error", "Select a community before starting a support request.");
       return;
     }
 
@@ -1460,7 +1586,10 @@ export default function MarketplacePage() {
       const createRes = await createLoanRequest({
         amount,
         currency: poolCurrency,
-        clan_id: communityId,
+        clan_id: activeCommunityId,
+        duration_days: durationDays,
+        purpose: safeStr(loanPurpose),
+        note: safeStr(loanPurpose),
       });
 
       const createdLoanId = positiveNumber(
@@ -1476,28 +1605,27 @@ export default function MarketplacePage() {
 
       if (!createdLoanId) {
         throw new Error(
-          "Loan request started, but the system did not return a usable loan ID."
+          "Support request started, but the system did not return a usable loan ID."
         );
       }
 
-      const loaded = await loadLoanDraftContext(createdLoanId, communityId);
-      await reloadLoansForCommunity(communityId);
+      await loadLoanDraftContext(createdLoanId, activeCommunityId);
+      await loadPage();
 
-      if (safeStr(loaded.summary?.status).toLowerCase() === "approved") {
-        showNotice(
-          "success",
-          "Loan request created and covered immediately. No guarantor action is needed."
-        );
-      } else {
-        showNotice(
-          "success",
-          "Loan draft created. The app is now focusing you on guarantor selection and fit checking."
-        );
-      }
+      setSectionsOpen((prev) => ({
+        ...prev,
+        members: true,
+        support: true,
+      }));
+
+      showNotice(
+        "success",
+        "Support request created. Review fit suggestions and send guarantor requests if needed."
+      );
     } catch (err: any) {
       showNotice(
         "error",
-        safeStr(err?.message) || "Loan request could not be started."
+        safeStr(err?.message) || "Support request could not be started."
       );
     } finally {
       setStartingLoanDraft(false);
@@ -1505,17 +1633,17 @@ export default function MarketplacePage() {
   }
 
   async function handleRefreshSuggestions() {
-    if (!loanDraftId || !communityId) {
-      showNotice("error", "Start the loan request first.");
+    if (!loanDraftId || !activeCommunityId) {
+      showNotice("error", "Start the support request first.");
       return;
     }
 
     setLoadingSuggestions(true);
 
     try {
-      const loaded = await loadLoanDraftContext(loanDraftId, communityId);
+      const loaded = await loadLoanDraftContext(loanDraftId, activeCommunityId);
 
-      if ((loaded.suggestions || []).length === 0) {
+      if ((loaded?.suggestions || []).length === 0) {
         showNotice(
           "error",
           "No fit guarantor suggestion was returned for this amount right now."
@@ -1533,90 +1661,53 @@ export default function MarketplacePage() {
     }
   }
 
-  async function handleCancelLoanDraft() {
-    if (!loanDraftId || !communityId) {
-      showNotice("error", "There is no active loan draft to cancel.");
-      return;
-    }
+  function toggleSuggestedSupporter(item: SuggestedSupporter) {
+    setSelectedSupporters((prev) => {
+      const exists = prev.some((entry) => entry.key === item.key);
+      if (exists) {
+        return prev.filter((entry) => entry.key !== item.key);
+      }
+      return [...prev, item];
+    });
+  }
 
-    setCancellingLoanDraft(true);
-
-    try {
-      await cancelLoanRequest(loanDraftId, { clan_id: communityId });
-      await reloadLoansForCommunity(communityId);
-      clearLoanDraftState(false);
-
-      showNotice(
-        "success",
-        "Loan draft cancelled successfully. You can change the amount or start again."
-      );
-    } catch (err: any) {
-      showNotice(
-        "error",
-        safeStr(err?.message) || "Loan draft could not be cancelled."
-      );
-    } finally {
-      setCancellingLoanDraft(false);
-    }
+  function toggleMemberAsSupporter(row: {
+    supportKey: string;
+    name: string;
+    gmfnId: string;
+    userId: number;
+  }) {
+    const match = suggestedSupporterMap.get(row.supportKey);
+    if (!match) return;
+    toggleSuggestedSupporter(match);
   }
 
   async function handleSendGuarantorRequests() {
-    if (!communityId) {
-      showNotice("error", "Select a community before sending the request.");
+    if (!activeCommunityId) {
+      showNotice("error", "Select a community first.");
       return;
     }
 
     if (!loanDraftId) {
-      showNotice("error", "Start the loan request first.");
+      showNotice("error", "Start the support request first.");
       return;
     }
 
-    const status = safeStr(loanDraftSummary?.status).toLowerCase();
-
-    if (status === "approved") {
-      showNotice(
-        "success",
-        "This loan draft is already approved. No guarantor requests are needed."
-      );
-      return;
-    }
-
-    if (selectedGuarantors.length === 0) {
-      showNotice(
-        "error",
-        "Choose at least one guarantor from the member rows before sending requests."
-      );
-      return;
-    }
-
-    if (requiredGuarantorCount > 0 && remainingGuarantorsNeeded > 0) {
-      showNotice(
-        "error",
-        `You still need ${remainingGuarantorsNeeded} more guarantor${
-          remainingGuarantorsNeeded === 1 ? "" : "s"
-        }. Select more people or cancel the loan draft.`
-      );
-      return;
-    }
-
-    if (suggestedSupporters.length === 0) {
-      showNotice(
-        "error",
-        "The system did not find fit guarantors for this amount yet. Reduce the amount or revisit readiness and suggestions."
-      );
-      return;
-    }
-
-    const unfitSelected = selectedGuarantors.filter(
-      (item) => !suggestedSupporterKeys.has(item.key)
+    const requiredGuarantorCount = positiveNumber(
+      loanDraftSummary?.guarantors_required
     );
 
-    if (unfitSelected.length > 0) {
+    if (requiredGuarantorCount <= 0) {
+      showNotice("error", "This support draft does not currently need guarantors.");
+      return;
+    }
+
+    if (selectedSupporters.length < requiredGuarantorCount) {
       showNotice(
         "error",
-        `These selected guarantors are not fit for this amount in the current system check: ${unfitSelected
-          .map((x) => x.name)
-          .join(", ")}.`
+        `Select ${requiredGuarantorCount} guarantor${
+          requiredGuarantorCount === 1 ? "" : "s"
+        } before sending requests.`
       );
       return;
     }
@@ -1630,19 +1721,13 @@ export default function MarketplacePage() {
         loanAmount
       );
 
-      const suggestedMap = new Map<string, SuggestedSupporter>(
-        suggestedSupporters.map((item) => [item.key, item])
-      );
-
       const fallbackSplit = computePerGuarantorPledge(
         targetAmount > 0 ? targetAmount : Number(loanAmount || 0),
-        selectedGuarantors.length
+        selectedSupporters.length
       );
 
-      for (const guarantor of selectedGuarantors) {
-        const suggested = suggestedMap.get(guarantor.key);
-        const pledgeAmount =
-          safeStr(suggested?.recommendedPledge) || fallbackSplit;
+      for (const guarantor of selectedSupporters.slice(0, requiredGuarantorCount)) {
+        const pledgeAmount = safeStr(guarantor.recommendedPledge) || fallbackSplit;
 
         if (!guarantor.userId) {
           throw new Error(
@@ -1654,17 +1739,17 @@ export default function MarketplacePage() {
           loan_id: loanDraftId,
           guarantor_user_id: guarantor.userId,
           pledge_amount: pledgeAmount,
-          clan_id: communityId,
+          clan_id: activeCommunityId,
         });
       }
 
-      await loadLoanDraftContext(loanDraftId, communityId);
-      await reloadLoansForCommunity(communityId);
-      setSelectedGuarantors([]);
+      await loadLoanDraftContext(loanDraftId, activeCommunityId);
+      await loadPage();
+      setSelectedSupporters([]);
 
       showNotice(
         "success",
-        "Your request was sent successfully. Wait for their response."
+        "Guarantor requests sent successfully. Wait for responses."
       );
     } catch (err: any) {
       showNotice(
@@ -1675,6 +1760,55 @@ export default function MarketplacePage() {
       setSendingGuarantorRequests(false);
     }
   }
+
+  async function handleCancelLoanDraft() {
+    if (!loanDraftId) {
+      resetLoanTaskState({ clearInputs: true });
+      showNotice("success", "Support draft cleared.");
+      return;
+    }
+
+    setCancellingLoanDraft(true);
+
+    try {
+      await cancelLoanRequest(loanDraftId, {
+        clan_id: activeCommunityId || undefined,
+      }).catch(() => null);
+
+      await loadPage();
+      resetLoanTaskState({ clearInputs: true });
+
+      showNotice(
+        "success",
+        "Support draft cancelled. You can start again when ready."
+      );
+    } catch (err: any) {
+      showNotice(
+        "error",
+        safeStr(err?.message) || "Support draft could not be cancelled."
+      );
+    } finally {
+      setCancellingLoanDraft(false);
+    }
+  }
+
+  const loanStatusLower = safeStr(loanDraftSummary?.status).toLowerCase();
+  const requiredGuarantorCount = positiveNumber(
+    loanDraftSummary?.guarantors_required
+  );
+  const approvedGuarantorCount = positiveNumber(
+    loanDraftSummary?.approved_guarantors
+  );
+  const sentGuarantorCount = positiveNumber(loanDraftSummary?.guarantors_total);
+
+  const visibleSelectedSupporters = useMemo(
+    () =>
+      selectedSupporters.slice(
+        0,
+        requiredGuarantorCount || selectedSupporters.length
+      ),
+    [selectedSupporters, requiredGuarantorCount]
+  );
 
   if (loading) {
     return (
@@ -1687,22 +1821,22 @@ export default function MarketplacePage() {
           gap: 18,
         }}
       >
-        <PageTopNav
-          sectionLabel="Marketplace"
-          title="Selected community marketplace"
-          subtitle="Preparing the selected community surface..."
-          homeTo="/app/dashboard"
-          homeLabel="Dashboard"
-          backTo="/app/community"
-          nextLinks={[
-            { label: "Community Home", to: "/app/community" },
-            { label: "Notifications", to: "/app/notifications" },
-            { label: "Loans and Support", to: "/app/loans" },
-          ]}
-        />
-
-        <section style={pageCard("#FFFFFF")}>
-          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+        <section
+          style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        >
+          <div style={sectionLabel()}>Marketplace</div>
+          <div
+            style={{
+              marginTop: 10,
+              color: "#0B1F33",
+              fontSize: isCompact ? 30 : 40,
+              fontWeight: 900,
+              lineHeight: 1.08,
+            }}
+          >
+            Selected community marketplace
+          </div>
+          <div style={{ marginTop: 12, ...helperText() }}>
             Loading selected community...
           </div>
         </section>
@@ -1710,7 +1844,7 @@ export default function MarketplacePage() {
     );
   }
 
-  if (!communityId || !selectedClan) {
+  if (!activeCommunityId || !selectedCommunity) {
     return (
       <div
         style={{
@@ -1721,18 +1855,59 @@ export default function MarketplacePage() {
           gap: 18,
         }}
       >
-        <PageTopNav
-          sectionLabel="Marketplace"
-          title="Selected community marketplace"
-          subtitle="Marketplace is the selected community surface. Choose a community first from Community Home."
-          homeTo="/app/dashboard"
-          homeLabel="Dashboard"
-          backTo="/app/community"
-          nextLinks={[
-            { label: "Community Home", to: "/app/community" },
-            { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
-          ]}
-        />
+        {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
+
+        <section
+          style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        >
+          <div style={sectionLabel()}>Marketplace</div>
+
+          <div
+            style={{
+              marginTop: 10,
+              color: "#0B1F33",
+              fontSize: isCompact ? 30 : 40,
+              fontWeight: 900,
+              lineHeight: 1.08,
+              maxWidth: 760,
+            }}
+          >
+            Selected community marketplace
+          </div>
+
+          <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
+            Marketplace is the selected community working surface. Choose a
+            community first from Community Home.
+          </div>
+
+          <div
+            style={{
+              marginTop: 18,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <Link to="/app/community" style={actionBtn("secondary")}>
+              Community Home
+            </Link>
+            <Link to="/app/dashboard" style={actionBtn("primary")}>
+              Dashboard
+            </Link>
+            <Link to="/app/notifications" style={actionBtn("soft")}>
+              Notifications
+            </Link>
+            <Link to="/app/trust" style={actionBtn("soft")}>
+              Trust
+            </Link>
+            <Link to="/app/my-gmfn-and-i" style={actionBtn("soft")}>
+              My GMFN and I
+            </Link>
+            <Link to="/app/my-gmfn-and-i?tab=settings" style={actionBtn("soft")}>
+              Settings
+            </Link>
+          </div>
+        </section>
 
         <section style={pageCard("#FFFFFF")}>
           <div style={sectionLabel()}>No selected community</div>
@@ -1747,22 +1922,19 @@ export default function MarketplacePage() {
               maxWidth: 760,
             }}
           >
-            Open Community Home first, then choose the community you want to work
-            with.
+            Open Community Home first, then choose the community you want to work with.
           </div>
 
           <div
             style={{
               marginTop: 12,
-              color: "#5F7287",
-              fontSize: 15,
-              lineHeight: 1.8,
+              ...helperText(),
               maxWidth: 860,
             }}
           >
             Community Home remains the private control room. Marketplace is the
-            selected community surface that opens after a community has been
-            chosen.
+            selected community working surface that opens after a community has
+            been chosen.
           </div>
 
           <div
@@ -1797,6 +1969,65 @@ export default function MarketplacePage() {
     >
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
+      <section
+        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+      >
+        <div style={sectionLabel()}>Marketplace</div>
+
+        <div
+          style={{
+            marginTop: 10,
+            color: "#0B1F33",
+            fontSize: isCompact ? 30 : 40,
+            fontWeight: 900,
+            lineHeight: 1.08,
+            maxWidth: 820,
+          }}
+        >
+          Selected community marketplace
+        </div>
+
+        <div style={{ marginTop: 12, ...helperText(), maxWidth: 920 }}>
+          Marketplace is the selected community working surface. Community
+          profile comes first, then stable tools, then changing working blocks
+          below.
+        </div>
+
+        <div
+          style={{
+            marginTop: 18,
+            display: "flex",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
+          <Link to="/app/community" style={actionBtn("secondary")}>
+            Community Home
+          </Link>
+          <Link to="/app/dashboard" style={actionBtn("primary")}>
+            Dashboard
+          </Link>
+          <Link to="/app/notifications" style={actionBtn("soft")}>
+            Notifications
+          </Link>
+          <Link to="/app/demand-box" style={actionBtn("soft")}>
+            Demand Box
+          </Link>
+          <Link to="/app/shop-control" style={actionBtn("soft")}>
+            Shop Control
+          </Link>
+          <Link to="/app/trust" style={actionBtn("soft")}>
+            Trust
+          </Link>
+          <Link to="/app/my-gmfn-and-i" style={actionBtn("soft")}>
+            My GMFN and I
+          </Link>
+          <Link to="/app/my-gmfn-and-i?tab=settings" style={actionBtn("soft")}>
+            Settings
+          </Link>
+        </div>
+      </section>
+
       <section style={pageCard("#FFFFFF")}>
         <div
           style={{
@@ -1809,15 +2040,8 @@ export default function MarketplacePage() {
         >
           <div>
             <div style={sectionLabel()}>Community profile</div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#5F7287",
-                fontSize: 14,
-                lineHeight: 1.75,
-              }}
-            >
-              System-level community identity for the selected marketplace surface.
+            <div style={{ marginTop: 8, ...helperText() }}>
+              The stable identity block of the current community should stay first.
             </div>
           </div>
 
@@ -1826,48 +2050,63 @@ export default function MarketplacePage() {
             onClick={() => toggleSection("profile")}
             style={actionBtn("soft")}
           >
-            {collapsed.profile ? "Open" : "Collapse"}
+            {sectionsOpen.profile ? "Collapse" : "Open"}
           </button>
         </div>
 
-        {!collapsed.profile ? (
+        {sectionsOpen.profile ? (
           <div
             style={{
               marginTop: 14,
               display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "250px minmax(0, 1fr)",
+              gridTemplateColumns: isCompact
+                ? "1fr"
+                : "280px minmax(0, 1fr)",
               gap: 18,
               alignItems: "start",
             }}
           >
             <div>
-              <div style={communityImageBox()}>
-                {resolvedCommunityImage ? (
-                  <img
-                    src={resolvedCommunityImage}
-                    alt={communityName}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      minHeight: 188,
-                      objectFit: "cover",
-                      display: "block",
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      padding: 18,
-                      textAlign: "center",
-                      color: "#37506A",
-                      fontWeight: 900,
-                      fontSize: 22,
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    {communityName}
-                  </div>
-                )}
+              <div
+                style={{
+                  width: "100%",
+                  minHeight: 230,
+                  borderRadius: 22,
+                  border: "1px solid rgba(11,31,51,0.08)",
+                  background: "linear-gradient(180deg, #E8F0FF 0%, #DDEBFF 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  overflow: "hidden",
+                }}
+              >
+                <AuthResolvedImage
+                  candidates={communityImageCandidates}
+                  alt={communityName(selectedCommunity)}
+                  clanId={activeCommunityId}
+                  refreshSeed={communityPictureRefreshSeed}
+                  style={{
+                    width: "100%",
+                    height: 230,
+                    objectFit: "cover",
+                    objectPosition: "center 18%",
+                    display: "block",
+                  }}
+                  fallback={
+                    <div
+                      style={{
+                        padding: 18,
+                        textAlign: "center",
+                        color: "#37506A",
+                        fontWeight: 900,
+                        fontSize: 22,
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {communityName(selectedCommunity)}
+                    </div>
+                  }
+                />
               </div>
             </div>
 
@@ -1877,69 +2116,113 @@ export default function MarketplacePage() {
                   color: "#0B1F33",
                   fontWeight: 900,
                   fontSize: isCompact ? 28 : 34,
-                  lineHeight: 1.08,
+                  lineHeight: 1.12,
                 }}
               >
-                {communityName}
+                {communityName(selectedCommunity)}
               </div>
 
               <div
                 style={{
                   marginTop: 12,
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
+                  ...helperText(),
+                  maxWidth: 820,
                 }}
               >
-                <span style={badge(true)}>Community ID: {communityGlobalId}</span>
-                <span style={badge(false)}>Trust: {communityTrust}</span>
-                <span style={badge(false)}>Members: {members.length}</span>
+                {communityDescription(selectedCommunity)}
               </div>
 
               <div
                 style={{
                   marginTop: 14,
-                  color: "#5F7287",
-                  fontSize: 15,
-                  lineHeight: 1.8,
-                  maxWidth: 760,
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "1fr 1fr"
+                    : "repeat(4, minmax(0, 1fr))",
+                  gap: 10,
                 }}
               >
-                {communityDescription}
+                <div style={statTile()}>
+                  <div style={sectionLabel()}>Community ID</div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      fontSize: 15,
+                      lineHeight: 1.3,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {communityIdentity(selectedCommunity)}
+                  </div>
+                </div>
+
+                <div style={statTile()}>
+                  <div style={sectionLabel()}>Community trust</div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      fontSize: 15,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {communityTrustLabel(selectedCommunity)}
+                  </div>
+                </div>
+
+                <div style={statTile()}>
+                  <div style={sectionLabel()}>Members</div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      fontSize: 20,
+                    }}
+                  >
+                    {members.length}
+                  </div>
+                </div>
+
+                <div style={statTile()}>
+                  <div style={sectionLabel()}>Pool</div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      fontSize: 15,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {visiblePoolAmount} {visiblePoolCurrency}
+                  </div>
+                </div>
               </div>
 
               <div
                 style={{
-                  marginTop: 16,
+                  marginTop: 14,
                   display: "flex",
-                  gap: 10,
+                  gap: 8,
                   flexWrap: "wrap",
                 }}
               >
-                <button
-                  type="button"
-                  onClick={copyCommunityId}
-                  style={actionBtn("secondary")}
-                >
-                  Copy Community ID
-                </button>
-
-                <button
-                  type="button"
-                  onClick={copyTrustLink}
-                  style={actionBtn("secondary")}
-                >
-                  Copy Trust Link
-                </button>
+                <span style={badge(true)}>Current member: {memberName}</span>
+                <span style={badge(false)}>GMFN ID: {gmfnId}</span>
+                <span style={badge(false)}>
+                  Invite: {inviteLink ? "Ready" : "Not ready"}
+                </span>
               </div>
             </div>
           </div>
         ) : null}
       </section>
 
-      <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
-      >
+      <section style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
@@ -1950,16 +2233,123 @@ export default function MarketplacePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Community tools</div>
+            <div style={sectionLabel()}>Community money routes</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              These are the stable money paths for the currently selected community.
+              Money In opens the deposit route. Money Out opens the withdrawal
+              route for the same community flow.
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span style={badge(true)}>{communityName(selectedCommunity)}</span>
+            <span style={badge(false)}>
+              Pool: {visiblePoolAmount} {visiblePoolCurrency}
+            </span>
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            display: "grid",
+            gridTemplateColumns: isCompact
+              ? "1fr"
+              : "repeat(3, minmax(0, 1fr))",
+            gap: 12,
+          }}
+        >
+          <div style={innerCard("#FCFEFF")}>
+            <div style={sectionLabel()}>Visible pool position</div>
+
             <div
               style={{
                 marginTop: 8,
-                color: "#5F7287",
-                fontSize: 14,
-                lineHeight: 1.75,
+                color: "#0B1F33",
+                fontWeight: 900,
+                fontSize: 22,
+                lineHeight: 1.2,
               }}
             >
-              Keep the working buttons together and out of the way until needed.
+              {visiblePoolAmount} {visiblePoolCurrency}
+            </div>
+
+            <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+              This is the current visible pool position in the selected community context.
+            </div>
+          </div>
+
+          <div style={innerCard("#FFFFFF")}>
+            <div style={sectionLabel()}>Money In</div>
+
+            <div
+              style={{
+                marginTop: 8,
+                color: "#0B1F33",
+                fontWeight: 900,
+                fontSize: 17,
+                lineHeight: 1.3,
+              }}
+            >
+              Deposit into the community pool
+            </div>
+
+            <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+              Open the deposit instructions for the current community money route.
+            </div>
+
+            <div style={{ marginTop: 14 }}>
+              <Link to="/app/payment/pool" style={actionBtn("primary")}>
+                Money In
+              </Link>
+            </div>
+          </div>
+
+          <div style={innerCard("#FFFFFF")}>
+            <div style={sectionLabel()}>Money Out</div>
+
+            <div
+              style={{
+                marginTop: 8,
+                color: "#0B1F33",
+                fontWeight: 900,
+                fontSize: 17,
+                lineHeight: 1.3,
+              }}
+            >
+              Withdraw through the community route
+            </div>
+
+            <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+              Open the withdrawal instructions tied to the same community money path.
+            </div>
+
+            <div style={{ marginTop: 14 }}>
+              <Link
+                to="/app/withdrawal-instructions"
+                style={actionBtn("secondary")}
+              >
+                Money Out
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Stable community tools</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Keep the fixed community tools near the top and keep the block compact.
             </div>
           </div>
 
@@ -1968,40 +2358,89 @@ export default function MarketplacePage() {
             onClick={() => toggleSection("tools")}
             style={actionBtn("soft")}
           >
-            {collapsed.tools ? "Open" : "Collapse"}
+            {sectionsOpen.tools ? "Collapse" : "Open"}
           </button>
         </div>
 
-        {!collapsed.tools ? (
-          <>
+        {sectionsOpen.tools ? (
+          <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
             <div
               style={{
-                marginTop: 16,
                 display: "grid",
                 gridTemplateColumns: isCompact
                   ? "1fr"
-                  : "repeat(2, minmax(0, 1fr))",
-                gap: 10,
+                  : "minmax(240px, 1fr) auto",
+                gap: 12,
+                alignItems: "center",
               }}
             >
-              <button
-                type="button"
-                onClick={copyInviteLink}
-                style={actionBtn("primary", !inviteLink)}
-                disabled={!inviteLink}
+              <input
+                key={communityPictureFileInputKey}
+                type="file"
+                accept="image/*"
+                onChange={(e) =>
+                  void handleUploadCommunityPicture(e.target.files?.[0] || null)
+                }
+                style={inputStyle()}
+              />
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  flexWrap: "wrap",
+                  justifyContent: isCompact ? "flex-start" : "flex-end",
+                }}
               >
-                Copy Invite Link
-              </button>
+                <button
+                  type="button"
+                  onClick={copyInviteLink}
+                  style={actionBtn("primary", !inviteLink)}
+                  disabled={!inviteLink}
+                >
+                  Copy Invite Link
+                </button>
 
-              <Link to="/app/payment/pool" style={actionBtn("secondary")}>
-                Money In
-              </Link>
+                <button
+                  type="button"
+                  onClick={copyCommunityId}
+                  style={actionBtn("secondary")}
+                >
+                  Copy Community ID
+                </button>
 
+                <button
+                  type="button"
+                  onClick={() => void handleRemoveCommunityPicture()}
+                  disabled={
+                    removingCommunityPicture ||
+                    uploadingCommunityPicture ||
+                    !hasCommunityPicture
+                  }
+                  style={actionBtn(
+                    "secondary",
+                    removingCommunityPicture ||
+                      uploadingCommunityPicture ||
+                      !hasCommunityPicture
+                  )}
+                >
+                  {removingCommunityPicture ? "Removing..." : "Remove Picture"}
+                </button>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+              }}
+            >
               <Link
-                to="/app/withdrawal-instructions"
+                to={`/app/community/${activeCommunityId}/join-requests`}
                 style={actionBtn("secondary")}
               >
-                Money Out
+                Join Requests
               </Link>
 
               <Link to="/app/demand-box" style={actionBtn("secondary")}>
@@ -2012,52 +2451,15 @@ export default function MarketplacePage() {
                 Merchant Verify
               </Link>
 
-              <Link to="/app/notifications" style={actionBtn("secondary")}>
-                Notifications
+              <Link to="/app/community" style={actionBtn("secondary")}>
+                Community Home
               </Link>
 
-              <Link to="/app/trust" style={actionBtn("secondary")}>
-                Trust
-              </Link>
-
-              <Link to="/app/my-gmfn-and-i" style={actionBtn("secondary")}>
-                My GMFN and I
+              <Link to="/app/build-first-circle" style={actionBtn("secondary")}>
+                Build First Circle
               </Link>
             </div>
-
-            <div
-              style={{
-                marginTop: 16,
-                ...softCard("#FFFFFF"),
-              }}
-            >
-              <div style={sectionLabel()}>Pool position</div>
-
-              <div
-                style={{
-                  marginTop: 10,
-                  color: "#0B1F33",
-                  fontSize: 22,
-                  fontWeight: 900,
-                  lineHeight: 1.2,
-                }}
-              >
-                {poolAmount} {poolCurrency}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#5F7287",
-                  fontSize: 14,
-                  lineHeight: 1.8,
-                }}
-              >
-                This shows only your own visible pool position in the selected
-                community context.
-              </div>
-            </div>
-          </>
+          </div>
         ) : null}
       </section>
 
@@ -2073,34 +2475,21 @@ export default function MarketplacePage() {
         >
           <div>
             <div style={sectionLabel()}>Member rows</div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#5F7287",
-                fontSize: 14,
-                lineHeight: 1.75,
-              }}
-            >
-              Choose a member, open the Shop Gallery, or mark the member as a
-              possible guarantor for the loan flow below.
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Member rows stay below the stable community frame and shop links remain easy to open.
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={badge(false)}>
-              Selected guarantors: {selectedGuarantors.length}
-            </span>
-            <button
-              type="button"
-              onClick={() => toggleSection("members")}
-              style={actionBtn("soft")}
-            >
-              {collapsed.members ? "Open" : "Collapse"}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => toggleSection("members")}
+            style={actionBtn("soft")}
+          >
+            {sectionsOpen.members ? "Collapse" : "Open"}
+          </button>
         </div>
 
-        {!collapsed.members ? (
+        {sectionsOpen.members ? (
           <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
             {memberRows.length === 0 ? (
               <div style={{ color: "#64748B", lineHeight: 1.8 }}>
@@ -2108,14 +2497,11 @@ export default function MarketplacePage() {
               </div>
             ) : (
               memberRows.map((row, index) => {
-                const selected = selectedGuarantorKeys.has(row.guarantorKey);
-                const suggested = suggestedSupporterKeys.has(row.guarantorKey);
+                const fitSuggestion = suggestedSupporterMap.get(row.supportKey);
+                const selected = selectedSupporterKeys.has(row.supportKey);
 
                 return (
-                  <div
-                    key={`${row.gmfnId || row.member?.id || index}`}
-                    style={innerCard("#FCFEFF")}
-                  >
+                  <div key={`${row.gmfnId || index}`} style={innerCard("#FCFEFF")}>
                     <div
                       style={{
                         display: "grid",
@@ -2135,7 +2521,7 @@ export default function MarketplacePage() {
                             lineHeight: 1.35,
                           }}
                         >
-                          {row.memberName}
+                          {row.name}
                         </div>
 
                         <div
@@ -2170,21 +2556,14 @@ export default function MarketplacePage() {
                             flexWrap: "wrap",
                           }}
                         >
-                          {row.shop ? (
-                            <span style={badge(false)}>Shop link available</span>
+                          {row.shopTo ? (
+                            <span style={badge(true)}>Shop link available</span>
                           ) : (
                             <span style={badge(false)}>No visible shop yet</span>
                           )}
 
-                          {loanDraftId && suggested ? (
-                            <span style={badge(true)}>Fit for this amount</span>
-                          ) : null}
-
-                          {loanDraftId &&
-                          suggestedSupporters.length > 0 &&
-                          !suggested &&
-                          !row.isSelf ? (
-                            <span style={badge(false)}>Not in fit list</span>
+                          {fitSuggestion ? (
+                            <span style={badge(false)}>Fit suggestion available</span>
                           ) : null}
                         </div>
                       </div>
@@ -2202,42 +2581,20 @@ export default function MarketplacePage() {
                             Open Shop Gallery
                           </Link>
                         ) : (
-                          <button
-                            type="button"
-                            style={actionBtn("secondary", true)}
-                            disabled
-                          >
+                          <button type="button" style={actionBtn("secondary", true)} disabled>
                             No Shop Yet
                           </button>
                         )}
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            toggleGuarantorFromRow({
-                              guarantorKey: row.guarantorKey,
-                              userId: row.userId,
-                              gmfnId: row.gmfnId,
-                              memberName: row.memberName,
-                              isSelf: row.isSelf,
-                            })
-                          }
-                          disabled={row.isSelf || (!row.userId && !row.gmfnId)}
-                          style={
-                            selected
-                              ? actionBtn("primary")
-                              : actionBtn(
-                                  "secondary",
-                                  row.isSelf || (!row.userId && !row.gmfnId)
-                                )
-                          }
-                        >
-                          {row.isSelf
-                            ? "You"
-                            : selected
-                            ? "Selected as Guarantor"
-                            : "Choose as Guarantor"}
-                        </button>
+                        {fitSuggestion ? (
+                          <button
+                            type="button"
+                            onClick={() => toggleMemberAsSupporter(row)}
+                            style={selected ? actionBtn("primary") : actionBtn("soft")}
+                          >
+                            {selected ? "Selected" : "Use as Guarantor"}
+                          </button>
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -2248,7 +2605,7 @@ export default function MarketplacePage() {
         ) : null}
       </section>
 
-      <section id="marketplace-loans-support" style={pageCard("#FFFFFF")}>
+      <section style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
@@ -2259,92 +2616,41 @@ export default function MarketplacePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Loans and Support</div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#5F7287",
-                fontSize: 14,
-                lineHeight: 1.75,
-                maxWidth: 860,
-              }}
-            >
-              The system now guides you in the real backend order: start the loan
-              draft, check fit suggestions, choose guarantors, then send the
-              guarantor requests.
+            <div style={sectionLabel()}>Loans & Support</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Start the support draft here, then open the fit and guarantor flow only when needed.
             </div>
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={badge(false)}>{activeLoanCount} active support items</span>
+            <span style={badge(false)}>Active items: {activeLoanCount}</span>
             <button
               type="button"
-              onClick={() => toggleSection("loan")}
+              onClick={() => toggleSection("support")}
               style={actionBtn("soft")}
             >
-              {collapsed.loan ? "Open" : "Collapse"}
+              {sectionsOpen.support ? "Collapse" : "Open"}
             </button>
           </div>
         </div>
 
-        {!collapsed.loan ? (
+        {sectionsOpen.support ? (
           <div
             style={{
               marginTop: 16,
               display: "grid",
               gridTemplateColumns: isCompact
                 ? "1fr"
-                : "minmax(0, 1.06fr) minmax(320px, 0.94fr)",
+                : "minmax(0, 1.05fr) minmax(320px, 0.95fr)",
               gap: 16,
               alignItems: "start",
             }}
           >
             <div style={innerCard("#FCFEFF")}>
-              <div style={sectionLabel()}>Guided support entry</div>
+              <div style={sectionLabel()}>Start a support request</div>
 
-              <div
-                style={{
-                  marginTop: 10,
-                  display: "grid",
-                  gridTemplateColumns: isCompact
-                    ? "1fr"
-                    : "repeat(3, minmax(0, 1fr))",
-                  gap: 10,
-                }}
-              >
-                <Link to="/app/loan-suggestions" style={actionBtn("secondary")}>
-                  Suggestions
-                </Link>
-                <Link to="/app/loan-readiness" style={actionBtn("secondary")}>
-                  Readiness
-                </Link>
-                <Link to="/app/loan-workbench" style={actionBtn("secondary")}>
-                  Workbench
-                </Link>
-              </div>
-
-              <div
-                style={{
-                  marginTop: 14,
-                  color: "#0B1F33",
-                  fontSize: 18,
-                  fontWeight: 900,
-                  lineHeight: 1.35,
-                }}
-              >
-                Need a loan?
-              </div>
-
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#5F7287",
-                  fontSize: 14,
-                  lineHeight: 1.75,
-                }}
-              >
-                Enter the amount and duration first. The app will start the loan
-                draft, then switch into the fit-check and guarantor stage.
+              <div style={{ marginTop: 10, ...helperText(), maxWidth: 760 }}>
+                Enter amount and duration first. If the draft needs guarantors, the fit suggestions appear below.
               </div>
 
               <div
@@ -2376,29 +2682,16 @@ export default function MarketplacePage() {
                     style={{ ...inputStyle(), marginTop: 8 }}
                   />
                 </div>
-              </div>
 
-              <div style={{ marginTop: 14 }}>
-                <div style={sectionLabel()}>Purpose / note</div>
-                <textarea
-                  value={loanPurpose}
-                  onChange={(e) => setLoanPurpose(e.target.value)}
-                  placeholder="State what the loan is for..."
-                  style={{ ...textAreaStyle(), marginTop: 8 }}
-                />
-              </div>
-
-              <div
-                style={{
-                  marginTop: 14,
-                  color: "#5F7287",
-                  fontSize: 13,
-                  lineHeight: 1.7,
-                }}
-              >
-                Duration and purpose are kept here as guided preparation for the
-                member flow. The backend you shared makes the real loan decision
-                from the loan draft and guarantor logic.
+                <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
+                  <div style={sectionLabel()}>Purpose / note</div>
+                  <textarea
+                    value={loanPurpose}
+                    onChange={(e) => setLoanPurpose(e.target.value)}
+                    placeholder="State what the support is for..."
+                    style={{ ...textAreaStyle(), marginTop: 8 }}
+                  />
+                </div>
               </div>
 
               <div
@@ -2411,21 +2704,32 @@ export default function MarketplacePage() {
               >
                 <button
                   type="button"
-                  onClick={handleStartLoanDraft}
+                  onClick={() => void handleStartLoanDraft()}
                   disabled={startingLoanDraft}
                   style={actionBtn("primary", startingLoanDraft)}
                 >
-                  {startingLoanDraft ? "Starting..." : "Start Loan Request"}
+                  {startingLoanDraft ? "Starting..." : "Start Support Request"}
                 </button>
 
                 {loanDraftId ? (
                   <button
                     type="button"
-                    onClick={handleRefreshSuggestions}
+                    onClick={() => void handleRefreshSuggestions()}
                     disabled={loadingSuggestions}
                     style={actionBtn("secondary", loadingSuggestions)}
                   >
                     {loadingSuggestions ? "Refreshing..." : "Refresh Fit Check"}
+                  </button>
+                ) : null}
+
+                {loanDraftId ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleCancelLoanDraft()}
+                    disabled={cancellingLoanDraft}
+                    style={actionBtn("secondary", cancellingLoanDraft)}
+                  >
+                    {cancellingLoanDraft ? "Cancelling..." : "Cancel Draft"}
                   </button>
                 ) : null}
 
@@ -2434,168 +2738,10 @@ export default function MarketplacePage() {
                 </Link>
               </div>
 
-              <div
-                style={{
-                  marginTop: 18,
-                  ...softCard("#FFFFFF"),
-                }}
-              >
-                <div style={sectionLabel()}>System guidance</div>
-
-                <div
-                  style={{
-                    marginTop: 10,
-                    color: "#0B1F33",
-                    fontSize: 16,
-                    fontWeight: 800,
-                    lineHeight: 1.55,
-                  }}
-                >
-                  {loanGuideMessage}
-                </div>
-
-                {loanDraftSummary ? (
-                  <>
-                    <div
-                      style={{
-                        marginTop: 12,
-                        display: "flex",
-                        gap: 8,
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <span style={badge(true)}>
-                        Status: {safeStr(loanDraftSummary.status || "Open")}
-                      </span>
-                      <span style={badge(false)}>
-                        Required guarantors: {positiveNumber(loanDraftSummary.guarantors_required)}
-                      </span>
-                      <span style={badge(false)}>
-                        Approved: {positiveNumber(loanDraftSummary.approved_guarantors)}
-                      </span>
-                      <span style={badge(false)}>
-                        Total requests: {positiveNumber(loanDraftSummary.guarantors_total)}
-                      </span>
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 16,
-                        ...innerCard("#FCFEFF"),
-                      }}
-                    >
-                      <div style={sectionLabel()}>Borrower request status</div>
-
-                      <div
-                        style={{
-                          marginTop: 8,
-                          color: "#5F7287",
-                          fontSize: 14,
-                          lineHeight: 1.75,
-                        }}
-                      >
-                        {safeStr(loanDraftSummary.status).toLowerCase() === "approved"
-                          ? "This loan request has already been approved."
-                          : "Your request was sent successfully. Wait for their response."}
-                      </div>
-
-                      <div
-                        style={{
-                          marginTop: 10,
-                          color: remainingGuarantorsNeeded > 0 ? "#92400E" : "#166534",
-                          fontSize: 14,
-                          fontWeight: 800,
-                          lineHeight: 1.75,
-                        }}
-                      >
-                        {selectionProgressMessage}
-                      </div>
-
-                      <div
-                        style={{
-                          marginTop: 14,
-                          display: "grid",
-                          gap: 10,
-                        }}
-                      >
-                        {loadingLoanGuarantorRows ? (
-                          <div style={{ color: "#64748B", lineHeight: 1.75 }}>
-                            Loading guarantor responses...
-                          </div>
-                        ) : loanGuarantorRows.length === 0 ? (
-                          <div style={{ color: "#64748B", lineHeight: 1.75 }}>
-                            No guarantor request has been sent yet.
-                          </div>
-                        ) : (
-                          loanGuarantorRows.map((item, index) => {
-                            const name =
-                              memberNameByUserId.get(
-                                positiveNumber(item.guarantor_user_id)
-                              ) ||
-                              `Member ${positiveNumber(item.guarantor_user_id) || index + 1}`;
-
-                            return (
-                              <div
-                                key={`${item.id || index}`}
-                                style={innerCard("#FFFFFF")}
-                              >
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    gap: 10,
-                                    flexWrap: "wrap",
-                                    alignItems: "center",
-                                  }}
-                                >
-                                  <div style={{ color: "#0B1F33", fontWeight: 900 }}>
-                                    {name}
-                                  </div>
-
-                                  <span style={badge(true)}>
-                                    Pledge: {safeStr(item.pledge_amount || "0")}
-                                  </span>
-                                </div>
-
-                                <div
-                                  style={{
-                                    marginTop: 8,
-                                    display: "flex",
-                                    gap: 8,
-                                    flexWrap: "wrap",
-                                  }}
-                                >
-                                  <span style={badge(false)}>
-                                    Status: {safeStr(item.status || "pending")}
-                                  </span>
-
-                                  {item.responded_at ? (
-                                    <span style={badge(false)}>
-                                      Responded: {safeStr(item.responded_at)}
-                                    </span>
-                                  ) : null}
-
-                                  {item.is_locked ? (
-                                    <span style={badge(false)}>
-                                      Locked: {safeStr(item.locked_amount || "0")}
-                                    </span>
-                                  ) : null}
-                                </div>
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
-                  </>
-                ) : null}
-              </div>
-
-              {loanDraftId &&
-              !isTerminalLoanStatus(safeStr(loanDraftSummary?.status)) ? (
-                <>
-                  <div style={{ marginTop: 18 }}>
-                    <div style={sectionLabel()}>Chosen guarantors</div>
+              {loanDraftId ? (
+                <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
+                  <div style={softCard("#FFFFFF")}>
+                    <div style={sectionLabel()}>Draft status</div>
 
                     <div
                       style={{
@@ -2605,134 +2751,173 @@ export default function MarketplacePage() {
                         flexWrap: "wrap",
                       }}
                     >
-                      {selectedGuarantors.length === 0 ? (
-                        <span style={{ color: "#64748B", lineHeight: 1.8 }}>
-                          No guarantor selected yet. Use the member rows above.
-                        </span>
-                      ) : (
-                        selectedGuarantors.map((item) => (
-                          <button
-                            key={item.key}
-                            type="button"
-                            onClick={() => removeSelectedGuarantor(item.key)}
-                            style={actionBtn("soft")}
-                          >
-                            {item.name} ×
-                          </button>
-                        ))
-                      )}
+                      <span style={badge(true)}>
+                        Status: {safeStr(loanDraftSummary?.status || "Open")}
+                      </span>
+                      <span style={badge(false)}>
+                        Required guarantors: {requiredGuarantorCount}
+                      </span>
+                      <span style={badge(false)}>
+                        Suggested fit: {suggestedSupporters.length}
+                      </span>
+                      <span style={badge(false)}>Sent: {sentGuarantorCount}</span>
+                      <span style={badge(false)}>
+                        Approved: {approvedGuarantorCount}
+                      </span>
+                    </div>
+
+                    <div style={{ marginTop: 12, ...helperText() }}>
+                      {extractSuggestionMessage(loanSuggestionRaw) ||
+                        "Review the fit suggestions below if the support draft needs guarantors."}
                     </div>
                   </div>
 
-                  {suggestedSupporters.length > 0 ? (
-                    <div style={{ marginTop: 18 }}>
-                      <div style={sectionLabel()}>System fit suggestions</div>
+                  {requiredGuarantorCount > 0 ? (
+                    <div style={softCard("#F8FBFF")}>
+                      <div style={sectionLabel()}>Fit suggestions</div>
 
-                      <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                        {suggestedSupporters.map((item) => (
-                          <div key={item.key} style={innerCard("#FFFFFF")}>
-                            <div
-                              style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                gap: 10,
-                                flexWrap: "wrap",
-                                alignItems: "center",
-                              }}
-                            >
-                              <div>
+                      {suggestedSupporters.length === 0 ? (
+                        <div style={{ marginTop: 10, ...helperText() }}>
+                          No fit guarantor suggestion is visible yet for this amount.
+                        </div>
+                      ) : (
+                        <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                          {suggestedSupporters.map((item) => {
+                            const selected = selectedSupporterKeys.has(item.key);
+
+                            return (
+                              <div key={item.key} style={innerCard("#FFFFFF")}>
                                 <div
                                   style={{
-                                    color: "#0B1F33",
-                                    fontWeight: 900,
-                                    fontSize: 15,
-                                    lineHeight: 1.35,
-                                  }}
-                                >
-                                  {item.name}
-                                </div>
-
-                                <div
-                                  style={{
-                                    marginTop: 6,
                                     display: "flex",
-                                    gap: 8,
+                                    justifyContent: "space-between",
+                                    gap: 10,
                                     flexWrap: "wrap",
+                                    alignItems: "center",
                                   }}
                                 >
-                                  {safeStr(item.reason) ? (
-                                    <span style={badge(false)}>
-                                      {safeStr(item.reason)}
-                                    </span>
-                                  ) : null}
+                                  <div>
+                                    <div
+                                      style={{
+                                        color: "#0B1F33",
+                                        fontWeight: 900,
+                                        fontSize: 15,
+                                        lineHeight: 1.35,
+                                      }}
+                                    >
+                                      {item.name}
+                                    </div>
 
-                                  {safeStr(item.recommendedPledge) ? (
-                                    <span style={badge(true)}>
-                                      Suggested pledge: {safeStr(item.recommendedPledge)}
-                                    </span>
-                                  ) : null}
+                                    <div
+                                      style={{
+                                        marginTop: 6,
+                                        display: "flex",
+                                        gap: 8,
+                                        flexWrap: "wrap",
+                                      }}
+                                    >
+                                      {safeStr(item.reason) ? (
+                                        <span style={badge(false)}>
+                                          {safeStr(item.reason)}
+                                        </span>
+                                      ) : null}
+
+                                      {safeStr(item.recommendedPledge) ? (
+                                        <span style={badge(true)}>
+                                          Suggested pledge: {safeStr(item.recommendedPledge)}
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleSuggestedSupporter(item)}
+                                    style={
+                                      selected
+                                        ? actionBtn("primary")
+                                        : actionBtn("secondary")
+                                    }
+                                  >
+                                    {selected ? "Selected" : "Choose"}
+                                  </button>
                                 </div>
                               </div>
+                            );
+                          })}
+                        </div>
+                      )}
 
+                      {visibleSelectedSupporters.length > 0 ? (
+                        <div style={{ marginTop: 14 }}>
+                          <div style={sectionLabel()}>Chosen guarantors</div>
+
+                          <div
+                            style={{
+                              marginTop: 10,
+                              display: "flex",
+                              gap: 8,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            {visibleSelectedSupporters.map((item) => (
                               <button
+                                key={item.key}
                                 type="button"
-                                onClick={() => addSuggestedSupporter(item)}
-                                style={
-                                  selectedGuarantorKeys.has(item.key)
-                                    ? actionBtn("primary")
-                                    : actionBtn("secondary")
-                                }
+                                onClick={() => toggleSuggestedSupporter(item)}
+                                style={actionBtn("soft")}
                               >
-                                {selectedGuarantorKeys.has(item.key)
-                                  ? "Selected"
-                                  : "Use Suggestion"}
+                                {item.name} ×
                               </button>
-                            </div>
+                            ))}
                           </div>
-                        ))}
+                        </div>
+                      ) : null}
+
+                      <div
+                        style={{
+                          marginTop: 14,
+                          display: "flex",
+                          gap: 10,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => void handleSendGuarantorRequests()}
+                          disabled={
+                            sendingGuarantorRequests ||
+                            requiredGuarantorCount <= 0 ||
+                            visibleSelectedSupporters.length < requiredGuarantorCount ||
+                            loanStatusLower === "approved"
+                          }
+                          style={actionBtn(
+                            "primary",
+                            sendingGuarantorRequests ||
+                              requiredGuarantorCount <= 0 ||
+                              visibleSelectedSupporters.length < requiredGuarantorCount ||
+                              loanStatusLower === "approved"
+                          )}
+                        >
+                          {sendingGuarantorRequests
+                            ? "Sending..."
+                            : loanStatusLower === "approved"
+                            ? "Already Approved"
+                            : "Send Guarantor Requests"}
+                        </button>
+
+                        <span style={badge(false)}>
+                          Selected: {visibleSelectedSupporters.length}
+                        </span>
                       </div>
                     </div>
                   ) : null}
-
-                  <div
-                    style={{
-                      marginTop: 18,
-                      display: "flex",
-                      gap: 10,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={handleSendGuarantorRequests}
-                      disabled={!canSendGuarantorRequests || sendingGuarantorRequests}
-                      style={actionBtn(
-                        "primary",
-                        !canSendGuarantorRequests || sendingGuarantorRequests
-                      )}
-                    >
-                      {sendButtonLabel}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleCancelLoanDraft}
-                      disabled={cancellingLoanDraft}
-                      style={actionBtn("secondary", cancellingLoanDraft)}
-                    >
-                      {cancellingLoanDraft ? "Cancelling..." : "Cancel Loan Draft"}
-                    </button>
-
-                    <Link to="/app/loan-readiness" style={actionBtn("secondary")}>
-                      Check Readiness Again
-                    </Link>
-                  </div>
-                </>
+                </div>
               ) : null}
             </div>
 
             <div style={innerCard("#FFFFFF")}>
-              <div style={sectionLabel()}>Live support items</div>
+              <div style={sectionLabel()}>Visible support items</div>
 
               <div
                 style={{
@@ -2743,19 +2928,16 @@ export default function MarketplacePage() {
                   lineHeight: 1.25,
                 }}
               >
-                Your support activity in this community
+                Your visible support activity here
               </div>
 
               <div
                 style={{
                   marginTop: 8,
-                  color: "#5F7287",
-                  fontSize: 14,
-                  lineHeight: 1.75,
+                  ...helperText(),
                 }}
               >
-                These are the support items currently visible in your selected
-                community context.
+                These are the support items currently visible in your selected community context.
               </div>
 
               <div
@@ -2767,15 +2949,11 @@ export default function MarketplacePage() {
               >
                 {loans.length === 0 ? (
                   <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                    No visible loan or support item is active in this community
-                    right now.
+                    No visible loan or support item is active in this community right now.
                   </div>
                 ) : (
-                  loans.slice(0, 8).map((item, index) => (
-                    <div
-                      key={`${item.id || index}`}
-                      style={innerCard("#FCFEFF")}
-                    >
+                  loans.slice(0, 6).map((item, index) => (
+                    <div key={`${item.id || index}`} style={innerCard("#FCFEFF")}>
                       <div
                         style={{
                           color: "#0B1F33",
@@ -2797,10 +2975,10 @@ export default function MarketplacePage() {
                       >
                         <span style={badge(true)}>{getLoanAmountText(item)}</span>
                         <span style={badge(false)}>
-                          Status: {getLoanStatusText(item)}
+                          Status: {firstTruthy(item?.status, "Open")}
                         </span>
                         <span style={badge(false)}>
-                          Role: {getLoanRoleText(item)}
+                          Role: {firstTruthy(item?.role, "Support")}
                         </span>
                       </div>
 
@@ -2819,31 +2997,13 @@ export default function MarketplacePage() {
                           item?.guarantor_name
                             ? `Guarantor: ${item.guarantor_name}`
                             : "",
-                          item?.created_at
-                            ? `Started: ${item.created_at}`
-                            : "",
+                          item?.created_at ? `Started: ${item.created_at}` : "",
                           "This support item is visible in the current community context."
                         )}
                       </div>
                     </div>
                   ))
                 )}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 14,
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
-                }}
-              >
-                <Link to="/app/loans" style={actionBtn("primary")}>
-                  Open Full Loans View
-                </Link>
-                <Link to="/app/loan-workbench" style={actionBtn("secondary")}>
-                  Workbench
-                </Link>
               </div>
             </div>
           </div>

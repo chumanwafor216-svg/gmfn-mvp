@@ -30,6 +30,7 @@ class UserOut(BaseModel):
     email: EmailStr
     role: str
     gmfn_id: Optional[str] = None
+    phone_e164: Optional[str] = None
 
     cci_score: Optional[float] = None
     cci_class: Optional[str] = None
@@ -373,6 +374,7 @@ def _build_me_payload(db: Session, user: User) -> dict[str, Any]:
         "email": user.email,
         "role": str(getattr(user, "role", "user") or "user"),
         "gmfn_id": getattr(user, "gmfn_id", None),
+        "phone_e164": getattr(user, "phone_e164", None),
         "cci_score": cci_payload.get("cci_score"),
         "cci_class": cci_payload.get("cci_class"),
         "cci_reason": cci_payload.get("cci_reason"),

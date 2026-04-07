@@ -559,7 +559,6 @@ export const MARKET_WISDOM_PAIRS: MarketWisdomPair[] = [
     gmfn: "GMFN brings order, visibility, and confidence to shared support.",
   },
 ];
-
 export function getNextMarketWisdomPair(index: number): MarketWisdomPair {
   if (!MARKET_WISDOM_PAIRS.length) {
     return {
@@ -578,19 +577,62 @@ function includesAny(text: string, words: string[]): boolean {
   return words.some((word) => text.includes(word));
 }
 
+function normalizeHour(value: any): number {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return new Date().getHours();
+  return Math.max(0, Math.min(23, Math.floor(n)));
+}
+
+function positiveNumber(value: any): number {
+  const n = Number(value || 0);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function safeTone(value: any): MarketWisdomTone {
+  const raw = String(value || "").trim().toLowerCase();
+
+  if (raw === "green") return "green";
+  if (raw === "yellow") return "yellow";
+  if (raw === "red") return "red";
+  return "neutral";
+}
+
+function daySeed(): number {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const diff = now.getTime() - start.getTime();
+  return Math.floor(diff / 86400000);
+}
+
+function hashSeed(...parts: Array<string | number | boolean | undefined>): number {
+  const text = parts.map((item) => String(item ?? "")).join("|");
+  let hash = 0;
+
+  for (let i = 0; i < text.length; i += 1) {
+    hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
+  }
+
+  return hash;
+}
+
+function stableWeightFromId(id: string, seed: number): number {
+  return hashSeed(id, seed) % 1000;
+}
+
 function scoreMarketWisdomPair(
   item: MarketWisdomPair,
-  ctx: MarketWisdomContext
+  ctx: MarketWisdomContext,
+  seed: number
 ): number {
-  const text = `${item.proverb} ${item.gmfn}`.toLowerCase();
+  const text = `${item.source} ${item.proverb} ${item.gmfn}`.toLowerCase();
   let score = 1;
 
-  const hour = Number(ctx.hour ?? 12);
-  const unread = Number(ctx.unread ?? 0);
-  const pendingRequests = Number(ctx.pendingRequests ?? 0);
+  const hour = normalizeHour(ctx.hour);
+  const unread = positiveNumber(ctx.unread);
+  const pendingRequests = positiveNumber(ctx.pendingRequests);
   const hasSpotlight = Boolean(ctx.hasSpotlight);
   const hasGmfnId = Boolean(ctx.hasGmfnId);
-  const trustTone = ctx.trustTone ?? "neutral";
+  const trustTone = safeTone(ctx.trustTone);
 
   if (ctx.previousId && item.id === ctx.previousId) {
     score -= 100;
@@ -605,6 +647,8 @@ function scoreMarketWisdomPair(
         "timing",
         "word",
         "predictable",
+        "morning",
+        "begin",
       ])
     ) {
       score += 4;
@@ -622,6 +666,7 @@ function scoreMarketWisdomPair(
         "seller",
         "supplier",
         "deal",
+        "shop",
       ])
     ) {
       score += 4;
@@ -637,6 +682,8 @@ function scoreMarketWisdomPair(
         "loyalty",
         "relationship",
         "together",
+        "name",
+        "reputation",
       ])
     ) {
       score += 4;
@@ -652,9 +699,11 @@ function scoreMarketWisdomPair(
         "trust",
         "network",
         "reputation",
+        "fair",
+        "word",
       ])
     ) {
-      score += 5;
+      score += 6;
     }
   }
 
@@ -666,9 +715,11 @@ function scoreMarketWisdomPair(
         "word",
         "attention",
         "reputation",
+        "timing",
+        "silence",
       ])
     ) {
-      score += 3;
+      score += 4;
     }
   }
 
@@ -682,9 +733,10 @@ function scoreMarketWisdomPair(
         "business",
         "buy",
         "shop",
+        "product",
       ])
     ) {
-      score += 4;
+      score += 5;
     }
   }
 
@@ -698,7 +750,7 @@ function scoreMarketWisdomPair(
         "reputation",
       ])
     ) {
-      score += 4;
+      score += 5;
     }
   }
 
@@ -711,9 +763,11 @@ function scoreMarketWisdomPair(
         "reputation",
         "behavior",
         "integrity",
+        "careful",
+        "silence",
       ])
     ) {
-      score += 6;
+      score += 7;
     }
   }
 
@@ -725,6 +779,7 @@ function scoreMarketWisdomPair(
         "support",
         "trust",
         "reliability",
+        "careful",
       ])
     ) {
       score += 5;
@@ -740,13 +795,14 @@ function scoreMarketWisdomPair(
         "network",
         "trade",
         "capital",
+        "stronger",
       ])
     ) {
       score += 4;
     }
   }
 
-  score += Math.random() * 0.75;
+  score += stableWeightFromId(item.id, seed) / 100000;
 
   return score;
 }
@@ -763,20 +819,41 @@ export function getSmartMarketWisdomPair(
     };
   }
 
+  const normalizedCtx = {
+    hour: normalizeHour(ctx.hour),
+    unread: positiveNumber(ctx.unread),
+    pendingRequests: positiveNumber(ctx.pendingRequests),
+    hasSpotlight: Boolean(ctx.hasSpotlight),
+    hasGmfnId: Boolean(ctx.hasGmfnId),
+    trustTone: safeTone(ctx.trustTone),
+    previousId: String(ctx.previousId || "").trim(),
+  };
+
+  const seed = hashSeed(
+    daySeed(),
+    normalizedCtx.hour,
+    normalizedCtx.unread,
+    normalizedCtx.pendingRequests,
+    normalizedCtx.hasSpotlight,
+    normalizedCtx.hasGmfnId,
+    normalizedCtx.trustTone
+  );
+
   const scored = MARKET_WISDOM_PAIRS
     .map((item) => ({
       item,
-      score: scoreMarketWisdomPair(item, ctx),
+      score: scoreMarketWisdomPair(item, normalizedCtx, seed),
     }))
     .sort((a, b) => b.score - a.score);
 
   const pool = scored
     .slice(0, Math.min(12, scored.length))
     .map((entry) => entry.item)
-    .filter((item) => item.id !== ctx.previousId);
+    .filter((item) => item.id !== normalizedCtx.previousId);
 
   if (pool.length > 0) {
-    return pool[Math.floor(Math.random() * pool.length)];
+    const pickedIndex = seed % pool.length;
+    return pool[pickedIndex];
   }
 
   return scored[0]?.item || MARKET_WISDOM_PAIRS[0];

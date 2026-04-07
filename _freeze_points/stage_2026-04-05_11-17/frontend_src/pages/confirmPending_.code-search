@@ -1,0 +1,9 @@
+# Query: confirmPending(
+# ContextLines: 1
+
+1 result - 1 file
+
+src\pages\DashboardPage.tsx:
+  581                    <button
+  582:                     onClick={() => openAdminConfirm(Number(e.id))}
+  583                      disabled={pendingBusyId === Number(e.id)}

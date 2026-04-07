@@ -78,6 +78,7 @@ from app.api.routes.withdrawal_instructions import router as withdrawal_instruct
 from app.api.routes.settlement_config import router as settlement_config_router
 from app.api.routes.notifications import router as notifications_router
 from app.api.routes.identity_risk import router as identity_risk_router
+from app.api.routes.settings import router as settings_router
 
 # =========================
 # Revenue / Earnings / Status
@@ -162,6 +163,7 @@ api_router.include_router(withdrawal_instructions_router)
 api_router.include_router(settlement_config_router)
 api_router.include_router(notifications_router)
 api_router.include_router(identity_risk_router)
+api_router.include_router(settings_router)
 
 # REVENUE / EARNINGS / STATUS
 api_router.include_router(revenue_allocation_router)

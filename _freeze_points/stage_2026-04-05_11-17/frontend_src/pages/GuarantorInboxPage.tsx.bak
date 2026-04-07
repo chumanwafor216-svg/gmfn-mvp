@@ -1,0 +1,233 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { getGuarantorInbox } from "../lib/api";
+
+type InboxRow = {
+  id?: number;
+  loan_id?: number;
+  borrower_display?: string | null;
+  borrower_email?: string | null;
+  borrower_user_id?: number | null;
+  amount?: string | number | null;
+  currency?: string | null;
+  status?: string | null;
+  created_at?: string | null;
+  expires_at?: string | null;
+  purpose?: string | null;
+};
+
+function safeStr(x: any): string {
+  return String(x ?? "");
+}
+
+function fmtMoney(x: any): string {
+  const n = Number(x);
+  if (!Number.isFinite(n)) {
+    const s = String(x ?? "").trim();
+    return s || "0.00";
+  }
+  return n.toFixed(2);
+}
+
+function pagePattern(): string {
+  const svg = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="320" viewBox="0 0 1600 320">
+    <rect width="1600" height="320" fill="#F8FBFE"/>
+    <g fill="none" stroke="#C7D9EE" stroke-opacity="0.40" stroke-width="2">
+      <path d="M70 170 C180 90, 290 90, 400 170 S620 250, 730 170" />
+      <path d="M900 170 C1010 90, 1120 90, 1230 170 S1450 250, 1560 170" />
+    </g>
+  </svg>`.trim();
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+function card(): React.CSSProperties {
+  return {
+    borderRadius: 24,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: "#FFFFFF",
+    boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
+    padding: 22,
+  };
+}
+
+function actionLink(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "11px 14px",
+    borderRadius: 14,
+    border: primary ? "none" : "1px solid rgba(11,31,51,0.10)",
+    background: primary ? "#0B63D1" : "#FFFFFF",
+    color: primary ? "#FFFFFF" : "#0B1F33",
+    textDecoration: "none",
+    fontWeight: 1000,
+    fontSize: 14,
+    cursor: "pointer",
+  };
+}
+
+function filterBtn(active: boolean): React.CSSProperties {
+  return {
+    padding: "10px 12px",
+    borderRadius: 14,
+    border: active ? "1px solid #BFDBFE" : "1px solid rgba(11,31,51,0.10)",
+    background: active ? "#EFF6FF" : "#FFFFFF",
+    color: active ? "#1D4ED8" : "#0B1F33",
+    fontWeight: 1000,
+    cursor: "pointer",
+    fontSize: 14,
+  };
+}
+
+function statusPill(status: string): React.CSSProperties {
+  const s = status.toLowerCase();
+  if (s.includes("approved")) {
+    return {
+      padding: "6px 10px",
+      borderRadius: 999,
+      background: "#ECFDF5",
+      border: "1px solid #A7F3D0",
+      color: "#065F46",
+      fontWeight: 1000,
+      fontSize: 12,
+    };
+  }
+  if (s.includes("declined")) {
+    return {
+      padding: "6px 10px",
+      borderRadius: 999,
+      background: "#FEF2F2",
+      border: "1px solid #FECACA",
+      color: "#991B1B",
+      fontWeight: 1000,
+      fontSize: 12,
+    };
+  }
+  return {
+    padding: "6px 10px",
+    borderRadius: 999,
+    background: "#FFFBEB",
+    border: "1px solid #FDE68A",
+    color: "#92400E",
+    fontWeight: 1000,
+    fontSize: 12,
+  };
+}
+
+export default function GuarantorInboxPage() {
+  const [rows, setRows] = useState<InboxRow[]>([]);
+  const [filter, setFilter] = useState<"pending" | "approved" | "declined" | "all">("pending");
+  const pattern = useMemo(() => pagePattern(), []);
+
+  async function loadInbox(nextFilter: "pending" | "approved" | "declined" | "all") {
+    const res = await getGuarantorInbox(nextFilter === "all" ? "all" : nextFilter, 50).catch(() => []);
+    const items = Array.isArray(res) ? res : res?.items || [];
+    setRows(items || []);
+  }
+
+  useEffect(() => {
+    loadInbox(filter);
+  }, [filter]);
+
+  return (
+    <div style={{ maxWidth: 1320, margin: "0 auto" }}>
+      <div
+        style={{
+          backgroundImage: `url("${pattern}")`,
+          backgroundRepeat: "no-repeat",
+          backgroundSize: "cover",
+          backgroundPosition: "center top",
+          borderRadius: 28,
+          border: "1px solid rgba(11,31,51,0.06)",
+          overflow: "hidden",
+          backgroundColor: "#F8FBFE",
+        }}
+      >
+        <div style={{ padding: 24 }}>
+          <div style={{ fontSize: 38, fontWeight: 1000, color: "#0B1F33" }}>
+            Incoming Support Requests
+          </div>
+          <div style={{ marginTop: 10, color: "#6B7A88", lineHeight: 1.8 }}>
+            Review requests that need your support response in a cleaner queue view.
+          </div>
+
+          <div style={{ marginTop: 18, ...card() }}>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              {(["pending", "approved", "declined", "all"] as const).map((x) => (
+                <button
+                  key={x}
+                  onClick={() => setFilter(x)}
+                  style={filterBtn(filter === x)}
+                >
+                  {x[0].toUpperCase() + x.slice(1)}
+                </button>
+              ))}
+              <Link to="/dashboard" style={actionLink(false)}>
+                Return to dashboard
+              </Link>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
+            {rows.length === 0 ? (
+              <div style={card()}>
+                <div style={{ color: "#6B7A88" }}>No requests visible for this filter.</div>
+              </div>
+            ) : (
+              rows.map((row, i) => (
+                <div key={row.id || i} style={card()}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 10,
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 1000, color: "#0B1F33", fontSize: 18 }}>
+                        {safeStr(row.borrower_display || row.borrower_email || "Member request")}
+                      </div>
+                      <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 13 }}>
+                        Loan #{safeStr(row.loan_id || "—")} · {safeStr(row.created_at || "—")}
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                      <span style={statusPill(safeStr(row.status || "pending"))}>
+                        {safeStr(row.status || "pending")}
+                      </span>
+                      <span style={statusPill("neutral")}>
+                        {fmtMoney(row.amount ?? "0")} {safeStr(row.currency || "NGN")}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: 12, color: "#6B7A88", lineHeight: 1.8 }}>
+                    Purpose: {safeStr(row.purpose || "—")}
+                  </div>
+
+                  <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
+                    Response window: {safeStr(row.expires_at || "Not visible yet")}
+                  </div>
+
+                  <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <Link to="/dashboard" style={actionLink(false)}>
+                      Back to dashboard
+                    </Link>
+                    <Link to="/loan-workbench" style={actionLink(false)}>
+                      Open workbench
+                    </Link>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

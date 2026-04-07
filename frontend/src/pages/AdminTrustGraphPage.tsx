@@ -1,639 +1,1030 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
-import { getAdminTrustGraph, getSelectedClanId } from "../lib/api";
+import * as api from "../lib/api";
 
-function safeStr(x: any, fallback = "—"): string {
-  const s = String(x ?? "").trim();
-  return s || fallback;
+type CollapseState = {
+  overview: boolean;
+  structure: boolean;
+  signals: boolean;
+  routes: boolean;
+};
+
+type GraphNode = {
+  id: string;
+  label: string;
+  gmfnId?: string;
+  cluster?: string;
+  degree?: number;
+  risk?: string;
+  role?: string;
+};
+
+type GraphEdge = {
+  id: string;
+  from: string;
+  to: string;
+  label?: string;
+  status?: string;
+  risk?: string;
+  weight?: number;
+};
+
+type GraphSignal = {
+  id: string;
+  title: string;
+  detail: string;
+  level: "normal" | "watch" | "flag";
+  createdAt?: string;
+};
+
+type GraphSnapshot = {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  clusters: string[];
+  signals: GraphSignal[];
+  sourceLabel: string;
+};
+
+type TrustEventRow = {
+  id?: number | string;
+  title?: string | null;
+  message?: string | null;
+  detail?: string | null;
+  description?: string | null;
+  kind?: string | null;
+  type?: string | null;
+  event_type?: string | null;
+  created_at?: string | null;
+};
+
+const TRUST_GRAPH_UI_STORAGE_KEY = "gmfn.trustGraph.sections.v1";
+
+function safeStr(x: any): string {
+  return String(x ?? "").trim();
 }
 
-function n(x: any): number {
-  const v = Number(x);
-  return Number.isFinite(v) ? v : 0;
+function firstTruthy(...values: any[]): string {
+  for (const value of values) {
+    const text = safeStr(value);
+    if (text) return text;
+  }
+  return "";
 }
 
-function card(bg = "#FFFFFF"): React.CSSProperties {
+function positiveNumber(value: any): number {
+  const n = Number(value || 0);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function rowsOf<T = any>(input: any): T[] {
+  if (Array.isArray(input)) return input as T[];
+  if (Array.isArray(input?.items)) return input.items as T[];
+  if (Array.isArray(input?.data?.items)) return input.data.items as T[];
+  if (Array.isArray(input?.results)) return input.results as T[];
+  if (Array.isArray(input?.rows)) return input.rows as T[];
+  return [];
+}
+
+function safeDateTime(x: any): string {
+  const raw = safeStr(x);
+  if (!raw) return "";
+  const d = new Date(raw);
+  if (!Number.isFinite(d.getTime())) return raw;
+  return d.toLocaleString();
+}
+
+function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 22,
+    borderRadius: 24,
     border: "1px solid rgba(11,31,51,0.08)",
     background: bg,
-    boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
-    padding: 22,
+    padding: 20,
+    boxShadow:
+      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
+    overflow: "hidden",
   };
 }
 
-function softCard(bg = "#F8FAFC"): React.CSSProperties {
+function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
-    borderRadius: 16,
+    borderRadius: 18,
     border: "1px solid rgba(11,31,51,0.08)",
     background: bg,
     padding: 16,
   };
 }
 
-function btn(primary = false, disabled = false): React.CSSProperties {
+function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "11px 14px",
-    borderRadius: 14,
-    border: primary ? "none" : "1px solid rgba(11,31,51,0.10)",
-    background: disabled ? "#CBD5E1" : primary ? "#0B63D1" : "#FFFFFF",
-    color: primary ? "#FFFFFF" : "#0B1F33",
+    borderRadius: 16,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 14,
+  };
+}
+
+function statTile(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 14,
+  };
+}
+
+function routeTile(primary = false): React.CSSProperties {
+  return {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+    minHeight: 104,
+    borderRadius: 18,
+    border: primary
+      ? "1px solid rgba(11,99,209,0.18)"
+      : "1px solid rgba(11,31,51,0.08)",
+    background: primary ? "#F7FAFF" : "#FFFFFF",
+    padding: 16,
     textDecoration: "none",
-    fontWeight: 1000,
-    fontSize: 14,
-    cursor: disabled ? "not-allowed" : "pointer",
-    opacity: disabled ? 0.72 : 1,
-  };
-}
-
-function inputStyle(width = 180): React.CSSProperties {
-  return {
-    width,
-    padding: "12px 14px",
-    borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.12)",
-    outline: "none",
-    fontSize: 14,
-    color: "#0B1F33",
-    background: "#FFFFFF",
-    boxSizing: "border-box",
-  };
-}
-
-function metricValueStyle(): React.CSSProperties {
-  return {
-    marginTop: 6,
-    fontSize: 24,
-    fontWeight: 1000,
-    color: "#0B1F33",
+    boxShadow: primary ? "0 10px 24px rgba(11,99,209,0.05)" : "none",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#64748B",
-    fontWeight: 1000,
-    letterSpacing: 0.2,
+    color: "#5D7389",
+    fontWeight: 900,
+    letterSpacing: 0.35,
     textTransform: "uppercase",
   };
 }
 
-function prettyValue(v: any): string {
-  if (v == null) return "—";
-  if (typeof v === "string") return v;
+function badge(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    minHeight: 30,
+    borderRadius: 999,
+    padding: "6px 10px",
+    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
+    color: primary ? "#0B63D1" : "#51657A",
+    fontSize: 12,
+    fontWeight: 900,
+    whiteSpace: "nowrap",
+  };
+}
+
+function collapseToggle(): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 38,
+    padding: "8px 12px",
+    borderRadius: 12,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#FFFFFF",
+    color: "#24415C",
+    fontWeight: 800,
+    fontSize: 13,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+  };
+}
+
+function helperText(): React.CSSProperties {
+  return {
+    color: "#5F7287",
+    fontSize: 14,
+    lineHeight: 1.75,
+  };
+}
+
+function readLocalJSON<T>(key: string, fallback: T): T {
   try {
-    return JSON.stringify(v, null, 2);
+    if (typeof window === "undefined") return fallback;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
   } catch {
-    return String(v);
+    return fallback;
   }
 }
 
-export default function AdminTrustGraphPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
+function writeLocalJSON(key: string, value: any) {
+  try {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore
+  }
+}
 
-  const selectedClanId = n(getSelectedClanId());
-  const queryClanId = n(searchParams.get("clan_id"));
-  const effectiveClanId = queryClanId || selectedClanId || 0;
-  const userId = n(searchParams.get("user_id"));
+function defaultCollapseState(): CollapseState {
+  return {
+    overview: false,
+    structure: false,
+    signals: true,
+    routes: false,
+  };
+}
 
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<any>(null);
-  const [err, setErr] = useState("");
+function normalizeCollapseState(raw: any): CollapseState {
+  const base = defaultCollapseState();
 
-  const load = useCallback(async () => {
-    setErr("");
-    setData(null);
+  return {
+    overview: Boolean(raw?.overview ?? base.overview),
+    structure: Boolean(raw?.structure ?? base.structure),
+    signals: Boolean(raw?.signals ?? base.signals),
+    routes: Boolean(raw?.routes ?? base.routes),
+  };
+}
 
-    try {
-      if (!userId || userId <= 0) {
-        return;
+async function callFirstAvailable<T = any>(
+  names: string[],
+  argsSets: any[][]
+): Promise<T | null> {
+  for (const name of names) {
+    const fn = (api as any)[name];
+    if (typeof fn !== "function") continue;
+
+    for (const args of argsSets) {
+      try {
+        const result = await fn(...args);
+        if (result) return result as T;
+      } catch {
+        // try next signature
       }
-
-      setLoading(true);
-
-      const res = await getAdminTrustGraph(userId, {
-        include_clans: true,
-        limit_events: 500,
-      });
-
-      setData(res || null);
-    } catch (e: any) {
-      setErr(String(e?.message || e || "Unable to load trust graph."));
-    } finally {
-      setLoading(false);
     }
-  }, [userId]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  function updateQuery(next: { clan_id?: number | null; user_id?: number | null }) {
-    const p = new URLSearchParams(searchParams.toString());
-
-    if (next.clan_id == null || next.clan_id <= 0) p.delete("clan_id");
-    else p.set("clan_id", String(next.clan_id));
-
-    if (next.user_id == null || next.user_id <= 0) p.delete("user_id");
-    else p.set("user_id", String(next.user_id));
-
-    setSearchParams(p);
   }
 
-  const queryString = useMemo(() => {
-    const p = new URLSearchParams();
-    if (effectiveClanId > 0) p.set("clan_id", String(effectiveClanId));
-    if (userId > 0) p.set("user_id", String(userId));
-    return p.toString();
-  }, [effectiveClanId, userId]);
+  return null;
+}
 
-  const nodes = Array.isArray(data?.nodes) ? data.nodes : [];
-  const rawEdges = Array.isArray(data?.edges) ? data.edges : [];
+function normalizeGraphNode(raw: any, index: number): GraphNode {
+  return {
+    id: firstTruthy(raw?.id, raw?.node_id, raw?.gmfn_id, `node-${index}`),
+    label: firstTruthy(
+      raw?.label,
+      raw?.name,
+      raw?.display_name,
+      raw?.title,
+      raw?.gmfn_id,
+      `Node ${index + 1}`
+    ),
+    gmfnId: firstTruthy(raw?.gmfn_id),
+    cluster: firstTruthy(raw?.cluster, raw?.community, raw?.group, raw?.bucket),
+    degree: positiveNumber(raw?.degree || raw?.weight || raw?.connections) || undefined,
+    risk: firstTruthy(raw?.risk, raw?.risk_level, raw?.status),
+    role: firstTruthy(raw?.role),
+  };
+}
 
-  const rootUser = data?.command_centre?.root_user || data?.root_user || {};
-  const summary = data?.summary || {};
-  const cci = data?.cci || {};
-  const commandStats = data?.command_centre?.stats || {};
-  const commandSignals = data?.command_centre?.signals || {};
+function normalizeGraphEdge(raw: any, index: number): GraphEdge {
+  return {
+    id: firstTruthy(raw?.id, raw?.edge_id, `edge-${index}`),
+    from: firstTruthy(raw?.from, raw?.source, raw?.source_id),
+    to: firstTruthy(raw?.to, raw?.target, raw?.target_id),
+    label: firstTruthy(raw?.label, raw?.relationship, raw?.kind),
+    status: firstTruthy(raw?.status),
+    risk: firstTruthy(raw?.risk, raw?.risk_level),
+    weight: positiveNumber(raw?.weight || raw?.score || raw?.strength) || undefined,
+  };
+}
 
-  const filteredEdges = useMemo(() => {
-    let rows = rawEdges.slice();
+function normalizeGraphSignal(raw: any, index: number): GraphSignal {
+  const text = [
+    safeStr(raw?.level),
+    safeStr(raw?.risk),
+    safeStr(raw?.status),
+    safeStr(raw?.title),
+    safeStr(raw?.detail),
+    safeStr(raw?.message),
+  ]
+    .join(" ")
+    .toLowerCase();
 
-    const hasClanContext = rows.some((edge: any) => n(edge?.clan_id) > 0);
-    if (effectiveClanId > 0 && hasClanContext) {
-      rows = rows.filter((edge: any) => n(edge?.clan_id) === effectiveClanId);
+  let level: GraphSignal["level"] = "normal";
+  if (
+    text.includes("flag") ||
+    text.includes("risk") ||
+    text.includes("high") ||
+    text.includes("urgent")
+  ) {
+    level = "flag";
+  } else if (
+    text.includes("watch") ||
+    text.includes("medium") ||
+    text.includes("pending")
+  ) {
+    level = "watch";
+  }
+
+  return {
+    id: firstTruthy(raw?.id, `signal-${index}`),
+    title: firstTruthy(raw?.title, raw?.label, raw?.kind, "Graph signal"),
+    detail: firstTruthy(
+      raw?.detail,
+      raw?.message,
+      raw?.description,
+      "A structural graph signal is visible."
+    ),
+    level,
+    createdAt: firstTruthy(raw?.created_at),
+  };
+}
+
+function normalizeGraphSnapshot(raw: any): GraphSnapshot | null {
+  if (!raw) return null;
+
+  const src = raw?.item || raw?.graph || raw?.snapshot || raw;
+
+  const nodeRows = [
+    src?.nodes,
+    src?.vertices,
+    src?.graph?.nodes,
+    src?.data?.nodes,
+  ].find(Array.isArray) || [];
+
+  const edgeRows = [
+    src?.edges,
+    src?.links,
+    src?.graph?.edges,
+    src?.data?.edges,
+  ].find(Array.isArray) || [];
+
+  const signalRows = [
+    src?.signals,
+    src?.flags,
+    src?.alerts,
+    src?.issues,
+    src?.data?.signals,
+  ].find(Array.isArray) || [];
+
+  const clusterRows = [
+    src?.clusters,
+    src?.communities,
+    src?.groups,
+    src?.buckets,
+  ].find(Array.isArray) || [];
+
+  const nodes = (nodeRows as any[]).map((row, index) =>
+    normalizeGraphNode(row, index)
+  );
+
+  const edges = (edgeRows as any[])
+    .map((row, index) => normalizeGraphEdge(row, index))
+    .filter((row) => row.from && row.to);
+
+  const signals = (signalRows as any[]).map((row, index) =>
+    normalizeGraphSignal(row, index)
+  );
+
+  const clusters = (clusterRows as any[])
+    .map((row: any, index: number) =>
+      firstTruthy(
+        row?.label,
+        row?.name,
+        row?.title,
+        row?.id,
+        `Cluster ${index + 1}`
+      )
+    )
+    .filter(Boolean);
+
+  return {
+    nodes,
+    edges,
+    clusters,
+    signals,
+    sourceLabel: "Graph feed",
+  };
+}
+
+function fallbackSignalsFromEvents(events: TrustEventRow[]): GraphSignal[] {
+  return events.slice(0, 8).map((row, index) => {
+    const text = [
+      safeStr(row?.kind),
+      safeStr(row?.type),
+      safeStr(row?.event_type),
+      safeStr(row?.title),
+      safeStr(row?.message),
+      safeStr(row?.detail),
+      safeStr(row?.description),
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    let level: GraphSignal["level"] = "normal";
+    if (
+      text.includes("risk") ||
+      text.includes("flag") ||
+      text.includes("default") ||
+      text.includes("overdue")
+    ) {
+      level = "flag";
+    } else if (
+      text.includes("watch") ||
+      text.includes("repair") ||
+      text.includes("warning")
+    ) {
+      level = "watch";
     }
 
-    return rows;
-  }, [rawEdges, effectiveClanId]);
+    return {
+      id: firstTruthy(row?.id, `fallback-${index}`),
+      title: firstTruthy(
+        row?.title,
+        row?.message,
+        row?.detail,
+        row?.kind,
+        row?.event_type,
+        "Relationship signal"
+      ),
+      detail: firstTruthy(
+        row?.detail,
+        row?.description,
+        row?.message,
+        "A relationship-related trust signal is visible."
+      ),
+      level,
+      createdAt: firstTruthy(row?.created_at),
+    };
+  });
+}
 
-  const clanNodes = useMemo(
-    () => nodes.filter((x: any) => safeStr(x?.node_type) === "clan"),
-    [nodes]
+export default function AdminTrustGraphPage() {
+  const selectedClanId = Number(api.getSelectedClanId() || 0);
+
+  const [isCompact, setIsCompact] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 980;
+  });
+
+  const [collapsed, setCollapsed] = useState<CollapseState>(() =>
+    normalizeCollapseState(
+      readLocalJSON(TRUST_GRAPH_UI_STORAGE_KEY, defaultCollapseState())
+    )
   );
 
-  const userNodes = useMemo(
-    () => nodes.filter((x: any) => safeStr(x?.node_type) === "user"),
-    [nodes]
-  );
+  const [loading, setLoading] = useState(true);
+  const [me, setMe] = useState<any>(null);
+  const [currentClan, setCurrentClan] = useState<any>(null);
+  const [graphSnapshot, setGraphSnapshot] = useState<GraphSnapshot | null>(null);
+  const [fallbackEvents, setFallbackEvents] = useState<TrustEventRow[]>([]);
 
-  const recentEdges = useMemo(
-    () => filteredEdges.filter((x: any) => safeStr(x?.status) === "recent"),
-    [filteredEdges]
-  );
+  useEffect(() => {
+    if (typeof window === "undefined") return;
 
-  const stressedEdges = useMemo(
-    () => filteredEdges.filter((x: any) => safeStr(x?.status) === "stressed"),
-    [filteredEdges]
-  );
-
-  const edgeTypeCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-
-    for (const edge of filteredEdges) {
-      const key = safeStr(edge?.edge_type || edge?.edge_label || "edge");
-      counts[key] = (counts[key] || 0) + 1;
+    function handleResize() {
+      setIsCompact(window.innerWidth <= 980);
     }
 
-    return counts;
-  }, [filteredEdges]);
+    handleResize();
+    window.addEventListener("resize", handleResize);
 
-  const topEdges = useMemo(() => {
-    return filteredEdges.slice().sort((a: any, b: any) => {
-      const aw = Number(a?.weight ?? 0);
-      const bw = Number(b?.weight ?? 0);
-      return bw - aw;
-    });
-  }, [filteredEdges]);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    writeLocalJSON(TRUST_GRAPH_UI_STORAGE_KEY, collapsed);
+  }, [collapsed]);
+
+  useEffect(() => {
+    let alive = true;
+
+    (async () => {
+      setLoading(true);
+
+      try {
+        const [meRes, clanRes, graphRes, eventsRes] = await Promise.all([
+          api.getMe().catch(() => null),
+          api.getCurrentClan().catch(() => null),
+          callFirstAvailable(
+            [
+              "getAdminTrustGraph",
+              "getTrustGraphAdmin",
+              "getTrustGraph",
+              "getTrustGraphSnapshot",
+              "getTrustGraphSummary",
+            ],
+            [
+              [{ clan_id: selectedClanId || undefined }],
+              [selectedClanId || undefined],
+              [],
+            ]
+          ),
+          api
+            .listTrustEvents({
+              clan_id: selectedClanId || undefined,
+              limit: 60,
+            })
+            .catch(() => ({ items: [] })),
+        ]);
+
+        if (!alive) return;
+
+        setMe(meRes || null);
+        setCurrentClan(clanRes || null);
+        setGraphSnapshot(normalizeGraphSnapshot(graphRes));
+        setFallbackEvents(rowsOf<TrustEventRow>(eventsRes));
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [selectedClanId]);
+
+  const operatorName = useMemo(() => {
+    return (
+      firstTruthy(
+        me?.display_name,
+        me?.nickname,
+        me?.name,
+        me?.first_name,
+        me?.email
+      ) || "Operator"
+    );
+  }, [me]);
+
+  const communityLabel = useMemo(() => {
+    return (
+      firstTruthy(
+        currentClan?.marketplace_name,
+        currentClan?.name,
+        currentClan?.display_name,
+        currentClan?.title
+      ) || (selectedClanId ? `Community ${selectedClanId}` : "No selected community")
+    );
+  }, [currentClan, selectedClanId]);
+
+  const roleLabel = useMemo(() => {
+    return (
+      firstTruthy(me?.role, me?.account_role, me?.user_role) || "admin"
+    );
+  }, [me]);
+
+  const graphSignals = useMemo(() => {
+    if (graphSnapshot?.signals?.length) return graphSnapshot.signals;
+    return fallbackSignalsFromEvents(fallbackEvents);
+  }, [graphSnapshot, fallbackEvents]);
+
+  const computedNodeDegrees = useMemo(() => {
+    const map = new Map<string, number>();
+
+    for (const node of graphSnapshot?.nodes || []) {
+      map.set(node.id, node.degree || 0);
+    }
+
+    for (const edge of graphSnapshot?.edges || []) {
+      if (!edge.from || !edge.to) continue;
+      map.set(edge.from, (map.get(edge.from) || 0) + 1);
+      map.set(edge.to, (map.get(edge.to) || 0) + 1);
+    }
+
+    return map;
+  }, [graphSnapshot]);
+
+  const topNodes = useMemo(() => {
+    const rows = (graphSnapshot?.nodes || []).map((node) => ({
+      ...node,
+      degree: node.degree || computedNodeDegrees.get(node.id) || 0,
+    }));
+
+    rows.sort((a, b) => (b.degree || 0) - (a.degree || 0));
+    return rows.slice(0, 6);
+  }, [graphSnapshot, computedNodeDegrees]);
+
+  const riskEdges = useMemo(() => {
+    return (graphSnapshot?.edges || [])
+      .filter((edge) => safeStr(edge.risk) || safeStr(edge.status))
+      .slice(0, 6);
+  }, [graphSnapshot]);
+
+  const summary = useMemo(() => {
+    const nodeCount = graphSnapshot?.nodes?.length || 0;
+    const edgeCount = graphSnapshot?.edges?.length || 0;
+    const clusterCount = graphSnapshot?.clusters?.length || 0;
+
+    const flaggedSignals = graphSignals.filter((signal) => signal.level === "flag").length;
+    const watchSignals = graphSignals.filter((signal) => signal.level === "watch").length;
+
+    const centralityPressure =
+      topNodes.length > 0 ? (topNodes[0].degree || 0) : 0;
+
+    let structureTitle = "The visible trust structure looks fairly distributed.";
+    let structureDetail =
+      "No strong central concentration signal is dominating the visible graph reading right now.";
+
+    if (centralityPressure >= 8 || flaggedSignals >= 4) {
+      structureTitle = "The visible trust structure shows concentration pressure.";
+      structureDetail =
+        "A central node or a cluster of flagged relationship signals is standing out in the current graph reading.";
+    } else if (centralityPressure >= 4 || watchSignals >= 3) {
+      structureTitle = "The visible trust structure needs watchful reading.";
+      structureDetail =
+        "The current graph reading is not yet critical, but some clusters or central relationships deserve watchful attention.";
+    }
+
+    return {
+      nodeCount,
+      edgeCount,
+      clusterCount,
+      flaggedSignals,
+      watchSignals,
+      structureTitle,
+      structureDetail,
+    };
+  }, [graphSnapshot, graphSignals, topNodes]);
+
+  function toggleSection(key: keyof CollapseState) {
+    setCollapsed((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  }
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          maxWidth: 1180,
+          margin: "0 auto",
+          paddingBottom: 40,
+          display: "grid",
+          gap: 18,
+        }}
+      >
+        <PageTopNav
+          sectionLabel="Trust Graph"
+          title="Trust Graph"
+          subtitle="Preparing the trust graph surface..."
+          homeTo="/app/dashboard"
+          homeLabel="Dashboard"
+          backTo="/app/command-center"
+          backLabel="Command Center"
+          nextLinks={[
+            { label: "Trust Analytics", to: "/app/command-center/trust-analytics" },
+            { label: "System Operations", to: "/app/command-center/system-operations" },
+          ]}
+          utilityLinks={[{ label: "Exposure", to: "/app/command-center/exposure" }]}
+        />
+
+        <section style={pageCard("#FFFFFF")}>
+          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+            Loading trust graph...
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ maxWidth: 1200, margin: "0 auto", paddingBottom: 30 }}>
+    <div
+      style={{
+        maxWidth: 1180,
+        margin: "0 auto",
+        paddingBottom: 40,
+        display: "grid",
+        gap: 18,
+      }}
+    >
       <PageTopNav
+        sectionLabel="Trust Graph"
         title="Trust Graph"
-        subtitle="Inspect a user’s visible trust relationships, connected community context, and edge structure."
+        subtitle="Read connectedness, structural concentration, and relationship-based trust shape from the operator layer."
+        homeTo="/app/dashboard"
+        homeLabel="Dashboard"
+        backTo="/app/command-center"
+        backLabel="Command Center"
+        nextLinks={[
+          { label: "Trust Analytics", to: "/app/command-center/trust-analytics" },
+          { label: "System Operations", to: "/app/command-center/system-operations" },
+        ]}
+        utilityLinks={[{ label: "Exposure", to: "/app/command-center/exposure" }]}
       />
 
-      <div style={{ ...card("#F8FBFF"), marginTop: 18 }}>
-        <div style={sectionLabel()}>Command Center</div>
-
+      <section
+        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+      >
         <div
           style={{
-            marginTop: 12,
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 14,
-            flexWrap: "wrap",
-            alignItems: "center",
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.1fr) 320px",
+            gap: 16,
+            alignItems: "start",
           }}
         >
           <div>
-            <div style={{ fontSize: 34, fontWeight: 1000, color: "#0B1F33" }}>
-              Trust Graph
+            <div style={sectionLabel()}>Structural overview</div>
+
+            <div
+              style={{
+                marginTop: 10,
+                color: "#0B1F33",
+                fontWeight: 900,
+                fontSize: isCompact ? 28 : 34,
+                lineHeight: 1.1,
+              }}
+            >
+              Trust structure reading for {operatorName}
             </div>
-            <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
-              Admin-only graph view for user nodes, clan nodes, relationship edges,
-              summary metrics, and command-center signals.
+
+            <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
+              This page is for connectedness and relationship structure. Use it when the work is about network shape, centrality, clusters, and structural risk signals.
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
+              <span style={badge(true)}>Role: {roleLabel}</span>
+              <span style={badge(false)}>Community: {communityLabel}</span>
+              <span style={badge(false)}>
+                Source: {graphSnapshot?.sourceLabel || "Fallback trust-event read"}
+              </span>
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <Link
-              to={`/app/command-center${queryString ? `?${queryString}` : ""}`}
-              style={btn(false)}
+          <div style={softCard("#FFFFFF")}>
+            <div style={sectionLabel()}>Current graph reading</div>
+
+            <div
+              style={{
+                marginTop: 10,
+                color: "#0B1F33",
+                fontWeight: 900,
+                fontSize: 20,
+                lineHeight: 1.25,
+              }}
             >
-              Command Center
-            </Link>
-            <Link
-              to={`/app/command-center/trust-analytics${queryString ? `?${queryString}` : ""}`}
-              style={btn(false)}
-            >
-              Trust Analytics
-            </Link>
-            <Link
-              to={`/app/command-center/trust-graph${queryString ? `?${queryString}` : ""}`}
-              style={btn(true)}
-            >
-              Trust Graph
-            </Link>
+              {summary.structureTitle}
+            </div>
+
+            <div style={{ marginTop: 10, ...helperText() }}>
+              {summary.structureDetail}
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div style={{ ...card(), marginTop: 18 }}>
-        <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-          Load a user graph
-        </div>
-
+      <section style={pageCard("#FFFFFF")}>
         <div
           style={{
-            marginTop: 16,
             display: "flex",
-            gap: 10,
-            flexWrap: "wrap",
+            justifyContent: "space-between",
+            gap: 12,
             alignItems: "center",
+            flexWrap: "wrap",
           }}
         >
-          <input
-            value={userId || ""}
-            onChange={(e) =>
-              updateQuery({
-                clan_id: effectiveClanId || null,
-                user_id: n(e.target.value) || null,
-              })
-            }
-            placeholder="User ID"
-            style={inputStyle(180)}
-          />
-
-          <input
-            value={effectiveClanId || ""}
-            onChange={(e) =>
-              updateQuery({
-                clan_id: n(e.target.value) || null,
-                user_id: userId || null,
-              })
-            }
-            placeholder="Clan ID"
-            style={inputStyle(160)}
-          />
-
-          <button type="button" onClick={() => void load()} style={btn(true, loading)}>
-            {loading ? "Loading..." : "Load Graph"}
-          </button>
+          <div>
+            <div style={sectionLabel()}>Graph overview</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              A quick reading of visible structure size and flagged signal count.
+            </div>
+          </div>
 
           <button
             type="button"
-            onClick={() => setSearchParams(new URLSearchParams())}
-            style={btn(false)}
+            onClick={() => toggleSection("overview")}
+            style={collapseToggle()}
           >
-            Clear Filters
+            {collapsed.overview ? "Open" : "Collapse"}
           </button>
         </div>
 
-        {err ? (
+        {!collapsed.overview ? (
           <div
             style={{
-              marginTop: 16,
-              padding: "12px 14px",
-              borderRadius: 14,
-              background: "#FEF2F2",
-              border: "1px solid #FECACA",
-              color: "#991B1B",
-              fontWeight: 900,
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "1fr 1fr"
+                : "repeat(5, minmax(0, 1fr))",
+              gap: 12,
             }}
           >
-            {err}
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Nodes</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 24,
+                  fontWeight: 900,
+                }}
+              >
+                {summary.nodeCount}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Edges</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 24,
+                  fontWeight: 900,
+                }}
+              >
+                {summary.edgeCount}
+              </div>
+            </div>
+
+            <div style={statTile("#F8FBFF")}>
+              <div style={sectionLabel()}>Clusters</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B63D1",
+                  fontSize: 24,
+                  fontWeight: 900,
+                }}
+              >
+                {summary.clusterCount}
+              </div>
+            </div>
+
+            <div style={statTile("#FFFBEF")}>
+              <div style={sectionLabel()}>Watch signals</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#92400E",
+                  fontSize: 24,
+                  fontWeight: 900,
+                }}
+              >
+                {summary.watchSignals}
+              </div>
+            </div>
+
+            <div style={statTile("#FFF5F5")}>
+              <div style={sectionLabel()}>Flagged signals</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#991B1B",
+                  fontSize: 24,
+                  fontWeight: 900,
+                }}
+              >
+                {summary.flaggedSignals}
+              </div>
+            </div>
           </div>
         ) : null}
+      </section>
 
-        <div style={{ marginTop: 14, color: "#6B7A88", lineHeight: 1.8 }}>
-          User ID is required. Clan ID is optional and narrows edge display when
-          clan-specific edge context exists.
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Structure reading</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Which nodes look most central, and which relationships are worth watching.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => toggleSection("structure")}
+            style={collapseToggle()}
+          >
+            {collapsed.structure ? "Open" : "Collapse"}
+          </button>
         </div>
-      </div>
 
-      {data ? (
-        <>
+        {!collapsed.structure ? (
           <div
             style={{
-              marginTop: 18,
+              marginTop: 14,
               display: "grid",
-              gridTemplateColumns: "1fr 1fr 1fr 1fr",
-              gap: 18,
+              gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+              gap: 12,
             }}
           >
-            <div style={card()}>
-              <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                ROOT USER
-              </div>
-              <div style={metricValueStyle()}>
-                {safeStr(rootUser?.gmfn_id, `User #${safeStr(data?.root_user_id)}`)}
-              </div>
-              <div style={{ marginTop: 6, color: "#64748B" }}>
-                {safeStr(rootUser?.email)}
-              </div>
-            </div>
-
-            <div style={card()}>
-              <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                USER NODES
-              </div>
-              <div style={metricValueStyle()}>
-                {n(commandStats?.user_node_total || userNodes.length)}
-              </div>
-              <div style={{ marginTop: 6, color: "#64748B" }}>
-                People visible in this graph
-              </div>
-            </div>
-
-            <div style={card()}>
-              <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                CLAN NODES
-              </div>
-              <div style={metricValueStyle()}>
-                {n(commandStats?.clan_node_total || clanNodes.length)}
-              </div>
-              <div style={{ marginTop: 6, color: "#64748B" }}>
-                Connected community context
-              </div>
-            </div>
-
-            <div style={card()}>
-              <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                FILTERED EDGES
-              </div>
-              <div style={metricValueStyle()}>
-                {filteredEdges.length}
-              </div>
-              <div style={{ marginTop: 6, color: "#64748B" }}>
-                Relationship and support links
-              </div>
-            </div>
-          </div>
-
-          <div
-            style={{
-              marginTop: 18,
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr 1fr 1fr",
-              gap: 18,
-            }}
-          >
-            <div style={card()}>
-              <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                SUPPORT GIVEN
-              </div>
-              <div style={metricValueStyle()}>
-                {n(summary?.support_given_count)}
-              </div>
-              <div style={{ marginTop: 6, color: "#64748B" }}>
-                Support actions initiated by this user
-              </div>
-            </div>
-
-            <div style={card()}>
-              <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                GUARANTEES GIVEN
-              </div>
-              <div style={metricValueStyle()}>
-                {n(summary?.guarantees_given_count)}
-              </div>
-              <div style={{ marginTop: 6, color: "#64748B" }}>
-                Guarantee edges created by this user
-              </div>
-            </div>
-
-            <div style={card()}>
-              <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                BORROWER SUPPORT
-              </div>
-              <div style={metricValueStyle()}>
-                {n(summary?.borrower_support_count)}
-              </div>
-              <div style={{ marginTop: 6, color: "#64748B" }}>
-                Support this user received as borrower
-              </div>
-            </div>
-
-            <div style={card()}>
-              <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                FUNDS MOBILISED
-              </div>
-              <div style={metricValueStyle()}>
-                {n(summary?.funds_mobilised_count)}
-              </div>
-              <div style={{ marginTop: 6, color: "#64748B" }}>
-                Distinct loans helped by this user
-              </div>
-            </div>
-          </div>
-
-          <div
-            style={{
-              marginTop: 18,
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr 1fr 1fr",
-              gap: 18,
-            }}
-          >
-            <div style={card()}>
-              <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                NETWORK BREADTH
-              </div>
-              <div style={metricValueStyle()}>
-                {safeStr(summary?.network_breadth)}
-              </div>
-            </div>
-
-            <div style={card()}>
-              <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                NETWORK QUALITY
-              </div>
-              <div style={metricValueStyle()}>
-                {safeStr(summary?.network_quality)}
-              </div>
-            </div>
-
-            <div style={card()}>
-              <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                GUARANTEE INTEGRITY
-              </div>
-              <div style={metricValueStyle()}>
-                {safeStr(summary?.guarantee_integrity)}
-              </div>
-            </div>
-
-            <div style={card()}>
-              <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                CCI SCORE / BAND
-              </div>
-              <div style={metricValueStyle()}>
-                {safeStr(cci?.cci_score)} / {safeStr(cci?.cci_band)}
-              </div>
-            </div>
-          </div>
-
-          <div
-            style={{
-              marginTop: 18,
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 18,
-            }}
-          >
-            <div style={card()}>
-              <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-                How to read this graph
-              </div>
-              <div style={{ marginTop: 12, color: "#475569", lineHeight: 1.8 }}>
-                This view reflects the new trust-graph structure: user nodes, clan
-                nodes, relationship edges, summary metrics, CCI interpretation,
-                and command-center signals.
+            <div style={innerCard("#F8FBFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 15,
+                }}
+              >
+                Most central visible nodes
               </div>
 
-              <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-                <div style={softCard()}>
-                  <b>Support given</b>
-                  <div style={{ marginTop: 6, color: "#64748B", lineHeight: 1.7 }}>
-                    Counts support-oriented outgoing edges from the selected user.
+              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                {topNodes.length === 0 ? (
+                  <div style={helperText()}>
+                    No graph node feed is visible right now.
                   </div>
-                </div>
-
-                <div style={softCard()}>
-                  <b>Guarantees given</b>
-                  <div style={{ marginTop: 6, color: "#64748B", lineHeight: 1.7 }}>
-                    Counts outgoing guarantee edges created by the selected user.
-                  </div>
-                </div>
-
-                <div style={softCard()}>
-                  <b>Borrower support</b>
-                  <div style={{ marginTop: 6, color: "#64748B", lineHeight: 1.7 }}>
-                    Counts support the selected user received as borrower.
-                  </div>
-                </div>
-
-                <div style={softCard()}>
-                  <b>Funds mobilised</b>
-                  <div style={{ marginTop: 6, color: "#64748B", lineHeight: 1.7 }}>
-                    Counts distinct loans helped by the selected user’s guarantees.
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div style={card()}>
-              <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-                Command Center Signals
-              </div>
-
-              <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
-                <div style={softCard()}>
-                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                    STRENGTHS
-                  </div>
-                  <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900 }}>
-                    {Array.isArray(commandSignals?.strengths) && commandSignals.strengths.length > 0
-                      ? commandSignals.strengths.join(", ")
-                      : "—"}
-                  </div>
-                </div>
-
-                <div style={softCard()}>
-                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                    PRESSURES
-                  </div>
-                  <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900 }}>
-                    {Array.isArray(commandSignals?.pressures) && commandSignals.pressures.length > 0
-                      ? commandSignals.pressures.join(", ")
-                      : "—"}
-                  </div>
-                </div>
-
-                <div style={softCard()}>
-                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                    RISK FLAGS
-                  </div>
-                  <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900 }}>
-                    {Array.isArray(summary?.risk_flags) && summary.risk_flags.length > 0
-                      ? summary.risk_flags.join(", ")
-                      : "—"}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div
-            style={{
-              marginTop: 18,
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 18,
-            }}
-          >
-            <div style={card()}>
-              <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-                Connected Community Context
-              </div>
-
-              <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-                {clanNodes.length === 0 ? (
-                  <div style={{ color: "#7A8D9F" }}>No connected clan context found.</div>
                 ) : (
-                  clanNodes.map((clanNode: any, idx: number) => (
-                    <div key={idx} style={softCard()}>
-                      <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
-                        {safeStr(clanNode?.display_label, `Clan #${idx + 1}`)}
+                  topNodes.map((node) => (
+                    <div key={node.id} style={innerCard("#FFFFFF")}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: 10,
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <div
+                          style={{
+                            color: "#0B1F33",
+                            fontWeight: 900,
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          {node.label}
+                        </div>
+
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <span style={badge(true)}>
+                            Degree: {positiveNumber(node.degree)}
+                          </span>
+                          {safeStr(node.cluster) ? (
+                            <span style={badge(false)}>{safeStr(node.cluster)}</span>
+                          ) : null}
+                        </div>
                       </div>
-                      <div style={{ marginTop: 6, color: "#64748B" }}>
-                        Node ID: {safeStr(clanNode?.node_id)}
-                      </div>
+
+                      {safeStr(node.gmfnId || node.role || node.risk) ? (
+                        <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                          {[
+                            safeStr(node.gmfnId) ? `GMFN: ${safeStr(node.gmfnId)}` : "",
+                            safeStr(node.role),
+                            safeStr(node.risk),
+                          ]
+                            .filter(Boolean)
+                            .join(" • ")}
+                        </div>
+                      ) : null}
                     </div>
                   ))
                 )}
               </div>
             </div>
 
-            <div style={card()}>
-              <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-                Edge Type Counts
+            <div style={innerCard("#FFFBEF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 15,
+                }}
+              >
+                Relationships worth watching
               </div>
 
-              <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-                {Object.keys(edgeTypeCounts || {}).length === 0 ? (
-                  <div style={{ color: "#7A8D9F" }}>No edge counts available.</div>
+              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                {riskEdges.length === 0 ? (
+                  <div style={helperText()}>
+                    No explicit flagged edge feed is visible right now.
+                  </div>
                 ) : (
-                  Object.entries(edgeTypeCounts).map(([key, value]) => (
-                    <div key={key} style={softCard()}>
-                      <div style={{ fontWeight: 1000, color: "#0B1F33" }}>{key}</div>
-                      <div style={{ marginTop: 6, color: "#64748B" }}>
-                        {safeStr(value)} edge(s)
+                  riskEdges.map((edge) => (
+                    <div key={edge.id} style={innerCard("#FFFFFF")}>
+                      <div
+                        style={{
+                          color: "#0B1F33",
+                          fontWeight: 900,
+                          lineHeight: 1.35,
+                        }}
+                      >
+                        {edge.from} → {edge.to}
+                      </div>
+
+                      <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                        {[
+                          safeStr(edge.label),
+                          safeStr(edge.status),
+                          safeStr(edge.risk),
+                          edge.weight ? `Weight: ${edge.weight}` : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" • ")}
                       </div>
                     </div>
                   ))
@@ -641,139 +1032,199 @@ export default function AdminTrustGraphPage() {
               </div>
             </div>
           </div>
+        ) : null}
+      </section>
 
-          <div style={{ ...card(), marginTop: 18 }}>
-            <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-              Key Edges
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Graph signals</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              The visible structural signals returned by the graph or the fallback trust-event feed.
             </div>
+          </div>
 
-            <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
-              {topEdges.length === 0 ? (
-                <div style={{ color: "#7A8D9F" }}>No edges available.</div>
-              ) : (
-                topEdges.slice(0, 20).map((edge: any, idx: number) => (
-                  <div key={edge?.edge_id || idx} style={softCard()}>
+          <button
+            type="button"
+            onClick={() => toggleSection("signals")}
+            style={collapseToggle()}
+          >
+            {collapsed.signals ? "Open" : "Collapse"}
+          </button>
+        </div>
+
+        {!collapsed.signals ? (
+          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+            {graphSignals.length === 0 ? (
+              <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+                No visible graph signal is available right now.
+              </div>
+            ) : (
+              graphSignals.slice(0, 10).map((signal) => {
+                const bg =
+                  signal.level === "flag"
+                    ? "#FFF5F5"
+                    : signal.level === "watch"
+                    ? "#FFFBEF"
+                    : "#F8FBFF";
+                const label =
+                  signal.level === "flag"
+                    ? "Flag"
+                    : signal.level === "watch"
+                    ? "Watch"
+                    : "Normal";
+
+                return (
+                  <div key={signal.id} style={innerCard(bg)}>
                     <div
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
                         gap: 10,
+                        alignItems: "center",
                         flexWrap: "wrap",
                       }}
                     >
-                      <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
-                        {safeStr(edge?.edge_label, safeStr(edge?.edge_type))}
-                      </div>
-                      <div style={{ color: "#64748B", fontSize: 13 }}>
-                        status: {safeStr(edge?.status)}
-                      </div>
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 8,
-                        display: "flex",
-                        gap: 10,
-                        flexWrap: "wrap",
-                        color: "#64748B",
-                        fontSize: 13,
-                      }}
-                    >
-                      <span>source: {safeStr(edge?.source_node_id)}</span>
-                      <span>target: {safeStr(edge?.target_node_id)}</span>
-                      <span>loan: {safeStr(edge?.loan_id)}</span>
-                      <span>clan: {safeStr(edge?.clan_id)}</span>
-                      <span>weight: {safeStr(edge?.weight)}</span>
-                      <span>count: {safeStr(edge?.event_count)}</span>
-                    </div>
-
-                    <details style={{ marginTop: 10 }}>
-                      <summary
+                      <div
                         style={{
-                          cursor: "pointer",
-                          fontWeight: 900,
                           color: "#0B1F33",
+                          fontWeight: 900,
+                          lineHeight: 1.35,
                         }}
                       >
-                        Edge details
-                      </summary>
-                      <pre
-                        style={{
-                          marginTop: 8,
-                          whiteSpace: "pre-wrap",
-                          fontSize: 12,
-                          color: "#334155",
-                        }}
-                      >
-                        {prettyValue(edge)}
-                      </pre>
-                    </details>
+                        {signal.title}
+                      </div>
+
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <span style={badge(true)}>{label}</span>
+                        {signal.createdAt ? (
+                          <span style={badge(false)}>
+                            {safeDateTime(signal.createdAt)}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: 8, ...helperText() }}>{signal.detail}</div>
                   </div>
-                ))
-              )}
+                );
+              })
+            )}
+          </div>
+        ) : null}
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Working routes</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Move from structural reading into the next operator surface you need.
             </div>
           </div>
 
+          <button
+            type="button"
+            onClick={() => toggleSection("routes")}
+            style={collapseToggle()}
+          >
+            {collapsed.routes ? "Open" : "Collapse"}
+          </button>
+        </div>
+
+        {!collapsed.routes ? (
           <div
             style={{
-              marginTop: 18,
+              marginTop: 16,
               display: "grid",
-              gridTemplateColumns: "1fr 1fr 1fr 1fr",
-              gap: 18,
+              gridTemplateColumns: isCompact
+                ? "1fr"
+                : "repeat(2, minmax(0, 1fr))",
+              gap: 12,
             }}
           >
-            <div style={card()}>
-              <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                RECENT EDGES
+            <Link to="/app/command-center/trust-analytics" style={routeTile(true)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 18,
+                  lineHeight: 1.3,
+                }}
+              >
+                Trust Analytics
               </div>
-              <div style={metricValueStyle()}>{recentEdges.length}</div>
-            </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Use this when the next step is broader pattern reading rather than structure-only interpretation.
+              </div>
+            </Link>
 
-            <div style={card()}>
-              <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                STRESSED EDGES
+            <Link to="/app/command-center/system-operations" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 18,
+                  lineHeight: 1.3,
+                }}
+              >
+                System Operations
               </div>
-              <div style={metricValueStyle()}>{stressedEdges.length}</div>
-            </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Use this when the structural signal now needs live operational handling.
+              </div>
+            </Link>
 
-            <div style={card()}>
-              <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                UNIQUE COUNTERPARTIES
+            <Link to="/app/command-center/exposure" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 18,
+                  lineHeight: 1.3,
+                }}
+              >
+                Exposure
               </div>
-              <div style={metricValueStyle()}>
-                {safeStr(summary?.unique_counterparties)}
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Use this when relationship shape is contributing to concentration or pressure.
               </div>
-            </div>
+            </Link>
 
-            <div style={card()}>
-              <div style={{ fontSize: 12, color: "#64748B", fontWeight: 1000 }}>
-                GRAPH SCORE
+            <Link to="/app/command-center" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 18,
+                  lineHeight: 1.3,
+                }}
+              >
+                Command Center
               </div>
-              <div style={metricValueStyle()}>{safeStr(summary?.graph_score)}</div>
-            </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Return to the operator entry surface when you need to choose another admin path.
+              </div>
+            </Link>
           </div>
-
-          <details style={{ marginTop: 18 }}>
-            <summary style={{ cursor: "pointer", fontWeight: 1000, color: "#0B1F33" }}>
-              Raw Graph Data
-            </summary>
-            <pre
-              style={{
-                marginTop: 12,
-                background: "#0B1F33",
-                color: "#E5E7EB",
-                padding: 16,
-                borderRadius: 14,
-                fontSize: 13,
-                overflow: "auto",
-                whiteSpace: "pre-wrap",
-              }}
-            >
-              {JSON.stringify(data, null, 2)}
-            </pre>
-          </details>
-        </>
-      ) : null}
+        ) : null}
+      </section>
     </div>
   );
 }
