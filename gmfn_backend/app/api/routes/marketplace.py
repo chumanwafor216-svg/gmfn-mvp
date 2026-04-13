@@ -29,6 +29,15 @@ TOTAL_DISTRIBUTION_SLOTS = 10
 ORIGIN_SPOTLIGHT_RESERVED_SLOTS = 1
 MAX_REPOST_SLOTS = TOTAL_DISTRIBUTION_SLOTS - ORIGIN_SPOTLIGHT_RESERVED_SLOTS
 
+SHOP_IMAGE_ATTRS = (
+    "image_url",
+    "photo_url",
+    "cover_image_url",
+    "banner_url",
+    "logo_url",
+    "shop_logo_url",
+)
+
 
 def _now_utc() -> datetime:
     return datetime.now(timezone.utc)
@@ -199,11 +208,7 @@ def _get_user_by_identity_key(
     if not raw:
         return None
 
-    user = (
-        db.query(User)
-        .filter(User.gmfn_id == raw)
-        .first()
-    )
+    user = db.query(User).filter(User.gmfn_id == raw).first()
     if user:
         return user
 
@@ -256,12 +261,111 @@ def _max_spotlights_for_clan(
     return max(1, floor(member_count * 0.4))
 
 
+def _get_shop_image_value(shop: MarketplaceShop) -> Optional[str]:
+    for attr in SHOP_IMAGE_ATTRS:
+        if hasattr(shop, attr):
+            value = _safe_str(getattr(shop, attr, None))
+            if value:
+                return value
+    return None
+
+
+def _set_shop_image_value(shop: MarketplaceShop, value: Optional[str]) -> bool:
+    existing_attrs = [attr for attr in SHOP_IMAGE_ATTRS if hasattr(shop, attr)]
+    if not existing_attrs:
+        return False
+
+    changed = False
+    primary = existing_attrs[0]
+    normalized = _safe_str(value) or None
+
+    if getattr(shop, primary, None) != normalized:
+        setattr(shop, primary, normalized)
+        changed = True
+
+    for attr in existing_attrs[1:]:
+        if getattr(shop, attr, None) is not None:
+            setattr(shop, attr, None)
+            changed = True
+
+    return changed
+
+
+def _clear_shop_image_value(shop: MarketplaceShop) -> bool:
+    changed = False
+    for attr in SHOP_IMAGE_ATTRS:
+        if hasattr(shop, attr) and getattr(shop, attr, None) is not None:
+            setattr(shop, attr, None)
+            changed = True
+    return changed
+
+
+def _shop_owner_can_manage(
+    *,
+    current_user: User,
+    shop: MarketplaceShop,
+) -> bool:
+    return _is_admin(current_user) or int(shop.owner_user_id) == int(current_user.id)
+
+
+def _product_owner_can_manage(
+    *,
+    db: Session,
+    current_user: User,
+    product: MarketplaceProduct,
+) -> bool:
+    if _is_admin(current_user):
+        return True
+
+    if int(product.seller_user_id) == int(current_user.id):
+        return True
+
+    shop = (
+        db.query(MarketplaceShop)
+        .filter(MarketplaceShop.id == int(product.shop_id))
+        .first()
+    )
+    if shop and int(shop.owner_user_id) == int(current_user.id):
+        return True
+
+    return False
+
+
+def _remove_product_reposts(
+    db: Session,
+    *,
+    product_id: int,
+) -> int:
+    rows = (
+        db.query(MarketplaceProductRepost)
+        .filter(MarketplaceProductRepost.original_product_id == int(product_id))
+        .all()
+    )
+    count = len(rows)
+    for row in rows:
+        db.delete(row)
+    return count
+
+
 class MarketplaceShopCreateIn(BaseModel):
     clan_id: Optional[int] = None
     name: str = Field(min_length=2, max_length=120)
     description: Optional[str] = Field(default=None, max_length=2000)
     whatsapp_number: Optional[str] = Field(default=None, max_length=32)
     telegram_handle: Optional[str] = Field(default=None, max_length=64)
+    image_url: Optional[str] = Field(default=None, max_length=4000)
+
+
+class MarketplaceShopUpdateIn(BaseModel):
+    clan_id: Optional[int] = None
+    name: Optional[str] = Field(default=None, max_length=120)
+    description: Optional[str] = Field(default=None, max_length=2000)
+    whatsapp_number: Optional[str] = Field(default=None, max_length=32)
+    telegram_handle: Optional[str] = Field(default=None, max_length=64)
+    image_url: Optional[str] = Field(default=None, max_length=4000)
+    clear_image: Optional[bool] = False
+    remove_image: Optional[bool] = False
+    delete_image: Optional[bool] = False
 
 
 class MarketplaceProductCreateIn(BaseModel):
@@ -273,6 +377,23 @@ class MarketplaceProductCreateIn(BaseModel):
     currency: Optional[str] = Field(default="NGN", max_length=8)
     image_url: Optional[str] = Field(default=None, max_length=4000)
     video_url: Optional[str] = Field(default=None, max_length=4000)
+
+
+class MarketplaceProductUpdateIn(BaseModel):
+    clan_id: Optional[int] = None
+    shop_id: Optional[int] = Field(default=None, gt=0)
+    name: Optional[str] = Field(default=None, max_length=160)
+    description: Optional[str] = Field(default=None, max_length=4000)
+    price: Optional[str] = Field(default=None, max_length=32)
+    currency: Optional[str] = Field(default=None, max_length=8)
+    image_url: Optional[str] = Field(default=None, max_length=4000)
+    video_url: Optional[str] = Field(default=None, max_length=4000)
+    clear_image: Optional[bool] = False
+    remove_image: Optional[bool] = False
+    delete_image: Optional[bool] = False
+    archived: Optional[bool] = None
+    is_active: Optional[bool] = None
+    status: Optional[str] = Field(default=None, max_length=40)
 
 
 class MarketplaceBroadcastCreateIn(BaseModel):
@@ -288,21 +409,55 @@ class MarketplaceRepostCreateIn(BaseModel):
 
 def _shop_out(db: Session, shop: MarketplaceShop) -> Dict[str, Any]:
     owner = db.query(User).filter(User.id == int(shop.owner_user_id)).first()
+    clan = db.query(Clan).filter(Clan.id == int(shop.clan_id)).first()
+
+    owner_gmfn_id = _safe_str(getattr(owner, "gmfn_id", None)) or None
+    owner_display_name = (
+        _safe_str(getattr(owner, "display_name", None))
+        or owner_gmfn_id
+        or _safe_str(getattr(owner, "email", None))
+        or f"Member {int(shop.owner_user_id)}"
+    )
+
+    trust_band = (
+        _safe_str(getattr(owner, "trust_band", None))
+        or _safe_str(getattr(owner, "trust_class", None))
+        or None
+    )
+    trust_score = getattr(owner, "trust_score", None) if owner else None
+
+    clan_name = (
+        _safe_str(getattr(clan, "marketplace_name", None))
+        or _safe_str(getattr(clan, "name", None))
+        or None
+    )
+
+    image_url = _get_shop_image_value(shop)
 
     return {
         "id": int(shop.id),
         "clan_id": int(shop.clan_id) if shop.clan_id is not None else None,
         "owner_user_id": int(shop.owner_user_id),
-        "gmfn_id": _safe_str(getattr(owner, "gmfn_id", None)) or None,
-        "owner_display_name": (
-            _safe_str(getattr(owner, "gmfn_id", None))
-            or _safe_str(getattr(owner, "email", None))
-            or f"Member {int(shop.owner_user_id)}"
-        ),
+        "gmfn_id": owner_gmfn_id,
+        "owner_gmfn_id": owner_gmfn_id,
+        "owner_name": owner_display_name,
+        "owner_display_name": owner_display_name,
+        "owner_nickname": _safe_str(getattr(owner, "nickname", None)) or None,
+        "trust_band": trust_band,
+        "trust_score": trust_score,
         "name": getattr(shop, "name", None),
         "description": shop.description,
         "whatsapp_number": shop.whatsapp_number,
         "telegram_handle": shop.telegram_handle,
+        "image_url": image_url,
+        "photo_url": image_url,
+        "cover_image_url": image_url,
+        "banner_url": image_url,
+        "logo_url": image_url,
+        "shop_logo_url": image_url,
+        "marketplace_name": clan_name,
+        "clan_name": clan_name,
+        "community_name": clan_name,
         "is_active": bool(shop.is_active),
         "created_at": shop.created_at.isoformat() if shop.created_at else None,
     }
@@ -354,7 +509,8 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
     author_name = None
     if author:
         author_name = (
-            _safe_str(getattr(author, "gmfn_id", None))
+            _safe_str(getattr(author, "display_name", None))
+            or _safe_str(getattr(author, "gmfn_id", None))
             or _safe_str(getattr(author, "email", None))
             or f"Member {int(author.id)}"
         )
@@ -403,6 +559,7 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
         "trust_band": trust_band,
         "trust_score": trust_score,
     }
+
 
 def _repost_out(db: Session, repost: MarketplaceProductRepost) -> Dict[str, Any]:
     product = (
@@ -578,6 +735,12 @@ def create_marketplace_shop(
                 existing_shop.telegram_handle = new_telegram
                 changed = True
 
+        if payload.image_url is not None:
+            changed = _set_shop_image_value(
+                existing_shop,
+                _safe_str(payload.image_url) or None,
+            ) or changed
+
         if existing_shop.clan_id is None:
             existing_shop.clan_id = int(resolved_clan_id)
             changed = True
@@ -586,6 +749,24 @@ def create_marketplace_shop(
             db.add(existing_shop)
             db.commit()
             db.refresh(existing_shop)
+
+            log_trust_event(
+                db,
+                event_type="marketplace.shop.updated",
+                clan_id=resolved_clan_id,
+                actor_user_id=int(current_user.id),
+                subject_user_id=int(current_user.id),
+                loan_id=None,
+                guarantor_id=None,
+                meta={
+                    "shop_id": int(existing_shop.id),
+                    "shop_name": getattr(existing_shop, "name", None),
+                    "reason": "marketplace_shop_updated_via_upsert",
+                },
+                commit=False,
+                refresh=False,
+            )
+            db.commit()
 
         return {
             "ok": True,
@@ -603,6 +784,9 @@ def create_marketplace_shop(
         is_active=True,
         created_at=_now_utc(),
     )
+
+    _set_shop_image_value(shop, _safe_str(payload.image_url) or None)
+
     db.add(shop)
     db.commit()
     db.refresh(shop)
@@ -627,6 +811,110 @@ def create_marketplace_shop(
     db.commit()
 
     return {"ok": True, "item": _shop_out(db, shop)}
+
+
+@router.put("/shops/{shop_id}")
+@router.patch("/shops/{shop_id}")
+def update_marketplace_shop(
+    shop_id: int,
+    payload: MarketplaceShopUpdateIn,
+    x_clan_id: Optional[str] = Header(default=None, alias="X-Clan-Id"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    shop = (
+        db.query(MarketplaceShop)
+        .filter(MarketplaceShop.id == int(shop_id))
+        .first()
+    )
+    if not shop:
+        raise HTTPException(status_code=404, detail="Shop not found")
+
+    if not _shop_owner_can_manage(current_user=current_user, shop=shop):
+        raise HTTPException(status_code=403, detail="Only the shop owner can update this shop")
+
+    resolved_clan_id = _resolve_clan_id(
+        current_user=current_user,
+        db=db,
+        explicit_clan_id=payload.clan_id or int(shop.clan_id or 0),
+        header_clan_id=x_clan_id,
+    )
+
+    _require_active_membership(
+        db=db,
+        user_id=int(current_user.id),
+        clan_id=resolved_clan_id,
+    )
+
+    provided = set(payload.__fields_set__ or set())
+    changed = False
+
+    if "name" in provided and payload.name is not None:
+        new_name = _safe_str(payload.name)
+        if not new_name:
+            raise HTTPException(status_code=400, detail="Shop name cannot be empty")
+        if shop.name != new_name:
+            shop.name = new_name
+            changed = True
+
+    if "description" in provided:
+        new_description = _safe_str(payload.description) or None
+        if shop.description != new_description:
+            shop.description = new_description
+            changed = True
+
+    if "whatsapp_number" in provided:
+        new_whatsapp = _safe_str(payload.whatsapp_number) or None
+        if shop.whatsapp_number != new_whatsapp:
+            shop.whatsapp_number = new_whatsapp
+            changed = True
+
+    if "telegram_handle" in provided:
+        new_telegram = _safe_str(payload.telegram_handle) or None
+        if shop.telegram_handle != new_telegram:
+            shop.telegram_handle = new_telegram
+            changed = True
+
+    clear_image_requested = bool(
+        payload.clear_image or payload.remove_image or payload.delete_image
+    )
+
+    if clear_image_requested:
+        changed = _clear_shop_image_value(shop) or changed
+    elif "image_url" in provided:
+        changed = _set_shop_image_value(
+            shop,
+            _safe_str(payload.image_url) or None,
+        ) or changed
+
+    if changed:
+        db.add(shop)
+        db.commit()
+        db.refresh(shop)
+
+        log_trust_event(
+            db,
+            event_type="marketplace.shop.updated",
+            clan_id=resolved_clan_id,
+            actor_user_id=int(current_user.id),
+            subject_user_id=int(current_user.id),
+            loan_id=None,
+            guarantor_id=None,
+            meta={
+                "shop_id": int(shop.id),
+                "shop_name": getattr(shop, "name", None),
+                "reason": "marketplace_shop_updated",
+            },
+            commit=False,
+            refresh=False,
+        )
+        db.commit()
+
+    return {
+        "ok": True,
+        "item": _shop_out(db, shop),
+        "detail": "Shop updated.",
+    }
 
 
 @router.get("/products")
@@ -823,6 +1111,244 @@ def create_marketplace_product(
     db.commit()
 
     return {"ok": True, "item": _product_out(db, product)}
+
+
+@router.put("/products/{product_id}")
+@router.patch("/products/{product_id}")
+def update_marketplace_product(
+    product_id: int,
+    payload: MarketplaceProductUpdateIn,
+    x_clan_id: Optional[str] = Header(default=None, alias="X-Clan-Id"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    product = (
+        db.query(MarketplaceProduct)
+        .filter(MarketplaceProduct.id == int(product_id))
+        .first()
+    )
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    if not _product_owner_can_manage(db=db, current_user=current_user, product=product):
+        raise HTTPException(status_code=403, detail="Only the shop owner can update this product")
+
+    resolved_clan_id = _resolve_clan_id(
+        current_user=current_user,
+        db=db,
+        explicit_clan_id=payload.clan_id or int(product.clan_id or 0),
+        header_clan_id=x_clan_id,
+    )
+
+    _require_active_membership(
+        db=db,
+        user_id=int(current_user.id),
+        clan_id=int(product.clan_id),
+    )
+
+    provided = set(payload.__fields_set__ or set())
+    changed = False
+    removed_reposts = 0
+
+    if "shop_id" in provided and payload.shop_id is not None and int(payload.shop_id) != int(product.shop_id):
+        shop = (
+            db.query(MarketplaceShop)
+            .filter(MarketplaceShop.id == int(payload.shop_id))
+            .first()
+        )
+        if not shop:
+            raise HTTPException(status_code=404, detail="Target shop not found")
+        if not _shop_owner_can_manage(current_user=current_user, shop=shop):
+            raise HTTPException(status_code=403, detail="You cannot move this product to that shop")
+        product.shop_id = int(payload.shop_id)
+        changed = True
+
+    if "name" in provided and payload.name is not None:
+        new_name = _safe_str(payload.name)
+        if not new_name:
+            raise HTTPException(status_code=400, detail="Product name cannot be empty")
+        if product.name != new_name:
+            product.name = new_name
+            changed = True
+
+    if "description" in provided:
+        new_description = _safe_str(payload.description) or None
+        if product.description != new_description:
+            product.description = new_description
+            changed = True
+
+    if "price" in provided:
+        new_price = _safe_str(payload.price) or None
+        if product.price != new_price:
+            product.price = new_price
+            changed = True
+
+    if "currency" in provided and payload.currency is not None:
+        new_currency = _safe_str(payload.currency) or "NGN"
+        if product.currency != new_currency:
+            product.currency = new_currency
+            changed = True
+
+    clear_image_requested = bool(
+        payload.clear_image or payload.remove_image or payload.delete_image
+    )
+    if clear_image_requested:
+        if getattr(product, "image_url", None) is not None:
+            product.image_url = None
+            changed = True
+    elif "image_url" in provided:
+        new_image = _safe_str(payload.image_url) or None
+        if getattr(product, "image_url", None) != new_image:
+            product.image_url = new_image
+            changed = True
+
+    if hasattr(product, "video_url") and "video_url" in provided:
+        new_video = _safe_str(payload.video_url) or None
+        if getattr(product, "video_url", None) != new_video:
+            setattr(product, "video_url", new_video)
+            changed = True
+
+    soft_remove_requested = (
+        payload.archived is True
+        or payload.is_active is False
+        or _safe_str(payload.status).lower() in {"removed", "archived", "deleted", "inactive"}
+    )
+
+    if soft_remove_requested and bool(getattr(product, "is_active", True)):
+        product.is_active = False
+        removed_reposts = _remove_product_reposts(db, product_id=int(product.id))
+        changed = True
+
+    if changed:
+        db.add(product)
+        db.commit()
+        db.refresh(product)
+
+        log_trust_event(
+            db,
+            event_type="marketplace.product.removed" if soft_remove_requested else "marketplace.product.updated",
+            clan_id=resolved_clan_id,
+            actor_user_id=int(current_user.id),
+            subject_user_id=int(current_user.id),
+            loan_id=None,
+            guarantor_id=None,
+            meta={
+                "product_id": int(product.id),
+                "shop_id": int(product.shop_id),
+                "removed_reposts": removed_reposts,
+                "image_url": getattr(product, "image_url", None),
+                "reason": "marketplace_product_removed" if soft_remove_requested else "marketplace_product_updated",
+            },
+            commit=False,
+            refresh=False,
+        )
+        db.commit()
+
+    return {
+        "ok": True,
+        "item": _product_out(db, product),
+        "removed_reposts": removed_reposts,
+        "detail": "Product updated." if not soft_remove_requested else "Product removed from visible blocks.",
+    }
+
+
+@router.delete("/products/{product_id}")
+@router.post("/products/{product_id}/delete")
+@router.post("/products/{product_id}/archive")
+def delete_marketplace_product(
+    product_id: int,
+    x_clan_id: Optional[str] = Header(default=None, alias="X-Clan-Id"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    product = (
+        db.query(MarketplaceProduct)
+        .filter(MarketplaceProduct.id == int(product_id))
+        .first()
+    )
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    if not _product_owner_can_manage(db=db, current_user=current_user, product=product):
+        raise HTTPException(status_code=403, detail="Only the shop owner can delete this product")
+
+    resolved_clan_id = _resolve_clan_id(
+        current_user=current_user,
+        db=db,
+        explicit_clan_id=int(product.clan_id or 0),
+        header_clan_id=x_clan_id,
+    )
+
+    _require_active_membership(
+        db=db,
+        user_id=int(current_user.id),
+        clan_id=int(product.clan_id),
+    )
+
+    removed_reposts = _remove_product_reposts(db, product_id=int(product.id))
+
+    snapshot = _product_out(db, product)
+
+    if hasattr(product, "is_active"):
+        product.is_active = False
+        db.add(product)
+        db.commit()
+        db.refresh(product)
+
+        log_trust_event(
+            db,
+            event_type="marketplace.product.removed",
+            clan_id=resolved_clan_id,
+            actor_user_id=int(current_user.id),
+            subject_user_id=int(current_user.id),
+            loan_id=None,
+            guarantor_id=None,
+            meta={
+                "product_id": int(product.id),
+                "shop_id": int(product.shop_id),
+                "removed_reposts": removed_reposts,
+                "reason": "marketplace_product_deleted_soft",
+            },
+            commit=False,
+            refresh=False,
+        )
+        db.commit()
+
+        return {
+            "ok": True,
+            "item": _product_out(db, product),
+            "removed_reposts": removed_reposts,
+            "detail": "Product block removed.",
+        }
+
+    db.delete(product)
+    db.commit()
+
+    log_trust_event(
+        db,
+        event_type="marketplace.product.removed",
+        clan_id=resolved_clan_id,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        loan_id=None,
+        guarantor_id=None,
+        meta={
+            "product_id": int(snapshot["id"]),
+            "shop_id": int(snapshot["shop_id"]),
+            "removed_reposts": removed_reposts,
+            "reason": "marketplace_product_deleted_hard",
+        },
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+
+    return {
+        "ok": True,
+        "item": snapshot,
+        "removed_reposts": removed_reposts,
+        "detail": "Product block removed.",
+    }
 
 
 @router.post("/products/{product_id}/repost")

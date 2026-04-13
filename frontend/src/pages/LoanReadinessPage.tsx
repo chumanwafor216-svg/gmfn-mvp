@@ -2,10 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
-import {
-  buildGuidanceSnapshot,
-  type GuidanceSnapshot,
-} from "../lib/guidance";
 
 type LoanRow = {
   id?: number;
@@ -36,7 +32,20 @@ type CollapseState = {
   routes: boolean;
 };
 
-const LOAN_READINESS_UI_STORAGE_KEY = "gmfn.loanReadiness.sections.v2";
+type PersistedWithdrawalTask = {
+  amountInput: string;
+  noteInput: string;
+  latestWithdrawalResult: any | null;
+  handoffMode?: string;
+  supportGap?: string;
+  updatedAt?: string | null;
+};
+
+const LOAN_READINESS_UI_STORAGE_KEY = "gmfn.loanReadiness.sections.v3";
+const WITHDRAWAL_TASK_STORAGE_KEY_PREFIXES = [
+  "gmfn.withdrawal.task.v5",
+  "gmfn.withdrawal.task.v4",
+];
 
 const FINAL_LOAN_STATUSES = new Set([
   "approved",
@@ -71,6 +80,89 @@ function rowsOf<T = any>(input: any): T[] {
   if (Array.isArray(input?.results)) return input.results as T[];
   if (Array.isArray(input?.rows)) return input.rows as T[];
   return [];
+}
+
+function safeDateTime(x: any): string {
+  const raw = safeStr(x);
+  if (!raw) return "";
+  const d = new Date(raw);
+  if (!Number.isFinite(d.getTime())) return raw;
+  return d.toLocaleString();
+}
+
+function getPoolAmountText(payload: any): string {
+  const candidates = [
+    payload?.available_balance,
+    payload?.balance,
+    payload?.pool_balance,
+    payload?.summary?.available_balance,
+    payload?.summary?.balance,
+    payload?.totals?.available_balance,
+    payload?.totals?.balance,
+    payload?.wallet_balance,
+  ];
+
+  for (const candidate of candidates) {
+    const text = safeStr(candidate);
+    if (text) return text;
+  }
+
+  return "—";
+}
+
+function getPoolCurrency(payload: any): string {
+  return firstTruthy(
+    payload?.currency,
+    payload?.summary?.currency,
+    payload?.totals?.currency,
+    "NGN"
+  );
+}
+
+function numberFromLooseText(value: any): number {
+  const raw = safeStr(value).replace(/,/g, "");
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function readLocalJSON<T>(key: string, fallback: T): T {
+  try {
+    if (typeof window === "undefined") return fallback;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeLocalJSON(key: string, value: any) {
+  try {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore
+  }
+}
+
+function defaultCollapseState(): CollapseState {
+  return {
+    overview: false,
+    reading: false,
+    blockers: false,
+    routes: false,
+  };
+}
+
+function normalizeCollapseState(raw: any): CollapseState {
+  const base = defaultCollapseState();
+
+  return {
+    overview: Boolean(raw?.overview ?? base.overview),
+    reading: Boolean(raw?.reading ?? base.reading),
+    blockers: Boolean(raw?.blockers ?? base.blockers),
+    routes: Boolean(raw?.routes ?? base.routes),
+  };
 }
 
 function normalizeLoanRow(raw: any): LoanRow | null {
@@ -152,56 +244,13 @@ function isGuarantorLoan(row: LoanRow): boolean {
   return role === "guarantor" || role.includes("guarant");
 }
 
-function safeDateTime(x: any): string {
-  const raw = safeStr(x);
-  if (!raw) return "";
-  const d = new Date(raw);
-  if (!Number.isFinite(d.getTime())) return raw;
-  return d.toLocaleString();
-}
-
-function getLoanAmountText(row: LoanRow): string {
+function getLoanAmountText(row: LoanRow | null): string {
   const amount = safeStr(row?.amount);
   const currency = safeStr(row?.currency);
 
   if (!amount && !currency) return "Amount pending";
   if (amount && currency) return `${amount} ${currency}`;
   return amount || currency || "Amount pending";
-}
-
-function getPoolAmountText(payload: any): string {
-  const candidates = [
-    payload?.available_balance,
-    payload?.balance,
-    payload?.pool_balance,
-    payload?.summary?.available_balance,
-    payload?.summary?.balance,
-    payload?.totals?.available_balance,
-    payload?.totals?.balance,
-    payload?.wallet_balance,
-  ];
-
-  for (const candidate of candidates) {
-    const text = safeStr(candidate);
-    if (text) return text;
-  }
-
-  return "—";
-}
-
-function getPoolCurrency(payload: any): string {
-  return firstTruthy(
-    payload?.currency,
-    payload?.summary?.currency,
-    payload?.totals?.currency,
-    "NGN"
-  );
-}
-
-function numberFromLooseText(value: any): number {
-  const raw = safeStr(value).replace(/,/g, "");
-  const n = Number(raw);
-  return Number.isFinite(n) ? n : 0;
 }
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
@@ -375,44 +424,115 @@ function helperText(): React.CSSProperties {
   };
 }
 
-function readLocalJSON<T>(key: string, fallback: T): T {
-  try {
-    if (typeof window === "undefined") return fallback;
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
+function readWithdrawalTask(clanId: number, gmfnId: string): PersistedWithdrawalTask | null {
+  if (!clanId || !gmfnId) return null;
+
+  for (const prefix of WITHDRAWAL_TASK_STORAGE_KEY_PREFIXES) {
+    const key = `${prefix}.${gmfnId || "me"}.${clanId || 0}`;
+    const value = readLocalJSON<PersistedWithdrawalTask | null>(key, null);
+    if (value) return value;
   }
+
+  return null;
 }
 
-function writeLocalJSON(key: string, value: any) {
-  try {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // ignore
+function communityName(currentClan: any, clanId: number): string {
+  return (
+    firstTruthy(
+      currentClan?.marketplace_name,
+      currentClan?.name,
+      currentClan?.display_name,
+      currentClan?.title
+    ) || (clanId ? `Community ${clanId}` : "No selected community")
+  );
+}
+
+function communityPublicId(currentClan: any): string {
+  return (
+    firstTruthy(
+      currentClan?.community_code,
+      currentClan?.community?.community_code,
+      currentClan?.profile?.community_code,
+      currentClan?.marketplace?.community_code
+    ) || "Pending"
+  );
+}
+
+function communityRole(currentClan: any): string {
+  return (
+    firstTruthy(
+      currentClan?.role,
+      currentClan?.member_role,
+      currentClan?.membership_role,
+      currentClan?.participant_role
+    ) || ""
+  );
+}
+
+function apiBase(): string {
+  const raw =
+    (typeof import.meta !== "undefined" &&
+      (import.meta as any)?.env &&
+      (import.meta as any).env.VITE_API_BASE_URL) ||
+    "/api";
+
+  return String(raw || "").trim().replace(/\/+$/, "");
+}
+
+function apiOrigin(): string {
+  const base = apiBase();
+
+  if (base.startsWith("http://") || base.startsWith("https://")) {
+    try {
+      const u = new URL(base);
+      return `${u.protocol}//${u.host}`;
+    } catch {
+      return "";
+    }
   }
+
+  if (typeof window !== "undefined") {
+    return String(window.location.origin || "").trim().replace(/\/+$/, "");
+  }
+
+  return "";
 }
 
-function defaultCollapseState(): CollapseState {
-  return {
-    overview: false,
-    reading: false,
-    blockers: false,
-    routes: false,
-  };
+function resolveMediaUrl(src: string): string {
+  const raw = safeStr(src);
+  if (!raw) return "";
+
+  if (
+    raw.startsWith("http://") ||
+    raw.startsWith("https://") ||
+    raw.startsWith("data:") ||
+    raw.startsWith("blob:")
+  ) {
+    return raw;
+  }
+
+  const origin = apiOrigin();
+  if (!origin) return raw;
+
+  if (raw.startsWith("/")) return `${origin}${raw}`;
+  return `${origin}/${raw.replace(/^\/+/, "")}`;
 }
 
-function normalizeCollapseState(raw: any): CollapseState {
-  const base = defaultCollapseState();
+function communityImageSrc(currentClan: any): string {
+  const raw = firstTruthy(
+    currentClan?.community_image_url,
+    currentClan?.profile_image_url,
+    currentClan?.marketplace_image_url,
+    currentClan?.cover_image_url,
+    currentClan?.banner_url,
+    currentClan?.image_url,
+    currentClan?.logo_url,
+    currentClan?.community?.community_image_url,
+    currentClan?.community?.image_url,
+    currentClan?.profile?.profile_image_url
+  );
 
-  return {
-    overview: Boolean(raw?.overview ?? base.overview),
-    reading: Boolean(raw?.reading ?? base.reading),
-    blockers: Boolean(raw?.blockers ?? base.blockers),
-    routes: Boolean(raw?.routes ?? base.routes),
-  };
+  return resolveMediaUrl(raw);
 }
 
 export default function LoanReadinessPage() {
@@ -435,7 +555,6 @@ export default function LoanReadinessPage() {
   const [poolInfo, setPoolInfo] = useState<any>(null);
   const [loans, setLoans] = useState<LoanRow[]>([]);
   const [guarantorInbox, setGuarantorInbox] = useState<GuarantorInboxRow[]>([]);
-  const [guidance, setGuidance] = useState<GuidanceSnapshot | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -492,14 +611,13 @@ export default function LoanReadinessPage() {
                 .catch(() => ({ items: [] }))
             : Promise.resolve({ items: [] });
 
-        const [meRes, clanRes, poolRes, loansRes, guarantorRes, guidanceRes] =
+        const [meRes, clanRes, poolRes, loansRes, guarantorRes] =
           await Promise.all([
             mePromise,
             clanPromise,
             poolPromise,
             loansPromise,
             guarantorPromise,
-            buildGuidanceSnapshot().catch(() => null),
           ]);
 
         if (!alive) return;
@@ -522,7 +640,6 @@ export default function LoanReadinessPage() {
         setPoolInfo(poolRes);
         setLoans(filteredLoans);
         setGuarantorInbox(normalizedGuarantorRows);
-        setGuidance(guidanceRes || null);
       } finally {
         if (alive) setLoading(false);
       }
@@ -545,16 +662,25 @@ export default function LoanReadinessPage() {
     );
   }, [me]);
 
+  const gmfnId = useMemo(() => {
+    return firstTruthy(me?.gmfn_id, "Pending");
+  }, [me]);
+
   const communityLabel = useMemo(() => {
-    return (
-      firstTruthy(
-        currentClan?.marketplace_name,
-        currentClan?.name,
-        currentClan?.display_name,
-        currentClan?.title
-      ) || (selectedClanId ? `Community ${selectedClanId}` : "No selected community")
-    );
+    return communityName(currentClan, selectedClanId);
   }, [currentClan, selectedClanId]);
+
+  const publicCommunityId = useMemo(() => {
+    return communityPublicId(currentClan);
+  }, [currentClan]);
+
+  const memberRole = useMemo(() => {
+    return communityRole(currentClan);
+  }, [currentClan]);
+
+  const pictureSrc = useMemo(() => {
+    return communityImageSrc(currentClan);
+  }, [currentClan]);
 
   const poolAmount = getPoolAmountText(poolInfo);
   const poolCurrency = getPoolCurrency(poolInfo);
@@ -570,10 +696,54 @@ export default function LoanReadinessPage() {
     [activeLoans]
   );
 
+  const activeBorrowerLoan = useMemo(() => {
+    const rows = [...borrowerLoans];
+    rows.sort((a, b) => {
+      const aTime = new Date(a.createdAt || 0).getTime();
+      const bTime = new Date(b.createdAt || 0).getTime();
+      return bTime - aTime;
+    });
+    return rows[0] || null;
+  }, [borrowerLoans]);
+
+  const withdrawalTask = useMemo(
+    () => readWithdrawalTask(selectedClanId, safeStr(me?.gmfn_id)),
+    [selectedClanId, me]
+  );
+
+  const cameFromWithdrawalSupport = useMemo(() => {
+    return (
+      safeStr(withdrawalTask?.handoffMode) === "withdrawal-support" ||
+      Boolean(safeStr(withdrawalTask?.supportGap))
+    );
+  }, [withdrawalTask]);
+
+  const withdrawalAmount = safeStr(withdrawalTask?.amountInput);
+  const supportGap = safeStr(withdrawalTask?.supportGap);
+  const withdrawalNote = safeStr(withdrawalTask?.noteInput);
+
   const readiness = useMemo(() => {
     const pendingGuarantor = guarantorInbox.length;
     const borrowerCount = borrowerLoans.length;
     const guarantorCount = guarantorLoans.length;
+
+    if (!selectedClanId || !safeStr(me?.gmfn_id)) {
+      return {
+        level: "blocked" as const,
+        title: "Community or GMFN context is not ready.",
+        detail:
+          "The support route should not continue without a selected community and visible GMFN identity.",
+      };
+    }
+
+    if (cameFromWithdrawalSupport && borrowerCount === 0) {
+      return {
+        level: "watch" as const,
+        title: "Money Out has handed off into support continuation.",
+        detail:
+          "The withdrawal route has already determined that support is needed. The next clean move is to start or continue the borrower-side support draft in the selected-community support surface.",
+      };
+    }
 
     if (borrowerCount > 0 && pendingGuarantor > 0) {
       return {
@@ -581,7 +751,7 @@ export default function LoanReadinessPage() {
         title:
           "Readiness is blocked by active borrower load and waiting guarantor decisions.",
         detail:
-          "Your own support path is still active, and someone is also waiting on your guarantor response. Clear one pressure area before starting another.",
+          "Your borrower-side support path is already active, and guarantor decisions are still waiting. Clear one pressure area before starting another.",
       };
     }
 
@@ -591,7 +761,7 @@ export default function LoanReadinessPage() {
         title:
           "Readiness is reduced because your borrower-side support path is still active.",
         detail:
-          "Finish or stabilize the current borrower-side path before starting another support request.",
+          "Finish or stabilize the current borrower-side path before starting another support movement.",
       };
     }
 
@@ -617,14 +787,27 @@ export default function LoanReadinessPage() {
 
     return {
       level: "ready" as const,
-      title: "Readiness looks clean enough to start a new support path.",
+      title: "Readiness looks clean enough to continue the next support step.",
       detail:
-        "No active borrower-side path or waiting guarantor request is visibly blocking the next support step right now.",
+        "No active borrower-side path or waiting guarantor request is visibly blocking the next support movement right now.",
     };
-  }, [borrowerLoans.length, guarantorInbox.length, guarantorLoans.length]);
+  }, [
+    selectedClanId,
+    me,
+    cameFromWithdrawalSupport,
+    borrowerLoans.length,
+    guarantorInbox.length,
+    guarantorLoans.length,
+  ]);
 
   const blockers = useMemo(() => {
     const rows: string[] = [];
+
+    if (cameFromWithdrawalSupport && !activeBorrowerLoan) {
+      rows.push(
+        "Money Out has already identified a support-backed withdrawal need, but no borrower-side support draft is visible yet."
+      );
+    }
 
     if (borrowerLoans.length > 0) {
       rows.push(
@@ -656,6 +839,8 @@ export default function LoanReadinessPage() {
 
     return rows;
   }, [
+    cameFromWithdrawalSupport,
+    activeBorrowerLoan,
     borrowerLoans.length,
     guarantorInbox.length,
     guarantorLoans.length,
@@ -665,8 +850,12 @@ export default function LoanReadinessPage() {
   const readinessHelps = useMemo(() => {
     const rows: string[] = [];
 
+    if (!cameFromWithdrawalSupport) {
+      rows.push("This page can read readiness before the next support move becomes heavier.");
+    }
+
     if (borrowerLoans.length === 0) {
-      rows.push("No active borrower-side support path is blocking you right now.");
+      rows.push("No active borrower-side support path is visibly blocking you right now.");
     }
 
     if (guarantorInbox.length === 0) {
@@ -687,6 +876,7 @@ export default function LoanReadinessPage() {
 
     return rows;
   }, [
+    cameFromWithdrawalSupport,
     borrowerLoans.length,
     guarantorInbox.length,
     guarantorLoans.length,
@@ -696,49 +886,69 @@ export default function LoanReadinessPage() {
   ]);
 
   const recommendedNext = useMemo(() => {
-    if (guarantorInbox.length > 0) {
+    if (!selectedClanId) {
       return {
-        title: "Respond to waiting guarantor requests first.",
-        ctaTo: "/app/notifications",
-        ctaLabel: "Open Action Inbox",
+        title: "Choose the community context first.",
+        detail:
+          "Support readiness should stay tied to the selected community before the member continues.",
+        ctaTo: "/app/community",
+        ctaLabel: "Open Community Home",
       };
     }
 
-    if (borrowerLoans.length > 0) {
+    if (cameFromWithdrawalSupport && !activeBorrowerLoan) {
       return {
-        title: "Continue the current borrower-side support path.",
+        title: "Start or continue the borrower-side support draft.",
+        detail:
+          "Money Out has already handed off into support continuation. Open the selected-community support start surface and carry the withdrawal need forward.",
         ctaTo: "/app/marketplace#marketplace-loans-support",
-        ctaLabel: "Open Support Path",
+        ctaLabel: "Open Support Start Surface",
+      };
+    }
+
+    if (guarantorInbox.length > 0) {
+      return {
+        title: "Respond to waiting guarantor requests first.",
+        detail:
+          "Someone is waiting directly on your support decision. Clear that queue before creating new support pressure.",
+        ctaTo: "/app/guarantor-inbox",
+        ctaLabel: "Open Incoming Guarantor Requests",
+      };
+    }
+
+    if (activeBorrowerLoan) {
+      return {
+        title: "Continue into fit suggestions for the current borrower-side support item.",
+        detail:
+          "The borrower-side support item is already visible, so the next clean step is usually fit reading.",
+        ctaTo: "/app/loan-suggestions",
+        ctaLabel: "Open Loan Suggestions",
       };
     }
 
     if (guarantorLoans.length > 0) {
       return {
         title: "Review your guarantor-side commitments before expanding further.",
+        detail:
+          "Existing guarantor-side responsibility should stay visible before another support load is added.",
         ctaTo: "/app/loans",
-        ctaLabel: "Open Loans",
-      };
-    }
-
-    const nextKind = safeStr(guidance?.nextBestStep?.kind).toLowerCase();
-    if (nextKind.includes("loan") || nextKind.includes("guarantor")) {
-      return {
-        title: safeStr(guidance?.nextBestStep?.title || "Open next support step"),
-        ctaTo: safeStr(guidance?.nextBestStep?.ctaTo || "/app/loans"),
-        ctaLabel: safeStr(guidance?.nextBestStep?.ctaLabel || "Open Loans"),
+        ctaLabel: "Open Loans & Support",
       };
     }
 
     return {
-      title: "You can begin a new support request when ready.",
+      title: "You can begin the next support movement when ready.",
+      detail:
+        "No visible pressure is blocking the next step right now.",
       ctaTo: "/app/marketplace#marketplace-loans-support",
-      ctaLabel: "Start Support Request",
+      ctaLabel: "Open Support Start Surface",
     };
   }, [
+    selectedClanId,
+    cameFromWithdrawalSupport,
+    activeBorrowerLoan,
     guarantorInbox.length,
-    borrowerLoans.length,
     guarantorLoans.length,
-    guidance,
   ]);
 
   const readinessTone =
@@ -781,18 +991,18 @@ export default function LoanReadinessPage() {
         <PageTopNav
           sectionLabel="Loan Readiness"
           title="Loan Readiness"
-          subtitle="Preparing the calmer readiness surface..."
+          subtitle="Preparing the support-readiness surface..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
-          backTo="/app/loans"
-          backLabel="Loans"
+          backTo="/app/withdrawal-instructions"
+          backLabel="Money Out"
           nextLinks={[
             { label: "Loan Suggestions", to: "/app/loan-suggestions" },
             { label: "Loan Workbench", to: "/app/loan-workbench" },
           ]}
           utilityLinks={[
             { label: "Marketplace", to: "/app/marketplace" },
-            { label: "Notifications", to: "/app/notifications" },
+            { label: "Loans", to: "/app/loans" },
           ]}
         />
 
@@ -818,18 +1028,18 @@ export default function LoanReadinessPage() {
       <PageTopNav
         sectionLabel="Loan Readiness"
         title="Loan Readiness"
-        subtitle="This page helps you see whether the next support step is clean enough to begin, or whether an earlier support pressure should be settled first."
+        subtitle="This page is a support-continuation stage. It helps the member see whether the next support move is clean enough to continue, especially after Money Out has already determined that support is needed."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
-        backTo="/app/loans"
-        backLabel="Loans"
+        backTo="/app/withdrawal-instructions"
+        backLabel="Money Out"
         nextLinks={[
           { label: "Loan Suggestions", to: "/app/loan-suggestions" },
           { label: "Loan Workbench", to: "/app/loan-workbench" },
         ]}
         utilityLinks={[
           { label: "Marketplace", to: "/app/marketplace" },
-          { label: "Notifications", to: "/app/notifications" },
+          { label: "Loans", to: "/app/loans" },
         ]}
       />
 
@@ -839,13 +1049,55 @@ export default function LoanReadinessPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.08fr) 320px",
+            gridTemplateColumns: isCompact ? "1fr" : "180px minmax(0, 1fr) 320px",
             gap: 16,
             alignItems: "start",
           }}
         >
           <div>
-            <div style={sectionLabel()}>Readiness overview</div>
+            <div
+              style={{
+                width: "100%",
+                height: 148,
+                borderRadius: 20,
+                border: "1px solid rgba(11,31,51,0.08)",
+                overflow: "hidden",
+                background: "linear-gradient(180deg, #E8F0FF 0%, #DDEBFF 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {pictureSrc ? (
+                <img
+                  src={pictureSrc}
+                  alt={communityLabel}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    color: "#37506A",
+                    fontWeight: 900,
+                    fontSize: 20,
+                    textAlign: "center",
+                    padding: 12,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {communityLabel}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <div style={sectionLabel()}>Fixed readiness context</div>
 
             <div
               style={{
@@ -860,10 +1112,10 @@ export default function LoanReadinessPage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
-              Loan readiness is not only about wanting support. It also depends
-              on whether your existing borrower-side path, guarantor-side
-              pressure, waiting decisions, and visible pool condition are clean
-              enough for the next step.
+              Loan readiness is not a loose side page. Once a support-backed movement
+              begins, this stage should help the member understand whether the next
+              support move is clean enough to continue, or whether an earlier pressure
+              should be settled first.
             </div>
 
             <div
@@ -874,13 +1126,13 @@ export default function LoanReadinessPage() {
                 flexWrap: "wrap",
               }}
             >
-              <span style={badge(true)}>Community: {communityLabel}</span>
-              <span style={badge(false)}>
-                Active support items: {activeLoans.length}
-              </span>
-              <span style={badge(false)}>
-                Pool: {poolAmount} {poolCurrency}
-              </span>
+              <span style={badge(true)}>Community ID: {publicCommunityId}</span>
+              <span style={badge(false)}>GMFN ID: {gmfnId}</span>
+              {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
+              <span style={badge(false)}>Current step: Readiness</span>
+              {cameFromWithdrawalSupport ? (
+                <span style={badge(false)}>Source: Money Out support handoff</span>
+              ) : null}
             </div>
           </div>
 
@@ -1018,6 +1270,85 @@ export default function LoanReadinessPage() {
                 {poolAmount} {poolCurrency}
               </div>
             </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Current borrower draft</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 16,
+                  fontWeight: 900,
+                  lineHeight: 1.25,
+                }}
+              >
+                {activeBorrowerLoan ? safeStr(activeBorrowerLoan.title || "Visible") : "Not visible"}
+              </div>
+            </div>
+
+            <div style={statTile("#FFFBEF")}>
+              <div style={sectionLabel()}>Money Out request</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#92400E",
+                  fontSize: 16,
+                  fontWeight: 900,
+                  lineHeight: 1.25,
+                }}
+              >
+                {cameFromWithdrawalSupport
+                  ? withdrawalAmount
+                    ? `${withdrawalAmount} ${poolCurrency}`
+                    : "Visible"
+                  : "No handoff"}
+              </div>
+            </div>
+
+            <div style={statTile("#FFFBEF")}>
+              <div style={sectionLabel()}>Support gap</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#92400E",
+                  fontSize: 16,
+                  fontWeight: 900,
+                  lineHeight: 1.25,
+                }}
+              >
+                {cameFromWithdrawalSupport ? safeStr(supportGap || "Pending") : "—"}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Current draft amount</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 16,
+                  fontWeight: 900,
+                  lineHeight: 1.25,
+                }}
+              >
+                {getLoanAmountText(activeBorrowerLoan)}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Draft created</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 14,
+                  fontWeight: 900,
+                  lineHeight: 1.35,
+                }}
+              >
+                {safeDateTime(activeBorrowerLoan?.createdAt) || "—"}
+              </div>
+            </div>
           </div>
         ) : null}
       </section>
@@ -1102,6 +1433,34 @@ export default function LoanReadinessPage() {
                 )}
               </div>
             </div>
+
+            {cameFromWithdrawalSupport ? (
+              <div style={innerCard("#FFFBEF")}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 15,
+                  }}
+                >
+                  Money Out handoff context
+                </div>
+
+                <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                  <div style={helperText()}>
+                    Requested withdrawal amount: {withdrawalAmount || "Pending"} {poolCurrency}
+                  </div>
+                  <div style={helperText()}>
+                    Support gap: {safeStr(supportGap || "Pending")}
+                  </div>
+                  {withdrawalNote ? (
+                    <div style={helperText()}>
+                      Note: {withdrawalNote}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </section>
@@ -1247,7 +1606,7 @@ export default function LoanReadinessPage() {
           <div>
             <div style={sectionLabel()}>Working routes</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Move from readiness reading into the exact support page you need.
+              Move from readiness reading into the exact support-continuation page you need.
             </div>
           </div>
 
@@ -1285,6 +1644,9 @@ export default function LoanReadinessPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 {recommendedNext.title}
               </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                {recommendedNext.detail}
+              </div>
             </Link>
 
             <Link to="/app/loan-suggestions" style={routeTile(false)}>
@@ -1299,7 +1661,7 @@ export default function LoanReadinessPage() {
                 Loan Suggestions
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when you need the next suggestions around the support path.
+                Use this when the next question is candidate fit after readiness is clear.
               </div>
             </Link>
 
@@ -1315,11 +1677,11 @@ export default function LoanReadinessPage() {
                 Loan Workbench
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this for deeper support handling and workbench-style operations.
+                Use this for deeper support handling once readiness is clear.
               </div>
             </Link>
 
-            <Link to="/app/payment/pool" style={routeTile(false)}>
+            <Link to="/app/marketplace#marketplace-loans-support" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1328,10 +1690,26 @@ export default function LoanReadinessPage() {
                   lineHeight: 1.3,
                 }}
               >
-                Money In
+                Support Start Surface
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the work is pool payment handling.
+                Return to the selected-community support surface when the draft itself must be started or resumed.
+              </div>
+            </Link>
+
+            <Link to="/app/guarantor-inbox" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                Incoming Guarantor Requests
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Open the queue if someone is waiting directly on your decision.
               </div>
             </Link>
 
@@ -1347,7 +1725,7 @@ export default function LoanReadinessPage() {
                 Money Out
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the work is withdrawal handling.
+                Return to the originating withdrawal path only when you need to verify the handoff source.
               </div>
             </Link>
 
@@ -1363,7 +1741,7 @@ export default function LoanReadinessPage() {
                 Action Inbox
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when someone is waiting directly on your support response.
+                Use this when the broader waiting picture matters around support response.
               </div>
             </Link>
           </div>

@@ -1,8 +1,36 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import Mark from "../assets/gmfn-mark.svg";
 import Wordmark from "../assets/gmfn-wordmark.svg";
+
+function canUseStorage(): boolean {
+  return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+}
+
+function hasActiveSession(): boolean {
+  try {
+    if (!canUseStorage()) return false;
+    return Boolean(String(window.localStorage.getItem("access_token") || "").trim());
+  } catch {
+    return false;
+  }
+}
+
+function mergeSearchIntoPath(to: string, currentSearch: string): string {
+  const [basePath, baseQueryRaw = ""] = String(to || "").split("?");
+  const merged = new URLSearchParams(baseQueryRaw);
+  const current = new URLSearchParams(currentSearch);
+
+  current.forEach((value, key) => {
+    if (!merged.has(key)) {
+      merged.append(key, value);
+    }
+  });
+
+  const finalQuery = merged.toString();
+  return finalQuery ? `${basePath}?${finalQuery}` : basePath;
+}
 
 function topPattern(): string {
   const svg = `
@@ -56,9 +84,82 @@ function actionButton(primary?: boolean): React.CSSProperties {
   };
 }
 
+function sectionLabel(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#5B7693",
+    fontWeight: 1000,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  };
+}
+
+function helperText(): React.CSSProperties {
+  return {
+    color: "#5F768D",
+    lineHeight: 1.85,
+    fontSize: 14,
+  };
+}
+
+function FeatureCard(props: { title: string; text: string }) {
+  const { title, text } = props;
+
+  return (
+    <div style={panel()}>
+      <div style={{ fontSize: 14, fontWeight: 1000, color: "#0B1F33" }}>
+        {title}
+      </div>
+      <p style={{ marginTop: 12, marginBottom: 0, ...helperText() }}>{text}</p>
+    </div>
+  );
+}
+
 export default function IntroductionPage() {
   const nav = useNavigate();
+  const location = useLocation();
   const pattern = topPattern();
+
+  const [isCompact, setIsCompact] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 980;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    function handleResize() {
+      setIsCompact(window.innerWidth <= 980);
+    }
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.title = "GSN | Introduction";
+    }
+  }, []);
+
+  const welcomeTo = useMemo(
+    () => mergeSearchIntoPath("/welcome", location.search),
+    [location.search]
+  );
+
+  const guideTo = useMemo(
+    () => mergeSearchIntoPath("/guide", location.search),
+    [location.search]
+  );
+
+  const loginTo = useMemo(
+    () => mergeSearchIntoPath("/login", location.search),
+    [location.search]
+  );
+
+  const signedIn = useMemo(() => hasActiveSession(), []);
 
   return (
     <div style={{ minHeight: "100vh", background: "#F8FBFE" }}>
@@ -72,20 +173,26 @@ export default function IntroductionPage() {
         }}
       >
         <div style={{ maxWidth: 1180, margin: "0 auto", padding: "28px 24px 38px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              marginBottom: 22,
+              flexWrap: "wrap",
+            }}
+          >
             <img src={Mark} alt="GSN mark" style={{ width: 36, height: 36 }} />
             <img src={Wordmark} alt="GSN wordmark" style={{ height: 30, width: "auto" }} />
           </div>
 
-          <div style={{ fontSize: 13, fontWeight: 1000, color: "#5B7693", letterSpacing: 1 }}>
-            INTRODUCTION
-          </div>
+          <div style={sectionLabel()}>Introduction</div>
 
           <h1
             style={{
               marginTop: 12,
               marginBottom: 16,
-              fontSize: 56,
+              fontSize: isCompact ? 34 : 56,
               lineHeight: 1.08,
               color: "#0B1F33",
               fontWeight: 1000,
@@ -100,7 +207,7 @@ export default function IntroductionPage() {
           <p
             style={{
               margin: 0,
-              fontSize: 22,
+              fontSize: isCompact ? 18 : 22,
               lineHeight: 1.76,
               color: "#48627C",
               maxWidth: 980,
@@ -114,36 +221,27 @@ export default function IntroductionPage() {
       </div>
 
       <div style={{ maxWidth: 1180, margin: "0 auto", padding: 24 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 20 }}>
-          <div style={panel()}>
-            <div style={{ fontSize: 14, fontWeight: 1000, color: "#0B1F33" }}>
-              Community coordination
-            </div>
-            <p style={{ marginTop: 12, marginBottom: 0, color: "#5F768D", lineHeight: 1.85 }}>
-              Communities can organise support using visible relationships, transparent processes,
-              and shared awareness of current obligations.
-            </p>
-          </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+            gap: 20,
+          }}
+        >
+          <FeatureCard
+            title="Community coordination"
+            text="Communities can organise support using visible relationships, transparent processes, and shared awareness of current obligations."
+          />
 
-          <div style={panel()}>
-            <div style={{ fontSize: 14, fontWeight: 1000, color: "#0B1F33" }}>
-              Explainable trust growth
-            </div>
-            <p style={{ marginTop: 12, marginBottom: 0, color: "#5F768D", lineHeight: 1.85 }}>
-              Trust grows gradually through verified completion of commitments,
-              rather than hidden manual scoring or unexplained adjustments.
-            </p>
-          </div>
+          <FeatureCard
+            title="Explainable trust growth"
+            text="Trust grows gradually through verified completion of commitments, rather than hidden manual scoring or unexplained adjustments."
+          />
 
-          <div style={panel()}>
-            <div style={{ fontSize: 14, fontWeight: 1000, color: "#0B1F33" }}>
-              Portable reliability
-            </div>
-            <p style={{ marginTop: 12, marginBottom: 0, color: "#5F768D", lineHeight: 1.85 }}>
-              TrustSlip allows reliability to be presented clearly to merchants and partners
-              without claiming to be a bank guarantee.
-            </p>
-          </div>
+          <FeatureCard
+            title="Portable reliability"
+            text="TrustSlip allows reliability to be presented clearly to merchants and partners without claiming to be a bank guarantee."
+          />
         </div>
 
         <div
@@ -151,40 +249,97 @@ export default function IntroductionPage() {
             marginTop: 28,
             ...panel(),
             display: "grid",
-            gridTemplateColumns: "1.05fr 0.95fr",
+            gridTemplateColumns: isCompact ? "1fr" : "1.05fr 0.95fr",
             gap: 24,
             alignItems: "center",
           }}
         >
           <div>
             <div style={{ fontSize: 16, fontWeight: 1000, color: "#0B1F33" }}>
-              Continue into the workspace
-            </div>
-            <div style={{ marginTop: 10, color: "#5F768D", lineHeight: 1.85 }}>
-              Enter the dashboard to view your community, active support requests,
-              trust position, and the next actions most relevant to you.
+              Continue into the guided public flow
             </div>
 
-            <div style={{ marginTop: 14, color: "#7A8D9F", fontSize: 13, lineHeight: 1.75 }}>
-              Pilot note: this environment remains non-custodial in the current phase.
+            <div style={{ marginTop: 10, ...helperText() }}>
+              This page should not open member surfaces directly. The correct next
+              public move is to continue to the Welcome page, where the app guides
+              one decision at a time.
             </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                color: "#7A8D9F",
+                fontSize: 13,
+                lineHeight: 1.75,
+              }}
+            >
+              Pilot note: this public entry remains structured so people are not
+              forced to choose too many things at once.
+            </div>
+
+            {signedIn ? (
+              <div
+                style={{
+                  marginTop: 12,
+                  fontSize: 13,
+                  color: "#5B7693",
+                  lineHeight: 1.7,
+                }}
+              >
+                Active session detected. Keep using the guided flow here, or return
+                to your dashboard from the authenticated workspace.
+              </div>
+            ) : null}
           </div>
 
           <div style={{ display: "grid", gap: 12 }}>
-            <button onClick={() => nav("/dashboard")} style={actionButton(true)}>
-              Enter Dashboard
+            <button onClick={() => nav(welcomeTo)} style={actionButton(true)}>
+              Continue to Welcome
             </button>
 
-            <button onClick={() => nav("/login")} style={actionButton(false)}>
-              Back to sign in
+            <button onClick={() => nav(guideTo)} style={actionButton(false)}>
+              Open My GMFN and I
             </button>
 
-            <button onClick={() => nav("/welcome")} style={actionButton(false)}>
-              Welcome page
+            <button onClick={() => nav(loginTo)} style={actionButton(false)}>
+              Existing access
             </button>
           </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: 18,
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 10,
+          }}
+        >
+          <Link to={welcomeTo} style={secondaryLinkStyle()}>
+            Welcome
+          </Link>
+
+          <Link to={guideTo} style={secondaryLinkStyle()}>
+            My GMFN and I
+          </Link>
         </div>
       </div>
     </div>
   );
+}
+
+function secondaryLinkStyle(): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "10px 12px",
+    borderRadius: 12,
+    background: "#FFFFFF",
+    color: "#0B1F33",
+    textDecoration: "none",
+    fontWeight: 900,
+    border: "1px solid rgba(11,31,51,0.10)",
+    fontSize: 14,
+  };
 }

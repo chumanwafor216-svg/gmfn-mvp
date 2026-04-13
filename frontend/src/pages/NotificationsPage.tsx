@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
+import { navigateWithOrigin } from "../lib/nav";
 import PageTopNav from "../components/PageTopNav";
 import {
   getMyNotifications,
@@ -71,50 +73,134 @@ const PUBLIC_ROUTE_PREFIXES = [
   "register",
 ];
 
-const APP_ROUTE_PREFIXES = [
-  "dashboard",
-  "home",
-  "clans",
-  "create-community",
-  "new-community",
-  "community",
-  "community-home",
-  "community-tools",
-  "community-tool",
-  "control-room",
-  "command-room",
-  "marketplace",
-  "market",
-  "demand-box",
-  "shop",
-  "shop-gallery",
-  "shop-control",
-  "my-shop",
-  "trust",
-  "trust-passport",
-  "trust-slip",
-  "trustslip",
-  "identity",
-  "notifications",
-  "action-inbox",
-  "inbox",
-  "my-gmfn-and-i",
-  "settings",
-  "loans",
-  "money",
-  "payment",
-  "withdrawal-instructions",
-  "loan-readiness",
-  "loan-suggestions",
-  "loan-workbench",
-  "guarantor-earnings",
-  "build-first-circle",
-  "command-center",
-  "trust-command-centre",
-  "trust-analytics",
-  "system-operations",
-  "admin",
-];
+const NOTIFICATION_TARGETS = {
+  DASHBOARD: "/app/dashboard",
+  COMMUNITY: "/app/community",
+  MARKETPLACE: "/app/marketplace",
+  FINANCE: "/app/finance",
+  MONEY_IN: "/app/payment/pool",
+  MONEY_OUT: "/app/withdrawal-instructions",
+  TRUST: "/app/trust",
+  TRUST_SLIP: "/app/trust-slip",
+  TRUST_SLIP_VERIFY: "/app/trust-slip/verify",
+  CCI: "/app/identity",
+  NOTIFICATIONS: "/app/notifications",
+  DEMAND_BOX: "/app/demand-box",
+  LOANS: "/app/loans",
+  LOAN_READINESS: "/app/loan-readiness",
+  LOAN_SUGGESTIONS: "/app/loan-suggestions",
+  LOAN_WORKBENCH: "/app/loan-workbench",
+  GUIDE: "/app/my-gmfn-and-i",
+  SETTINGS: "/app/my-gmfn-and-i?tab=settings",
+  BUILD_FIRST_CIRCLE: "/app/build-first-circle",
+  SHOP_ME: "/app/shop/me",
+  COMMAND_CENTER: "/app/command-center",
+  GUARANTOR_EARNINGS: "/app/guarantor-earnings",
+} as const;
+
+const EXACT_TARGET_ALIASES: Record<string, string> = {
+  dashboard: NOTIFICATION_TARGETS.DASHBOARD,
+  home: NOTIFICATION_TARGETS.DASHBOARD,
+  "main-dashboard": NOTIFICATION_TARGETS.DASHBOARD,
+  "member-home": NOTIFICATION_TARGETS.DASHBOARD,
+
+  notifications: NOTIFICATION_TARGETS.NOTIFICATIONS,
+  "action-inbox": NOTIFICATION_TARGETS.NOTIFICATIONS,
+  inbox: NOTIFICATION_TARGETS.NOTIFICATIONS,
+
+  finance: NOTIFICATION_TARGETS.FINANCE,
+  finances: NOTIFICATION_TARGETS.FINANCE,
+  financials: NOTIFICATION_TARGETS.FINANCE,
+  "open-finance": NOTIFICATION_TARGETS.FINANCE,
+  "finance-overview": NOTIFICATION_TARGETS.FINANCE,
+  "finance-meter": NOTIFICATION_TARGETS.FINANCE,
+
+  "money-in": NOTIFICATION_TARGETS.MONEY_IN,
+  "payment/pool": NOTIFICATION_TARGETS.MONEY_IN,
+
+  "money-out": NOTIFICATION_TARGETS.MONEY_OUT,
+  withdrawal: NOTIFICATION_TARGETS.MONEY_OUT,
+  "withdrawal-instructions": NOTIFICATION_TARGETS.MONEY_OUT,
+
+  marketplace: NOTIFICATION_TARGETS.MARKETPLACE,
+  market: NOTIFICATION_TARGETS.MARKETPLACE,
+  "open-marketplace": NOTIFICATION_TARGETS.MARKETPLACE,
+
+  community: NOTIFICATION_TARGETS.COMMUNITY,
+  "community-home": NOTIFICATION_TARGETS.COMMUNITY,
+  "community-tools": NOTIFICATION_TARGETS.COMMUNITY,
+  "community-tool": NOTIFICATION_TARGETS.COMMUNITY,
+  "control-room": NOTIFICATION_TARGETS.COMMUNITY,
+  "command-room": NOTIFICATION_TARGETS.COMMUNITY,
+  "open-community": NOTIFICATION_TARGETS.COMMUNITY,
+  "open-community-home": NOTIFICATION_TARGETS.COMMUNITY,
+
+  trust: NOTIFICATION_TARGETS.TRUST,
+  "trust-passport": NOTIFICATION_TARGETS.TRUST,
+  "open-trust": NOTIFICATION_TARGETS.TRUST,
+
+  "trust-slip": NOTIFICATION_TARGETS.TRUST_SLIP,
+  trustslip: NOTIFICATION_TARGETS.TRUST_SLIP,
+  "open-trust-slip": NOTIFICATION_TARGETS.TRUST_SLIP,
+  "merchant-verify": NOTIFICATION_TARGETS.TRUST_SLIP,
+  "verify-merchant": NOTIFICATION_TARGETS.TRUST_SLIP,
+  "trust-slip/verify": NOTIFICATION_TARGETS.TRUST_SLIP_VERIFY,
+
+  identity: NOTIFICATION_TARGETS.CCI,
+  "identity-integrity": NOTIFICATION_TARGETS.CCI,
+  cci: NOTIFICATION_TARGETS.CCI,
+
+  "demand-box": NOTIFICATION_TARGETS.DEMAND_BOX,
+  demands: NOTIFICATION_TARGETS.DEMAND_BOX,
+  "open-demand": NOTIFICATION_TARGETS.DEMAND_BOX,
+
+  loans: NOTIFICATION_TARGETS.LOANS,
+  money: NOTIFICATION_TARGETS.LOANS,
+  support: NOTIFICATION_TARGETS.LOANS,
+  "support-path": NOTIFICATION_TARGETS.LOANS,
+  "loan-support": NOTIFICATION_TARGETS.LOANS,
+  "loans-support": NOTIFICATION_TARGETS.LOANS,
+
+  "loan-readiness": NOTIFICATION_TARGETS.LOAN_READINESS,
+  readiness: NOTIFICATION_TARGETS.LOAN_READINESS,
+
+  "loan-suggestions": NOTIFICATION_TARGETS.LOAN_SUGGESTIONS,
+  suggestions: NOTIFICATION_TARGETS.LOAN_SUGGESTIONS,
+
+  "loan-workbench": NOTIFICATION_TARGETS.LOAN_WORKBENCH,
+  workbench: NOTIFICATION_TARGETS.LOAN_WORKBENCH,
+
+  "my-gmfn-and-i": NOTIFICATION_TARGETS.GUIDE,
+  guide: NOTIFICATION_TARGETS.GUIDE,
+  "member-guide": NOTIFICATION_TARGETS.GUIDE,
+  settings: NOTIFICATION_TARGETS.SETTINGS,
+  "workspace-settings": NOTIFICATION_TARGETS.SETTINGS,
+  "my-gmfn-and-i/settings": NOTIFICATION_TARGETS.SETTINGS,
+
+  "build-first-circle": NOTIFICATION_TARGETS.BUILD_FIRST_CIRCLE,
+  "first-circle": NOTIFICATION_TARGETS.BUILD_FIRST_CIRCLE,
+  "grow-your-circle": NOTIFICATION_TARGETS.BUILD_FIRST_CIRCLE,
+  circle: NOTIFICATION_TARGETS.BUILD_FIRST_CIRCLE,
+  "circle-builder": NOTIFICATION_TARGETS.BUILD_FIRST_CIRCLE,
+
+  shop: NOTIFICATION_TARGETS.SHOP_ME,
+  "my-shop": NOTIFICATION_TARGETS.SHOP_ME,
+  "shop-gallery": NOTIFICATION_TARGETS.SHOP_ME,
+  "open-shop": NOTIFICATION_TARGETS.SHOP_ME,
+
+  "shop-control": "/app/shop-control",
+  "shop-manager": "/app/shop-control",
+
+  "command-center": NOTIFICATION_TARGETS.COMMAND_CENTER,
+  "trust-command-centre": NOTIFICATION_TARGETS.COMMAND_CENTER,
+  "trust-analytics": "/app/command-center/trust-analytics",
+  "system-operations": "/app/command-center/system-operations",
+  "admin/exposure": "/app/command-center/exposure",
+  "admin/trust-graph": "/app/command-center/trust-graph",
+
+  earnings: NOTIFICATION_TARGETS.GUARANTOR_EARNINGS,
+  "guarantor-earnings": NOTIFICATION_TARGETS.GUARANTOR_EARNINGS,
+};
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -304,9 +390,48 @@ function matchesRoutePrefix(path: string, prefixes: string[]): boolean {
   );
 }
 
+function mergeAliasTarget(target: string, suffix: string): string {
+  if (!suffix) return target;
+
+  const parsed = new URL(target, "http://local");
+  const hashIndex = suffix.indexOf("#");
+  const queryPart = hashIndex >= 0 ? suffix.slice(0, hashIndex) : suffix;
+  const hashPart = hashIndex >= 0 ? suffix.slice(hashIndex) : "";
+
+  if (queryPart.startsWith("?")) {
+    const extra = new URLSearchParams(queryPart.slice(1));
+    extra.forEach((value, key) => {
+      if (!parsed.searchParams.has(key)) {
+        parsed.searchParams.append(key, value);
+      }
+    });
+  }
+
+  if (hashPart) {
+    parsed.hash = hashPart;
+  }
+
+  return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+}
+
+function isSafeRelativeAppPath(path: string): boolean {
+  const value = path.toLowerCase();
+
+  return (
+    /^payment\/loans\/[^/]+$/.test(value) ||
+    /^shop\/[^/]+$/.test(value) ||
+    /^open-shop\/[^/]+$/.test(value) ||
+    /^shop-gallery\/[^/]+$/.test(value) ||
+    /^community\/[^/]+\/join-requests$/.test(value) ||
+    value === "trust-slip/verify" ||
+    value.startsWith("command-center/") ||
+    value.startsWith("admin/")
+  );
+}
+
 function normalizeActionTargetPath(value: any): string {
   const raw = safeStr(value);
-  if (!raw) return "";
+  if (!raw) return NOTIFICATION_TARGETS.NOTIFICATIONS;
 
   if (/^(https?:|mailto:|tel:)/i.test(raw)) {
     return raw;
@@ -321,32 +446,40 @@ function normalizeActionTargetPath(value: any): string {
   }
 
   if (raw.startsWith("?")) {
-    return `/app/notifications${raw}`;
+    return `${NOTIFICATION_TARGETS.NOTIFICATIONS}${raw}`;
   }
 
   const { path, suffix } = splitPathSuffix(raw);
-  if (!path) return raw;
+  const normalizedPath = safeStr(path).replace(/^\/+/, "");
+  const lowerPath = normalizedPath.toLowerCase();
 
-  if (path === "app" || path.startsWith("app/")) {
-    return `/${path}${suffix}`;
+  if (!lowerPath) return NOTIFICATION_TARGETS.NOTIFICATIONS;
+
+  const aliased = EXACT_TARGET_ALIASES[lowerPath];
+  if (aliased) {
+    return mergeAliasTarget(aliased, suffix);
   }
 
-  if (matchesRoutePrefix(path, PUBLIC_ROUTE_PREFIXES)) {
-    return `/${path}${suffix}`;
+  if (lowerPath === "app" || lowerPath.startsWith("app/")) {
+    return `/${normalizedPath}${suffix}`;
   }
 
-  if (matchesRoutePrefix(path, APP_ROUTE_PREFIXES)) {
-    return `/app/${path}${suffix}`;
+  if (matchesRoutePrefix(lowerPath, PUBLIC_ROUTE_PREFIXES)) {
+    return `/${normalizedPath}${suffix}`;
   }
 
-  return `/app/${path}${suffix}`;
+  if (isSafeRelativeAppPath(lowerPath)) {
+    return `/app/${normalizedPath}${suffix}`;
+  }
+
+  return NOTIFICATION_TARGETS.NOTIFICATIONS;
 }
 
 function resolveNoticeTarget(raw: any): string {
   const explicit = normalizeActionTargetPath(
     raw?.action_url || raw?.cta_to || raw?.ctaTo || raw?.to
   );
-  if (explicit) return explicit;
+  if (explicit && explicit !== NOTIFICATION_TARGETS.NOTIFICATIONS) return explicit;
 
   const text = [
     safeStr(raw?.kind),
@@ -367,7 +500,7 @@ function resolveNoticeTarget(raw: any): string {
       "circle invite",
     ])
   ) {
-    return "/app/build-first-circle";
+    return NOTIFICATION_TARGETS.BUILD_FIRST_CIRCLE;
   }
 
   if (
@@ -380,41 +513,7 @@ function resolveNoticeTarget(raw: any): string {
       "qr verify",
     ])
   ) {
-    return "/app/trust-slip";
-  }
-
-  if (
-    containsAny(text, [
-      "guarantor",
-      "loan",
-      "support path",
-      "support request",
-      "repay",
-      "repayment",
-      "payment",
-      "withdrawal",
-      "pool",
-      "readiness",
-      "workbench",
-      "suggestion",
-    ])
-  ) {
-    return "/app/loans";
-  }
-
-  if (
-    containsAny(text, [
-      "join request",
-      "join approval",
-      "approval vote",
-      "member approval",
-      "community approval",
-      "pending approval",
-      "activate membership",
-      "activation",
-    ])
-  ) {
-    return "/app/community";
+    return NOTIFICATION_TARGETS.TRUST_SLIP;
   }
 
   if (
@@ -428,49 +527,7 @@ function resolveNoticeTarget(raw: any): string {
       "sourcing",
     ])
   ) {
-    return "/app/demand-box";
-  }
-
-  if (
-    containsAny(text, [
-      "identity",
-      "integrity",
-      "cci",
-      "cross-community",
-    ])
-  ) {
-    return "/app/identity";
-  }
-
-  if (containsAny(text, ["trust", "trust passport", "trust score"])) {
-    return "/app/trust";
-  }
-
-  if (
-    containsAny(text, [
-      "community picture",
-      "community profile",
-      "marketplace profile",
-      "community tools",
-      "control room",
-      "community home",
-    ])
-  ) {
-    return "/app/community";
-  }
-
-  if (
-    containsAny(text, [
-      "marketplace",
-      "shop gallery",
-      "shop",
-      "spotlight",
-      "product",
-      "seller",
-      "repost",
-    ])
-  ) {
-    return "/app/marketplace";
+    return NOTIFICATION_TARGETS.DEMAND_BOX;
   }
 
   if (
@@ -481,18 +538,14 @@ function resolveNoticeTarget(raw: any): string {
       "quiet notifications",
     ])
   ) {
-    return "/app/my-gmfn-and-i?tab=settings";
+    return NOTIFICATION_TARGETS.SETTINGS;
   }
 
   if (containsAny(text, ["my gmfn and i", "guide"])) {
-    return "/app/my-gmfn-and-i";
+    return NOTIFICATION_TARGETS.GUIDE;
   }
 
-  if (containsAny(text, ["community"])) {
-    return "/app/community";
-  }
-
-  return "/app/notifications";
+  return NOTIFICATION_TARGETS.NOTIFICATIONS;
 }
 
 function normalizeSettings(raw: any): SettingsState {
@@ -522,6 +575,13 @@ function normalizeRawNotificationRow(raw: any): RawNotificationRow {
     ctaTo: resolveNoticeTarget(raw),
     unread: !raw?.is_read,
     createdAt: firstTruthy(raw?.created_at),
+  };
+}
+
+function normalizeGuidanceNotice(item: GuidanceNotice): GuidanceNotice {
+  return {
+    ...item,
+    ctaTo: normalizeActionTargetPath(item.ctaTo),
   };
 }
 
@@ -709,6 +769,7 @@ function normalizeCollapseState(raw: any): CollapseState {
 
 export default function NotificationsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -800,17 +861,14 @@ export default function NotificationsPage() {
   const bucketRows = useMemo(() => {
     const summary = guidanceSnapshot?.actionInboxSummary;
 
+    const normalizeAndSort = (rows: GuidanceNotice[]) =>
+      sortGuidanceNotices(rows.map(normalizeGuidanceNotice), settings.unreadFirst);
+
     return {
-      actNow: sortGuidanceNotices(summary?.actNow || [], settings.unreadFirst),
-      dueSoon: sortGuidanceNotices(summary?.dueSoon || [], settings.unreadFirst),
-      watchAndWait: sortGuidanceNotices(
-        summary?.watchAndWait || [],
-        settings.unreadFirst
-      ),
-      generalUpdates: sortGuidanceNotices(
-        summary?.generalUpdates || [],
-        settings.unreadFirst
-      ),
+      actNow: normalizeAndSort(summary?.actNow || []),
+      dueSoon: normalizeAndSort(summary?.dueSoon || []),
+      watchAndWait: normalizeAndSort(summary?.watchAndWait || []),
+      generalUpdates: normalizeAndSort(summary?.generalUpdates || []),
     };
   }, [guidanceSnapshot, settings.unreadFirst]);
 
@@ -825,7 +883,7 @@ export default function NotificationsPage() {
     if (bucketRows.actNow.length > 0) return bucketRows.actNow[0];
     if (bucketRows.dueSoon.length > 0) return bucketRows.dueSoon[0];
     if (guidanceSnapshot?.recoveryPath) {
-      return {
+      return normalizeGuidanceNotice({
         id: "recovery-focus",
         kind: guidanceSnapshot.recoveryPath.kind,
         title: guidanceSnapshot.recoveryPath.title,
@@ -834,7 +892,7 @@ export default function NotificationsPage() {
         ctaTo: guidanceSnapshot.recoveryPath.ctaTo,
         bucket: "actNow" as GuidanceInboxBucketKey,
         unread: true,
-      };
+      });
     }
     return null;
   }, [bucketRows, guidanceSnapshot]);
@@ -856,16 +914,18 @@ export default function NotificationsPage() {
   }
 
   async function handlePrimaryNoticeAction(notice: GuidanceNotice) {
-    if (safeStr(notice.id)) {
-      await markAsRead(safeStr(notice.id));
+    const normalizedNotice = normalizeGuidanceNotice(notice);
+
+    if (safeStr(normalizedNotice.id)) {
+      await markAsRead(safeStr(normalizedNotice.id));
     }
 
     if (settings.openActionsDirectly) {
-      navigate(notice.ctaTo);
+      navigateWithOrigin(navigate, normalizedNotice.ctaTo, location);
       return;
     }
 
-    setSelectedNotice(notice);
+    setSelectedNotice(normalizedNotice);
   }
 
   function toggleSection(key: keyof CollapseState) {
@@ -1016,6 +1076,29 @@ export default function NotificationsPage() {
             Primary action: {settings.openActionsDirectly ? "Open directly" : "Review first"}
           </span>
         </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            display: "flex",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() =>
+              setCollapsed((prev) => ({
+                ...prev,
+                focus: false,
+                buckets: false,
+              }))
+            }
+            style={actionBtn("primary")}
+          >
+            Open act-now items
+          </button>
+        </div>
       </section>
 
       <section style={pageCard("#FFFFFF")}>
@@ -1110,9 +1193,9 @@ export default function NotificationsPage() {
                     {settings.openActionsDirectly ? operationalFocus.ctaLabel : "Review here"}
                   </button>
 
-                  <Link to={operationalFocus.ctaTo} style={actionBtn("secondary")}>
+                  <OriginLink to={operationalFocus.ctaTo} style={actionBtn("secondary")}>
                     Open page
-                  </Link>
+                  </OriginLink>
                 </div>
               </div>
 
@@ -1198,9 +1281,9 @@ export default function NotificationsPage() {
                   flexWrap: "wrap",
                 }}
               >
-                <Link to={selectedNotice.ctaTo} style={actionBtn("primary")}>
+                <OriginLink to={selectedNotice.ctaTo} style={actionBtn("primary")}>
                   {selectedNotice.ctaLabel}
-                </Link>
+                </OriginLink>
 
                 {selectedNotice.unread && /^\d+$/.test(safeStr(selectedNotice.id)) ? (
                   <button
@@ -1359,9 +1442,9 @@ export default function NotificationsPage() {
                                 {settings.openActionsDirectly ? notice.ctaLabel : "Review here"}
                               </button>
 
-                              <Link to={notice.ctaTo} style={actionBtn("secondary")}>
+                              <OriginLink to={notice.ctaTo} style={actionBtn("secondary")}>
                                 Open page
-                              </Link>
+                              </OriginLink>
 
                               {notice.unread && /^\d+$/.test(safeStr(notice.id)) ? (
                                 <button

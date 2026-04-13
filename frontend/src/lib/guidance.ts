@@ -158,43 +158,134 @@ const PUBLIC_ROUTE_PREFIXES = [
   "register",
 ];
 
-const APP_ROUTE_PREFIXES = [
-  "dashboard",
-  "home",
-  "clans",
-  "create-community",
-  "community",
-  "community-home",
-  "marketplace",
-  "market",
-  "demand-box",
-  "shop",
-  "shop-gallery",
-  "shop-control",
-  "my-shop",
-  "trust",
-  "trust-passport",
-  "trust-slip",
-  "trustslip",
-  "identity",
-  "notifications",
-  "my-gmfn-and-i",
-  "settings",
-  "loans",
-  "money",
-  "payment",
-  "withdrawal-instructions",
-  "loan-readiness",
-  "loan-suggestions",
-  "loan-workbench",
-  "guarantor-earnings",
-  "build-first-circle",
-  "command-center",
-  "trust-command-centre",
-  "trust-analytics",
-  "system-operations",
-  "admin",
-];
+const GUIDANCE_TARGETS = {
+  DASHBOARD: "/app/dashboard",
+  COMMUNITY: "/app/community",
+  MARKETPLACE: "/app/marketplace",
+  FINANCE: "/app/finance",
+  MONEY_IN: "/app/payment/pool",
+  MONEY_OUT: "/app/withdrawal-instructions",
+  TRUST: "/app/trust",
+  TRUST_SLIP: "/app/trust-slip",
+  TRUST_SLIP_VERIFY: "/app/trust-slip/verify",
+  CCI: "/app/identity",
+  NOTIFICATIONS: "/app/notifications",
+  DEMAND_BOX: "/app/demand-box",
+  LOANS: "/app/loans",
+  LOAN_READINESS: "/app/loan-readiness",
+  LOAN_SUGGESTIONS: "/app/loan-suggestions",
+  LOAN_WORKBENCH: "/app/loan-workbench",
+  GUIDE: "/app/my-gmfn-and-i",
+  SETTINGS: "/app/my-gmfn-and-i?tab=settings",
+  BUILD_FIRST_CIRCLE: "/app/build-first-circle",
+  SHOP_ME: "/app/shop/me",
+  COMMAND_CENTER: "/app/command-center",
+  GUARANTOR_EARNINGS: "/app/guarantor-earnings",
+} as const;
+
+const EXACT_TARGET_ALIASES: Record<string, string> = {
+  dashboard: GUIDANCE_TARGETS.DASHBOARD,
+  home: GUIDANCE_TARGETS.DASHBOARD,
+  "main-dashboard": GUIDANCE_TARGETS.DASHBOARD,
+  "member-home": GUIDANCE_TARGETS.DASHBOARD,
+
+  notifications: GUIDANCE_TARGETS.NOTIFICATIONS,
+  "action-inbox": GUIDANCE_TARGETS.NOTIFICATIONS,
+  inbox: GUIDANCE_TARGETS.NOTIFICATIONS,
+
+  finance: GUIDANCE_TARGETS.FINANCE,
+  finances: GUIDANCE_TARGETS.FINANCE,
+  financials: GUIDANCE_TARGETS.FINANCE,
+  "open-finance": GUIDANCE_TARGETS.FINANCE,
+  "finance-overview": GUIDANCE_TARGETS.FINANCE,
+  "finance-meter": GUIDANCE_TARGETS.FINANCE,
+
+  "money-in": GUIDANCE_TARGETS.MONEY_IN,
+  "payment/pool": GUIDANCE_TARGETS.MONEY_IN,
+
+  "money-out": GUIDANCE_TARGETS.MONEY_OUT,
+  withdrawal: GUIDANCE_TARGETS.MONEY_OUT,
+  "withdrawal-instructions": GUIDANCE_TARGETS.MONEY_OUT,
+
+  marketplace: GUIDANCE_TARGETS.MARKETPLACE,
+  market: GUIDANCE_TARGETS.MARKETPLACE,
+  "open-marketplace": GUIDANCE_TARGETS.MARKETPLACE,
+
+  community: GUIDANCE_TARGETS.COMMUNITY,
+  "community-home": GUIDANCE_TARGETS.COMMUNITY,
+  "community-tools": GUIDANCE_TARGETS.COMMUNITY,
+  "community-tool": GUIDANCE_TARGETS.COMMUNITY,
+  "control-room": GUIDANCE_TARGETS.COMMUNITY,
+  "command-room": GUIDANCE_TARGETS.COMMUNITY,
+  "open-community": GUIDANCE_TARGETS.COMMUNITY,
+  "open-community-home": GUIDANCE_TARGETS.COMMUNITY,
+
+  trust: GUIDANCE_TARGETS.TRUST,
+  "trust-passport": GUIDANCE_TARGETS.TRUST,
+  "open-trust": GUIDANCE_TARGETS.TRUST,
+
+  "trust-slip": GUIDANCE_TARGETS.TRUST_SLIP,
+  trustslip: GUIDANCE_TARGETS.TRUST_SLIP,
+  "open-trust-slip": GUIDANCE_TARGETS.TRUST_SLIP,
+  "merchant-verify": GUIDANCE_TARGETS.TRUST_SLIP,
+  "verify-merchant": GUIDANCE_TARGETS.TRUST_SLIP,
+  "trust-slip/verify": GUIDANCE_TARGETS.TRUST_SLIP_VERIFY,
+
+  identity: GUIDANCE_TARGETS.CCI,
+  "identity-integrity": GUIDANCE_TARGETS.CCI,
+  cci: GUIDANCE_TARGETS.CCI,
+
+  "demand-box": GUIDANCE_TARGETS.DEMAND_BOX,
+  demands: GUIDANCE_TARGETS.DEMAND_BOX,
+  "open-demand": GUIDANCE_TARGETS.DEMAND_BOX,
+
+  loans: GUIDANCE_TARGETS.LOANS,
+  money: GUIDANCE_TARGETS.LOANS,
+  support: GUIDANCE_TARGETS.LOANS,
+  "support-path": GUIDANCE_TARGETS.LOANS,
+  "loan-support": GUIDANCE_TARGETS.LOANS,
+  "loans-support": GUIDANCE_TARGETS.LOANS,
+
+  "loan-readiness": GUIDANCE_TARGETS.LOAN_READINESS,
+  readiness: GUIDANCE_TARGETS.LOAN_READINESS,
+
+  "loan-suggestions": GUIDANCE_TARGETS.LOAN_SUGGESTIONS,
+  suggestions: GUIDANCE_TARGETS.LOAN_SUGGESTIONS,
+
+  "loan-workbench": GUIDANCE_TARGETS.LOAN_WORKBENCH,
+  workbench: GUIDANCE_TARGETS.LOAN_WORKBENCH,
+
+  "my-gmfn-and-i": GUIDANCE_TARGETS.GUIDE,
+  guide: GUIDANCE_TARGETS.GUIDE,
+  "member-guide": GUIDANCE_TARGETS.GUIDE,
+  settings: GUIDANCE_TARGETS.SETTINGS,
+  "workspace-settings": GUIDANCE_TARGETS.SETTINGS,
+  "my-gmfn-and-i/settings": GUIDANCE_TARGETS.SETTINGS,
+
+  "build-first-circle": GUIDANCE_TARGETS.BUILD_FIRST_CIRCLE,
+  "first-circle": GUIDANCE_TARGETS.BUILD_FIRST_CIRCLE,
+  "grow-your-circle": GUIDANCE_TARGETS.BUILD_FIRST_CIRCLE,
+  circle: GUIDANCE_TARGETS.BUILD_FIRST_CIRCLE,
+  "circle-builder": GUIDANCE_TARGETS.BUILD_FIRST_CIRCLE,
+
+  shop: GUIDANCE_TARGETS.SHOP_ME,
+  "my-shop": GUIDANCE_TARGETS.SHOP_ME,
+  "shop-gallery": GUIDANCE_TARGETS.SHOP_ME,
+  "open-shop": GUIDANCE_TARGETS.SHOP_ME,
+
+  "shop-control": "/app/shop-control",
+  "shop-manager": "/app/shop-control",
+
+  "command-center": GUIDANCE_TARGETS.COMMAND_CENTER,
+  "trust-command-centre": GUIDANCE_TARGETS.COMMAND_CENTER,
+  "trust-analytics": "/app/command-center/trust-analytics",
+  "system-operations": "/app/command-center/system-operations",
+  "admin/exposure": "/app/command-center/exposure",
+  "admin/trust-graph": "/app/command-center/trust-graph",
+
+  earnings: GUIDANCE_TARGETS.GUARANTOR_EARNINGS,
+  "guarantor-earnings": GUIDANCE_TARGETS.GUARANTOR_EARNINGS,
+};
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -444,9 +535,48 @@ function matchesRoutePrefix(path: string, prefixes: string[]): boolean {
   );
 }
 
+function mergeAliasTarget(target: string, suffix: string): string {
+  if (!suffix) return target;
+
+  const parsed = new URL(target, "http://local");
+  const hashIndex = suffix.indexOf("#");
+  const queryPart = hashIndex >= 0 ? suffix.slice(0, hashIndex) : suffix;
+  const hashPart = hashIndex >= 0 ? suffix.slice(hashIndex) : "";
+
+  if (queryPart.startsWith("?")) {
+    const extra = new URLSearchParams(queryPart.slice(1));
+    extra.forEach((value, key) => {
+      if (!parsed.searchParams.has(key)) {
+        parsed.searchParams.append(key, value);
+      }
+    });
+  }
+
+  if (hashPart) {
+    parsed.hash = hashPart;
+  }
+
+  return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+}
+
+function isSafeRelativeAppPath(path: string): boolean {
+  const value = path.toLowerCase();
+
+  return (
+    /^payment\/loans\/[^/]+$/.test(value) ||
+    /^shop\/[^/]+$/.test(value) ||
+    /^open-shop\/[^/]+$/.test(value) ||
+    /^shop-gallery\/[^/]+$/.test(value) ||
+    /^community\/[^/]+\/join-requests$/.test(value) ||
+    value === "trust-slip/verify" ||
+    value.startsWith("command-center/") ||
+    value.startsWith("admin/")
+  );
+}
+
 function normalizeActionTargetPath(value: any): string {
   const raw = safeStr(value);
-  if (!raw) return "";
+  if (!raw) return GUIDANCE_TARGETS.NOTIFICATIONS;
 
   if (/^(https?:|mailto:|tel:)/i.test(raw)) {
     return raw;
@@ -461,32 +591,40 @@ function normalizeActionTargetPath(value: any): string {
   }
 
   if (raw.startsWith("?")) {
-    return `/app/notifications${raw}`;
+    return `${GUIDANCE_TARGETS.NOTIFICATIONS}${raw}`;
   }
 
   const { path, suffix } = splitPathSuffix(raw);
-  if (!path) return raw;
+  const normalizedPath = safeStr(path).replace(/^\/+/, "");
+  const lowerPath = normalizedPath.toLowerCase();
 
-  if (path === "app" || path.startsWith("app/")) {
-    return `/${path}${suffix}`;
+  if (!lowerPath) return GUIDANCE_TARGETS.NOTIFICATIONS;
+
+  const aliased = EXACT_TARGET_ALIASES[lowerPath];
+  if (aliased) {
+    return mergeAliasTarget(aliased, suffix);
   }
 
-  if (matchesRoutePrefix(path, PUBLIC_ROUTE_PREFIXES)) {
-    return `/${path}${suffix}`;
+  if (lowerPath === "app" || lowerPath.startsWith("app/")) {
+    return `/${normalizedPath}${suffix}`;
   }
 
-  if (matchesRoutePrefix(path, APP_ROUTE_PREFIXES)) {
-    return `/app/${path}${suffix}`;
+  if (matchesRoutePrefix(lowerPath, PUBLIC_ROUTE_PREFIXES)) {
+    return `/${normalizedPath}${suffix}`;
   }
 
-  return `/app/${path}${suffix}`;
+  if (isSafeRelativeAppPath(lowerPath)) {
+    return `/app/${normalizedPath}${suffix}`;
+  }
+
+  return GUIDANCE_TARGETS.NOTIFICATIONS;
 }
 
 function resolveNoticeTarget(raw: any): string {
-  const explicit = normalizeActionTargetPath(
-    raw?.action_url || raw?.cta_to || raw?.ctaTo || raw?.to
-  );
-  if (explicit) return explicit;
+  const rawExplicit = raw?.action_url || raw?.cta_to || raw?.ctaTo || raw?.to;
+  if (safeStr(rawExplicit)) {
+    return normalizeActionTargetPath(rawExplicit);
+  }
 
   const text = [
     safeStr(raw?.kind),
@@ -507,7 +645,7 @@ function resolveNoticeTarget(raw: any): string {
       "circle invite",
     ])
   ) {
-    return "/app/build-first-circle";
+    return GUIDANCE_TARGETS.BUILD_FIRST_CIRCLE;
   }
 
   if (
@@ -520,26 +658,119 @@ function resolveNoticeTarget(raw: any): string {
       "qr verify",
     ])
   ) {
-    return "/app/trust-slip";
+    return GUIDANCE_TARGETS.TRUST_SLIP;
   }
 
   if (
     containsAny(text, [
-      "guarantor",
+      "money in",
+      "pay in",
+      "pool deposit",
+      "deposit reference",
+      "payment code",
+      "payment instruction",
+      "payment rail",
+      "community account",
+      "deposit into pool",
+      "fund pool",
+    ])
+  ) {
+    return GUIDANCE_TARGETS.MONEY_IN;
+  }
+
+  if (
+    containsAny(text, [
+      "money out",
+      "withdrawal instruction",
+      "withdraw from pool",
+      "cash out",
+      "payout destination",
+      "personal payout",
+      "withdrawal rail",
+      "withdrawal request",
+    ])
+  ) {
+    return GUIDANCE_TARGETS.MONEY_OUT;
+  }
+
+  if (
+    containsAny(text, [
+      "finance",
+      "financial",
+      "pool balance",
+      "effective available",
+      "pending deposits",
+      "pending withdrawals",
+      "locked by guarantees",
+      "released guarantees",
+      "guarantor exposure",
+      "borrower-side total",
+      "remaining to repay",
+      "recent finance event",
+      "pool position",
+    ])
+  ) {
+    return GUIDANCE_TARGETS.FINANCE;
+  }
+
+  if (
+    containsAny(text, [
+      "loan readiness",
+      "readiness plan",
+      "readiness check",
+      "readiness",
+    ])
+  ) {
+    return GUIDANCE_TARGETS.LOAN_READINESS;
+  }
+
+  if (
+    containsAny(text, [
+      "loan suggestions",
+      "guarantor suggestions",
+      "fit suggestions",
+      "suggestions",
+    ])
+  ) {
+    return GUIDANCE_TARGETS.LOAN_SUGGESTIONS;
+  }
+
+  if (
+    containsAny(text, [
+      "loan workbench",
+      "support workbench",
+      "workbench",
+    ])
+  ) {
+    return GUIDANCE_TARGETS.LOAN_WORKBENCH;
+  }
+
+  if (
+    containsAny(text, [
+      "incoming guarantor request",
+      "guarantor request",
+      "approve guarantor",
+      "decline guarantor",
+      "decision required",
+      "respond now",
+    ])
+  ) {
+    return GUIDANCE_TARGETS.NOTIFICATIONS;
+  }
+
+  if (
+    containsAny(text, [
       "loan",
       "support path",
       "support request",
       "repay",
       "repayment",
-      "payment",
-      "withdrawal",
-      "pool",
-      "readiness",
-      "workbench",
-      "suggestion",
+      "borrower preflight",
+      "active support item",
+      "support-backed",
     ])
   ) {
-    return "/app/loans";
+    return GUIDANCE_TARGETS.LOANS;
   }
 
   if (
@@ -554,7 +785,7 @@ function resolveNoticeTarget(raw: any): string {
       "activation",
     ])
   ) {
-    return "/app/community";
+    return GUIDANCE_TARGETS.COMMUNITY;
   }
 
   if (
@@ -568,7 +799,7 @@ function resolveNoticeTarget(raw: any): string {
       "sourcing",
     ])
   ) {
-    return "/app/demand-box";
+    return GUIDANCE_TARGETS.DEMAND_BOX;
   }
 
   if (
@@ -579,11 +810,11 @@ function resolveNoticeTarget(raw: any): string {
       "cross-community",
     ])
   ) {
-    return "/app/identity";
+    return GUIDANCE_TARGETS.CCI;
   }
 
   if (containsAny(text, ["trust", "trust passport", "trust score"])) {
-    return "/app/trust";
+    return GUIDANCE_TARGETS.TRUST;
   }
 
   if (
@@ -593,7 +824,18 @@ function resolveNoticeTarget(raw: any): string {
       "marketplace profile",
     ])
   ) {
-    return "/app/marketplace";
+    return GUIDANCE_TARGETS.MARKETPLACE;
+  }
+
+  if (
+    containsAny(text, [
+      "community tools",
+      "control room",
+      "community home",
+      "community workspace",
+    ])
+  ) {
+    return GUIDANCE_TARGETS.COMMUNITY;
   }
 
   if (
@@ -607,7 +849,7 @@ function resolveNoticeTarget(raw: any): string {
       "repost",
     ])
   ) {
-    return "/app/marketplace";
+    return GUIDANCE_TARGETS.MARKETPLACE;
   }
 
   if (
@@ -618,18 +860,18 @@ function resolveNoticeTarget(raw: any): string {
       "quiet notifications",
     ])
   ) {
-    return "/app/my-gmfn-and-i?tab=settings";
+    return GUIDANCE_TARGETS.SETTINGS;
   }
 
   if (containsAny(text, ["my gmfn and i", "guide"])) {
-    return "/app/my-gmfn-and-i";
+    return GUIDANCE_TARGETS.GUIDE;
   }
 
   if (containsAny(text, ["community"])) {
-    return "/app/community";
+    return GUIDANCE_TARGETS.COMMUNITY;
   }
 
-  return "/app/notifications";
+  return GUIDANCE_TARGETS.NOTIFICATIONS;
 }
 
 function bucketFromNotification(raw: any): GuidanceInboxBucketKey {
@@ -719,7 +961,7 @@ function buildGuarantorInboxNotices(raw: any): GuidanceNotice[] {
         ? `A borrower is waiting for your decision on a pledge of ${pledge}.`
         : "A borrower is waiting for your decision.",
       ctaLabel: "Open Action Inbox",
-      ctaTo: "/app/notifications",
+      ctaTo: GUIDANCE_TARGETS.NOTIFICATIONS,
       bucket: "actNow",
       unread: true,
     };
@@ -1168,7 +1410,7 @@ function buildRecoveryPath(params: {
         trustChangeExplainer.next[0] ||
         "A trust repair step is needed now. Review what weakened your trust path and fix the next visible issue.",
       ctaLabel: "Open Trust Passport",
-      ctaTo: "/app/trust",
+      ctaTo: GUIDANCE_TARGETS.TRUST,
       severity: "important",
       todayText: pickVariant(
         voice === "warm"
@@ -1221,7 +1463,7 @@ function buildRecoveryPath(params: {
           ? "One open demand has gone stale and needs a follow-up, update, or close decision."
           : `${staleDemandCount} open demands have gone stale and need follow-up, update, or closure.`,
       ctaLabel: "Open Demand Box",
-      ctaTo: "/app/demand-box",
+      ctaTo: GUIDANCE_TARGETS.DEMAND_BOX,
       severity: "important",
       todayText: pickVariant(
         voice === "warm"
@@ -1289,8 +1531,8 @@ function buildRecoveryPath(params: {
         status
       ),
       detail: `Your current borrower-side support path is still active with status '${status}'.`,
-      ctaLabel: "Open Marketplace Loan Flow",
-      ctaTo: "/app/marketplace#marketplace-loans-support",
+      ctaLabel: "Open Loans & Support",
+      ctaTo: GUIDANCE_TARGETS.LOANS,
       severity: "important",
       todayText: pickVariant(
         voice === "warm"
@@ -1507,8 +1749,8 @@ function buildNextBestStep(params: {
       ),
       detail:
         "Your borrower-side loan path is still active. Review the next valid step and keep it moving cleanly.",
-      ctaLabel: "Open Marketplace Loan Flow",
-      ctaTo: "/app/marketplace#marketplace-loans-support",
+      ctaLabel: "Open Loans & Support",
+      ctaTo: GUIDANCE_TARGETS.LOANS,
       severity: "important",
       todayText: pickVariant(
         voice === "warm"
@@ -1573,7 +1815,7 @@ function buildNextBestStep(params: {
       detail:
         "Your selected community does not yet have a visible community picture in the marketplace identity block.",
       ctaLabel: "Open Marketplace",
-      ctaTo: "/app/marketplace",
+      ctaTo: GUIDANCE_TARGETS.MARKETPLACE,
       severity: "normal",
       todayText: pickVariant(
         voice === "warm"
@@ -1626,7 +1868,7 @@ function buildNextBestStep(params: {
           ? "You have one open demand that may need follow-up or closure."
           : `You have ${openDemandCount} open demands that may need follow-up or closure.`,
       ctaLabel: "Open Demand Box",
-      ctaTo: "/app/demand-box",
+      ctaTo: GUIDANCE_TARGETS.DEMAND_BOX,
       severity: "normal",
       todayText: pickVariant(
         voice === "warm"
@@ -1692,7 +1934,7 @@ function buildNextBestStep(params: {
     detail:
       "No urgent step is blocking you right now. Review your current summaries and keep visible participation consistent.",
     ctaLabel: "Open Community Home",
-    ctaTo: "/app/community",
+    ctaTo: GUIDANCE_TARGETS.COMMUNITY,
     severity: "normal",
     todayText: pickVariant(
       voice === "warm"
@@ -1912,7 +2154,7 @@ function buildWeeklyFocus(params: {
         params.voice
       ),
       ctaLabel: "Open Action Inbox",
-      ctaTo: "/app/notifications",
+      ctaTo: GUIDANCE_TARGETS.NOTIFICATIONS,
     };
   }
 
@@ -1946,7 +2188,7 @@ function buildWeeklyFocus(params: {
         params.voice
       ),
       ctaLabel: "Open Trust Passport",
-      ctaTo: "/app/trust",
+      ctaTo: GUIDANCE_TARGETS.TRUST,
     };
   }
 
@@ -1971,8 +2213,8 @@ function buildWeeklyFocus(params: {
         "weekly-loan-detail",
         params.voice
       ),
-      ctaLabel: "Open Marketplace",
-      ctaTo: "/app/marketplace",
+      ctaLabel: "Open Loans & Support",
+      ctaTo: GUIDANCE_TARGETS.LOANS,
     };
   }
 
@@ -1998,7 +2240,7 @@ function buildWeeklyFocus(params: {
         params.voice
       ),
       ctaLabel: "Open Marketplace",
-      ctaTo: "/app/marketplace",
+      ctaTo: GUIDANCE_TARGETS.MARKETPLACE,
     };
   }
 
@@ -2025,7 +2267,7 @@ function buildWeeklyFocus(params: {
         params.openDemandCount
       ),
       ctaLabel: "Open Demand Box",
-      ctaTo: "/app/demand-box",
+      ctaTo: GUIDANCE_TARGETS.DEMAND_BOX,
     };
   }
 
@@ -2058,7 +2300,7 @@ function buildWeeklyFocus(params: {
       params.voice
     ),
     ctaLabel: "Open Community Home",
-    ctaTo: "/app/community",
+    ctaTo: GUIDANCE_TARGETS.COMMUNITY,
   };
 }
 

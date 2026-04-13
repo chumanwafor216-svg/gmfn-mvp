@@ -576,8 +576,8 @@ export default function LoansPage() {
         detail: first.pledgeAmount
           ? `A borrower is waiting for your decision on a pledge of ${first.pledgeAmount}.`
           : "A borrower is waiting for your decision.",
-        ctaLabel: "Open Action Inbox",
-        ctaTo: "/app/notifications",
+        ctaLabel: "Incoming Guarantor Requests",
+        ctaTo: "/app/guarantor-inbox",
       };
     }
 
@@ -1349,6 +1349,22 @@ export default function LoansPage() {
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Read the guarantor-side reward side separately.
+              </div>
+            </Link>
+
+            <Link to="/app/guarantor-inbox" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                Incoming Guarantor Requests
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Open the dedicated guarantor decision queue.
               </div>
             </Link>
 

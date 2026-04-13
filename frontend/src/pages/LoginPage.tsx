@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { getAccessToken, getMe, loginAndStore } from "../lib/api";
 
 function pageShell(): React.CSSProperties {
@@ -7,7 +7,8 @@ function pageShell(): React.CSSProperties {
     minHeight: "100vh",
     display: "grid",
     placeItems: "center",
-    background: "#EEF5FB",
+    background:
+      "radial-gradient(circle at top, rgba(47,103,196,0.16) 0%, rgba(16,37,59,0.00) 32%), linear-gradient(180deg, #0C1F33 0%, #143454 62%, #183F66 100%)",
     padding: "24px 18px",
     boxSizing: "border-box",
   };
@@ -16,12 +17,12 @@ function pageShell(): React.CSSProperties {
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     width: "100%",
-    maxWidth: 760,
+    maxWidth: 820,
     padding: 30,
     borderRadius: 24,
     background: bg,
     border: "1px solid rgba(11,31,51,0.08)",
-    boxShadow: "0 18px 50px rgba(15,23,42,0.08)",
+    boxShadow: "0 18px 50px rgba(15,23,42,0.10)",
   };
 }
 
@@ -60,6 +61,20 @@ function primaryBtn(disabled = false): React.CSSProperties {
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 15,
     opacity: disabled ? 0.82 : 1,
+  };
+}
+
+function secondaryBtn(): React.CSSProperties {
+  return {
+    width: "100%",
+    padding: "14px 18px",
+    borderRadius: 16,
+    background: "#FFFFFF",
+    color: "#0B1F33",
+    fontWeight: 1000,
+    border: "1px solid rgba(11,31,51,0.10)",
+    cursor: "pointer",
+    fontSize: 15,
   };
 }
 
@@ -139,6 +154,32 @@ function labelText(): React.CSSProperties {
   };
 }
 
+function badge(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    minHeight: 30,
+    padding: "6px 10px",
+    borderRadius: 999,
+    background: primary ? "#EAF2FF" : "#F8FAFC",
+    border: primary
+      ? "1px solid rgba(11,99,209,0.14)"
+      : "1px solid rgba(11,31,51,0.08)",
+    color: primary ? "#0B63D1" : "#475569",
+    fontWeight: 900,
+    fontSize: 12,
+    whiteSpace: "nowrap",
+  };
+}
+
+function helperText(): React.CSSProperties {
+  return {
+    color: "#5F768D",
+    lineHeight: 1.75,
+    fontSize: 14,
+  };
+}
+
 function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
@@ -146,6 +187,7 @@ function safeStr(x: any): string {
 export default function LoginPage() {
   const nav = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   const routeState =
     (location.state as {
@@ -160,11 +202,19 @@ export default function LoginPage() {
   const founderContext = routeState.create_entry || {};
   const founderEmail = safeStr(founderContext.email || "");
   const founderCommunityName = safeStr(founderContext.clan_name || "");
+  const forceLogin = searchParams.get("force") === "1";
 
-  const redirectTarget =
-    routeState.from?.pathname && routeState.from.pathname !== "/login"
-      ? `${routeState.from.pathname}${routeState.from.search || ""}`
-      : "/app/dashboard";
+  const redirectTarget = useMemo(() => {
+    if (routeState.from?.pathname && routeState.from.pathname !== "/login") {
+      return `${routeState.from.pathname}${routeState.from.search || ""}`;
+    }
+    return "/app/dashboard";
+  }, [routeState]);
+
+  const [isCompact, setIsCompact] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 920;
+  });
 
   const [email, setEmail] = useState(founderEmail || "admin@test.com");
   const [password, setPassword] = useState("pass1234");
@@ -173,9 +223,30 @@ export default function LoginPage() {
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    function handleResize() {
+      setIsCompact(window.innerWidth <= 920);
+    }
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.title = "GSN | Sign In";
+    }
+  }, []);
+
+  useEffect(() => {
     (async () => {
       try {
         if (!getAccessToken()) return;
+        if (forceLogin) return;
+
         const me = await getMe();
         if (me?.id) {
           nav(redirectTarget, { replace: true });
@@ -184,7 +255,7 @@ export default function LoginPage() {
         // ignore stale token during test phase
       }
     })();
-  }, [nav, redirectTarget]);
+  }, [nav, redirectTarget, forceLogin]);
 
   async function onSubmit(e?: React.FormEvent) {
     if (e) e.preventDefault();
@@ -202,7 +273,7 @@ export default function LoginPage() {
 
       await loginAndStore(u, p);
 
-      setMsg("Sign-in successful. Opening workspace...");
+      setMsg("Sign-in successful. Opening your workspace...");
       setTimeout(() => {
         nav(redirectTarget, { replace: true });
       }, 500);
@@ -210,7 +281,7 @@ export default function LoginPage() {
       setErr(
         String(
           e?.message ||
-            "Unable to sign in. Confirm the email or GMFN membership has been activated."
+            "Unable to sign in. Confirm that your account is already active."
         )
       );
     } finally {
@@ -222,7 +293,7 @@ export default function LoginPage() {
     try {
       localStorage.removeItem("access_token");
       localStorage.removeItem("gmfn_selected_clan_id");
-      setMsg("Old test session cleared from browser.");
+      setMsg("Old session cleared from this browser.");
       setErr(null);
     } catch {
       setMsg("Browser session cleared.");
@@ -232,7 +303,7 @@ export default function LoginPage() {
 
   return (
     <div style={pageShell()}>
-      <div style={{ width: "100%", maxWidth: 760, display: "grid", gap: 18 }}>
+      <div style={{ width: "100%", maxWidth: 820, display: "grid", gap: 18 }}>
         <div
           style={{
             ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
@@ -244,32 +315,49 @@ export default function LoginPage() {
           <div
             style={{
               marginTop: 10,
-              fontSize: 32,
+              fontSize: isCompact ? 30 : 36,
               fontWeight: 1000,
               color: "#0B1F33",
-              lineHeight: 1.1,
+              lineHeight: 1.08,
+              maxWidth: 760,
             }}
           >
-            Sign in with an active GMFN account
+            Sign in to continue
           </div>
 
           <div
             style={{
-              marginTop: 10,
+              marginTop: 12,
               color: "#5F768D",
-              lineHeight: 1.75,
+              lineHeight: 1.8,
               fontSize: 15,
+              maxWidth: 820,
             }}
           >
-            Use this page only if your access is already active. If your community
-            has approved you but you have not activated yet, complete membership
-            activation first.
+            Enter your email and password to open your workspace.
+          </div>
+
+          <div
+            style={{
+              marginTop: 16,
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
+            <span style={badge(true)}>Existing member</span>
+            {founderCommunityName ? (
+              <span style={badge(false)}>Community: {founderCommunityName}</span>
+            ) : null}
+            {founderEmail ? (
+              <span style={badge(false)}>Email: {founderEmail}</span>
+            ) : null}
           </div>
         </div>
 
         {founderEmail || founderCommunityName ? (
           <div style={{ ...softCard("#FFFFFF"), maxWidth: "100%" }}>
-            <div style={labelText()}>Founder continuation</div>
+            <div style={labelText()}>Saved details</div>
 
             <div
               style={{
@@ -279,7 +367,7 @@ export default function LoginPage() {
                 fontSize: 20,
               }}
             >
-              Create entry details carried forward
+              Details carried forward
             </div>
 
             <div
@@ -287,9 +375,7 @@ export default function LoginPage() {
                 marginTop: 10,
                 display: "grid",
                 gap: 6,
-                color: "#5F768D",
-                lineHeight: 1.75,
-                fontSize: 14,
+                ...helperText(),
               }}
             >
               {founderCommunityName ? (
@@ -301,7 +387,7 @@ export default function LoginPage() {
 
               {founderEmail ? (
                 <div>
-                  <strong style={{ color: "#0B1F33" }}>Founder email:</strong>{" "}
+                  <strong style={{ color: "#0B1F33" }}>Email:</strong>{" "}
                   {founderEmail}
                 </div>
               ) : null}
@@ -309,22 +395,30 @@ export default function LoginPage() {
           </div>
         ) : null}
 
+        {forceLogin && getAccessToken() ? (
+          <div style={{ ...noticeStyle("warning"), maxWidth: "100%" }}>
+            <div style={{ fontWeight: 1000, marginBottom: 8 }}>
+              You already have a saved session on this device
+            </div>
+            <div>
+              Sign in below to continue, or clear the old session first.
+            </div>
+          </div>
+        ) : null}
+
         <div style={{ ...pageCard(), maxWidth: "100%" }}>
           <div style={{ ...noticeStyle("warning"), marginBottom: 16 }}>
             <div style={{ fontWeight: 1000, marginBottom: 8 }}>
-              Approved members
+              Already approved but not yet activated?
             </div>
             <div>
-              If you have already been approved through the join request process,
-              use <strong>Activate Membership</strong> first. That step binds
-              your GMFN ID to your password and opens your entry path into the
-              workspace.
+              Use <strong>Activate Membership</strong> first.
             </div>
           </div>
 
           <div style={{ ...noticeStyle("info"), marginBottom: 16 }}>
             <div style={{ fontWeight: 1000, marginBottom: 8 }}>
-              Current test defaults
+              Test details for this environment
             </div>
             <div>
               Email: <strong>admin@test.com</strong>
@@ -343,41 +437,48 @@ export default function LoginPage() {
           ) : null}
 
           <form onSubmit={onSubmit}>
-            <div style={{ display: "grid", gap: 12 }}>
-              <input
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email"
-                autoComplete="username"
-                style={inputStyle()}
-              />
+            <div
+              style={{
+                display: "grid",
+                gap: 12,
+                gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+              }}
+            >
+              <div>
+                <div style={labelText()}>Email</div>
+                <input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email"
+                  autoComplete="username"
+                  style={{ ...inputStyle(), marginTop: 8 }}
+                />
+              </div>
 
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                autoComplete="current-password"
-                style={inputStyle()}
-              />
+              <div>
+                <div style={labelText()}>Password</div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  autoComplete="current-password"
+                  style={{ ...inputStyle(), marginTop: 8 }}
+                />
+              </div>
             </div>
 
             <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
               <button type="submit" disabled={busy} style={primaryBtn(busy)}>
-                {busy ? "Signing in..." : "Enter Workspace"}
+                {busy ? "Signing in..." : "Sign in"}
               </button>
 
               <button
                 type="button"
                 onClick={clearBrowserSession}
-                style={{
-                  ...primaryBtn(false),
-                  background: "#FFFFFF",
-                  color: "#0B1F33",
-                  border: "1px solid rgba(11,31,51,0.10)",
-                }}
+                style={secondaryBtn()}
               >
-                Clear Old Test Session
+                Clear Old Session
               </button>
             </div>
           </form>
@@ -396,10 +497,6 @@ export default function LoginPage() {
 
             <Link to="/welcome" style={secondaryLink()}>
               Welcome
-            </Link>
-
-            <Link to="/cover" style={secondaryLink()}>
-              Cover
             </Link>
           </div>
         </div>

@@ -286,6 +286,7 @@ function buildMarketplaceReadOptions(params?: {
 
   return undefined;
 }
+
 async function httpJson(
   path: string,
   method: string,
@@ -862,9 +863,22 @@ export async function getLoanSupportSuggestions(params?: {
 
 export async function getPoolMe(
   currency: string = "NGN",
-  limit: number = 20
+  limit: number = 20,
+  options?: {
+    clan_id?: number | null;
+  }
 ): Promise<any> {
-  return httpJson(`/pool/me${buildQuery({ currency, limit })}`, "GET");
+  const requestOptions =
+    options && Object.prototype.hasOwnProperty.call(options, "clan_id")
+      ? { header_clan_id: options.clan_id ?? null }
+      : undefined;
+
+  return httpJson(
+    `/pool/me${buildQuery({ currency, limit })}`,
+    "GET",
+    undefined,
+    requestOptions
+  );
 }
 
 export async function createPoolInstruction(payload: {
@@ -1028,15 +1042,31 @@ export async function getLoanGuarantorInbox(params?: {
       ? { header_clan_id: params.clan_id ?? null }
       : undefined;
 
+  const requestedStatus = String(params?.status || "").trim().toLowerCase();
+
   return httpJson(
     `/loans/guarantors/inbox${buildQuery({
-      status: params?.status ?? "pending",
+      status:
+        requestedStatus && requestedStatus !== "all"
+          ? requestedStatus
+          : undefined,
       limit: params?.limit ?? 50,
     })}`,
     "GET",
     undefined,
     options
   );
+}
+
+export async function getGuarantorInbox(
+  status: "pending" | "approved" | "declined" | "all" = "pending",
+  limit: number = 50
+): Promise<{ items: LoanGuarantorInboxItem[]; total: number }> {
+  return getLoanGuarantorInbox({
+    clan_id: getSelectedClanId() ?? undefined,
+    status: status === "all" ? undefined : status,
+    limit,
+  });
 }
 
 export async function decideLoanGuarantor(
@@ -1084,6 +1114,151 @@ export async function cancelLoanRequest(
     "POST",
     undefined,
     options
+  );
+}
+
+function normalizeWithdrawalDestinationPayload(payload: {
+  clan_id?: number | null;
+  gmfn_id?: string | null;
+  destination_name?: string | null;
+  bank_name?: string | null;
+  account_number?: string | null;
+  phone_number?: string | null;
+  note?: string | null;
+}): Record<string, any> {
+  const cleaned: Record<string, any> = {};
+
+  const clanId = Number(payload?.clan_id || 0);
+  const gmfnId = String(payload?.gmfn_id || "").trim();
+  const destinationName = String(payload?.destination_name || "").trim();
+  const bankName = String(payload?.bank_name || "").trim();
+  const accountNumber = String(payload?.account_number || "").trim();
+  const phoneNumber = String(payload?.phone_number || "").trim();
+  const note = String(payload?.note || "").trim();
+
+  if (clanId > 0) {
+    cleaned.clan_id = clanId;
+    cleaned.community_id = clanId;
+  }
+
+  if (gmfnId) {
+    cleaned.gmfn_id = gmfnId;
+  }
+
+  if (destinationName) {
+    cleaned.destination_name = destinationName;
+    cleaned.account_name = destinationName;
+  }
+
+  if (bankName) {
+    cleaned.bank_name = bankName;
+    cleaned.bank = bankName;
+  }
+
+  if (accountNumber) {
+    cleaned.account_number = accountNumber;
+    cleaned.bank_account_number = accountNumber;
+  }
+
+  if (phoneNumber) {
+    cleaned.phone_number = phoneNumber;
+    cleaned.phone = phoneNumber;
+  }
+
+  if (note) {
+    cleaned.note = note;
+    cleaned.description = note;
+  }
+
+  return cleaned;
+}
+
+export async function getMyWithdrawalDestination(params?: {
+  clan_id?: number | null;
+  gmfn_id?: string | null;
+}): Promise<any> {
+  const requestOptions =
+    params && Object.prototype.hasOwnProperty.call(params, "clan_id")
+      ? { header_clan_id: params.clan_id ?? null }
+      : undefined;
+
+  const query = buildQuery({
+    clan_id: params?.clan_id ?? undefined,
+    community_id: params?.clan_id ?? undefined,
+    gmfn_id: params?.gmfn_id ?? undefined,
+  });
+
+  return httpJsonPaths(
+    [
+      `/withdrawal-destinations/me${query}`,
+      `/withdrawal-destination/me${query}`,
+      `/pool/withdrawal-destination${query}`,
+      `/pool/payout-destination${query}`,
+      `/payment-destinations/me${query}`,
+    ],
+    "GET",
+    undefined,
+    requestOptions
+  );
+}
+
+export async function saveWithdrawalDestination(payload: {
+  clan_id?: number | null;
+  gmfn_id?: string | null;
+  destination_name?: string | null;
+  bank_name?: string | null;
+  account_number?: string | null;
+  phone_number?: string | null;
+  note?: string | null;
+}): Promise<any> {
+  const requestOptions =
+    payload && Object.prototype.hasOwnProperty.call(payload, "clan_id")
+      ? { header_clan_id: payload.clan_id ?? null }
+      : undefined;
+
+  const cleaned = normalizeWithdrawalDestinationPayload(payload);
+
+  return httpJsonPaths(
+    [
+      "/withdrawal-destinations/me",
+      "/withdrawal-destination/me",
+      "/pool/withdrawal-destination",
+      "/pool/payout-destination",
+      "/payment-destinations/me",
+    ],
+    "POST",
+    cleaned,
+    requestOptions
+  );
+}
+
+export async function updateWithdrawalDestination(payload: {
+  clan_id?: number | null;
+  gmfn_id?: string | null;
+  destination_name?: string | null;
+  bank_name?: string | null;
+  account_number?: string | null;
+  phone_number?: string | null;
+  note?: string | null;
+}): Promise<any> {
+  const requestOptions =
+    payload && Object.prototype.hasOwnProperty.call(payload, "clan_id")
+      ? { header_clan_id: payload.clan_id ?? null }
+      : undefined;
+
+  const cleaned = normalizeWithdrawalDestinationPayload(payload);
+
+  return httpJsonPaths(
+    [
+      "/withdrawal-destinations/me",
+      "/withdrawal-destination/me",
+      "/pool/withdrawal-destination",
+      "/pool/payout-destination",
+      "/payment-destinations/me",
+    ],
+    "PATCH",
+    cleaned,
+    requestOptions
   );
 }
 
@@ -1170,6 +1345,7 @@ export async function getMyNotifications(
 export async function getMyUnreadNotificationCount(): Promise<any> {
   return httpJson("/notifications/me/unread-count", "GET");
 }
+
 /* =========================
    SETTINGS
    ========================= */
@@ -1390,6 +1566,7 @@ export async function markNotificationRead(notificationId: number): Promise<any>
 export async function seedAssistantNotifications(): Promise<any> {
   return httpJson("/notifications/me/seed-assistant", "POST");
 }
+
 /* =========================
    ADMIN / OPS / ANALYTICS
    ========================= */

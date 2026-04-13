@@ -88,7 +88,17 @@ function makeShopGalleryItem(myShopGalleryTo: string): NavLinkItem {
   return {
     label: "Shop Gallery",
     to: myShopGalleryTo,
-    match: (pathname) => pathname.startsWith("/app/shop/"),
+    match: (pathname) =>
+      pathname.startsWith("/app/shop/") ||
+      pathname === "/app/shop-control",
+  };
+}
+
+function makeShopControlItem(): NavLinkItem {
+  return {
+    label: "Shop Control",
+    to: "/app/shop-control",
+    match: (pathname) => pathname === "/app/shop-control",
   };
 }
 
@@ -204,8 +214,8 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
       hint:
         "Task focus is active. Finish the shop update first, then return to the wider workspace.",
       actions: [
-        makeMarketplaceItem(),
         makeCommunityItem(),
+        makeMarketplaceItem(),
         makeDashboardItem(),
       ],
     };
@@ -420,8 +430,8 @@ function getPageActions(
 
   if (pathname === "/app/shop-control") {
     return [
-      makeMarketplaceItem(),
       makeCommunityItem(),
+      makeMarketplaceItem(),
       { label: "Shop Gallery", to: myShopGalleryTo },
       makeDashboardItem(),
     ];
@@ -429,6 +439,7 @@ function getPageActions(
 
   if (pathname.startsWith("/app/community")) {
     return [
+      makeShopControlItem(),
       { label: "Demand Box", to: "/app/demand-box" },
       { label: "Notifications", to: "/app/notifications" },
       { label: "Money In", to: "/app/payment/pool" },
@@ -439,17 +450,17 @@ function getPageActions(
   if (pathname === "/app/marketplace") {
     return [
       { label: "Loans & Support", to: "/app/loans" },
+      makeShopControlItem(),
       { label: "Notifications", to: "/app/notifications" },
       { label: "Trust", to: "/app/trust" },
-      { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
     ];
   }
 
   if (pathname.startsWith("/app/shop/")) {
     return [
+      makeShopControlItem(),
       makeMarketplaceItem(),
       makeCommunityItem(),
-      { label: "Trust", to: "/app/trust" },
       { label: "Notifications", to: "/app/notifications" },
     ];
   }
@@ -1050,8 +1061,16 @@ export default function AppLayout() {
   const [openGroup, setOpenGroup] = useState<string>(firstOpenGroup);
 
   useEffect(() => {
-    setOpenGroup(firstOpenGroup);
-  }, [firstOpenGroup]);
+    if (!openGroup) {
+      setOpenGroup(firstOpenGroup);
+      return;
+    }
+
+    const stillExists = displayedGroups.some((group) => group.key === openGroup);
+    if (!stillExists) {
+      setOpenGroup(firstOpenGroup);
+    }
+  }, [displayedGroups, firstOpenGroup, openGroup]);
 
   useEffect(() => {
     setIsDrawerOpen(false);

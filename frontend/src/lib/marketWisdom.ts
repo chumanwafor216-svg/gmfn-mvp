@@ -1,600 +1,43 @@
+export type MarketWisdomCategory =
+  | "trade"
+  | "visibility"
+  | "finance"
+  | "support"
+  | "community"
+  | "identity"
+  | "work"
+  | "operating";
+
+export type MarketWisdomTone = "calm" | "focus" | "alert" | "spotlight";
+
 export type MarketWisdomPair = {
   id: string;
-  source: "African Proverb" | "Indian Proverb" | "South American Proverb";
+  title: string;
   proverb: string;
   gmfn: string;
+  category: MarketWisdomCategory;
+  tone: MarketWisdomTone;
+  capability?: number;
+  priority?: number;
 };
 
-export type MarketWisdomTone = "green" | "yellow" | "red" | "neutral";
-
-export type MarketWisdomContext = {
+export type SmartMarketWisdomParams = {
   hour?: number;
   unread?: number;
   pendingRequests?: number;
   hasSpotlight?: boolean;
   hasGmfnId?: boolean;
-  trustTone?: MarketWisdomTone;
-  previousId?: string;
+  trustTone?: "green" | "yellow" | "red" | "neutral";
+  previousId?: string | number | null;
 };
 
-export const MARKET_WISDOM_PAIRS: MarketWisdomPair[] = [
-  {
-    id: "afr-001",
-    source: "African Proverb",
-    proverb: "In African markets, your name travels faster than your product. Protect it.",
-    gmfn: "GMFN turns your reputation into usable financial power.",
-  },
-  {
-    id: "afr-002",
-    source: "African Proverb",
-    proverb: "A trusted trader sells even when prices rise. Trust absorbs volatility.",
-    gmfn: "TrustSlip allows you to buy based on who you are, not only what you hold.",
-  },
-  {
-    id: "afr-003",
-    source: "African Proverb",
-    proverb: "Credit in the market is not about money — it is about character.",
-    gmfn: "Your integrity becomes your credit line inside GMFN.",
-  },
-  {
-    id: "afr-004",
-    source: "African Proverb",
-    proverb: "One bad deal can erase ten good years. Be careful.",
-    gmfn: "In GMFN, trust is no longer hidden — it is visible and measurable.",
-  },
-  {
-    id: "afr-005",
-    source: "African Proverb",
-    proverb: "The strongest traders are not the richest — they are the most trusted.",
-    gmfn: "Your community stands behind your transactions through shared trust.",
-  },
-  {
-    id: "afr-006",
-    source: "African Proverb",
-    proverb: "Community guarantees are stronger than paper contracts in many markets.",
-    gmfn: "Trust is no longer local — GMFN makes it portable across markets.",
-  },
-  {
-    id: "afr-007",
-    source: "African Proverb",
-    proverb: "If people greet you warmly, your business is safe.",
-    gmfn: "With GMFN, your network becomes your financial strength.",
-  },
-  {
-    id: "afr-008",
-    source: "African Proverb",
-    proverb: "Trade is built on relationships before transactions.",
-    gmfn: "TrustSlip transforms social credibility into economic access.",
-  },
-  {
-    id: "afr-009",
-    source: "African Proverb",
-    proverb: "When elders trust you, the market opens for you.",
-    gmfn: "Your history of repayment becomes your strongest asset.",
-  },
-  {
-    id: "afr-010",
-    source: "African Proverb",
-    proverb: "Reputation is your real capital — cash only supports it.",
-    gmfn: "GMFN replaces blind trust with visible, explainable trust.",
-  },
-  {
-    id: "afr-011",
-    source: "African Proverb",
-    proverb: "Never rush profit at the cost of long-term trust.",
-    gmfn: "Distance is no longer a barrier — your trust travels with you.",
-  },
-  {
-    id: "afr-012",
-    source: "African Proverb",
-    proverb: "A consistent trader beats a clever trader.",
-    gmfn: "GMFN allows communities to support each other without confusion or conflict.",
-  },
-  {
-    id: "afr-013",
-    source: "African Proverb",
-    proverb: "People buy from who they know, not the cheapest.",
-    gmfn: "Your behavior builds your financial identity over time.",
-  },
-  {
-    id: "afr-014",
-    source: "African Proverb",
-    proverb: "Pay back early — it multiplies your trust faster than profit.",
-    gmfn: "TrustSlip allows merchants to release goods with confidence.",
-  },
-  {
-    id: "afr-015",
-    source: "African Proverb",
-    proverb: "When people defend your name in your absence, you are truly established.",
-    gmfn: "In GMFN, every action contributes to your trust record.",
-  },
-  {
-    id: "afr-016",
-    source: "African Proverb",
-    proverb: "A bad debt spreads faster than good news.",
-    gmfn: "Trust becomes structured, shared, and accountable.",
-  },
-  {
-    id: "afr-017",
-    source: "African Proverb",
-    proverb: "Traders who cooperate grow faster than those who compete blindly.",
-    gmfn: "GMFN helps communities formalize what they already do informally.",
-  },
-  {
-    id: "afr-018",
-    source: "African Proverb",
-    proverb: "Your word is stronger than your receipt.",
-    gmfn: "You no longer need collateral when your trust is strong.",
-  },
-  {
-    id: "afr-019",
-    source: "African Proverb",
-    proverb: "Trust reduces friction — business becomes easier.",
-    gmfn: "Trust-based networks move faster than rigid bank systems.",
-  },
-  {
-    id: "afr-020",
-    source: "African Proverb",
-    proverb: "The market remembers everything.",
-    gmfn: "Your community validates your financial credibility.",
-  },
-  {
-    id: "afr-021",
-    source: "African Proverb",
-    proverb: "If you can’t repay, communicate early — silence destroys trust.",
-    gmfn: "GMFN makes informal finance systems clearer and more reliable.",
-  },
-  {
-    id: "afr-022",
-    source: "African Proverb",
-    proverb: "Shared success strengthens community trade systems.",
-    gmfn: "Your reputation becomes verifiable beyond your immediate circle.",
-  },
-  {
-    id: "afr-023",
-    source: "African Proverb",
-    proverb: "Avoid deals that force you to break your word.",
-    gmfn: "TrustSlip allows you to transact even where banking fails.",
-  },
-  {
-    id: "afr-024",
-    source: "African Proverb",
-    proverb: "People invest in people, not just goods.",
-    gmfn: "Your trust history reduces risk for everyone involved.",
-  },
-  {
-    id: "afr-025",
-    source: "African Proverb",
-    proverb: "Your behavior during hardship defines your future.",
-    gmfn: "GMFN aligns incentives between individuals and their communities.",
-  },
-  {
-    id: "afr-026",
-    source: "African Proverb",
-    proverb: "Trust grows slowly but collapses instantly.",
-    gmfn: "Trust becomes an asset you can carry anywhere.",
-  },
-  {
-    id: "afr-027",
-    source: "African Proverb",
-    proverb: "A reliable supplier is more valuable than a cheap one.",
-    gmfn: "Communities can now lend and support with clarity and structure.",
-  },
-  {
-    id: "afr-028",
-    source: "African Proverb",
-    proverb: "Strong networks are built on loyalty.",
-    gmfn: "Your identity is backed by real actions, not empty claims.",
-  },
-  {
-    id: "afr-029",
-    source: "African Proverb",
-    proverb: "Be known for consistency.",
-    gmfn: "GMFN enables trust-backed trade across borders.",
-  },
-  {
-    id: "afr-030",
-    source: "African Proverb",
-    proverb: "When trust is strong, business expands naturally.",
-    gmfn: "When trust is visible, business becomes faster and safer.",
-  },
-  {
-    id: "ind-001",
-    source: "Indian Proverb",
-    proverb: "Business flows through relationships, not just pricing.",
-    gmfn: "GMFN makes trusted relationships economically usable.",
-  },
-  {
-    id: "ind-002",
-    source: "Indian Proverb",
-    proverb: "Trust is built through repetition, not promises.",
-    gmfn: "TrustSlip rewards consistent behavior, not loud claims.",
-  },
-  {
-    id: "ind-003",
-    source: "Indian Proverb",
-    proverb: "A reliable trader earns long-term credit access.",
-    gmfn: "Your repayment conduct becomes visible strength inside GMFN.",
-  },
-  {
-    id: "ind-004",
-    source: "Indian Proverb",
-    proverb: "Family reputation often backs business decisions.",
-    gmfn: "GMFN turns social credibility into structured financial credibility.",
-  },
-  {
-    id: "ind-005",
-    source: "Indian Proverb",
-    proverb: "Negotiation is expected, integrity is respected.",
-    gmfn: "Trust becomes explainable, auditable, and shared.",
-  },
-  {
-    id: "ind-006",
-    source: "Indian Proverb",
-    proverb: "Timing matters — deliver when promised.",
-    gmfn: "Your reliability improves your standing in the network.",
-  },
-  {
-    id: "ind-007",
-    source: "Indian Proverb",
-    proverb: "Loyalty reduces risk more than contracts.",
-    gmfn: "GMFN allows trust to travel beyond one location.",
-  },
-  {
-    id: "ind-008",
-    source: "Indian Proverb",
-    proverb: "Trust enables faster transactions than systems.",
-    gmfn: "TrustSlip helps merchants act with more confidence.",
-  },
-  {
-    id: "ind-009",
-    source: "Indian Proverb",
-    proverb: "Reputation spreads across regions quickly.",
-    gmfn: "A strong trust record can support access across communities.",
-  },
-  {
-    id: "ind-010",
-    source: "Indian Proverb",
-    proverb: "Long-term relationships beat short-term profit.",
-    gmfn: "GMFN supports long-term integrity over one-off advantage.",
-  },
-  {
-    id: "ind-011",
-    source: "Indian Proverb",
-    proverb: "Honesty in small deals earns trust in big deals.",
-    gmfn: "Small acts inside GMFN build your larger trust identity.",
-  },
-  {
-    id: "ind-012",
-    source: "Indian Proverb",
-    proverb: "Markets reward consistency more than aggression.",
-    gmfn: "GMFN favors repeat good conduct over noise.",
-  },
-  {
-    id: "ind-013",
-    source: "Indian Proverb",
-    proverb: "Manage expectations, not just goods.",
-    gmfn: "Clear trust signals reduce misunderstanding and conflict.",
-  },
-  {
-    id: "ind-014",
-    source: "Indian Proverb",
-    proverb: "Reliability attracts better partners.",
-    gmfn: "Better trust standing attracts stronger community backing.",
-  },
-  {
-    id: "ind-015",
-    source: "Indian Proverb",
-    proverb: "Mutual respect sustains trade.",
-    gmfn: "GMFN works best when support and accountability move together.",
-  },
-  {
-    id: "ind-016",
-    source: "Indian Proverb",
-    proverb: "Trust reduces enforcement.",
-    gmfn: "Visible trust lowers the need for heavy control.",
-  },
-  {
-    id: "ind-017",
-    source: "Indian Proverb",
-    proverb: "Business networks extend beyond geography.",
-    gmfn: "GMFN keeps communities connected across borders.",
-  },
-  {
-    id: "ind-018",
-    source: "Indian Proverb",
-    proverb: "Community validation matters.",
-    gmfn: "Your community can now make your credibility visible.",
-  },
-  {
-    id: "ind-019",
-    source: "Indian Proverb",
-    proverb: "A respected name opens doors faster than capital.",
-    gmfn: "GMFN allows identity to open access before collateral does.",
-  },
-  {
-    id: "ind-020",
-    source: "Indian Proverb",
-    proverb: "Repeat customers are your backbone.",
-    gmfn: "Repeat trust interactions strengthen your economic profile.",
-  },
-  {
-    id: "ind-021",
-    source: "Indian Proverb",
-    proverb: "Avoid disputes — resolution preserves reputation.",
-    gmfn: "GMFN protects long-term trust by making conduct count.",
-  },
-  {
-    id: "ind-022",
-    source: "Indian Proverb",
-    proverb: "The market favors predictable behavior.",
-    gmfn: "Predictable repayment and support raise trust confidence.",
-  },
-  {
-    id: "ind-023",
-    source: "Indian Proverb",
-    proverb: "Creditworthiness is social before financial.",
-    gmfn: "GMFN captures the social side of creditworthiness.",
-  },
-  {
-    id: "ind-024",
-    source: "Indian Proverb",
-    proverb: "Strong networks protect during downturns.",
-    gmfn: "Your network becomes part of your resilience in GMFN.",
-  },
-  {
-    id: "ind-025",
-    source: "Indian Proverb",
-    proverb: "Trust compounds like capital.",
-    gmfn: "Each good action in GMFN adds to future opportunity.",
-  },
-  {
-    id: "ind-026",
-    source: "Indian Proverb",
-    proverb: "A disciplined trader grows across generations.",
-    gmfn: "Discipline in trust behavior creates lasting economic value.",
-  },
-  {
-    id: "ind-027",
-    source: "Indian Proverb",
-    proverb: "Reliable supply builds stronger networks than flashy promotion.",
-    gmfn: "GMFN rewards dependable behavior over surface appearance.",
-  },
-  {
-    id: "ind-028",
-    source: "Indian Proverb",
-    proverb: "A respected partner lowers the cost of doing business.",
-    gmfn: "Visible trust reduces friction across the network.",
-  },
-  {
-    id: "ind-029",
-    source: "Indian Proverb",
-    proverb: "A stable name can survive a difficult season.",
-    gmfn: "GMFN helps preserve value in your name through structured trust.",
-  },
-  {
-    id: "ind-030",
-    source: "Indian Proverb",
-    proverb: "A trader known for balance lasts longer than one known for speed.",
-    gmfn: "GMFN is designed for sustainable trust, not reckless movement.",
-  },
-  {
-    id: "sam-001",
-    source: "South American Proverb",
-    proverb: "Relationships drive business more than systems.",
-    gmfn: "GMFN gives those relationships a financial framework.",
-  },
-  {
-    id: "sam-002",
-    source: "South American Proverb",
-    proverb: "Trust creates access where formal finance fails.",
-    gmfn: "TrustSlip opens a cleaner path where banks may not.",
-  },
-  {
-    id: "sam-003",
-    source: "South American Proverb",
-    proverb: "Community reputation shapes opportunity.",
-    gmfn: "Your community standing can now become visible economic strength.",
-  },
-  {
-    id: "sam-004",
-    source: "South American Proverb",
-    proverb: "Personal connections influence trade success.",
-    gmfn: "GMFN structures real-life connections into usable trust.",
-  },
-  {
-    id: "sam-005",
-    source: "South American Proverb",
-    proverb: "Consistency builds credibility over time.",
-    gmfn: "GMFN tracks trust as something earned, not claimed.",
-  },
-  {
-    id: "sam-006",
-    source: "South American Proverb",
-    proverb: "Reliable partners reduce risk.",
-    gmfn: "Trust visibility helps communities choose better partners.",
-  },
-  {
-    id: "sam-007",
-    source: "South American Proverb",
-    proverb: "Trust allows business even in instability.",
-    gmfn: "GMFN helps trust-based trade continue through uncertainty.",
-  },
-  {
-    id: "sam-008",
-    source: "South American Proverb",
-    proverb: "Informal networks are powerful economies.",
-    gmfn: "GMFN gives informal support systems a formal backbone.",
-  },
-  {
-    id: "sam-009",
-    source: "South American Proverb",
-    proverb: "A respected trader attracts better deals.",
-    gmfn: "Stronger trust standing can improve access and terms.",
-  },
-  {
-    id: "sam-010",
-    source: "South American Proverb",
-    proverb: "Loyalty strengthens survival.",
-    gmfn: "GMFN helps loyalty become visible and accountable.",
-  },
-  {
-    id: "sam-011",
-    source: "South American Proverb",
-    proverb: "Deliver as promised — always.",
-    gmfn: "Reliability is one of the strongest signals inside GMFN.",
-  },
-  {
-    id: "sam-012",
-    source: "South American Proverb",
-    proverb: "Word-of-mouth drives business.",
-    gmfn: "GMFN turns spoken reputation into structured reputation.",
-  },
-  {
-    id: "sam-013",
-    source: "South American Proverb",
-    proverb: "A dependable trader becomes indispensable.",
-    gmfn: "Dependability raises your value across the network.",
-  },
-  {
-    id: "sam-014",
-    source: "South American Proverb",
-    proverb: "Markets reward behavior, not strategy.",
-    gmfn: "GMFN measures actions, not just intentions.",
-  },
-  {
-    id: "sam-015",
-    source: "South American Proverb",
-    proverb: "Relationships sustain business through crisis.",
-    gmfn: "GMFN keeps support structured when pressure rises.",
-  },
-  {
-    id: "sam-016",
-    source: "South American Proverb",
-    proverb: "Trust enables expansion.",
-    gmfn: "Visible trust makes expansion safer and faster.",
-  },
-  {
-    id: "sam-017",
-    source: "South American Proverb",
-    proverb: "Integrity attracts long-term partners.",
-    gmfn: "GMFN strengthens the economic value of integrity.",
-  },
-  {
-    id: "sam-018",
-    source: "South American Proverb",
-    proverb: "Reliability builds financial flexibility.",
-    gmfn: "Trust-based flexibility is one of GMFN’s core strengths.",
-  },
-  {
-    id: "sam-019",
-    source: "South American Proverb",
-    proverb: "Trade grows faster in trusted networks.",
-    gmfn: "GMFN is built to strengthen trusted networks at scale.",
-  },
-  {
-    id: "sam-020",
-    source: "South American Proverb",
-    proverb: "Good conduct multiplies opportunities.",
-    gmfn: "Each trust-positive action can open future access.",
-  },
-  {
-    id: "sam-021",
-    source: "South American Proverb",
-    proverb: "Trust reduces operational cost.",
-    gmfn: "Clear trust signals save time, effort, and conflict.",
-  },
-  {
-    id: "sam-022",
-    source: "South American Proverb",
-    proverb: "Reputation is a shared asset.",
-    gmfn: "GMFN treats trust as both personal and communal value.",
-  },
-  {
-    id: "sam-023",
-    source: "South American Proverb",
-    proverb: "Partnerships require aligned values.",
-    gmfn: "GMFN helps communities align support with conduct.",
-  },
-  {
-    id: "sam-024",
-    source: "South American Proverb",
-    proverb: "Consistency beats quick profit.",
-    gmfn: "Long-term trust is worth more than short-term gain.",
-  },
-  {
-    id: "sam-025",
-    source: "South American Proverb",
-    proverb: "Strong networks create safety.",
-    gmfn: "GMFN helps communities create cleaner economic safety nets.",
-  },
-  {
-    id: "sam-026",
-    source: "South American Proverb",
-    proverb: "Trust turns identity into economic power.",
-    gmfn: "That is one of GMFN’s core promises.",
-  },
-  {
-    id: "sam-027",
-    source: "South American Proverb",
-    proverb: "A reliable circle can carry a member through hardship.",
-    gmfn: "GMFN helps communities support one another without chaos.",
-  },
-  {
-    id: "sam-028",
-    source: "South American Proverb",
-    proverb: "A good name can cross borders before you do.",
-    gmfn: "GMFN makes trust more portable across places and markets.",
-  },
-  {
-    id: "sam-029",
-    source: "South American Proverb",
-    proverb: "Trade survives where confidence survives.",
-    gmfn: "GMFN strengthens confidence through visible trust logic.",
-  },
-  {
-    id: "sam-030",
-    source: "South American Proverb",
-    proverb: "Communities grow stronger when support is orderly.",
-    gmfn: "GMFN brings order, visibility, and confidence to shared support.",
-  },
-];
-export function getNextMarketWisdomPair(index: number): MarketWisdomPair {
-  if (!MARKET_WISDOM_PAIRS.length) {
-    return {
-      id: "fallback",
-      source: "African Proverb",
-      proverb: "Trust grows where people keep their word.",
-      gmfn: "GMFN helps communities turn trust into visible economic strength.",
-    };
-  }
-
-  const safeIndex = Math.abs(index) % MARKET_WISDOM_PAIRS.length;
-  return MARKET_WISDOM_PAIRS[safeIndex];
-}
-
-function includesAny(text: string, words: string[]): boolean {
-  return words.some((word) => text.includes(word));
-}
-
-function normalizeHour(value: any): number {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return new Date().getHours();
-  return Math.max(0, Math.min(23, Math.floor(n)));
+function safeStr(x: any): string {
+  return String(x ?? "").trim();
 }
 
 function positiveNumber(value: any): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
-}
-
-function safeTone(value: any): MarketWisdomTone {
-  const raw = String(value || "").trim().toLowerCase();
-
-  if (raw === "green") return "green";
-  if (raw === "yellow") return "yellow";
-  if (raw === "red") return "red";
-  return "neutral";
 }
 
 function daySeed(): number {
@@ -604,8 +47,8 @@ function daySeed(): number {
   return Math.floor(diff / 86400000);
 }
 
-function hashSeed(...parts: Array<string | number | boolean | undefined>): number {
-  const text = parts.map((item) => String(item ?? "")).join("|");
+function hashSeed(...parts: Array<string | number | boolean | undefined | null>): number {
+  const text = parts.map((part) => String(part ?? "")).join("|");
   let hash = 0;
 
   for (let i = 0; i < text.length; i += 1) {
@@ -615,246 +58,451 @@ function hashSeed(...parts: Array<string | number | boolean | undefined>): numbe
   return hash;
 }
 
-function stableWeightFromId(id: string, seed: number): number {
-  return hashSeed(id, seed) % 1000;
-}
+const CAPABILITY_WISDOM: MarketWisdomPair[] = [
+  {
+    id: "mw-cap-01",
+    capability: 1,
+    title: "Release Before Payment",
+    proverb: "Release Before Payment reduces risk before money moves.",
+    gmfn:
+      "GMFN makes trust visible before payment so identity, trust, and community can improve access and reduce risk.",
+    category: "trade",
+    tone: "focus",
+    priority: 6,
+  },
+  {
+    id: "mw-cap-02",
+    capability: 2,
+    title: "Trusted Buying and Selling",
+    proverb: "Trusted Buying and Selling turns reputation into safer trade.",
+    gmfn:
+      "GMFN helps buyers and sellers act with more confidence because identity, trust, and community are visible in one flow.",
+    category: "trade",
+    tone: "focus",
+    priority: 6,
+  },
+  {
+    id: "mw-cap-03",
+    capability: 3,
+    title: "Cross-Community Trade",
+    proverb: "Cross-Community Trade expands trust beyond one circle.",
+    gmfn:
+      "GMFN carries visible trust across communities so economic access grows without losing accountability.",
+    category: "trade",
+    tone: "focus",
+    priority: 6,
+  },
+  {
+    id: "mw-cap-04",
+    capability: 4,
+    title: "Fraud Reduction Before Action",
+    proverb: "Fraud Reduction Before Action protects people before loss happens.",
+    gmfn:
+      "GMFN reduces risk before action by making trust visible early, not after damage is done.",
+    category: "identity",
+    tone: "alert",
+    priority: 8,
+  },
+  {
+    id: "mw-cap-05",
+    capability: 5,
+    title: "Spotlight Visibility",
+    proverb: "Spotlight Visibility helps the right value get seen first.",
+    gmfn:
+      "GMFN uses visible trust to improve presence and confidence around spotlighted goods, services, and people.",
+    category: "visibility",
+    tone: "spotlight",
+    priority: 7,
+  },
+  {
+    id: "mw-cap-06",
+    capability: 6,
+    title: "Reputation-Based Visibility",
+    proverb: "Reputation-Based Visibility gives stronger trust more reach.",
+    gmfn:
+      "GMFN makes visibility depend on visible trust, not noise alone, so access improves while risk falls.",
+    category: "visibility",
+    tone: "spotlight",
+    priority: 7,
+  },
+  {
+    id: "mw-cap-07",
+    capability: 7,
+    title: "Marketplace Presence Across Communities",
+    proverb: "Marketplace Presence Across Communities lets trust travel with the merchant.",
+    gmfn:
+      "GMFN gives a merchant usable presence beyond one market by carrying identity, trust, and community context together.",
+    category: "visibility",
+    tone: "spotlight",
+    priority: 7,
+  },
+  {
+    id: "mw-cap-08",
+    capability: 8,
+    title: "People-Backed Loans",
+    proverb: "People-Backed Loans make support more relational and accountable.",
+    gmfn:
+      "GMFN turns visible trust into a support signal so lending can improve access while keeping risk clearer.",
+    category: "finance",
+    tone: "focus",
+    priority: 7,
+  },
+  {
+    id: "mw-cap-09",
+    capability: 9,
+    title: "Supporting Others",
+    proverb: "Supporting Others makes trust productive, not passive.",
+    gmfn:
+      "GMFN shows when support is visible, accountable, and community-backed so help becomes measurable.",
+    category: "support",
+    tone: "calm",
+    priority: 6,
+  },
+  {
+    id: "mw-cap-10",
+    capability: 10,
+    title: "Emergency Support",
+    proverb: "Emergency Support works better when trust is already visible.",
+    gmfn:
+      "GMFN shortens uncertainty in urgent moments by making identity, trust, and community context easier to read.",
+    category: "support",
+    tone: "alert",
+    priority: 8,
+  },
+  {
+    id: "mw-cap-11",
+    capability: 11,
+    title: "Diaspora Trust Bridge",
+    proverb: "Diaspora Trust Bridge carries confidence across distance.",
+    gmfn:
+      "GMFN helps people transact, support, and verify across borders by making trust portable instead of local only.",
+    category: "community",
+    tone: "focus",
+    priority: 6,
+  },
+  {
+    id: "mw-cap-12",
+    capability: 12,
+    title: "Trust Savings (ROSCA Support)",
+    proverb: "Trust Savings gives familiar savings culture a visible trust layer.",
+    gmfn:
+      "GMFN helps savings groups become more accountable by making contribution trust visible inside community structures.",
+    category: "finance",
+    tone: "calm",
+    priority: 6,
+  },
+  {
+    id: "mw-cap-13",
+    capability: 13,
+    title: "Contribution Tracking",
+    proverb: "Contribution Tracking turns memory into visible economic record.",
+    gmfn:
+      "GMFN helps contribution history become visible proof so access and accountability improve together.",
+    category: "finance",
+    tone: "focus",
+    priority: 6,
+  },
+  {
+    id: "mw-cap-14",
+    capability: 14,
+    title: "Continuity Across Distance",
+    proverb: "Continuity Across Distance keeps trust from breaking when people move.",
+    gmfn:
+      "GMFN preserves identity, trust, and participation across time and location so opportunity does not reset from zero.",
+    category: "community",
+    tone: "calm",
+    priority: 6,
+  },
+  {
+    id: "mw-cap-15",
+    capability: 15,
+    title: "Portable Trust Identity",
+    proverb: "Portable Trust Identity lets trust move with the person.",
+    gmfn:
+      "GMFN makes trust portable so verified standing can travel across communities, markets, and decisions.",
+    category: "identity",
+    tone: "focus",
+    priority: 8,
+  },
+  {
+    id: "mw-cap-16",
+    capability: 16,
+    title: "Reputation Mobility",
+    proverb: "Reputation Mobility stops trust from staying trapped in one place.",
+    gmfn:
+      "GMFN helps earned reputation stay usable across new spaces, which improves access without losing accountability.",
+    category: "identity",
+    tone: "focus",
+    priority: 7,
+  },
+  {
+    id: "mw-cap-17",
+    capability: 17,
+    title: "One Global Shop",
+    proverb: "One Global Shop gives one identity a wider trusted market presence.",
+    gmfn:
+      "GMFN helps one merchant identity stay visible across communities instead of rebuilding from zero in each market.",
+    category: "visibility",
+    tone: "spotlight",
+    priority: 7,
+  },
+  {
+    id: "mw-cap-18",
+    capability: 18,
+    title: "Service Economy Participation",
+    proverb: "Service Economy Participation brings trust into work that often stays informal.",
+    gmfn:
+      "GMFN helps service work become more visible and trusted so access improves for workers and buyers alike.",
+    category: "work",
+    tone: "focus",
+    priority: 6,
+  },
+  {
+    id: "mw-cap-19",
+    capability: 19,
+    title: "Trust-Based Hiring",
+    proverb: "Trust-Based Hiring helps work decisions rely on visible credibility.",
+    gmfn:
+      "GMFN makes trust readable before hiring, so decisions can go beyond guesswork and weak informal signals.",
+    category: "work",
+    tone: "focus",
+    priority: 6,
+  },
+  {
+    id: "mw-cap-20",
+    capability: 20,
+    title: "Demand Box",
+    proverb: "Demand Box makes real needs visible before the market misses them.",
+    gmfn:
+      "GMFN helps demand become readable and actionable so opportunity can meet need with less friction.",
+    category: "trade",
+    tone: "focus",
+    priority: 7,
+  },
+  {
+    id: "mw-cap-21",
+    capability: 21,
+    title: "Community Economic Power",
+    proverb: "Community Economic Power grows when trust becomes visible and usable.",
+    gmfn:
+      "GMFN turns trust into shared economic strength by linking identity, trust, and community into one working layer.",
+    category: "community",
+    tone: "calm",
+    priority: 8,
+  },
+];
 
-function scoreMarketWisdomPair(
-  item: MarketWisdomPair,
-  ctx: MarketWisdomContext,
-  seed: number
-): number {
-  const text = `${item.source} ${item.proverb} ${item.gmfn}`.toLowerCase();
-  let score = 1;
+const LEGACY_WISDOM: MarketWisdomPair[] = [
+  {
+    id: "mw-legacy-01",
+    title: "Trust before transaction",
+    proverb: "Before money moves, trust should be readable.",
+    gmfn:
+      "GMFN turns trust from hidden social knowledge into visible economic signal.",
+    category: "operating",
+    tone: "focus",
+    priority: 3,
+  },
+  {
+    id: "mw-legacy-02",
+    title: "Visibility reduces fear",
+    proverb: "What people can verify, they can approach with more confidence.",
+    gmfn:
+      "Visible identity and trust reduce hesitation, conflict, and avoidable delay.",
+    category: "visibility",
+    tone: "spotlight",
+    priority: 3,
+  },
+  {
+    id: "mw-legacy-03",
+    title: "Carry one clean proof",
+    proverb: "Portable proof is stronger than repeated explanation.",
+    gmfn:
+      "GMFN helps a person or merchant carry usable trust instead of starting from zero again.",
+    category: "identity",
+    tone: "focus",
+    priority: 3,
+  },
+  {
+    id: "mw-legacy-04",
+    title: "One clear next step",
+    proverb: "A clean next action is stronger than scattered effort.",
+    gmfn:
+      "GMFN works best when people can see what matters now and what comes after it.",
+    category: "operating",
+    tone: "calm",
+    priority: 3,
+  },
+  {
+    id: "mw-legacy-05",
+    title: "Community multiplies confidence",
+    proverb: "Trust becomes stronger when community can see and support it.",
+    gmfn:
+      "Identity alone is not enough; trust grows when the surrounding community makes it visible.",
+    category: "community",
+    tone: "calm",
+    priority: 3,
+  },
+  {
+    id: "mw-legacy-06",
+    title: "Consistency compounds",
+    proverb: "Small visible reliability becomes larger access over time.",
+    gmfn:
+      "GMFN rewards steady proof, not noise, by making visible conduct economically useful.",
+    category: "operating",
+    tone: "focus",
+    priority: 3,
+  },
+  {
+    id: "mw-legacy-07",
+    title: "Support needs structure",
+    proverb: "Goodwill works better when trust and responsibility are visible.",
+    gmfn:
+      "GMFN helps support move from sentiment into accountable structure.",
+    category: "support",
+    tone: "calm",
+    priority: 3,
+  },
+  {
+    id: "mw-legacy-08",
+    title: "Trust opens markets",
+    proverb: "Where trust becomes visible, opportunity can travel further.",
+    gmfn:
+      "GMFN helps trade move beyond familiar circles without losing confidence or accountability.",
+    category: "trade",
+    tone: "spotlight",
+    priority: 3,
+  },
+];
 
-  const hour = normalizeHour(ctx.hour);
-  const unread = positiveNumber(ctx.unread);
-  const pendingRequests = positiveNumber(ctx.pendingRequests);
-  const hasSpotlight = Boolean(ctx.hasSpotlight);
-  const hasGmfnId = Boolean(ctx.hasGmfnId);
-  const trustTone = safeTone(ctx.trustTone);
+function buildPreferredCategories(
+  params: SmartMarketWisdomParams
+): MarketWisdomCategory[] {
+  const hour = Number(params.hour ?? 12);
+  const unread = positiveNumber(params.unread);
+  const pendingRequests = positiveNumber(params.pendingRequests);
+  const trustTone = safeStr(params.trustTone).toLowerCase();
+  const hasSpotlight = Boolean(params.hasSpotlight);
+  const hasGmfnId = Boolean(params.hasGmfnId);
 
-  if (ctx.previousId && item.id === ctx.previousId) {
-    score -= 100;
-  }
-
-  if (hour >= 6 && hour < 12) {
-    if (
-      includesAny(text, [
-        "consistency",
-        "discipline",
-        "deliver",
-        "timing",
-        "word",
-        "predictable",
-        "morning",
-        "begin",
-      ])
-    ) {
-      score += 4;
-    }
-  }
-
-  if (hour >= 12 && hour < 18) {
-    if (
-      includesAny(text, [
-        "market",
-        "trade",
-        "business",
-        "merchant",
-        "buy",
-        "seller",
-        "supplier",
-        "deal",
-        "shop",
-      ])
-    ) {
-      score += 4;
-    }
-  }
-
-  if (hour >= 18 || hour < 6) {
-    if (
-      includesAny(text, [
-        "community",
-        "support",
-        "network",
-        "loyalty",
-        "relationship",
-        "together",
-        "name",
-        "reputation",
-      ])
-    ) {
-      score += 4;
-    }
+  if (!hasGmfnId) {
+    return ["identity", "community", "trade", "operating"];
   }
 
   if (pendingRequests > 0) {
-    if (
-      includesAny(text, [
-        "community",
-        "support",
-        "people",
-        "trust",
-        "network",
-        "reputation",
-        "fair",
-        "word",
-      ])
-    ) {
-      score += 6;
-    }
+    return ["support", "finance", "community", "operating"];
   }
 
-  if (unread >= 3) {
-    if (
-      includesAny(text, [
-        "communicate",
-        "clear",
-        "word",
-        "attention",
-        "reputation",
-        "timing",
-        "silence",
-      ])
-    ) {
-      score += 4;
-    }
+  if (unread > 3) {
+    return ["support", "community", "operating", "identity"];
+  }
+
+  if (trustTone === "red" || trustTone === "yellow") {
+    return ["identity", "finance", "community", "operating"];
   }
 
   if (hasSpotlight) {
-    if (
-      includesAny(text, [
-        "market",
-        "merchant",
-        "trade",
-        "seller",
-        "business",
-        "buy",
-        "shop",
-        "product",
-      ])
-    ) {
-      score += 5;
-    }
+    return ["visibility", "trade", "identity", "community"];
   }
 
-  if (!hasGmfnId) {
-    if (
-      includesAny(text, [
-        "identity",
-        "community",
-        "trust",
-        "name",
-        "reputation",
-      ])
-    ) {
-      score += 5;
-    }
+  if (hour >= 5 && hour < 11) {
+    return ["identity", "community", "work", "operating"];
   }
 
-  if (trustTone === "red") {
-    if (
-      includesAny(text, [
-        "repay",
-        "trust",
-        "word",
-        "reputation",
-        "behavior",
-        "integrity",
-        "careful",
-        "silence",
-      ])
-    ) {
-      score += 7;
-    }
+  if (hour >= 11 && hour < 16) {
+    return ["trade", "visibility", "work", "operating"];
   }
 
-  if (trustTone === "yellow") {
-    if (
-      includesAny(text, [
-        "consistency",
-        "discipline",
-        "support",
-        "trust",
-        "reliability",
-        "careful",
-      ])
-    ) {
-      score += 5;
-    }
+  if (hour >= 16 && hour < 20) {
+    return ["finance", "support", "trade", "community"];
   }
 
-  if (trustTone === "green") {
-    if (
-      includesAny(text, [
-        "growth",
-        "expansion",
-        "opportunity",
-        "network",
-        "trade",
-        "capital",
-        "stronger",
-      ])
-    ) {
-      score += 4;
-    }
+  return ["community", "identity", "finance", "operating"];
+}
+
+function scoreEntry(
+  entry: MarketWisdomPair,
+  params: SmartMarketWisdomParams,
+  preferredCategories: MarketWisdomCategory[]
+): number {
+  let score = positiveNumber(entry.priority || 0);
+  const unread = positiveNumber(params.unread);
+  const pendingRequests = positiveNumber(params.pendingRequests);
+  const trustTone = safeStr(params.trustTone).toLowerCase();
+
+  if (entry.capability) score += 4;
+
+  const preferredIndex = preferredCategories.indexOf(entry.category);
+  if (preferredIndex >= 0) {
+    score += Math.max(1, 5 - preferredIndex);
   }
 
-  score += stableWeightFromId(item.id, seed) / 100000;
+  if (params.hasSpotlight && entry.tone === "spotlight") score += 3;
+  if ((trustTone === "red" || trustTone === "yellow") && entry.tone === "alert") {
+    score += 4;
+  }
+
+  if (pendingRequests > 0 && (entry.category === "support" || entry.category === "finance")) {
+    score += 3;
+  }
+
+  if (unread > 0 && entry.category === "community") {
+    score += 2;
+  }
+
+  if (!params.hasGmfnId && entry.category === "identity") {
+    score += 4;
+  }
 
   return score;
 }
 
 export function getSmartMarketWisdomPair(
-  ctx: MarketWisdomContext = {}
+  params: SmartMarketWisdomParams
 ): MarketWisdomPair {
-  if (!MARKET_WISDOM_PAIRS.length) {
-    return {
-      id: "fallback-smart",
-      source: "African Proverb",
-      proverb: "Trust grows where people keep their word.",
-      gmfn: "GMFN helps communities turn trust into visible economic strength.",
-    };
-  }
+  const pool = [...CAPABILITY_WISDOM, ...LEGACY_WISDOM];
+  const preferredCategories = buildPreferredCategories(params);
+  const previousId = safeStr(params.previousId);
+  const today = daySeed();
 
-  const normalizedCtx = {
-    hour: normalizeHour(ctx.hour),
-    unread: positiveNumber(ctx.unread),
-    pendingRequests: positiveNumber(ctx.pendingRequests),
-    hasSpotlight: Boolean(ctx.hasSpotlight),
-    hasGmfnId: Boolean(ctx.hasGmfnId),
-    trustTone: safeTone(ctx.trustTone),
-    previousId: String(ctx.previousId || "").trim(),
-  };
-
-  const seed = hashSeed(
-    daySeed(),
-    normalizedCtx.hour,
-    normalizedCtx.unread,
-    normalizedCtx.pendingRequests,
-    normalizedCtx.hasSpotlight,
-    normalizedCtx.hasGmfnId,
-    normalizedCtx.trustTone
-  );
-
-  const scored = MARKET_WISDOM_PAIRS
-    .map((item) => ({
-      item,
-      score: scoreMarketWisdomPair(item, normalizedCtx, seed),
+  const ranked = pool
+    .map((entry) => ({
+      entry,
+      score: scoreEntry(entry, params, preferredCategories),
+      tie: hashSeed(
+        today,
+        entry.id,
+        params.hour,
+        params.unread,
+        params.pendingRequests,
+        params.hasSpotlight,
+        params.hasGmfnId,
+        params.trustTone
+      ),
     }))
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.tie - b.tie;
+    });
 
-  const pool = scored
-    .slice(0, Math.min(12, scored.length))
-    .map((entry) => entry.item)
-    .filter((item) => item.id !== normalizedCtx.previousId);
+  const topPool = ranked.slice(0, Math.min(8, ranked.length)).map((row) => row.entry);
+  const filtered = topPool.filter((entry) => entry.id !== previousId);
 
-  if (pool.length > 0) {
-    const pickedIndex = seed % pool.length;
-    return pool[pickedIndex];
+  if (filtered.length > 0) {
+    const pickIndex =
+      hashSeed(
+        today,
+        "market-wisdom-choice",
+        params.hour,
+        params.unread,
+        params.pendingRequests,
+        params.hasSpotlight,
+        params.hasGmfnId,
+        params.trustTone
+      ) % filtered.length;
+
+    return filtered[pickIndex];
   }
 
-  return scored[0]?.item || MARKET_WISDOM_PAIRS[0];
+  return topPool[0] || CAPABILITY_WISDOM[0];
 }

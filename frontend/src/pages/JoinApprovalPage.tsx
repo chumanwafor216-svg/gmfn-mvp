@@ -1,18 +1,23 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 import { getJoinApprovalStatus } from "../lib/api";
 
 type ApprovalStatus = {
-  request_id?: number;
-  status?: string;
+  request_id?: number | string;
+  status?: string | null;
   gmfn_id?: string | null;
   next_step?: string | null;
   message?: string | null;
   community_name?: string | null;
   community_code?: string | null;
   marketplace_name?: string | null;
+  reviewed_at?: string | null;
+  approved_at?: string | null;
+  activated_at?: string | null;
 };
+
+type NormalizedStatus = "approved" | "pending" | "rejected" | "unknown";
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
@@ -21,6 +26,15 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
     background: bg,
     padding: 18,
     boxShadow: "0 12px 30px rgba(15,23,42,0.05)",
+  };
+}
+
+function softCard(bg = "#F8FBFF"): React.CSSProperties {
+  return {
+    border: "1px solid rgba(11,31,51,0.08)",
+    borderRadius: 16,
+    background: bg,
+    padding: 14,
   };
 }
 
@@ -38,6 +52,8 @@ function actionBtn(primary = false, disabled = false): React.CSSProperties {
     cursor: disabled ? "not-allowed" : "pointer",
     textDecoration: "none",
     opacity: disabled ? 0.75 : 1,
+    minHeight: 42,
+    whiteSpace: "nowrap",
   };
 }
 
@@ -51,14 +67,46 @@ function sectionLabel(): React.CSSProperties {
   };
 }
 
+function helperText(): React.CSSProperties {
+  return {
+    color: "#64748B",
+    lineHeight: 1.8,
+    fontSize: 14,
+  };
+}
+
+function badge(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    minHeight: 30,
+    padding: "6px 10px",
+    borderRadius: 999,
+    background: primary ? "#EAF2FF" : "#F8FAFC",
+    border: primary
+      ? "1px solid rgba(11,99,209,0.14)"
+      : "1px solid rgba(11,31,51,0.08)",
+    color: primary ? "#0B63D1" : "#475569",
+    fontWeight: 900,
+    fontSize: 12,
+    whiteSpace: "nowrap",
+  };
+}
+
 function safeStr(x: any, fallback = ""): string {
   const s = String(x ?? "").trim();
   return s || fallback;
 }
 
-function normalizedStatus(
-  value?: string | null
-): "approved" | "pending" | "rejected" | "unknown" {
+function safeDateTime(value: any): string {
+  const raw = safeStr(value);
+  if (!raw) return "—";
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return raw;
+  return d.toLocaleString();
+}
+
+function normalizedStatus(value?: string | null): NormalizedStatus {
   const raw = safeStr(value).toLowerCase();
 
   if (
@@ -94,7 +142,7 @@ function normalizedStatus(
   return "unknown";
 }
 
-function statusTone(status: "approved" | "pending" | "rejected" | "unknown") {
+function statusTone(status: NormalizedStatus) {
   if (status === "approved") {
     return {
       bg: "#ECFDF5",
@@ -130,13 +178,53 @@ function statusTone(status: "approved" | "pending" | "rejected" | "unknown") {
   };
 }
 
+function mergeSearchIntoPath(to: string, currentSearch: string): string {
+  const [basePath, baseQueryRaw = ""] = String(to || "").split("?");
+  const merged = new URLSearchParams(baseQueryRaw);
+  const current = new URLSearchParams(currentSearch);
+
+  current.forEach((value, key) => {
+    if (!merged.has(key)) {
+      merged.append(key, value);
+    }
+  });
+
+  const finalQuery = merged.toString();
+  return finalQuery ? `${basePath}?${finalQuery}` : basePath;
+}
+
 export default function JoinApprovalPage() {
   const { requestId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const [isCompact, setIsCompact] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 920;
+  });
 
   const [data, setData] = useState<ApprovalStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    function handleResize() {
+      setIsCompact(window.innerWidth <= 920);
+    }
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.title = "GSN | Join Approval";
+    }
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -162,14 +250,14 @@ export default function JoinApprovalPage() {
   }, [requestId]);
 
   function goBack() {
-    if (window.history.length > 1) {
+    if (typeof window !== "undefined" && window.history.length > 1) {
       navigate(-1);
       return;
     }
-    navigate("/welcome");
+    navigate(mergeSearchIntoPath("/welcome", location.search));
   }
 
-  const status = useMemo(
+  const status = useMemo<NormalizedStatus>(
     () => normalizedStatus(data?.status),
     [data?.status]
   );
@@ -194,11 +282,35 @@ export default function JoinApprovalPage() {
     return "Status information is available, but not fully classified.";
   }, [data?.message, status]);
 
+  const communityLabel = useMemo(() => {
+    return safeStr(data?.community_name || data?.marketplace_name || "—");
+  }, [data]);
+
+  const requestLabel = useMemo(() => {
+    return safeStr(data?.request_id || requestId || "—");
+  }, [data, requestId]);
+
+  const gmfnId = useMemo(() => {
+    return safeStr(data?.gmfn_id || "");
+  }, [data]);
+
+  const reviewedAt = useMemo(() => {
+    return safeStr(data?.approved_at || data?.reviewed_at || data?.activated_at || "");
+  }, [data]);
+
   return (
-    <div style={{ padding: 20, maxWidth: 760, margin: "0 auto", paddingBottom: 30 }}>
+    <div
+      style={{
+        padding: 20,
+        maxWidth: 960,
+        margin: "0 auto",
+        paddingBottom: 30,
+      }}
+    >
       <PageTopNav
+        sectionLabel="Join Approval"
         title="Join Approval"
-        subtitle="Review the outcome of your community join request and continue to the right next step."
+        subtitle="Review the outcome of your community join request and continue to the correct next step."
       />
 
       <div
@@ -221,22 +333,17 @@ export default function JoinApprovalPage() {
             <div
               style={{
                 marginTop: 8,
-                fontSize: 28,
+                fontSize: isCompact ? 28 : 34,
                 fontWeight: 1000,
                 color: "#0B1F33",
-                lineHeight: 1.15,
+                lineHeight: 1.12,
+                maxWidth: 760,
               }}
             >
               Application Status
             </div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#64748B",
-                lineHeight: 1.8,
-              }}
-            >
-              Review the outcome of your request, then move to the next public step.
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Review the outcome of your request, then move to the right next public step.
             </div>
           </div>
 
@@ -266,131 +373,243 @@ export default function JoinApprovalPage() {
       ) : null}
 
       {!loading && !error && data ? (
-        <>
-          <div
-            style={{
-              ...pageCard(tone.bg),
-              marginTop: 18,
-              border: tone.border,
-            }}
-          >
-            <div style={sectionLabel()}>Status</div>
+        <div
+          style={{
+            marginTop: 18,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "1.02fr 0.98fr",
+            gap: 18,
+          }}
+        >
+          <div style={{ display: "grid", gap: 18 }}>
             <div
               style={{
-                marginTop: 8,
-                fontSize: 28,
-                fontWeight: 1000,
-                color: tone.text,
+                ...pageCard(tone.bg),
+                border: tone.border,
               }}
             >
-              {tone.title}
-            </div>
-
-            <div
-              style={{
-                marginTop: 10,
-                color: "#475569",
-                lineHeight: 1.8,
-              }}
-            >
-              {helperMessage}
-            </div>
-
-            <div
-              style={{
-                marginTop: 14,
-                display: "grid",
-                gap: 8,
-                color: "#334155",
-                lineHeight: 1.7,
-                fontSize: 14,
-              }}
-            >
-              <div>
-                <strong>Request ID:</strong> {safeStr(data.request_id || requestId || "—")}
+              <div style={sectionLabel()}>Status</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  fontSize: 30,
+                  fontWeight: 1000,
+                  color: tone.text,
+                }}
+              >
+                {tone.title}
               </div>
 
-              {safeStr(data.community_name || data.marketplace_name || "") ? (
-                <div>
-                  <strong>Community:</strong>{" "}
-                  {safeStr(data.community_name || data.marketplace_name || "—")}
-                </div>
-              ) : null}
+              <div style={{ marginTop: 10, ...helperText(), color: "#475569" }}>
+                {helperMessage}
+              </div>
 
-              {safeStr(data.community_code || "") ? (
-                <div>
-                  <strong>Community ID:</strong> {safeStr(data.community_code)}
-                </div>
-              ) : null}
+              <div
+                style={{
+                  marginTop: 16,
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                }}
+              >
+                <span style={badge(true)}>Status: {tone.title}</span>
+                <span style={badge(false)}>Request ID: {requestLabel}</span>
+                {communityLabel !== "—" ? (
+                  <span style={badge(false)}>Community: {communityLabel}</span>
+                ) : null}
+              </div>
+            </div>
 
-              {status === "approved" ? (
-                <div>
-                  <strong>GMFN ID:</strong> {safeStr(data.gmfn_id || "Pending issuance")}
-                </div>
-              ) : null}
+            <div style={pageCard()}>
+              <div style={sectionLabel()}>Request details</div>
 
-              {safeStr(data.next_step) ? (
-                <div>
-                  <strong>Next step:</strong> {safeStr(data.next_step)}
+              <div
+                style={{
+                  marginTop: 14,
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                  gap: 12,
+                }}
+              >
+                <div style={softCard()}>
+                  <div style={sectionLabel()}>Request ID</div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B1F33",
+                      fontWeight: 1000,
+                      lineHeight: 1.45,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {requestLabel}
+                  </div>
                 </div>
-              ) : null}
+
+                <div style={softCard()}>
+                  <div style={sectionLabel()}>Community</div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B1F33",
+                      fontWeight: 1000,
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    {communityLabel}
+                  </div>
+                </div>
+
+                {safeStr(data?.community_code) ? (
+                  <div style={softCard()}>
+                    <div style={sectionLabel()}>Community ID</div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#0B1F33",
+                        fontWeight: 1000,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      {safeStr(data?.community_code)}
+                    </div>
+                  </div>
+                ) : null}
+
+                {reviewedAt ? (
+                  <div style={softCard()}>
+                    <div style={sectionLabel()}>
+                      {status === "approved" ? "Approved / reviewed" : "Reviewed"}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#0B1F33",
+                        fontWeight: 1000,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      {safeDateTime(reviewedAt)}
+                    </div>
+                  </div>
+                ) : null}
+
+                {status === "approved" ? (
+                  <div style={softCard()}>
+                    <div style={sectionLabel()}>GMFN ID</div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#0B1F33",
+                        fontWeight: 1000,
+                        lineHeight: 1.45,
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {gmfnId || "Pending issuance"}
+                    </div>
+                  </div>
+                ) : null}
+
+                {safeStr(data?.next_step) ? (
+                  <div style={softCard()}>
+                    <div style={sectionLabel()}>Next step</div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#0B1F33",
+                        fontWeight: 1000,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      {safeStr(data?.next_step)}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
 
-          <div style={{ ...pageCard(), marginTop: 18 }}>
-            <div style={sectionLabel()}>Next action</div>
+          <div style={{ display: "grid", gap: 18 }}>
+            <div style={pageCard()}>
+              <div style={sectionLabel()}>Next action</div>
 
-            <div
-              style={{
-                marginTop: 10,
-                color: "#64748B",
-                lineHeight: 1.8,
-              }}
-            >
-              {status === "approved"
-                ? "Activation is the correct next step."
-                : status === "pending"
-                ? "You can return later to check this status again."
-                : status === "rejected"
-                ? "You can return to the public entry surface."
-                : "Return to the public entry surface or try again later."}
-            </div>
+              <div style={{ marginTop: 10, ...helperText() }}>
+                {status === "approved"
+                  ? "Activation is the correct next step."
+                  : status === "pending"
+                  ? "You can return later to check this status again."
+                  : status === "rejected"
+                  ? "You can return to the public entry surface or speak again with the inviting community."
+                  : "Return to the public entry surface or try again later."}
+              </div>
 
-            <div
-              style={{
-                marginTop: 16,
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
-              }}
-            >
-              {status === "approved" ? (
-                <button
-                  type="button"
-                  style={actionBtn(true)}
-                  onClick={() =>
-                    navigate("/activate-membership", {
-                      state: {
-                        gmfn_id: safeStr(data.gmfn_id || ""),
-                        request_id: requestId || "",
-                      },
-                    })
-                  }
+              <div
+                style={{
+                  marginTop: 16,
+                  display: "flex",
+                  gap: 10,
+                  flexWrap: "wrap",
+                }}
+              >
+                {status === "approved" ? (
+                  <button
+                    type="button"
+                    style={actionBtn(true)}
+                    onClick={() =>
+                      navigate(mergeSearchIntoPath("/activate-membership", location.search), {
+                        state: {
+                          gmfn_id: gmfnId,
+                          request_id: requestId || "",
+                        },
+                      })
+                    }
+                  >
+                    Continue Activation
+                  </button>
+                ) : null}
+
+                {status === "pending" ? (
+                  <Link
+                    to={mergeSearchIntoPath("/join-request/pending", location.search)}
+                    style={actionBtn(false)}
+                  >
+                    Open pending page
+                  </Link>
+                ) : null}
+
+                <Link
+                  to={mergeSearchIntoPath("/welcome", location.search)}
+                  style={actionBtn(false)}
                 >
-                  Continue Activation
-                </button>
-              ) : null}
+                  Open Welcome
+                </Link>
+              </div>
+            </div>
 
-              <Link to="/welcome" style={actionBtn(false)}>
-                Open Welcome
-              </Link>
+            <div style={pageCard()}>
+              <div style={sectionLabel()}>Support</div>
 
-              <Link to="/cover" style={actionBtn(false)}>
-                Open Cover
-              </Link>
+              <div style={{ marginTop: 10, ...helperText() }}>
+                If you need to understand the system better before the next step,
+                open the readable guide first.
+              </div>
+
+              <div
+                style={{
+                  marginTop: 16,
+                  display: "flex",
+                  gap: 10,
+                  flexWrap: "wrap",
+                }}
+              >
+                <Link to="/guide" style={actionBtn(false)}>
+                  Open My GMFN and I
+                </Link>
+              </div>
             </div>
           </div>
-        </>
+        </div>
       ) : null}
     </div>
   );

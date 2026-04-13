@@ -135,6 +135,76 @@ function browserOrigin(): string {
   }
 }
 
+function buildApiUrl(path: string): string {
+  const base = apiBase();
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${base}${normalizedPath}`;
+}
+
+function authHeaders(clanId?: number, withJson = false): Record<string, string> {
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+  };
+
+  const token = (api as any).getAccessToken?.();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  if (positiveNumber(clanId) > 0) {
+    headers["X-Clan-Id"] = String(clanId);
+  }
+
+  if (withJson) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  return headers;
+}
+
+async function requestApi(
+  path: string,
+  init: RequestInit,
+  clanId?: number
+): Promise<any> {
+  const isFormData =
+    typeof FormData !== "undefined" && init.body instanceof FormData;
+
+  const headers = {
+    ...authHeaders(clanId, !isFormData && Boolean(init.body)),
+    ...(init.headers || {}),
+  };
+
+  const res = await fetch(buildApiUrl(path), {
+    ...init,
+    headers,
+    credentials: "include",
+  });
+
+  const text = await res.text().catch(() => "");
+  let payload: any = null;
+
+  if (text) {
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      payload = text;
+    }
+  }
+
+  if (!res.ok) {
+    throw new Error(
+      safeStr(
+        payload?.detail ||
+          payload?.message ||
+          payload?.error ||
+          text ||
+          `HTTP ${res.status}`
+      ) || `HTTP ${res.status}`
+    );
+  }
+
+  return payload;
+}
+
 function getMediaOrigins(): string[] {
   const out: string[] = [];
   const base = apiBase();
@@ -379,6 +449,15 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 14,
+  };
+}
+
+function statTile(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 16,
     border: "1px solid rgba(11,31,51,0.08)",
@@ -742,17 +821,6 @@ export default function ShopControlPage() {
     []
   );
 
-  const hasDeleteProductApi = useMemo(
-    () =>
-      hasAnyApi([
-        "deleteMarketplaceProduct",
-        "removeMarketplaceProduct",
-        "archiveMarketplaceProduct",
-        "deleteShopProduct",
-      ]),
-    []
-  );
-
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -827,13 +895,15 @@ export default function ShopControlPage() {
       }
 
       if (!resolvedShop) {
-        const listRes = await api
-          .getMarketplaceShops({
-            clan_id: selectedClanId || undefined,
-            only_active: true,
-            limit: 200,
-          })
-          .catch(() => ({ items: [] }));
+        const getMarketplaceShops = (api as any).getMarketplaceShops;
+        const listRes =
+          typeof getMarketplaceShops === "function"
+            ? await getMarketplaceShops({
+                clan_id: selectedClanId || undefined,
+                only_active: true,
+                limit: 200,
+              }).catch(() => ({ items: [] }))
+            : { items: [] };
 
         const rows = rowsOf<any>(listRes)
           .map((row) => normalizeShopRecord(row))
@@ -851,7 +921,7 @@ export default function ShopControlPage() {
       let productRows: ShopProduct[] = [];
 
       if (resolvedShop?.id) {
-        const productsRes = await api
+        const productsRes = await (api as any)
           .getMarketplaceProducts({
             clan_id: selectedClanId || undefined,
             shop_id: resolvedShop.id,
@@ -910,9 +980,10 @@ export default function ShopControlPage() {
     );
   }, [currentClan, selectedClanId]);
 
-  const myShopLink = safeStr(gmfnId) && gmfnId !== "Pending"
-    ? `/app/shop/${encodeURIComponent(gmfnId)}`
-    : "/app/shop/me";
+  const publicShopLink =
+    safeStr(gmfnId) && gmfnId !== "Pending"
+      ? `/shop/${encodeURIComponent(gmfnId)}`
+      : "";
 
   const shopImageCandidates = useMemo(() => {
     return buildResolvedMediaCandidates(getShopImage(shop));
@@ -963,13 +1034,18 @@ export default function ShopControlPage() {
   }
 
   function copyShopLink() {
+    if (!publicShopLink) {
+      showFeedback("error", "Public shop link is not ready yet.");
+      return;
+    }
+
     const url =
       typeof window !== "undefined"
-        ? `${window.location.origin}${myShopLink}`
-        : myShopLink;
+        ? `${window.location.origin}${publicShopLink}`
+        : publicShopLink;
 
     api.safeCopy(url);
-    showFeedback("success", "Shop gallery link copied.");
+    showFeedback("success", "Public shop link copied.");
   }
 
   function copyGmfnId() {
@@ -1004,6 +1080,7 @@ export default function ShopControlPage() {
       imageUrl: firstTruthy(product?.image_url),
     });
     setProductImageFile(null);
+    setCollapsed((prev) => ({ ...prev, composer: false }));
   }
 
   function clearProductDraft() {
@@ -1173,6 +1250,73 @@ export default function ShopControlPage() {
     }
   }
 
+  async function tryDirectDeleteProduct(productId: number): Promise<boolean> {
+    const payload = {
+      clan_id: selectedClanId || undefined,
+      shop_id: shop?.id || undefined,
+      product_id: productId,
+      id: productId,
+      is_active: false,
+      archived: true,
+    };
+
+    const attempts: Array<() => Promise<any>> = [
+      () =>
+        requestApi(
+          `/marketplace/products/${productId}`,
+          { method: "DELETE" },
+          selectedClanId || undefined
+        ),
+      () =>
+        requestApi(
+          `/marketplace/products/${productId}/delete`,
+          {
+            method: "POST",
+            body: JSON.stringify(payload),
+          },
+          selectedClanId || undefined
+        ),
+      () =>
+        requestApi(
+          `/marketplace/products/${productId}`,
+          {
+            method: "PATCH",
+            body: JSON.stringify(payload),
+          },
+          selectedClanId || undefined
+        ),
+      () =>
+        requestApi(
+          `/marketplace/products/${productId}`,
+          {
+            method: "PUT",
+            body: JSON.stringify(payload),
+          },
+          selectedClanId || undefined
+        ),
+      () =>
+        requestApi(
+          `/marketplace/products/${productId}/archive`,
+          {
+            method: "POST",
+            body: JSON.stringify(payload),
+          },
+          selectedClanId || undefined
+        ),
+    ];
+
+    for (const attempt of attempts) {
+      try {
+        await attempt();
+        return true;
+      } catch {
+        // try next
+      }
+    }
+
+    return false;
+  }
+
   async function deleteProduct(product: ShopProduct) {
     const productId = positiveNumber(product?.id);
 
@@ -1191,35 +1335,50 @@ export default function ShopControlPage() {
     setDeletingProductId(productId);
 
     try {
-      const payload = {
-        id: productId,
-        product_id: productId,
-        shop_id: shop?.id || undefined,
-        clan_id: selectedClanId || undefined,
-      };
+      let removed = false;
 
-      const removed = await callFirstAvailable(
-        [
-          "deleteMarketplaceProduct",
-          "removeMarketplaceProduct",
-          "archiveMarketplaceProduct",
-          "deleteShopProduct",
-        ],
-        payload
-      );
+      const apiDeleteNames = [
+        "deleteMarketplaceProduct",
+        "removeMarketplaceProduct",
+        "archiveMarketplaceProduct",
+        "deleteShopProduct",
+      ];
+
+      for (const name of apiDeleteNames) {
+        const fn = (api as any)[name];
+        if (typeof fn !== "function") continue;
+
+        try {
+          await fn({
+            id: productId,
+            product_id: productId,
+            shop_id: shop?.id || undefined,
+            clan_id: selectedClanId || undefined,
+          });
+          removed = true;
+          break;
+        } catch {
+          // try direct fallback next
+        }
+      }
 
       if (!removed) {
-        showFeedback(
-          "error",
-          "Product delete API is not wired in this build yet."
-        );
-      } else {
-        showFeedback("success", "Product block removed.");
-        if (editingProductId === productId) {
-          clearProductDraft();
-        }
-        await loadShopContext();
+        removed = await tryDirectDeleteProduct(productId);
       }
+
+      if (!removed) {
+        throw new Error(
+          "Product remove endpoint is not responding yet. The block could not be removed."
+        );
+      }
+
+      showFeedback("success", "Product block removed.");
+
+      if (editingProductId === productId) {
+        clearProductDraft();
+      }
+
+      await loadShopContext();
     } catch (err: any) {
       showFeedback(
         "error",
@@ -1249,7 +1408,7 @@ export default function ShopControlPage() {
           homeLabel="Dashboard"
           backTo="/app/dashboard"
           nextLinks={[
-            { label: "Shop Gallery", to: "/app/shop/me" },
+            { label: "Shop Gallery", to: publicShopLink || "/shop/preview" },
             { label: "Marketplace", to: "/app/marketplace" },
             { label: "Notifications", to: "/app/notifications" },
           ]}
@@ -1281,12 +1440,12 @@ export default function ShopControlPage() {
       <PageTopNav
         sectionLabel="Shop Control"
         title="Shop Control"
-        subtitle="A calmer control room for your shop identity, visible blocks, and direct movement into your gallery and marketplace."
+        subtitle="A calmer control room for your shop identity, visible blocks, and direct movement into your public shop and marketplace."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
         nextLinks={[
-          { label: "Shop Gallery", to: myShopLink },
+          { label: "Public Shop", to: publicShopLink || "/shop/preview" },
           { label: "Marketplace", to: "/app/marketplace" },
           { label: "Notifications", to: "/app/notifications" },
         ]}
@@ -1301,27 +1460,24 @@ export default function ShopControlPage() {
       <section
         style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
       >
-        <div style={sectionLabel()}>Shop identity</div>
-
         <div
           style={{
-            marginTop: 12,
             display: "grid",
             gridTemplateColumns: isCompact
               ? "1fr"
-              : "280px minmax(0, 1fr)",
+              : "300px minmax(0, 1fr)",
             gap: 18,
             alignItems: "start",
           }}
         >
-          <div style={mediaBox(230)}>
+          <div style={mediaBox(250)}>
             <RotatingImage
               candidates={shopImageCandidates}
               alt={firstTruthy(shop?.name, "Shop")}
               style={{
                 width: "100%",
                 height: "100%",
-                minHeight: 230,
+                minHeight: 250,
                 objectFit: "cover",
                 display: "block",
               }}
@@ -1332,7 +1488,7 @@ export default function ShopControlPage() {
                     textAlign: "center",
                     color: "#37506A",
                     fontWeight: 900,
-                    fontSize: 20,
+                    fontSize: 22,
                     lineHeight: 1.3,
                   }}
                 >
@@ -1343,8 +1499,11 @@ export default function ShopControlPage() {
           </div>
 
           <div>
+            <div style={sectionLabel()}>Shop identity</div>
+
             <div
               style={{
+                marginTop: 10,
                 color: "#0B1F33",
                 fontWeight: 900,
                 fontSize: isCompact ? 28 : 34,
@@ -1357,7 +1516,7 @@ export default function ShopControlPage() {
             <div style={{ marginTop: 12, ...helperText(), maxWidth: 820 }}>
               {firstTruthy(
                 shop?.description,
-                "This page controls your shop identity and the visible selling blocks that appear in Shop Gallery."
+                "This page controls your shop identity and the visible selling blocks that appear in the public shop gallery."
               )}
             </div>
 
@@ -1393,9 +1552,78 @@ export default function ShopControlPage() {
                 Copy GMFN ID
               </button>
 
-              <Link to={myShopLink} style={actionBtn("secondary")}>
-                Open Shop Gallery
-              </Link>
+              {publicShopLink ? (
+                <Link to={publicShopLink} style={actionBtn("secondary")}>
+                  Open Public Shop
+                </Link>
+              ) : null}
+            </div>
+
+            <div
+              style={{
+                marginTop: 16,
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr 1fr"
+                  : "repeat(4, minmax(0, 1fr))",
+                gap: 10,
+              }}
+            >
+              <div style={statTile("#F8FBFF")}>
+                <div style={sectionLabel()}>Owner</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  {memberName}
+                </div>
+              </div>
+
+              <div style={statTile()}>
+                <div style={sectionLabel()}>WhatsApp</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  {firstTruthy(shop?.whatsapp_number, "Not set")}
+                </div>
+              </div>
+
+              <div style={statTile()}>
+                <div style={sectionLabel()}>Telegram</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  {firstTruthy(shop?.telegram_handle, "Not set")}
+                </div>
+              </div>
+
+              <div style={statTile()}>
+                <div style={sectionLabel()}>Public surface</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  {publicShopLink ? "Ready" : "Pending"}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1438,9 +1666,11 @@ export default function ShopControlPage() {
               gap: 10,
             }}
           >
-            <Link to={myShopLink} style={actionBtn("primary")}>
-              Shop Gallery
-            </Link>
+            {publicShopLink ? (
+              <Link to={publicShopLink} style={actionBtn("primary")}>
+                Public Shop
+              </Link>
+            ) : null}
             <Link to="/app/marketplace" style={actionBtn("secondary")}>
               Marketplace
             </Link>
@@ -1622,7 +1852,7 @@ export default function ShopControlPage() {
             <div style={innerCard("#FFFFFF")}>
               <div style={sectionLabel()}>Preview</div>
 
-              <div style={{ marginTop: 14, ...mediaBox(220) }}>
+              <div style={{ marginTop: 14, ...mediaBox(230) }}>
                 <RotatingImage
                   candidates={
                     profileImagePreview
@@ -1633,7 +1863,7 @@ export default function ShopControlPage() {
                   style={{
                     width: "100%",
                     height: "100%",
-                    minHeight: 220,
+                    minHeight: 230,
                     objectFit: "cover",
                     display: "block",
                   }}
@@ -1709,7 +1939,9 @@ export default function ShopControlPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Visible block composer</div>
+            <div style={sectionLabel()}>
+              {editingProductId > 0 ? "Edit visible block" : "Visible block composer"}
+            </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Prepare one calm selling block at a time.
             </div>
@@ -1848,19 +2080,13 @@ export default function ShopControlPage() {
                     Clear
                   </button>
                 </div>
-
-                {!hasCreateProductApi && editingProductId === 0 ? (
-                  <div style={{ ...helperText(), fontSize: 13 }}>
-                    This build will preserve the draft locally if the backend create-product API is not yet wired.
-                  </div>
-                ) : null}
               </div>
             </div>
 
             <div style={innerCard("#FFFFFF")}>
               <div style={sectionLabel()}>Block preview</div>
 
-              <div style={{ marginTop: 14, ...mediaBox(190) }}>
+              <div style={{ marginTop: 14, ...mediaBox(220) }}>
                 <RotatingImage
                   candidates={
                     productImagePreview
@@ -1871,7 +2097,7 @@ export default function ShopControlPage() {
                   style={{
                     width: "100%",
                     height: "100%",
-                    minHeight: 190,
+                    minHeight: 220,
                     objectFit: "cover",
                     display: "block",
                   }}
@@ -1949,7 +2175,7 @@ export default function ShopControlPage() {
           <div>
             <div style={sectionLabel()}>Visible selling blocks</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Edit or review the blocks already visible in your gallery.
+              Edit or review the blocks already visible in your public shop.
             </div>
           </div>
 
@@ -1970,123 +2196,129 @@ export default function ShopControlPage() {
         {!collapsed.products ? (
           <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
             {products.length === 0 ? (
-              <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                No visible selling block is available yet in this shop.
+              <div
+                style={{
+                  ...innerCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
+                  border: "1px solid rgba(11,99,209,0.10)",
+                }}
+              >
+                <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 18 }}>
+                  No visible selling block is available yet.
+                </div>
+                <div style={{ marginTop: 10, ...helperText() }}>
+                  Start by drafting one calm product or service block, then publish it here.
+                </div>
               </div>
             ) : (
-              products.map((product, index) => (
-                <div key={`${product.id || index}`} style={innerCard("#FCFEFF")}>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: isCompact
-                        ? "1fr"
-                        : "160px minmax(0, 1fr) auto",
-                      gap: 14,
-                      alignItems: "center",
-                    }}
-                  >
-                    <div style={mediaBox(120)}>
-                      <RotatingImage
-                        candidates={buildResolvedMediaCandidates(
-                          firstTruthy(product?.image_url)
-                        )}
-                        alt={firstTruthy(product?.name, "Product")}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          minHeight: 120,
-                          objectFit: "cover",
-                          display: "block",
-                        }}
-                        fallback={
-                          <div
-                            style={{
-                              padding: 12,
-                              textAlign: "center",
-                              color: "#37506A",
-                              fontWeight: 800,
-                              fontSize: 14,
-                              lineHeight: 1.4,
-                            }}
-                          >
-                            {firstTruthy(product?.name, "Product")}
-                          </div>
-                        }
-                      />
-                    </div>
+              products.map((product, index) => {
+                const currentId = positiveNumber(product?.id);
+                const isDeleting = deletingProductId === currentId;
 
-                    <div>
-                      <div
-                        style={{
-                          color: "#0B1F33",
-                          fontSize: 17,
-                          fontWeight: 900,
-                          lineHeight: 1.35,
-                        }}
-                      >
-                        {firstTruthy(product?.name, "Product")}
+                return (
+                  <div key={`${product.id || index}`} style={innerCard("#FCFEFF")}>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: isCompact
+                          ? "1fr"
+                          : "170px minmax(0, 1fr) auto",
+                        gap: 14,
+                        alignItems: "center",
+                      }}
+                    >
+                      <div style={mediaBox(132)}>
+                        <RotatingImage
+                          candidates={buildResolvedMediaCandidates(
+                            firstTruthy(product?.image_url)
+                          )}
+                          alt={firstTruthy(product?.name, "Product")}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            minHeight: 132,
+                            objectFit: "cover",
+                            display: "block",
+                          }}
+                          fallback={
+                            <div
+                              style={{
+                                padding: 12,
+                                textAlign: "center",
+                                color: "#37506A",
+                                fontWeight: 800,
+                                fontSize: 14,
+                                lineHeight: 1.4,
+                              }}
+                            >
+                              {firstTruthy(product?.name, "Product")}
+                            </div>
+                          }
+                        />
                       </div>
 
-                      <div style={{ marginTop: 8, ...helperText() }}>
-                        {firstTruthy(
-                          product?.description,
-                          "No additional description is visible yet."
-                        )}
+                      <div>
+                        <div
+                          style={{
+                            color: "#0B1F33",
+                            fontSize: 17,
+                            fontWeight: 900,
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          {firstTruthy(product?.name, "Product")}
+                        </div>
+
+                        <div style={{ marginTop: 8, ...helperText() }}>
+                          {firstTruthy(
+                            product?.description,
+                            "No additional description is visible yet."
+                          )}
+                        </div>
+
+                        <div
+                          style={{
+                            marginTop: 10,
+                            display: "flex",
+                            gap: 8,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <span style={badge(true)}>{displayPrice(product)}</span>
+                          {currentId ? (
+                            <span style={badge(false)}>ID: {currentId}</span>
+                          ) : null}
+                        </div>
                       </div>
 
                       <div
                         style={{
-                          marginTop: 10,
                           display: "flex",
-                          gap: 8,
+                          justifyContent: isCompact ? "flex-start" : "flex-end",
+                          gap: 10,
                           flexWrap: "wrap",
                         }}
                       >
-                        <span style={badge(true)}>{displayPrice(product)}</span>
-                        {positiveNumber(product?.id) ? (
-                          <span style={badge(false)}>ID: {positiveNumber(product?.id)}</span>
-                        ) : null}
+                        <button
+                          type="button"
+                          onClick={() => beginEditProduct(product)}
+                          style={actionBtn("secondary")}
+                        >
+                          Edit Block
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => void deleteProduct(product)}
+                          disabled={!currentId || isDeleting}
+                          style={actionBtn("secondary", !currentId || isDeleting)}
+                        >
+                          {isDeleting ? "Removing..." : "Remove"}
+                        </button>
                       </div>
                     </div>
-
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: isCompact ? "flex-start" : "flex-end",
-                        gap: 10,
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => beginEditProduct(product)}
-                        style={actionBtn("secondary")}
-                      >
-                        Edit Block
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => void deleteProduct(product)}
-                        disabled={
-                          !hasDeleteProductApi ||
-                          deletingProductId === positiveNumber(product?.id)
-                        }
-                        style={actionBtn(
-                          "soft",
-                          !hasDeleteProductApi ||
-                            deletingProductId === positiveNumber(product?.id)
-                        )}
-                      >
-                        {deletingProductId === positiveNumber(product?.id)
-                          ? "Removing..."
-                          : "Remove"}
-                      </button>
-                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         ) : null}

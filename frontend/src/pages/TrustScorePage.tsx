@@ -930,17 +930,12 @@ export default function TrustScorePage() {
       ) || (selectedClanId ? `Community ${selectedClanId}` : "No selected community")
     );
   }, [trustSlipSummary, currentClan, matchedClan, selectedClanId]);
-
   const communityCode = useMemo(() => {
     return (
-      firstTruthy(
-        matchedClan?.community_code,
-        currentClan?.community_code,
-        currentClan?.clan_code,
-        selectedClanId
-      ) || "Pending"
-    );
-  }, [matchedClan, currentClan, selectedClanId]);
+      firstTruthy(matchedClan?.community_code, currentClan?.community_code) ||
+      "Pending"
+     );
+  }, [matchedClan, currentClan]);
 
   const currentBand = useMemo(() => {
     return firstTruthy(

@@ -1,4 +1,3 @@
-// FILE: src/pages/PaymentRailsPage.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
@@ -13,6 +12,14 @@ type RailItem = {
   currencies: string[];
   countries: string[];
   note: string;
+};
+
+type RailReading = {
+  tone: "green" | "blue" | "yellow" | "red" | "gray";
+  title: string;
+  detail: string;
+  nowLine: string;
+  nextLine: string;
 };
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
@@ -83,6 +90,43 @@ function secondaryBtn(disabled = false): React.CSSProperties {
   };
 }
 
+function softBtn(disabled = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "9px 12px",
+    minHeight: 38,
+    borderRadius: 12,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#F8FBFF",
+    color: disabled ? "#94A3B8" : "#24415C",
+    textDecoration: "none",
+    fontWeight: 900,
+    fontSize: 13,
+    cursor: disabled ? "not-allowed" : "pointer",
+    opacity: disabled ? 0.72 : 1,
+    whiteSpace: "nowrap",
+  };
+}
+
+function routeTile(primary = false): React.CSSProperties {
+  return {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+    minHeight: 100,
+    borderRadius: 18,
+    border: primary
+      ? "1px solid rgba(11,99,209,0.18)"
+      : "1px solid rgba(11,31,51,0.08)",
+    background: primary ? "#F7FAFF" : "#FFFFFF",
+    padding: 16,
+    textDecoration: "none",
+    boxShadow: primary ? "0 10px 24px rgba(11,99,209,0.05)" : "none",
+  };
+}
+
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
@@ -115,6 +159,14 @@ function feedbackCard(success: boolean): React.CSSProperties {
     color: success ? "#065F46" : "#991B1B",
     fontWeight: 900,
     padding: 14,
+  };
+}
+
+function helperText(): React.CSSProperties {
+  return {
+    color: "#5F7287",
+    fontSize: 14,
+    lineHeight: 1.75,
   };
 }
 
@@ -265,6 +317,46 @@ function railStatusTone(status: string) {
   return {
     bg: "#F8FAFC",
     border: "1px solid #E2E8F0",
+    text: "#475569",
+  };
+}
+
+function readingTone(tone: RailReading["tone"]) {
+  if (tone === "green") {
+    return {
+      bg: "#F3FBF5",
+      border: "1px solid rgba(34,197,94,0.16)",
+      text: "#166534",
+    };
+  }
+
+  if (tone === "blue") {
+    return {
+      bg: "#EFF6FF",
+      border: "1px solid rgba(59,130,246,0.16)",
+      text: "#1D4ED8",
+    };
+  }
+
+  if (tone === "yellow") {
+    return {
+      bg: "#FFFBEF",
+      border: "1px solid rgba(245,158,11,0.16)",
+      text: "#92400E",
+    };
+  }
+
+  if (tone === "red") {
+    return {
+      bg: "#FEF2F2",
+      border: "1px solid rgba(239,68,68,0.16)",
+      text: "#991B1B",
+    };
+  }
+
+  return {
+    bg: "#F8FAFC",
+    border: "1px solid rgba(148,163,184,0.16)",
     text: "#475569",
   };
 }
@@ -464,6 +556,16 @@ export default function PaymentRailsPage() {
     [rails]
   );
 
+  const activeInboundCount = useMemo(
+    () => inboundRails.filter((item) => isActiveStatus(item.status)).length,
+    [inboundRails]
+  );
+
+  const activeOutboundCount = useMemo(
+    () => outboundRails.filter((item) => isActiveStatus(item.status)).length,
+    [outboundRails]
+  );
+
   const activeCount = useMemo(
     () => rails.filter((item) => isActiveStatus(item.status)).length,
     [rails]
@@ -475,23 +577,100 @@ export default function PaymentRailsPage() {
     );
   }, [rails]);
 
+  const activeProviders = useMemo(() => {
+    return dedupeStrings(
+      rails
+        .filter((item) => isActiveStatus(item.status))
+        .map((item) => safeStr(item.provider))
+        .filter(Boolean)
+    );
+  }, [rails]);
+
+  const reading = useMemo<RailReading>(() => {
+    if (loading) {
+      return {
+        tone: "gray",
+        title: "Preparing payment rails reading",
+        detail:
+          "The page is checking what inbound and outbound rail families are visible.",
+        nowLine: "Wait for the rails reading to load.",
+        nextLine: "Return to the active money task after this page becomes readable.",
+      };
+    }
+
+    if (rails.length === 0) {
+      return {
+        tone: "red",
+        title: "No readable payment rail is visible right now",
+        detail:
+          "This page is only for intelligence. If rails are missing here, Money In or Money Out should be treated carefully until the rail picture becomes clearer.",
+        nowLine: "Do not rely on this page for action until rail visibility improves.",
+        nextLine: "Use the task pages and backend-confirmed route surfaces directly.",
+      };
+    }
+
+    if (activeInboundCount > 0 && activeOutboundCount > 0) {
+      return {
+        tone: "green",
+        title: "Inbound and outbound rails are both visible",
+        detail:
+          "This page is behaving like a supporting intelligence surface. It tells you that both money directions are at least partially visible, but action should still happen on the guided Money In and Money Out task pages.",
+        nowLine: "Use this page to understand rail visibility, not to execute money movement.",
+        nextLine: "Return to Money In or Money Out when you are ready to act.",
+      };
+    }
+
+    if (activeInboundCount > 0) {
+      return {
+        tone: "blue",
+        title: "Inbound rails are visible, but outbound rails look weaker",
+        detail:
+          "Deposit-side movement looks more available than withdrawal-side movement right now. This is useful intelligence, but not the action surface itself.",
+        nowLine: "Money In may be clearer than Money Out at the moment.",
+        nextLine: "Check the Money Out task page carefully before assuming payout rails are ready.",
+      };
+    }
+
+    if (activeOutboundCount > 0) {
+      return {
+        tone: "blue",
+        title: "Outbound rails are visible, but inbound rails look weaker",
+        detail:
+          "Withdrawal-side movement looks more available than deposit-side movement right now. This remains an intelligence page, not the task execution page.",
+        nowLine: "Money Out may be clearer than Money In at the moment.",
+        nextLine: "Check the Money In task page carefully before assuming deposit rails are ready.",
+      };
+    }
+
+    return {
+      tone: "yellow",
+      title: "Rails are visible, but not clearly active",
+      detail:
+        "Some rail information is coming through, but the current statuses do not read as confidently active. Use this as a caution signal, not as a blocker by itself.",
+      nowLine: "Review the visible statuses before choosing a money direction.",
+      nextLine: "Return to the exact task page and rely on the route shown there.",
+    };
+  }, [loading, rails.length, activeInboundCount, activeOutboundCount]);
+
+  const readingToneStyle = readingTone(reading.tone);
+
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", paddingBottom: 30 }}>
       <PageTopNav
         sectionLabel="Payment Rails"
         title="Payment Rails"
-        subtitle="Read-only overview of available inbound and outbound rails for GMFN operations."
+        subtitle="Read-only intelligence about inbound and outbound rails. Money actions should still happen on the guided task pages."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/loans"
         backLabel="Loans & Support"
         nextLinks={[
-          { label: "Pool Deposit Instructions", to: "/app/payment/pool" },
-          { label: "Withdrawal Instructions", to: "/app/withdrawal-instructions" },
-          { label: "Community Home", to: "/app/community" },
+          { label: "Finance", to: "/app/finance" },
+          { label: "Marketplace", to: "/app/marketplace" },
+          { label: "Loans", to: "/app/loans" },
         ]}
         utilityLinks={[
-          { label: "Marketplace", to: "/app/marketplace" },
+          { label: "Community Home", to: "/app/community" },
           { label: "Trust", to: "/app/trust" },
         ]}
       />
@@ -517,7 +696,7 @@ export default function PaymentRailsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Rails overview</div>
+            <div style={sectionLabel()}>Rails intelligence</div>
 
             <div
               style={{
@@ -538,9 +717,9 @@ export default function PaymentRailsPage() {
                 lineHeight: 1.8,
               }}
             >
-              This page is informational. It shows the currently visible rails for
-              inbound and outbound money movement without turning the page into an
-              action surface.
+              This page is not the finance ledger and not the action surface. It is a
+              supporting intelligence page that helps the member understand which rail
+              families are visible before returning to the guided Money In or Money Out path.
             </div>
 
             <div
@@ -551,10 +730,10 @@ export default function PaymentRailsPage() {
                 flexWrap: "wrap",
               }}
             >
-              <span style={badge(true)}>Total rails: {rails.length}</span>
-              <span style={badge(false)}>Inbound: {inboundRails.length}</span>
-              <span style={badge(false)}>Outbound: {outboundRails.length}</span>
-              <span style={badge(false)}>Active: {activeCount}</span>
+              <span style={badge(true)}>Total rails: {loading ? "…" : rails.length}</span>
+              <span style={badge(false)}>Inbound: {loading ? "…" : inboundRails.length}</span>
+              <span style={badge(false)}>Outbound: {loading ? "…" : outboundRails.length}</span>
+              <span style={badge(false)}>Active: {loading ? "…" : activeCount}</span>
             </div>
 
             <div
@@ -566,45 +745,42 @@ export default function PaymentRailsPage() {
               }}
             >
               <Link to="/app/payment/pool" style={primaryBtn(false)}>
-                Pool Deposit Instructions
+                Open Money In
               </Link>
+
               <Link to="/app/withdrawal-instructions" style={secondaryBtn(false)}>
-                Withdrawal Instructions
+                Open Money Out
               </Link>
             </div>
           </div>
 
-          <div style={{ display: "grid", gap: 12 }}>
-            <div style={softCard("#FFFFFF")}>
-              <div style={sectionLabel()}>Today</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 15,
-                  fontWeight: 900,
-                  lineHeight: 1.65,
-                }}
-              >
-                Review the visible rails first so the money path stays clearer
-                before anyone starts moving funds.
-              </div>
+          <div
+            style={{
+              ...softCard(readingToneStyle.bg),
+              border: readingToneStyle.border,
+            }}
+          >
+            <div style={sectionLabel()}>Current reading</div>
+
+            <div
+              style={{
+                marginTop: 10,
+                color: readingToneStyle.text,
+                fontSize: 20,
+                fontWeight: 1000,
+                lineHeight: 1.3,
+              }}
+            >
+              {reading.title}
             </div>
 
-            <div style={softCard("#FFFFFF")}>
-              <div style={sectionLabel()}>Tomorrow</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 15,
-                  fontWeight: 900,
-                  lineHeight: 1.65,
-                }}
-              >
-                A readable rails surface reduces confusion and makes settlement
-                easier to understand and explain.
-              </div>
+            <div style={{ marginTop: 10, ...helperText(), color: "#0B1F33" }}>
+              {reading.detail}
+            </div>
+
+            <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+              <div style={helperText()}>{reading.nowLine}</div>
+              <div style={helperText()}>{reading.nextLine}</div>
             </div>
           </div>
         </div>
@@ -619,7 +795,7 @@ export default function PaymentRailsPage() {
         }}
       >
         <div style={softCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Total rails</div>
+          <div style={sectionLabel()}>Inbound active</div>
           <div
             style={{
               marginTop: 8,
@@ -628,12 +804,12 @@ export default function PaymentRailsPage() {
               color: "#0B1F33",
             }}
           >
-            {loading ? "…" : rails.length}
+            {loading ? "…" : activeInboundCount}
           </div>
         </div>
 
         <div style={softCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Inbound</div>
+          <div style={sectionLabel()}>Outbound active</div>
           <div
             style={{
               marginTop: 8,
@@ -642,21 +818,7 @@ export default function PaymentRailsPage() {
               color: "#0B1F33",
             }}
           >
-            {loading ? "…" : inboundRails.length}
-          </div>
-        </div>
-
-        <div style={softCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Outbound</div>
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 28,
-              fontWeight: 1000,
-              color: "#0B1F33",
-            }}
-          >
-            {loading ? "…" : outboundRails.length}
+            {loading ? "…" : activeOutboundCount}
           </div>
         </div>
 
@@ -678,16 +840,36 @@ export default function PaymentRailsPage() {
               : "Not shown"}
           </div>
         </div>
+
+        <div style={softCard("#FFFFFF")}>
+          <div style={sectionLabel()}>Providers</div>
+          <div
+            style={{
+              marginTop: 8,
+              fontSize: 18,
+              fontWeight: 1000,
+              color: "#0B1F33",
+              lineHeight: 1.4,
+            }}
+          >
+            {loading
+              ? "…"
+              : activeProviders.length > 0
+              ? activeProviders.join(", ")
+              : "Not shown"}
+          </div>
+        </div>
       </section>
 
       <section style={{ ...pageCard(), marginTop: 18 }}>
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
+            display: "grid",
+            gridTemplateColumns: isCompact
+              ? "1fr"
+              : "minmax(0, 1.05fr) minmax(320px, 0.95fr)",
+            gap: 16,
+            alignItems: "start",
           }}
         >
           <div>
@@ -699,18 +881,38 @@ export default function PaymentRailsPage() {
                 lineHeight: 1.8,
               }}
             >
-              The page keeps a structured view when the response supports it. The
-              full raw response remains available below.
+              The page keeps a structured view when the response supports it. The full raw response remains available below.
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setShowRaw((prev) => !prev)}
-            style={secondaryBtn(false)}
-          >
-            {showRaw ? "Hide raw response" : "Show raw response"}
-          </button>
+          <div style={softCard("#F8FBFF")}>
+            <div style={sectionLabel()}>How to use this page</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Use it to understand whether deposit or withdrawal looks more available. Do not treat it as the execution page. When you decide to act, return to the guided Money In or Money Out task.
+            </div>
+            <div
+              style={{
+                marginTop: 12,
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+              }}
+            >
+              <Link to="/app/payment/pool" style={softBtn(false)}>
+                Money In task
+              </Link>
+              <Link to="/app/withdrawal-instructions" style={softBtn(false)}>
+                Money Out task
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowRaw((prev) => !prev)}
+                style={softBtn(false)}
+              >
+                {showRaw ? "Hide raw response" : "Show raw response"}
+              </button>
+            </div>
+          </div>
         </div>
 
         {loading ? (
@@ -872,6 +1074,128 @@ export default function PaymentRailsPage() {
             </pre>
           </div>
         ) : null}
+      </section>
+
+      <section style={{ ...pageCard(), marginTop: 18 }}>
+        <div>
+          <div style={sectionLabel()}>Working routes</div>
+          <div
+            style={{
+              marginTop: 8,
+              color: "#6B7A88",
+              lineHeight: 1.8,
+            }}
+          >
+            Move back into the exact task page you need after reading the rail picture.
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            display: "grid",
+            gridTemplateColumns: isCompact
+              ? "1fr"
+              : "repeat(3, minmax(0, 1fr))",
+            gap: 12,
+          }}
+        >
+          <Link to="/app/payment/pool" style={routeTile(true)}>
+            <div
+              style={{
+                color: "#0B1F33",
+                fontWeight: 1000,
+                fontSize: 17,
+                lineHeight: 1.3,
+              }}
+            >
+              Money In
+            </div>
+            <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              Use this when you are actively paying into the pool.
+            </div>
+          </Link>
+
+          <Link to="/app/withdrawal-instructions" style={routeTile(false)}>
+            <div
+              style={{
+                color: "#0B1F33",
+                fontWeight: 1000,
+                fontSize: 17,
+                lineHeight: 1.3,
+              }}
+            >
+              Money Out
+            </div>
+            <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              Use this when you are actively withdrawing or checking payout route readiness.
+            </div>
+          </Link>
+
+          <Link to="/app/loan-readiness" style={routeTile(false)}>
+            <div
+              style={{
+                color: "#0B1F33",
+                fontWeight: 1000,
+                fontSize: 17,
+                lineHeight: 1.3,
+              }}
+            >
+              Loan Readiness
+            </div>
+            <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              Use this when the money question has already become a support-continuation question.
+            </div>
+          </Link>
+
+          <Link to="/app/loan-workbench" style={routeTile(false)}>
+            <div
+              style={{
+                color: "#0B1F33",
+                fontWeight: 1000,
+                fontSize: 17,
+                lineHeight: 1.3,
+              }}
+            >
+              Loan Workbench
+            </div>
+            <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              Use this when the support path is already deep and operational.
+            </div>
+          </Link>
+
+          <Link to="/app/marketplace" style={routeTile(false)}>
+            <div
+              style={{
+                color: "#0B1F33",
+                fontWeight: 1000,
+                fontSize: 17,
+                lineHeight: 1.3,
+              }}
+            >
+              Marketplace
+            </div>
+            <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              Go back to the selected-community working surface only after the current money reading is complete.
+            </div>
+          </Link>
+
+          <Link to="/app/community" style={routeTile(false)}>
+            <div
+              style={{
+                color: "#0B1F33",
+                fontWeight: 1000,
+                fontSize: 17,
+                lineHeight: 1.3,
+              }}
+            >
+              Community Home
+            </div>
+            <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              Return to the wider community control room.
+            </div>
+          </Link>
+        </div>
       </section>
     </div>
   );

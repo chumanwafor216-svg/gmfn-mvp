@@ -1,6 +1,5 @@
-// src/pages/JoinByInvitePage.tsx
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
 type Preview = {
   code: string;
@@ -23,17 +22,66 @@ async function parseError(res: Response): Promise<string> {
   }
 }
 
-function getToken(): string | null {
-  return localStorage.getItem("access_token");
+function cleanText(value: any): string {
+  return String(value ?? "").trim();
 }
 
-function card(): React.CSSProperties {
+function mergeSearchIntoPath(to: string, currentSearch: string): string {
+  const [basePath, baseQueryRaw = ""] = String(to || "").split("?");
+  const merged = new URLSearchParams(baseQueryRaw);
+  const current = new URLSearchParams(currentSearch);
+
+  current.forEach((value, key) => {
+    if (!merged.has(key)) {
+      merged.append(key, value);
+    }
+  });
+
+  const finalQuery = merged.toString();
+  return finalQuery ? `${basePath}?${finalQuery}` : basePath;
+}
+
+function fmtDate(iso?: string | null): string {
+  if (!iso) return "Not specified";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString();
+}
+
+function isExpired(iso?: string | null): boolean {
+  const raw = cleanText(iso);
+  if (!raw) return false;
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return false;
+  return d.getTime() < Date.now();
+}
+
+function pageShell(): React.CSSProperties {
+  return {
+    minHeight: "100vh",
+    background:
+      "radial-gradient(circle at top, rgba(47,103,196,0.12) 0%, rgba(16,37,59,0.00) 34%), linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 55%, #FFFFFF 100%)",
+    padding: "32px 16px",
+    boxSizing: "border-box",
+  };
+}
+
+function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     border: "1px solid rgba(11,31,51,0.10)",
     borderRadius: 18,
     padding: 18,
-    background: "rgba(255,255,255,0.96)",
+    background: bg,
     boxShadow: "0 18px 60px rgba(2,6,23,0.06)",
+  };
+}
+
+function softCard(bg = "#F8FBFF"): React.CSSProperties {
+  return {
+    border: "1px solid rgba(11,31,51,0.08)",
+    borderRadius: 16,
+    background: bg,
+    padding: 14,
   };
 }
 
@@ -52,57 +100,128 @@ function pill(kind: "blue" | "gray" | "green" | "red"): React.CSSProperties {
   };
 
   if (kind === "blue") {
-    return { ...base, color: "#1e40af", background: "#eff6ff", borderColor: "#bfdbfe" };
+    return {
+      ...base,
+      color: "#1e40af",
+      background: "#eff6ff",
+      borderColor: "#bfdbfe",
+    };
   }
+
   if (kind === "green") {
-    return { ...base, color: "#065f46", background: "#ecfdf5", borderColor: "#a7f3d0" };
+    return {
+      ...base,
+      color: "#065f46",
+      background: "#ecfdf5",
+      borderColor: "#a7f3d0",
+    };
   }
+
   if (kind === "red") {
-    return { ...base, color: "#991b1b", background: "#fef2f2", borderColor: "#fecaca" };
+    return {
+      ...base,
+      color: "#991b1b",
+      background: "#fef2f2",
+      borderColor: "#fecaca",
+    };
   }
-  return { ...base, color: "#334155", background: "#f9fafb", borderColor: "#e5e7eb" };
+
+  return {
+    ...base,
+    color: "#334155",
+    background: "#f9fafb",
+    borderColor: "#e5e7eb",
+  };
 }
 
-function btn(primary?: boolean): React.CSSProperties {
+function btn(primary = false, disabled = false): React.CSSProperties {
   return {
     padding: "12px 14px",
     borderRadius: 14,
     border: primary
       ? "1px solid rgba(11,31,51,0.75)"
       : "1px solid rgba(11,31,51,0.12)",
-    background: primary ? "#0B1F33" : "#fff",
+    background: disabled ? "#CBD5E1" : primary ? "#0B1F33" : "#fff",
     color: primary ? "#fff" : "#0B1F33",
     fontWeight: 1000,
-    cursor: "pointer",
+    cursor: disabled ? "not-allowed" : "pointer",
+    textDecoration: "none",
+    opacity: disabled ? 0.8 : 1,
+    minHeight: 44,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    whiteSpace: "nowrap",
   };
 }
 
-function fmtDate(iso?: string | null): string {
-  if (!iso) return "Not specified";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString();
+function helperText(): React.CSSProperties {
+  return {
+    color: "#64748B",
+    lineHeight: 1.75,
+    fontSize: 14,
+  };
+}
+
+function buildCoverInviteRoute(
+  code: string,
+  preview: Preview | null,
+  currentSearch: string
+): string {
+  const params = new URLSearchParams(currentSearch);
+
+  params.set("entry", "invite");
+  params.set("invite_code", code);
+
+  if (preview?.clan_name) {
+    params.set("community_name", preview.clan_name);
+    params.set("clan_name", preview.clan_name);
+  }
+
+  if (preview?.clan_id) {
+    params.set("community_route", String(preview.clan_id));
+  }
+
+  if (preview?.expires_at) {
+    params.set("expires_at", preview.expires_at);
+  }
+
+  return `/cover?${params.toString()}`;
 }
 
 export default function JoinByInvitePage() {
   const { code } = useParams<{ code: string }>();
   const nav = useNavigate();
+  const location = useLocation();
+
+  const [isCompact, setIsCompact] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 920;
+  });
 
   const [preview, setPreview] = useState<Preview | null>(null);
   const [loading, setLoading] = useState(true);
-  const [joining, setJoining] = useState(false);
+  const [continuing, setContinuing] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [joined, setJoined] = useState(false);
-
-  const autoJoinAttemptedRef = useRef(false);
 
   useEffect(() => {
-    if (!code) return;
-    const token = getToken();
-    if (!token) {
-      nav(`/login?next=${encodeURIComponent(`/join/${code}`)}`, { replace: true });
+    if (typeof window === "undefined") return;
+
+    function handleResize() {
+      setIsCompact(window.innerWidth <= 920);
     }
-  }, [code, nav]);
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.title = "GSN | Invitation Preview";
+    }
+  }, []);
 
   useEffect(() => {
     if (!code) return;
@@ -126,91 +245,57 @@ export default function JoinByInvitePage() {
       }
     }
 
-    run();
+    void run();
     return () => {
       cancelled = true;
     };
   }, [code]);
 
-  const canJoin = useMemo(() => {
-    if (!preview) return false;
-    if (!preview.is_active) return false;
-    if (preview.revoked_at) return false;
-    if (preview.max_uses && (preview.uses ?? 0) >= preview.max_uses) return false;
-    return true;
+  const unavailableReason = useMemo(() => {
+    if (!preview) return "";
+    if (preview.revoked_at) return "This invitation has been revoked.";
+    if (!preview.is_active) return "This invitation is inactive.";
+    if (isExpired(preview.expires_at)) return "This invitation has expired.";
+    if (preview.max_uses && (preview.uses ?? 0) >= preview.max_uses) {
+      return "This invitation has reached its usage limit.";
+    }
+    return "";
   }, [preview]);
 
-  async function join(manual: boolean) {
-    if (!code) return;
+  const canContinue = useMemo(() => {
+    return Boolean(preview && !unavailableReason);
+  }, [preview, unavailableReason]);
 
-    try {
-      setJoining(true);
-      setErr(null);
-
-      const t = getToken();
-      if (!t) {
-        nav(`/login?next=${encodeURIComponent(`/join/${code}`)}`, { replace: true });
-        return;
-      }
-
-      const res = await fetch(`/api/invites/join`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${t}`,
-        },
-        body: JSON.stringify({ code }),
-      });
-
-      if (!res.ok) throw new Error(await parseError(res));
-
-      setJoined(true);
-      nav("/clans", { replace: true });
-    } catch (e: any) {
-      setErr(e?.message || "Join failed");
-      if (!manual) {
-        autoJoinAttemptedRef.current = true;
-      }
-    } finally {
-      setJoining(false);
-    }
-  }
-
-  useEffect(() => {
-    if (!code || !preview || joined || !canJoin) return;
-    if (autoJoinAttemptedRef.current) return;
-
-    autoJoinAttemptedRef.current = true;
-    void join(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, preview, canJoin, joined]);
+  const continueTo = useMemo(() => {
+    return buildCoverInviteRoute(cleanText(code), preview, location.search);
+  }, [code, preview, location.search]);
 
   const statusLabel = !preview
     ? "Pending"
     : preview.revoked_at
     ? "Revoked"
-    : canJoin
-    ? "Eligible"
-    : "Unavailable";
+    : unavailableReason
+    ? "Unavailable"
+    : "Eligible";
 
   const statusKind: "blue" | "green" | "red" | "gray" = !preview
     ? "blue"
     : preview.revoked_at
     ? "red"
-    : canJoin
-    ? "green"
-    : "gray";
+    : unavailableReason
+    ? "gray"
+    : "green";
+
+  function continueInviteFlow() {
+    if (!canContinue || !code) return;
+    setContinuing(true);
+    nav(continueTo);
+  }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "linear-gradient(180deg, #f8fafc 0%, #eef2ff 55%, #ffffff 100%)",
-        padding: "32px 16px",
-      }}
-    >
-      <div style={{ maxWidth: 760, margin: "0 auto" }}>
-        <div style={card()}>
+    <div style={pageShell()}>
+      <div style={{ maxWidth: 860, margin: "0 auto" }}>
+        <div style={pageCard()}>
           <div
             style={{
               display: "flex",
@@ -221,11 +306,39 @@ export default function JoinByInvitePage() {
             }}
           >
             <div>
-              <div style={{ fontSize: 24, fontWeight: 1000, color: "#0B1F33" }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "#64748B",
+                  fontWeight: 1000,
+                  letterSpacing: 0.45,
+                  textTransform: "uppercase",
+                }}
+              >
+                Invitation preview
+              </div>
+
+              <div
+                style={{
+                  marginTop: 8,
+                  fontSize: isCompact ? 28 : 34,
+                  fontWeight: 1000,
+                  color: "#0B1F33",
+                  lineHeight: 1.1,
+                }}
+              >
                 Community Admission
               </div>
-              <div style={{ marginTop: 4, fontSize: 12, color: "#6B7A88", lineHeight: 1.4 }}>
-                Secure access to an existing GMFN community through invitation.
+
+              <div
+                style={{
+                  marginTop: 8,
+                  ...helperText(),
+                  maxWidth: 700,
+                }}
+              >
+                This page checks the invitation first. It does not open member
+                surfaces directly. The app will guide you step by step.
               </div>
             </div>
 
@@ -233,7 +346,17 @@ export default function JoinByInvitePage() {
           </div>
 
           {!code && (
-            <div style={{ marginTop: 14, color: "#991b1b", fontWeight: 900 }}>
+            <div
+              style={{
+                marginTop: 14,
+                border: "1px solid #fecaca",
+                background: "#fef2f2",
+                color: "#991b1b",
+                padding: 12,
+                borderRadius: 12,
+                fontWeight: 700,
+              }}
+            >
               Missing invitation code.
             </div>
           )}
@@ -261,21 +384,38 @@ export default function JoinByInvitePage() {
             </div>
           )}
 
-          {!loading && preview && (
+          {!loading && preview ? (
             <>
               <div
                 style={{
                   marginTop: 16,
                   padding: 16,
                   borderRadius: 16,
-                  background: "#f8fafc",
-                  border: "1px solid #e2e8f0",
+                  background: "#F8FAFC",
+                  border: "1px solid #E2E8F0",
                 }}
               >
-                <div style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#64748B",
+                    fontWeight: 1000,
+                    letterSpacing: 0.35,
+                    textTransform: "uppercase",
+                  }}
+                >
                   Community
                 </div>
-                <div style={{ fontSize: 22, fontWeight: 1000, color: "#0B1F33" }}>
+
+                <div
+                  style={{
+                    marginTop: 6,
+                    fontSize: 24,
+                    fontWeight: 1000,
+                    color: "#0B1F33",
+                    lineHeight: 1.15,
+                  }}
+                >
                   {preview.clan_name}
                 </div>
 
@@ -283,56 +423,106 @@ export default function JoinByInvitePage() {
                   style={{
                     marginTop: 14,
                     display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
+                    gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
                     gap: 12,
                   }}
                 >
-                  <div>
-                    <div style={{ fontSize: 11, color: "#64748b", fontWeight: 900 }}>
+                  <div style={softCard("#FFFFFF")}>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "#64748B",
+                        fontWeight: 900,
+                        textTransform: "uppercase",
+                      }}
+                    >
                       Invitation Code
                     </div>
-                    <div style={{ marginTop: 4, fontWeight: 900 }}>{preview.code}</div>
+                    <div style={{ marginTop: 6, fontWeight: 900, color: "#0B1F33" }}>
+                      {preview.code}
+                    </div>
                   </div>
 
-                  <div>
-                    <div style={{ fontSize: 11, color: "#64748b", fontWeight: 900 }}>
+                  <div style={softCard("#FFFFFF")}>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "#64748B",
+                        fontWeight: 900,
+                        textTransform: "uppercase",
+                      }}
+                    >
                       Usage
                     </div>
-                    <div style={{ marginTop: 4, fontWeight: 900 }}>
+                    <div style={{ marginTop: 6, fontWeight: 900, color: "#0B1F33" }}>
                       {preview.uses}
                       {preview.max_uses ? ` / ${preview.max_uses}` : ""}
                     </div>
                   </div>
 
-                  <div>
-                    <div style={{ fontSize: 11, color: "#64748b", fontWeight: 900 }}>
+                  <div style={softCard("#FFFFFF")}>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "#64748B",
+                        fontWeight: 900,
+                        textTransform: "uppercase",
+                      }}
+                    >
                       Status
                     </div>
-                    <div style={{ marginTop: 4, fontWeight: 900 }}>
+                    <div style={{ marginTop: 6, fontWeight: 900, color: "#0B1F33" }}>
                       {preview.is_active ? "Active" : "Inactive"}
                     </div>
                   </div>
 
-                  <div>
-                    <div style={{ fontSize: 11, color: "#64748b", fontWeight: 900 }}>
+                  <div style={softCard("#FFFFFF")}>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "#64748B",
+                        fontWeight: 900,
+                        textTransform: "uppercase",
+                      }}
+                    >
                       Expiry
                     </div>
-                    <div style={{ marginTop: 4, fontWeight: 900 }}>
+                    <div style={{ marginTop: 6, fontWeight: 900, color: "#0B1F33" }}>
                       {fmtDate(preview.expires_at)}
                     </div>
                   </div>
                 </div>
               </div>
 
-              {preview.revoked_at && (
-                <div style={{ marginTop: 14, color: "#991b1b", fontWeight: 900 }}>
-                  This invitation has been revoked.
+              {unavailableReason ? (
+                <div
+                  style={{
+                    marginTop: 14,
+                    border: "1px solid #fecaca",
+                    background: "#fef2f2",
+                    color: "#991b1b",
+                    padding: 12,
+                    borderRadius: 12,
+                    fontWeight: 700,
+                  }}
+                >
+                  {unavailableReason}
                 </div>
-              )}
-
-              {!canJoin && !preview.revoked_at && (
-                <div style={{ marginTop: 14, color: "#991b1b", fontWeight: 900 }}>
-                  This invitation cannot currently be used.
+              ) : (
+                <div
+                  style={{
+                    marginTop: 14,
+                    border: "1px solid #BFDBFE",
+                    background: "#EFF6FF",
+                    color: "#1D4ED8",
+                    padding: 12,
+                    borderRadius: 12,
+                    fontWeight: 700,
+                    lineHeight: 1.7,
+                  }}
+                >
+                  This invite is valid. Continue into the guided invited-member
+                  route.
                 </div>
               )}
 
@@ -345,28 +535,30 @@ export default function JoinByInvitePage() {
                 }}
               >
                 <button
-                  onClick={() => join(true)}
-                  disabled={!canJoin || joining}
-                  style={btn(true)}
+                  type="button"
+                  onClick={continueInviteFlow}
+                  disabled={!canContinue || continuing}
+                  style={btn(true, !canContinue || continuing)}
                 >
-                  {joining ? "Processing..." : "Join community"}
+                  {continuing ? "Continuing..." : "Continue invited route"}
                 </button>
 
-                <button
-                  onClick={() => nav("/clans")}
-                  style={btn()}
-                >
-                  Open communities
-                </button>
+                <Link to="/guide" style={btn(false)}>
+                  Open My GMFN and I
+                </Link>
+
+                <Link to="/welcome" style={btn(false)}>
+                  Open Welcome
+                </Link>
               </div>
 
-              {canJoin && !joining && !err && (
-                <div style={{ marginTop: 12, fontSize: 12, color: "#6B7A88" }}>
-                  Admission processing starts automatically. Use the button above if manual confirmation is required.
-                </div>
-              )}
+              <div style={{ marginTop: 12, ...helperText() }}>
+                This invite does not directly create membership. It moves you
+                into the guided public route so the system can keep the entry path
+                controlled and clear.
+              </div>
             </>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

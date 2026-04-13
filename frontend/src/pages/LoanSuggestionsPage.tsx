@@ -2,10 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
-import {
-  buildGuidanceSnapshot,
-  type GuidanceSnapshot,
-} from "../lib/guidance";
 
 type LoanRow = {
   id?: number;
@@ -31,6 +27,8 @@ type LoanDraftSummary = {
   guarantorsTotal?: number | null;
   dueAt?: string | null;
   decisionAt?: string | null;
+  purpose?: string | null;
+  note?: string | null;
 };
 
 type SuggestedSupporter = {
@@ -40,6 +38,8 @@ type SuggestedSupporter = {
   name: string;
   reason?: string | null;
   recommendedPledge?: string | null;
+  trustScore?: string | null;
+  trustBand?: string | null;
 };
 
 type CollapseState = {
@@ -49,7 +49,20 @@ type CollapseState = {
   routes: boolean;
 };
 
-const LOAN_SUGGESTIONS_UI_STORAGE_KEY = "gmfn.loanSuggestions.sections.v1";
+type PersistedWithdrawalTask = {
+  amountInput: string;
+  noteInput: string;
+  latestWithdrawalResult: any | null;
+  handoffMode?: string;
+  supportGap?: string;
+  updatedAt?: string | null;
+};
+
+const LOAN_SUGGESTIONS_UI_STORAGE_KEY = "gmfn.loanSuggestions.sections.v2";
+const WITHDRAWAL_TASK_STORAGE_KEY_PREFIXES = [
+  "gmfn.withdrawal.task.v5",
+  "gmfn.withdrawal.task.v4",
+];
 
 const FINAL_LOAN_STATUSES = new Set([
   "approved",
@@ -93,6 +106,54 @@ function rowsOf<T = any>(input: any): T[] {
   if (Array.isArray(input?.results)) return input.results as T[];
   if (Array.isArray(input?.rows)) return input.rows as T[];
   return [];
+}
+
+function safeDateTime(x: any): string {
+  const raw = safeStr(x);
+  if (!raw) return "—";
+  const d = new Date(raw);
+  if (!Number.isFinite(d.getTime())) return raw;
+  return d.toLocaleString();
+}
+
+function readLocalJSON<T>(key: string, fallback: T): T {
+  try {
+    if (typeof window === "undefined") return fallback;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeLocalJSON(key: string, value: any) {
+  try {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore
+  }
+}
+
+function defaultCollapseState(): CollapseState {
+  return {
+    overview: false,
+    reading: false,
+    supporters: false,
+    routes: false,
+  };
+}
+
+function normalizeCollapseState(raw: any): CollapseState {
+  const base = defaultCollapseState();
+
+  return {
+    overview: Boolean(raw?.overview ?? base.overview),
+    reading: Boolean(raw?.reading ?? base.reading),
+    supporters: Boolean(raw?.supporters ?? base.supporters),
+    routes: Boolean(raw?.routes ?? base.routes),
+  };
 }
 
 function normalizeLoanRow(raw: any): LoanRow | null {
@@ -156,6 +217,8 @@ function normalizeLoanSummary(raw: any): LoanDraftSummary | null {
     guarantorsTotal: positiveNumber(src?.guarantors_total) || undefined,
     dueAt: firstTruthy(src?.due_at),
     decisionAt: firstTruthy(src?.decision_at),
+    purpose: firstTruthy(src?.purpose, src?.title),
+    note: firstTruthy(src?.note, src?.description),
   };
 }
 
@@ -199,6 +262,8 @@ function normalizeSuggestedSupporter(raw: any): SuggestedSupporter | null {
     name,
     reason: reason || undefined,
     recommendedPledge: recommendedPledge || undefined,
+    trustScore: firstTruthy(src?.trust_score, src?.cci),
+    trustBand: firstTruthy(src?.trust_band),
   };
 }
 
@@ -249,14 +314,6 @@ function isBorrowerLoan(row: LoanRow): boolean {
   return role === "borrower" || role.includes("borrow");
 }
 
-function safeDateTime(x: any): string {
-  const raw = safeStr(x);
-  if (!raw) return "";
-  const d = new Date(raw);
-  if (!Number.isFinite(d.getTime())) return raw;
-  return d.toLocaleString();
-}
-
 function getLoanAmountText(row: LoanRow | LoanDraftSummary | null): string {
   const value = safeStr(row?.amount);
   const currency = safeStr(row?.currency);
@@ -264,6 +321,18 @@ function getLoanAmountText(row: LoanRow | LoanDraftSummary | null): string {
   if (!value && !currency) return "Amount pending";
   if (value && currency) return `${value} ${currency}`;
   return value || currency || "Amount pending";
+}
+
+function readWithdrawalTask(clanId: number, gmfnId: string): PersistedWithdrawalTask | null {
+  if (!clanId || !gmfnId) return null;
+
+  for (const prefix of WITHDRAWAL_TASK_STORAGE_KEY_PREFIXES) {
+    const key = `${prefix}.${gmfnId || "me"}.${clanId || 0}`;
+    const value = readLocalJSON<PersistedWithdrawalTask | null>(key, null);
+    if (value) return value;
+  }
+
+  return null;
 }
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
@@ -437,44 +506,103 @@ function helperText(): React.CSSProperties {
   };
 }
 
-function readLocalJSON<T>(key: string, fallback: T): T {
-  try {
-    if (typeof window === "undefined") return fallback;
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
+function communityName(currentClan: any, clanId: number): string {
+  return (
+    firstTruthy(
+      currentClan?.marketplace_name,
+      currentClan?.name,
+      currentClan?.display_name,
+      currentClan?.title
+    ) || (clanId ? `Community ${clanId}` : "No selected community")
+  );
+}
+
+function communityPublicId(currentClan: any): string {
+  return (
+    firstTruthy(
+      currentClan?.community_code,
+      currentClan?.community?.community_code,
+      currentClan?.profile?.community_code,
+      currentClan?.marketplace?.community_code
+    ) || "Pending"
+  );
+}
+
+function communityRole(currentClan: any): string {
+  return (
+    firstTruthy(
+      currentClan?.role,
+      currentClan?.member_role,
+      currentClan?.membership_role,
+      currentClan?.participant_role
+    ) || ""
+  );
+}
+
+function apiBase(): string {
+  const raw =
+    (typeof import.meta !== "undefined" &&
+      (import.meta as any)?.env &&
+      (import.meta as any).env.VITE_API_BASE_URL) ||
+    "/api";
+
+  return String(raw || "").trim().replace(/\/+$/, "");
+}
+
+function apiOrigin(): string {
+  const base = apiBase();
+
+  if (base.startsWith("http://") || base.startsWith("https://")) {
+    try {
+      const u = new URL(base);
+      return `${u.protocol}//${u.host}`;
+    } catch {
+      return "";
+    }
   }
-}
 
-function writeLocalJSON(key: string, value: any) {
-  try {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // ignore
+  if (typeof window !== "undefined") {
+    return String(window.location.origin || "").trim().replace(/\/+$/, "");
   }
+
+  return "";
 }
 
-function defaultCollapseState(): CollapseState {
-  return {
-    overview: false,
-    reading: false,
-    supporters: false,
-    routes: false,
-  };
+function resolveMediaUrl(src: string): string {
+  const raw = safeStr(src);
+  if (!raw) return "";
+
+  if (
+    raw.startsWith("http://") ||
+    raw.startsWith("https://") ||
+    raw.startsWith("data:") ||
+    raw.startsWith("blob:")
+  ) {
+    return raw;
+  }
+
+  const origin = apiOrigin();
+  if (!origin) return raw;
+
+  if (raw.startsWith("/")) return `${origin}${raw}`;
+  return `${origin}/${raw.replace(/^\/+/, "")}`;
 }
 
-function normalizeCollapseState(raw: any): CollapseState {
-  const base = defaultCollapseState();
+function communityImageSrc(currentClan: any): string {
+  const raw = firstTruthy(
+    currentClan?.community_image_url,
+    currentClan?.profile_image_url,
+    currentClan?.marketplace_image_url,
+    currentClan?.cover_image_url,
+    currentClan?.banner_url,
+    currentClan?.image_url,
+    currentClan?.logo_url,
+    currentClan?.community?.community_image_url,
+    currentClan?.community?.image_url,
+    currentClan?.profile?.profile_image_url
+  );
 
-  return {
-    overview: Boolean(raw?.overview ?? base.overview),
-    reading: Boolean(raw?.reading ?? base.reading),
-    supporters: Boolean(raw?.supporters ?? base.supporters),
-    routes: Boolean(raw?.routes ?? base.routes),
-  };
+  return resolveMediaUrl(raw);
 }
 
 export default function LoanSuggestionsPage() {
@@ -492,9 +620,9 @@ export default function LoanSuggestionsPage() {
   );
 
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
-  const [guidance, setGuidance] = useState<GuidanceSnapshot | null>(null);
   const [loans, setLoans] = useState<LoanRow[]>([]);
   const [loanSummary, setLoanSummary] = useState<LoanDraftSummary | null>(null);
   const [suggestionRaw, setSuggestionRaw] = useState<any>(null);
@@ -526,7 +654,7 @@ export default function LoanSuggestionsPage() {
       setLoading(true);
 
       try {
-        const [meRes, clanRes, loansRes, guidanceRes] = await Promise.all([
+        const [meRes, clanRes, loansRes] = await Promise.all([
           typeof (api as any).getMe === "function"
             ? (api as any).getMe().catch(() => null)
             : Promise.resolve(null),
@@ -536,7 +664,6 @@ export default function LoanSuggestionsPage() {
           typeof (api as any).listMyLoans === "function"
             ? (api as any).listMyLoans().catch(() => [])
             : Promise.resolve([]),
-          buildGuidanceSnapshot().catch(() => null),
         ]);
 
         if (!alive) return;
@@ -553,7 +680,6 @@ export default function LoanSuggestionsPage() {
         setMe(meRes || null);
         setCurrentClan(clanRes || null);
         setLoans(filteredLoans);
-        setGuidance(guidanceRes || null);
       } finally {
         if (alive) setLoading(false);
       }
@@ -576,16 +702,25 @@ export default function LoanSuggestionsPage() {
     );
   }, [me]);
 
+  const gmfnId = useMemo(() => {
+    return firstTruthy(me?.gmfn_id, "Pending");
+  }, [me]);
+
   const communityLabel = useMemo(() => {
-    return (
-      firstTruthy(
-        currentClan?.marketplace_name,
-        currentClan?.name,
-        currentClan?.display_name,
-        currentClan?.title
-      ) || (selectedClanId ? `Community ${selectedClanId}` : "No selected community")
-    );
+    return communityName(currentClan, selectedClanId);
   }, [currentClan, selectedClanId]);
+
+  const publicCommunityId = useMemo(() => {
+    return communityPublicId(currentClan);
+  }, [currentClan]);
+
+  const memberRole = useMemo(() => {
+    return communityRole(currentClan);
+  }, [currentClan]);
+
+  const pictureSrc = useMemo(() => {
+    return communityImageSrc(currentClan);
+  }, [currentClan]);
 
   const activeBorrowerLoan = useMemo(() => {
     const rows = loans.filter((row) => isActiveLoan(row) && isBorrowerLoan(row));
@@ -599,50 +734,83 @@ export default function LoanSuggestionsPage() {
     return rows[0] || null;
   }, [loans]);
 
+  const withdrawalTask = useMemo(
+    () => readWithdrawalTask(selectedClanId, safeStr(me?.gmfn_id)),
+    [selectedClanId, me]
+  );
+
+  const cameFromWithdrawalSupport = useMemo(() => {
+    return (
+      safeStr(withdrawalTask?.handoffMode) === "withdrawal-support" ||
+      Boolean(safeStr(withdrawalTask?.supportGap))
+    );
+  }, [withdrawalTask]);
+
+  const withdrawalAmount = safeStr(withdrawalTask?.amountInput);
+  const supportGap = safeStr(withdrawalTask?.supportGap);
+  const withdrawalNote = safeStr(withdrawalTask?.noteInput);
+
+  async function loadSuggestionsForLoan(loanId: number) {
+    if (!loanId || !selectedClanId) {
+      setLoanSummary(null);
+      setSuggestionRaw(null);
+      setSuggestedSupporters([]);
+      return;
+    }
+
+    const [summaryRes, suggestionsRes] = await Promise.all([
+      typeof (api as any).getLoanSummary === "function"
+        ? (api as any).getLoanSummary(loanId).catch(() => null)
+        : Promise.resolve(null),
+      typeof (api as any).getLoanGuarantorSuggestions === "function"
+        ? (api as any)
+            .getLoanGuarantorSuggestions(loanId, {
+              clan_id: selectedClanId,
+              limit: 12,
+            })
+            .catch(() => null)
+        : Promise.resolve(null),
+    ]);
+
+    setLoanSummary(normalizeLoanSummary(summaryRes));
+    setSuggestionRaw(suggestionsRes);
+    setSuggestedSupporters(extractSuggestedSupporters(suggestionsRes));
+  }
+
   useEffect(() => {
     let alive = true;
 
     (async () => {
-      if (!activeBorrowerLoan?.id || !selectedClanId) {
+      const loanId = positiveNumber(activeBorrowerLoan?.id);
+
+      if (!loanId || !selectedClanId) {
+        if (!alive) return;
         setLoanSummary(null);
         setSuggestionRaw(null);
         setSuggestedSupporters([]);
         return;
       }
 
-      const loanId = positiveNumber(activeBorrowerLoan.id);
-      if (!loanId) {
-        setLoanSummary(null);
-        setSuggestionRaw(null);
-        setSuggestedSupporters([]);
-        return;
-      }
-
-      const [summaryRes, suggestionsRes] = await Promise.all([
-        typeof (api as any).getLoanSummary === "function"
-          ? (api as any).getLoanSummary(loanId).catch(() => null)
-          : Promise.resolve(null),
-        typeof (api as any).getLoanGuarantorSuggestions === "function"
-          ? (api as any)
-              .getLoanGuarantorSuggestions(loanId, {
-                clan_id: selectedClanId,
-                limit: 8,
-              })
-              .catch(() => null)
-          : Promise.resolve(null),
-      ]);
+      await loadSuggestionsForLoan(loanId);
 
       if (!alive) return;
-
-      setLoanSummary(normalizeLoanSummary(summaryRes));
-      setSuggestionRaw(suggestionsRes);
-      setSuggestedSupporters(extractSuggestedSupporters(suggestionsRes));
     })();
 
     return () => {
       alive = false;
     };
   }, [activeBorrowerLoan?.id, selectedClanId]);
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    try {
+      const loanId = positiveNumber(activeBorrowerLoan?.id);
+      if (!loanId) return;
+      await loadSuggestionsForLoan(loanId);
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   const suggestionMessage = useMemo(() => {
     return extractSuggestionMessage(suggestionRaw);
@@ -653,11 +821,29 @@ export default function LoanSuggestionsPage() {
   const sentGuarantors = positiveNumber(loanSummary?.guarantorsTotal);
 
   const fitReading = useMemo(() => {
+    if (!selectedClanId || !safeStr(me?.gmfn_id)) {
+      return {
+        title: "Community or GMFN context is not ready.",
+        detail:
+          "The fit-reading stage should stay tied to the selected community and visible GMFN identity.",
+        tone: "error" as const,
+      };
+    }
+
+    if (cameFromWithdrawalSupport && !activeBorrowerLoan) {
+      return {
+        title: "Money Out has already handed off into support continuation.",
+        detail:
+          "Start or resume the borrower-side support draft first, then return here for guarantor fit reading.",
+        tone: "watch" as const,
+      };
+    }
+
     if (!activeBorrowerLoan) {
       return {
-        title: "Start a support request first.",
+        title: "Start a support draft first.",
         detail:
-          "Loan suggestions only become meaningful after a borrower-side support path exists.",
+          "Loan suggestions only become meaningful after a borrower-side support item exists.",
         tone: "neutral" as const,
       };
     }
@@ -666,29 +852,38 @@ export default function LoanSuggestionsPage() {
       return {
         title: "No fit guarantor suggestion is visible yet.",
         detail:
+          suggestionMessage ||
           "The current amount or structure may still need a better fit before suggestions become clearer.",
         tone: "watch" as const,
       };
     }
 
-    if (requiredGuarantors > 0 && suggestedSupporters.length > 0) {
+    if (suggestedSupporters.length > 0) {
       return {
         title: "Fit suggestions are available.",
         detail:
           suggestionMessage ||
-          "Review the suggested supporters and move into the working surface that sends the requests.",
+          "Review the strongest candidates, then continue into the deeper support workbench.",
         tone: "ready" as const,
       };
     }
 
     return {
-      title: "This support draft may not currently need guarantors.",
+      title: "This support item may not currently need guarantors.",
       detail:
         suggestionMessage ||
         "The current support structure does not show a strong guarantor requirement right now.",
       tone: "neutral" as const,
     };
-  }, [activeBorrowerLoan, requiredGuarantors, suggestedSupporters.length, suggestionMessage]);
+  }, [
+    selectedClanId,
+    me,
+    cameFromWithdrawalSupport,
+    activeBorrowerLoan,
+    requiredGuarantors,
+    suggestedSupporters.length,
+    suggestionMessage,
+  ]);
 
   const fitTone =
     fitReading.tone === "ready"
@@ -703,6 +898,12 @@ export default function LoanSuggestionsPage() {
           border: "1px solid rgba(245,158,11,0.16)",
           text: "#92400E",
         }
+      : fitReading.tone === "error"
+      ? {
+          bg: "#FEF2F2",
+          border: "1px solid rgba(239,68,68,0.16)",
+          text: "#991B1B",
+        }
       : {
           bg: "#F8FBFF",
           border: "1px solid rgba(11,99,209,0.12)",
@@ -710,39 +911,54 @@ export default function LoanSuggestionsPage() {
         };
 
   const nextRoute = useMemo(() => {
+    if (!selectedClanId) {
+      return {
+        title: "Choose the community context first.",
+        detail:
+          "Fit reading should stay tied to the selected community before the support path continues.",
+        ctaTo: "/app/community",
+        ctaLabel: "Open Community Home",
+      };
+    }
+
+    if (cameFromWithdrawalSupport && !activeBorrowerLoan) {
+      return {
+        title: "Start the borrower-side support draft from the Money Out handoff.",
+        detail:
+          "The withdrawal route has already decided that support is needed. Resume the selected-community support surface, then return here for fit reading.",
+        ctaTo: "/app/marketplace#marketplace-loans-support",
+        ctaLabel: "Open Support Start Surface",
+      };
+    }
+
     if (!activeBorrowerLoan) {
       return {
         title: "Start the support request first.",
+        detail:
+          "This page only becomes useful after the borrower-side support item exists.",
         ctaTo: "/app/marketplace#marketplace-loans-support",
         ctaLabel: "Start Support Request",
       };
     }
 
-    if (requiredGuarantors > 0 && suggestedSupporters.length > 0) {
+    if (suggestedSupporters.length > 0) {
       return {
-        title: "Open the working surface that sends guarantor requests.",
-        ctaTo: "/app/marketplace#marketplace-loans-support",
-        ctaLabel: "Open Support Path",
-      };
-    }
-
-    if (
-      safeStr(guidance?.nextBestStep?.kind).toLowerCase().includes("loan") ||
-      safeStr(guidance?.nextBestStep?.kind).toLowerCase().includes("guarantor")
-    ) {
-      return {
-        title: safeStr(guidance?.nextBestStep?.title || "Open next loan step"),
-        ctaTo: safeStr(guidance?.nextBestStep?.ctaTo || "/app/loans"),
-        ctaLabel: safeStr(guidance?.nextBestStep?.ctaLabel || "Open Loans"),
+        title: "Continue into the deeper support workbench.",
+        detail:
+          "The fit picture is visible enough. The next move is the deeper workbench, not a return to a loose dashboard.",
+        ctaTo: "/app/loan-workbench",
+        ctaLabel: "Open Loan Workbench",
       };
     }
 
     return {
-      title: "Review the full support flow.",
-      ctaTo: "/app/loans",
-      ctaLabel: "Open Loans",
+      title: "Return to the active support path and review the draft.",
+      detail:
+        "If the fit picture is still weak, review the active support item before moving again.",
+      ctaTo: "/app/loan-workbench",
+      ctaLabel: "Open Loan Workbench",
     };
-  }, [activeBorrowerLoan, requiredGuarantors, suggestedSupporters.length, guidance]);
+  }, [selectedClanId, cameFromWithdrawalSupport, activeBorrowerLoan, suggestedSupporters.length]);
 
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
@@ -765,7 +981,7 @@ export default function LoanSuggestionsPage() {
         <PageTopNav
           sectionLabel="Loan Suggestions"
           title="Loan Suggestions"
-          subtitle="Preparing the calmer fit-suggestion surface..."
+          subtitle="Preparing the fit-suggestion stage..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/loan-readiness"
@@ -776,7 +992,7 @@ export default function LoanSuggestionsPage() {
           ]}
           utilityLinks={[
             { label: "Marketplace", to: "/app/marketplace" },
-            { label: "Notifications", to: "/app/notifications" },
+            { label: "Money Out", to: "/app/withdrawal-instructions" },
           ]}
         />
 
@@ -802,7 +1018,7 @@ export default function LoanSuggestionsPage() {
       <PageTopNav
         sectionLabel="Loan Suggestions"
         title="Loan Suggestions"
-        subtitle="This page is for fit reading. It helps you see whether the current support draft has useful guarantor suggestions before you move into the sending surface."
+        subtitle="This page is the fit-reading stage inside support continuation. It should keep the member inside the current support path instead of sending them back into unrelated surfaces."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/loan-readiness"
@@ -813,7 +1029,7 @@ export default function LoanSuggestionsPage() {
         ]}
         utilityLinks={[
           { label: "Marketplace", to: "/app/marketplace" },
-          { label: "Notifications", to: "/app/notifications" },
+          { label: "Money Out", to: "/app/withdrawal-instructions" },
         ]}
       />
 
@@ -823,13 +1039,55 @@ export default function LoanSuggestionsPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.08fr) 320px",
+            gridTemplateColumns: isCompact ? "1fr" : "180px minmax(0, 1fr) 320px",
             gap: 16,
             alignItems: "start",
           }}
         >
           <div>
-            <div style={sectionLabel()}>Suggestion overview</div>
+            <div
+              style={{
+                width: "100%",
+                height: 148,
+                borderRadius: 20,
+                border: "1px solid rgba(11,31,51,0.08)",
+                overflow: "hidden",
+                background: "linear-gradient(180deg, #E8F0FF 0%, #DDEBFF 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {pictureSrc ? (
+                <img
+                  src={pictureSrc}
+                  alt={communityLabel}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    color: "#37506A",
+                    fontWeight: 900,
+                    fontSize: 20,
+                    textAlign: "center",
+                    padding: 12,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {communityLabel}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <div style={sectionLabel()}>Fixed suggestion context</div>
 
             <div
               style={{
@@ -844,7 +1102,9 @@ export default function LoanSuggestionsPage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
-              This page is for reading fit, not for carrying the entire support process. Start a borrower-side support request first, then use this page to see whether the system is returning meaningful guarantor suggestions.
+              This page is for fit reading, not for drifting away from the support path.
+              Once support continuation has begun, the member should move from readiness
+              into fit reading, then into deeper workbench handling.
             </div>
 
             <div
@@ -855,13 +1115,13 @@ export default function LoanSuggestionsPage() {
                 flexWrap: "wrap",
               }}
             >
-              <span style={badge(true)}>Community: {communityLabel}</span>
-              <span style={badge(false)}>
-                Current borrower item: {activeBorrowerLoan ? "Visible" : "None"}
-              </span>
-              <span style={badge(false)}>
-                Suggestions: {suggestedSupporters.length}
-              </span>
+              <span style={badge(true)}>Community ID: {publicCommunityId}</span>
+              <span style={badge(false)}>GMFN ID: {gmfnId}</span>
+              {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
+              <span style={badge(false)}>Current step: Fit suggestions</span>
+              {cameFromWithdrawalSupport ? (
+                <span style={badge(false)}>Source: Money Out support handoff</span>
+              ) : null}
             </div>
           </div>
 
@@ -888,6 +1148,19 @@ export default function LoanSuggestionsPage() {
             <div style={{ marginTop: 10, ...helperText(), color: "#0B1F33" }}>
               {fitReading.detail}
             </div>
+
+            {activeBorrowerLoan?.id ? (
+              <div style={{ marginTop: 12 }}>
+                <button
+                  type="button"
+                  onClick={() => void handleRefresh()}
+                  disabled={refreshing}
+                  style={actionBtn("secondary", refreshing)}
+                >
+                  {refreshing ? "Refreshing..." : "Refresh Fit Check"}
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       </section>
@@ -905,7 +1178,7 @@ export default function LoanSuggestionsPage() {
           <div>
             <div style={sectionLabel()}>Suggestion summary</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              A quick reading of the current borrower-side support draft.
+              A quick reading of the current borrower-side support item.
             </div>
           </div>
 
@@ -974,7 +1247,7 @@ export default function LoanSuggestionsPage() {
             </div>
 
             <div style={statTile("#F8FBFF")}>
-              <div style={sectionLabel()}>Suggested fit</div>
+              <div style={sectionLabel()}>Fit suggestions</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1001,6 +1274,85 @@ export default function LoanSuggestionsPage() {
                 {approvedGuarantors} / {sentGuarantors}
               </div>
             </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Status</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 16,
+                  fontWeight: 900,
+                  lineHeight: 1.25,
+                }}
+              >
+                {safeStr(loanSummary?.status || activeBorrowerLoan?.status || "Pending")}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Decision at</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 14,
+                  fontWeight: 900,
+                  lineHeight: 1.35,
+                }}
+              >
+                {safeDateTime(loanSummary?.decisionAt)}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Due at</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 14,
+                  fontWeight: 900,
+                  lineHeight: 1.35,
+                }}
+              >
+                {safeDateTime(loanSummary?.dueAt)}
+              </div>
+            </div>
+
+            {cameFromWithdrawalSupport ? (
+              <>
+                <div style={statTile("#FFFBEF")}>
+                  <div style={sectionLabel()}>Money Out amount</div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#92400E",
+                      fontSize: 16,
+                      fontWeight: 900,
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    {withdrawalAmount ? withdrawalAmount : "Pending"}
+                  </div>
+                </div>
+
+                <div style={statTile("#FFFBEF")}>
+                  <div style={sectionLabel()}>Support gap</div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#92400E",
+                      fontSize: 16,
+                      fontWeight: 900,
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    {safeStr(supportGap || "Pending")}
+                  </div>
+                </div>
+              </>
+            ) : null}
           </div>
         ) : null}
       </section>
@@ -1056,7 +1408,7 @@ export default function LoanSuggestionsPage() {
                   suggestionMessage ||
                     (activeBorrowerLoan
                       ? "The system has not returned a fuller fit note yet."
-                      : "Start a support request first to see fit suggestions.")
+                      : "Start or resume the support draft first to see fit suggestions.")
                 )}
               </div>
             </div>
@@ -1069,13 +1421,42 @@ export default function LoanSuggestionsPage() {
                   fontSize: 15,
                 }}
               >
-                What this page is for
+                What this stage is for
               </div>
 
               <div style={{ marginTop: 10, ...helperText() }}>
-                This page is for reading fit. The actual sending of guarantor requests should happen in the working support surface, not here.
+                This page is for fit reading only. Once the fit picture is clear enough,
+                the member should continue into the deeper workbench, not drift back into a loose launcher surface.
               </div>
             </div>
+
+            {cameFromWithdrawalSupport ? (
+              <div style={innerCard("#FFFBEF")}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 15,
+                  }}
+                >
+                  Money Out handoff context
+                </div>
+
+                <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                  <div style={helperText()}>
+                    Requested withdrawal amount: {withdrawalAmount || "Pending"}
+                  </div>
+                  <div style={helperText()}>
+                    Support gap: {safeStr(supportGap || "Pending")}
+                  </div>
+                  {withdrawalNote ? (
+                    <div style={helperText()}>
+                      Note: {withdrawalNote}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </section>
@@ -1093,7 +1474,7 @@ export default function LoanSuggestionsPage() {
           <div>
             <div style={sectionLabel()}>Suggested supporters</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              The strongest visible guarantor-fit suggestions for the current draft.
+              The strongest visible guarantor-fit suggestions for the current support item.
             </div>
           </div>
 
@@ -1110,7 +1491,7 @@ export default function LoanSuggestionsPage() {
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             {suggestedSupporters.length === 0 ? (
               <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                No visible fit suggestion is returned right now for this support draft.
+                No visible fit suggestion is returned right now for this support item.
               </div>
             ) : (
               suggestedSupporters.map((item) => (
@@ -1148,9 +1529,17 @@ export default function LoanSuggestionsPage() {
                         {safeStr(item.reason) ? (
                           <span style={badge(false)}>{safeStr(item.reason)}</span>
                         ) : null}
+
                         {safeStr(item.recommendedPledge) ? (
                           <span style={badge(true)}>
                             Suggested pledge: {safeStr(item.recommendedPledge)}
+                          </span>
+                        ) : null}
+
+                        {safeStr(item.trustScore) ? (
+                          <span style={badge(false)}>
+                            Trust: {safeStr(item.trustScore)}
+                            {safeStr(item.trustBand) ? ` / ${safeStr(item.trustBand)}` : ""}
                           </span>
                         ) : null}
                       </div>
@@ -1170,11 +1559,8 @@ export default function LoanSuggestionsPage() {
                         flexWrap: "wrap",
                       }}
                     >
-                      <Link
-                        to="/app/marketplace#marketplace-loans-support"
-                        style={actionBtn("secondary")}
-                      >
-                        Open Support Path
+                      <Link to="/app/loan-workbench" style={actionBtn("secondary")}>
+                        Open Loan Workbench
                       </Link>
                     </div>
                   </div>
@@ -1198,7 +1584,7 @@ export default function LoanSuggestionsPage() {
           <div>
             <div style={sectionLabel()}>Working routes</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Move from fit reading into the exact next support page you need.
+              Move from fit reading into the exact next support-continuation page you need.
             </div>
           </div>
 
@@ -1236,6 +1622,9 @@ export default function LoanSuggestionsPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 {nextRoute.title}
               </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                {nextRoute.detail}
+              </div>
             </Link>
 
             <Link to="/app/loan-readiness" style={routeTile(false)}>
@@ -1250,7 +1639,7 @@ export default function LoanSuggestionsPage() {
                 Loan Readiness
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the question is whether the next support step is clean enough to start.
+                Use this when the question is whether the next support move is clean enough to continue.
               </div>
             </Link>
 
@@ -1266,7 +1655,7 @@ export default function LoanSuggestionsPage() {
                 Loan Workbench
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this for deeper support handling after the fit reading is done.
+                Use this for deeper support handling after the fit picture is clear enough.
               </div>
             </Link>
 
@@ -1279,10 +1668,42 @@ export default function LoanSuggestionsPage() {
                   lineHeight: 1.3,
                 }}
               >
-                Loans
+                Loans & Support
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Return to the broader support overview.
+                Return to the broader support overview only after the current fit-reading stage is complete.
+              </div>
+            </Link>
+
+            <Link to="/app/guarantor-inbox" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                Incoming Guarantor Requests
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Open the dedicated guarantor decision queue when responses are waiting on you.
+              </div>
+            </Link>
+
+            <Link to="/app/withdrawal-instructions" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                Money Out
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Return to the originating withdrawal path only when you need to verify the handoff source.
               </div>
             </Link>
 
@@ -1298,23 +1719,7 @@ export default function LoanSuggestionsPage() {
                 Action Inbox
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when people are waiting directly on your response.
-              </div>
-            </Link>
-
-            <Link to="/app/marketplace" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
-                Marketplace
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Return to the selected-community working surface.
+                Use this when the broader waiting picture matters around support response.
               </div>
             </Link>
           </div>

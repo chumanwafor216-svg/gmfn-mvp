@@ -130,6 +130,7 @@ type TrustSlipSummary = {
   public_verify_url?: string | null;
   community_id?: string | null;
   community_global_id?: string | null;
+  community_code?: string | null;
   clan_code?: string | null;
 };
 
@@ -146,17 +147,6 @@ function firstTruthy(...values: any[]): string {
     if (text) return text;
   }
   return "";
-}
-
-function firstNumberLike(...values: any[]): number | null {
-  for (const value of values) {
-    if (value === null || value === undefined || String(value).trim() === "") {
-      continue;
-    }
-    const n = Number(value);
-    if (!Number.isNaN(n)) return n;
-  }
-  return null;
 }
 
 function positiveNumber(value: any): number {
@@ -196,7 +186,16 @@ function apiOrigin(): string {
   return "http://127.0.0.1:8012";
 }
 
-function absoluteUrl(pathOrUrl: string): string {
+function joinUrl(root: string, path: string): string {
+  const cleanRoot = safeStr(root).replace(/\/+$/, "");
+  const cleanPath = safeStr(path).startsWith("/")
+    ? safeStr(path)
+    : `/${safeStr(path)}`;
+
+  return `${cleanRoot}${cleanPath}`;
+}
+
+function toApiAbsoluteUrl(pathOrUrl: string): string {
   const raw = safeStr(pathOrUrl);
   if (!raw) return "";
 
@@ -204,11 +203,67 @@ function absoluteUrl(pathOrUrl: string): string {
     return raw;
   }
 
-  if (typeof window !== "undefined" && raw.startsWith("/")) {
-    return `${window.location.origin}${raw}`;
+  if (raw.startsWith("/")) {
+    return joinUrl(apiOrigin(), raw);
   }
 
   return raw;
+}
+
+async function fetchFirstJson(
+  paths: string[],
+  extraHeaders: Record<string, string> = {}
+): Promise<any | null> {
+  const bases = [apiBase()];
+
+  if (typeof window !== "undefined") {
+    bases.push(`${window.location.origin}/api`);
+  }
+
+  const uniqueBases = Array.from(
+    new Set(bases.map((item) => safeStr(item)).filter(Boolean))
+  );
+
+  const token =
+    typeof (api as any).getAccessToken === "function"
+      ? (api as any).getAccessToken()
+      : "";
+
+  for (const base of uniqueBases) {
+    for (const path of paths) {
+      try {
+        const headers: Record<string, string> = {
+          accept: "application/json",
+          ...extraHeaders,
+        };
+
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const res = await fetch(joinUrl(base, path), {
+          method: "GET",
+          headers,
+          credentials: "include",
+          cache: "no-store",
+        });
+
+        if (!res.ok) continue;
+
+        const contentType = String(
+          res.headers.get("content-type") || ""
+        ).toLowerCase();
+
+        if (!contentType.includes("application/json")) continue;
+
+        return await res.json();
+      } catch {
+        // continue
+      }
+    }
+  }
+
+  return null;
 }
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
@@ -490,6 +545,7 @@ function normalizeTrustSlipSummary(raw: any): TrustSlipSummary | null {
     public_verify_url: firstTruthy(src?.public_verify_url),
     community_id: firstTruthy(src?.community_id),
     community_global_id: firstTruthy(src?.community_global_id),
+    community_code: firstTruthy(src?.community_code),
     clan_code: firstTruthy(src?.clan_code),
   };
 }
@@ -580,15 +636,42 @@ export default function TrustSlipPage() {
           typeof (api as any).getCurrentClan === "function"
             ? (api as any).getCurrentClan().catch(() => null)
             : Promise.resolve(null),
-          callFirstAvailable(
-            [
-              "getMyTrustSlipSummary",
-              "getTrustSlipSummary",
-              "getTrustSlipMeSummary",
-              "getMyTrustSlip",
-            ],
-            [[], [{ clan_id: selectedClanId || undefined }]]
-          ),
+          (async () => {
+            const viaFn = await callFirstAvailable(
+              [
+                "getMyTrustSlipSummary",
+                "getTrustSlipSummary",
+                "getTrustSlipMeSummary",
+                "getMyTrustSlip",
+              ],
+              [
+                [],
+                [{ clan_id: selectedClanId || undefined }],
+                [
+                  {
+                    clan_id: selectedClanId || undefined,
+                    header_clan_id: selectedClanId || undefined,
+                  },
+                ],
+              ]
+            );
+
+            if (viaFn) return viaFn;
+
+            const clanHeaders: Record<string, string> = {};
+            if (selectedClanId) {
+              clanHeaders["X-Clan-Id"] = String(selectedClanId);
+            }
+
+            return fetchFirstJson(
+              [
+                "/trust-slips/me/summary",
+                "/trust-slips/me-summary",
+                "/trust-slips/summary/me",
+              ],
+              clanHeaders
+            );
+          })(),
         ]);
 
         if (!alive) return;
@@ -609,6 +692,8 @@ export default function TrustSlipPage() {
   const holderName = useMemo(() => {
     return (
       firstTruthy(
+        summary?.merchant_view?.display_name,
+        summary?.merchant_summary?.display_name,
         summary?.display_name,
         me?.display_name,
         me?.nickname,
@@ -620,12 +705,20 @@ export default function TrustSlipPage() {
   }, [summary, me]);
 
   const gmfnId = useMemo(() => {
-    return firstTruthy(summary?.gmfn_id, me?.gmfn_id, "Pending");
+    return firstTruthy(
+      summary?.merchant_view?.gmfn_id,
+      summary?.merchant_summary?.gmfn_id,
+      summary?.gmfn_id,
+      me?.gmfn_id,
+      "Pending"
+    );
   }, [summary, me]);
 
   const communityName = useMemo(() => {
     return (
       firstTruthy(
+        summary?.merchant_view?.community,
+        summary?.merchant_summary?.community,
         summary?.community,
         currentClan?.marketplace_name,
         currentClan?.name,
@@ -634,50 +727,49 @@ export default function TrustSlipPage() {
       ) || (selectedClanId ? `Community ${selectedClanId}` : "No selected community")
     );
   }, [summary, currentClan, selectedClanId]);
+
   const communityRef = useMemo(() => {
     return (
       firstTruthy(
-        summary?.community_id,
         summary?.community_global_id,
+        summary?.community_code,
         summary?.clan_code,
+        summary?.community_id,
+        currentClan?.community_global_id,
         currentClan?.community_code,
-        currentClan?.community_id,
-        currentClan?.marketplace_id,
-        currentClan?.clan_code,
-        summary?.clan_id,
-        currentClan?.clan_id,
-        selectedClanId
+        currentClan?.clan_code
       ) || "Pending"
     );
-  }, [summary, currentClan, selectedClanId]);
-  const trustSlipCode = safeStr(
-    summary?.verification_code ||
-      summary?.code ||
-      summary?.verification_token ||
+  }, [summary, currentClan]);
+
+  const trustSlipCode = useMemo(() => {
+    return firstTruthy(
+      summary?.merchant_view?.code,
+      summary?.verification_code,
+      summary?.code,
+      summary?.verification_token,
       summary?.token
-  );
+    );
+  }, [summary]);
 
   const verifyUrl = useMemo(() => {
-    return absoluteUrl(
-      firstTruthy(
-        summary?.public_verify_url,
-        summary?.merchant_view?.code
-          ? `/trust-slips/verify/${encodeURIComponent(
-              safeStr(summary.merchant_view.code)
-            )}/page`
-          : "",
-        trustSlipCode
-          ? `/trust-slips/verify/${encodeURIComponent(trustSlipCode)}/page`
-          : ""
-      )
+    return firstTruthy(
+      toApiAbsoluteUrl(summary?.public_verify_url || ""),
+      trustSlipCode
+        ? joinUrl(
+            apiOrigin(),
+            `/trust-slips/verify/${encodeURIComponent(trustSlipCode)}/page`
+          )
+        : ""
     );
   }, [summary, trustSlipCode]);
 
   const qrUrl = useMemo(() => {
     if (!trustSlipCode) return "";
-    return `${apiOrigin()}/trust-slips/verify/${encodeURIComponent(
-      trustSlipCode
-    )}/qr.png`;
+    return joinUrl(
+      apiOrigin(),
+      `/trust-slips/verify/${encodeURIComponent(trustSlipCode)}/qr.png`
+    );
   }, [trustSlipCode]);
 
   const merchantBand = firstTruthy(
@@ -751,11 +843,17 @@ export default function TrustSlipPage() {
 
     if (typeof (api as any).safeCopy === "function") {
       (api as any).safeCopy(value);
-    } else if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-      void navigator.clipboard.writeText(value);
+      showNotice("success", successText);
+      return;
     }
 
-    showNotice("success", successText);
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      void navigator.clipboard.writeText(value);
+      showNotice("success", successText);
+      return;
+    }
+
+    showNotice("error", "Copy is not supported in this browser.");
   }
 
   if (loading) {
@@ -806,7 +904,7 @@ export default function TrustSlipPage() {
       <PageTopNav
         sectionLabel="TrustSlip"
         title="TrustSlip"
-        subtitle="TrustSlip is the portable proof surface. Merchant Verify is now driven by the real TrustSlip summary payload."
+        subtitle="TrustSlip is the portable proof surface. Merchant Verify now uses the real TrustSlip summary payload."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
@@ -845,11 +943,15 @@ export default function TrustSlipPage() {
                 lineHeight: 1.12,
               }}
             >
-              {trustSlipCode ? "Your TrustSlip summary is loaded" : "TrustSlip is still preparing"}
+              {trustSlipCode
+                ? "Your TrustSlip summary is loaded"
+                : "TrustSlip is still preparing"}
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), maxWidth: 840 }}>
-              This page now reads the real TrustSlip summary payload. It carries the merchant-facing trust state, verify link, code, CCI, trust limit, and institutional notes.
+              This page reads the real TrustSlip summary payload. It carries the
+              merchant-facing trust state, verify link, code, CCI, trust limit,
+              and institutional notes.
             </div>
 
             <div
@@ -907,7 +1009,11 @@ export default function TrustSlipPage() {
               <button
                 type="button"
                 onClick={() =>
-                  handleCopy(gmfnId, "GMFN ID copied.", "GMFN ID is not ready yet.")
+                  handleCopy(
+                    gmfnId,
+                    "GMFN ID copied.",
+                    "GMFN ID is not ready yet."
+                  )
                 }
                 style={actionBtn("secondary", !gmfnId || gmfnId === "Pending")}
                 disabled={!gmfnId || gmfnId === "Pending"}
@@ -975,7 +1081,8 @@ export default function TrustSlipPage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText() }}>
-              Status: {safeStr(summary?.status || "Pending")} • Visibility: {merchantVisibility}
+              Status: {safeStr(summary?.status || "Pending")} • Visibility:{" "}
+              {merchantVisibility}
             </div>
           </div>
         </div>
@@ -1085,7 +1192,10 @@ export default function TrustSlipPage() {
               </div>
 
               <div style={{ marginTop: 10, ...helperText() }}>
-                Verified: {String(Boolean(summary?.verified))} • Active: {String(Boolean(summary?.active))} • Phone verified: {String(Boolean(summary?.phone_verified))}
+                Verified: {String(Boolean(summary?.merchant_view?.verified ?? summary?.verified))} •{" "}
+                Active: {String(Boolean(summary?.merchant_view?.active ?? summary?.active))} •{" "}
+                Phone verified:{" "}
+                {String(Boolean(summary?.merchant_view?.phone_verified ?? summary?.phone_verified))}
               </div>
 
               <div
@@ -1210,10 +1320,12 @@ export default function TrustSlipPage() {
                   Band: {safeStr(summary?.merchant_summary?.band || merchantBand)}
                 </div>
                 <div style={helperText()}>
-                  Trust limit: {safeStr(summary?.merchant_summary?.trust_limit || merchantTrustLimit)} {safeStr(summary?.merchant_summary?.currency || merchantCurrency)}
+                  Trust limit: {safeStr(summary?.merchant_summary?.trust_limit || merchantTrustLimit)}{" "}
+                  {safeStr(summary?.merchant_summary?.currency || merchantCurrency)}
                 </div>
                 <div style={helperText()}>
-                  CCI: {safeStr(summary?.merchant_summary?.cci_score || cciScore)} / {safeStr(summary?.merchant_summary?.cci_band || cciBand)}
+                  CCI: {safeStr(summary?.merchant_summary?.cci_score || cciScore)} /{" "}
+                  {safeStr(summary?.merchant_summary?.cci_band || cciBand)}
                 </div>
               </div>
             </div>
@@ -1461,7 +1573,9 @@ export default function TrustSlipPage() {
                 Executive summary PDF
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Keep the GSN executive summary visible from the trust side. Put the file in <strong style={{ color: "#0B1F33" }}>/public/gsn-executive-summary.pdf</strong> and the button opens it. 
+                Keep the GSN executive summary visible from the trust side. Put the file in{" "}
+                <strong style={{ color: "#0B1F33" }}>/public/gsn-executive-summary.pdf</strong>{" "}
+                and the button opens it.
               </div>
 
               <div

@@ -1,19 +1,52 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 import {
   decideLoanGuarantor,
   getAccessToken,
+  getCurrentClan,
+  getLoanGuarantorSuggestions,
   getLoanGuarantors,
   getLoanSummary,
   getMe,
+  getRevenueAllocation,
+  getSelectedClanId,
   safeCopy,
 } from "../lib/api";
 
 type MeLite = {
   id?: number | string;
+  gmfn_id?: string | null;
   email?: string;
   role?: string;
+  display_name?: string | null;
+  nickname?: string | null;
+  name?: string | null;
+  first_name?: string | null;
+};
+
+type CommunityLite = {
+  id?: number;
+  clan_id?: number;
+  name?: string | null;
+  marketplace_name?: string | null;
+  display_name?: string | null;
+  title?: string | null;
+  community_code?: string | null;
+  role?: string | null;
+  member_role?: string | null;
+  membership_role?: string | null;
+  participant_role?: string | null;
+  community_image_url?: string | null;
+  profile_image_url?: string | null;
+  marketplace_image_url?: string | null;
+  cover_image_url?: string | null;
+  banner_url?: string | null;
+  image_url?: string | null;
+  logo_url?: string | null;
+  community?: any;
+  profile?: any;
+  marketplace?: any;
 };
 
 type LoanSummary = {
@@ -27,16 +60,21 @@ type LoanSummary = {
   due_at?: string | null;
   purpose?: string | null;
   note?: string | null;
+  remaining_amount?: number | string | null;
+  paid_total?: number | string | null;
 };
 
 type LoanGuarantor = {
   id?: number;
   guarantor_user_id: number;
   guarantor_email?: string;
+  guarantor_name?: string | null;
   status: string;
-  pledge_amount?: number;
+  pledge_amount?: number | string | null;
   is_locked?: boolean;
-  locked_amount?: number;
+  locked_amount?: number | string | null;
+  released_amount?: number | string | null;
+  responded_at?: string | null;
 };
 
 type TrustEvent = {
@@ -49,27 +87,53 @@ type TrustEvent = {
 
 type Repayment = {
   id?: number;
-  amount: number;
+  amount: number | string;
   created_at?: string;
 };
 
 type Suggestion = {
   user_id: number;
   email?: string;
-  cci?: number;
-  recommended_pledge?: number;
+  gmfn_id?: string | null;
+  display_name?: string | null;
+  cci?: number | string;
+  recommended_pledge?: number | string;
+  reason?: string | null;
+};
+
+type RevenuePreview = {
+  service_fee?: string | number | null;
+  guarantor_pool?: string | number | null;
+  platform_revenue?: string | number | null;
+  net_disbursed_amount?: string | number | null;
 };
 
 type FeedbackTone = "success" | "error";
+
+type CollapseState = {
+  overview: boolean;
+  guarantors: boolean;
+  repayment: boolean;
+  evidence: boolean;
+  routes: boolean;
+};
+
+const LOAN_SUMMARY_UI_STORAGE_KEY = "gmfn.loanSummary.sections.v1";
 
 function safeItems<T>(res: any): T[] {
   if (!res) return [];
   if (Array.isArray(res)) return res as T[];
   if (Array.isArray(res.items)) return res.items as T[];
+  if (Array.isArray(res.data?.items)) return res.data.items as T[];
   return [];
 }
 
-const n = (x: any) => (Number.isFinite(Number(x)) ? Number(x) : 0);
+const n = (x: any) => {
+  const raw = String(x ?? "").trim().replace(/,/g, "");
+  const num = Number(raw);
+  return Number.isFinite(num) ? num : 0;
+};
+
 const lc = (x: any) => String(x ?? "").toLowerCase().trim();
 const safeStr = (x: any) => String(x ?? "").trim();
 
@@ -82,33 +146,15 @@ function safeDateTime(x: any): string {
 }
 
 function fmtMoney(value: any, currency: string): string {
-  const amount = Number(value);
-  const text = Number.isFinite(amount) ? amount.toFixed(2) : safeStr(value || "0");
-  return `${text} ${currency}`;
+  return `${n(value).toFixed(2)} ${currency}`;
 }
 
-function parseMetaObj(meta: any): Record<string, any> | null {
-  if (meta == null) return null;
-  try {
-    if (typeof meta === "string") {
-      const s = meta.trim();
-      if ((s.startsWith("{") && s.endsWith("}")) || (s.startsWith("[") && s.endsWith("]"))) {
-        const parsed = JSON.parse(s);
-        return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-          ? parsed
-          : null;
-      }
-      return null;
-    }
-
-    if (typeof meta === "object" && !Array.isArray(meta)) {
-      return meta as Record<string, any>;
-    }
-
-    return null;
-  } catch {
-    return null;
+function firstTruthy(...values: any[]): string {
+  for (const value of values) {
+    const text = safeStr(value);
+    if (text) return text;
   }
+  return "";
 }
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
@@ -138,6 +184,32 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
     border: "1px solid rgba(11,31,51,0.08)",
     background: bg,
     padding: 14,
+  };
+}
+
+function statTile(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 14,
+  };
+}
+
+function routeTile(primary = false): React.CSSProperties {
+  return {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+    minHeight: 104,
+    borderRadius: 18,
+    border: primary
+      ? "1px solid rgba(11,99,209,0.18)"
+      : "1px solid rgba(11,31,51,0.08)",
+    background: primary ? "#F7FAFF" : "#FFFFFF",
+    padding: 16,
+    textDecoration: "none",
+    boxShadow: primary ? "0 10px 24px rgba(11,99,209,0.05)" : "none",
   };
 }
 
@@ -181,6 +253,24 @@ function secondaryBtn(disabled = false): React.CSSProperties {
   };
 }
 
+function collapseToggle(): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 38,
+    padding: "8px 12px",
+    borderRadius: 12,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#FFFFFF",
+    color: "#24415C",
+    fontWeight: 800,
+    fontSize: 13,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+  };
+}
+
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
@@ -203,6 +293,14 @@ function badge(primary = false): React.CSSProperties {
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "nowrap",
+  };
+}
+
+function helperText(): React.CSSProperties {
+  return {
+    color: "#5F7287",
+    fontSize: 14,
+    lineHeight: 1.75,
   };
 }
 
@@ -252,6 +350,175 @@ async function fetchJson(path: string, clanId?: number): Promise<any> {
     return JSON.parse(text);
   } catch {
     return text;
+  }
+}
+
+function parseMetaObj(meta: any): Record<string, any> | null {
+  if (meta == null) return null;
+
+  try {
+    if (typeof meta === "string") {
+      const s = meta.trim();
+      if (
+        (s.startsWith("{") && s.endsWith("}")) ||
+        (s.startsWith("[") && s.endsWith("]"))
+      ) {
+        const parsed = JSON.parse(s);
+        return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+          ? parsed
+          : null;
+      }
+      return null;
+    }
+
+    if (typeof meta === "object" && !Array.isArray(meta)) {
+      return meta as Record<string, any>;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeCommunityName(clan: CommunityLite | null, selectedClanId: number): string {
+  return (
+    firstTruthy(
+      clan?.marketplace_name,
+      clan?.name,
+      clan?.display_name,
+      clan?.title
+    ) || (selectedClanId ? `Community ${selectedClanId}` : "No selected community")
+  );
+}
+
+function normalizeCommunityId(clan: CommunityLite | null): string {
+  return (
+    firstTruthy(
+      clan?.community_code,
+      clan?.community?.community_code,
+      clan?.profile?.community_code,
+      clan?.marketplace?.community_code
+    ) || "Pending"
+  );
+}
+
+function normalizeCommunityRole(clan: CommunityLite | null): string {
+  return (
+    firstTruthy(
+      clan?.role,
+      clan?.member_role,
+      clan?.membership_role,
+      clan?.participant_role
+    ) || ""
+  );
+}
+
+function apiBase(): string {
+  const raw =
+    (typeof import.meta !== "undefined" &&
+      (import.meta as any)?.env &&
+      (import.meta as any).env.VITE_API_BASE_URL) ||
+    "/api";
+
+  return String(raw || "").trim().replace(/\/+$/, "");
+}
+
+function apiOrigin(): string {
+  const base = apiBase();
+
+  if (base.startsWith("http://") || base.startsWith("https://")) {
+    try {
+      const u = new URL(base);
+      return `${u.protocol}//${u.host}`;
+    } catch {
+      return "";
+    }
+  }
+
+  if (typeof window !== "undefined") {
+    return String(window.location.origin || "").trim().replace(/\/+$/, "");
+  }
+
+  return "";
+}
+
+function resolveMediaUrl(src: string): string {
+  const raw = safeStr(src);
+  if (!raw) return "";
+
+  if (
+    raw.startsWith("http://") ||
+    raw.startsWith("https://") ||
+    raw.startsWith("data:") ||
+    raw.startsWith("blob:")
+  ) {
+    return raw;
+  }
+
+  const origin = apiOrigin();
+  if (!origin) return raw;
+
+  if (raw.startsWith("/")) return `${origin}${raw}`;
+  return `${origin}/${raw.replace(/^\/+/, "")}`;
+}
+
+function communityImageSrc(clan: CommunityLite | null): string {
+  const raw = firstTruthy(
+    clan?.community_image_url,
+    clan?.profile_image_url,
+    clan?.marketplace_image_url,
+    clan?.cover_image_url,
+    clan?.banner_url,
+    clan?.image_url,
+    clan?.logo_url,
+    clan?.community?.community_image_url,
+    clan?.community?.image_url,
+    clan?.profile?.profile_image_url
+  );
+
+  return resolveMediaUrl(raw);
+}
+
+function defaultCollapseState(): CollapseState {
+  return {
+    overview: false,
+    guarantors: false,
+    repayment: false,
+    evidence: false,
+    routes: false,
+  };
+}
+
+function normalizeCollapseState(raw: any): CollapseState {
+  const base = defaultCollapseState();
+
+  return {
+    overview: Boolean(raw?.overview ?? base.overview),
+    guarantors: Boolean(raw?.guarantors ?? base.guarantors),
+    repayment: Boolean(raw?.repayment ?? base.repayment),
+    evidence: Boolean(raw?.evidence ?? base.evidence),
+    routes: Boolean(raw?.routes ?? base.routes),
+  };
+}
+
+function readLocalJSON<T>(key: string, fallback: T): T {
+  try {
+    if (typeof window === "undefined") return fallback;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeLocalJSON(key: string, value: any) {
+  try {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore
   }
 }
 
@@ -313,7 +580,7 @@ function statusBadge(status: string) {
     );
   }
 
-  if (s === "rejected" || s === "declined") {
+  if (s === "rejected" || s === "declined" || s === "cancelled") {
     return (
       <span
         style={{
@@ -411,11 +678,11 @@ function nextStepText(status: string) {
   const s = lc(status);
 
   if (s === "pending") {
-    return "Next: request guarantors, wait for approvals, and watch the approval count. When enough guarantors approve, the loan can continue.";
+    return "Next: review guarantor movement, keep the pending decisions moving, and stay inside the support path until the approval picture is clear.";
   }
 
   if (s === "approved") {
-    return "Next: the loan is approved. Repayment and evidence review become the main actions.";
+    return "Next: the loan is approved. Repayment and finance evidence become the main actions.";
   }
 
   if (s === "disbursed") {
@@ -426,8 +693,8 @@ function nextStepText(status: string) {
     return "Completed: this loan has been fully repaid.";
   }
 
-  if (s === "rejected" || s === "declined") {
-    return "Stopped: this loan was rejected. Return to preparation before starting a new request.";
+  if (s === "rejected" || s === "declined" || s === "cancelled") {
+    return "Stopped: this loan was rejected or cancelled. Return to preparation before starting a new request.";
   }
 
   return "Next: review guarantors, evidence, and repayment state for this loan.";
@@ -435,21 +702,61 @@ function nextStepText(status: string) {
 
 export default function LoanSummaryPage() {
   const { loanId } = useParams();
-  const nav = useNavigate();
-  const id = Number(loanId);
+  const numericLoanId = Number(loanId || 0);
+  const selectedClanId = Number(getSelectedClanId() || 0);
+
+  const [isCompact, setIsCompact] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 980;
+  });
+
+  const [collapsed, setCollapsed] = useState<CollapseState>(() =>
+    normalizeCollapseState(
+      readLocalJSON(LOAN_SUMMARY_UI_STORAGE_KEY, defaultCollapseState())
+    )
+  );
 
   const [me, setMe] = useState<MeLite | null>(null);
+  const [currentClan, setCurrentClan] = useState<CommunityLite | null>(null);
   const [summary, setSummary] = useState<LoanSummary | null>(null);
   const [guarantors, setGuarantors] = useState<LoanGuarantor[]>([]);
   const [repayments, setRepayments] = useState<Repayment[]>([]);
   const [events, setEvents] = useState<TrustEvent[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [revenuePreview, setRevenuePreview] = useState<RevenuePreview | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyDecisionKey, setBusyDecisionKey] = useState("");
   const [feedback, setFeedback] = useState<{
     tone: FeedbackTone;
     text: string;
   } | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    function handleResize() {
+      setIsCompact(window.innerWidth <= 980);
+    }
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    writeLocalJSON(LOAN_SUMMARY_UI_STORAGE_KEY, collapsed);
+  }, [collapsed]);
+
+  useEffect(() => {
+    if (!feedback) return;
+
+    const timer = window.setTimeout(() => {
+      setFeedback(null);
+    }, 2600);
+
+    return () => window.clearTimeout(timer);
+  }, [feedback]);
 
   const currency = summary?.currency ?? "NGN";
   const isAdmin = lc(me?.role) === "admin";
@@ -482,41 +789,87 @@ export default function LoanSummaryPage() {
   const latestReason = safeStr(latestMeta?.reason || "");
   const latestNote = safeStr(latestMeta?.note || latestMeta?.message || "");
 
-  useEffect(() => {
-    if (!feedback) return;
+  const memberName = useMemo(() => {
+    return (
+      firstTruthy(
+        me?.display_name,
+        me?.nickname,
+        me?.name,
+        me?.first_name,
+        me?.email
+      ) || "Member"
+    );
+  }, [me]);
 
-    const timer = window.setTimeout(() => {
-      setFeedback(null);
-    }, 2600);
+  const gmfnId = useMemo(() => firstTruthy(me?.gmfn_id, "Pending"), [me]);
 
-    return () => window.clearTimeout(timer);
-  }, [feedback]);
+  const communityLabel = useMemo(
+    () => normalizeCommunityName(currentClan, selectedClanId),
+    [currentClan, selectedClanId]
+  );
 
-  function jumpToAudit() {
-    const clan = summary?.clan_id ? String(summary.clan_id) : "1";
-    nav(`/app/trust-analytics?clan_id=${clan}&loan_id=${summary?.id}&audit=1`);
-  }
+  const communityPublicId = useMemo(
+    () => normalizeCommunityId(currentClan),
+    [currentClan]
+  );
+
+  const memberRole = useMemo(
+    () => normalizeCommunityRole(currentClan),
+    [currentClan]
+  );
+
+  const pictureSrc = useMemo(() => communityImageSrc(currentClan), [currentClan]);
 
   async function refreshAll() {
     setLoading(true);
 
     try {
       const meRes = await getMe().catch(() => null);
-      if (meRes) setMe({ id: meRes.id, email: meRes.email, role: meRes.role });
-      else setMe(null);
+      const clanRes = await getCurrentClan().catch(() => null);
 
-      const summaryRes = (await getLoanSummary(id)) as LoanSummary;
+      if (meRes) {
+        setMe({
+          id: meRes.id,
+          gmfn_id: meRes.gmfn_id,
+          email: meRes.email,
+          role: meRes.role,
+          display_name: meRes.display_name,
+          nickname: meRes.nickname,
+          name: meRes.name,
+          first_name: meRes.first_name,
+        });
+      } else {
+        setMe(null);
+      }
+
+      setCurrentClan(clanRes || null);
+
+      const summaryRes = (await getLoanSummary(numericLoanId)) as LoanSummary;
       setSummary(summaryRes);
 
-      const guarantorRes = await getLoanGuarantors(id, {
-        clan_id: summaryRes?.clan_id,
-      }).catch(() => ({ items: [] }));
+      const loanClanId = Number(summaryRes?.clan_id || selectedClanId || 0);
+
+      const [guarantorRes, suggestionsRes, revenueRes] = await Promise.all([
+        getLoanGuarantors(numericLoanId, {
+          clan_id: loanClanId || undefined,
+        }).catch(() => ({ items: [] })),
+        getLoanGuarantorSuggestions(numericLoanId, {
+          clan_id: loanClanId || undefined,
+          limit: 10,
+        }).catch(() => ({ items: [] })),
+        getRevenueAllocation(numericLoanId).catch(() => null),
+      ]);
+
       setGuarantors(safeItems<LoanGuarantor>(guarantorRes));
+      setSuggestions(safeItems<Suggestion>(suggestionsRes));
+      setRevenuePreview(
+        revenueRes ? (revenueRes?.item || revenueRes?.data || revenueRes) : null
+      );
 
       try {
         const repaymentsRes = await fetchJson(
           `/api/loans/${Number(summaryRes.id)}/repayments`,
-          summaryRes?.clan_id
+          loanClanId || undefined
         );
         setRepayments(safeItems<Repayment>(repaymentsRes));
       } catch {
@@ -524,21 +877,9 @@ export default function LoanSummaryPage() {
       }
 
       try {
-        const suggestionsRes = await fetchJson(
-          `/api/loans/${Number(summaryRes.id)}/guarantors/suggestions?limit=10`,
-          summaryRes?.clan_id
-        );
-        setSuggestions(safeItems<Suggestion>(suggestionsRes));
-      } catch {
-        setSuggestions([]);
-      }
-
-      try {
         const eventsRes = await fetchJson(
-          `/api/admin/trust-events/recent?limit=20&loan_id=${Number(summaryRes.id)}&clan_id=${Number(
-            summaryRes.clan_id || 0
-          )}`,
-          summaryRes?.clan_id
+          `/api/admin/trust-events/recent?limit=20&loan_id=${Number(summaryRes.id)}&clan_id=${loanClanId}`,
+          loanClanId || undefined
         );
         setEvents(safeItems<TrustEvent>(eventsRes));
       } catch {
@@ -555,9 +896,9 @@ export default function LoanSummaryPage() {
   }
 
   useEffect(() => {
-    if (!id) return;
+    if (!numericLoanId) return;
     void refreshAll();
-  }, [id]);
+  }, [numericLoanId]);
 
   async function handleGuarantorDecision(
     guarantor: LoanGuarantor,
@@ -604,23 +945,58 @@ export default function LoanSummaryPage() {
     if (!summary?.id) return;
 
     const p = new URLSearchParams({
-      clan_id: String(summary.clan_id || 1),
+      clan_id: String(summary.clan_id || selectedClanId || 1),
       loan_id: String(summary.id),
       audit: "1",
     });
 
-    safeCopy(`${window.location.origin}/app/trust-analytics?${p.toString()}`);
+    const origin =
+      typeof window !== "undefined" ? window.location.origin : "";
+    safeCopy(`${origin}/app/trust-analytics?${p.toString()}`);
+
     setFeedback({
       tone: "success",
-      text: "Loan and audit link copied.",
+      text: "Loan audit link copied.",
     });
   }
 
-  function downloadPdf() {
+  function copyLoanSummary() {
+    if (!summary) return;
+
+    const lines = [
+      `Community: ${communityLabel}`,
+      `Community ID: ${communityPublicId}`,
+      `GMFN ID: ${gmfnId}`,
+      `Member: ${memberName}`,
+      memberRole ? `Role: ${memberRole}` : "",
+      `Loan ID: ${summary.id}`,
+      `Status: ${safeStr(summary.status)}`,
+      `Amount: ${fmtMoney(n(summary.amount), currency)}`,
+      `Required guarantors: ${requiredCount}`,
+      `Approved guarantors: ${approvedCount}`,
+      `Pending guarantors: ${pendingGuarantors.length}`,
+      summary?.remaining_amount != null
+        ? `Remaining amount: ${fmtMoney(summary.remaining_amount, currency)}`
+        : "",
+      summary?.paid_total != null
+        ? `Paid total: ${fmtMoney(summary.paid_total, currency)}`
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    safeCopy(lines);
     setFeedback({
-      tone: "error",
-      text: "PDF download is disabled in this build.",
+      tone: "success",
+      text: "Loan summary copied.",
     });
+  }
+
+  function toggleSection(key: keyof CollapseState) {
+    setCollapsed((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
   }
 
   const summaryNextStep = useMemo(() => {
@@ -628,9 +1004,17 @@ export default function LoanSummaryPage() {
     return nextStepText(summary.status);
   }, [summary]);
 
-  if (!id) {
+  if (!numericLoanId) {
     return (
-      <div style={{ maxWidth: 1180, margin: "0 auto", paddingBottom: 40 }}>
+      <div
+        style={{
+          maxWidth: 1180,
+          margin: "0 auto",
+          paddingBottom: 40,
+          display: "grid",
+          gap: 18,
+        }}
+      >
         <section style={pageCard("#FFFFFF")}>
           <div style={{ color: "#991B1B", fontWeight: 800 }}>
             Invalid loan ID.
@@ -642,7 +1026,15 @@ export default function LoanSummaryPage() {
 
   if (loading && !summary) {
     return (
-      <div style={{ maxWidth: 1180, margin: "0 auto", paddingBottom: 40 }}>
+      <div
+        style={{
+          maxWidth: 1180,
+          margin: "0 auto",
+          paddingBottom: 40,
+          display: "grid",
+          gap: 18,
+        }}
+      >
         <PageTopNav
           sectionLabel="Loan Summary"
           title="Loan Summary"
@@ -651,9 +1043,17 @@ export default function LoanSummaryPage() {
           homeLabel="Dashboard"
           backTo="/app/loans"
           backLabel="Loans & Support"
+          nextLinks={[
+            { label: "Loan Workbench", to: "/app/loan-workbench" },
+            { label: "Finance", to: "/app/finance" },
+          ]}
+          utilityLinks={[
+            { label: "Marketplace", to: "/app/marketplace" },
+            { label: "Notifications", to: "/app/notifications" },
+          ]}
         />
 
-        <section style={{ ...pageCard("#FFFFFF"), marginTop: 18 }}>
+        <section style={pageCard("#FFFFFF")}>
           <div style={{ color: "#64748B", lineHeight: 1.8 }}>
             Loading loan summary...
           </div>
@@ -664,7 +1064,15 @@ export default function LoanSummaryPage() {
 
   if (!summary) {
     return (
-      <div style={{ maxWidth: 1180, margin: "0 auto", paddingBottom: 40 }}>
+      <div
+        style={{
+          maxWidth: 1180,
+          margin: "0 auto",
+          paddingBottom: 40,
+          display: "grid",
+          gap: 18,
+        }}
+      >
         <PageTopNav
           sectionLabel="Loan Summary"
           title="Loan Summary"
@@ -675,13 +1083,9 @@ export default function LoanSummaryPage() {
           backLabel="Loans & Support"
         />
 
-        {feedback ? (
-          <div style={{ ...feedbackCard(feedback.tone), marginTop: 18 }}>
-            {feedback.text}
-          </div>
-        ) : null}
+        {feedback ? <div style={feedbackCard(feedback.tone)}>{feedback.text}</div> : null}
 
-        <section style={{ ...pageCard("#FFFFFF"), marginTop: 18 }}>
+        <section style={pageCard("#FFFFFF")}>
           <div style={{ color: "#64748B", lineHeight: 1.8 }}>
             Loan summary could not be loaded.
           </div>
@@ -703,18 +1107,18 @@ export default function LoanSummaryPage() {
       <PageTopNav
         sectionLabel="Loan Summary"
         title={`Loan #${summary.id}`}
-        subtitle="Review the support item, guarantor progress, evidence trail, and repayment state in one calmer surface."
+        subtitle="Review the support item, guarantor progress, repayment state, evidence trail, and finance distribution in one calmer surface."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/loans"
         backLabel="Loans & Support"
         nextLinks={[
-          { label: "Open audit", to: `/app/trust-analytics?clan_id=${summary.clan_id || 1}&loan_id=${summary.id}&audit=1` },
-          { label: "Marketplace", to: "/app/marketplace" },
+          { label: "Loan Workbench", to: "/app/loan-workbench" },
+          { label: "Finance", to: "/app/finance" },
         ]}
         utilityLinks={[
+          { label: "Marketplace", to: "/app/marketplace" },
           { label: "Notifications", to: "/app/notifications" },
-          { label: "Trust", to: "/app/trust" },
         ]}
       />
 
@@ -726,13 +1130,57 @@ export default function LoanSummaryPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "minmax(0, 1.08fr) minmax(320px, 0.92fr)",
+            gridTemplateColumns: isCompact
+              ? "1fr"
+              : "180px minmax(0, 1.08fr) minmax(320px, 0.92fr)",
             gap: 16,
             alignItems: "start",
           }}
         >
           <div>
-            <div style={sectionLabel()}>Summary</div>
+            <div
+              style={{
+                width: "100%",
+                height: 148,
+                borderRadius: 20,
+                border: "1px solid rgba(11,31,51,0.08)",
+                overflow: "hidden",
+                background: "linear-gradient(180deg, #E8F0FF 0%, #DDEBFF 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {pictureSrc ? (
+                <img
+                  src={pictureSrc}
+                  alt={communityLabel}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    color: "#37506A",
+                    fontWeight: 900,
+                    fontSize: 20,
+                    textAlign: "center",
+                    padding: 12,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {communityLabel}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <div style={sectionLabel()}>Fixed support context</div>
 
             <div
               style={{
@@ -756,26 +1204,17 @@ export default function LoanSummaryPage() {
               }}
             >
               {statusBadge(summary.status)}
-              <span style={badge(true)}>
-                Required guarantors: {requiredCount}
-              </span>
-              <span style={badge(false)}>
-                Approved: {approvedCount}
-              </span>
-              <span style={badge(false)}>
-                Pending: {pendingGuarantors.length}
-              </span>
-              <span style={badge(false)}>
-                Clan: {summary.clan_id ?? "-"}
-              </span>
+              <span style={badge(true)}>Community ID: {communityPublicId}</span>
+              <span style={badge(false)}>GMFN ID: {gmfnId}</span>
+              <span style={badge(false)}>Member: {memberName}</span>
+              {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
+              <span style={badge(false)}>Current step: Loan summary</span>
             </div>
 
             <div
               style={{
                 marginTop: 14,
-                color: "#5F7287",
-                lineHeight: 1.8,
-                fontSize: 15,
+                ...helperText(),
                 maxWidth: 860,
               }}
             >
@@ -791,14 +1230,11 @@ export default function LoanSummaryPage() {
                 flexWrap: "wrap",
               }}
             >
+              <button type="button" onClick={copyLoanSummary} style={secondaryBtn(false)}>
+                Copy loan summary
+              </button>
               <button type="button" onClick={copyLoanAuditLink} style={secondaryBtn(false)}>
-                Copy loan + audit link
-              </button>
-              <button type="button" onClick={jumpToAudit} style={secondaryBtn(false)}>
-                Open audit
-              </button>
-              <button type="button" onClick={downloadPdf} style={secondaryBtn(false)}>
-                Download PDF
+                Copy audit link
               </button>
             </div>
           </div>
@@ -842,117 +1278,368 @@ export default function LoanSummaryPage() {
         </div>
       </section>
 
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Summary facts</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Core facts for the current support item.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => toggleSection("overview")}
+            style={collapseToggle()}
+          >
+            {collapsed.overview ? "Open" : "Collapse"}
+          </button>
+        </div>
+
+        {!collapsed.overview ? (
+          <div
+            style={{
+              marginTop: 16,
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "1fr 1fr"
+                : "repeat(4, minmax(0, 1fr))",
+              gap: 12,
+            }}
+          >
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Amount</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 22,
+                  fontWeight: 1000,
+                }}
+              >
+                {fmtMoney(n(summary.amount), currency)}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Required guarantors</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 22,
+                  fontWeight: 1000,
+                }}
+              >
+                {requiredCount}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Approved guarantors</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 22,
+                  fontWeight: 1000,
+                }}
+              >
+                {approvedCount}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Pending guarantors</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 22,
+                  fontWeight: 1000,
+                }}
+              >
+                {pendingGuarantors.length}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Remaining amount</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 18,
+                  fontWeight: 900,
+                }}
+              >
+                {fmtMoney(summary.remaining_amount, currency)}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Paid total</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 18,
+                  fontWeight: 900,
+                }}
+              >
+                {fmtMoney(summary.paid_total, currency)}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Created</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 15,
+                  fontWeight: 900,
+                  lineHeight: 1.35,
+                }}
+              >
+                {safeDateTime(summary.created_at)}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Due</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 15,
+                  fontWeight: 900,
+                  lineHeight: 1.35,
+                }}
+              >
+                {safeDateTime(summary.due_at)}
+              </div>
+            </div>
+
+            {revenuePreview ? (
+              <>
+                <div style={statTile("#F8FBFF")}>
+                  <div style={sectionLabel()}>Service fee</div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B63D1",
+                      fontSize: 16,
+                      fontWeight: 900,
+                    }}
+                  >
+                    {fmtMoney(revenuePreview.service_fee, currency)}
+                  </div>
+                </div>
+
+                <div style={statTile("#F8FBFF")}>
+                  <div style={sectionLabel()}>Guarantor pool</div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B63D1",
+                      fontSize: 16,
+                      fontWeight: 900,
+                    }}
+                  >
+                    {fmtMoney(revenuePreview.guarantor_pool, currency)}
+                  </div>
+                </div>
+
+                <div style={statTile("#F8FBFF")}>
+                  <div style={sectionLabel()}>Platform revenue</div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B63D1",
+                      fontSize: 16,
+                      fontWeight: 900,
+                    }}
+                  >
+                    {fmtMoney(revenuePreview.platform_revenue, currency)}
+                  </div>
+                </div>
+
+                <div style={statTile("#F8FBFF")}>
+                  <div style={sectionLabel()}>Net disbursed</div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B63D1",
+                      fontSize: 16,
+                      fontWeight: 900,
+                    }}
+                  >
+                    {fmtMoney(revenuePreview.net_disbursed_amount, currency)}
+                  </div>
+                </div>
+              </>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
+
       <section
         style={{
           display: "grid",
-          gridTemplateColumns: "minmax(0, 1fr) minmax(320px, 0.92fr)",
+          gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(320px, 0.92fr)",
           gap: 16,
           alignItems: "start",
         }}
       >
         <div style={pageCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Guarantors</div>
-
           <div
             style={{
-              marginTop: 10,
-              color: "#5F7287",
-              fontSize: 14,
-              lineHeight: 1.75,
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              alignItems: "center",
+              flexWrap: "wrap",
             }}
           >
-            Review the guarantor rows one by one. Bulk admin action remains
-            intentionally disabled in this build.
+            <div>
+              <div style={sectionLabel()}>Guarantor decisions</div>
+              <div style={{ marginTop: 8, ...helperText() }}>
+                Review the guarantor rows one by one. Bulk action remains deliberately disabled here.
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => toggleSection("guarantors")}
+              style={collapseToggle()}
+            >
+              {collapsed.guarantors ? "Open" : "Collapse"}
+            </button>
           </div>
 
-          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-            {guarantors.length === 0 ? (
-              <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                No guarantor has been attached yet.
-              </div>
-            ) : (
-              guarantors.map((g, idx) => {
-                const gStatus = lc(g.status);
-                const canDecide = canActOnGuarantors && g.id != null && gStatus === "pending";
-                const approveKey = `${summary.id}-${g.id}-approved`;
-                const declineKey = `${summary.id}-${g.id}-declined`;
-                const busyApprove = busyDecisionKey === approveKey;
-                const busyDecline = busyDecisionKey === declineKey;
+          {!collapsed.guarantors ? (
+            <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+              {guarantors.length === 0 ? (
+                <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+                  No guarantor has been attached yet.
+                </div>
+              ) : (
+                guarantors.map((g, idx) => {
+                  const gStatus = lc(g.status);
+                  const canDecide =
+                    canActOnGuarantors && g.id != null && gStatus === "pending";
+                  const approveKey = `${summary.id}-${g.id}-approved`;
+                  const declineKey = `${summary.id}-${g.id}-declined`;
+                  const busyApprove = busyDecisionKey === approveKey;
+                  const busyDecline = busyDecisionKey === declineKey;
 
-                return (
-                  <div key={idx} style={innerCard("#FCFEFF")}>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "minmax(0, 1fr) auto",
-                        gap: 12,
-                        alignItems: "center",
-                      }}
-                    >
-                      <div>
-                        <div
-                          style={{
-                            color: "#0B1F33",
-                            fontSize: 16,
-                            fontWeight: 900,
-                            lineHeight: 1.35,
-                          }}
-                        >
-                          {safeStr(g.guarantor_email || `user:${g.guarantor_user_id}`)}
+                  return (
+                    <div key={idx} style={innerCard("#FCFEFF")}>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: isCompact
+                            ? "1fr"
+                            : "minmax(0, 1fr) auto",
+                          gap: 12,
+                          alignItems: "center",
+                        }}
+                      >
+                        <div>
+                          <div
+                            style={{
+                              color: "#0B1F33",
+                              fontSize: 16,
+                              fontWeight: 900,
+                              lineHeight: 1.35,
+                            }}
+                          >
+                            {firstTruthy(
+                              g.guarantor_name,
+                              g.guarantor_email,
+                              `user:${g.guarantor_user_id}`
+                            )}
+                          </div>
+
+                          <div
+                            style={{
+                              marginTop: 8,
+                              display: "flex",
+                              gap: 8,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            {guarantorBadge(g.status)}
+                            <span style={badge(true)}>
+                              Pledge: {fmtMoney(g.pledge_amount, currency)}
+                            </span>
+                            {g.is_locked ? (
+                              <span style={badge(false)}>
+                                Locked: {fmtMoney(g.locked_amount, currency)}
+                              </span>
+                            ) : null}
+                            {safeStr(g.released_amount) ? (
+                              <span style={badge(false)}>
+                                Released: {fmtMoney(g.released_amount, currency)}
+                              </span>
+                            ) : null}
+                          </div>
+
+                          {safeStr(g.responded_at) ? (
+                            <div
+                              style={{
+                                marginTop: 8,
+                                ...helperText(),
+                                fontSize: 13,
+                              }}
+                            >
+                              Responded: {safeDateTime(g.responded_at)}
+                            </div>
+                          ) : null}
                         </div>
 
                         <div
                           style={{
-                            marginTop: 8,
                             display: "flex",
                             gap: 8,
                             flexWrap: "wrap",
+                            justifyContent: isCompact ? "flex-start" : "flex-end",
                           }}
                         >
-                          {guarantorBadge(g.status)}
-                          <span style={badge(true)}>
-                            Pledge: {fmtMoney(n(g.pledge_amount), currency)}
-                          </span>
-                          {g.is_locked ? (
-                            <span style={badge(false)}>
-                              Locked: {fmtMoney(n(g.locked_amount), currency)}
-                            </span>
-                          ) : null}
+                          <button
+                            type="button"
+                            onClick={() => handleGuarantorDecision(g, "approved")}
+                            disabled={!canDecide || busyApprove || busyDecline}
+                            style={primaryBtn(!canDecide || busyApprove || busyDecline)}
+                          >
+                            {busyApprove ? "Approving..." : "Approve"}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleGuarantorDecision(g, "declined")}
+                            disabled={!canDecide || busyApprove || busyDecline}
+                            style={secondaryBtn(!canDecide || busyApprove || busyDecline)}
+                          >
+                            {busyDecline ? "Declining..." : "Decline"}
+                          </button>
                         </div>
                       </div>
-
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: 8,
-                          flexWrap: "wrap",
-                          justifyContent: "flex-end",
-                        }}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => handleGuarantorDecision(g, "approved")}
-                          disabled={!canDecide || busyApprove || busyDecline}
-                          style={primaryBtn(!canDecide || busyApprove || busyDecline)}
-                        >
-                          {busyApprove ? "Approving..." : "Approve"}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleGuarantorDecision(g, "declined")}
-                          disabled={!canDecide || busyApprove || busyDecline}
-                          style={secondaryBtn(!canDecide || busyApprove || busyDecline)}
-                        >
-                          {busyDecline ? "Declining..." : "Decline"}
-                        </button>
-                      </div>
                     </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+                  );
+                })
+              )}
+            </div>
+          ) : null}
         </div>
 
         <div style={{ display: "grid", gap: 16 }}>
@@ -962,14 +1649,12 @@ export default function LoanSummaryPage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#5F7287",
-                fontSize: 14,
-                lineHeight: 1.75,
+                ...helperText(),
               }}
             >
               {isAdmin
-                ? "Bulk approve and bulk decline remain disabled in this build. Use single-item review until the controlled bulk path is enabled."
-                : "Bulk guarantor actions are admin-only and remain disabled in this build."}
+                ? "Bulk approve and bulk decline remain disabled here. Keep review deliberate and line-by-line."
+                : "Bulk guarantor actions are not enabled here. Keep the path deliberate and line-by-line."}
             </div>
 
             <div
@@ -995,9 +1680,7 @@ export default function LoanSummaryPage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#5F7287",
-                fontSize: 14,
-                lineHeight: 1.75,
+                ...helperText(),
               }}
             >
               Suggested guarantor candidates for this loan, when available.
@@ -1019,7 +1702,12 @@ export default function LoanSummaryPage() {
                         lineHeight: 1.35,
                       }}
                     >
-                      {safeStr(s.email || `user:${s.user_id}`)}
+                      {firstTruthy(
+                        s.display_name,
+                        s.email,
+                        s.gmfn_id,
+                        `user:${s.user_id}`
+                      )}
                     </div>
 
                     <div
@@ -1036,10 +1724,22 @@ export default function LoanSummaryPage() {
 
                       {Number.isFinite(Number(s.recommended_pledge)) ? (
                         <span style={badge(true)}>
-                          Suggested pledge: {fmtMoney(n(s.recommended_pledge), currency)}
+                          Suggested pledge: {fmtMoney(s.recommended_pledge, currency)}
                         </span>
                       ) : null}
                     </div>
+
+                    {safeStr(s.reason) ? (
+                      <div
+                        style={{
+                          marginTop: 8,
+                          ...helperText(),
+                          fontSize: 13,
+                        }}
+                      >
+                        Reason: {safeStr(s.reason)}
+                      </div>
+                    ) : null}
                   </div>
                 ))
               )}
@@ -1051,137 +1751,259 @@ export default function LoanSummaryPage() {
       <section
         style={{
           display: "grid",
-          gridTemplateColumns: "minmax(0, 1fr) minmax(320px, 0.92fr)",
+          gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(320px, 0.92fr)",
           gap: 16,
           alignItems: "start",
         }}
       >
         <div style={pageCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Repayment evidence</div>
-
           <div
             style={{
-              marginTop: 10,
-              color: "#5F7287",
-              fontSize: 14,
-              lineHeight: 1.75,
-            }}
-          >
-            Existing repayment records are shown here. Manual repayment posting
-            from this page remains disabled in this build.
-          </div>
-
-          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-            {repayments.length === 0 ? (
-              <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                No repayment record is visible yet.
-              </div>
-            ) : (
-              repayments.map((repayment, index) => (
-                <div key={repayment.id || index} style={innerCard("#FCFEFF")}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 12,
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <div
-                      style={{
-                        color: "#0B1F33",
-                        fontSize: 15,
-                        fontWeight: 900,
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      Repayment #{safeStr(repayment.id || index + 1)}
-                    </div>
-
-                    <span style={badge(true)}>
-                      {fmtMoney(n(repayment.amount), currency)}
-                    </span>
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "#64748B",
-                      fontSize: 13,
-                      lineHeight: 1.7,
-                    }}
-                  >
-                    Posted: {safeDateTime(repayment.created_at)}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          <div
-            style={{
-              marginTop: 14,
               display: "flex",
-              gap: 10,
+              justifyContent: "space-between",
+              gap: 12,
+              alignItems: "center",
               flexWrap: "wrap",
             }}
           >
+            <div>
+              <div style={sectionLabel()}>Repayment evidence</div>
+              <div style={{ marginTop: 8, ...helperText() }}>
+                Existing repayment records are shown here. This is the money stage after approval or disbursement.
+              </div>
+            </div>
+
             <button
               type="button"
-              disabled={!canRepay}
-              style={secondaryBtn(!canRepay)}
-              onClick={() =>
-                setFeedback({
-                  tone: "error",
-                  text: canRepay
-                    ? "Manual repayment posting is disabled in this build. Use Loans & Support for the live money path."
-                    : "Repayment becomes the main path after approval or disbursement.",
-                })
-              }
+              onClick={() => toggleSection("repayment")}
+              style={collapseToggle()}
             >
-              Manual repayment disabled
+              {collapsed.repayment ? "Open" : "Collapse"}
             </button>
-
-            <Link to="/app/loans" style={primaryBtn(false)}>
-              Return to Loans & Support
-            </Link>
           </div>
+
+          {!collapsed.repayment ? (
+            <>
+              <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+                {repayments.length === 0 ? (
+                  <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+                    No repayment record is visible yet.
+                  </div>
+                ) : (
+                  repayments.map((repayment, index) => (
+                    <div key={repayment.id || index} style={innerCard("#FCFEFF")}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: 12,
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <div
+                          style={{
+                            color: "#0B1F33",
+                            fontSize: 15,
+                            fontWeight: 900,
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          Repayment #{safeStr(repayment.id || index + 1)}
+                        </div>
+
+                        <span style={badge(true)}>
+                          {fmtMoney(repayment.amount, currency)}
+                        </span>
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: 8,
+                          ...helperText(),
+                          fontSize: 13,
+                        }}
+                      >
+                        Posted: {safeDateTime(repayment.created_at)}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 14,
+                  display: "flex",
+                  gap: 10,
+                  flexWrap: "wrap",
+                }}
+              >
+                <Link
+                  to={`/app/payment/loans/${summary.id}`}
+                  style={primaryBtn(!canRepay)}
+                >
+                  {canRepay ? "Loan Payment Instructions" : "Repayment Opens After Approval"}
+                </Link>
+
+                <Link to="/app/finance" style={secondaryBtn(false)}>
+                  Open Finance
+                </Link>
+              </div>
+            </>
+          ) : null}
         </div>
 
         <div style={{ display: "grid", gap: 16 }}>
           <div style={pageCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Latest trust note</div>
-
-            {latestEvent ? (
-              <>
-                <div
-                  style={{
-                    marginTop: 10,
-                    color: "#0B1F33",
-                    fontSize: 15,
-                    fontWeight: 900,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {latestNote || "No explicit note was recorded in the latest event."}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 12,
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <div>
+                <div style={sectionLabel()}>Latest trust note</div>
+                <div style={{ marginTop: 8, ...helperText() }}>
+                  The most recent visible trust evidence tied to this support item.
                 </div>
+              </div>
 
+              <button
+                type="button"
+                onClick={() => toggleSection("evidence")}
+                style={collapseToggle()}
+              >
+                {collapsed.evidence ? "Open" : "Collapse"}
+              </button>
+            </div>
+
+            {!collapsed.evidence ? (
+              latestEvent ? (
+                <>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      color: "#0B1F33",
+                      fontSize: 15,
+                      fontWeight: 900,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {latestNote || "No explicit note was recorded in the latest event."}
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 10,
+                      color: "#64748B",
+                      fontSize: 13,
+                      lineHeight: 1.75,
+                    }}
+                  >
+                    Event type:{" "}
+                    <strong style={{ color: "#0B1F33" }}>
+                      {safeStr(latestEvent.event_type || "—")}
+                    </strong>
+                    <br />
+                    Created:{" "}
+                    <strong style={{ color: "#0B1F33" }}>
+                      {safeDateTime(latestEvent.created_at)}
+                    </strong>
+                    <br />
+                    Reason code:{" "}
+                    <strong style={{ color: "#0B1F33" }}>
+                      {latestReason || "(auto)"}
+                    </strong>
+                  </div>
+                </>
+              ) : (
                 <div
                   style={{
                     marginTop: 10,
                     color: "#64748B",
-                    fontSize: 13,
-                    lineHeight: 1.75,
+                    fontSize: 14,
+                    lineHeight: 1.8,
                   }}
                 >
-                  Event type: <strong style={{ color: "#0B1F33" }}>{safeStr(latestEvent.event_type || "—")}</strong>
-                  <br />
-                  Created: <strong style={{ color: "#0B1F33" }}>{safeDateTime(latestEvent.created_at)}</strong>
-                  <br />
-                  Reason code: <strong style={{ color: "#0B1F33" }}>{latestReason || "(auto)"}</strong>
+                  No trust event evidence is visible from this page right now.
                 </div>
-              </>
+              )
+            ) : null}
+          </div>
+
+          <div style={pageCard("#FFFFFF")}>
+            <div style={sectionLabel()}>Revenue allocation preview</div>
+
+            {revenuePreview ? (
+              <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+                <div style={innerCard("#FCFEFF")}>
+                  <div style={{ color: "#64748B", fontSize: 12, fontWeight: 900 }}>
+                    Service fee
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 6,
+                      color: "#0B1F33",
+                      fontSize: 18,
+                      fontWeight: 1000,
+                    }}
+                  >
+                    {fmtMoney(revenuePreview.service_fee, currency)}
+                  </div>
+                </div>
+
+                <div style={innerCard("#FCFEFF")}>
+                  <div style={{ color: "#64748B", fontSize: 12, fontWeight: 900 }}>
+                    Guarantor pool
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 6,
+                      color: "#0B1F33",
+                      fontSize: 18,
+                      fontWeight: 1000,
+                    }}
+                  >
+                    {fmtMoney(revenuePreview.guarantor_pool, currency)}
+                  </div>
+                </div>
+
+                <div style={innerCard("#FCFEFF")}>
+                  <div style={{ color: "#64748B", fontSize: 12, fontWeight: 900 }}>
+                    Platform revenue
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 6,
+                      color: "#0B1F33",
+                      fontSize: 18,
+                      fontWeight: 1000,
+                    }}
+                  >
+                    {fmtMoney(revenuePreview.platform_revenue, currency)}
+                  </div>
+                </div>
+
+                <div style={innerCard("#FCFEFF")}>
+                  <div style={{ color: "#64748B", fontSize: 12, fontWeight: 900 }}>
+                    Net disbursed
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 6,
+                      color: "#0B1F33",
+                      fontSize: 18,
+                      fontWeight: 1000,
+                    }}
+                  >
+                    {fmtMoney(revenuePreview.net_disbursed_amount, currency)}
+                  </div>
+                </div>
+              </div>
             ) : (
               <div
                 style={{
@@ -1191,65 +2013,156 @@ export default function LoanSummaryPage() {
                   lineHeight: 1.8,
                 }}
               >
-                No trust event evidence is visible from this page right now.
+                Revenue allocation preview is not visible yet for this support item.
               </div>
             )}
-          </div>
 
-          <div style={pageCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Summary facts</div>
-
-            <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-              <div style={innerCard("#FCFEFF")}>
-                <div style={{ color: "#64748B", fontSize: 12, fontWeight: 900 }}>
-                  Amount
-                </div>
-                <div
-                  style={{
-                    marginTop: 6,
-                    color: "#0B1F33",
-                    fontSize: 22,
-                    fontWeight: 1000,
-                  }}
-                >
-                  {fmtMoney(n(summary.amount), currency)}
-                </div>
-              </div>
-
-              <div style={innerCard("#FCFEFF")}>
-                <div style={{ color: "#64748B", fontSize: 12, fontWeight: 900 }}>
-                  Created
-                </div>
-                <div
-                  style={{
-                    marginTop: 6,
-                    color: "#0B1F33",
-                    fontSize: 16,
-                    fontWeight: 900,
-                  }}
-                >
-                  {safeDateTime(summary.created_at)}
-                </div>
-              </div>
-
-              <div style={innerCard("#FCFEFF")}>
-                <div style={{ color: "#64748B", fontSize: 12, fontWeight: 900 }}>
-                  Due
-                </div>
-                <div
-                  style={{
-                    marginTop: 6,
-                    color: "#0B1F33",
-                    fontSize: 16,
-                    fontWeight: 900,
-                  }}
-                >
-                  {safeDateTime(summary.due_at)}
-                </div>
-              </div>
+            <div style={{ marginTop: 14 }}>
+              <Link to="/app/revenue-allocation" style={secondaryBtn(false)}>
+                Open Revenue Allocation
+              </Link>
             </div>
           </div>
         </div>
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Working routes</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Move from loan summary into the exact next page you need.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => toggleSection("routes")}
+            style={collapseToggle()}
+          >
+            {collapsed.routes ? "Open" : "Collapse"}
+          </button>
+        </div>
+
+        {!collapsed.routes ? (
+          <div
+            style={{
+              marginTop: 16,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+              gap: 12,
+            }}
+          >
+            <Link to="/app/loan-workbench" style={routeTile(true)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                Loan Workbench
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Continue deeper support handling here.
+              </div>
+            </Link>
+
+            <Link to="/app/loan-suggestions" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                Loan Suggestions
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Use this when the next question is guarantor fit.
+              </div>
+            </Link>
+
+            <Link to="/app/loan-readiness" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                Loan Readiness
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Use this when the question is whether the path is clean enough to continue.
+              </div>
+            </Link>
+
+            <Link to="/app/revenue-allocation" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                Revenue Allocation
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Read fee and distribution logic here.
+              </div>
+            </Link>
+
+            <Link
+              to={canRepay ? `/app/payment/loans/${summary.id}` : "/app/finance"}
+              style={routeTile(false)}
+            >
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                {canRepay ? "Loan Payment Instructions" : "Finance"}
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                {canRepay
+                  ? "Use this when the support item has moved into repayment."
+                  : "Use this when the next question is the broader money truth."}
+              </div>
+            </Link>
+
+            <Link to="/app/loans" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                Loans & Support
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Return to the broader support overview.
+              </div>
+            </Link>
+          </div>
+        ) : null}
       </section>
     </div>
   );

@@ -1,5 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { navigateWithOrigin } from "../lib/nav";
+import { useLocation, useNavigate } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import {
   addLoanGuarantorRequest,
   cancelLoanRequest,
@@ -23,6 +25,7 @@ import {
 } from "../lib/api";
 import {
   getCommunityMoneySurface,
+  type CommunityMoneySettlement,
   type CommunityMoneySurface,
 } from "../lib/communityMoney";
 
@@ -55,8 +58,11 @@ type CommunityRow = {
   community_trust_band?: string | null;
   reputation_band?: string | null;
   status?: string | null;
+  role?: string | null;
+  member_role?: string | null;
+  membership_role?: string | null;
+  participant_role?: string | null;
   community?: any;
-  
   profile?: any;
   marketplace?: any;
   clan?: any;
@@ -126,9 +132,16 @@ type NoticeTone = "success" | "error";
 
 type SectionState = {
   profile: boolean;
+  money: boolean;
   tools: boolean;
   members: boolean;
   support: boolean;
+};
+
+type PersistedWithdrawalTask = {
+  amountInput: string;
+  noteInput: string;
+  latestWithdrawalResult: any | null;
 };
 
 const IMAGE_FIELD_NAMES = [
@@ -157,6 +170,7 @@ const IMAGE_FIELD_NAMES = [
 
 const DEFAULT_SECTION_STATE: SectionState = {
   profile: true,
+  money: true,
   tools: true,
   members: false,
   support: false,
@@ -170,6 +184,8 @@ const FINAL_LOAN_STATUSES = new Set([
   "cancelled",
   "defaulted",
 ]);
+
+const WITHDRAWAL_TASK_STORAGE_KEY_PREFIX = "gmfn.withdrawal.task.v4";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -365,7 +381,7 @@ function getInviteUrl(payload: any): string {
 
   if (direct) return direct;
 
-  const code = firstTruthy(payload?.code);
+  const code = firstTruthy(payload?.code, payload?.invite_code);
   if (code && typeof window !== "undefined") {
     return `${window.location.origin}/join?code=${encodeURIComponent(code)}`;
   }
@@ -580,19 +596,20 @@ function communityDescription(row: CommunityRow | null | undefined): string {
     firstTruthy(
       row?.marketplace_description,
       row?.description,
-      "This selected community surface contains the community identity, stable tools, member rows, and support movement."
+      "Marketplace is the selected-community launcher surface. Community profile comes first, money routes come next, then stable tools, member rows, and support movement."
     )
   );
 }
+
 function communityIdentity(row: CommunityRow | null | undefined): string {
   return (
     firstTruthy(
       row?.community_code,
-      row?.community_id,
-      row?.marketplace_id,
-      row?.gmfn_id,
-      row?.clan_code,
-      row?.id
+      row?.community?.community_code,
+      row?.profile?.community_code,
+      row?.marketplace?.community_code,
+      row?.clan?.community_code,
+      row?.meta?.community_code
     ) || "Pending"
   );
 }
@@ -609,6 +626,21 @@ function communityTrustLabel(row: CommunityRow | null | undefined): string {
       row?.community?.trust_band,
       "Visible community"
     )
+  );
+}
+
+function communityRole(row: CommunityRow | null | undefined): string {
+  return (
+    firstTruthy(
+      row?.role,
+      row?.member_role,
+      row?.membership_role,
+      row?.participant_role,
+      row?.community?.role,
+      row?.profile?.role,
+      row?.marketplace?.role,
+      row?.clan?.role
+    ) || ""
   );
 }
 
@@ -796,6 +828,14 @@ function getLoanAmountText(item: LoanSupportItem): string {
   return value || currency || "Amount pending";
 }
 
+function safeDateTime(x: any): string {
+  const raw = safeStr(x);
+  if (!raw) return "";
+  const d = new Date(raw);
+  if (!Number.isFinite(d.getTime())) return raw;
+  return d.toLocaleString();
+}
+
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
@@ -832,11 +872,11 @@ function sectionLabel(): React.CSSProperties {
     color: "#5D7389",
     fontWeight: 900,
     letterSpacing: 0.35,
-    textTransform: "uppercase" as const,
+    textTransform: "uppercase",
   };
 }
 
-function badge(primary = false): React.CSSProperties {
+function badgeStyle(primary = false): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
@@ -848,8 +888,13 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap" as const,
+    whiteSpace: "nowrap",
   };
+}
+
+// alias kept to match existing component usage
+function badge(primary = false): React.CSSProperties {
+  return badgeStyle(primary);
 }
 
 function actionBtn(
@@ -926,7 +971,7 @@ function inputStyle(): React.CSSProperties {
     fontSize: 14,
     color: "#0B1F33",
     outline: "none",
-    boxSizing: "border-box" as const,
+    boxSizing: "border-box",
   };
 }
 
@@ -934,7 +979,7 @@ function textAreaStyle(): React.CSSProperties {
   return {
     ...inputStyle(),
     minHeight: 96,
-    resize: "vertical" as const,
+    resize: "vertical",
     lineHeight: 1.6,
   };
 }
@@ -1023,6 +1068,10 @@ function communitySectionsStorageKey(communityId: number): string {
   return `gmfn.marketplace.sections.${communityId}`;
 }
 
+function withdrawalTaskStorageKey(clanId: number, gmfnId: string): string {
+  return `${WITHDRAWAL_TASK_STORAGE_KEY_PREFIX}.${gmfnId || "me"}.${clanId || 0}`;
+}
+
 function AuthResolvedImage(props: {
   candidates: string[];
   alt: string;
@@ -1062,7 +1111,7 @@ function AuthResolvedImage(props: {
 
         try {
           const headers: Record<string, string> = {};
-          if (token) headers["Authorization"] = `Bearer ${token}`;
+          if (token) headers.Authorization = `Bearer ${token}`;
           if (positiveNumber(props.clanId)) {
             headers["X-Clan-Id"] = String(props.clanId);
           }
@@ -1132,7 +1181,31 @@ function AuthResolvedImage(props: {
 
   return <>{props.fallback}</>;
 }
+
+function settlementSummary(settlement: CommunityMoneySettlement | null): string {
+  if (!settlement) return "Community account not ready";
+
+  return firstTruthy(
+    settlement.bankName,
+    settlement.accountName,
+    settlement.accountNumber,
+    "Community account ready"
+  );
+}
+
+function payoutSummary(surface: CommunityMoneySurface | null): string {
+  return firstTruthy(
+    surface?.payoutDestination?.destinationName,
+    surface?.payoutDestination?.bankName,
+    surface?.payoutDestination?.accountNumber,
+    "Personal payout not ready"
+  );
+}
+
 export default function MarketplacePage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 980;
@@ -1151,6 +1224,7 @@ export default function MarketplacePage() {
   const [shops, setShops] = useState<MarketplaceShop[]>([]);
   const [poolInfo, setPoolInfo] = useState<any>(null);
   const [inviteLink, setInviteLink] = useState<string>("");
+  const [creatingInviteLink, setCreatingInviteLink] = useState(false);
   const [loans, setLoans] = useState<LoanSupportItem[]>([]);
   const [moneySurface, setMoneySurface] = useState<CommunityMoneySurface | null>(
     null
@@ -1188,6 +1262,9 @@ export default function MarketplacePage() {
 
   const [sectionsOpen, setSectionsOpen] =
     useState<SectionState>(DEFAULT_SECTION_STATE);
+
+  const supportSectionRef = useRef<HTMLElement | null>(null);
+  const withdrawalHandoffAppliedRef = useRef("");
 
   const selectedClanId = Number(getSelectedClanId() || 0);
   const currentGmfnId = safeStr(me?.gmfn_id || "");
@@ -1228,6 +1305,10 @@ export default function MarketplacePage() {
       ...prev,
       [key]: !prev[key],
     }));
+  }
+
+  function openFinance() {
+    navigateWithOrigin(navigate, "/app/finance", location);
   }
 
   async function loadLoanDraftContext(loanId: number, communityId: number) {
@@ -1343,7 +1424,8 @@ export default function MarketplacePage() {
     (async () => {
       const surface = await getCommunityMoneySurface(
         activeCommunityId,
-        currentGmfnId
+        currentGmfnId,
+        "NGN"
       ).catch(() => null);
 
       if (!alive) return;
@@ -1388,6 +1470,52 @@ export default function MarketplacePage() {
     }));
   }, [loanDraftId]);
 
+  useEffect(() => {
+    const hash = safeStr(location.hash).replace(/^#/, "");
+    if (hash !== "marketplace-loans-support") return;
+
+    setSectionsOpen((prev) => {
+      if (prev.members && prev.support) return prev;
+      return {
+        ...prev,
+        members: true,
+        support: true,
+      };
+    });
+
+    if (activeCommunityId && currentGmfnId) {
+      const token = `${activeCommunityId}:${currentGmfnId}:${hash}`;
+      if (withdrawalHandoffAppliedRef.current !== token) {
+        const storedWithdrawalTask = readLocalJSON<PersistedWithdrawalTask | null>(
+          withdrawalTaskStorageKey(activeCommunityId, currentGmfnId),
+          null
+        );
+
+        const storedAmount = safeStr(storedWithdrawalTask?.amountInput);
+        const storedNote = safeStr(storedWithdrawalTask?.noteInput);
+
+        if (storedAmount && !safeStr(loanAmount)) {
+          setLoanAmount(storedAmount);
+        }
+
+        if (storedNote && !safeStr(loanPurpose)) {
+          setLoanPurpose(storedNote);
+        }
+
+        withdrawalHandoffAppliedRef.current = token;
+      }
+    }
+
+    const timer = window.setTimeout(() => {
+      supportSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [location.hash, activeCommunityId, currentGmfnId, loanAmount, loanPurpose]);
+
   const memberName = useMemo(() => {
     return (
       firstTruthy(
@@ -1409,6 +1537,18 @@ export default function MarketplacePage() {
   const visiblePoolAmount = safeStr(moneySurface?.poolAmount || poolAmount || "—");
   const visiblePoolCurrency = safeStr(
     moneySurface?.poolCurrency || poolCurrency || "NGN"
+  );
+
+  const communitySettlementReady = Boolean(
+    moneySurface?.communitySettlement?.bankName ||
+      moneySurface?.communitySettlement?.accountName ||
+      moneySurface?.communitySettlement?.accountNumber
+  );
+
+  const payoutReady = Boolean(
+    safeStr(moneySurface?.payoutDestination?.destinationName) &&
+      safeStr(moneySurface?.payoutDestination?.bankName) &&
+      safeStr(moneySurface?.payoutDestination?.accountNumber)
   );
 
   const communityImageCandidates = useMemo(() => {
@@ -1540,14 +1680,40 @@ export default function MarketplacePage() {
     }
   }
 
-  function copyInviteLink() {
-    if (!inviteLink) {
-      showNotice("error", "Invite link is not ready yet.");
+  async function handleCreateInviteLink() {
+    if (!activeCommunityId) {
+      showNotice("error", "Select a community first.");
       return;
     }
 
-    safeCopy(inviteLink);
-    showNotice("success", "Invite link copied.");
+    setCreatingInviteLink(true);
+
+    try {
+      const inviteRes = await getClanInviteLink(activeCommunityId).catch(() => null);
+      const nextInviteLink = getInviteUrl(inviteRes);
+
+      if (!nextInviteLink) {
+        showNotice("error", "Invite link is not ready yet.");
+        return;
+      }
+
+      setInviteLink(nextInviteLink);
+      safeCopy(nextInviteLink);
+      showNotice("success", "Invite link created and copied.");
+    } finally {
+      setCreatingInviteLink(false);
+    }
+  }
+
+  function handleOpenJoinLink() {
+    if (!inviteLink) {
+      showNotice("error", "Join invite link is not ready yet.");
+      return;
+    }
+
+    if (typeof window !== "undefined") {
+      window.open(inviteLink, "_blank", "noopener,noreferrer");
+    }
   }
 
   function copyCommunityId() {
@@ -1876,7 +2042,7 @@ export default function MarketplacePage() {
           </div>
 
           <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
-            Marketplace is the selected community working surface. Choose a
+            Marketplace is the selected-community launcher surface. Choose a
             community first from Community Home.
           </div>
 
@@ -1888,69 +2054,30 @@ export default function MarketplacePage() {
               flexWrap: "wrap",
             }}
           >
-            <Link to="/app/community" style={actionBtn("secondary")}>
+            <OriginLink to="/app/community" style={actionBtn("secondary")}>
               Community Home
-            </Link>
-            <Link to="/app/dashboard" style={actionBtn("primary")}>
+            </OriginLink>
+            <OriginLink to="/app/dashboard" style={actionBtn("primary")}>
               Dashboard
-            </Link>
-            <Link to="/app/notifications" style={actionBtn("soft")}>
+            </OriginLink>
+            <button type="button" onClick={openFinance} style={actionBtn("soft")}>
+              Finance
+            </button>
+            <OriginLink to="/app/notifications" style={actionBtn("soft")}>
               Notifications
-            </Link>
-            <Link to="/app/trust" style={actionBtn("soft")}>
-              Trust
-            </Link>
-            <Link to="/app/my-gmfn-and-i" style={actionBtn("soft")}>
+            </OriginLink>
+            <OriginLink to="/app/trust" style={actionBtn("soft")}>
+              Trust Passport
+            </OriginLink>
+            <OriginLink to="/app/identity" style={actionBtn("soft")}>
+              CCI
+            </OriginLink>
+            <OriginLink to="/app/trust-slip" style={actionBtn("soft")}>
+              TrustSlip
+            </OriginLink>
+            <OriginLink to="/app/my-gmfn-and-i" style={actionBtn("soft")}>
               My GMFN and I
-            </Link>
-            <Link to="/app/my-gmfn-and-i?tab=settings" style={actionBtn("soft")}>
-              Settings
-            </Link>
-          </div>
-        </section>
-
-        <section style={pageCard("#FFFFFF")}>
-          <div style={sectionLabel()}>No selected community</div>
-
-          <div
-            style={{
-              marginTop: 12,
-              color: "#0B1F33",
-              fontSize: 28,
-              fontWeight: 900,
-              lineHeight: 1.15,
-              maxWidth: 760,
-            }}
-          >
-            Open Community Home first, then choose the community you want to work with.
-          </div>
-
-          <div
-            style={{
-              marginTop: 12,
-              ...helperText(),
-              maxWidth: 860,
-            }}
-          >
-            Community Home remains the private control room. Marketplace is the
-            selected community working surface that opens after a community has
-            been chosen.
-          </div>
-
-          <div
-            style={{
-              marginTop: 18,
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            <Link to="/app/community" style={actionBtn("primary")}>
-              Open Community Home
-            </Link>
-            <Link to="/app/dashboard" style={actionBtn("secondary")}>
-              Dashboard
-            </Link>
+            </OriginLink>
           </div>
         </section>
       </div>
@@ -1988,43 +2115,106 @@ export default function MarketplacePage() {
         </div>
 
         <div style={{ marginTop: 12, ...helperText(), maxWidth: 920 }}>
-          Marketplace is the selected community working surface. Community
-          profile comes first, then stable tools, then changing working blocks
-          below.
+          Marketplace is the launcher surface for this selected community.
+          Community profile stays first. Money routes stay second. Stable tools
+          stay above members and support. Once Money In, Money Out, or Finance is
+          chosen, the broader app should give way to the chosen journey until that
+          journey reaches a real outcome.
+        </div>
+
+        <div
+          style={{
+            marginTop: 14,
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
+          }}
+        >
+          <span style={badge(true)}>{communityName(selectedCommunity)}</span>
+          <span style={badge(false)}>
+            Pool: {visiblePoolAmount} {visiblePoolCurrency}
+          </span>
+          <span style={badge(false)}>
+            Community account: {communitySettlementReady ? "Ready" : "Pending"}
+          </span>
+          <span style={badge(false)}>
+            Payout account: {payoutReady ? "Ready" : "Pending"}
+          </span>
         </div>
 
         <div
           style={{
             marginTop: 18,
-            display: "flex",
+            display: "grid",
             gap: 10,
-            flexWrap: "wrap",
           }}
         >
-          <Link to="/app/community" style={actionBtn("secondary")}>
-            Community Home
-          </Link>
-          <Link to="/app/dashboard" style={actionBtn("primary")}>
-            Dashboard
-          </Link>
-          <Link to="/app/notifications" style={actionBtn("soft")}>
-            Notifications
-          </Link>
-          <Link to="/app/demand-box" style={actionBtn("soft")}>
-            Demand Box
-          </Link>
-          <Link to="/app/shop-control" style={actionBtn("soft")}>
-            Shop Control
-          </Link>
-          <Link to="/app/trust" style={actionBtn("soft")}>
-            Trust
-          </Link>
-          <Link to="/app/my-gmfn-and-i" style={actionBtn("soft")}>
-            My GMFN and I
-          </Link>
-          <Link to="/app/my-gmfn-and-i?tab=settings" style={actionBtn("soft")}>
-            Settings
-          </Link>
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <OriginLink to="/app/community" style={actionBtn("secondary")}>
+              Community Home
+            </OriginLink>
+
+            <OriginLink to="/app/dashboard" style={actionBtn("secondary")}>
+              Dashboard
+            </OriginLink>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <button
+              type="button"
+              onClick={openFinance}
+              style={{
+                ...actionBtn("primary"),
+                position: "relative",
+                zIndex: 4,
+              }}
+            >
+              Finance
+            </button>
+
+            <OriginLink to="/app/payment/pool" style={actionBtn("secondary")}>
+              Money In
+            </OriginLink>
+
+            <OriginLink
+              to="/app/withdrawal-instructions"
+              style={actionBtn("secondary")}
+            >
+              Money Out
+            </OriginLink>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <OriginLink to="/app/trust" style={actionBtn("soft")}>
+              Trust Passport
+            </OriginLink>
+
+            <OriginLink to="/app/identity" style={actionBtn("soft")}>
+              CCI
+            </OriginLink>
+
+            <OriginLink to="/app/trust-slip" style={actionBtn("soft")}>
+              TrustSlip
+            </OriginLink>
+          </div>
         </div>
       </section>
 
@@ -2041,7 +2231,7 @@ export default function MarketplacePage() {
           <div>
             <div style={sectionLabel()}>Community profile</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              The stable identity block of the current community should stay first.
+              The stable identity block of the current community stays first.
             </div>
           </div>
 
@@ -2213,9 +2403,62 @@ export default function MarketplacePage() {
               >
                 <span style={badge(true)}>Current member: {memberName}</span>
                 <span style={badge(false)}>GMFN ID: {gmfnId}</span>
+                {communityRole(selectedCommunity) ? (
+                  <span style={badge(false)}>
+                    Role: {communityRole(selectedCommunity)}
+                  </span>
+                ) : null}
                 <span style={badge(false)}>
                   Invite: {inviteLink ? "Ready" : "Not ready"}
                 </span>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 16,
+                  display: "grid",
+                  gap: 10,
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={openFinance}
+                    style={{
+                      ...actionBtn("primary"),
+                      position: "relative",
+                      zIndex: 4,
+                    }}
+                  >
+                    Finance
+                  </button>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <OriginLink to="/app/trust" style={actionBtn("secondary")}>
+                    Trust Passport
+                  </OriginLink>
+
+                  <OriginLink to="/app/identity" style={actionBtn("secondary")}>
+                    CCI
+                  </OriginLink>
+
+                  <OriginLink to="/app/trust-slip" style={actionBtn("secondary")}>
+                    TrustSlip
+                  </OriginLink>
+                </div>
               </div>
             </div>
           </div>
@@ -2233,107 +2476,191 @@ export default function MarketplacePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Community money routes</div>
+            <div style={sectionLabel()}>Money routes</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              These are the stable money paths for the currently selected community.
-              Money In opens the deposit route. Money Out opens the withdrawal
-              route for the same community flow.
+              Marketplace is the launcher. Once the member chooses Money In,
+              Money Out, or Finance, the chosen process should own the screen
+              until that route reaches a real conclusion.
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={badge(true)}>{communityName(selectedCommunity)}</span>
-            <span style={badge(false)}>
-              Pool: {visiblePoolAmount} {visiblePoolCurrency}
-            </span>
-          </div>
+          <button
+            type="button"
+            onClick={() => toggleSection("money")}
+            style={actionBtn("soft")}
+          >
+            {sectionsOpen.money ? "Collapse" : "Open"}
+          </button>
         </div>
 
-        <div
-          style={{
-            marginTop: 16,
-            display: "grid",
-            gridTemplateColumns: isCompact
-              ? "1fr"
-              : "repeat(3, minmax(0, 1fr))",
-            gap: 12,
-          }}
-        >
-          <div style={innerCard("#FCFEFF")}>
-            <div style={sectionLabel()}>Visible pool position</div>
+        {sectionsOpen.money ? (
+          <div
+            style={{
+              marginTop: 16,
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "1fr"
+                : "repeat(3, minmax(0, 1fr))",
+              gap: 12,
+            }}
+          >
+            <div style={innerCard("#FCFEFF")}>
+              <div style={sectionLabel()}>Visible pool position</div>
 
-            <div
-              style={{
-                marginTop: 8,
-                color: "#0B1F33",
-                fontWeight: 900,
-                fontSize: 22,
-                lineHeight: 1.2,
-              }}
-            >
-              {visiblePoolAmount} {visiblePoolCurrency}
-            </div>
-
-            <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-              This is the current visible pool position in the selected community context.
-            </div>
-          </div>
-
-          <div style={innerCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Money In</div>
-
-            <div
-              style={{
-                marginTop: 8,
-                color: "#0B1F33",
-                fontWeight: 900,
-                fontSize: 17,
-                lineHeight: 1.3,
-              }}
-            >
-              Deposit into the community pool
-            </div>
-
-            <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-              Open the deposit instructions for the current community money route.
-            </div>
-
-            <div style={{ marginTop: 14 }}>
-              <Link to="/app/payment/pool" style={actionBtn("primary")}>
-                Money In
-              </Link>
-            </div>
-          </div>
-
-          <div style={innerCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Money Out</div>
-
-            <div
-              style={{
-                marginTop: 8,
-                color: "#0B1F33",
-                fontWeight: 900,
-                fontSize: 17,
-                lineHeight: 1.3,
-              }}
-            >
-              Withdraw through the community route
-            </div>
-
-            <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-              Open the withdrawal instructions tied to the same community money path.
-            </div>
-
-            <div style={{ marginTop: 14 }}>
-              <Link
-                to="/app/withdrawal-instructions"
-                style={actionBtn("secondary")}
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 22,
+                  lineHeight: 1.2,
+                }}
               >
-                Money Out
-              </Link>
+                {visiblePoolAmount} {visiblePoolCurrency}
+              </div>
+
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                This is the current visible pool position in the selected community context.
+              </div>
+            </div>
+
+            <div style={innerCard("#FFFFFF")}>
+              <div style={sectionLabel()}>Community account</div>
+
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                {settlementSummary(moneySurface?.communitySettlement || null)}
+              </div>
+
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                This is the official community money account / settlement rail. Money In depends on it.
+              </div>
+
+              <div style={{ marginTop: 12 }}>
+                <span style={communitySettlementReady ? badge(true) : badge(false)}>
+                  {communitySettlementReady ? "Community account ready" : "Community account not ready"}
+                </span>
+              </div>
+            </div>
+
+            <div style={innerCard("#FFFFFF")}>
+              <div style={sectionLabel()}>Personal payout</div>
+
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                {payoutSummary(moneySurface)}
+              </div>
+
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                This is where approved Money Out should land. It is separate from the fixed community account.
+              </div>
+
+              <div style={{ marginTop: 12 }}>
+                <span style={payoutReady ? badge(true) : badge(false)}>
+                  {payoutReady ? "Personal payout ready" : "Personal payout not ready"}
+                </span>
+              </div>
+            </div>
+
+            <div style={innerCard("#FFFFFF")}>
+              <div style={sectionLabel()}>Money In</div>
+
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                Pay into the community pool
+              </div>
+
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                Choosing Money In should move the member into a guided pay-in
+                journey until reference, rail, confirmation, and result are complete.
+              </div>
+
+              <div style={{ marginTop: 14 }}>
+                <OriginLink to="/app/payment/pool" style={actionBtn("primary")}>
+                  Money In
+                </OriginLink>
+              </div>
+            </div>
+
+            <div style={innerCard("#FFFFFF")}>
+              <div style={sectionLabel()}>Money Out</div>
+
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                Withdraw through the guided route
+              </div>
+
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                Choosing Money Out should move the member into the guided
+                withdrawal path until direct result or support continuation is resolved.
+              </div>
+
+              <div style={{ marginTop: 14 }}>
+                <OriginLink
+                  to="/app/withdrawal-instructions"
+                  style={actionBtn("secondary")}
+                >
+                  Money Out
+                </OriginLink>
+              </div>
+            </div>
+
+            <div style={innerCard("#F8FBFF")}>
+              <div style={sectionLabel()}>Finance</div>
+
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                Pool, support, locks, releases
+              </div>
+
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                Finance should become the full money truth of the member inside
+                the selected community context, not just a balance card.
+              </div>
+
+              <div style={{ marginTop: 14 }}>
+                <button type="button" onClick={openFinance} style={actionBtn("secondary")}>
+                  Open Finance
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        ) : null}
       </section>
 
       <section style={pageCard("#FFFFFF")}>
@@ -2394,11 +2721,20 @@ export default function MarketplacePage() {
               >
                 <button
                   type="button"
-                  onClick={copyInviteLink}
-                  style={actionBtn("primary", !inviteLink)}
-                  disabled={!inviteLink}
+                  onClick={() => void handleCreateInviteLink()}
+                  disabled={creatingInviteLink}
+                  style={actionBtn("primary", creatingInviteLink)}
                 >
-                  Copy Invite Link
+                  {creatingInviteLink ? "Creating..." : "Create Invite Link"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleOpenJoinLink}
+                  disabled={!inviteLink}
+                  style={actionBtn("secondary", !inviteLink)}
+                >
+                  Open Join Invite
                 </button>
 
                 <button
@@ -2436,28 +2772,28 @@ export default function MarketplacePage() {
                 flexWrap: "wrap",
               }}
             >
-              <Link
+              <OriginLink
                 to={`/app/community/${activeCommunityId}/join-requests`}
                 style={actionBtn("secondary")}
               >
                 Join Requests
-              </Link>
+              </OriginLink>
 
-              <Link to="/app/demand-box" style={actionBtn("secondary")}>
+              <OriginLink to="/app/demand-box" style={actionBtn("secondary")}>
                 Demand Box
-              </Link>
+              </OriginLink>
 
-              <Link to="/app/trust-slip" style={actionBtn("secondary")}>
+              <OriginLink to="/app/trust-slip" style={actionBtn("secondary")}>
                 Merchant Verify
-              </Link>
+              </OriginLink>
 
-              <Link to="/app/community" style={actionBtn("secondary")}>
+              <OriginLink to="/app/community" style={actionBtn("secondary")}>
                 Community Home
-              </Link>
+              </OriginLink>
 
-              <Link to="/app/build-first-circle" style={actionBtn("secondary")}>
+              <OriginLink to="/app/build-first-circle" style={actionBtn("secondary")}>
                 Build First Circle
-              </Link>
+              </OriginLink>
             </div>
           </div>
         ) : null}
@@ -2577,9 +2913,9 @@ export default function MarketplacePage() {
                         }}
                       >
                         {row.shopTo ? (
-                          <Link to={row.shopTo} style={actionBtn("secondary")}>
+                          <OriginLink to={row.shopTo} style={actionBtn("secondary")}>
                             Open Shop Gallery
-                          </Link>
+                          </OriginLink>
                         ) : (
                           <button type="button" style={actionBtn("secondary", true)} disabled>
                             No Shop Yet
@@ -2605,7 +2941,11 @@ export default function MarketplacePage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section
+        id="marketplace-loans-support"
+        ref={supportSectionRef}
+        style={pageCard("#FFFFFF")}
+      >
         <div
           style={{
             display: "flex",
@@ -2618,7 +2958,9 @@ export default function MarketplacePage() {
           <div>
             <div style={sectionLabel()}>Loans & Support</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Start the support draft here, then open the fit and guarantor flow only when needed.
+              Start the support draft here. Once the support path is active, the
+              guided support pages should take over instead of leaving the person
+              halfway between mixed surfaces.
             </div>
           </div>
 
@@ -2650,7 +2992,10 @@ export default function MarketplacePage() {
               <div style={sectionLabel()}>Start a support request</div>
 
               <div style={{ marginTop: 10, ...helperText(), maxWidth: 760 }}>
-                Enter amount and duration first. If the draft needs guarantors, the fit suggestions appear below.
+                Enter amount and duration first. If the draft needs guarantors,
+                fit suggestions appear below. Once support becomes active, the
+                guided continuation pages should carry the person through
+                readiness, suggestions, and workbench in order.
               </div>
 
               <div
@@ -2732,10 +3077,31 @@ export default function MarketplacePage() {
                     {cancellingLoanDraft ? "Cancelling..." : "Cancel Draft"}
                   </button>
                 ) : null}
+              </div>
 
-                <Link to="/app/loans" style={actionBtn("soft")}>
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "flex",
+                  gap: 10,
+                  flexWrap: "wrap",
+                }}
+              >
+                <OriginLink to="/app/loan-readiness" style={actionBtn("soft")}>
+                  Loan Readiness
+                </OriginLink>
+                <OriginLink to="/app/loan-suggestions" style={actionBtn("soft")}>
+                  Loan Suggestions
+                </OriginLink>
+                <OriginLink to="/app/loan-workbench" style={actionBtn("soft")}>
+                  Loan Workbench
+                </OriginLink>
+                <button type="button" onClick={openFinance} style={actionBtn("soft")}>
+                  Finance
+                </button>
+                <OriginLink to="/app/loans" style={actionBtn("soft")}>
                   Full Loans View
-                </Link>
+                </OriginLink>
               </div>
 
               {loanDraftId ? (
@@ -2997,7 +3363,7 @@ export default function MarketplacePage() {
                           item?.guarantor_name
                             ? `Guarantor: ${item.guarantor_name}`
                             : "",
-                          item?.created_at ? `Started: ${item.created_at}` : "",
+                          item?.created_at ? `Started: ${safeDateTime(item.created_at)}` : "",
                           "This support item is visible in the current community context."
                         )}
                       </div>

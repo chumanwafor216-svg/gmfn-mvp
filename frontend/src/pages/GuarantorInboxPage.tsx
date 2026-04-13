@@ -1,9 +1,7 @@
-// FILE: src/pages/GuarantorInboxPage.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 import {
-  decideLoanGuarantor,
   getCurrentClan,
   getLoanGuarantorInbox,
   getMe,
@@ -11,11 +9,27 @@ import {
   safeCopy,
 } from "../lib/api";
 
-type MeLite = {
-  gmfn_id?: string | null;
-  nickname?: string | null;
-  display_name?: string | null;
-  email?: string | null;
+type FilterKey = "pending" | "approved" | "declined" | "all";
+
+type InboxRow = {
+  id?: number;
+  loanId?: number;
+  clanId?: number;
+  borrowerDisplay?: string | null;
+  borrowerEmail?: string | null;
+  borrowerUserId?: number | null;
+  amount?: string | number | null;
+  pledgeAmount?: string | number | null;
+  currency?: string | null;
+  status?: string | null;
+  createdAt?: string | null;
+  expiresAt?: string | null;
+  purpose?: string | null;
+  guarantorUserId?: number | null;
+  lockedAmount?: string | number | null;
+  releasedAmount?: string | number | null;
+  isLocked?: boolean | null;
+  note?: string | null;
 };
 
 type CommunityLite = {
@@ -23,37 +37,30 @@ type CommunityLite = {
   clan_id?: number;
   name?: string | null;
   marketplace_name?: string | null;
+  community_code?: string | null;
+  role?: string | null;
+  member_role?: string | null;
+  membership_role?: string | null;
+  participant_role?: string | null;
 };
 
-type InboxRow = {
-  id?: number;
-  loan_id?: number;
-  guarantor_user_id?: number;
-  borrower_user_id?: number;
-  borrower_display?: string | null;
-  borrower_name?: string | null;
-  borrower_email?: string | null;
-  borrower_gmfn_id?: string | null;
-  pledge_amount?: string | number | null;
-  requested_amount?: string | number | null;
-  amount?: string | number | null;
-  currency?: string | null;
-  status?: string | null;
-  note?: string | null;
-  created_at?: string | null;
-  loan_title?: string | null;
+type MeLite = {
+  gmfn_id?: string | null;
+  display_name?: string | null;
+  nickname?: string | null;
+  name?: string | null;
+  first_name?: string | null;
+  email?: string | null;
 };
 
-type FilterKey = "pending" | "approved" | "declined" | "all";
-
-type NextStepState = {
-  title: string;
-  detail: string;
-  today: string;
-  tomorrow: string;
-  ctaLabel: string;
-  ctaTo: string;
+type CollapseState = {
+  overview: boolean;
+  queue: boolean;
+  guidance: boolean;
+  routes: boolean;
 };
+
+const GUARANTOR_INBOX_UI_STORAGE_KEY = "gmfn.guarantorInbox.sections.v1";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -67,35 +74,28 @@ function firstTruthy(...values: any[]): string {
   return "";
 }
 
-function firstDefined(...values: any[]): any {
-  for (const value of values) {
-    if (value === undefined || value === null) continue;
-    if (typeof value === "string" && value.trim() === "") continue;
-    return value;
-  }
-  return undefined;
-}
-
 function positiveNumber(x: any): number {
-  const n = Number(x || 0);
+  const n = Number(x);
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
-function fmtMoney(x: any): string {
-  const n = Number(x);
-  if (!Number.isFinite(n)) {
-    const s = safeStr(x);
-    return s || "0.00";
-  }
-  return n.toFixed(2);
+function moneyNumber(x: any): number {
+  const raw = safeStr(x).replace(/,/g, "");
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : 0;
 }
 
-function safeDate(x: any): Date | null {
-  const raw = safeStr(x);
-  if (!raw) return null;
-  const d = new Date(raw);
-  if (Number.isNaN(d.getTime())) return null;
-  return d;
+function fmtMoney(x: any): string {
+  return moneyNumber(x).toFixed(2);
+}
+
+function rowsOf<T = any>(input: any): T[] {
+  if (Array.isArray(input)) return input as T[];
+  if (Array.isArray(input?.items)) return input.items as T[];
+  if (Array.isArray(input?.data?.items)) return input.data.items as T[];
+  if (Array.isArray(input?.results)) return input.results as T[];
+  if (Array.isArray(input?.rows)) return input.rows as T[];
+  return [];
 }
 
 function safeDateTime(x: any): string {
@@ -106,28 +106,6 @@ function safeDateTime(x: any): string {
   return d.toLocaleString();
 }
 
-function displayName(me: MeLite | null): string {
-  const n1 = safeStr(me?.nickname);
-  if (n1) return n1;
-
-  const n2 = safeStr(me?.display_name);
-  if (n2) return n2;
-
-  const email = safeStr(me?.email);
-  if (!email) return "Member";
-
-  const left = email.split("@")[0] || "member";
-  return left
-    .split(/[._-]+/)
-    .filter(Boolean)
-    .map((x) => x.charAt(0).toUpperCase() + x.slice(1))
-    .join(" ");
-}
-
-function getCommunityName(clan: CommunityLite | null): string {
-  return safeStr(clan?.marketplace_name || clan?.name || "");
-}
-
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
@@ -135,15 +113,7 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
     background: bg,
     boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
     padding: 22,
-  };
-}
-
-function innerCard(bg = "#FFFFFF"): React.CSSProperties {
-  return {
-    borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 16,
+    overflow: "hidden",
   };
 }
 
@@ -156,12 +126,47 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
   };
 }
 
+function innerCard(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 14,
+  };
+}
+
+function statTile(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 14,
+  };
+}
+
+function routeTile(primary = false): React.CSSProperties {
+  return {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+    minHeight: 104,
+    borderRadius: 18,
+    border: primary
+      ? "1px solid rgba(11,99,209,0.18)"
+      : "1px solid rgba(11,31,51,0.08)",
+    background: primary ? "#F7FAFF" : "#FFFFFF",
+    padding: 16,
+    textDecoration: "none",
+    boxShadow: primary ? "0 10px 24px rgba(11,99,209,0.05)" : "none",
+  };
+}
+
 function primaryBtn(disabled = false): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "10px 12px",
+    padding: "11px 14px",
     minHeight: 42,
     borderRadius: 14,
     border: "none",
@@ -181,7 +186,7 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "10px 12px",
+    padding: "11px 14px",
     minHeight: 42,
     borderRadius: 14,
     border: "1px solid rgba(11,31,51,0.10)",
@@ -196,40 +201,34 @@ function secondaryBtn(disabled = false): React.CSSProperties {
   };
 }
 
-function approveBtn(disabled = false): React.CSSProperties {
+function filterBtn(active: boolean): React.CSSProperties {
   return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
     padding: "10px 12px",
-    minHeight: 42,
     borderRadius: 14,
-    border: "1px solid #A7F3D0",
-    background: disabled ? "#DCFCE7" : "#ECFDF5",
-    color: "#065F46",
+    border: active ? "1px solid #BFDBFE" : "1px solid rgba(11,31,51,0.10)",
+    background: active ? "#EFF6FF" : "#FFFFFF",
+    color: active ? "#1D4ED8" : "#0B1F33",
     fontWeight: 1000,
-    cursor: disabled ? "not-allowed" : "pointer",
+    cursor: "pointer",
     fontSize: 14,
-    opacity: disabled ? 0.72 : 1,
     whiteSpace: "nowrap",
   };
 }
 
-function declineBtn(disabled = false): React.CSSProperties {
+function collapseToggle(): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "10px 12px",
-    minHeight: 42,
-    borderRadius: 14,
-    border: "1px solid #FECACA",
-    background: disabled ? "#FEE2E2" : "#FEF2F2",
-    color: "#991B1B",
-    fontWeight: 1000,
-    cursor: disabled ? "not-allowed" : "pointer",
-    fontSize: 14,
-    opacity: disabled ? 0.72 : 1,
+    minHeight: 38,
+    padding: "8px 12px",
+    borderRadius: 12,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#FFFFFF",
+    color: "#24415C",
+    fontWeight: 800,
+    fontSize: 13,
+    cursor: "pointer",
     whiteSpace: "nowrap",
   };
 }
@@ -259,182 +258,169 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function feedbackCard(success = false): React.CSSProperties {
+function helperText(): React.CSSProperties {
   return {
-    ...pageCard(success ? "#ECFDF5" : "#FEF2F2"),
-    border: success ? "1px solid #A7F3D0" : "1px solid #FECACA",
-    color: success ? "#065F46" : "#991B1B",
-    fontWeight: 900,
-    padding: 14,
+    color: "#5F7287",
+    fontSize: 14,
+    lineHeight: 1.75,
   };
 }
 
-function statusKind(
-  status?: string | null
-): "green" | "gold" | "red" | "gray" | "blue" {
-  const s = safeStr(status).toLowerCase();
-
-  if (s.includes("approved")) return "green";
-  if (s.includes("pending") || s.includes("requested") || s.includes("waiting"))
-    return "gold";
-  if (s.includes("declined") || s.includes("expired")) return "red";
-  if (s.includes("review")) return "blue";
-  return "gray";
+function readLocalJSON<T>(key: string, fallback: T): T {
+  try {
+    if (typeof window === "undefined") return fallback;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
 }
 
-function statusPill(
-  kind: "green" | "gold" | "red" | "gray" | "blue"
-): React.CSSProperties {
-  const base: React.CSSProperties = {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 6,
-    padding: "5px 10px",
-    borderRadius: 999,
-    fontSize: 12,
-    fontWeight: 1000,
-    border: "1px solid #E5E7EB",
-    whiteSpace: "nowrap",
-    background: "#FFFFFF",
-  };
-
-  if (kind === "green") {
-    return {
-      ...base,
-      color: "#065F46",
-      background: "#ECFDF5",
-      borderColor: "#A7F3D0",
-    };
+function writeLocalJSON(key: string, value: any) {
+  try {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore
   }
+}
 
-  if (kind === "gold") {
-    return {
-      ...base,
-      color: "#92400E",
-      background: "#FFFBEB",
-      borderColor: "#FDE68A",
-    };
-  }
-
-  if (kind === "red") {
-    return {
-      ...base,
-      color: "#991B1B",
-      background: "#FEF2F2",
-      borderColor: "#FECACA",
-    };
-  }
-
-  if (kind === "blue") {
-    return {
-      ...base,
-      color: "#1D4ED8",
-      background: "#EFF6FF",
-      borderColor: "#BFDBFE",
-    };
-  }
-
+function defaultCollapseState(): CollapseState {
   return {
-    ...base,
-    color: "#475569",
-    background: "#F8FAFC",
-    borderColor: "#E2E8F0",
+    overview: false,
+    queue: false,
+    guidance: false,
+    routes: false,
   };
 }
 
-function fieldLabel(): React.CSSProperties {
+function normalizeCollapseState(raw: any): CollapseState {
+  const base = defaultCollapseState();
+
   return {
-    fontSize: 12,
-    color: "#5B7693",
-    fontWeight: 1000,
-    marginBottom: 6,
+    overview: Boolean(raw?.overview ?? base.overview),
+    queue: Boolean(raw?.queue ?? base.queue),
+    guidance: Boolean(raw?.guidance ?? base.guidance),
+    routes: Boolean(raw?.routes ?? base.routes),
   };
+}
+
+function getCommunityName(clan: CommunityLite | null): string {
+  return safeStr(clan?.marketplace_name || clan?.name || "");
+}
+
+function getCommunityId(clan: CommunityLite | null): string {
+  return safeStr(clan?.community_code || "");
+}
+
+function getCommunityRole(clan: CommunityLite | null): string {
+  return firstTruthy(
+    clan?.role,
+    clan?.member_role,
+    clan?.membership_role,
+    clan?.participant_role
+  );
+}
+
+function getMemberName(me: MeLite | null): string {
+  return (
+    firstTruthy(
+      me?.display_name,
+      me?.nickname,
+      me?.name,
+      me?.first_name,
+      me?.email
+    ) || "Member"
+  );
 }
 
 function normalizeInboxRow(raw: any): InboxRow | null {
   if (!raw) return null;
 
-  const src = raw?.item || raw?.request || raw?.guarantor || raw;
+  const src = raw?.item || raw?.request || raw?.guarantor_request || raw;
+
+  const id = positiveNumber(src?.id);
+  const loanId = positiveNumber(src?.loan_id);
+
+  if (!id && !loanId) return null;
 
   return {
-    id:
-      positiveNumber(firstDefined(src?.id, src?.guarantor_id, src?.request_id)) ||
-      undefined,
-    loan_id:
-      positiveNumber(firstDefined(src?.loan_id, src?.support_loan_id)) || undefined,
-    guarantor_user_id:
-      positiveNumber(firstDefined(src?.guarantor_user_id, src?.user_id)) ||
-      undefined,
-    borrower_user_id:
-      positiveNumber(firstDefined(src?.borrower_user_id, src?.requester_user_id)) ||
-      undefined,
-    borrower_display:
-      firstTruthy(
-        src?.borrower_display,
-        src?.borrower_name,
-        src?.requester_name,
-        src?.member_name
-      ) || null,
-    borrower_name: firstTruthy(src?.borrower_name, src?.requester_name) || null,
-    borrower_email:
-      firstTruthy(src?.borrower_email, src?.requester_email, src?.email) || null,
-    borrower_gmfn_id:
-      firstTruthy(src?.borrower_gmfn_id, src?.requester_gmfn_id) || null,
-    pledge_amount:
-      firstDefined(
-        src?.pledge_amount,
-        src?.guarantee_amount,
-        src?.weight_amount,
-        src?.locked_amount
-      ) ?? null,
-    requested_amount:
-      firstDefined(src?.requested_amount, src?.amount, src?.loan_amount) ?? null,
+    id: id || undefined,
+    loanId: loanId || undefined,
+    clanId: positiveNumber(src?.clan_id || src?.community_id) || undefined,
+    borrowerDisplay: firstTruthy(
+      src?.borrower_display,
+      src?.borrower_name,
+      src?.member_name,
+      src?.requester_name,
+      src?.display_name
+    ) || null,
+    borrowerEmail: firstTruthy(src?.borrower_email, src?.email) || null,
+    borrowerUserId: positiveNumber(src?.borrower_user_id) || null,
     amount:
-      firstDefined(src?.amount, src?.requested_amount, src?.loan_amount) ?? null,
+      src?.amount ??
+      src?.loan_amount ??
+      src?.requested_amount ??
+      src?.outstanding_amount ??
+      null,
+    pledgeAmount: src?.pledge_amount ?? null,
     currency: firstTruthy(src?.currency, src?.currency_code, "NGN") || null,
     status: firstTruthy(src?.status, "pending") || null,
-    note:
-      firstTruthy(src?.note, src?.purpose, src?.loan_title, src?.title) || null,
-    created_at:
-      firstTruthy(src?.created_at, src?.requested_at, src?.updated_at) || null,
-    loan_title: firstTruthy(src?.loan_title, src?.title, src?.purpose) || null,
+    createdAt: firstTruthy(src?.created_at, src?.requested_at) || null,
+    expiresAt: firstTruthy(src?.expires_at, src?.deadline_at) || null,
+    purpose: firstTruthy(src?.purpose, src?.note, src?.description) || null,
+    guarantorUserId: positiveNumber(src?.guarantor_user_id) || null,
+    lockedAmount:
+      src?.locked_amount ??
+      src?.weight_amount ??
+      null,
+    releasedAmount: src?.released_amount ?? null,
+    isLocked:
+      typeof src?.is_locked === "boolean" ? Boolean(src.is_locked) : null,
+    note: firstTruthy(src?.note, src?.detail) || null,
   };
 }
 
-function dedupeRows(rows: InboxRow[]): InboxRow[] {
-  const seen = new Set<string>();
-  const out: InboxRow[] = [];
+function statusPill(status: string): React.CSSProperties {
+  const s = safeStr(status).toLowerCase();
 
-  for (const row of rows) {
-    const key = [
-      safeStr(row.id),
-      safeStr(row.loan_id),
-      safeStr(row.guarantor_user_id),
-      safeStr(row.status),
-    ].join("|");
-
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(row);
+  if (s.includes("approved")) {
+    return {
+      padding: "6px 10px",
+      borderRadius: 999,
+      background: "#ECFDF5",
+      border: "1px solid #A7F3D0",
+      color: "#065F46",
+      fontWeight: 1000,
+      fontSize: 12,
+      whiteSpace: "nowrap",
+    };
   }
 
-  return out;
-}
-
-function renderStepAction(step: NextStepState) {
-  if (step.ctaTo.startsWith("#")) {
-    return (
-      <a href={step.ctaTo} style={primaryBtn(false)}>
-        {step.ctaLabel}
-      </a>
-    );
+  if (s.includes("declined")) {
+    return {
+      padding: "6px 10px",
+      borderRadius: 999,
+      background: "#FEF2F2",
+      border: "1px solid #FECACA",
+      color: "#991B1B",
+      fontWeight: 1000,
+      fontSize: 12,
+      whiteSpace: "nowrap",
+    };
   }
 
-  return (
-    <Link to={step.ctaTo} style={primaryBtn(false)}>
-      {step.ctaLabel}
-    </Link>
-  );
+  return {
+    padding: "6px 10px",
+    borderRadius: 999,
+    background: "#FFFBEB",
+    border: "1px solid #FDE68A",
+    color: "#92400E",
+    fontWeight: 1000,
+    fontSize: 12,
+    whiteSpace: "nowrap",
+  };
 }
 
 export default function GuarantorInboxPage() {
@@ -445,20 +431,67 @@ export default function GuarantorInboxPage() {
     return window.innerWidth <= 980;
   });
 
-  const [loading, setLoading] = useState(true);
-  const [busyKey, setBusyKey] = useState<string>("");
-  const [err, setErr] = useState<string>("");
-  const [msg, setMsg] = useState<string>("");
+  const [collapsed, setCollapsed] = useState<CollapseState>(() =>
+    normalizeCollapseState(
+      readLocalJSON(GUARANTOR_INBOX_UI_STORAGE_KEY, defaultCollapseState())
+    )
+  );
 
-  const [me, setMe] = useState<MeLite | null>(null);
+  const [filter, setFilter] = useState<FilterKey>("pending");
+  const [loading, setLoading] = useState(true);
   const [community, setCommunity] = useState<CommunityLite | null>(null);
-  const [rows, setRows] = useState<InboxRow[]>([]);
-  const [statusFilter, setStatusFilter] = useState<FilterKey>("pending");
-  const [counts, setCounts] = useState({
-    pending: 0,
-    approved: 0,
-    declined: 0,
-  });
+  const [me, setMe] = useState<MeLite | null>(null);
+
+  const [pendingRows, setPendingRows] = useState<InboxRow[]>([]);
+  const [approvedRows, setApprovedRows] = useState<InboxRow[]>([]);
+  const [declinedRows, setDeclinedRows] = useState<InboxRow[]>([]);
+
+  async function loadInbox() {
+    setLoading(true);
+
+    try {
+      const [pendingRes, approvedRes, declinedRes, clanRes, meRes] = await Promise.all([
+        getLoanGuarantorInbox({
+          clan_id: selectedClanId || undefined,
+          status: "pending",
+          limit: 50,
+        }).catch(() => ({ items: [] })),
+        getLoanGuarantorInbox({
+          clan_id: selectedClanId || undefined,
+          status: "approved",
+          limit: 50,
+        }).catch(() => ({ items: [] })),
+        getLoanGuarantorInbox({
+          clan_id: selectedClanId || undefined,
+          status: "declined",
+          limit: 50,
+        }).catch(() => ({ items: [] })),
+        getCurrentClan().catch(() => null),
+        getMe().catch(() => null),
+      ]);
+
+      setPendingRows(
+        rowsOf<any>(pendingRes)
+          .map((row) => normalizeInboxRow(row))
+          .filter(Boolean) as InboxRow[]
+      );
+      setApprovedRows(
+        rowsOf<any>(approvedRes)
+          .map((row) => normalizeInboxRow(row))
+          .filter(Boolean) as InboxRow[]
+      );
+      setDeclinedRows(
+        rowsOf<any>(declinedRes)
+          .map((row) => normalizeInboxRow(row))
+          .filter(Boolean) as InboxRow[]
+      );
+
+      setCommunity(clanRes || null);
+      setMe(meRes || null);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -474,145 +507,42 @@ export default function GuarantorInboxPage() {
   }, []);
 
   useEffect(() => {
-    if (!err && !msg) return;
-
-    const timer = window.setTimeout(() => {
-      setErr("");
-      setMsg("");
-    }, 2600);
-
-    return () => window.clearTimeout(timer);
-  }, [err, msg]);
-
-  async function fetchRowsByStatus(status: "pending" | "approved" | "declined") {
-    if (!selectedClanId) return [];
-
-    const res = await getLoanGuarantorInbox({
-      clan_id: selectedClanId,
-      status,
-      limit: 100,
-    }).catch(() => ({ items: [] }));
-
-    const items = Array.isArray(res)
-      ? res
-      : Array.isArray((res as any)?.items)
-      ? (res as any).items
-      : [];
-
-    return items
-      .map((row: any) => normalizeInboxRow(row))
-      .filter(Boolean) as InboxRow[];
-  }
-
-  async function loadAll() {
-    setLoading(true);
-    setErr("");
-
-    try {
-      const [meRes, clanRes] = await Promise.all([
-        getMe().catch(() => null),
-        getCurrentClan().catch(() => null),
-      ]);
-
-      setMe(meRes || null);
-      setCommunity(clanRes || null);
-
-      if (!selectedClanId) {
-        setCounts({
-          pending: 0,
-          approved: 0,
-          declined: 0,
-        });
-        setRows([]);
-        return;
-      }
-
-      const [pendingRows, approvedRows, declinedRows] = await Promise.all([
-        fetchRowsByStatus("pending"),
-        fetchRowsByStatus("approved"),
-        fetchRowsByStatus("declined"),
-      ]);
-
-      const nextCounts = {
-        pending: pendingRows.length,
-        approved: approvedRows.length,
-        declined: declinedRows.length,
-      };
-      setCounts(nextCounts);
-
-      const filtered =
-        statusFilter === "pending"
-          ? pendingRows
-          : statusFilter === "approved"
-          ? approvedRows
-          : statusFilter === "declined"
-          ? declinedRows
-          : dedupeRows([...pendingRows, ...approvedRows, ...declinedRows]);
-
-      const sorted = [...filtered].sort((a, b) => {
-        const ta = safeDate(a?.created_at)?.getTime() || 0;
-        const tb = safeDate(b?.created_at)?.getTime() || 0;
-        return tb - ta;
-      });
-
-      setRows(sorted);
-    } catch (e: any) {
-      setErr(String(e?.message || e || "Unable to load guarantor inbox."));
-    } finally {
-      setLoading(false);
-    }
-  }
+    writeLocalJSON(GUARANTOR_INBOX_UI_STORAGE_KEY, collapsed);
+  }, [collapsed]);
 
   useEffect(() => {
-    void loadAll();
-  }, [statusFilter, selectedClanId]);
+    void loadInbox();
+  }, [selectedClanId]);
 
-  async function decide(row: InboxRow, decision: "approved" | "declined") {
-    const loanId = positiveNumber(row.loan_id);
-    const guarantorRequestId = positiveNumber(row.id);
+  const allRows = useMemo(() => {
+    const rows = [...pendingRows, ...approvedRows, ...declinedRows];
+    rows.sort((a, b) => {
+      const ta = new Date(a.createdAt || 0).getTime();
+      const tb = new Date(b.createdAt || 0).getTime();
+      return tb - ta;
+    });
+    return rows;
+  }, [pendingRows, approvedRows, declinedRows]);
 
-    if (!selectedClanId) {
-      setErr("Select a community first.");
-      return;
-    }
+  const visibleRows = useMemo(() => {
+    if (filter === "pending") return pendingRows;
+    if (filter === "approved") return approvedRows;
+    if (filter === "declined") return declinedRows;
+    return allRows;
+  }, [filter, pendingRows, approvedRows, declinedRows, allRows]);
 
-    if (!loanId || !guarantorRequestId) {
-      setErr("Missing loan or guarantor request information.");
-      return;
-    }
+  const counts = useMemo(
+    () => ({
+      pending: pendingRows.length,
+      approved: approvedRows.length,
+      declined: declinedRows.length,
+      all: allRows.length,
+    }),
+    [pendingRows.length, approvedRows.length, declinedRows.length, allRows.length]
+  );
 
-    const rowKey = `${Number(row.id || loanId)}-${decision}`;
-    setBusyKey(rowKey);
-    setErr("");
-    setMsg("");
-
-    try {
-      await decideLoanGuarantor(loanId, guarantorRequestId, {
-        status: decision,
-        clan_id: selectedClanId,
-        reason:
-          decision === "approved" ? "capacity_confirmed" : "capacity_declined",
-        note:
-          decision === "approved"
-            ? "Approved from guarantor inbox."
-            : "Declined from guarantor inbox.",
-      });
-
-      setMsg(decision === "approved" ? "Request approved." : "Request declined.");
-      await loadAll();
-    } catch (e: any) {
-      setErr(
-        String(
-          e?.message || e || "Unable to complete this guarantor decision."
-        )
-      );
-    } finally {
-      setBusyKey("");
-    }
-  }
-
-  const name = useMemo(() => displayName(me), [me]);
-  const gmfnId = useMemo(() => safeStr(me?.gmfn_id) || "Pending", [me]);
+  const memberName = useMemo(() => getMemberName(me), [me]);
+  const gmfnId = useMemo(() => firstTruthy(me?.gmfn_id, "Pending"), [me]);
 
   const selectedCommunityLabel = useMemo(() => {
     return (
@@ -621,81 +551,108 @@ export default function GuarantorInboxPage() {
     );
   }, [community, selectedClanId]);
 
-  const pendingCount = counts.pending;
-  const approvedCount = counts.approved;
-  const declinedCount = counts.declined;
+  const communityPublicId = useMemo(() => {
+    return getCommunityId(community) || "Pending";
+  }, [community]);
 
-  const nextStep = useMemo<NextStepState>(() => {
+  const memberRole = useMemo(() => {
+    return getCommunityRole(community);
+  }, [community]);
+
+  const nextStep = useMemo<{
+    title: string;
+    detail: string;
+    ctaLabel: string;
+    ctaTo: string;
+  }>(() => {
     if (!selectedClanId) {
       return {
-        title: "Choose the community context first",
+        title: "Choose the community context first.",
         detail:
-          "Guarantor decisions should stay inside the selected community support path before you approve or decline anything.",
-        today: "Open Community Home and confirm the community before reviewing requests.",
-        tomorrow:
-          "A selected community keeps guarantor obligations attached to the correct support flow.",
+          "Incoming guarantor requests should stay tied to the selected community before you act on them.",
         ctaLabel: "Open Community Home",
         ctaTo: "/app/community",
       };
     }
 
-    if (pendingCount > 0) {
+    if (counts.pending > 0) {
       return {
         title:
-          pendingCount === 1
-            ? "One guarantor decision is waiting"
-            : `${pendingCount} guarantor decisions are waiting`,
+          counts.pending === 1
+            ? "One guarantor request is waiting on you."
+            : `${counts.pending} guarantor requests are waiting on you.`,
         detail:
-          "Approve only when you are truly willing and able to stand behind the request. Decline if you cannot carry the obligation.",
-        today:
-          "Review the waiting requests one by one and make a clear decision.",
-        tomorrow:
-          "Clear guarantor decisions help borrowers move forward without confusion.",
-        ctaLabel: "Review the request queue",
-        ctaTo: "#guarantor-request-queue",
+          "This queue is only the intake surface. Once you choose to continue, the deeper workbench should take over instead of leaving you halfway between routes.",
+        ctaLabel: "Open Loan Workbench",
+        ctaTo: "/app/loan-workbench",
+      };
+    }
+
+    if (counts.approved > 0) {
+      return {
+        title: "Approved guarantor responses are visible.",
+        detail:
+          "The next move is usually to continue the broader support path rather than staying only in the queue.",
+        ctaLabel: "Return to Loans & Support",
+        ctaTo: "/app/loans",
       };
     }
 
     return {
-      title: "No guarantor request is waiting right now",
+      title: "No pending guarantor request is visible right now.",
       detail:
-        "This inbox is calmer when no request is waiting. Return here when a new guarantor decision arrives.",
-      today: "No immediate guarantor action is required.",
-      tomorrow:
-        "Keeping this inbox clear makes future guarantor decisions easier to manage.",
-      ctaLabel: "Return to Notifications",
-      ctaTo: "/app/notifications",
+        "That means nothing is directly waiting on your guarantor response inside this current queue view.",
+      ctaLabel: "Open Loans & Support",
+      ctaTo: "/app/loans",
     };
-  }, [selectedClanId, pendingCount]);
+  }, [selectedClanId, counts.pending, counts.approved]);
+
+  function toggleSection(key: keyof CollapseState) {
+    setCollapsed((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  }
+
+  function copyQueueSummary() {
+    const text = [
+      `Community: ${selectedCommunityLabel}`,
+      `Community ID: ${communityPublicId}`,
+      `Member: ${memberName}`,
+      `GMFN ID: ${gmfnId}`,
+      memberRole ? `Role: ${memberRole}` : "",
+      `Pending: ${counts.pending}`,
+      `Approved: ${counts.approved}`,
+      `Declined: ${counts.declined}`,
+      `Visible: ${counts.all}`,
+      `Filter: ${filter}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    safeCopy(text);
+  }
 
   return (
-    <div style={{ maxWidth: 1260, margin: "0 auto", paddingBottom: 30 }}>
+    <div style={{ maxWidth: 1180, margin: "0 auto", paddingBottom: 40 }}>
       <PageTopNav
         sectionLabel="Incoming Guarantor Requests"
         title="Incoming Guarantor Requests"
-        subtitle="Review requests carefully. A guarantor approval is a real personal commitment decision."
+        subtitle="Review requests that need your guarantor response inside the current community context."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
-        backTo="/app/notifications"
-        backLabel="Notifications"
+        backTo="/app/loans"
+        backLabel="Loans & Support"
         nextLinks={[
-          { label: "Loans & Support", to: "/app/loans" },
-          { label: "Community Home", to: "/app/community" },
+          { label: "Loan Workbench", to: "/app/loan-workbench" },
+          { label: "Loan Suggestions", to: "/app/loan-suggestions" },
           { label: "Marketplace", to: "/app/marketplace" },
         ]}
         utilityLinks={[
-          { label: "Trust", to: "/app/trust" },
-          { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+          { label: "Money Out", to: "/app/withdrawal-instructions" },
+          { label: "Notifications", to: "/app/notifications" },
         ]}
       />
-
-      {err ? (
-        <div style={{ ...feedbackCard(false), marginTop: 18 }}>{err}</div>
-      ) : null}
-
-      {msg ? (
-        <div style={{ ...feedbackCard(true), marginTop: 18 }}>{msg}</div>
-      ) : null}
 
       <section
         style={{
@@ -714,7 +671,7 @@ export default function GuarantorInboxPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Guarantor position</div>
+            <div style={sectionLabel()}>Fixed queue context</div>
 
             <div
               style={{
@@ -722,14 +679,89 @@ export default function GuarantorInboxPage() {
                 fontSize: 30,
                 fontWeight: 1000,
                 color: "#0B1F33",
-                lineHeight: 1.15,
+                lineHeight: 1.12,
               }}
             >
               {nextStep.title}
             </div>
 
-            <div style={{ marginTop: 10, color: "#6B7A88", lineHeight: 1.8 }}>
-              {nextStep.detail}
+            <div style={{ marginTop: 10, ...helperText(), maxWidth: 860 }}>
+              This page is the incoming queue surface for guarantor requests. Once
+              a request is chosen, the deeper support workbench should take over
+              instead of leaving the person inside a loose queue.
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr 1fr"
+                  : "repeat(4, minmax(0, 1fr))",
+                gap: 10,
+              }}
+            >
+              <div style={statTile()}>
+                <div style={sectionLabel()}>Community</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 15,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {selectedCommunityLabel}
+                </div>
+              </div>
+
+              <div style={statTile()}>
+                <div style={sectionLabel()}>Community ID</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 15,
+                    lineHeight: 1.3,
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {communityPublicId}
+                </div>
+              </div>
+
+              <div style={statTile()}>
+                <div style={sectionLabel()}>GMFN ID</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 15,
+                    lineHeight: 1.3,
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {gmfnId}
+                </div>
+              </div>
+
+              <div style={statTile()}>
+                <div style={sectionLabel()}>Current step</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 15,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  Incoming guarantor requests
+                </div>
+              </div>
             </div>
 
             <div
@@ -740,9 +772,11 @@ export default function GuarantorInboxPage() {
                 flexWrap: "wrap",
               }}
             >
-              <span style={badge(true)}>{gmfnId}</span>
-              <span style={badge(false)}>Guarantor: {name}</span>
-              <span style={badge(false)}>Context: {selectedCommunityLabel}</span>
+              <span style={badge(true)}>Member: {memberName}</span>
+              {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
+              <span style={badge(false)}>Pending: {counts.pending}</span>
+              <span style={badge(false)}>Approved: {counts.approved}</span>
+              <span style={badge(false)}>Declined: {counts.declined}</span>
             </div>
 
             <div
@@ -753,113 +787,42 @@ export default function GuarantorInboxPage() {
                 flexWrap: "wrap",
               }}
             >
-              {renderStepAction(nextStep)}
+              <Link to={nextStep.ctaTo} style={primaryBtn(false)}>
+                {nextStep.ctaLabel}
+              </Link>
 
-              <button
-                onClick={() => void loadAll()}
-                disabled={loading}
-                style={secondaryBtn(loading)}
-              >
-                {loading ? "Refreshing..." : "Refresh"}
+              <button type="button" onClick={copyQueueSummary} style={secondaryBtn(false)}>
+                Copy Queue Summary
               </button>
             </div>
           </div>
 
-          <div style={{ display: "grid", gap: 12 }}>
-            <div style={softCard("#FFFFFF")}>
-              <div style={sectionLabel()}>Today</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 15,
-                  fontWeight: 900,
-                  lineHeight: 1.65,
-                }}
-              >
-                {nextStep.today}
-              </div>
+          <div style={softCard("#FFFFFF")}>
+            <div style={sectionLabel()}>Current reading</div>
+
+            <div
+              style={{
+                marginTop: 10,
+                color: "#0B1F33",
+                fontWeight: 900,
+                fontSize: 18,
+                lineHeight: 1.35,
+              }}
+            >
+              {nextStep.detail}
             </div>
 
-            <div style={softCard("#FFFFFF")}>
-              <div style={sectionLabel()}>Tomorrow</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 15,
-                  fontWeight: 900,
-                  lineHeight: 1.65,
-                }}
-              >
-                {nextStep.tomorrow}
-              </div>
+            <div
+              style={{
+                marginTop: 12,
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
+              <span style={badge(true)}>Pending now: {counts.pending}</span>
+              <span style={badge(false)}>Visible now: {visibleRows.length}</span>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section
-        style={{
-          marginTop: 18,
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: 14,
-        }}
-      >
-        <div style={softCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Pending</div>
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 28,
-              fontWeight: 1000,
-              color: "#0B1F33",
-            }}
-          >
-            {loading ? "…" : pendingCount}
-          </div>
-        </div>
-
-        <div style={softCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Approved</div>
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 28,
-              fontWeight: 1000,
-              color: "#0B1F33",
-            }}
-          >
-            {loading ? "…" : approvedCount}
-          </div>
-        </div>
-
-        <div style={softCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Declined</div>
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 28,
-              fontWeight: 1000,
-              color: "#0B1F33",
-            }}
-          >
-            {loading ? "…" : declinedCount}
-          </div>
-        </div>
-
-        <div style={softCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Visible rows</div>
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 28,
-              fontWeight: 1000,
-              color: "#0B1F33",
-            }}
-          >
-            {loading ? "…" : rows.length}
           </div>
         </div>
       </section>
@@ -875,203 +838,453 @@ export default function GuarantorInboxPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Filter inbox</div>
-            <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
-              View pending, approved, declined, or all requests.
+            <div style={sectionLabel()}>Queue overview</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              A quick reading of the visible guarantor queue.
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            {(["pending", "approved", "declined", "all"] as FilterKey[]).map(
-              (s) => {
-                const active = statusFilter === s;
-                return (
-                  <button
-                    key={s}
-                    onClick={() => setStatusFilter(s)}
-                    style={active ? primaryBtn(false) : secondaryBtn(false)}
-                  >
-                    {s}
-                  </button>
-                );
-              }
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section
-        id="guarantor-request-queue"
-        style={{ ...pageCard(), marginTop: 18 }}
-      >
-        <div style={{ fontSize: 16, fontWeight: 1000, color: "#0B1F33" }}>
-          Request queue
+          <button
+            type="button"
+            onClick={() => toggleSection("overview")}
+            style={collapseToggle()}
+          >
+            {collapsed.overview ? "Open" : "Collapse"}
+          </button>
         </div>
 
-        <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
-          Open each request with clear judgment. Approval should not be casual.
-        </div>
-
-        <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-          {!loading && rows.length === 0 ? (
-            <div style={{ color: "#7A8D9F", lineHeight: 1.8 }}>
-              {selectedClanId
-                ? "No guarantor requests found for this filter."
-                : "Select a community first to keep guarantor decisions inside the correct support context."}
-            </div>
-          ) : null}
-
-          {rows.map((row, idx) => {
-            const rowId = Number(row.id || idx + 1);
-            const loanId = Number(row.loan_id || 0);
-            const borrower = firstTruthy(
-              row.borrower_display,
-              row.borrower_name,
-              row.borrower_email,
-              row.borrower_gmfn_id ? `GMFN ${row.borrower_gmfn_id}` : "",
-              row.borrower_user_id ? `Borrower #${row.borrower_user_id}` : "",
-              "Borrower"
-            );
-            const pledgeAmount = fmtMoney(row.pledge_amount ?? "0");
-            const requestedAmount = fmtMoney(
-              row.requested_amount ?? row.amount ?? "0"
-            );
-            const rowCurrency = safeStr(row.currency || "NGN");
-            const rowStatus = safeStr(row.status || "pending");
-            const pending = rowStatus.toLowerCase().includes("pending");
-            const approveBusy = busyKey === `${rowId}-approved`;
-            const declineBusy = busyKey === `${rowId}-declined`;
-
-            return (
+        {!collapsed.overview ? (
+          <div
+            style={{
+              marginTop: 16,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr 1fr" : "repeat(4, minmax(0, 1fr))",
+              gap: 14,
+            }}
+          >
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Pending</div>
               <div
-                key={`${rowId}-${idx}`}
                 style={{
-                  borderRadius: 18,
-                  border: "1px solid rgba(11,31,51,0.08)",
-                  background: "#FFFFFF",
-                  padding: 16,
+                  marginTop: 8,
+                  fontWeight: 1000,
+                  fontSize: 28,
+                  color: "#0B1F33",
                 }}
               >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 12,
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                  }}
-                >
-                  <div>
-                    <div
-                      style={{
-                        fontWeight: 1000,
-                        color: "#0B1F33",
-                        fontSize: 18,
-                      }}
-                    >
-                      {row.loan_title ? row.loan_title : `Loan #${loanId || "—"}`}
-                    </div>
-
-                    <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 13 }}>
-                      {row.created_at ? safeDateTime(row.created_at) : "—"}
-                    </div>
-                  </div>
-
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <span style={statusPill(statusKind(rowStatus))}>
-                      {rowStatus}
-                    </span>
-                    <span style={statusPill("blue")}>
-                      Pledge {pledgeAmount} {rowCurrency}
-                    </span>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 14,
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                    gap: 12,
-                  }}
-                >
-                  <div>
-                    <div style={fieldLabel()}>Borrower</div>
-                    <div style={{ color: "#0B1F33", fontWeight: 900 }}>
-                      {borrower}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div style={fieldLabel()}>Requested amount</div>
-                    <div style={{ color: "#0B1F33", fontWeight: 900 }}>
-                      {requestedAmount} {rowCurrency}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div style={fieldLabel()}>Note</div>
-                    <div style={{ color: "#0B1F33", fontWeight: 900 }}>
-                      {safeStr(row.note || "—")}
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 14,
-                    color: "#6B7A88",
-                    lineHeight: 1.8,
-                    fontSize: 14,
-                  }}
-                >
-                  Approve only if you are intentionally willing and able to stand
-                  behind this request. Decline if you cannot carry that obligation.
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 14,
-                    display: "flex",
-                    gap: 10,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  {pending ? (
-                    <>
-                      <button
-                        onClick={() => void decide(row, "approved")}
-                        disabled={approveBusy || declineBusy}
-                        style={approveBtn(approveBusy || declineBusy)}
-                      >
-                        {approveBusy ? "Working..." : "Approve"}
-                      </button>
-
-                      <button
-                        onClick={() => void decide(row, "declined")}
-                        disabled={approveBusy || declineBusy}
-                        style={declineBtn(approveBusy || declineBusy)}
-                      >
-                        {declineBusy ? "Working..." : "Decline"}
-                      </button>
-                    </>
-                  ) : null}
-
-                  <button
-                    onClick={() =>
-                      safeCopy(
-                        `Loan ${loanId} | Borrower: ${borrower} | Requested: ${requestedAmount} ${rowCurrency} | Pledge: ${pledgeAmount} ${rowCurrency} | Status: ${rowStatus}`
-                      )
-                    }
-                    style={secondaryBtn(false)}
-                  >
-                    Copy summary
-                  </button>
-                </div>
+                {counts.pending}
               </div>
-            );
-          })}
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Approved</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  fontWeight: 1000,
+                  fontSize: 28,
+                  color: "#0B1F33",
+                }}
+              >
+                {counts.approved}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Declined</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  fontWeight: 1000,
+                  fontSize: 28,
+                  color: "#0B1F33",
+                }}
+              >
+                {counts.declined}
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Visible total</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  fontWeight: 1000,
+                  fontSize: 28,
+                  color: "#0B1F33",
+                }}
+              >
+                {counts.all}
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section style={{ ...pageCard(), marginTop: 18 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Filter and queue</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Filter the queue, then continue from the right support page.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => toggleSection("queue")}
+            style={collapseToggle()}
+          >
+            {collapsed.queue ? "Open" : "Collapse"}
+          </button>
         </div>
+
+        {!collapsed.queue ? (
+          <>
+            <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
+              {(["pending", "approved", "declined", "all"] as const).map((x) => (
+                <button
+                  key={x}
+                  type="button"
+                  onClick={() => setFilter(x)}
+                  style={filterBtn(filter === x)}
+                >
+                  {x[0].toUpperCase() + x.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
+              {loading ? (
+                <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+                  Loading queue...
+                </div>
+              ) : visibleRows.length === 0 ? (
+                <div style={innerCard("#FFFFFF")}>
+                  <div style={{ color: "#6B7A88", lineHeight: 1.8 }}>
+                    No requests are visible for this filter.
+                  </div>
+                </div>
+              ) : (
+                visibleRows.map((row, i) => {
+                  const status = safeStr(row.status || "pending");
+                  const amountText = safeStr(row.amount)
+                    ? `${fmtMoney(row.amount)} ${safeStr(row.currency || "NGN")}`
+                    : "";
+                  const pledgeText = safeStr(row.pledgeAmount)
+                    ? `${fmtMoney(row.pledgeAmount)} ${safeStr(row.currency || "NGN")}`
+                    : "";
+
+                  return (
+                    <div key={`${row.id || row.loanId || i}`} style={innerCard("#FFFFFF")}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: 10,
+                          flexWrap: "wrap",
+                          alignItems: "center",
+                        }}
+                      >
+                        <div>
+                          <div
+                            style={{
+                              fontWeight: 1000,
+                              color: "#0B1F33",
+                              fontSize: 18,
+                            }}
+                          >
+                            {firstTruthy(
+                              row.borrowerDisplay,
+                              row.borrowerEmail,
+                              row.borrowerUserId ? `Borrower ${row.borrowerUserId}` : "",
+                              "Member request"
+                            )}
+                          </div>
+                          <div
+                            style={{
+                              marginTop: 4,
+                              color: "#6B7A88",
+                              fontSize: 13,
+                              lineHeight: 1.7,
+                            }}
+                          >
+                            {[
+                              row.loanId ? `Loan #${row.loanId}` : "",
+                              row.createdAt ? safeDateTime(row.createdAt) : "",
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </div>
+                        </div>
+
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 8,
+                            flexWrap: "wrap",
+                            alignItems: "center",
+                          }}
+                        >
+                          <span style={statusPill(status)}>{status}</span>
+                          {pledgeText ? (
+                            <span style={badge(true)}>Pledge: {pledgeText}</span>
+                          ) : null}
+                          {amountText ? (
+                            <span style={badge(false)}>Amount: {amountText}</span>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: 12, ...helperText() }}>
+                        Purpose: {safeStr(row.purpose || row.note || "—")}
+                      </div>
+
+                      <div style={{ marginTop: 8, ...helperText() }}>
+                        Response window: {safeStr(row.expiresAt || "Not visible yet")}
+                      </div>
+
+                      {(Boolean(row.isLocked) || safeStr(row.lockedAmount) || safeStr(row.releasedAmount)) ? (
+                        <div style={{ marginTop: 8, ...helperText() }}>
+                          {[
+                            `Locked: ${String(Boolean(row.isLocked))}`,
+                            safeStr(row.lockedAmount) ? `Locked amount: ${safeStr(row.lockedAmount)}` : "",
+                            safeStr(row.releasedAmount) ? `Released amount: ${safeStr(row.releasedAmount)}` : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" • ")}
+                        </div>
+                      ) : null}
+
+                      <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                        <Link to="/app/loan-workbench" style={secondaryBtn(false)}>
+                          Open workbench
+                        </Link>
+                        <Link to="/app/loans" style={secondaryBtn(false)}>
+                          Loans & Support
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </>
+        ) : null}
+      </section>
+
+      <section style={{ ...pageCard("#F8FBFF"), marginTop: 18 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Guidance</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Keep the meaning of this queue clear.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => toggleSection("guidance")}
+            style={collapseToggle()}
+          >
+            {collapsed.guidance ? "Open" : "Collapse"}
+          </button>
+        </div>
+
+        {!collapsed.guidance ? (
+          <div
+            style={{
+              marginTop: 16,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+              gap: 12,
+            }}
+          >
+            <div style={innerCard("#FFFFFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 1000,
+                  fontSize: 18,
+                }}
+              >
+                What this queue is for
+              </div>
+              <div style={{ marginTop: 10, ...helperText() }}>
+                This queue is where incoming guarantor decisions first become visible.
+                It is not the final support surface. Once you choose a request,
+                the deeper workbench should take over.
+              </div>
+            </div>
+
+            <div style={innerCard("#FFFFFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 1000,
+                  fontSize: 18,
+                }}
+              >
+                What to avoid
+              </div>
+              <div style={{ marginTop: 10, ...helperText() }}>
+                Do not leave the person stuck in a queue-only experience. The queue
+                should lead into the correct support path, then return to the broader
+                app only after the current decision is properly handled.
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section style={{ ...pageCard(), marginTop: 18 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Working routes</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Move from queue reading into the exact next page you need.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => toggleSection("routes")}
+            style={collapseToggle()}
+          >
+            {collapsed.routes ? "Open" : "Collapse"}
+          </button>
+        </div>
+
+        {!collapsed.routes ? (
+          <div
+            style={{
+              marginTop: 16,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+              gap: 12,
+            }}
+          >
+            <Link to={nextStep.ctaTo} style={routeTile(true)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                {nextStep.ctaLabel}
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                {nextStep.detail}
+              </div>
+            </Link>
+
+            <Link to="/app/loan-workbench" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                Loan Workbench
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Use this when you are continuing the deeper support decision path.
+              </div>
+            </Link>
+
+            <Link to="/app/loan-suggestions" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                Loan Suggestions
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Use this when the next question is candidate fit rather than queue state.
+              </div>
+            </Link>
+
+            <Link to="/app/loans" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                Loans & Support
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Return to the broader support overview.
+              </div>
+            </Link>
+
+            <Link to="/app/marketplace" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                Marketplace
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Return to the selected-community launcher surface only after the current queue reading is complete.
+              </div>
+            </Link>
+
+            <Link to="/app/notifications" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                Action Inbox
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Use this when the broader notification picture matters around the support decision.
+              </div>
+            </Link>
+          </div>
+        ) : null}
       </section>
     </div>
   );

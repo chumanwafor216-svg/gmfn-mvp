@@ -1,40 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import gmfnMark from "../assets/gmfn-mark.svg";
+import { useLocation, useNavigate } from "react-router-dom";
 
-const PUBLIC_GUIDE_TO = "/guide";
-const PDF_FALLBACK_TO = "/GSN_FINAL_WHITE.pdf";
-
-const ACCESS_TOKEN_KEY = "access_token";
 const ENTRY_MODE_KEY = "gmfn_entry_mode";
 const ENTRY_INVITE_CODE_KEY = "gmfn_entry_invite_code";
 const ENTRY_CREATE_CODE_KEY = "gmfn_entry_create_code";
 
 type EntryMode = "general" | "create" | "invite" | "approved" | "existing";
 
-type ModeConfig = {
-  label: string;
-  heading: string;
-  description: string;
-  supportText: string;
-  primaryLabel: string;
-  primaryTo: string;
-  steps: string[];
-  showLoginLink?: boolean;
-};
-
 function canUseStorage(): boolean {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
-}
-
-function readStorage(key: string): string | null {
-  try {
-    if (!canUseStorage()) return null;
-    const value = window.localStorage.getItem(key);
-    return value == null ? null : String(value);
-  } catch {
-    return null;
-  }
 }
 
 function writeStorage(key: string, value: string | null): void {
@@ -47,15 +21,13 @@ function writeStorage(key: string, value: string | null): void {
     }
 
     window.localStorage.setItem(key, String(value));
-  } catch {}
+  } catch {
+    // ignore
+  }
 }
 
 function normalizeValue(value: unknown): string {
   return String(value ?? "").trim().toLowerCase();
-}
-
-function isAuthenticated(): boolean {
-  return Boolean(String(readStorage(ACCESS_TOKEN_KEY) || "").trim());
 }
 
 function matchEntryMode(raw: string): EntryMode | null {
@@ -200,96 +172,13 @@ function mergeSearchIntoPath(to: string, currentSearch: string): string {
   return finalQuery ? `${basePath}?${finalQuery}` : basePath;
 }
 
-const MODE_CONFIG: Record<EntryMode, ModeConfig> = {
-  general: {
-    label: "Public entry",
-    heading:
-      "A guided system for identity, trust, community, demand, and support.",
-    description:
-      "GMFN / GSN is designed to reduce confusion and guide people into the correct next step. Start here, understand the system if needed, then continue through the right public path.",
-    supportText:
-      "This general public route is for people who are not coming through a special create, invite, or approval link. It is designed to feel calm, structured, and easy to follow.",
-    primaryLabel: "Continue to guided welcome",
-    primaryTo: "/welcome",
-    steps: [
-      "Open the guided welcome page.",
-      "Choose whether to read My GMFN and I first.",
-      "Continue to login when ready.",
-      "Enter your dashboard after sign in.",
-    ],
-    showLoginLink: true,
-  },
-  create: {
-    label: "Founder create entry",
-    heading: "Start the founder route for a new GMFN community.",
-    description:
-      "This entry already knows you are coming through the public create route. Continue directly into Create Entry. No prior login should be required before first-time founder setup.",
-    supportText:
-      "After completing the required registration and setup fields, the system should issue one global GMFN ID to that identity and attach one global shop to it. Immediately after GMFN issuance, the next guided step should be Build Your First Circle.",
-    primaryLabel: "Continue to Create Entry",
-    primaryTo: "/create",
-    steps: [
-      "Open Create Entry.",
-      "Complete the required registration and setup fields.",
-      "Receive your global GMFN ID and linked global shop.",
-      "Build Your First Circle.",
-      "Then continue into dashboard and wider member surfaces.",
-    ],
-    showLoginLink: false,
-  },
-  invite: {
-    label: "Invited join entry",
-    heading: "Continue your request to join an existing community.",
-    description:
-      "This entry already knows you are coming through the invited join route. Continue into Join Entry, not founder create and not the generic welcome page.",
-    supportText:
-      "After the first submission, the flow continues into Pending Approval. Activation should happen only after the team or community has approved the request.",
-    primaryLabel: "Continue to Join Entry",
-    primaryTo: "/join",
-    steps: [
-      "Open Join Entry and submit the required information.",
-      "Move into Pending Approval while the request is reviewed.",
-      "After approval, continue into activation and final setup.",
-      "Receive your GMFN ID.",
-      "Build Your First Circle before wider movement reopens.",
-    ],
-    showLoginLink: false,
-  },
-  approved: {
-    label: "Approved activation entry",
-    heading: "Complete activation for your approved membership.",
-    description:
-      "Your request has already been approved. Continue directly into final activation, complete the remaining setup, and enter the system.",
-    supportText:
-      "This page is not for first-time joining. It is only for approved people who now need to finish activation and receive full access.",
-    primaryLabel: "Continue to Activation",
-    primaryTo: "/activate-membership",
-    steps: [
-      "Open Activation.",
-      "Complete your final details and set your password.",
-      "Receive your GMFN identity if issuance happens at this stage.",
-      "Build Your First Circle.",
-      "Then continue into dashboard and wider member surfaces.",
-    ],
-    showLoginLink: false,
-  },
-  existing: {
-    label: "Existing access",
-    heading: "Sign in to your existing GMFN access.",
-    description:
-      "If you already have working access, continue straight to login. You do not need to repeat join, create, or activation steps.",
-    supportText:
-      "This is the shortest route for an already active user. Sign in and continue from your dashboard.",
-    primaryLabel: "Continue to Login",
-    primaryTo: "/login",
-    steps: [
-      "Open Login.",
-      "Enter your credentials.",
-      "Continue to your dashboard.",
-    ],
-    showLoginLink: false,
-  },
-};
+function nextRouteForMode(mode: EntryMode): string {
+  if (mode === "create") return "/create";
+  if (mode === "invite") return "/join";
+  if (mode === "approved") return "/activate-membership";
+  if (mode === "existing") return "/login";
+  return "/welcome";
+}
 
 function pageShell(): React.CSSProperties {
   return {
@@ -307,135 +196,321 @@ function pageShell(): React.CSSProperties {
   };
 }
 
-function heroCard(): React.CSSProperties {
+function frameStyle(): React.CSSProperties {
   return {
-    maxWidth: 1020,
+    width: "min(92vw, 560px)",
+    display: "grid",
+    gap: 18,
+    justifyItems: "center",
+  };
+}
+
+function artworkShell(): React.CSSProperties {
+  return {
     width: "100%",
-    borderRadius: 32,
-    background: "rgba(255,255,255,0.07)",
+    borderRadius: 34,
+    overflow: "hidden",
     border: "1px solid rgba(255,255,255,0.12)",
-    boxShadow: "0 20px 60px rgba(0,0,0,0.22)",
-    padding: 28,
-    backdropFilter: "blur(10px)",
+    background: "rgba(255,255,255,0.04)",
+    boxShadow: "0 28px 74px rgba(0,0,0,0.30)",
   };
 }
 
-function labelText(): React.CSSProperties {
-  return {
-    fontSize: 12,
-    color: "rgba(255,255,255,0.72)",
-    fontWeight: 900,
-    letterSpacing: 0.45,
-    textTransform: "uppercase",
-  };
-}
-
-function primaryBtn(): React.CSSProperties {
+function buttonStyle(disabled = false): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 48,
-    padding: "14px 22px",
+    minHeight: 52,
+    minWidth: 210,
+    padding: "12px 18px",
     borderRadius: 16,
     border: "none",
-    fontSize: 15,
+    background: disabled ? "#8AA7D0" : "#FFFFFF",
+    color: "#0B2E59",
     fontWeight: 900,
-    background: "#F3D06A",
-    color: "#10253B",
-    cursor: "pointer",
-    textDecoration: "none",
-    boxShadow: "0 10px 24px rgba(0,0,0,0.18)",
+    fontSize: 16,
+    cursor: disabled ? "not-allowed" : "pointer",
+    boxShadow: disabled ? "none" : "0 14px 30px rgba(0,0,0,0.18)",
     whiteSpace: "nowrap",
   };
 }
 
-function secondaryLink(): React.CSSProperties {
+function helperText(): React.CSSProperties {
   return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 44,
-    padding: "11px 16px",
-    borderRadius: 14,
-    border: "1px solid rgba(255,255,255,0.16)",
-    background: "rgba(255,255,255,0.06)",
-    color: "#FFFFFF",
-    textDecoration: "none",
-    fontWeight: 800,
-    fontSize: 14,
-    whiteSpace: "nowrap",
+    color: "rgba(255,255,255,0.84)",
+    fontSize: 13,
+    lineHeight: 1.7,
+    textAlign: "center",
+    maxWidth: 420,
   };
 }
 
-function mutedPanel(): React.CSSProperties {
-  return {
-    borderRadius: 22,
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(255,255,255,0.10)",
-    padding: 18,
-  };
-}
+function GSNSplashArtwork() {
+  return (
+    <div
+      style={{
+        width: "100%",
+        aspectRatio: "9 / 16",
+        position: "relative",
+        overflow: "hidden",
+        background:
+          "radial-gradient(circle at 50% 18%, rgba(92,157,255,0.20), transparent 26%), linear-gradient(180deg, #0A2A88 0%, #0D47D6 42%, #19AEEF 100%)",
+      }}
+    >
+      <svg
+        viewBox="0 0 900 1600"
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "block",
+        }}
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <linearGradient id="shieldBorderGlow" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#F4C75A" />
+            <stop offset="100%" stopColor="#E7A83B" />
+          </linearGradient>
 
-function stepCard(): React.CSSProperties {
-  return {
-    borderRadius: 16,
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(255,255,255,0.10)",
-    padding: 14,
-  };
-}
+          <linearGradient id="shieldFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#0F6FF0" />
+            <stop offset="100%" stopColor="#0A49BA" />
+          </linearGradient>
 
-function infoCard(): React.CSSProperties {
-  return {
-    borderRadius: 18,
-    background: "rgba(255,255,255,0.05)",
-    border: "1px solid rgba(255,255,255,0.10)",
-    padding: 16,
-  };
+          <linearGradient id="shieldInnerLight" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.14)" />
+            <stop offset="100%" stopColor="rgba(255,255,255,0.02)" />
+          </linearGradient>
+
+          <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="10" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+
+          <filter id="starGlow" x="-200%" y="-200%" width="400%" height="400%">
+            <feGaussianBlur stdDeviation="5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        <rect
+          x="34"
+          y="34"
+          width="832"
+          height="1532"
+          rx="36"
+          fill="none"
+          stroke="rgba(255,255,255,0.10)"
+          strokeWidth="2"
+        />
+
+        <g opacity="0.20">
+          <path
+            d="M-20 108 C 180 24, 350 46, 544 118 S 812 186, 948 114"
+            fill="none"
+            stroke="#CBEAFF"
+            strokeWidth="3"
+          />
+          <path
+            d="M-10 214 C 164 138, 340 154, 520 226 S 810 300, 952 218"
+            fill="none"
+            stroke="#A6E4FF"
+            strokeWidth="2.5"
+          />
+        </g>
+
+        <g opacity="0.18">
+          <path
+            d="M20 1088 C 232 990, 426 1018, 628 1092 S 876 1184, 982 1106"
+            fill="none"
+            stroke="#A3E6FF"
+            strokeWidth="3"
+          />
+          <path
+            d="M-10 1254 C 210 1144, 430 1172, 650 1254 S 886 1360, 980 1270"
+            fill="none"
+            stroke="#9FE0FF"
+            strokeWidth="3"
+          />
+        </g>
+
+        <g transform="translate(0,10)">
+          <path
+            d="
+              M450 170
+              L612 255
+              L612 626
+              C612 814 556 954 450 1082
+              C344 954 288 814 288 626
+              L288 255
+              Z
+            "
+            fill="url(#shieldFill)"
+            stroke="url(#shieldBorderGlow)"
+            strokeWidth="10"
+            filter="url(#softGlow)"
+          />
+
+          <path
+            d="
+              M450 198
+              L586 270
+              L586 613
+              C586 775 538 898 450 1008
+              C362 898 314 775 314 613
+              L314 270
+              Z
+            "
+            fill="none"
+            stroke="rgba(255,255,255,0.12)"
+            strokeWidth="4"
+          />
+
+          <path
+            d="
+              M450 268
+              L545 785
+              L450 948
+              L355 785
+              Z
+            "
+            fill="rgba(14,43,118,0.18)"
+          />
+
+          <g stroke="#F7FBFF" strokeWidth="6" fill="none" strokeLinecap="round">
+            <path d="M450 425 L565 565" />
+            <path d="M450 425 L360 632" />
+            <path d="M450 425 L450 724" />
+            <path d="M360 632 L384 815" />
+            <path d="M384 815 L542 796" />
+            <path d="M542 796 L565 565" />
+            <path d="M450 724 L565 565" />
+            <path d="M450 724 L542 796" />
+            <path d="M450 724 L384 815" />
+            <path d="M360 632 L565 565" />
+          </g>
+
+          <g>
+            <polygon
+              points="
+                450,362
+                464,404
+                508,404
+                472,430
+                486,472
+                450,446
+                414,472
+                428,430
+                392,404
+                436,404
+              "
+              fill="#F5CF68"
+              filter="url(#starGlow)"
+            />
+            <circle cx="565" cy="565" r="15" fill="#F4F7FA" />
+            <circle cx="360" cy="632" r="15" fill="#F4F7FA" />
+            <circle cx="384" cy="815" r="15" fill="#F4F7FA" />
+            <circle cx="542" cy="796" r="15" fill="#F4F7FA" />
+          </g>
+        </g>
+
+        <text
+          x="450"
+          y="1140"
+          textAnchor="middle"
+          fill="#FFFFFF"
+          fontSize="98"
+          fontWeight="900"
+          fontFamily="Arial, Helvetica, sans-serif"
+        >
+          GSN
+        </text>
+
+        <text
+          x="450"
+          y="1256"
+          textAnchor="middle"
+          fill="#F3D06A"
+          fontSize="54"
+          fontWeight="700"
+          fontFamily="Arial, Helvetica, sans-serif"
+        >
+          Global Support Network
+        </text>
+
+        <text
+          x="450"
+          y="1334"
+          textAnchor="middle"
+          fill="#FFFFFF"
+          fontSize="42"
+          fontWeight="500"
+          fontFamily="Arial, Helvetica, sans-serif"
+        >
+          Trust Infrastructure Protocol
+        </text>
+
+        <text
+          x="450"
+          y="1484"
+          textAnchor="middle"
+          fill="#FFFFFF"
+          fontSize="38"
+          fontWeight="500"
+          fontFamily="Arial, Helvetica, sans-serif"
+        >
+          Trusted cooperation for communities.
+        </text>
+
+        <g opacity="0.26">
+          <circle cx="152" cy="1388" r="4" fill="#C7EDFF" />
+          <circle cx="738" cy="1398" r="4" fill="#C7EDFF" />
+          <circle cx="308" cy="1366" r="3.5" fill="#C7EDFF" />
+          <circle cx="590" cy="1350" r="3.5" fill="#C7EDFF" />
+        </g>
+      </svg>
+    </div>
+  );
 }
 
 export default function CoverPage() {
   const navigate = useNavigate();
   const location = useLocation();
-
-  const [isCompact, setIsCompact] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return window.innerWidth <= 920;
-  });
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    function handleResize() {
-      setIsCompact(window.innerWidth <= 920);
-    }
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  const [busy, setBusy] = useState(false);
 
   const entryMode = useMemo(
     () => detectEntryMode(location.pathname, location.search, location.state),
     [location.pathname, location.search, location.state]
   );
 
-  const signedIn = isAuthenticated();
-  const activeMode = MODE_CONFIG[entryMode];
-
   useEffect(() => {
     persistEntryState(entryMode, location.search);
   }, [entryMode, location.search]);
 
-  function goNext() {
-    if (signedIn && (entryMode === "general" || entryMode === "existing")) {
-      navigate("/app/dashboard");
-      return;
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.title = "GSN | Global Support Network";
     }
+  }, []);
 
-    navigate(mergeSearchIntoPath(activeMode.primaryTo, location.search), {
+  function goNext() {
+    if (busy) return;
+    setBusy(true);
+
+    const nextTo = mergeSearchIntoPath(
+      nextRouteForMode(entryMode),
+      location.search
+    );
+
+    navigate(nextTo, {
+      replace: false,
       state:
         location.state && typeof location.state === "object"
           ? { ...(location.state as Record<string, unknown>) }
@@ -443,249 +518,25 @@ export default function CoverPage() {
     });
   }
 
-  const primaryLabel =
-    signedIn && (entryMode === "general" || entryMode === "existing")
-      ? "Open Dashboard"
-      : activeMode.primaryLabel;
-
   return (
     <div style={pageShell()}>
-      <div style={heroCard()}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: isCompact
-              ? "1fr"
-              : "minmax(0, 1.18fr) minmax(300px, 0.82fr)",
-            gap: 22,
-            alignItems: "stretch",
-          }}
-        >
-          <div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 14,
-                flexWrap: "wrap",
-              }}
-            >
-              <img
-                src={gmfnMark}
-                alt="GMFN / GSN"
-                style={{
-                  width: isCompact ? 92 : 112,
-                  height: "auto",
-                  filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.28))",
-                }}
-              />
-
-              <div>
-                <div style={labelText()}>{activeMode.label}</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    fontSize: isCompact ? 30 : 40,
-                    fontWeight: 900,
-                    letterSpacing: 0.4,
-                    lineHeight: 1.05,
-                  }}
-                >
-                  GMFN / GSN
-                </div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    fontSize: isCompact ? 18 : 21,
-                    fontWeight: 700,
-                    color: "#F3D06A",
-                  }}
-                >
-                  Global Support Network
-                </div>
-              </div>
-            </div>
-
-            <div
-              style={{
-                marginTop: 22,
-                fontSize: isCompact ? 24 : 36,
-                fontWeight: 900,
-                lineHeight: 1.12,
-                maxWidth: 760,
-              }}
-            >
-              {activeMode.heading}
-            </div>
-
-            <div
-              style={{
-                marginTop: 14,
-                fontSize: 16,
-                lineHeight: 1.82,
-                color: "rgba(255,255,255,0.90)",
-                maxWidth: 760,
-              }}
-            >
-              {activeMode.description}
-            </div>
-
-            <div
-              style={{
-                marginTop: 18,
-                fontSize: 14,
-                lineHeight: 1.8,
-                color: "rgba(255,255,255,0.74)",
-                maxWidth: 760,
-              }}
-            >
-              {activeMode.supportText}
-            </div>
-
-            <div
-              style={{
-                marginTop: 22,
-                display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "repeat(2, max-content)",
-                gap: 12,
-                alignItems: "start",
-                justifyContent: "start",
-              }}
-            >
-              <button type="button" onClick={goNext} style={primaryBtn()}>
-                {primaryLabel}
-              </button>
-
-              <Link to={PUBLIC_GUIDE_TO} style={secondaryLink()}>
-                Open My GMFN and I
-              </Link>
-
-              {activeMode.showLoginLink && !signedIn ? (
-                <Link to="/login" style={secondaryLink()}>
-                  Login
-                </Link>
-              ) : null}
-            </div>
-
-            <div
-              style={{
-                marginTop: 16,
-                display: "flex",
-                gap: 12,
-                flexWrap: "wrap",
-                alignItems: "center",
-              }}
-            >
-              <a
-                href={PDF_FALLBACK_TO}
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  color: "rgba(255,255,255,0.74)",
-                  fontSize: 13,
-                  fontWeight: 700,
-                  textDecoration: "underline",
-                  textUnderlineOffset: 3,
-                }}
-              >
-                PDF fallback
-              </a>
-            </div>
-
-            <div
-              style={{
-                marginTop: 18,
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr"
-                  : "repeat(2, minmax(0, 1fr))",
-                gap: 12,
-              }}
-            >
-              <div style={infoCard()}>
-                <div style={labelText()}>Why this entry is guided</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    fontSize: 14,
-                    lineHeight: 1.75,
-                    color: "rgba(255,255,255,0.84)",
-                  }}
-                >
-                  People should not be pushed into too many equal choices at
-                  once. The system should guide the next move clearly.
-                </div>
-              </div>
-
-              <div style={infoCard()}>
-                <div style={labelText()}>Who this design serves</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    fontSize: 14,
-                    lineHeight: 1.75,
-                    color: "rgba(255,255,255,0.84)",
-                  }}
-                >
-                  It is built to be clearer and safer for people who need plain
-                  language, institutional calm, and lower cognitive load.
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div style={mutedPanel()}>
-            <div style={labelText()}>What happens next</div>
-
-            <div
-              style={{
-                marginTop: 12,
-                display: "grid",
-                gap: 10,
-              }}
-            >
-              {activeMode.steps.map((step, index) => (
-                <div key={`${entryMode}-${index}`} style={stepCard()}>
-                  <div
-                    style={{
-                      color: "#F3D06A",
-                      fontSize: 12,
-                      fontWeight: 900,
-                      letterSpacing: 0.35,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    Step {index + 1}
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 8,
-                      fontSize: 15,
-                      fontWeight: 800,
-                      lineHeight: 1.6,
-                      color: "#FFFFFF",
-                    }}
-                  >
-                    {step}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div
-              style={{
-                marginTop: 16,
-                color: "rgba(255,255,255,0.74)",
-                fontSize: 14,
-                lineHeight: 1.75,
-              }}
-            >
-              My GMFN and I is the readable guide page. The PDF remains
-              available only as fallback, not as the main path.
-            </div>
-          </div>
+      <div style={frameStyle()}>
+        <div style={artworkShell()}>
+          <GSNSplashArtwork />
         </div>
+
+        <div style={helperText()}>
+          Trust-first entry into the Global Support Network.
+        </div>
+
+        <button
+          type="button"
+          onClick={goNext}
+          disabled={busy}
+          style={buttonStyle(busy)}
+        >
+          {busy ? "Opening..." : "Continue"}
+        </button>
       </div>
     </div>
   );

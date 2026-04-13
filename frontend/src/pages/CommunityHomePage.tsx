@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import CommunityShopControlPanel from "../components/CommunityShopControlPanel";
 import PageTopNav from "../components/PageTopNav";
 import {
   createMarketplaceBroadcast,
   getClanInviteLink,
+  getMarketplaceBroadcasts,
   getMe,
   getPoolMe,
   getSelectedClanId,
@@ -695,6 +697,15 @@ export default function CommunityHomePage() {
     }
   }
 
+  function openShopControlPanel() {
+    if (typeof document !== "undefined") {
+      const el = document.getElementById("community-home-shop-control");
+      if (el && typeof el.scrollIntoView === "function") {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  }
+
   async function handleSelectCommunity(clan: ClanItem, openAfter = false) {
     const clanId = getClanId(clan);
     if (!clanId) {
@@ -1225,6 +1236,14 @@ export default function CommunityHomePage() {
               Spotlight Gears
             </button>
 
+            <button
+              type="button"
+              onClick={openShopControlPanel}
+              style={actionBtn("secondary")}
+            >
+              Shop Control
+            </button>
+
             <Link to="/app/notifications" style={actionBtn("secondary")}>
               Notifications
             </Link>
@@ -1253,6 +1272,10 @@ export default function CommunityHomePage() {
           </div>
         ) : null}
       </section>
+
+      <div id="community-home-shop-control">
+        <CommunityShopControlPanel />
+      </div>
 
       <section
         id="community-home-grow-your-circle"

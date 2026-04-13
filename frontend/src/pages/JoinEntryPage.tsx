@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { submitJoinRequest } from "../lib/api";
 
@@ -32,6 +32,16 @@ function inputStyle(): React.CSSProperties {
     color: "#0B1F33",
     background: "#FFFFFF",
     boxSizing: "border-box",
+  };
+}
+
+function textareaStyle(): React.CSSProperties {
+  return {
+    ...inputStyle(),
+    minHeight: 110,
+    resize: "vertical",
+    fontFamily: "inherit",
+    lineHeight: 1.6,
   };
 }
 
@@ -95,6 +105,31 @@ function labelText(): React.CSSProperties {
     fontWeight: 1000,
     letterSpacing: 0.2,
     textTransform: "uppercase",
+  };
+}
+
+function helperText(): React.CSSProperties {
+  return {
+    color: "#6B7A88",
+    lineHeight: 1.75,
+    fontSize: 14,
+  };
+}
+
+function badge(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "6px 10px",
+    borderRadius: 999,
+    background: primary ? "#EAF2FF" : "#F8FAFC",
+    border: primary
+      ? "1px solid rgba(11,99,209,0.14)"
+      : "1px solid rgba(11,31,51,0.08)",
+    color: primary ? "#0B63D1" : "#475569",
+    fontWeight: 900,
+    fontSize: 12,
+    whiteSpace: "nowrap",
   };
 }
 
@@ -183,6 +218,30 @@ function safeDateTime(value: any): string {
 export default function JoinEntryPage() {
   const { clanId } = useParams();
   const [searchParams] = useSearchParams();
+
+  const [isCompact, setIsCompact] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 980;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    function handleResize() {
+      setIsCompact(window.innerWidth <= 980);
+    }
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.title = "GSN | Join Entry";
+    }
+  }, []);
 
   const inviteCode = useMemo(() => {
     return cleanText(
@@ -344,9 +403,17 @@ export default function JoinEntryPage() {
       }}
     >
       <div style={{ maxWidth: 1120, margin: "0 auto" }}>
-        <div style={{ ...pageCard(), padding: 30 }}>
+        <div
+          style={{
+            ...pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
+            padding: 30,
+          }}
+        >
+          <div style={labelText()}>Invited join route</div>
+
           <div
             style={{
+              marginTop: 10,
               fontSize: 42,
               lineHeight: 1.08,
               fontWeight: 1000,
@@ -354,7 +421,7 @@ export default function JoinEntryPage() {
               maxWidth: 860,
             }}
           >
-            Join an Existing GMFN Community
+            Continue your join request carefully.
           </div>
 
           <div
@@ -366,8 +433,25 @@ export default function JoinEntryPage() {
               maxWidth: 980,
             }}
           >
-            This path is for people invited by a known member into an existing
-            GMFN community. Admission is trust-based and is not automatic.
+            This path is only for people invited into an existing GMFN community.
+            It is guided, trust-based, and not automatic.
+          </div>
+
+          <div
+            style={{
+              marginTop: 16,
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
+            <span style={badge(true)}>Join route</span>
+            <span style={badge(false)}>
+              Community: {communityName || "Pending community"}
+            </span>
+            <span style={badge(false)}>
+              Invited by: {inviterLabel}
+            </span>
           </div>
         </div>
 
@@ -375,12 +459,12 @@ export default function JoinEntryPage() {
           style={{
             marginTop: 18,
             display: "grid",
-            gridTemplateColumns: "0.95fr 1.05fr",
+            gridTemplateColumns: isCompact ? "1fr" : "0.95fr 1.05fr",
             gap: 18,
           }}
         >
           <div style={pageCard()}>
-            <div style={labelText()}>Join information</div>
+            <div style={labelText()}>Invitation package</div>
 
             <div
               style={{
@@ -390,19 +474,13 @@ export default function JoinEntryPage() {
                 color: "#0B1F33",
               }}
             >
-              Community join request
+              Community join details
             </div>
 
-            <div
-              style={{
-                marginTop: 12,
-                color: "#6B7A88",
-                lineHeight: 1.8,
-                fontSize: 15,
-              }}
-            >
-              You are not creating a normal public account here. You are submitting
-              a request to be considered for admission into an existing community.
+            <div style={{ marginTop: 12, ...helperText() }}>
+              You are not creating a normal public account here. You are
+              submitting a request to be considered for admission into an
+              existing community.
             </div>
 
             <div style={{ marginTop: 18, ...softCard() }}>
@@ -413,7 +491,7 @@ export default function JoinEntryPage() {
                   fontSize: 15,
                 }}
               >
-                Invitation package
+                Invitation summary
               </div>
 
               <div
@@ -422,6 +500,8 @@ export default function JoinEntryPage() {
                   color: "#35516B",
                   lineHeight: 1.85,
                   fontSize: 14,
+                  display: "grid",
+                  gap: 6,
                 }}
               >
                 <div>
@@ -493,52 +573,10 @@ export default function JoinEntryPage() {
                 Important admission rule
               </div>
 
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#6B7A88",
-                  lineHeight: 1.75,
-                  fontSize: 14,
-                }}
-              >
-                Receiving an invitation or submitting this request does not by
-                itself guarantee admission. Members of the community must still
-                approve your request according to the voting rule already in place.
-              </div>
-            </div>
-
-            <div style={{ marginTop: 18, ...softCard() }}>
-              <div
-                style={{
-                  fontWeight: 1000,
-                  color: "#0B1F33",
-                  fontSize: 15,
-                }}
-              >
-                Guide
-              </div>
-
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#6B7A88",
-                  lineHeight: 1.75,
-                  fontSize: 14,
-                }}
-              >
-                Before joining, read the guide and understand what GMFN / GSN is
-                for and how trust-based participation works.
-              </div>
-
-              <div style={{ marginTop: 12 }}>
-                <a
-                  href="/GSN_FINAL_WHITE.pdf"
-                  target="_blank"
-                  rel="noreferrer"
-                  style={secondaryLink()}
-                >
-                  Open guide
-                </a>
+              <div style={{ marginTop: 8, ...helperText() }}>
+                Receiving an invitation or submitting this request does not
+                guarantee admission. Members of the community must still approve
+                your request according to the decision rule already in place.
               </div>
             </div>
 
@@ -553,17 +591,42 @@ export default function JoinEntryPage() {
                 What happens next
               </div>
 
+              <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                <div style={noticeStyle("info")}>
+                  <strong>Step 1:</strong> Submit your join request with the
+                  details required by the community.
+                </div>
+                <div style={noticeStyle("info")}>
+                  <strong>Step 2:</strong> The community reviews and votes on
+                  the request according to its internal rule.
+                </div>
+                <div style={noticeStyle("info")}>
+                  <strong>Step 3:</strong> If approved, you move into activation
+                  and the next authenticated member steps.
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 18, ...softCard() }}>
               <div
                 style={{
-                  marginTop: 8,
-                  color: "#6B7A88",
-                  lineHeight: 1.75,
-                  fontSize: 14,
+                  fontWeight: 1000,
+                  color: "#0B1F33",
+                  fontSize: 15,
                 }}
               >
-                Once you submit, your request goes to {communityName || "the community"} for
-                review. If approved, GMFN will issue your institutional identity
-                and you will then be invited to activate your account properly.
+                Guide
+              </div>
+
+              <div style={{ marginTop: 8, ...helperText() }}>
+                Before joining, read My GMFN and I and understand how trust-based
+                participation works.
+              </div>
+
+              <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <Link to="/guide" style={secondaryLink()}>
+                  Open My GMFN and I
+                </Link>
               </div>
             </div>
 
@@ -619,17 +682,17 @@ export default function JoinEntryPage() {
               Submit your request
             </div>
 
-            <div
-              style={{
-                marginTop: 10,
-                color: "#6B7A88",
-                lineHeight: 1.8,
-                fontSize: 15,
-              }}
-            >
+            <div style={{ marginTop: 10, ...helperText() }}>
               Provide the details the community needs in order to review your
               admission request.
             </div>
+
+            {!inviteCode ? (
+              <div style={{ marginTop: 18, ...noticeStyle("error") }}>
+                This join page does not contain a valid invite code yet. Return
+                to the invited link and reopen it correctly before submitting.
+              </div>
+            ) : null}
 
             {err ? (
               <div style={{ marginTop: 18, ...noticeStyle("error") }}>
@@ -664,22 +727,20 @@ export default function JoinEntryPage() {
                   )}
                 </div>
 
-                {submittedRequestId ? (
-                  <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  {submittedRequestId ? (
                     <Link
                       to={`/join-approval/${submittedRequestId}`}
                       style={secondaryLink()}
                     >
                       Check approval status
                     </Link>
-                  </div>
-                ) : (
-                  <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  ) : (
                     <Link to="/join-request/pending" style={secondaryLink()}>
                       Open pending page
                     </Link>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             ) : null}
 
@@ -688,66 +749,77 @@ export default function JoinEntryPage() {
                 style={{
                   marginTop: 18,
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
+                  gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
                   gap: 12,
                 }}
               >
-                <input
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="First name"
-                  style={inputStyle()}
-                />
-                <input
-                  value={surname}
-                  onChange={(e) => setSurname(e.target.value)}
-                  placeholder="Surname"
-                  style={inputStyle()}
-                />
+                <div>
+                  <div style={labelText()}>First name</div>
+                  <input
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="Enter first name"
+                    style={{ ...inputStyle(), marginTop: 8 }}
+                  />
+                </div>
+
+                <div>
+                  <div style={labelText()}>Surname</div>
+                  <input
+                    value={surname}
+                    onChange={(e) => setSurname(e.target.value)}
+                    placeholder="Enter surname"
+                    style={{ ...inputStyle(), marginTop: 8 }}
+                  />
+                </div>
               </div>
 
               <div
                 style={{
                   marginTop: 12,
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
+                  gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
                   gap: 12,
                 }}
               >
-                <input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Phone number (preferably +E164)"
-                  style={inputStyle()}
-                />
-                <input
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                  placeholder="Country"
-                  style={inputStyle()}
-                />
+                <div>
+                  <div style={labelText()}>Phone number</div>
+                  <input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="Preferably +E164 format"
+                    style={{ ...inputStyle(), marginTop: 8 }}
+                  />
+                </div>
+
+                <div>
+                  <div style={labelText()}>Country</div>
+                  <input
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    placeholder="Enter country"
+                    style={{ ...inputStyle(), marginTop: 8 }}
+                  />
+                </div>
               </div>
 
               <div style={{ marginTop: 12 }}>
+                <div style={labelText()}>Business or trade (optional)</div>
                 <input
                   value={businessName}
                   onChange={(e) => setBusinessName(e.target.value)}
-                  placeholder="Business / trade (optional)"
-                  style={inputStyle()}
+                  placeholder="Business / trade"
+                  style={{ ...inputStyle(), marginTop: 8 }}
                 />
               </div>
 
               <div style={{ marginTop: 12 }}>
+                <div style={labelText()}>Short note to the community (optional)</div>
                 <textarea
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  placeholder="Short note to the community (optional)"
-                  style={{
-                    ...inputStyle(),
-                    minHeight: 110,
-                    resize: "vertical",
-                    fontFamily: "inherit",
-                  }}
+                  placeholder="Add a short note"
+                  style={{ ...textareaStyle(), marginTop: 8 }}
                 />
               </div>
 
@@ -761,10 +833,6 @@ export default function JoinEntryPage() {
                 <button type="submit" disabled={!canSubmit} style={primaryBtn(!canSubmit)}>
                   {busy ? "Submitting Request..." : "Submit Join Request"}
                 </button>
-
-                <Link to="/login" style={secondaryBtn()}>
-                  I already have access — Sign in
-                </Link>
               </div>
             </form>
           </div>
@@ -780,10 +848,6 @@ export default function JoinEntryPage() {
         >
           <Link to="/welcome" style={secondaryLink()}>
             Back to Welcome
-          </Link>
-
-          <Link to="/cover" style={secondaryLink()}>
-            Back to Cover
           </Link>
         </div>
       </div>
