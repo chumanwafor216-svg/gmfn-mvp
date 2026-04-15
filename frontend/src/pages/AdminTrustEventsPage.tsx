@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import PageTopNav from "../components/PageTopNav";
 import { adminRecentTrustEvents } from "../lib/api";
 
 function safeStr(x: any): string {
@@ -46,6 +47,16 @@ export default function AdminTrustEventsPage() {
 
   return (
     <div style={{ maxWidth: 1260, margin: "0 auto" }}>
+      <PageTopNav
+        sectionLabel="Trust Events"
+        title="Trust Events"
+        subtitle="Review recent trust-event records for oversight, evidence, and explainability checks."
+        homeTo="/app/dashboard"
+        homeLabel="Dashboard"
+        backTo="/app/command-center"
+        backLabel="Command Center"
+      />
+
       <div
         style={{
           backgroundImage: `url("${pattern}")`,
@@ -59,7 +70,7 @@ export default function AdminTrustEventsPage() {
         }}
       >
         <div style={{ padding: 24 }}>
-          <div style={{ fontSize: 34, fontWeight: 1000, color: "#0B1F33" }}>Audit Log</div>
+          <div style={{ fontSize: 34, fontWeight: 1000, color: "#0B1F33" }}>Trust event log</div>
           <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
             Recent TrustEvents for oversight, evidence, and explainability review.
           </div>
@@ -81,7 +92,7 @@ export default function AdminTrustEventsPage() {
           )}
 
           <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-            {rows.length === 0 && <div style={{ ...card(), color: "#7A8D9F" }}>No recent trust events returned.</div>}
+            {rows.length === 0 && <div style={{ ...card(), color: "#7A8D9F" }}>No recent trust events are currently shown.</div>}
 
             {rows.map((row, i) => (
               <div key={row?.id || i} style={card()}>

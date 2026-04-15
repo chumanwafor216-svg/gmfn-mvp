@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import { submitJoinRequest } from "../lib/api";
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
@@ -209,7 +210,7 @@ function humanInviterLabel(rawInviter: string): string {
 
 function safeDateTime(value: any): string {
   const raw = cleanText(value);
-  if (!raw) return "—";
+  if (!raw) return "Not available yet";
   const d = new Date(raw);
   if (Number.isNaN(d.getTime())) return raw;
   return d.toLocaleString();
@@ -239,7 +240,7 @@ export default function JoinEntryPage() {
 
   useEffect(() => {
     if (typeof document !== "undefined") {
-      document.title = "GSN | Join Entry";
+      document.title = "GMFN | Join Entry";
     }
   }, []);
 
@@ -447,11 +448,15 @@ export default function JoinEntryPage() {
           >
             <span style={badge(true)}>Join route</span>
             <span style={badge(false)}>
-              Community: {communityName || "Pending community"}
+              Community ID: {communityCode || "Awaiting issue"}
+            </span>
+            <span style={badge(false)}>
+              Community: {communityName || "Community not stated yet"}
             </span>
             <span style={badge(false)}>
               Invited by: {inviterLabel}
             </span>
+            <span style={badge(false)}>Current step: Join request entry</span>
           </div>
         </div>
 
@@ -541,6 +546,11 @@ export default function JoinEntryPage() {
                     {safeDateTime(inviteExpiry)}
                   </div>
                 ) : null}
+
+                <div>
+                  <strong style={{ color: "#0B1F33" }}>Invite code:</strong>{" "}
+                  {inviteCode || "Not available yet"}
+                </div>
               </div>
 
               {inviteMessage ? (
@@ -624,9 +634,9 @@ export default function JoinEntryPage() {
               </div>
 
               <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <Link to="/guide" style={secondaryLink()}>
+                <OriginLink to="/guide" style={secondaryLink()}>
                   Open My GMFN and I
-                </Link>
+                </OriginLink>
               </div>
             </div>
 
@@ -723,22 +733,22 @@ export default function JoinEntryPage() {
                     success?.community_name ||
                       success?.request?.clan_name ||
                       communityName ||
-                      "Pending community"
+                      "Community not stated yet"
                   )}
                 </div>
 
                 <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
                   {submittedRequestId ? (
-                    <Link
+                    <OriginLink
                       to={`/join-approval/${submittedRequestId}`}
                       style={secondaryLink()}
                     >
                       Check approval status
-                    </Link>
+                    </OriginLink>
                   ) : (
-                    <Link to="/join-request/pending" style={secondaryLink()}>
+                    <OriginLink to="/join-request/pending" style={secondaryLink()}>
                       Open pending page
-                    </Link>
+                    </OriginLink>
                   )}
                 </div>
               </div>
@@ -846,9 +856,9 @@ export default function JoinEntryPage() {
             flexWrap: "wrap",
           }}
         >
-          <Link to="/welcome" style={secondaryLink()}>
+          <OriginLink to="/welcome" style={secondaryLink()}>
             Back to Welcome
-          </Link>
+          </OriginLink>
         </div>
       </div>
     </div>

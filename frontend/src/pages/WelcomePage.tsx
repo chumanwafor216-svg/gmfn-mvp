@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import {
   detectEntryMode,
   initialWelcomeStep,
@@ -166,7 +167,7 @@ export default function WelcomePage() {
 
   useEffect(() => {
     if (typeof document !== "undefined") {
-      document.title = "GSN | Welcome";
+      document.title = "GMFN | Welcome";
     }
   }, []);
 
@@ -237,7 +238,7 @@ export default function WelcomePage() {
       <div style={heroCard()}>
         <div style={{ display: "grid", gap: 18 }}>
           <div>
-            <div style={labelText()}>GSN Welcome</div>
+            <div style={labelText()}>GMFN Welcome</div>
 
             <div
               style={{
@@ -278,9 +279,9 @@ export default function WelcomePage() {
                 <button type="button" onClick={openCreate} style={primaryBtn()}>
                   Continue
                 </button>
-                <Link to={GUIDE_TO} style={secondaryBtn()}>
+                <OriginLink to={GUIDE_TO} style={secondaryBtn()}>
                   Open My GMFN and I
-                </Link>
+                </OriginLink>
               </div>
             </div>
           ) : null}
@@ -299,9 +300,9 @@ export default function WelcomePage() {
                 <button type="button" onClick={openJoin} style={primaryBtn()}>
                   Continue
                 </button>
-                <Link to={GUIDE_TO} style={secondaryBtn()}>
+                <OriginLink to={GUIDE_TO} style={secondaryBtn()}>
                   Open My GMFN and I
-                </Link>
+                </OriginLink>
               </div>
             </div>
           ) : null}
@@ -320,9 +321,9 @@ export default function WelcomePage() {
                 <button type="button" onClick={openActivation} style={primaryBtn()}>
                   Continue
                 </button>
-                <Link to={GUIDE_TO} style={secondaryBtn()}>
+                <OriginLink to={GUIDE_TO} style={secondaryBtn()}>
                   Open My GMFN and I
-                </Link>
+                </OriginLink>
               </div>
             </div>
           ) : null}
@@ -341,9 +342,9 @@ export default function WelcomePage() {
                 <button type="button" onClick={openExisting} style={primaryBtn()}>
                   Continue to Login
                 </button>
-                <Link to={GUIDE_TO} style={secondaryBtn()}>
+                <OriginLink to={GUIDE_TO} style={secondaryBtn()}>
                   Open My GMFN and I
-                </Link>
+                </OriginLink>
               </div>
             </div>
           ) : null}
@@ -455,9 +456,9 @@ export default function WelcomePage() {
           ) : null}
 
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <Link to={GUIDE_TO} style={secondaryBtn()}>
+            <OriginLink to={GUIDE_TO} style={secondaryBtn()}>
               Open My GMFN and I
-            </Link>
+            </OriginLink>
           </div>
 
           <div style={infoCard()}>

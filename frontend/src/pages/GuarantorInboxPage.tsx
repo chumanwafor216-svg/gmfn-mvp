@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
   getCurrentClan,
@@ -100,7 +100,7 @@ function rowsOf<T = any>(input: any): T[] {
 
 function safeDateTime(x: any): string {
   const raw = safeStr(x);
-  if (!raw) return "—";
+  if (!raw) return "Not available yet";
   const d = new Date(raw);
   if (Number.isNaN(d.getTime())) return raw;
   return d.toLocaleString();
@@ -542,7 +542,7 @@ export default function GuarantorInboxPage() {
   );
 
   const memberName = useMemo(() => getMemberName(me), [me]);
-  const gmfnId = useMemo(() => firstTruthy(me?.gmfn_id, "Pending"), [me]);
+  const gmfnId = useMemo(() => firstTruthy(me?.gmfn_id, "Not available yet"), [me]);
 
   const selectedCommunityLabel = useMemo(() => {
     return (
@@ -552,7 +552,7 @@ export default function GuarantorInboxPage() {
   }, [community, selectedClanId]);
 
   const communityPublicId = useMemo(() => {
-    return getCommunityId(community) || "Pending";
+    return getCommunityId(community) || "Not available yet";
   }, [community]);
 
   const memberRole = useMemo(() => {
@@ -599,7 +599,7 @@ export default function GuarantorInboxPage() {
     }
 
     return {
-      title: "No pending guarantor request is visible right now.",
+      title: "No pending guarantor request is currently shown.",
       detail:
         "That means nothing is directly waiting on your guarantor response inside this current queue view.",
       ctaLabel: "Open Loans & Support",
@@ -656,7 +656,7 @@ export default function GuarantorInboxPage() {
 
       <section
         style={{
-          ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
+          ...pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
           marginTop: 18,
         }}
       >
@@ -678,7 +678,7 @@ export default function GuarantorInboxPage() {
                 marginTop: 10,
                 fontSize: 30,
                 fontWeight: 1000,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 lineHeight: 1.12,
               }}
             >
@@ -787,9 +787,9 @@ export default function GuarantorInboxPage() {
                 flexWrap: "wrap",
               }}
             >
-              <Link to={nextStep.ctaTo} style={primaryBtn(false)}>
+              <OriginLink to={nextStep.ctaTo} style={primaryBtn(false)}>
                 {nextStep.ctaLabel}
-              </Link>
+              </OriginLink>
 
               <button type="button" onClick={copyQueueSummary} style={secondaryBtn(false)}>
                 Copy Queue Summary
@@ -1022,7 +1022,7 @@ export default function GuarantorInboxPage() {
                               row.createdAt ? safeDateTime(row.createdAt) : "",
                             ]
                               .filter(Boolean)
-                              .join(" · ")}
+                              .join(" | ")}
                           </div>
                         </div>
 
@@ -1045,7 +1045,7 @@ export default function GuarantorInboxPage() {
                       </div>
 
                       <div style={{ marginTop: 12, ...helperText() }}>
-                        Purpose: {safeStr(row.purpose || row.note || "—")}
+                        Purpose: {safeStr(row.purpose || row.note || "Not available yet")}
                       </div>
 
                       <div style={{ marginTop: 8, ...helperText() }}>
@@ -1060,17 +1060,17 @@ export default function GuarantorInboxPage() {
                             safeStr(row.releasedAmount) ? `Released amount: ${safeStr(row.releasedAmount)}` : "",
                           ]
                             .filter(Boolean)
-                            .join(" • ")}
+                            .join(" | ")}
                         </div>
                       ) : null}
 
                       <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                        <Link to="/app/loan-workbench" style={secondaryBtn(false)}>
+                        <OriginLink to="/app/loan-workbench" style={secondaryBtn(false)}>
                           Open workbench
-                        </Link>
-                        <Link to="/app/loans" style={secondaryBtn(false)}>
+                        </OriginLink>
+                        <OriginLink to="/app/loans" style={secondaryBtn(false)}>
                           Loans & Support
-                        </Link>
+                        </OriginLink>
                       </div>
                     </div>
                   );
@@ -1164,7 +1164,7 @@ export default function GuarantorInboxPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Working routes</div>
+            <div style={sectionLabel()}>Next routes</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Move from queue reading into the exact next page you need.
             </div>
@@ -1188,7 +1188,7 @@ export default function GuarantorInboxPage() {
               gap: 12,
             }}
           >
-            <Link to={nextStep.ctaTo} style={routeTile(true)}>
+            <OriginLink to={nextStep.ctaTo} style={routeTile(true)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1202,9 +1202,9 @@ export default function GuarantorInboxPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 {nextStep.detail}
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/loan-workbench" style={routeTile(false)}>
+            <OriginLink to="/app/loan-workbench" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1218,9 +1218,9 @@ export default function GuarantorInboxPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when you are continuing the deeper support decision path.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/loan-suggestions" style={routeTile(false)}>
+            <OriginLink to="/app/loan-suggestions" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1234,9 +1234,9 @@ export default function GuarantorInboxPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when the next question is candidate fit rather than queue state.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/loans" style={routeTile(false)}>
+            <OriginLink to="/app/loans" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1250,9 +1250,9 @@ export default function GuarantorInboxPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Return to the broader support overview.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/marketplace" style={routeTile(false)}>
+            <OriginLink to="/app/marketplace" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1266,9 +1266,9 @@ export default function GuarantorInboxPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Return to the selected-community launcher surface only after the current queue reading is complete.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/notifications" style={routeTile(false)}>
+            <OriginLink to="/app/notifications" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1282,7 +1282,7 @@ export default function GuarantorInboxPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when the broader notification picture matters around the support decision.
               </div>
-            </Link>
+            </OriginLink>
           </div>
         ) : null}
       </section>

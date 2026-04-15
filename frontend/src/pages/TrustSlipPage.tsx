@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
 
@@ -135,7 +135,7 @@ type TrustSlipSummary = {
 };
 
 const TRUST_SLIP_UI_STORAGE_KEY = "gmfn.trustSlip.sections.v3";
-const GSN_EXEC_SUMMARY_URL = "/gsn-executive-summary.pdf";
+const GMFN_EXEC_SUMMARY_URL = "/gmfn-executive-summary.pdf";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -432,6 +432,16 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
         ? "1px solid rgba(34,197,94,0.16)"
         : "1px solid rgba(239,68,68,0.16)",
     fontWeight: 800,
+  };
+}
+
+function documentMetaCard(bg = "#F7FAFC"): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    border: "1px solid rgba(148,163,184,0.18)",
+    background: bg,
+    padding: 14,
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.45)",
   };
 }
 
@@ -801,18 +811,29 @@ export default function TrustSlipPage() {
     "standard"
   );
 
+  const merchantVerifyActive = Boolean((summary as any)?.merchant_verify_active);
+  const merchantVerifyRequired = Boolean(
+    (summary as any)?.merchant_verify_subscription_required
+  );
+  const merchantVerifyDetail = firstTruthy(
+    (summary as any)?.merchant_verify_detail,
+    merchantVerifyActive
+      ? "External merchant verification is active."
+      : "External merchant verification requires an active Merchant Verify subscription."
+  );
+
   const cciScore = firstTruthy(
     summary?.merchant_view?.cci_score,
     summary?.merchant_summary?.cci_score,
     summary?.cci_score,
-    "—"
+    "Not stated"
   );
 
   const cciBand = firstTruthy(
     summary?.merchant_view?.cci_band,
     summary?.merchant_summary?.cci_band,
     summary?.cci_band,
-    "—"
+    "Not stated"
   );
 
   const disclaimer = firstTruthy(
@@ -870,7 +891,7 @@ export default function TrustSlipPage() {
         <PageTopNav
           sectionLabel="TrustSlip"
           title="TrustSlip"
-          subtitle="Preparing the portable trust verification surface..."
+          subtitle="Loading the TrustSlip surface..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/dashboard"
@@ -901,10 +922,17 @@ export default function TrustSlipPage() {
         gap: 18,
       }}
     >
+      <style>{`
+        @media print {
+          body { background: #ffffff !important; }
+          a[href]:after { content: "" !important; }
+          button { display: none !important; }
+        }
+      `}</style>
       <PageTopNav
         sectionLabel="TrustSlip"
         title="TrustSlip"
-        subtitle="TrustSlip is the portable proof surface. Merchant Verify now uses the real TrustSlip summary payload."
+        subtitle="TrustSlip is the public trust summary surface. TrustSlip Verify follows the current TrustSlip summary."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
@@ -919,7 +947,9 @@ export default function TrustSlipPage() {
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        style={pageCard(
+          "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+        )}
       >
         <div
           style={{
@@ -937,7 +967,7 @@ export default function TrustSlipPage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: isCompact ? 28 : 34,
                 lineHeight: 1.12,
@@ -948,10 +978,16 @@ export default function TrustSlipPage() {
                 : "TrustSlip is still preparing"}
             </div>
 
-            <div style={{ marginTop: 12, ...helperText(), maxWidth: 840 }}>
-              This page reads the real TrustSlip summary payload. It carries the
-              merchant-facing trust state, verify link, code, CCI, trust limit,
-              and institutional notes.
+            <div
+              style={{
+                marginTop: 12,
+                ...helperText(),
+                color: "#D7E3F1",
+                maxWidth: 840,
+              }}
+            >
+              This page shows your current portable trust state, verify link,
+              code, CCI, trust limit, and institutional notes.
             </div>
 
             <div
@@ -966,6 +1002,8 @@ export default function TrustSlipPage() {
               <span style={badge(false)}>GMFN ID: {gmfnId}</span>
               <span style={badge(false)}>Community: {communityName}</span>
               <span style={badge(false)}>Community ID: {communityRef}</span>
+              <span style={badge(false)}>Current page: TrustSlip</span>
+              <span style={badge(false)}>Current step: Review portable trust summary</span>
             </div>
 
             <div
@@ -1015,15 +1053,32 @@ export default function TrustSlipPage() {
                     "GMFN ID is not ready yet."
                   )
                 }
-                style={actionBtn("secondary", !gmfnId || gmfnId === "Pending")}
-                disabled={!gmfnId || gmfnId === "Pending"}
+                style={actionBtn("secondary", !gmfnId || gmfnId === "Awaiting issue")}
+                disabled={!gmfnId || gmfnId === "Awaiting issue"}
               >
                 Copy GMFN ID
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== "undefined" && typeof window.print === "function") {
+                    window.print();
+                  }
+                }}
+                style={actionBtn("soft")}
+              >
+                Print TrustSlip
               </button>
             </div>
           </div>
 
-          <div style={softCard("#FFFFFF")}>
+          <div
+            style={{
+              ...softCard("rgba(255,255,255,0.94)"),
+              border: "1px solid rgba(148,163,184,0.16)",
+            }}
+          >
             <div style={sectionLabel()}>Current portable reading</div>
 
             <div
@@ -1081,8 +1136,40 @@ export default function TrustSlipPage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText() }}>
-              Status: {safeStr(summary?.status || "Pending")} • Visibility:{" "}
+              Status: {safeStr(summary?.status || "Awaiting issue")} - Visibility:{" "}
               {merchantVisibility}
+            </div>
+
+            <div
+              style={{
+                marginTop: 12,
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+                gap: 10,
+              }}
+            >
+              <div style={documentMetaCard("rgba(255,255,255,0.98)")}>
+                <div style={sectionLabel()}>Document reference</div>
+                <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                  TrustSlip code: {trustSlipCode || "Awaiting issue"}
+                </div>
+                <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
+                  Verification code: {safeStr(summary?.verification_code || "Not stated")}
+                </div>
+              </div>
+
+              <div style={documentMetaCard("rgba(248,251,255,0.98)")}>
+                <div style={sectionLabel()}>Issue window</div>
+                <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                  Issued: {safeDateTime(summary?.issued_at) || "Not stated"}
+                </div>
+                <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
+                  Expires: {safeDateTime(summary?.expires_at) || "Not stated"}
+                </div>
+                <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
+                  Expiry policy: {safeStr(summary?.expiry_policy || "Not stated")}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1101,7 +1188,7 @@ export default function TrustSlipPage() {
           <div>
             <div style={sectionLabel()}>Merchant Verify Portal</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              This block now reads the actual verification fields from TrustSlip summary.
+              This block shows whether outside merchants can use your verification page.
             </div>
           </div>
 
@@ -1163,7 +1250,7 @@ export default function TrustSlipPage() {
                     padding: 12,
                   }}
                 >
-                  QR appears here when TrustSlip is ready
+                  QR code appears here when TrustSlip is ready
                 </div>
               )}
 
@@ -1176,12 +1263,25 @@ export default function TrustSlipPage() {
                 }}
               >
                 Scan to verify
+                <div style={{ marginTop: 6, color: "#94A3B8", fontWeight: 800 }}>
+                  Formal verification instrument
+                </div>
               </div>
             </div>
 
             <div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <span style={badge(merchantVerifyActive)}>
+                  {merchantVerifyActive ? "Merchant Verify active" : "Merchant Verify inactive"}
+                </span>
+                <span style={badge(false)}>
+                  {merchantVerifyRequired ? "Subscription required" : "Subscription satisfied"}
+                </span>
+              </div>
+
               <div
                 style={{
+                  marginTop: 12,
                   color: "#0B1F33",
                   fontWeight: 900,
                   fontSize: 18,
@@ -1192,8 +1292,21 @@ export default function TrustSlipPage() {
               </div>
 
               <div style={{ marginTop: 10, ...helperText() }}>
-                Verified: {String(Boolean(summary?.merchant_view?.verified ?? summary?.verified))} •{" "}
-                Active: {String(Boolean(summary?.merchant_view?.active ?? summary?.active))} •{" "}
+                {merchantVerifyDetail}
+              </div>
+
+              <div style={{ marginTop: 10, ...helperText() }}>
+                Unlock result:{" "}
+                {merchantVerifyActive
+                  ? "Outside merchants can use this verification page now."
+                  : merchantVerifyRequired
+                    ? "Outside merchants cannot use this verification page until Merchant Verify is active."
+                    : "This verification page is not active for outside merchants yet."}
+              </div>
+
+              <div style={{ marginTop: 10, ...helperText() }}>
+                Verified: {String(Boolean(summary?.merchant_view?.verified ?? summary?.verified))} -{" "}
+                Active: {String(Boolean(summary?.merchant_view?.active ?? summary?.active))} -{" "}
                 Phone verified:{" "}
                 {String(Boolean(summary?.merchant_view?.phone_verified ?? summary?.phone_verified))}
               </div>
@@ -1207,14 +1320,23 @@ export default function TrustSlipPage() {
                 }}
               >
                 <span style={badge(true)}>
-                  Code: {trustSlipCode || "Pending"}
+                  Code: {trustSlipCode || "Awaiting issue"}
                 </span>
                 <span style={badge(false)}>
                   Visibility: {merchantVisibility}
                 </span>
                 <span style={badge(false)}>
-                  Status: {safeStr(summary?.status || "Pending")}
+                  Status: {safeStr(summary?.status || "Awaiting issue")}
                 </span>
+              </div>
+
+              <div style={{ marginTop: 12, display: "grid", gap: 6 }}>
+                <div style={helperText()}>
+                  Verify link: {verifyUrl || "Not available yet"}
+                </div>
+                <div style={helperText()}>
+                  Expires: {safeStr(summary?.expires_at) ? safeDateTime(summary?.expires_at) : "No expiry stated"}
+                </div>
               </div>
 
               <div
@@ -1232,11 +1354,11 @@ export default function TrustSlipPage() {
                     rel="noreferrer"
                     style={actionBtn("primary")}
                   >
-                    Open Merchant Verify
+                    Open TrustSlip Verify
                   </a>
                 ) : (
                   <button type="button" style={actionBtn("primary", true)} disabled>
-                    Open Merchant Verify
+                    Open TrustSlip Verify
                   </button>
                 )}
 
@@ -1273,7 +1395,7 @@ export default function TrustSlipPage() {
           <div>
             <div style={sectionLabel()}>Merchant-facing view</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              The merchant-facing summary and merchant view stay together here.
+              Everything a merchant needs to read stays together here.
             </div>
           </div>
 
@@ -1311,7 +1433,7 @@ export default function TrustSlipPage() {
                   GMFN ID: {safeStr(summary?.merchant_summary?.gmfn_id || gmfnId)}
                 </div>
                 <div style={helperText()}>
-                  Code: {safeStr(summary?.merchant_summary?.code || trustSlipCode || "Pending")}
+                  Code: {safeStr(summary?.merchant_summary?.code || trustSlipCode || "Awaiting issue")}
                 </div>
                 <div style={helperText()}>
                   Community: {safeStr(summary?.merchant_summary?.community || communityName)}
@@ -1341,6 +1463,22 @@ export default function TrustSlipPage() {
                 Merchant view
               </div>
 
+              <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <span style={badge(Boolean(summary?.merchant_view?.active ?? summary?.active))}>
+                  {Boolean(summary?.merchant_view?.active ?? summary?.active)
+                    ? "Usable now"
+                    : "Not active yet"}
+                </span>
+                <span style={badge(false)}>
+                  {Boolean(summary?.merchant_view?.verified ?? summary?.verified)
+                    ? "Verified"
+                    : "Not yet verified"}
+                </span>
+                <span style={badge(false)}>
+                  Visibility: {safeStr(summary?.merchant_view?.visibility_level || merchantVisibility)}
+                </span>
+              </div>
+
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 <div style={helperText()}>
                   Verified: {String(Boolean(summary?.merchant_view?.verified ?? summary?.verified))}
@@ -1349,7 +1487,7 @@ export default function TrustSlipPage() {
                   Active: {String(Boolean(summary?.merchant_view?.active ?? summary?.active))}
                 </div>
                 <div style={helperText()}>
-                  Status: {safeStr(summary?.merchant_view?.status || summary?.status || "Pending")}
+                  Status: {safeStr(summary?.merchant_view?.status || summary?.status || "Awaiting issue")}
                 </div>
                 <div style={helperText()}>
                   Visibility level: {safeStr(summary?.merchant_view?.visibility_level || merchantVisibility)}
@@ -1359,6 +1497,12 @@ export default function TrustSlipPage() {
                 </div>
                 <div style={helperText()}>
                   Phone verified: {String(Boolean(summary?.merchant_view?.phone_verified ?? summary?.phone_verified))}
+                </div>
+                <div style={helperText()}>
+                  Decision reading:{" "}
+                  {Boolean(summary?.merchant_view?.active ?? summary?.active)
+                    ? "A merchant can rely on this verification view now."
+                    : "A merchant cannot rely on this verification view yet."}
                 </div>
               </div>
             </div>
@@ -1379,7 +1523,7 @@ export default function TrustSlipPage() {
           <div>
             <div style={sectionLabel()}>Evidence and exposure context</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              This is where capacity and exposure indicators from the payload appear.
+              This is where capacity and exposure indicators appear.
             </div>
           </div>
 
@@ -1441,7 +1585,7 @@ export default function TrustSlipPage() {
 
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 <div style={helperText()}>
-                  Graph score: {safeStr(summary?.graph_score || "—")}
+                  Graph score: {safeStr(summary?.graph_score || "Not stated")}
                 </div>
                 <div style={helperText()}>
                   Active clan count: {safeStr(summary?.active_clan_count ?? "0")}
@@ -1468,16 +1612,16 @@ export default function TrustSlipPage() {
 
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 <div style={helperText()}>
-                  Issued: {safeDateTime(summary?.issued_at) || "—"}
+                  Issued: {safeDateTime(summary?.issued_at) || "Not stated"}
                 </div>
                 <div style={helperText()}>
-                  Expires: {safeDateTime(summary?.expires_at) || "—"}
+                  Expires: {safeDateTime(summary?.expires_at) || "Not stated"}
                 </div>
                 <div style={helperText()}>
-                  Last release: {safeDateTime(summary?.last_release_at) || "—"}
+                  Last release: {safeDateTime(summary?.last_release_at) || "Not stated"}
                 </div>
                 <div style={helperText()}>
-                  Last full repayment: {safeDateTime(summary?.last_full_repayment_at) || "—"}
+                  Last full repayment: {safeDateTime(summary?.last_full_repayment_at) || "Not stated"}
                 </div>
               </div>
             </div>
@@ -1556,9 +1700,9 @@ export default function TrustSlipPage() {
               </div>
 
               <div style={{ marginTop: 12 }}>
-                <Link to="/app/trust" style={actionBtn("secondary")}>
+                <OriginLink to="/app/trust" style={actionBtn("secondary")}>
                   Open Trust Passport
-                </Link>
+                </OriginLink>
               </div>
             </div>
 
@@ -1573,9 +1717,9 @@ export default function TrustSlipPage() {
                 Executive summary PDF
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Keep the GSN executive summary visible from the trust side. Put the file in{" "}
-                <strong style={{ color: "#0B1F33" }}>/public/gsn-executive-summary.pdf</strong>{" "}
-                and the button opens it.
+                Keep the executive summary visible from the trust side. Place the file in{" "}
+                <strong style={{ color: "#0B1F33" }}>/public/gmfn-executive-summary.pdf</strong>{" "}
+                so the button can open it.
               </div>
 
               <div
@@ -1587,7 +1731,7 @@ export default function TrustSlipPage() {
                 }}
               >
                 <a
-                  href={GSN_EXEC_SUMMARY_URL}
+                  href={GMFN_EXEC_SUMMARY_URL}
                   target="_blank"
                   rel="noreferrer"
                   style={actionBtn("secondary")}
@@ -1595,9 +1739,9 @@ export default function TrustSlipPage() {
                   Open PDF
                 </a>
 
-                <Link to="/app/my-gmfn-and-i" style={actionBtn("soft")}>
+                <OriginLink to="/app/my-gmfn-and-i" style={actionBtn("soft")}>
                   Open Guide
-                </Link>
+                </OriginLink>
               </div>
             </div>
           </div>

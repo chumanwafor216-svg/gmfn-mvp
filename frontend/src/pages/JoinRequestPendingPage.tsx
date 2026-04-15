@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 
 function safeStr(x: any, fallback = ""): string {
@@ -140,7 +141,7 @@ export default function JoinRequestPendingPage() {
 
   useEffect(() => {
     if (typeof document !== "undefined") {
-      document.title = "GSN | Join Request Pending";
+      document.title = "GMFN | Join Request Pending";
     }
   }, []);
 
@@ -206,7 +207,9 @@ export default function JoinRequestPendingPage() {
 
       <div
         style={{
-          ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
+          ...pageCard(
+            "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+          ),
           marginTop: 18,
         }}
       >
@@ -217,7 +220,7 @@ export default function JoinRequestPendingPage() {
             marginTop: 8,
             fontSize: isCompact ? 28 : 34,
             fontWeight: 1000,
-            color: "#0B1F33",
+            color: "#F8FBFF",
             lineHeight: 1.12,
             maxWidth: 760,
           }}
@@ -228,7 +231,7 @@ export default function JoinRequestPendingPage() {
         <div
           style={{
             marginTop: 10,
-            color: "#64748B",
+            color: "#D7E3F1",
             lineHeight: 1.8,
             fontSize: 15,
             maxWidth: 860,
@@ -367,9 +370,9 @@ export default function JoinRequestPendingPage() {
                     flexWrap: "wrap",
                   }}
                 >
-                  <Link to={approvalTo} style={actionBtn(true)}>
+                  <OriginLink to={approvalTo} style={actionBtn(true)}>
                     Check approval status
-                  </Link>
+                  </OriginLink>
                 </div>
               </>
             ) : (
@@ -391,13 +394,13 @@ export default function JoinRequestPendingPage() {
                 flexWrap: "wrap",
               }}
             >
-              <Link to="/guide" style={actionBtn(false)}>
+              <OriginLink to="/guide" style={actionBtn(false)}>
                 Open My GMFN and I
-              </Link>
+              </OriginLink>
 
-              <Link to="/welcome" style={actionBtn(false)}>
+              <OriginLink to="/welcome" style={actionBtn(false)}>
                 Welcome
-              </Link>
+              </OriginLink>
             </div>
           </div>
         </div>

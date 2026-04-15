@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
 
@@ -781,7 +781,7 @@ export default function LoanWorkbenchPage() {
   }, [me]);
 
   const gmfnId = useMemo(() => {
-    return firstTruthy(me?.gmfn_id, "Pending");
+    return firstTruthy(me?.gmfn_id, "Awaiting issue");
   }, [me]);
 
   const communityLabel = useMemo(() => {
@@ -1086,6 +1086,9 @@ export default function LoanWorkbenchPage() {
     };
   }, [selectedClanId, cameFromWithdrawalSupport, selectedLoanId]);
 
+  const workbenchSupportActive =
+    cameFromWithdrawalSupport || Boolean(selectedLoanId);
+
   if (loading) {
     return (
       <div
@@ -1099,8 +1102,8 @@ export default function LoanWorkbenchPage() {
       >
         <PageTopNav
           sectionLabel="Loan Workbench"
-          title="Loan Workbench"
-          subtitle="Preparing the deeper loan workbench..."
+          title="Support Workbench"
+          subtitle="Loading the loan workbench..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/loan-suggestions"
@@ -1136,7 +1139,7 @@ export default function LoanWorkbenchPage() {
     >
       <PageTopNav
         sectionLabel="Loan Workbench"
-        title="Loan Workbench"
+        title="Support Workbench"
         subtitle="This is the deeper institutional stage of the support path. Once the member reaches workbench, the app should stay inside the real support item until the next exact move is clear."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
@@ -1146,16 +1149,20 @@ export default function LoanWorkbenchPage() {
           { label: "Loan Summary", to: selectedLoanId ? `/app/loan-summary/${selectedLoanId}` : "/app/loans" },
           { label: "Finance", to: "/app/finance" },
         ]}
-        utilityLinks={[
-          { label: "Marketplace", to: "/app/marketplace" },
-          { label: "Money Out", to: "/app/withdrawal-instructions" },
-        ]}
+        utilityLinks={
+          workbenchSupportActive
+            ? [{ label: "Loan Suggestions", to: "/app/loan-suggestions" }]
+            : [
+                { label: "Marketplace", to: "/app/marketplace" },
+                { label: "Money Out", to: "/app/withdrawal-instructions" },
+              ]
+        }
       />
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
         <div
           style={{
@@ -1171,9 +1178,10 @@ export default function LoanWorkbenchPage() {
                 width: "100%",
                 height: 148,
                 borderRadius: 20,
-                border: "1px solid rgba(11,31,51,0.08)",
+                border: "1px solid rgba(212,175,55,0.22)",
                 overflow: "hidden",
-                background: "linear-gradient(180deg, #E8F0FF 0%, #DDEBFF 100%)",
+                background: "linear-gradient(180deg, rgba(8,17,31,0.88) 0%, rgba(16,42,67,0.96) 100%)",
+                boxShadow: "0 20px 44px rgba(2,12,27,0.32)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1193,7 +1201,7 @@ export default function LoanWorkbenchPage() {
               ) : (
                 <div
                   style={{
-                    color: "#37506A",
+                    color: "#F8FBFF",
                     fontWeight: 900,
                     fontSize: 20,
                     textAlign: "center",
@@ -1213,7 +1221,7 @@ export default function LoanWorkbenchPage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: isCompact ? 28 : 34,
                 lineHeight: 1.12,
@@ -1222,7 +1230,7 @@ export default function LoanWorkbenchPage() {
               Workbench for {memberName}
             </div>
 
-            <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
+            <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
               This stage is the deeper institutional work surface for the current support item.
               It should keep the member inside the real support item rather than dropping them
               back into unrelated routes.
@@ -1239,6 +1247,7 @@ export default function LoanWorkbenchPage() {
               <span style={badge(true)}>Community ID: {publicCommunityId}</span>
               <span style={badge(false)}>GMFN ID: {gmfnId}</span>
               {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
+              <span style={badge(false)}>Current page: Loan workbench</span>
               <span style={badge(false)}>Current step: Workbench</span>
               {cameFromWithdrawalSupport ? (
                 <span style={badge(false)}>Source: Money Out support handoff</span>
@@ -1688,7 +1697,7 @@ export default function LoanWorkbenchPage() {
                       fontSize: 16,
                     }}
                   >
-                    {withdrawalAmount || "Pending"}
+                    {withdrawalAmount || "Awaiting issue"}
                   </div>
                 </div>
 
@@ -1702,7 +1711,7 @@ export default function LoanWorkbenchPage() {
                       fontSize: 16,
                     }}
                   >
-                    {safeStr(supportGap || "Pending")}
+                    {safeStr(supportGap || "Awaiting issue")}
                   </div>
                 </div>
               </>
@@ -1760,7 +1769,7 @@ export default function LoanWorkbenchPage() {
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 {suggestedGuarantors.length === 0 ? (
                   <div style={helperText()}>
-                    No guarantor-fit rows are visible right now for this support item.
+                    No guarantor-fit rows are currently shown for this support item.
                   </div>
                 ) : (
                   suggestedGuarantors.map((item) => (
@@ -1853,7 +1862,7 @@ export default function LoanWorkbenchPage() {
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 {guarantorRequests.length === 0 ? (
                   <div style={helperText()}>
-                    No guarantor request row is visible right now for this support item.
+                    No guarantor request row is currently shown for this support item.
                   </div>
                 ) : (
                   guarantorRequests.map((item, index) => (
@@ -1921,10 +1930,10 @@ export default function LoanWorkbenchPage() {
 
                 <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                   <div style={helperText()}>
-                    Requested withdrawal amount: {withdrawalAmount || "Pending"}
+                    Requested withdrawal amount: {withdrawalAmount || "Not available yet"}
                   </div>
                   <div style={helperText()}>
-                    Support gap: {safeStr(supportGap || "Pending")}
+                    Support gap: {safeStr(supportGap || "Not available yet")}
                   </div>
                   {withdrawalNote ? (
                     <div style={helperText()}>
@@ -1949,9 +1958,13 @@ export default function LoanWorkbenchPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Working routes</div>
+            <div style={sectionLabel()}>
+              {workbenchSupportActive ? "Support continuation routes" : "Next routes"}
+            </div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Move from the deeper workbench into the exact next support-continuation page you need.
+              {workbenchSupportActive
+                ? "Stay inside the current support item and move only to the next exact continuation surface."
+                : "Move from the deeper workbench into the exact next support-continuation page you need."}
             </div>
           </div>
 
@@ -1973,7 +1986,7 @@ export default function LoanWorkbenchPage() {
               gap: 12,
             }}
           >
-            <Link to={nextRoute.ctaTo} style={routeTile(true)}>
+            <OriginLink to={nextRoute.ctaTo} style={routeTile(true)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1990,9 +2003,9 @@ export default function LoanWorkbenchPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 {nextRoute.detail}
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/loan-readiness" style={routeTile(false)}>
+            <OriginLink to="/app/loan-readiness" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -2006,9 +2019,9 @@ export default function LoanWorkbenchPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when the question is whether the current support path is clean enough to continue.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/loan-suggestions" style={routeTile(false)}>
+            <OriginLink to="/app/loan-suggestions" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -2022,9 +2035,9 @@ export default function LoanWorkbenchPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when the next question is candidate fit rather than deeper workbench state.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to={selectedLoanId ? `/app/loan-summary/${selectedLoanId}` : "/app/loans"} style={routeTile(false)}>
+            <OriginLink to={selectedLoanId ? `/app/loan-summary/${selectedLoanId}` : "/app/loans"} style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -2038,9 +2051,9 @@ export default function LoanWorkbenchPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Return to the current support item summary.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to={selectedLoanId ? "/app/revenue-allocation" : "/app/loans"} style={routeTile(false)}>
+            <OriginLink to={selectedLoanId ? "/app/revenue-allocation" : "/app/loans"} style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -2054,9 +2067,9 @@ export default function LoanWorkbenchPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Read fee and distribution logic when the finance breakdown matters.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to={selectedLoanId ? `/app/payment/loans/${selectedLoanId}` : "/app/finance"} style={routeTile(false)}>
+            <OriginLink to={selectedLoanId ? `/app/payment/loans/${selectedLoanId}` : "/app/finance"} style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -2070,23 +2083,25 @@ export default function LoanWorkbenchPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when the support item has moved into repayment.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/loans" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
-                Loans & Support
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Return to the broader support overview only after the current workbench stage is complete.
-              </div>
-            </Link>
+            {!workbenchSupportActive ? (
+              <OriginLink to="/app/loans" style={routeTile(false)}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 17,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  Loans & Support
+                </div>
+                <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                  Return to the broader support overview only after the current workbench stage is complete.
+                </div>
+              </OriginLink>
+            ) : null}
           </div>
         ) : null}
       </section>

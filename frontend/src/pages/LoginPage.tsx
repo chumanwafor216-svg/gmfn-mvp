@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import { getAccessToken, getMe, loginAndStore } from "../lib/api";
 
 function pageShell(): React.CSSProperties {
@@ -237,7 +238,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (typeof document !== "undefined") {
-      document.title = "GSN | Sign In";
+      document.title = "GMFN | Sign In";
     }
   }, []);
 
@@ -306,7 +307,7 @@ export default function LoginPage() {
       <div style={{ width: "100%", maxWidth: 820, display: "grid", gap: 18 }}>
         <div
           style={{
-            ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
+            ...pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
             maxWidth: "100%",
           }}
         >
@@ -317,7 +318,7 @@ export default function LoginPage() {
               marginTop: 10,
               fontSize: isCompact ? 30 : 36,
               fontWeight: 1000,
-              color: "#0B1F33",
+              color: "#F8FBFF",
               lineHeight: 1.08,
               maxWidth: 760,
             }}
@@ -328,7 +329,7 @@ export default function LoginPage() {
           <div
             style={{
               marginTop: 12,
-              color: "#5F768D",
+              color: "#D7E3F1",
               lineHeight: 1.8,
               fontSize: 15,
               maxWidth: 820,
@@ -491,13 +492,13 @@ export default function LoginPage() {
               flexWrap: "wrap",
             }}
           >
-            <Link to="/activate-membership" style={secondaryLink()}>
+            <OriginLink to="/activate-membership" style={secondaryLink()}>
               Activate Membership
-            </Link>
+            </OriginLink>
 
-            <Link to="/welcome" style={secondaryLink()}>
+            <OriginLink to="/welcome" style={secondaryLink()}>
               Welcome
-            </Link>
+            </OriginLink>
           </div>
         </div>
       </div>

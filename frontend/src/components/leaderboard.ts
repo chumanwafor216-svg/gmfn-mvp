@@ -1,4 +1,4 @@
-import { apiGet } from "./trust";
+import { apiGet } from "../lib/trust";
 
 export type GuarantorLeaderboardRow = {
   guarantor_user_id: number;

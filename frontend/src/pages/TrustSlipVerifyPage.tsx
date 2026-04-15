@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
 
@@ -257,6 +258,16 @@ function bannerToneStyle(tone: VerifyBannerTone): {
   };
 }
 
+function documentMetaCard(bg = "#F7FAFC"): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    border: "1px solid rgba(148,163,184,0.18)",
+    background: bg,
+    padding: 14,
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.45)",
+  };
+}
+
 function apiBase(): string {
   const raw =
     (typeof import.meta !== "undefined" &&
@@ -383,9 +394,9 @@ function deriveBanner(record: TrustSlipVerifyRecord | null): {
   if (!record) {
     return {
       tone: "error",
-      title: "No readable TrustSlip record was found",
+      title: "No usable TrustSlip record was found",
       detail:
-        "The supplied TrustSlip code did not return a readable verification record from the available verification source.",
+        "The supplied TrustSlip code did not return a usable verification record from the available verification source.",
     };
   }
 
@@ -435,9 +446,9 @@ function deriveBanner(record: TrustSlipVerifyRecord | null): {
   ) {
     return {
       tone: "warning",
-      title: "This TrustSlip is still preparing",
+      title: "This TrustSlip is still being issued",
       detail:
-        "A TrustSlip record exists, but the visible state suggests the verification surface is not fully settled yet.",
+        "A TrustSlip record exists, but the visible state suggests the current verification issue is not fully settled yet.",
     };
   }
 
@@ -445,7 +456,7 @@ function deriveBanner(record: TrustSlipVerifyRecord | null): {
     tone: "success",
     title: "A TrustSlip record was found",
     detail:
-      "This page is showing the current portable verification surface returned for the supplied TrustSlip code.",
+      "This page is showing the current verification reading returned for the supplied TrustSlip code.",
   };
 }
 
@@ -584,7 +595,7 @@ export default function TrustSlipVerifyPage() {
   }, [record, currentClan]);
 
   const gmfnId = useMemo(() => {
-    return firstTruthy(record?.gmfn_id, me?.gmfn_id, "Pending");
+    return firstTruthy(record?.gmfn_id, me?.gmfn_id, "Awaiting issue");
   }, [record, me]);
 
   const holderName = useMemo(() => {
@@ -650,7 +661,7 @@ export default function TrustSlipVerifyPage() {
   }
 
   function copyGmfnId() {
-    if (!gmfnId || gmfnId === "Pending") {
+    if (!gmfnId || gmfnId === "Awaiting issue") {
       showNotice("error", "GMFN ID is not available.");
       return;
     }
@@ -674,7 +685,7 @@ export default function TrustSlipVerifyPage() {
           <PageTopNav
             sectionLabel="TrustSlip Verify"
             title="TrustSlip Verify"
-            subtitle="Preparing the verification page..."
+            subtitle="Loading the verification reading..."
             homeTo="/app/dashboard"
             homeLabel="Dashboard"
             backTo="/app/trust-slip"
@@ -686,22 +697,24 @@ export default function TrustSlipVerifyPage() {
           />
         ) : (
           <section
-            style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+            style={pageCard(
+              "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+            )}
           >
             <div style={sectionLabel()}>TrustSlip verify</div>
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontSize: isCompact ? 28 : 34,
                 fontWeight: 900,
                 lineHeight: 1.1,
               }}
             >
-              Preparing verification page
+              Loading verification page
             </div>
-            <div style={{ marginTop: 12, ...helperText() }}>
-              Reading the TrustSlip verification surface...
+            <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1" }}>
+              Reading the TrustSlip verification record...
             </div>
           </section>
         )}
@@ -725,11 +738,18 @@ export default function TrustSlipVerifyPage() {
         gap: 18,
       }}
     >
+      <style>{`
+        @media print {
+          body { background: #ffffff !important; }
+          a[href]:after { content: "" !important; }
+          button { display: none !important; }
+        }
+      `}</style>
       {isAppRoute ? (
         <PageTopNav
           sectionLabel="TrustSlip Verify"
           title="TrustSlip Verify"
-          subtitle="This is the public-facing read surface for the portable TrustSlip verification state."
+          subtitle="This page confirms who this TrustSlip belongs to, whether it is valid now, and when the current verification window ends."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/trust-slip"
@@ -742,24 +762,33 @@ export default function TrustSlipVerifyPage() {
         />
       ) : (
         <section
-          style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+          style={pageCard(
+            "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+          )}
         >
           <div style={sectionLabel()}>TrustSlip verify</div>
 
           <div
             style={{
               marginTop: 10,
-              color: "#0B1F33",
+              color: "#F8FBFF",
               fontSize: isCompact ? 28 : 34,
               fontWeight: 900,
               lineHeight: 1.1,
             }}
           >
-            Portable trust verification page
+            TrustSlip verification page
           </div>
 
-          <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
-            This page is for quick verification. It is not the full trust explanation page.
+          <div
+            style={{
+              marginTop: 12,
+              ...helperText(),
+              maxWidth: 860,
+              color: "#D7E3F1",
+            }}
+          >
+            This page confirms identity, visible trust reading, and current validity. It is not the full trust explanation page.
           </div>
 
           <div
@@ -770,12 +799,12 @@ export default function TrustSlipVerifyPage() {
               flexWrap: "wrap",
             }}
           >
-            <Link to="/welcome" style={actionBtn("secondary")}>
+            <OriginLink to="/welcome" style={actionBtn("secondary")}>
               Welcome
-            </Link>
-            <Link to="/guide" style={actionBtn("secondary")}>
+            </OriginLink>
+            <OriginLink to="/guide" style={actionBtn("secondary")}>
               My GMFN and I
-            </Link>
+            </OriginLink>
           </div>
         </section>
       )}
@@ -815,7 +844,7 @@ export default function TrustSlipVerifyPage() {
           }}
         >
           <span style={badge(true)}>
-            Code: {resolvedCode || "Not supplied"}
+            Code: {resolvedCode || "Not available"}
           </span>
           <span style={badge(false)}>
             Status:{" "}
@@ -823,7 +852,7 @@ export default function TrustSlipVerifyPage() {
               record?.status,
               record?.verification_status,
               record?.state,
-              loadError ? "Unavailable" : "Readable"
+              loadError ? "Unavailable" : "Record found"
             )}
           </span>
         </div>
@@ -892,7 +921,7 @@ export default function TrustSlipVerifyPage() {
           </div>
 
           <div style={innerCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Portable visible state</div>
+            <div style={sectionLabel()}>Visible trust reading</div>
 
             <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
               <div style={statTile()}>
@@ -948,6 +977,38 @@ export default function TrustSlipVerifyPage() {
             </div>
           </div>
         ) : null}
+
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+            gap: 12,
+          }}
+        >
+          <div style={documentMetaCard("#FFFFFF")}>
+            <div style={sectionLabel()}>Document reference</div>
+            <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+              Verification code: {resolvedCode || "Not available"}
+            </div>
+            <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
+              Verification state: {firstTruthy(record?.verification_status, record?.status, "Not stated")}
+            </div>
+          </div>
+
+          <div style={documentMetaCard("#F8FBFF")}>
+            <div style={sectionLabel()}>Validity window</div>
+            <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+              Issued: {safeDateTime(record?.issued_at) || "Not stated"}
+            </div>
+            <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
+              Expires: {safeDateTime(record?.expires_at) || "Not stated"}
+            </div>
+            <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
+              Public verify path: {verifyPath || "Not available"}
+            </div>
+          </div>
+        </div>
       </section>
 
       <section style={pageCard("#FFFFFF")}>
@@ -969,10 +1030,10 @@ export default function TrustSlipVerifyPage() {
                 fontSize: 15,
               }}
             >
-              This page is for quick verification
+              This page confirms current validity
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              This is the portable proof surface. It is designed for people who need a quick readable verification state.
+              This is the public verification surface. It is designed for someone who needs to confirm identity, trust reading, and current validity quickly.
             </div>
           </div>
 
@@ -1025,20 +1086,32 @@ export default function TrustSlipVerifyPage() {
           <button
             type="button"
             onClick={copyGmfnId}
-            disabled={!gmfnId || gmfnId === "Pending"}
-            style={actionBtn("secondary", !gmfnId || gmfnId === "Pending")}
+            disabled={!gmfnId || gmfnId === "Awaiting issue"}
+            style={actionBtn("secondary", !gmfnId || gmfnId === "Awaiting issue")}
           >
             Copy GMFN ID
           </button>
 
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== "undefined" && typeof window.print === "function") {
+                window.print();
+              }
+            }}
+            style={actionBtn("soft")}
+          >
+            Print Verification
+          </button>
+
           {isAppRoute ? (
-            <Link to="/app/trust" style={actionBtn("soft")}>
+            <OriginLink to="/app/trust" style={actionBtn("soft")}>
               Trust Passport
-            </Link>
+            </OriginLink>
           ) : (
-            <Link to="/guide" style={actionBtn("soft")}>
+            <OriginLink to="/guide" style={actionBtn("soft")}>
               My GMFN and I
-            </Link>
+            </OriginLink>
           )}
         </div>
       </section>

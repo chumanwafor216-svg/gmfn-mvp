@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+﻿import React, { useEffect, useMemo, useState } from "react";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import { getPaymentRails } from "../lib/api";
 
@@ -590,7 +590,7 @@ export default function PaymentRailsPage() {
     if (loading) {
       return {
         tone: "gray",
-        title: "Preparing payment rails reading",
+        title: "Loading payment rails reading",
         detail:
           "The page is checking what inbound and outbound rail families are visible.",
         nowLine: "Wait for the rails reading to load.",
@@ -601,7 +601,7 @@ export default function PaymentRailsPage() {
     if (rails.length === 0) {
       return {
         tone: "red",
-        title: "No readable payment rail is visible right now",
+        title: "No readable payment rail is currently shown",
         detail:
           "This page is only for intelligence. If rails are missing here, Money In or Money Out should be treated carefully until the rail picture becomes clearer.",
         nowLine: "Do not rely on this page for action until rail visibility improves.",
@@ -681,7 +681,9 @@ export default function PaymentRailsPage() {
 
       <section
         style={{
-          ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
+          ...pageCard(
+            "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+          ),
           marginTop: 18,
         }}
       >
@@ -730,10 +732,10 @@ export default function PaymentRailsPage() {
                 flexWrap: "wrap",
               }}
             >
-              <span style={badge(true)}>Total rails: {loading ? "…" : rails.length}</span>
-              <span style={badge(false)}>Inbound: {loading ? "…" : inboundRails.length}</span>
-              <span style={badge(false)}>Outbound: {loading ? "…" : outboundRails.length}</span>
-              <span style={badge(false)}>Active: {loading ? "…" : activeCount}</span>
+              <span style={badge(true)}>Total rails: {loading ? "..." : rails.length}</span>
+              <span style={badge(false)}>Inbound: {loading ? "..." : inboundRails.length}</span>
+              <span style={badge(false)}>Outbound: {loading ? "..." : outboundRails.length}</span>
+              <span style={badge(false)}>Active: {loading ? "..." : activeCount}</span>
             </div>
 
             <div
@@ -744,13 +746,13 @@ export default function PaymentRailsPage() {
                 flexWrap: "wrap",
               }}
             >
-              <Link to="/app/payment/pool" style={primaryBtn(false)}>
+              <OriginLink to="/app/payment/pool" style={primaryBtn(false)}>
                 Open Money In
-              </Link>
+              </OriginLink>
 
-              <Link to="/app/withdrawal-instructions" style={secondaryBtn(false)}>
+              <OriginLink to="/app/withdrawal-instructions" style={secondaryBtn(false)}>
                 Open Money Out
-              </Link>
+              </OriginLink>
             </div>
           </div>
 
@@ -804,7 +806,7 @@ export default function PaymentRailsPage() {
               color: "#0B1F33",
             }}
           >
-            {loading ? "…" : activeInboundCount}
+            {loading ? "..." : activeInboundCount}
           </div>
         </div>
 
@@ -818,7 +820,7 @@ export default function PaymentRailsPage() {
               color: "#0B1F33",
             }}
           >
-            {loading ? "…" : activeOutboundCount}
+            {loading ? "..." : activeOutboundCount}
           </div>
         </div>
 
@@ -834,7 +836,7 @@ export default function PaymentRailsPage() {
             }}
           >
             {loading
-              ? "…"
+              ? "..."
               : supportedCurrencies.length > 0
               ? supportedCurrencies.join(", ")
               : "Not shown"}
@@ -853,7 +855,7 @@ export default function PaymentRailsPage() {
             }}
           >
             {loading
-              ? "…"
+              ? "..."
               : activeProviders.length > 0
               ? activeProviders.join(", ")
               : "Not shown"}
@@ -877,7 +879,7 @@ export default function PaymentRailsPage() {
             <div
               style={{
                 marginTop: 8,
-                color: "#6B7A88",
+                color: "#D7E3F1",
                 lineHeight: 1.8,
               }}
             >
@@ -898,12 +900,12 @@ export default function PaymentRailsPage() {
                 flexWrap: "wrap",
               }}
             >
-              <Link to="/app/payment/pool" style={softBtn(false)}>
+              <OriginLink to="/app/payment/pool" style={softBtn(false)}>
                 Money In task
-              </Link>
-              <Link to="/app/withdrawal-instructions" style={softBtn(false)}>
+              </OriginLink>
+              <OriginLink to="/app/withdrawal-instructions" style={softBtn(false)}>
                 Money Out task
-              </Link>
+              </OriginLink>
               <button
                 type="button"
                 onClick={() => setShowRaw((prev) => !prev)}
@@ -921,7 +923,7 @@ export default function PaymentRailsPage() {
           </div>
         ) : rails.length === 0 ? (
           <div style={{ marginTop: 16, color: "#64748B", lineHeight: 1.8 }}>
-            No structured rail listing is visible yet. The raw response stays
+            No structured rail listing is shown yet. The raw response stays
             available below.
           </div>
         ) : (
@@ -1078,7 +1080,7 @@ export default function PaymentRailsPage() {
 
       <section style={{ ...pageCard(), marginTop: 18 }}>
         <div>
-          <div style={sectionLabel()}>Working routes</div>
+          <div style={sectionLabel()}>Next routes</div>
           <div
             style={{
               marginTop: 8,
@@ -1100,7 +1102,7 @@ export default function PaymentRailsPage() {
             gap: 12,
           }}
         >
-          <Link to="/app/payment/pool" style={routeTile(true)}>
+          <OriginLink to="/app/payment/pool" style={routeTile(true)}>
             <div
               style={{
                 color: "#0B1F33",
@@ -1114,9 +1116,9 @@ export default function PaymentRailsPage() {
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
               Use this when you are actively paying into the pool.
             </div>
-          </Link>
+          </OriginLink>
 
-          <Link to="/app/withdrawal-instructions" style={routeTile(false)}>
+          <OriginLink to="/app/withdrawal-instructions" style={routeTile(false)}>
             <div
               style={{
                 color: "#0B1F33",
@@ -1130,9 +1132,9 @@ export default function PaymentRailsPage() {
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
               Use this when you are actively withdrawing or checking payout route readiness.
             </div>
-          </Link>
+          </OriginLink>
 
-          <Link to="/app/loan-readiness" style={routeTile(false)}>
+          <OriginLink to="/app/loan-readiness" style={routeTile(false)}>
             <div
               style={{
                 color: "#0B1F33",
@@ -1146,9 +1148,9 @@ export default function PaymentRailsPage() {
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
               Use this when the money question has already become a support-continuation question.
             </div>
-          </Link>
+          </OriginLink>
 
-          <Link to="/app/loan-workbench" style={routeTile(false)}>
+          <OriginLink to="/app/loan-workbench" style={routeTile(false)}>
             <div
               style={{
                 color: "#0B1F33",
@@ -1162,9 +1164,9 @@ export default function PaymentRailsPage() {
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
               Use this when the support path is already deep and operational.
             </div>
-          </Link>
+          </OriginLink>
 
-          <Link to="/app/marketplace" style={routeTile(false)}>
+          <OriginLink to="/app/marketplace" style={routeTile(false)}>
             <div
               style={{
                 color: "#0B1F33",
@@ -1178,9 +1180,9 @@ export default function PaymentRailsPage() {
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
               Go back to the selected-community working surface only after the current money reading is complete.
             </div>
-          </Link>
+          </OriginLink>
 
-          <Link to="/app/community" style={routeTile(false)}>
+          <OriginLink to="/app/community" style={routeTile(false)}>
             <div
               style={{
                 color: "#0B1F33",
@@ -1194,9 +1196,10 @@ export default function PaymentRailsPage() {
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
               Return to the wider community control room.
             </div>
-          </Link>
+          </OriginLink>
         </div>
       </section>
     </div>
   );
 }
+

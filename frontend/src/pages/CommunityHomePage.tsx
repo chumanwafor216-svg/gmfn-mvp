@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import CommunityShopControlPanel from "../components/CommunityShopControlPanel";
 import PageTopNav from "../components/PageTopNav";
+import OriginLink from "../components/OriginLink";
+import { navigateWithOrigin } from "../lib/nav";
 import {
   createMarketplaceBroadcast,
   getClanInviteLink,
@@ -106,7 +108,7 @@ function getClanGlobalId(clan: ClanItem | null | undefined): string {
     clan?.clan_code,
     clan?.code,
     getClanId(clan) ? `COMM-${getClanId(clan)}` : "",
-    "Pending"
+    "Awaiting issue"
   );
 }
 
@@ -316,13 +318,15 @@ function previewMediaBox(): React.CSSProperties {
   return {
     width: "100%",
     minHeight: 220,
-    borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: "linear-gradient(180deg, #E8F0FF 0%, #DDEBFF 100%)",
+    borderRadius: 22,
+    border: "1px solid rgba(212,175,55,0.16)",
+    background: "linear-gradient(180deg, #0A1625 0%, #11263B 56%, #193A58 100%)",
     overflow: "hidden",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
+    boxShadow:
+      "0 20px 42px rgba(2,12,27,0.18), inset 0 1px 0 rgba(255,255,255,0.04)",
   };
 }
 
@@ -343,7 +347,7 @@ function getPoolAmountText(payload: any): string {
     if (text) return text;
   }
 
-  return "—";
+  return "Not available yet";
 }
 
 function getPoolCurrency(payload: any): string {
@@ -720,7 +724,7 @@ export default function CommunityHomePage() {
       setSelectedClan(clan);
 
       if (openAfter) {
-        navigate("/app/marketplace");
+        navigateWithOrigin(navigate, "/app/marketplace", location);
       } else {
         showNotice(
           "success",
@@ -767,7 +771,7 @@ export default function CommunityHomePage() {
 
     try {
       await selectClan(selectedClanId);
-      navigate("/app/marketplace");
+      navigateWithOrigin(navigate, "/app/marketplace", location);
     } catch (err: any) {
       showNotice(
         "error",
@@ -890,7 +894,7 @@ export default function CommunityHomePage() {
         <PageTopNav
           sectionLabel="Community Home"
           title="Community Home"
-          subtitle="Preparing your private community control room..."
+          subtitle="Loading your current community workspace..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/dashboard"
@@ -923,7 +927,7 @@ export default function CommunityHomePage() {
         <PageTopNav
           sectionLabel="Community Home"
           title="Community Home"
-          subtitle="This is your private control room for choosing communities and moving into the selected community surface."
+          subtitle="This page helps you choose a working community, confirm the context, and move into the right community route."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/dashboard"
@@ -958,10 +962,9 @@ export default function CommunityHomePage() {
               maxWidth: 860,
             }}
           >
-            Community Home is your private control room. It is where you choose
-            communities, create a new one, use invite links, grow your trusted
-            circle, and move into the selected community surface when a community
-            is available.
+            Community Home is where you choose a working community, confirm the
+            current context, use invite tools, grow your trusted circle, and
+            move into the right community route when one is available.
           </div>
 
           <div
@@ -972,15 +975,15 @@ export default function CommunityHomePage() {
               flexWrap: "wrap",
             }}
           >
-            <Link to="/app/clans" style={actionBtn("primary")}>
+            <OriginLink to="/app/clans" style={actionBtn("primary")}>
               Create New Community
-            </Link>
-            <Link to="/app/build-first-circle" style={actionBtn("secondary")}>
+            </OriginLink>
+            <OriginLink to="/app/build-first-circle" style={actionBtn("secondary")}>
               Build Your First Circle
-            </Link>
-            <Link to="/app/dashboard" style={actionBtn("secondary")}>
+            </OriginLink>
+            <OriginLink to="/app/dashboard" style={actionBtn("secondary")}>
               Dashboard
-            </Link>
+            </OriginLink>
           </div>
         </section>
       </div>
@@ -1000,12 +1003,12 @@ export default function CommunityHomePage() {
       <PageTopNav
         sectionLabel="Community Home"
         title="Community Home"
-        subtitle="Choose your current community, grow your trusted circle, use invite tools, and move into the selected marketplace when you are ready."
+        subtitle="Choose your working community, confirm the current context, use community tools, and move into the right route when you are ready."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
         nextLinks={[
-          { label: "Open Marketplace", to: "/app/marketplace" },
+          { label: "Marketplace", to: "/app/marketplace" },
           { label: "Notifications", to: "/app/notifications" },
         ]}
         utilityLinks={[
@@ -1016,7 +1019,11 @@ export default function CommunityHomePage() {
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
-      <section style={pageCard("#FFFFFF")}>
+      <section
+        style={pageCard(
+          "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+        )}
+      >
         <div
           style={{
             display: "flex",
@@ -1031,12 +1038,12 @@ export default function CommunityHomePage() {
             <div
               style={{
                 marginTop: 8,
-                color: "#5F7287",
+                color: "#C7D4E5",
                 fontSize: 14,
                 lineHeight: 1.75,
               }}
             >
-              This is your currently selected working community.
+              This is the community context you are working in now.
             </div>
           </div>
 
@@ -1064,7 +1071,7 @@ export default function CommunityHomePage() {
             <div>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: isCompact ? 28 : 34,
                   fontWeight: 900,
                   lineHeight: 1.08,
@@ -1076,7 +1083,7 @@ export default function CommunityHomePage() {
               <div
                 style={{
                   marginTop: 12,
-                  color: "#5F7287",
+                  color: "#D7E3F1",
                   fontSize: 15,
                   lineHeight: 1.85,
                   maxWidth: 760,
@@ -1096,6 +1103,8 @@ export default function CommunityHomePage() {
                 <span style={badge(true)}>Community ID: {selectedClanGlobalId}</span>
                 <span style={badge(false)}>Trust: {selectedClanTrust}</span>
                 <span style={badge(false)}>Members: {selectedClanMemberCount}</span>
+                <span style={badge(false)}>Current page: Community Home</span>
+                <span style={badge(false)}>Current step: Confirm community context</span>
               </div>
 
               <div
@@ -1117,7 +1126,7 @@ export default function CommunityHomePage() {
                 >
                   {changingClanId === selectedClanId
                     ? "Opening..."
-                    : "Open Selected Community"}
+                    : "Enter Community"}
                 </button>
 
                 <button
@@ -1130,7 +1139,12 @@ export default function CommunityHomePage() {
               </div>
             </div>
 
-            <div style={softCard("#F8FBFF")}>
+            <div
+              style={{
+                ...softCard("rgba(255,255,255,0.94)"),
+                border: "1px solid rgba(148,163,184,0.16)",
+              }}
+            >
               <div style={sectionLabel()}>Your pool position</div>
 
               <div
@@ -1181,7 +1195,7 @@ export default function CommunityHomePage() {
                 lineHeight: 1.75,
               }}
             >
-              Keep the private control buttons together and reduce searching.
+              Keep your main community actions together so the next step stays clear.
             </div>
           </div>
 
@@ -1203,9 +1217,9 @@ export default function CommunityHomePage() {
               gap: 10,
             }}
           >
-            <Link to="/app/clans" style={actionBtn("primary")}>
+            <OriginLink to="/app/clans" style={actionBtn("primary")}>
               Create New Community
-            </Link>
+            </OriginLink>
 
             <button
               type="button"
@@ -1216,16 +1230,16 @@ export default function CommunityHomePage() {
               Copy Invite Link
             </button>
 
-            <Link to="/app/demand-box" style={actionBtn("secondary")}>
+            <OriginLink to="/app/demand-box" style={actionBtn("secondary")}>
               Demand Box
-            </Link>
+            </OriginLink>
 
             <button
               type="button"
               onClick={openGrowYourCircle}
               style={actionBtn("secondary")}
             >
-              Grow Your Circle
+              Grow Trusted Circle
             </button>
 
             <button
@@ -1233,7 +1247,7 @@ export default function CommunityHomePage() {
               onClick={openSpotlightGears}
               style={actionBtn("secondary")}
             >
-              Spotlight Gears
+              Manage Spotlight
             </button>
 
             <button
@@ -1244,17 +1258,17 @@ export default function CommunityHomePage() {
               Shop Control
             </button>
 
-            <Link to="/app/notifications" style={actionBtn("secondary")}>
+            <OriginLink to="/app/notifications" style={actionBtn("secondary")}>
               Notifications
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/payment/pool" style={actionBtn("secondary")}>
+            <OriginLink to="/app/payment/pool" style={actionBtn("secondary")}>
               Money In
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/withdrawal-instructions" style={actionBtn("secondary")}>
+            <OriginLink to="/app/withdrawal-instructions" style={actionBtn("secondary")}>
               Money Out
-            </Link>
+            </OriginLink>
 
             <button
               type="button"
@@ -1291,7 +1305,7 @@ export default function CommunityHomePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Grow your circle</div>
+            <div style={sectionLabel()}>Grow your trusted circle</div>
             <div
               style={{
                 marginTop: 8,
@@ -1384,9 +1398,9 @@ export default function CommunityHomePage() {
                   flexWrap: "wrap",
                 }}
               >
-                <Link to="/app/build-first-circle" style={actionBtn("primary")}>
+                <OriginLink to="/app/build-first-circle" style={actionBtn("primary")}>
                   Open First Circle
-                </Link>
+                </OriginLink>
 
                 <button
                   type="button"
@@ -1420,7 +1434,7 @@ export default function CommunityHomePage() {
                     </span>
                   ))
                 ) : (
-                  <span style={badge(false)}>Choose your role first</span>
+                  <span style={badge(false)}>Choose your member role first</span>
                 )}
               </div>
 
@@ -1487,7 +1501,7 @@ export default function CommunityHomePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Spotlight gears</div>
+            <div style={sectionLabel()}>Spotlight management</div>
             <div
               style={{
                 marginTop: 8,
@@ -1604,7 +1618,13 @@ export default function CommunityHomePage() {
               </div>
             </div>
 
-            <div style={innerCard("#FFFFFF")}>
+            <div
+              style={{
+                ...innerCard("rgba(255,255,255,0.98)"),
+                border: "1px solid rgba(212,175,55,0.12)",
+                boxShadow: "0 16px 34px rgba(2,12,27,0.10)",
+              }}
+            >
               <div style={sectionLabel()}>Preview before publish</div>
 
               <div style={{ marginTop: 14 }}>
@@ -1626,7 +1646,7 @@ export default function CommunityHomePage() {
                       style={{
                         padding: 18,
                         textAlign: "center",
-                        color: "#37506A",
+                        color: "#D7E3F1",
                         fontWeight: 800,
                         fontSize: 16,
                         lineHeight: 1.5,
@@ -1789,8 +1809,8 @@ export default function CommunityHomePage() {
                       }}
                     >
                       {active
-                        ? "This is your current working community."
-                        : "Select this community to make it your current working community."}
+                        ? "This is your current community context."
+                        : "Select this community to make it your current community context."}
                     </div>
 
                     <div
@@ -1816,7 +1836,7 @@ export default function CommunityHomePage() {
                         disabled={working}
                         style={actionBtn("primary", working)}
                       >
-                        {working ? "Opening..." : "Open Community"}
+                        {working ? "Opening..." : "Enter Community"}
                       </button>
                     </div>
                   </div>

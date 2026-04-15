@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
 import { navigateWithOrigin } from "../lib/nav";
@@ -867,7 +867,7 @@ function defaultFocusCommitmentDraft(): FocusCommitmentDraft {
     title: "",
     category: "savings",
     targetValue: "",
-    unit: "₦",
+    unit: "?",
     dueDate: dateInputValueFromNow(30),
     cadence: "weekly",
     note: "",
@@ -908,7 +908,7 @@ function formatFocusProgress(
       ? "—"
       : String(targetValue);
 
-  if (unit === "₦") {
+  if (unit === "?") {
     return `${unit}${current} / ${unit}${target}`;
   }
 
@@ -3549,7 +3549,7 @@ export default function DashboardPage() {
         title: "Savings target",
         category: "savings",
         targetValue: "",
-        unit: "₦",
+        unit: "?",
         dueDate: dateInputValueFromNow(30),
         cadence: "weekly",
         note: "Protect cash discipline and visible follow-through.",
@@ -3559,7 +3559,7 @@ export default function DashboardPage() {
         title: "Repayment target",
         category: "repayment",
         targetValue: "",
-        unit: "₦",
+        unit: "?",
         dueDate: dateInputValueFromNow(30),
         cadence: "weekly",
         note: "Keep the repayment path visible and disciplined.",
@@ -3607,7 +3607,7 @@ export default function DashboardPage() {
       unit:
         safeStr(focusDraft.unit) ||
         (focusDraft.category === "savings" || focusDraft.category === "repayment"
-          ? "₦"
+          ? "?"
           : "units"),
       startDate: dateInputValueFromNow(0),
       dueDate,
@@ -3801,8 +3801,9 @@ export default function DashboardPage() {
       <section style={pageCard("#FFFFFF")}>
         <div
           style={{
-            ...innerCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
-            border: "1px solid rgba(11,99,209,0.10)",
+            ...innerCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
+            border: "1px solid rgba(212,175,55,0.18)",
+            boxShadow: "0 18px 38px rgba(2,12,27,0.18)",
             padding: isCompact ? 16 : 18,
           }}
         >
@@ -3823,7 +3824,7 @@ export default function DashboardPage() {
                 opacity: 0.88,
               }}
             >
-              GMFN / GSN
+              GMFN
             </div>
 
             <div
@@ -3898,7 +3899,17 @@ export default function DashboardPage() {
                     color: "#FFFFFF",
                   }}
                 >
-                  Community-backed confidence
+                  Current page: Dashboard
+                </span>
+
+                <span
+                  style={{
+                    ...badge(false),
+                    background: "rgba(255,255,255,0.12)",
+                    color: "#FFFFFF",
+                  }}
+                >
+                  Current step: Review what matters now
                 </span>
               </div>
             </div>
@@ -3920,11 +3931,12 @@ export default function DashboardPage() {
                 style={{
                   width: "100%",
                   borderRadius: 30,
-                  padding: 8,
-                  border: "1px solid rgba(11,31,51,0.12)",
-                  background: "linear-gradient(180deg, #F8FBFF 0%, #E7F0FF 100%)",
+                  padding: 10,
+                  border: "1px solid rgba(212,175,55,0.22)",
+                  background:
+                    "linear-gradient(180deg, #0A1625 0%, #10263C 48%, #153756 100%)",
                   boxShadow:
-                    "0 18px 36px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.70)",
+                    "0 22px 48px rgba(2,12,27,0.34), inset 0 1px 0 rgba(255,255,255,0.06)",
                 }}
               >
                 <div
@@ -3932,11 +3944,13 @@ export default function DashboardPage() {
                     height: isCompact ? 250 : 280,
                     borderRadius: 24,
                     overflow: "hidden",
-                    border: "1px solid rgba(11,31,51,0.08)",
-                    background: "#DDEBFF",
+                    border: "1px solid rgba(212,175,55,0.16)",
+                    background:
+                      "linear-gradient(180deg, #11263B 0%, #193A58 100%)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    position: "relative",
                   }}
                 >
                   {avatarSrc ? (
@@ -3954,9 +3968,21 @@ export default function DashboardPage() {
                   ) : (
                     <div
                       style={{
-                        color: "#0B63D1",
+                        width: 120,
+                        height: 120,
+                        borderRadius: 999,
+                        border: "1px solid rgba(212,175,55,0.28)",
+                        background:
+                          "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18) 0%, rgba(212,175,55,0.14) 26%, rgba(11,31,51,0.18) 100%)",
+                        boxShadow:
+                          "0 18px 40px rgba(3,10,22,0.28), inset 0 1px 0 rgba(255,255,255,0.08)",
+                        color: "#F8FBFF",
                         fontWeight: 900,
-                        fontSize: 48,
+                        fontSize: 42,
+                        letterSpacing: 1.4,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                       }}
                     >
                       {profileInitials}
@@ -3984,7 +4010,7 @@ export default function DashboardPage() {
                   }}
                 >
                   <span>Picture options</span>
-                  <span>{pictureOptionsOpen ? "−" : "+"}</span>
+                  <span>{pictureOptionsOpen ? "-" : "+"}</span>
                 </button>
               </div>
 
@@ -4237,9 +4263,11 @@ export default function DashboardPage() {
                   >
                     <div
                       style={{
-                        ...innerCard("#FFFFFF"),
-                        border: "1px solid rgba(11,99,209,0.12)",
-                        boxShadow: "0 10px 22px rgba(11,99,209,0.06)",
+                        ...innerCard(
+                          "linear-gradient(180deg, #0A1625 0%, #11263B 100%)"
+                        ),
+                        border: "1px solid rgba(212,175,55,0.20)",
+                        boxShadow: "0 18px 36px rgba(2,12,27,0.26)",
                         padding: 12,
                         display: "flex",
                         flexDirection: "column",
@@ -4257,7 +4285,7 @@ export default function DashboardPage() {
                             width: 88,
                             height: 88,
                             borderRadius: 12,
-                            border: "1px solid rgba(11,31,51,0.10)",
+                            border: "1px solid rgba(212,175,55,0.16)",
                             background: "#FFFFFF",
                             padding: 4,
                           }}
@@ -4268,25 +4296,26 @@ export default function DashboardPage() {
                             width: 88,
                             height: 88,
                             borderRadius: 12,
-                            border: "1px solid rgba(11,31,51,0.10)",
-                            background: "linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%)",
+                            border: "1px solid rgba(212,175,55,0.18)",
+                            background:
+                              "linear-gradient(180deg, #11263B 0%, #193A58 100%)",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            color: "#64748B",
+                            color: "#D7E3F1",
                             fontSize: 12,
                             textAlign: "center",
                             padding: 8,
                           }}
                         >
-                          QR pending
+                          QR loading
                         </div>
                       )}
 
                       <div
                         style={{
                           fontSize: 12,
-                          color: "#5D7389",
+                          color: "#D7E3F1",
                           fontWeight: 800,
                           textAlign: "center",
                           letterSpacing: 0.15,
@@ -4309,8 +4338,8 @@ export default function DashboardPage() {
                         <span
                           style={{
                             ...badge(false),
-                            background: "rgba(15,59,116,0.08)",
-                            color: "#0F3B74",
+                            background: "rgba(212,175,55,0.12)",
+                            color: "#F6D77A",
                           }}
                         >
                           {verificationStatus}
@@ -4320,7 +4349,7 @@ export default function DashboardPage() {
                       <div
                         style={{
                           marginTop: 10,
-                          color: "#0B1F33",
+                          color: "#F8FBFF",
                           fontSize: 21,
                           fontWeight: 900,
                           lineHeight: 1.22,
@@ -4332,7 +4361,7 @@ export default function DashboardPage() {
                       <div
                         style={{
                           marginTop: 8,
-                          color: "#4D657D",
+                          color: "#D7E3F1",
                           fontSize: 14,
                           lineHeight: 1.78,
                           maxWidth: 760,
@@ -4832,14 +4861,16 @@ export default function DashboardPage() {
                 >
                   <div
                     style={{
-                      ...innerCard("#FFFFFF"),
-                      border: "1px solid rgba(11,99,209,0.10)",
-                      boxShadow: "0 10px 22px rgba(15,23,42,0.04)",
+                      ...innerCard(
+                        "linear-gradient(180deg, #0D1B2A 0%, #12293F 100%)"
+                      ),
+                      border: "1px solid rgba(212,175,55,0.18)",
+                      boxShadow: "0 18px 36px rgba(2,12,27,0.24)",
                     }}
                   >
                     <div
                       style={{
-                        color: "#0B1F33",
+                        color: "#F8FBFF",
                         fontWeight: 900,
                         fontSize: 20,
                         lineHeight: 1.3,
@@ -4863,7 +4894,13 @@ export default function DashboardPage() {
                       <span style={badge(true)}>
                         {safeStr(activeSpotlight.trust_band || "Trusted member")}
                       </span>
-                      <span style={badge(false)}>
+                      <span
+                        style={{
+                          ...badge(false),
+                          background: "rgba(212,175,55,0.10)",
+                          color: "#F6D77A",
+                        }}
+                      >
                         {safeStr(
                           activeSpotlight.source_clan_name ||
                             currentCommunityName(currentClan, selectedClanId)
@@ -4874,15 +4911,15 @@ export default function DashboardPage() {
                     <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
                       <div
                         style={statTile(
-                          "#F8FBFF",
-                          "1px solid rgba(11,99,209,0.08)"
+                          "rgba(255,255,255,0.05)",
+                          "1px solid rgba(212,175,55,0.12)"
                         )}
                       >
                         <div style={sectionLabel()}>Community</div>
                         <div
                           style={{
                             marginTop: 8,
-                            color: "#0B1F33",
+                            color: "#F8FBFF",
                             fontWeight: 900,
                             lineHeight: 1.35,
                           }}
@@ -4896,15 +4933,15 @@ export default function DashboardPage() {
 
                       <div
                         style={statTile(
-                          "#FFFFFF",
-                          "1px solid rgba(11,31,51,0.08)"
+                          "rgba(255,255,255,0.05)",
+                          "1px solid rgba(212,175,55,0.12)"
                         )}
                       >
                         <div style={sectionLabel()}>Posted</div>
                         <div
                           style={{
                             marginTop: 8,
-                            color: "#0B1F33",
+                            color: "#F8FBFF",
                             fontWeight: 900,
                             lineHeight: 1.35,
                           }}
@@ -4916,15 +4953,15 @@ export default function DashboardPage() {
                       {safeStr(activeSpotlight.author_gmfn_id || "") ? (
                         <div
                           style={statTile(
-                            "#FFFFFF",
-                            "1px solid rgba(11,31,51,0.08)"
+                            "rgba(255,255,255,0.05)",
+                            "1px solid rgba(212,175,55,0.12)"
                           )}
                         >
                           <div style={sectionLabel()}>GMFN ID</div>
                           <div
                             style={{
                               marginTop: 8,
-                              color: "#0B1F33",
+                              color: "#F8FBFF",
                               fontWeight: 900,
                               lineHeight: 1.35,
                               wordBreak: "break-word",
@@ -4940,11 +4977,11 @@ export default function DashboardPage() {
                   <div
                     style={{
                       ...innerCard(
-                        "linear-gradient(180deg, #F7FAFF 0%, #EDF4FF 100%)"
+                        "linear-gradient(180deg, #0D1B2A 0%, #12293F 100%)"
                       ),
-                      border: "1px solid rgba(11,99,209,0.12)",
+                      border: "1px solid rgba(212,175,55,0.18)",
                       minHeight: 220,
-                      boxShadow: "0 10px 22px rgba(11,99,209,0.05)",
+                      boxShadow: "0 18px 36px rgba(2,12,27,0.24)",
                     }}
                   >
                     <div
@@ -4956,13 +4993,21 @@ export default function DashboardPage() {
                       }}
                     >
                       <span style={badge(true)}>Visibility & Action</span>
-                      <span style={badge(false)}>Reputation-based presence</span>
+                      <span
+                        style={{
+                          ...badge(false),
+                          background: "rgba(212,175,55,0.10)",
+                          color: "#F6D77A",
+                        }}
+                      >
+                        Reputation-based presence
+                      </span>
                     </div>
 
                     <div
                       style={{
                         marginTop: 10,
-                        color: "#0B1F33",
+                        color: "#F8FBFF",
                         fontWeight: 900,
                         fontSize: 18,
                         lineHeight: 1.3,
@@ -4974,7 +5019,7 @@ export default function DashboardPage() {
                     <div
                       style={{
                         marginTop: 10,
-                        color: "#4D657D",
+                        color: "#D7E3F1",
                         fontSize: 14,
                         lineHeight: 1.78,
                       }}
@@ -4994,8 +5039,24 @@ export default function DashboardPage() {
                       }}
                     >
                       <span style={badge(true)}>Spotlight Visibility</span>
-                      <span style={badge(false)}>Reputation-Based Visibility</span>
-                      <span style={badge(false)}>One Global Shop</span>
+                      <span
+                        style={{
+                          ...badge(false),
+                          background: "rgba(212,175,55,0.10)",
+                          color: "#F6D77A",
+                        }}
+                      >
+                        Reputation-Based Visibility
+                      </span>
+                      <span
+                        style={{
+                          ...badge(false),
+                          background: "rgba(255,255,255,0.10)",
+                          color: "#D7E3F1",
+                        }}
+                      >
+                        One Global Shop
+                      </span>
                     </div>
 
                     <div
@@ -6717,24 +6778,24 @@ export default function DashboardPage() {
                   );
                 })
               ) : (
-                <div
-                  style={{
-                    ...innerCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
-                    border: "1px solid rgba(11,99,209,0.10)",
-                  }}
-                >
                   <div
                     style={{
-                      color: "#0B1F33",
-                      fontWeight: 900,
-                      fontSize: 18,
-                      lineHeight: 1.3,
+                      ...innerCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
+                      border: "1px solid rgba(212,175,55,0.18)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        color: "#F8FBFF",
+                        fontWeight: 900,
+                        fontSize: 18,
+                        lineHeight: 1.3,
                     }}
                   >
                     No active focus commitment is visible yet.
                   </div>
 
-                  <div style={{ marginTop: 10, ...helperText(), maxWidth: 860 }}>
+                  <div style={{ marginTop: 10, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
                     Use one or two serious targets only. The point is not to collect
                     goals. The point is to build execution discipline that can later
                     support trust, savings behavior, repayment readiness, and more
@@ -7123,3 +7184,4 @@ export default function DashboardPage() {
     </div>
   );
 } 
+

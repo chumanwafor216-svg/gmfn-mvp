@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import { getCurrentClan, getMe, getSelectedClanId, safeCopy } from "../lib/api";
 
@@ -200,9 +200,9 @@ function getCommunityName(clan: CommunityLite | null): string {
 
 function renderStepAction(step: NextStepState) {
   return (
-    <Link to={step.ctaTo} style={primaryBtn(false)}>
+    <OriginLink to={step.ctaTo} style={primaryBtn(false)}>
       {step.ctaLabel}
-    </Link>
+    </OriginLink>
   );
 }
 
@@ -400,7 +400,7 @@ export default function PayoutDetailsPage() {
 
       <section
         style={{
-          ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
+          ...pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
           marginTop: 18,
         }}
       >
@@ -422,14 +422,14 @@ export default function PayoutDetailsPage() {
                 marginTop: 10,
                 fontSize: 30,
                 fontWeight: 1000,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 lineHeight: 1.15,
               }}
             >
               {nextStep.title}
             </div>
 
-            <div style={{ marginTop: 10, color: "#475569", lineHeight: 1.8 }}>
+            <div style={{ marginTop: 10, color: "#D7E3F1", lineHeight: 1.8 }}>
               GMFN does not hold funds as a custodian. When a withdrawal is processed,
               money should move from the community settlement account into your own
               registered payout account or wallet. This page tells the system where
@@ -462,9 +462,9 @@ export default function PayoutDetailsPage() {
               }}
             >
               {renderStepAction(nextStep)}
-              <Link to="/app/loans" style={secondaryBtn(false)}>
+              <OriginLink to="/app/loans" style={secondaryBtn(false)}>
                 Return to Loans & Support
-              </Link>
+              </OriginLink>
             </div>
           </div>
 
@@ -672,12 +672,12 @@ export default function PayoutDetailsPage() {
             flexWrap: "wrap",
           }}
         >
-          <Link to="/app/withdrawal-instructions" style={primaryBtn(false)}>
+          <OriginLink to="/app/withdrawal-instructions" style={primaryBtn(false)}>
             Open Withdrawal Instructions
-          </Link>
-          <Link to="/app/loans" style={secondaryBtn(false)}>
+          </OriginLink>
+          <OriginLink to="/app/loans" style={secondaryBtn(false)}>
             Return to Loans & Support
-          </Link>
+          </OriginLink>
         </div>
       </section>
     </div>

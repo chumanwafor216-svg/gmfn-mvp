@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import { getInvitePreview } from "../lib/api";
+import { navigateWithOrigin } from "../lib/nav";
 
 type InvitePreview = {
   code?: string;
@@ -238,7 +240,7 @@ export default function InviteLandingPage() {
 
   useEffect(() => {
     if (typeof document !== "undefined") {
-      document.title = "GSN | Founder Invitation";
+      document.title = "GMFN | Founder Invitation";
     }
   }, []);
 
@@ -295,13 +297,13 @@ export default function InviteLandingPage() {
   function continueFounderRoute() {
     if (!canContinue) return;
     setContinuing(true);
-    navigate(continueTo);
+    navigateWithOrigin(navigate, continueTo, location);
   }
 
   return (
     <div style={pageShell()}>
       <div style={{ maxWidth: 960, margin: "0 auto", display: "grid", gap: 18 }}>
-        <div style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}>
+        <div style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}>
           <div
             style={{
               display: "flex",
@@ -319,7 +321,7 @@ export default function InviteLandingPage() {
               marginTop: 16,
               fontSize: isCompact ? 30 : 36,
               lineHeight: 1.1,
-              color: "#0F172A",
+              color: "#F8FBFF",
               fontWeight: 1000,
               maxWidth: 800,
             }}
@@ -553,13 +555,13 @@ export default function InviteLandingPage() {
                   {continuing ? "Continuing..." : "Continue founder route"}
                 </button>
 
-                <Link to="/guide" style={actionBtn(false)}>
+                <OriginLink to="/guide" style={actionBtn(false)}>
                   Open My GMFN and I
-                </Link>
+                </OriginLink>
 
-                <Link to="/welcome" style={actionBtn(false)}>
+                <OriginLink to="/welcome" style={actionBtn(false)}>
                   Open Welcome
-                </Link>
+                </OriginLink>
               </div>
             </div>
           </>

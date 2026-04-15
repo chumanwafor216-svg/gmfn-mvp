@@ -67,7 +67,7 @@ function fmtMoney(value: unknown): string {
 
 function safeDateTime(x: unknown): string {
   const raw = safeStr(x);
-  if (!raw) return "—";
+  if (!raw) return "Not stated";
   const d = new Date(raw);
   if (!Number.isFinite(d.getTime())) return raw;
   return d.toLocaleString();
@@ -390,7 +390,7 @@ function getCommunityPublicId(currentClan: any): string {
       currentClan?.community?.community_code,
       currentClan?.profile?.community_code,
       currentClan?.marketplace?.community_code
-    ) || "Pending"
+    ) || "Awaiting issue"
   );
 }
 
@@ -757,6 +757,9 @@ export default function PaymentInstructionsPage() {
     };
   }, [inferredResult]);
 
+  const moneyInCanWidenRoutes = paymentConfirmed || Boolean(matchedEvent);
+  const moneyInTaskStillActive = !moneyInCanWidenRoutes;
+
   async function handleRefreshRoute() {
     if (!selectedClanId || !currentGmfnId) {
       setNotice({
@@ -798,7 +801,7 @@ export default function PaymentInstructionsPage() {
     if (!communityRailReady) {
       setNotice({
         tone: "error",
-        text: "Community pay-in rail is not ready yet.",
+        text: "Community pay-in details are not visible yet.",
       });
       return;
     }
@@ -895,10 +898,10 @@ export default function PaymentInstructionsPage() {
     const text = [
       `Community: ${communityLabel}`,
       `Community ID: ${publicCommunityCode}`,
-      `GMFN ID: ${currentGmfnId || "Pending"}`,
+      `GMFN ID: ${currentGmfnId || "Awaiting issue"}`,
       `Member: ${memberName}`,
       memberRole ? `Role: ${memberRole}` : "",
-      `Current step: ${inferredResult.step}`,
+      `Current stage: ${inferredResult.step}`,
       formattedInputAmount
         ? `Amount: ${formattedInputAmount} ${instruction.currency}`
         : "",
@@ -936,7 +939,7 @@ export default function PaymentInstructionsPage() {
     if (!reference) {
       setNotice({
         tone: "error",
-        text: "No payment reference is visible yet.",
+        text: "No payment reference is shown yet.",
       });
       return;
     }
@@ -970,7 +973,7 @@ export default function PaymentInstructionsPage() {
         <PageTopNav
           sectionLabel="Money In"
           title="Payment Instructions"
-          subtitle="Preparing the guided pay-in route..."
+          subtitle="Loading the pay-in route..."
           homeTo={APP_TARGETS.DASHBOARD}
           homeLabel="Dashboard"
           backTo={APP_TARGETS.MARKETPLACE}
@@ -987,7 +990,7 @@ export default function PaymentInstructionsPage() {
 
         <section style={pageCard("#FFFFFF")}>
           <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-            Loading Money In route...
+            Loading Money In...
           </div>
         </section>
       </div>
@@ -1007,25 +1010,31 @@ export default function PaymentInstructionsPage() {
       <PageTopNav
         sectionLabel="Money In"
         title="Payment Instructions"
-        subtitle="Money In should remain a guided route from context to instruction, payment confirmation, and reconciliation. Once the member chooses pay-in, unrelated surfaces should stay out of the way until the route is complete."
+        subtitle="Money In stays on one route from context to instruction, payment confirmation, and reconciliation."
         homeTo={APP_TARGETS.DASHBOARD}
         homeLabel="Dashboard"
         backTo={APP_TARGETS.MARKETPLACE}
         backLabel="Marketplace"
-        nextLinks={[
-          { label: "Finance", to: APP_TARGETS.FINANCE },
-          { label: "Money Out", to: APP_TARGETS.MONEY_OUT },
-        ]}
+        nextLinks={
+          moneyInCanWidenRoutes
+            ? [
+                { label: "Finance", to: APP_TARGETS.FINANCE },
+                { label: "Money Out", to: APP_TARGETS.MONEY_OUT },
+              ]
+            : [{ label: "Finance", to: APP_TARGETS.FINANCE }]
+        }
         utilityLinks={[
-          { label: "Loans", to: APP_TARGETS.LOANS },
           { label: "Notifications", to: APP_TARGETS.NOTIFICATIONS },
+          ...(moneyInCanWidenRoutes
+            ? [{ label: "Loans", to: APP_TARGETS.LOANS }]
+            : []),
         ]}
       />
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
         <div
           style={{
@@ -1041,9 +1050,10 @@ export default function PaymentInstructionsPage() {
                 width: "100%",
                 height: 148,
                 borderRadius: 20,
-                border: "1px solid rgba(11,31,51,0.08)",
+                border: "1px solid rgba(212,175,55,0.22)",
                 overflow: "hidden",
-                background: "linear-gradient(180deg, #E8F0FF 0%, #DDEBFF 100%)",
+                background: "linear-gradient(180deg, rgba(8,17,31,0.88) 0%, rgba(16,42,67,0.96) 100%)",
+                boxShadow: "0 20px 44px rgba(2,12,27,0.32)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1063,7 +1073,7 @@ export default function PaymentInstructionsPage() {
               ) : (
                 <div
                   style={{
-                    color: "#37506A",
+                    color: "#F8FBFF",
                     fontWeight: 900,
                     fontSize: 20,
                     textAlign: "center",
@@ -1083,7 +1093,7 @@ export default function PaymentInstructionsPage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: isCompact ? 28 : 34,
                 lineHeight: 1.1,
@@ -1092,7 +1102,7 @@ export default function PaymentInstructionsPage() {
               Pay into {communityLabel}
             </div>
 
-            <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
+            <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
               GMFN is not the custodian of the money. This route generates the exact
               matching reference so payment into the official community account can
               later be matched and reflected correctly.
@@ -1107,10 +1117,10 @@ export default function PaymentInstructionsPage() {
               }}
             >
               <span style={badge(true)}>Community ID: {publicCommunityCode}</span>
-              <span style={badge(false)}>GMFN ID: {currentGmfnId || "Pending"}</span>
+              <span style={badge(false)}>GMFN ID: {currentGmfnId || "Awaiting issue"}</span>
               <span style={badge(false)}>Member: {memberName}</span>
               {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
-              <span style={badge(false)}>Current step: {inferredResult.step}</span>
+              <span style={badge(false)}>Current stage: {inferredResult.step}</span>
             </div>
           </div>
 
@@ -1188,7 +1198,7 @@ export default function PaymentInstructionsPage() {
                   fontWeight: 900,
                 }}
               >
-                {formattedInputAmount ? `${formattedInputAmount} ${poolCurrency}` : "Pending"}
+                {formattedInputAmount ? `${formattedInputAmount} ${poolCurrency}` : "Awaiting amount"}
               </div>
             </div>
 
@@ -1202,7 +1212,7 @@ export default function PaymentInstructionsPage() {
                   fontWeight: 900,
                 }}
               >
-                {communityRailReady ? "Community pay-in rail ready" : "Community pay-in rail pending"}
+                {communityRailReady ? "Community pay-in details ready" : "Community pay-in details pending"}
               </div>
             </div>
 
@@ -1217,7 +1227,7 @@ export default function PaymentInstructionsPage() {
                   wordBreak: "break-word",
                 }}
               >
-                {firstTruthy(instruction?.reference, "Pending")}
+                {firstTruthy(instruction?.reference, "Awaiting reference")}
               </div>
             </div>
 
@@ -1448,7 +1458,7 @@ export default function PaymentInstructionsPage() {
                         fontSize: 18,
                       }}
                     >
-                      {formattedInputAmount || "Pending"} {instruction.currency}
+                      {formattedInputAmount || "Awaiting amount"} {instruction.currency}
                     </div>
                   </div>
 
@@ -1463,7 +1473,7 @@ export default function PaymentInstructionsPage() {
                         wordBreak: "break-word",
                       }}
                     >
-                      {firstTruthy(instruction.reference, "Pending")}
+                      {firstTruthy(instruction.reference, "Awaiting reference")}
                     </div>
                   </div>
 
@@ -1542,7 +1552,7 @@ export default function PaymentInstructionsPage() {
           <div>
             <div style={sectionLabel()}>Result and reconciliation</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              The route should not drift away after payment. It should stay here until reconciliation is visible or explicitly pending.
+              Stay on this route until reconciliation is visible or clearly awaiting confirmation.
             </div>
           </div>
 
@@ -1634,16 +1644,20 @@ export default function PaymentInstructionsPage() {
             </div>
 
             <div style={softCard("#FFFFFF")}>
-              <div style={sectionLabel()}>Next routes</div>
+              <div style={sectionLabel()}>
+                {moneyInTaskStillActive ? "Current route actions" : "Completion actions"}
+              </div>
 
               <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                 <OriginLink to={APP_TARGETS.FINANCE} style={actionBtn("primary")}>
                   Open Finance
                 </OriginLink>
 
-                <OriginLink to={APP_TARGETS.MARKETPLACE} style={actionBtn("secondary")}>
-                  Return To Marketplace
-                </OriginLink>
+                {moneyInCanWidenRoutes ? (
+                  <OriginLink to={APP_TARGETS.MARKETPLACE} style={actionBtn("secondary")}>
+                    Return To Marketplace
+                  </OriginLink>
+                ) : null}
 
                 <OriginLink to={APP_TARGETS.NOTIFICATIONS} style={actionBtn("secondary")}>
                   Action Inbox
@@ -1654,7 +1668,7 @@ export default function PaymentInstructionsPage() {
                   onClick={handleResetTask}
                   style={actionBtn("soft")}
                 >
-                  Reset Money In Task
+                  Reset Money In
                 </button>
               </div>
             </div>
@@ -1673,9 +1687,13 @@ export default function PaymentInstructionsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Working routes</div>
+            <div style={sectionLabel()}>
+              {moneyInCanWidenRoutes ? "Next routes" : "Route focus"}
+            </div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Keep related routes visible but secondary.
+              {moneyInCanWidenRoutes
+                ? "Related routes reopen after this pay-in has reached a visible conclusion."
+                : "This pay-in is still active. Stay on this route until payment is confirmed or reconciliation is clearly awaiting."}
             </div>
           </div>
 
@@ -1689,40 +1707,53 @@ export default function PaymentInstructionsPage() {
         </div>
 
         {!collapsed.routes ? (
-          <div
-            style={{
-              marginTop: 16,
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr"
-                : "repeat(3, minmax(0, 1fr))",
-              gap: 12,
-            }}
-          >
-            <OriginLink to={APP_TARGETS.FINANCE} style={actionBtn("primary")}>
-              Finance
-            </OriginLink>
+          moneyInCanWidenRoutes ? (
+            <div
+              style={{
+                marginTop: 16,
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : "repeat(3, minmax(0, 1fr))",
+                gap: 12,
+              }}
+            >
+              <OriginLink to={APP_TARGETS.FINANCE} style={actionBtn("primary")}>
+                Finance
+              </OriginLink>
 
-            <OriginLink to={APP_TARGETS.MONEY_OUT} style={actionBtn("secondary")}>
-              Money Out
-            </OriginLink>
+              <OriginLink to={APP_TARGETS.MONEY_OUT} style={actionBtn("secondary")}>
+                Money Out
+              </OriginLink>
 
-            <OriginLink to={APP_TARGETS.LOANS} style={actionBtn("secondary")}>
-              Loans
-            </OriginLink>
+              <OriginLink to={APP_TARGETS.LOANS} style={actionBtn("secondary")}>
+                Loans
+              </OriginLink>
 
-            <OriginLink to={APP_TARGETS.MARKETPLACE} style={actionBtn("secondary")}>
-              Marketplace
-            </OriginLink>
+              <OriginLink to={APP_TARGETS.MARKETPLACE} style={actionBtn("secondary")}>
+                Marketplace
+              </OriginLink>
 
-            <OriginLink to={APP_TARGETS.COMMUNITY} style={actionBtn("secondary")}>
-              Community Home
-            </OriginLink>
+              <OriginLink to={APP_TARGETS.COMMUNITY} style={actionBtn("secondary")}>
+                Community Home
+              </OriginLink>
 
-            <OriginLink to={APP_TARGETS.NOTIFICATIONS} style={actionBtn("secondary")}>
-              Action Inbox
-            </OriginLink>
-          </div>
+              <OriginLink to={APP_TARGETS.NOTIFICATIONS} style={actionBtn("secondary")}>
+                Action Inbox
+              </OriginLink>
+            </div>
+          ) : (
+            <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
+              <div style={innerCard("#F8FBFF")}>
+                <div style={sectionLabel()}>One-task mode</div>
+                <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                  Generate the instruction, pay using the exact reference, and keep this
+                  route open until the payment is confirmed or reconciliation is visibly
+                  awaiting.
+                </div>
+              </div>
+            </div>
+          )
         ) : null}
       </section>
     </div>

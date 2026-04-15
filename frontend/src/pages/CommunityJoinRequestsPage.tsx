@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
   getCommunityJoinRequests,
@@ -122,7 +123,7 @@ function safeStr(x: any, fallback = ""): string {
 
 function safeDateTime(x: any): string {
   const raw = String(x || "").trim();
-  if (!raw) return "—";
+  if (!raw) return "Not available yet";
   const d = new Date(raw);
   if (Number.isNaN(d.getTime())) return raw;
   return d.toLocaleString();
@@ -271,13 +272,14 @@ export default function CommunityJoinRequestsPage() {
   return (
     <div style={{ padding: 20, maxWidth: 980, margin: "0 auto", paddingBottom: 30 }}>
       <PageTopNav
+        sectionLabel="Community Join Requests"
         title="Community Join Requests"
         subtitle="Review incoming requests for the selected community and decide whether to approve or reject them."
       />
 
       <div
         style={{
-          ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
+          ...pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
           marginTop: 18,
         }}
       >
@@ -288,7 +290,7 @@ export default function CommunityJoinRequestsPage() {
             marginTop: 10,
             fontSize: 30,
             fontWeight: 1000,
-            color: "#0B1F33",
+            color: "#F8FBFF",
             lineHeight: 1.15,
           }}
         >
@@ -298,12 +300,12 @@ export default function CommunityJoinRequestsPage() {
         <div
           style={{
             marginTop: 8,
-            color: "#64748B",
+            color: "#D7E3F1",
             lineHeight: 1.8,
           }}
         >
-          This page belongs to the community control flow. Review pending requests
-          here, then return to Community Home or the selected marketplace when finished.
+          This page belongs to the community approval flow. Review join requests
+          here, then return to Community Home or Marketplace when this review task is complete.
         </div>
 
         <div
@@ -314,13 +316,30 @@ export default function CommunityJoinRequestsPage() {
             flexWrap: "wrap",
           }}
         >
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              minHeight: 30,
+              padding: "6px 10px",
+              borderRadius: 999,
+              background: "#F8FAFC",
+              border: "1px solid rgba(11,31,51,0.08)",
+              color: "#475569",
+              fontWeight: 900,
+              fontSize: 12,
+              whiteSpace: "nowrap",
+            }}
+          >
+            Current step: Community review
+          </span>
           <button type="button" onClick={goBack} style={actionBtn(false)}>
             Community Home
           </button>
 
-          <Link to="/app/marketplace" style={actionBtn(false)}>
+          <OriginLink to="/app/marketplace" style={actionBtn(false)}>
             Marketplace
-          </Link>
+          </OriginLink>
 
           <button
             type="button"
@@ -406,7 +425,7 @@ export default function CommunityJoinRequestsPage() {
           }}
         >
           <div style={{ fontWeight: 1000, fontSize: 18, color: "#0B1F33" }}>
-            Approval → Activation Package
+            Approval to activation package
           </div>
 
           <div
@@ -423,23 +442,23 @@ export default function CommunityJoinRequestsPage() {
               <strong>GMFN ID:</strong> {safeStr(activationPack.gmfn_id)}
             </div>
             <div>
-              <strong>Community:</strong> {safeStr(activationPack.community_name || "—")}
+              <strong>Community:</strong> {safeStr(activationPack.community_name || "Not available yet")}
             </div>
             <div>
-              <strong>Community ID:</strong> {safeStr(activationPack.community_code || "—")}
+              <strong>Community ID:</strong> {safeStr(activationPack.community_code || "Not available yet")}
             </div>
             <div>
               <strong>Invited by:</strong>{" "}
               {safeStr(
                 activationPack.invited_by_display ||
                   activationPack.invited_by_email ||
-                  "—"
+                  "Not available yet"
               )}
             </div>
             <div>
               <strong>Activation link:</strong>{" "}
               <span style={{ wordBreak: "break-word" }}>
-                {safeStr(activationPack.activation_link || "—")}
+                {safeStr(activationPack.activation_link || "Not available yet")}
               </span>
             </div>
           </div>
@@ -520,13 +539,13 @@ export default function CommunityJoinRequestsPage() {
 
       {loading ? (
         <div style={{ ...pageCard(), marginTop: 18 }}>
-          <strong>Loading...</strong>
+          <strong>Loading join requests...</strong>
         </div>
       ) : null}
 
       {!loading && !error && !items.length ? (
         <div style={{ ...pageCard(), marginTop: 18 }}>
-          <strong>No join requests yet.</strong>
+          <strong>No join requests are currently shown.</strong>
         </div>
       ) : null}
 
@@ -562,12 +581,18 @@ export default function CommunityJoinRequestsPage() {
                 </div>
 
                 <div style={{ marginTop: 10, display: "grid", gap: 4 }}>
-                  <div>Community ID: {safeStr(item.community_code || "-")}</div>
+                  <div>
+                    Community ID: {safeStr(item.community_code || "Awaiting issue")}
+                  </div>
                   <div>
                     Community / Market:{" "}
-                    {safeStr(item.marketplace_name || item.clan_name || "-")}
+                    {safeStr(
+                      item.marketplace_name ||
+                        item.clan_name ||
+                        "Not available yet"
+                    )}
                   </div>
-                  <div>Invite code: {safeStr(item.invite_code || "-")}</div>
+                  <div>Invite code: {safeStr(item.invite_code || "Not available yet")}</div>
                   <div>Status: {status}</div>
                   <div>Submitted: {safeDateTime(item.created_at)}</div>
                   <div>Decided: {safeDateTime(item.decided_at)}</div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
 
@@ -850,7 +850,7 @@ export default function LoanSuggestionsPage() {
 
     if (requiredGuarantors > 0 && suggestedSupporters.length === 0) {
       return {
-        title: "No fit guarantor suggestion is visible yet.",
+        title: "No fit guarantor suggestion is shown yet.",
         detail:
           suggestionMessage ||
           "The current amount or structure may still need a better fit before suggestions become clearer.",
@@ -960,6 +960,9 @@ export default function LoanSuggestionsPage() {
     };
   }, [selectedClanId, cameFromWithdrawalSupport, activeBorrowerLoan, suggestedSupporters.length]);
 
+  const suggestionsSupportActive =
+    cameFromWithdrawalSupport || Boolean(activeBorrowerLoan);
+
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
       ...prev,
@@ -981,7 +984,7 @@ export default function LoanSuggestionsPage() {
         <PageTopNav
           sectionLabel="Loan Suggestions"
           title="Loan Suggestions"
-          subtitle="Preparing the fit-suggestion stage..."
+          subtitle="Loading the fit-suggestion stage..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/loan-readiness"
@@ -1027,14 +1030,18 @@ export default function LoanSuggestionsPage() {
           { label: "Loan Workbench", to: "/app/loan-workbench" },
           { label: "Loans", to: "/app/loans" },
         ]}
-        utilityLinks={[
-          { label: "Marketplace", to: "/app/marketplace" },
-          { label: "Money Out", to: "/app/withdrawal-instructions" },
-        ]}
+        utilityLinks={
+          suggestionsSupportActive
+            ? [{ label: "Loan Readiness", to: "/app/loan-readiness" }]
+            : [
+                { label: "Marketplace", to: "/app/marketplace" },
+                { label: "Money Out", to: "/app/withdrawal-instructions" },
+              ]
+        }
       />
 
       <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
         <div
           style={{
@@ -1050,9 +1057,10 @@ export default function LoanSuggestionsPage() {
                 width: "100%",
                 height: 148,
                 borderRadius: 20,
-                border: "1px solid rgba(11,31,51,0.08)",
+                border: "1px solid rgba(212,175,55,0.22)",
                 overflow: "hidden",
-                background: "linear-gradient(180deg, #E8F0FF 0%, #DDEBFF 100%)",
+                background: "linear-gradient(180deg, rgba(8,17,31,0.88) 0%, rgba(16,42,67,0.96) 100%)",
+                boxShadow: "0 20px 44px rgba(2,12,27,0.32)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1072,7 +1080,7 @@ export default function LoanSuggestionsPage() {
               ) : (
                 <div
                   style={{
-                    color: "#37506A",
+                    color: "#F8FBFF",
                     fontWeight: 900,
                     fontSize: 20,
                     textAlign: "center",
@@ -1092,7 +1100,7 @@ export default function LoanSuggestionsPage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: isCompact ? 28 : 34,
                 lineHeight: 1.1,
@@ -1101,7 +1109,7 @@ export default function LoanSuggestionsPage() {
               Loan fit suggestions for {memberName}
             </div>
 
-            <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
+            <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
               This page is for fit reading, not for drifting away from the support path.
               Once support continuation has begun, the member should move from readiness
               into fit reading, then into deeper workbench handling.
@@ -1286,7 +1294,7 @@ export default function LoanSuggestionsPage() {
                   lineHeight: 1.25,
                 }}
               >
-                {safeStr(loanSummary?.status || activeBorrowerLoan?.status || "Pending")}
+                {safeStr(loanSummary?.status || activeBorrowerLoan?.status || "Awaiting issue")}
               </div>
             </div>
 
@@ -1333,7 +1341,7 @@ export default function LoanSuggestionsPage() {
                       lineHeight: 1.25,
                     }}
                   >
-                    {withdrawalAmount ? withdrawalAmount : "Pending"}
+                    {withdrawalAmount ? withdrawalAmount : "Not available yet"}
                   </div>
                 </div>
 
@@ -1348,7 +1356,7 @@ export default function LoanSuggestionsPage() {
                       lineHeight: 1.25,
                     }}
                   >
-                    {safeStr(supportGap || "Pending")}
+                    {safeStr(supportGap || "Not available yet")}
                   </div>
                 </div>
               </>
@@ -1491,7 +1499,7 @@ export default function LoanSuggestionsPage() {
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             {suggestedSupporters.length === 0 ? (
               <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                No visible fit suggestion is returned right now for this support item.
+                No fit suggestion is available for this support item right now.
               </div>
             ) : (
               suggestedSupporters.map((item) => (
@@ -1559,9 +1567,9 @@ export default function LoanSuggestionsPage() {
                         flexWrap: "wrap",
                       }}
                     >
-                      <Link to="/app/loan-workbench" style={actionBtn("secondary")}>
+                      <OriginLink to="/app/loan-workbench" style={actionBtn("secondary")}>
                         Open Loan Workbench
-                      </Link>
+                      </OriginLink>
                     </div>
                   </div>
                 </div>
@@ -1582,9 +1590,13 @@ export default function LoanSuggestionsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Working routes</div>
+            <div style={sectionLabel()}>
+              {suggestionsSupportActive ? "Support continuation routes" : "Next routes"}
+            </div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Move from fit reading into the exact next support-continuation page you need.
+              {suggestionsSupportActive
+                ? "Stay inside the support path and move only to the next exact continuation surface."
+                : "Move from fit reading into the exact next support-continuation page you need."}
             </div>
           </div>
 
@@ -1608,7 +1620,7 @@ export default function LoanSuggestionsPage() {
               gap: 12,
             }}
           >
-            <Link to={nextRoute.ctaTo} style={routeTile(true)}>
+            <OriginLink to={nextRoute.ctaTo} style={routeTile(true)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1625,9 +1637,9 @@ export default function LoanSuggestionsPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 {nextRoute.detail}
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/loan-readiness" style={routeTile(false)}>
+            <OriginLink to="/app/loan-readiness" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1641,9 +1653,9 @@ export default function LoanSuggestionsPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when the question is whether the next support move is clean enough to continue.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/loan-workbench" style={routeTile(false)}>
+            <OriginLink to="/app/loan-workbench" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1657,25 +1669,27 @@ export default function LoanSuggestionsPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this for deeper support handling after the fit picture is clear enough.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/loans" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
-                Loans & Support
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Return to the broader support overview only after the current fit-reading stage is complete.
-              </div>
-            </Link>
+            {!suggestionsSupportActive ? (
+              <OriginLink to="/app/loans" style={routeTile(false)}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 17,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  Loans & Support
+                </div>
+                <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                  Return to the broader support overview only after the current fit-reading stage is complete.
+                </div>
+              </OriginLink>
+            ) : null}
 
-            <Link to="/app/guarantor-inbox" style={routeTile(false)}>
+            <OriginLink to="/app/guarantor-inbox" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1689,39 +1703,43 @@ export default function LoanSuggestionsPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open the dedicated guarantor decision queue when responses are waiting on you.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/withdrawal-instructions" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
-                Money Out
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Return to the originating withdrawal path only when you need to verify the handoff source.
-              </div>
-            </Link>
+            {!suggestionsSupportActive ? (
+              <>
+                <OriginLink to="/app/withdrawal-instructions" style={routeTile(false)}>
+                  <div
+                    style={{
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      fontSize: 17,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    Money Out
+                  </div>
+                  <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                    Return to the originating withdrawal path only when you need to verify the handoff source.
+                  </div>
+                </OriginLink>
 
-            <Link to="/app/notifications" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
-                Action Inbox
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the broader waiting picture matters around support response.
-              </div>
-            </Link>
+                <OriginLink to="/app/notifications" style={routeTile(false)}>
+                  <div
+                    style={{
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      fontSize: 17,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    Action Inbox
+                  </div>
+                  <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                    Use this when the broader waiting picture matters around support response.
+                  </div>
+                </OriginLink>
+              </>
+            ) : null}
           </div>
         ) : null}
       </section>

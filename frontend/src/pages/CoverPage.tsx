@@ -430,7 +430,7 @@ function GSNSplashArtwork() {
           fontWeight="900"
           fontFamily="Arial, Helvetica, sans-serif"
         >
-          GSN
+          GMFN
         </text>
 
         <text
@@ -442,7 +442,7 @@ function GSNSplashArtwork() {
           fontWeight="700"
           fontFamily="Arial, Helvetica, sans-serif"
         >
-          Global Support Network
+          Global Mutual Finance Network
         </text>
 
         <text
@@ -496,7 +496,7 @@ export default function CoverPage() {
 
   useEffect(() => {
     if (typeof document !== "undefined") {
-      document.title = "GSN | Global Support Network";
+      document.title = "GMFN | Global Support Network";
     }
   }, []);
 

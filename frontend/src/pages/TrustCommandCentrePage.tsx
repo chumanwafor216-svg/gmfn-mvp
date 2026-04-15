@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import { getCurrentClan, getMe, getSelectedClanId } from "../lib/api";
 
@@ -351,7 +351,7 @@ export default function TrustCommandCentrePage() {
         <PageTopNav
           sectionLabel="Command Center"
           title="Trust Command Centre"
-          subtitle="Preparing the admin command surface..."
+          subtitle="Loading the command center..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/dashboard"
@@ -367,7 +367,7 @@ export default function TrustCommandCentrePage() {
 
         <section style={pageCard("#FFFFFF")}>
           <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-            Loading command centre...
+            Loading command center...
           </div>
         </section>
       </div>
@@ -387,7 +387,7 @@ export default function TrustCommandCentrePage() {
       <PageTopNav
         sectionLabel="Command Center"
         title="Trust Command Centre"
-        subtitle="This is the operator layer. Use it for platform trust operations, not for ordinary member work."
+        subtitle="Use this page for platform trust operations and move from here into the exact operator route required for the current task."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
@@ -402,7 +402,7 @@ export default function TrustCommandCentrePage() {
       />
 
       <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
         <div
           style={{
@@ -418,7 +418,7 @@ export default function TrustCommandCentrePage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: isCompact ? 28 : 34,
                 lineHeight: 1.1,
@@ -427,7 +427,7 @@ export default function TrustCommandCentrePage() {
               Welcome, {operatorName}
             </div>
 
-            <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
+            <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
               This surface should remain calmer than a raw admin console. Start here, then move into the exact admin page required for the current job.
             </div>
 
@@ -450,7 +450,7 @@ export default function TrustCommandCentrePage() {
 
             <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
               <div style={helperText()}>
-                Use this page as the front door into the operator layer.
+                Use this page as the front door into the operator workspace.
               </div>
               <div style={helperText()}>
                 Pick the specific admin page that matches the current task instead of scanning everything at once.
@@ -600,7 +600,7 @@ export default function TrustCommandCentrePage() {
               gap: 12,
             }}
           >
-            <Link to="/app/command-center/trust-analytics" style={routeTile(true)}>
+            <OriginLink to="/app/command-center/trust-analytics" style={routeTile(true)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -614,9 +614,9 @@ export default function TrustCommandCentrePage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Read trend, movement, and higher-level trust patterns.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/command-center/system-operations" style={routeTile(false)}>
+            <OriginLink to="/app/command-center/system-operations" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -630,9 +630,9 @@ export default function TrustCommandCentrePage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Review live system operations and operational health.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/command-center/exposure" style={routeTile(false)}>
+            <OriginLink to="/app/command-center/exposure" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -646,9 +646,9 @@ export default function TrustCommandCentrePage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Review concentration, balance, and exposure pressure.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/command-center/trust-graph" style={routeTile(false)}>
+            <OriginLink to="/app/command-center/trust-graph" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -662,7 +662,7 @@ export default function TrustCommandCentrePage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Read network structure and relationship-based trust shape.
               </div>
-            </Link>
+            </OriginLink>
           </div>
         ) : null}
       </section>
@@ -778,7 +778,7 @@ export default function TrustCommandCentrePage() {
           <div>
             <div style={sectionLabel()}>Separation of layers</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Keep the operator layer distinct from the ordinary member layer.
+              Keep the operator workspace distinct from the ordinary member layer.
             </div>
           </div>
 
@@ -826,7 +826,7 @@ export default function TrustCommandCentrePage() {
                 Command pages stay operator-facing
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                This operator layer can hold more system detail, but it should still be organized enough that an operator can move without confusion.
+                This operator workspace can hold more system detail, but it should still be organized enough that an operator can move without confusion.
               </div>
             </div>
           </div>
@@ -844,18 +844,18 @@ export default function TrustCommandCentrePage() {
             flexWrap: "wrap",
           }}
         >
-          <Link to="/app/command-center/trust-analytics" style={actionBtn("primary")}>
+          <OriginLink to="/app/command-center/trust-analytics" style={actionBtn("primary")}>
             Trust Analytics
-          </Link>
-          <Link to="/app/command-center/system-operations" style={actionBtn("secondary")}>
+          </OriginLink>
+          <OriginLink to="/app/command-center/system-operations" style={actionBtn("secondary")}>
             System Operations
-          </Link>
-          <Link to="/app/command-center/exposure" style={actionBtn("secondary")}>
+          </OriginLink>
+          <OriginLink to="/app/command-center/exposure" style={actionBtn("secondary")}>
             Exposure
-          </Link>
-          <Link to="/app/command-center/trust-graph" style={actionBtn("secondary")}>
+          </OriginLink>
+          <OriginLink to="/app/command-center/trust-graph" style={actionBtn("secondary")}>
             Trust Graph
-          </Link>
+          </OriginLink>
         </div>
       </section>
     </div>

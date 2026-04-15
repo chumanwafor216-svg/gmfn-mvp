@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
   getCurrentClan,
@@ -565,7 +565,7 @@ export default function TrustAnalyticsPage() {
         <PageTopNav
           sectionLabel="Trust Analytics"
           title="Trust Analytics"
-          subtitle="Preparing the trust analytics surface..."
+          subtitle="Loading the trust analytics surface..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/command-center"
@@ -612,7 +612,7 @@ export default function TrustAnalyticsPage() {
       />
 
       <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
         <div
           style={{
@@ -628,7 +628,7 @@ export default function TrustAnalyticsPage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: isCompact ? 28 : 34,
                 lineHeight: 1.1,
@@ -852,7 +852,7 @@ export default function TrustAnalyticsPage() {
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 {builtRows.length === 0 ? (
                   <div style={helperText()}>
-                    No strong built-side event is visible right now.
+                    No strong built-side event is currently shown.
                   </div>
                 ) : (
                   builtRows.map((row) => (
@@ -889,7 +889,7 @@ export default function TrustAnalyticsPage() {
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 {weakenedRows.length === 0 ? (
                   <div style={helperText()}>
-                    No weakened or repair-side event is visible right now.
+                    No weakened or repair-side event is currently shown.
                   </div>
                 ) : (
                   weakenedRows.map((row) => (
@@ -945,7 +945,7 @@ export default function TrustAnalyticsPage() {
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             {recentRows.length === 0 ? (
               <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                No recent trust event is visible right now.
+                No recent trust event is currently shown.
               </div>
             ) : (
               recentRows.map((row) => {
@@ -1089,18 +1089,18 @@ export default function TrustAnalyticsPage() {
             flexWrap: "wrap",
           }}
         >
-          <Link to="/app/command-center/system-operations" style={actionBtn("primary")}>
+          <OriginLink to="/app/command-center/system-operations" style={actionBtn("primary")}>
             System Operations
-          </Link>
-          <Link to="/app/command-center/exposure" style={actionBtn("secondary")}>
+          </OriginLink>
+          <OriginLink to="/app/command-center/exposure" style={actionBtn("secondary")}>
             Exposure
-          </Link>
-          <Link to="/app/command-center/trust-graph" style={actionBtn("secondary")}>
+          </OriginLink>
+          <OriginLink to="/app/command-center/trust-graph" style={actionBtn("secondary")}>
             Trust Graph
-          </Link>
-          <Link to="/app/command-center" style={actionBtn("soft")}>
+          </OriginLink>
+          <OriginLink to="/app/command-center" style={actionBtn("soft")}>
             Command Center
-          </Link>
+          </OriginLink>
         </div>
       </section>
     </div>

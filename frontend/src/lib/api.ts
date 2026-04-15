@@ -1623,6 +1623,31 @@ export async function getExposureAdmin(): Promise<any> {
   return httpJson("/exposure/admin", "GET");
 }
 
+export async function getCciScore(
+  clanId: number,
+  userId: number
+): Promise<any> {
+  return httpJson(
+    `/exposure/admin/cci-scores${buildQuery({ clan_id: clanId, user_id: userId })}`,
+    "GET"
+  );
+}
+
+export async function runOverdueDetector(payload: {
+  dry_run?: boolean;
+  grace_days?: number;
+  limit?: number;
+}): Promise<any> {
+  return httpJson(
+    `/loans/overdue/run${buildQuery({
+      dry_run: payload?.dry_run,
+      grace_days: payload?.grace_days,
+      limit: payload?.limit,
+    })}`,
+    "POST"
+  );
+}
+
 export async function getRevenueAllocation(loanId: number): Promise<any> {
   return httpJson(
     `/revenue-allocation/loan/${encodeURIComponent(String(loanId))}`,
@@ -1708,12 +1733,35 @@ export async function listBankCredits(payload: {
   );
 }
 
-export async function listExpectedPayments(_payload?: any): Promise<any> {
-  return {
-    items: [],
-    total: 0,
-    detail: "Expected payments listing is not enabled in this frontend build.",
-  };
+export async function listExpectedPayments(payload?: {
+  clan_id?: number;
+  user_id?: number;
+  expected_type?: string;
+  status?: string;
+  currency?: string;
+  limit?: number;
+}): Promise<any> {
+  const primaryClanId = Number(payload?.clan_id || 0);
+  const query = buildQuery({
+    clan_id: primaryClanId > 0 ? primaryClanId : undefined,
+    user_id: payload?.user_id ?? undefined,
+    expected_type: payload?.expected_type ?? undefined,
+    status: payload?.status ?? undefined,
+    currency: payload?.currency ?? undefined,
+    limit: payload?.limit ?? 100,
+  });
+
+  if (primaryClanId > 0) {
+    return httpJson(`/bank-reconciliation/expected${query}`, "GET");
+  }
+
+  return httpJson(`/bank/expected${buildQuery({
+    user_id: payload?.user_id ?? undefined,
+    expected_type: payload?.expected_type ?? undefined,
+    status: payload?.status ?? undefined,
+    currency: payload?.currency ?? undefined,
+    limit: payload?.limit ?? 100,
+  })}`, "GET");
 }
 
 export async function runBankReconciliation(payload: {
@@ -2746,3 +2794,638 @@ export async function getTrustGraphByGmfnId(gmfnId: string): Promise<any> {
 }
 
 export type TrustGraphNodeOut = any;
+
+export type TrustGraphEdgeOut = {
+  edge_type?: string | null;
+  source_gmfn_id?: string | null;
+  target_gmfn_id?: string | null;
+  source_user_id?: number | null;
+  target_user_id?: number | null;
+  clan_id?: number | null;
+  loan_id?: number | null;
+  first_seen_at?: string | null;
+  last_seen_at?: string | null;
+  weight?: number | string | null;
+  confidence?: number | string | null;
+  event_count?: number | string | null;
+  provenance?: any[] | null;
+  meta?: any;
+};
+
+export type TrustGraphSummaryOut = {
+  cci_score?: number | string | null;
+  graph_score?: number | string | null;
+  active_clan_count?: number | string | null;
+  sponsor_count?: number | string | null;
+  unique_counterparties?: number | string | null;
+  inbound_trust_edges?: number | string | null;
+  outbound_trust_edges?: number | string | null;
+  repayment_edge_count?: number | string | null;
+  guarantee_edge_count?: number | string | null;
+  invite_edge_count?: number | string | null;
+  risk_flags?: any[] | null;
+};
+// ==============================
+// Vault Shops / Lock-Up Shops
+// ==============================
+
+export type ShopVisibilityMode = "community_visible" | "vault_private";
+
+export type VaultAccessPolicy = {
+  expires_at?: string | null;
+  max_views?: number | null;
+  views_used?: number | null;
+  allow_download?: boolean;
+  allow_print?: boolean;
+  allow_reshare?: boolean;
+  watermark_enabled?: boolean;
+  revoked_at?: string | null;
+};
+
+export type VaultLinkItem = {
+  id: number | string;
+  shop_id: number | string;
+  access_url: string;
+  token: string;
+  expires_at?: string | null;
+  max_views?: number | null;
+  views_used?: number | null;
+  allow_download?: boolean;
+  allow_print?: boolean;
+  allow_reshare?: boolean;
+  watermark_enabled?: boolean;
+  revoked_at?: string | null;
+  created_at?: string | null;
+  last_opened_at?: string | null;
+  status?: "active" | "expired" | "revoked" | "exhausted";
+};
+
+export type CreateVaultShopAccessLinkInput = {
+  shop_id: number | string;
+  vault_shop_id?: number | string;
+  visibility_mode?: ShopVisibilityMode;
+  expires_at?: string | null;
+  max_views?: number | null;
+  allow_download?: boolean;
+  allow_print?: boolean;
+  allow_reshare?: boolean;
+  watermark_enabled?: boolean;
+};
+
+export type ExtendVaultShopAccessLinkInput = {
+  link_id: number | string;
+  expires_at: string;
+};
+
+export type VaultShopAccessProduct = {
+  id?: number | string;
+  name?: string | null;
+  description?: string | null;
+  price?: string | null;
+  currency?: string | null;
+  image_url?: string | null;
+};
+
+export type VaultShopAccessView = {
+  token?: string;
+  status?: "active" | "expired" | "revoked" | "exhausted" | "invalid";
+  shop_id?: number | string;
+  vault_shop_id?: number | string;
+  shop_name?: string | null;
+  shop_description?: string | null;
+  owner_name?: string | null;
+  gmfn_id?: string | null;
+  community_name?: string | null;
+  banner_url?: string | null;
+  image_url?: string | null;
+  products?: VaultShopAccessProduct[];
+  policy?: VaultAccessPolicy;
+  disclaimer?: string | null;
+  watermark_text?: string | null;
+  raw?: any;
+};
+
+function vaultSafeStr(x: any): string {
+  return String(x ?? "").trim();
+}
+
+function vaultFirstTruthy(...values: any[]): string {
+  for (const value of values) {
+    const text = vaultSafeStr(value);
+    if (text) return text;
+  }
+  return "";
+}
+
+function vaultNumberLike(value: any): number | null {
+  if (value === null || value === undefined || String(value).trim() === "") {
+    return null;
+  }
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function vaultRowsOf<T = any>(input: any): T[] {
+  if (Array.isArray(input)) return input as T[];
+  if (Array.isArray(input?.items)) return input.items as T[];
+  if (Array.isArray(input?.data?.items)) return input.data.items as T[];
+  if (Array.isArray(input?.results)) return input.results as T[];
+  if (Array.isArray(input?.rows)) return input.rows as T[];
+  return [];
+}
+
+function vaultApiBase(): string {
+  const raw =
+    (typeof import.meta !== "undefined" &&
+      (import.meta as any)?.env &&
+      (import.meta as any).env.VITE_API_BASE_URL) ||
+    "/api";
+
+  return String(raw || "").trim().replace(/\/+$/, "");
+}
+
+function vaultJoinUrl(root: string, path: string): string {
+  const cleanRoot = vaultSafeStr(root).replace(/\/+$/, "");
+  const cleanPath = vaultSafeStr(path).startsWith("/")
+    ? vaultSafeStr(path)
+    : `/${vaultSafeStr(path)}`;
+
+  return `${cleanRoot}${cleanPath}`;
+}
+
+async function vaultReadError(res: Response): Promise<string> {
+  const text = await res.text();
+  try {
+    const j = JSON.parse(text);
+    return j?.detail || j?.message || text || `HTTP ${res.status}`;
+  } catch {
+    return text || `HTTP ${res.status}`;
+  }
+}
+
+async function vaultTryJson<T = any>(
+  attempts: Array<{
+    method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
+    path: string;
+    body?: any;
+  }>,
+  includeAuth = true
+): Promise<T> {
+  const roots = [vaultApiBase()];
+
+  if (typeof window !== "undefined") {
+    roots.push(`${window.location.origin}/api`);
+  }
+
+  const uniqueRoots = Array.from(new Set(roots.map((x) => vaultSafeStr(x)).filter(Boolean)));
+
+  const token =
+    includeAuth && typeof getAccessToken === "function"
+      ? getAccessToken()
+      : "";
+
+  let lastError = "Vault Shops request failed.";
+
+  for (const root of uniqueRoots) {
+    for (const attempt of attempts) {
+      try {
+        const headers: Record<string, string> = {
+          Accept: "application/json",
+        };
+
+        if (attempt.body !== undefined) {
+          headers["Content-Type"] = "application/json";
+        }
+
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const res = await fetch(vaultJoinUrl(root, attempt.path), {
+          method: attempt.method,
+          headers,
+          credentials: "include",
+          cache: "no-store",
+          body:
+            attempt.body === undefined ? undefined : JSON.stringify(attempt.body),
+        });
+
+        if (res.status === 404 || res.status === 405) {
+          continue;
+        }
+
+        if (!res.ok) {
+          lastError = await vaultReadError(res);
+          continue;
+        }
+
+        const contentType = String(res.headers.get("content-type") || "").toLowerCase();
+
+        if (!contentType.includes("application/json")) {
+          return {} as T;
+        }
+
+        return (await res.json()) as T;
+      } catch (err: any) {
+        lastError = vaultSafeStr(err?.message || err) || lastError;
+      }
+    }
+  }
+
+  throw new Error(lastError);
+}
+
+function normalizeVaultLinkItem(raw: any): VaultLinkItem {
+  const src = raw?.item || raw?.link || raw?.data || raw || {};
+
+  const expiresAt = vaultFirstTruthy(src?.expires_at);
+  const revokedAt = vaultFirstTruthy(src?.revoked_at);
+  const maxViews = vaultNumberLike(src?.max_views);
+  const viewsUsed = vaultNumberLike(src?.views_used);
+
+  let status: VaultLinkItem["status"] = "active";
+
+  if (revokedAt) {
+    status = "revoked";
+  } else if (expiresAt) {
+    const d = new Date(expiresAt);
+    if (Number.isFinite(d.getTime()) && d.getTime() < Date.now()) {
+      status = "expired";
+    }
+  }
+
+  if (
+    status === "active" &&
+    maxViews !== null &&
+    viewsUsed !== null &&
+    viewsUsed >= maxViews
+  ) {
+    status = "exhausted";
+  }
+
+  return {
+    id: src?.id ?? src?.link_id ?? "",
+    shop_id: src?.shop_id ?? src?.vault_shop_id ?? "",
+    access_url: vaultFirstTruthy(src?.access_url, src?.url),
+    token: vaultFirstTruthy(src?.token, src?.code),
+    expires_at: expiresAt || null,
+    max_views: maxViews,
+    views_used: viewsUsed,
+    allow_download: Boolean(src?.allow_download),
+    allow_print: Boolean(src?.allow_print),
+    allow_reshare: Boolean(src?.allow_reshare),
+    watermark_enabled: Boolean(src?.watermark_enabled),
+    revoked_at: revokedAt || null,
+    created_at: vaultFirstTruthy(src?.created_at) || null,
+    last_opened_at: vaultFirstTruthy(src?.last_opened_at) || null,
+    status,
+  };
+}
+
+function normalizeVaultAccessProduct(raw: any): VaultShopAccessProduct {
+  const src = raw?.item || raw?.product || raw || {};
+
+  return {
+    id: src?.id ?? src?.product_id,
+    name: vaultFirstTruthy(src?.name, src?.title, src?.product_name),
+    description: vaultFirstTruthy(
+      src?.description,
+      src?.detail,
+      src?.summary,
+      src?.product_description
+    ),
+    price: vaultFirstTruthy(src?.price),
+    currency: vaultFirstTruthy(src?.currency, src?.currency_code),
+    image_url: vaultFirstTruthy(
+      src?.image_url,
+      src?.photo_url,
+      src?.thumbnail_url,
+      src?.cover_image_url
+    ),
+  };
+}
+
+function normalizeVaultAccessView(raw: any): VaultShopAccessView {
+  const src = raw?.item || raw?.view || raw?.data || raw || {};
+  const shop = src?.shop || src?.shop_summary || src;
+  const policySrc = src?.policy || src?.access_policy || src?.link || src;
+
+  const expiresAt = vaultFirstTruthy(policySrc?.expires_at, shop?.expires_at, src?.expires_at);
+  const revokedAt = vaultFirstTruthy(policySrc?.revoked_at, shop?.revoked_at, src?.revoked_at);
+  const maxViews = vaultNumberLike(
+    policySrc?.max_views ?? shop?.max_views ?? src?.max_views
+  );
+  const viewsUsed = vaultNumberLike(
+    policySrc?.views_used ?? shop?.views_used ?? src?.views_used
+  );
+
+  let status: VaultShopAccessView["status"] = "active";
+  const rawStatus = vaultFirstTruthy(src?.status, policySrc?.status, shop?.status).toLowerCase();
+
+  if (rawStatus.includes("invalid")) status = "invalid";
+  if (rawStatus.includes("revoke")) status = "revoked";
+  if (rawStatus.includes("expire")) status = "expired";
+  if (rawStatus.includes("exhaust")) status = "exhausted";
+
+  if (revokedAt) {
+    status = "revoked";
+  } else if (expiresAt) {
+    const d = new Date(expiresAt);
+    if (Number.isFinite(d.getTime()) && d.getTime() < Date.now()) {
+      status = "expired";
+    }
+  }
+
+  if (
+    status === "active" &&
+    maxViews !== null &&
+    viewsUsed !== null &&
+    viewsUsed >= maxViews
+  ) {
+    status = "exhausted";
+  }
+
+  const productRows = vaultRowsOf<any>(
+    src?.products || src?.items || shop?.products || src?.shop_products
+  ).map((item) => normalizeVaultAccessProduct(item));
+
+  return {
+    token: vaultFirstTruthy(src?.token, policySrc?.token, src?.code),
+    status,
+    shop_id: shop?.id ?? shop?.shop_id ?? src?.shop_id,
+    vault_shop_id: src?.vault_shop_id ?? shop?.vault_shop_id,
+    shop_name: vaultFirstTruthy(shop?.name, shop?.shop_name, src?.shop_name),
+    shop_description: vaultFirstTruthy(
+      shop?.description,
+      shop?.shop_description,
+      src?.description
+    ),
+    owner_name: vaultFirstTruthy(
+      shop?.owner_name,
+      shop?.owner_display_name,
+      src?.owner_name
+    ),
+    gmfn_id: vaultFirstTruthy(shop?.gmfn_id, src?.gmfn_id),
+    community_name: vaultFirstTruthy(
+      shop?.community_name,
+      shop?.clan_name,
+      src?.community_name
+    ),
+    banner_url: vaultFirstTruthy(
+      shop?.banner_url,
+      shop?.image_url,
+      shop?.cover_image_url,
+      src?.banner_url
+    ),
+    image_url: vaultFirstTruthy(
+      shop?.image_url,
+      shop?.cover_image_url,
+      src?.image_url
+    ),
+    products: productRows,
+    policy: {
+      expires_at: expiresAt || null,
+      max_views: maxViews,
+      views_used: viewsUsed,
+      allow_download: Boolean(policySrc?.allow_download ?? src?.allow_download),
+      allow_print: Boolean(policySrc?.allow_print ?? src?.allow_print),
+      allow_reshare: Boolean(policySrc?.allow_reshare ?? src?.allow_reshare),
+      watermark_enabled: Boolean(
+        policySrc?.watermark_enabled ?? src?.watermark_enabled
+      ),
+      revoked_at: revokedAt || null,
+    },
+    disclaimer: vaultFirstTruthy(src?.disclaimer, shop?.disclaimer),
+    watermark_text: vaultFirstTruthy(
+      src?.watermark_text,
+      shop?.watermark_text,
+      vaultFirstTruthy(shop?.name, src?.code, src?.token)
+    ),
+    raw: raw,
+  };
+}
+
+export async function createVaultShopAccessLink(
+  input: CreateVaultShopAccessLinkInput
+): Promise<VaultLinkItem> {
+  const shopId = String(input.shop_id);
+  const nestedBody = {
+    ...input,
+  };
+  delete (nestedBody as any).shop_id;
+
+  const res = await vaultTryJson<any>(
+    [
+      {
+        method: "POST",
+        path: `/marketplace/shops/${encodeURIComponent(shopId)}/vault-access-links`,
+        body: nestedBody,
+      },
+      {
+        method: "POST",
+        path: `/marketplace/shops/${encodeURIComponent(shopId)}/vault-links`,
+        body: nestedBody,
+      },
+      {
+        method: "POST",
+        path: `/marketplace/vault-access-links`,
+        body: input,
+      },
+      {
+        method: "POST",
+        path: `/marketplace/vault-links`,
+        body: input,
+      },
+      {
+        method: "POST",
+        path: `/vault-access-links`,
+        body: input,
+      },
+      {
+        method: "POST",
+        path: `/vault-links`,
+        body: input,
+      },
+    ],
+    true
+  );
+
+  return normalizeVaultLinkItem(res);
+}
+
+export async function listVaultShopAccessLinks(
+  shopId: number | string
+): Promise<VaultLinkItem[]> {
+  const safeShopId = String(shopId);
+
+  const res = await vaultTryJson<any>(
+    [
+      {
+        method: "GET",
+        path: `/marketplace/shops/${encodeURIComponent(safeShopId)}/vault-access-links`,
+      },
+      {
+        method: "GET",
+        path: `/marketplace/shops/${encodeURIComponent(safeShopId)}/vault-links`,
+      },
+      {
+        method: "GET",
+        path: `/marketplace/vault-access-links?shop_id=${encodeURIComponent(safeShopId)}`,
+      },
+      {
+        method: "GET",
+        path: `/marketplace/vault-links?shop_id=${encodeURIComponent(safeShopId)}`,
+      },
+      {
+        method: "GET",
+        path: `/vault-access-links?shop_id=${encodeURIComponent(safeShopId)}`,
+      },
+      {
+        method: "GET",
+        path: `/vault-links?shop_id=${encodeURIComponent(safeShopId)}`,
+      },
+    ],
+    true
+  );
+
+  return vaultRowsOf<any>(res).map((row) => normalizeVaultLinkItem(row));
+}
+
+export async function revokeVaultShopAccessLink(
+  linkId: number | string
+): Promise<VaultLinkItem> {
+  const safeLinkId = String(linkId);
+
+  const res = await vaultTryJson<any>(
+    [
+      {
+        method: "POST",
+        path: `/marketplace/vault-access-links/${encodeURIComponent(safeLinkId)}/revoke`,
+      },
+      {
+        method: "POST",
+        path: `/marketplace/vault-links/${encodeURIComponent(safeLinkId)}/revoke`,
+      },
+      {
+        method: "POST",
+        path: `/vault-access-links/${encodeURIComponent(safeLinkId)}/revoke`,
+      },
+      {
+        method: "POST",
+        path: `/vault-links/${encodeURIComponent(safeLinkId)}/revoke`,
+      },
+    ],
+    true
+  );
+
+  return normalizeVaultLinkItem(res);
+}
+
+export async function extendVaultShopAccessLink(
+  linkId: number | string,
+  expiresAt: string
+): Promise<VaultLinkItem> {
+  const safeLinkId = String(linkId);
+
+  const res = await vaultTryJson<any>(
+    [
+      {
+        method: "POST",
+        path: `/marketplace/vault-access-links/${encodeURIComponent(safeLinkId)}/extend`,
+        body: { expires_at: expiresAt },
+      },
+      {
+        method: "POST",
+        path: `/marketplace/vault-links/${encodeURIComponent(safeLinkId)}/extend`,
+        body: { expires_at: expiresAt },
+      },
+      {
+        method: "POST",
+        path: `/vault-access-links/${encodeURIComponent(safeLinkId)}/extend`,
+        body: { expires_at: expiresAt },
+      },
+      {
+        method: "POST",
+        path: `/vault-links/${encodeURIComponent(safeLinkId)}/extend`,
+        body: { expires_at: expiresAt },
+      },
+    ],
+    true
+  );
+
+  return normalizeVaultLinkItem(res);
+}
+
+export async function getVaultShopAccessView(
+  token: string
+): Promise<VaultShopAccessView> {
+  const safeToken = vaultSafeStr(token);
+
+  const res = await vaultTryJson<any>(
+    [
+      {
+        method: "GET",
+        path: `/marketplace/vault-access/${encodeURIComponent(safeToken)}`,
+      },
+      {
+        method: "GET",
+        path: `/marketplace/vault-access/${encodeURIComponent(safeToken)}/view`,
+      },
+      {
+        method: "GET",
+        path: `/marketplace/vault-shops/access/${encodeURIComponent(safeToken)}`,
+      },
+      {
+        method: "GET",
+        path: `/marketplace/vault-shops/access/${encodeURIComponent(safeToken)}/view`,
+      },
+      {
+        method: "GET",
+        path: `/vault-access/${encodeURIComponent(safeToken)}`,
+      },
+      {
+        method: "GET",
+        path: `/vault-access/${encodeURIComponent(safeToken)}/view`,
+      },
+      {
+        method: "GET",
+        path: `/vault-shops/access/${encodeURIComponent(safeToken)}`,
+      },
+      {
+        method: "GET",
+        path: `/vault-shops/access/${encodeURIComponent(safeToken)}/view`,
+      },
+    ],
+    false
+  );
+
+  return normalizeVaultAccessView(res);
+}
+
+export async function recordVaultShopAccessOpen(
+  token: string
+): Promise<any> {
+  const safeToken = vaultSafeStr(token);
+
+  return vaultTryJson<any>(
+    [
+      {
+        method: "POST",
+        path: `/marketplace/vault-access/${encodeURIComponent(safeToken)}/open`,
+      },
+      {
+        method: "POST",
+        path: `/marketplace/vault-shops/access/${encodeURIComponent(safeToken)}/open`,
+      },
+      {
+        method: "POST",
+        path: `/vault-access/${encodeURIComponent(safeToken)}/open`,
+      },
+      {
+        method: "POST",
+        path: `/vault-shops/access/${encodeURIComponent(safeToken)}/open`,
+      },
+    ],
+    false
+  );
+}

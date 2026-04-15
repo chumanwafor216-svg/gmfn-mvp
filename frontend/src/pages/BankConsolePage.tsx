@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
   bankIngestEvent,
@@ -265,9 +265,9 @@ function statusTone(status?: string | null) {
 
 function renderStepAction(step: NextStepState) {
   return (
-    <Link to={step.ctaTo} style={primaryBtn(false)}>
+    <OriginLink to={step.ctaTo} style={primaryBtn(false)}>
       {step.ctaLabel}
-    </Link>
+    </OriginLink>
   );
 }
 
@@ -715,7 +715,7 @@ export default function BankConsolePage() {
 
       <section
         style={{
-          ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
+          ...pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
           marginTop: 18,
         }}
       >
@@ -737,14 +737,14 @@ export default function BankConsolePage() {
                 marginTop: 10,
                 fontSize: 30,
                 fontWeight: 1000,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 lineHeight: 1.15,
               }}
             >
               {nextStep.title}
             </div>
 
-            <div style={{ marginTop: 10, color: "#475569", lineHeight: 1.8 }}>
+            <div style={{ marginTop: 10, color: "#D7E3F1", lineHeight: 1.8 }}>
               This page helps operations staff detect incoming bank events, match
               them against expected references, and understand which items are
               confirmed and which still need review.
@@ -981,21 +981,21 @@ export default function BankConsolePage() {
           "Recent Events",
           "Newest bank-side items visible in this community context.",
           recent,
-          "No recent bank event is visible right now."
+          "No recent bank event is currently shown."
         )}
 
         {renderList(
           "Unmatched Events",
           "Events that still need review or matching.",
           unmatched,
-          "No unmatched bank event is visible right now."
+          "No unmatched bank event is currently shown."
         )}
 
         {renderList(
           "Credits",
           "Visible credit-side bank records for this currency context.",
           credits,
-          "No credit record is visible right now."
+          "No credit record is currently shown."
         )}
 
         <div style={pageCard("#FFFFFF")}>
@@ -1146,7 +1146,7 @@ export default function BankConsolePage() {
                 >
                   {expectedDetail ||
                     safeStr(cfg?.detail) ||
-                    "Expected payments listing is not enabled in this frontend build yet."}
+                    "Expected payment visibility is available when the current community has matching bank and reconciliation data."}
                 </div>
 
                 {cfg ? (

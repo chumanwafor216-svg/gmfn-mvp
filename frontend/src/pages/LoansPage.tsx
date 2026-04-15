@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
 import {
@@ -187,7 +187,7 @@ function getPoolAmountText(payload: any): string {
     if (text) return text;
   }
 
-  return "—";
+  return "Not available yet";
 }
 
 function getPoolCurrency(payload: any): string {
@@ -624,11 +624,14 @@ export default function LoansPage() {
     return {
       title: "Your support path is currently calm",
       detail:
-        "No urgent borrower-side or guarantor-side support pressure is visible right now.",
+        "No urgent borrower-side or guarantor-side support pressure is currently shown.",
       ctaLabel: "Open Support Start",
       ctaTo: "/app/marketplace#marketplace-loans-support",
     };
   }, [guarantorInbox, borrowerLoans, guarantorLoans, guidance]);
+
+  const supportFlowActive =
+    guarantorInbox.length > 0 || borrowerLoans.length > 0 || guarantorLoans.length > 0;
 
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
@@ -651,7 +654,7 @@ export default function LoansPage() {
         <PageTopNav
           sectionLabel="Loans & Support"
           title="Loans & Support"
-          subtitle="Preparing the calmer support surface..."
+          subtitle="Loading the support surface..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/dashboard"
@@ -691,18 +694,26 @@ export default function LoansPage() {
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
-        nextLinks={[
-          { label: "Marketplace", to: "/app/marketplace" },
-          { label: "Notifications", to: "/app/notifications" },
-        ]}
-        utilityLinks={[
-          { label: "Demand Box", to: "/app/demand-box" },
-          { label: "Trust", to: "/app/trust" },
-        ]}
+        nextLinks={
+          supportFlowActive
+            ? [{ label: "Loan Readiness", to: "/app/loan-readiness" }]
+            : [
+                { label: "Marketplace", to: "/app/marketplace" },
+                { label: "Notifications", to: "/app/notifications" },
+              ]
+        }
+        utilityLinks={
+          supportFlowActive
+            ? [{ label: "Guarantor Inbox", to: "/app/guarantor-inbox" }]
+            : [
+                { label: "Demand Box", to: "/app/demand-box" },
+                { label: "Trust", to: "/app/trust" },
+              ]
+        }
       />
 
       <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
         <div
           style={{
@@ -718,7 +729,7 @@ export default function LoansPage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: isCompact ? 28 : 34,
                 lineHeight: 1.1,
@@ -727,7 +738,7 @@ export default function LoansPage() {
               Loans and support for {memberName}
             </div>
 
-            <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
+            <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
               This page keeps the support path calmer. Use it when the work is borrower-side progress, guarantor-side responsibility, payment, withdrawal, or support readiness.
             </div>
 
@@ -942,13 +953,13 @@ export default function LoansPage() {
                   flexWrap: "wrap",
                 }}
               >
-                <Link to={supportFocus.ctaTo} style={actionBtn("primary")}>
+                <OriginLink to={supportFocus.ctaTo} style={actionBtn("primary")}>
                   {supportFocus.ctaLabel}
-                </Link>
+                </OriginLink>
 
-                <Link to="/app/marketplace#marketplace-loans-support" style={actionBtn("secondary")}>
+                <OriginLink to="/app/marketplace#marketplace-loans-support" style={actionBtn("secondary")}>
                   Start Support Request
-                </Link>
+                </OriginLink>
               </div>
             </div>
 
@@ -960,7 +971,7 @@ export default function LoansPage() {
                   Borrower-side load means your own support request path is active.
                 </div>
                 <div style={helperText()}>
-                  Guarantor-side load means you are attached to someone else’s support path.
+                  Guarantor-side load means you are attached to someone else's support path.
                 </div>
                 <div style={helperText()}>
                   Pending guarantor requests mean someone is waiting for your decision now.
@@ -1052,7 +1063,7 @@ export default function LoansPage() {
                         row.createdAt ? `Started: ${safeDateTime(row.createdAt)}` : "",
                       ]
                         .filter(Boolean)
-                        .join(" • ") || "This borrower-side support item is still active."}
+                        .join(" | ") || "This borrower-side support item is still active."}
                     </div>
 
                     <div
@@ -1063,9 +1074,9 @@ export default function LoansPage() {
                         flexWrap: "wrap",
                       }}
                     >
-                      <Link to="/app/marketplace#marketplace-loans-support" style={actionBtn("secondary")}>
+                      <OriginLink to="/app/marketplace#marketplace-loans-support" style={actionBtn("secondary")}>
                         Open Support Path
-                      </Link>
+                      </OriginLink>
                     </div>
                   </div>
                 </div>
@@ -1124,7 +1135,7 @@ export default function LoansPage() {
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 {guarantorInbox.length === 0 ? (
                   <div style={helperText()}>
-                    No pending guarantor request is visible right now.
+                    No pending guarantor request is currently shown.
                   </div>
                 ) : (
                   guarantorInbox.map((row, index) => (
@@ -1148,7 +1159,7 @@ export default function LoansPage() {
                           row.createdAt ? `Created: ${safeDateTime(row.createdAt)}` : "",
                         ]
                           .filter(Boolean)
-                          .join(" • ") || "A borrower is waiting for your decision."}
+                          .join(" | ") || "A borrower is waiting for your decision."}
                       </div>
                     </div>
                   ))
@@ -1170,7 +1181,7 @@ export default function LoansPage() {
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 {guarantorLoans.length === 0 ? (
                   <div style={helperText()}>
-                    No active guarantor-side support item is visible right now.
+                    No active guarantor-side support item is currently shown.
                   </div>
                 ) : (
                   guarantorLoans.slice(0, 6).map((row, index) => (
@@ -1192,7 +1203,7 @@ export default function LoansPage() {
                           row.createdAt ? `Started: ${safeDateTime(row.createdAt)}` : "",
                         ]
                           .filter(Boolean)
-                          .join(" • ")}
+                          .join(" | ")}
                       </div>
                     </div>
                   ))
@@ -1214,9 +1225,13 @@ export default function LoansPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Working routes</div>
+            <div style={sectionLabel()}>
+              {supportFlowActive ? "Support continuation routes" : "Next routes"}
+            </div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Move from this calmer overview into the exact support page you need.
+              {supportFlowActive
+                ? "Stay inside the support lifecycle and move only to the next exact support surface."
+                : "Move from this calmer overview into the exact support page you need."}
             </div>
           </div>
 
@@ -1240,7 +1255,7 @@ export default function LoansPage() {
               gap: 12,
             }}
           >
-            <Link to="/app/marketplace#marketplace-loans-support" style={routeTile(true)}>
+            <OriginLink to="/app/marketplace#marketplace-loans-support" style={routeTile(true)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1254,41 +1269,45 @@ export default function LoansPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Begin or continue the borrower-side support path.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/payment/pool" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
-                Money In
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the work is payment into the pool.
-              </div>
-            </Link>
+            {!supportFlowActive ? (
+              <>
+                <OriginLink to="/app/payment/pool" style={routeTile(false)}>
+                  <div
+                    style={{
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      fontSize: 17,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    Money In
+                  </div>
+                  <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                    Use this when the work is payment into the pool.
+                  </div>
+                </OriginLink>
 
-            <Link to="/app/withdrawal-instructions" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
-                Money Out
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the work is withdrawal handling.
-              </div>
-            </Link>
+                <OriginLink to="/app/withdrawal-instructions" style={routeTile(false)}>
+                  <div
+                    style={{
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      fontSize: 17,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    Money Out
+                  </div>
+                  <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                    Use this when the work is withdrawal handling.
+                  </div>
+                </OriginLink>
+              </>
+            ) : null}
 
-            <Link to="/app/loan-readiness" style={routeTile(false)}>
+            <OriginLink to="/app/loan-readiness" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1302,9 +1321,9 @@ export default function LoansPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Read whether the current support path looks ready.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/loan-suggestions" style={routeTile(false)}>
+            <OriginLink to="/app/loan-suggestions" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1318,9 +1337,9 @@ export default function LoansPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when you need the next suggestions around the support path.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/loan-workbench" style={routeTile(false)}>
+            <OriginLink to="/app/loan-workbench" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1334,9 +1353,9 @@ export default function LoansPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this for deeper support handling and workbench-style operations.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/guarantor-earnings" style={routeTile(false)}>
+            <OriginLink to="/app/guarantor-earnings" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1350,9 +1369,9 @@ export default function LoansPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Read the guarantor-side reward side separately.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/guarantor-inbox" style={routeTile(false)}>
+            <OriginLink to="/app/guarantor-inbox" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1366,9 +1385,9 @@ export default function LoansPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open the dedicated guarantor decision queue.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/notifications" style={routeTile(false)}>
+            <OriginLink to="/app/notifications" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1382,9 +1401,9 @@ export default function LoansPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when someone is waiting directly on your response.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/marketplace" style={routeTile(false)}>
+            <OriginLink to="/app/marketplace" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1398,7 +1417,7 @@ export default function LoansPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Return to the selected-community working surface.
               </div>
-            </Link>
+            </OriginLink>
           </div>
         ) : null}
       </section>

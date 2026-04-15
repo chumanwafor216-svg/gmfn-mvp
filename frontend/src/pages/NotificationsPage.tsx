@@ -964,14 +964,14 @@ export default function NotificationsPage() {
       />
 
       <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
         <div style={sectionLabel()}>Action inbox summary</div>
 
         <div
           style={{
             marginTop: 12,
-            color: "#0B1F33",
+            color: "#F8FBFF",
             fontSize: isCompact ? 28 : 34,
             fontWeight: 900,
             lineHeight: 1.08,
@@ -985,6 +985,7 @@ export default function NotificationsPage() {
           style={{
             marginTop: 12,
             ...helperText(),
+            color: "#D7E3F1",
             maxWidth: 880,
           }}
         >
@@ -1215,7 +1216,7 @@ export default function NotificationsPage() {
             </div>
           ) : (
             <div style={{ marginTop: 12, color: "#64748B", lineHeight: 1.8 }}>
-              No operational focus is visible right now.
+              No operational focus is currently shown.
             </div>
           )
         ) : null}
@@ -1337,7 +1338,7 @@ export default function NotificationsPage() {
         {!collapsed.buckets ? (
           guidanceLoading ? (
             <div style={{ marginTop: 14, color: "#64748B", lineHeight: 1.8 }}>
-              Preparing your action inbox...
+              Loading your action inbox...
             </div>
           ) : (
             <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
@@ -1518,7 +1519,7 @@ export default function NotificationsPage() {
               ) : rawFeed.length === 0 ? (
                 <div style={innerCard("#FCFEFF")}>
                   <div style={helperText()}>
-                    No recent system notification is visible right now.
+                    No recent system notification is currently shown.
                   </div>
                 </div>
               ) : (

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
   getCurrentClan,
@@ -83,7 +83,7 @@ function safeDate(x: any): Date | null {
 
 function safeDateTime(x: any): string {
   const raw = safeStr(x);
-  if (!raw) return "—";
+  if (!raw) return "Not available yet";
   const d = new Date(raw);
   if (Number.isNaN(d.getTime())) return raw;
   return d.toLocaleString();
@@ -376,9 +376,9 @@ function isPendingStatus(status: string): boolean {
 
 function renderStepAction(step: NextStepState) {
   return (
-    <Link to={step.ctaTo} style={primaryBtn(false)}>
+    <OriginLink to={step.ctaTo} style={primaryBtn(false)}>
       {step.ctaLabel}
-    </Link>
+    </OriginLink>
   );
 }
 
@@ -480,7 +480,7 @@ export default function GuarantorEarningsPage() {
   }, [community, selectedClanId]);
 
   const communityPublicId = useMemo(() => {
-    return getCommunityId(community) || "Pending";
+    return getCommunityId(community) || "Not available yet";
   }, [community]);
 
   const memberRole = useMemo(() => {
@@ -488,7 +488,7 @@ export default function GuarantorEarningsPage() {
   }, [community]);
 
   const memberName = useMemo(() => getMemberName(me), [me]);
-  const gmfnId = useMemo(() => firstTruthy(me?.gmfn_id, "Pending"), [me]);
+  const gmfnId = useMemo(() => firstTruthy(me?.gmfn_id, "Not available yet"), [me]);
 
   const totals = useMemo(() => {
     const total = visibleItems.reduce(
@@ -583,7 +583,7 @@ export default function GuarantorEarningsPage() {
     }
 
     return {
-      title: "No guarantor earnings are visible yet",
+      title: "No guarantor earnings are shown yet",
       detail:
         "That does not mean the path is useless. It means the earnings side of the support cycle has not materialized yet in your visible records.",
       today: "Continue using the guided support path rather than forcing the earnings question too early.",
@@ -649,7 +649,7 @@ export default function GuarantorEarningsPage() {
 
       <section
         style={{
-          ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
+          ...pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
           marginTop: 18,
         }}
       >
@@ -670,7 +670,7 @@ export default function GuarantorEarningsPage() {
               style={{
                 marginTop: 10,
                 fontWeight: 1000,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontSize: 30,
                 lineHeight: 1.15,
               }}
@@ -1082,7 +1082,7 @@ export default function GuarantorEarningsPage() {
                   </div>
                 ) : (
                   visibleItems.map((earning: GuarantorEarningItem, idx: number) => {
-                    const status = safeStr(earning?.status || "—");
+                    const status = safeStr(earning?.status || "Not available yet");
                     const tone = statusTone(status);
 
                     return (
@@ -1106,7 +1106,7 @@ export default function GuarantorEarningsPage() {
                                 fontSize: 17,
                               }}
                             >
-                              Loan #{safeStr(earning?.loan_id || "—")}
+                              Loan #{safeStr(earning?.loan_id || "Not available yet")}
                             </div>
 
                             <div
@@ -1193,7 +1193,7 @@ export default function GuarantorEarningsPage() {
               }}
             >
               <div>
-                <div style={sectionLabel()}>Working routes</div>
+                <div style={sectionLabel()}>Next routes</div>
                 <div style={{ marginTop: 8, ...helperText() }}>
                   Move from earnings reading into the exact next support page you need.
                 </div>
@@ -1217,7 +1217,7 @@ export default function GuarantorEarningsPage() {
                   gap: 12,
                 }}
               >
-                <Link to={nextStep.ctaTo} style={routeTile(true)}>
+                <OriginLink to={nextStep.ctaTo} style={routeTile(true)}>
                   <div
                     style={{
                       color: "#0B1F33",
@@ -1231,9 +1231,9 @@ export default function GuarantorEarningsPage() {
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     {nextStep.detail}
                   </div>
-                </Link>
+                </OriginLink>
 
-                <Link to="/app/loan-workbench" style={routeTile(false)}>
+                <OriginLink to="/app/loan-workbench" style={routeTile(false)}>
                   <div
                     style={{
                       color: "#0B1F33",
@@ -1247,9 +1247,9 @@ export default function GuarantorEarningsPage() {
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Use this when you need the deeper support work item behind the earnings result.
                   </div>
-                </Link>
+                </OriginLink>
 
-                <Link to="/app/loan-suggestions" style={routeTile(false)}>
+                <OriginLink to="/app/loan-suggestions" style={routeTile(false)}>
                   <div
                     style={{
                       color: "#0B1F33",
@@ -1263,9 +1263,9 @@ export default function GuarantorEarningsPage() {
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Use this when the next question is candidate fit rather than earnings history.
                   </div>
-                </Link>
+                </OriginLink>
 
-                <Link to="/app/community" style={routeTile(false)}>
+                <OriginLink to="/app/community" style={routeTile(false)}>
                   <div
                     style={{
                       color: "#0B1F33",
@@ -1279,9 +1279,9 @@ export default function GuarantorEarningsPage() {
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Return to the wider selected-community control surface.
                   </div>
-                </Link>
+                </OriginLink>
 
-                <Link to="/app/marketplace" style={routeTile(false)}>
+                <OriginLink to="/app/marketplace" style={routeTile(false)}>
                   <div
                     style={{
                       color: "#0B1F33",
@@ -1295,9 +1295,9 @@ export default function GuarantorEarningsPage() {
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Return to the selected-community launcher surface only after this earnings reading is complete.
                   </div>
-                </Link>
+                </OriginLink>
 
-                <Link to="/app/withdrawal-instructions" style={routeTile(false)}>
+                <OriginLink to="/app/withdrawal-instructions" style={routeTile(false)}>
                   <div
                     style={{
                       color: "#0B1F33",
@@ -1311,7 +1311,7 @@ export default function GuarantorEarningsPage() {
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Use this when the money question becomes a guided withdrawal question again.
                   </div>
-                </Link>
+                </OriginLink>
               </div>
             ) : null}
           </section>

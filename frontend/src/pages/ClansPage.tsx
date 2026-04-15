@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
+import { navigateWithOrigin } from "../lib/nav";
 import {
   createClan,
   createClanInvite,
@@ -138,7 +140,7 @@ function communityIdentity(item: any): string {
       item?.gmfn_id ||
       item?.clan_code ||
       item?.id ||
-      "Pending"
+      "Not available yet"
   );
 }
 
@@ -164,7 +166,7 @@ function buildGuideUrl(): string {
 }
 
 function buildGuideFallbackUrl(): string {
-  return `${appOrigin()}/GSN_FINAL_WHITE.pdf`;
+  return `${appOrigin()}/GMFN_FINAL_WHITE.pdf`;
 }
 
 function buildInviteState(
@@ -180,7 +182,7 @@ function buildInviteState(
   const guideUrl = buildGuideUrl();
   const fallbackGuideUrl = buildGuideFallbackUrl();
 
-  const defaultMessage = `You are invited to join ${selectedCommunityName} on GMFN / GSN.`;
+  const defaultMessage = `You are invited to join ${selectedCommunityName} on GMFN.`;
   const effectiveMessage = safeStr(shortMessage) || defaultMessage;
 
   const packagedShareText = [
@@ -214,6 +216,7 @@ function buildInviteState(
 }
 
 export default function ClansPage() {
+  const location = useLocation();
   const navigate = useNavigate();
 
   const [me, setMe] = useState<any>(null);
@@ -370,7 +373,7 @@ export default function ClansPage() {
   async function handleOpenMarketplace(clanId: number) {
     if (!clanId) return;
     await handleSelectCommunity(clanId);
-    navigate("/app/marketplace");
+    navigateWithOrigin(navigate, "/app/marketplace", location);
   }
 
   return (
@@ -385,7 +388,9 @@ export default function ClansPage() {
     >
       <div
         style={{
-          ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
+          ...pageCard(
+            "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+          ),
           marginTop: 18,
         }}
       >
@@ -406,7 +411,7 @@ export default function ClansPage() {
                 margin: "14px 0 8px",
                 fontSize: 30,
                 lineHeight: 1.15,
-                color: "#0B1F33",
+                color: "#F8FBFF",
               }}
             >
               Create a new community
@@ -414,7 +419,7 @@ export default function ClansPage() {
 
             <div
               style={{
-                color: "#475569",
+                color: "#D7E3F1",
                 fontSize: 15,
                 lineHeight: 1.7,
                 maxWidth: 760,
@@ -430,7 +435,9 @@ export default function ClansPage() {
             style={{
               minWidth: 240,
               flex: "0 1 300px",
-              ...softCard("#FFFFFF"),
+              ...softCard("rgba(255,255,255,0.96)"),
+              border: "1px solid rgba(212,175,55,0.14)",
+              boxShadow: "0 18px 38px rgba(2,12,27,0.16)",
             }}
           >
             <div style={{ fontSize: 13, color: "#64748B", fontWeight: 900 }}>
@@ -445,12 +452,12 @@ export default function ClansPage() {
                 flexWrap: "wrap",
               }}
             >
-              <Link to="/app/community" style={btn(false)}>
+              <OriginLink to="/app/community" style={btn(false)}>
                 Community Home
-              </Link>
-              <Link to="/app/dashboard" style={btn(true)}>
+              </OriginLink>
+              <OriginLink to="/app/dashboard" style={btn(true)}>
                 Dashboard
-              </Link>
+              </OriginLink>
             </div>
           </div>
         </div>
@@ -638,9 +645,9 @@ export default function ClansPage() {
                   {creatingCommunity ? "Creating..." : "Create community"}
                 </button>
 
-                <Link to="/app/community" style={btn(false)}>
+                <OriginLink to="/app/community" style={btn(false)}>
                   Open Community Home
-                </Link>
+                </OriginLink>
               </div>
             </form>
           </div>
@@ -769,18 +776,18 @@ export default function ClansPage() {
                     flexWrap: "wrap",
                   }}
                 >
-                  <Link to="/app/community" style={btn(false)}>
+                  <OriginLink to="/app/community" style={btn(false)}>
                     Community Home
-                  </Link>
-                  <Link to="/app/demand-box" style={btn(false)}>
+                  </OriginLink>
+                  <OriginLink to="/app/demand-box" style={btn(false)}>
                     Demand Box
-                  </Link>
-                  <Link to="/app/shop-control" style={btn(false)}>
+                  </OriginLink>
+                  <OriginLink to="/app/shop-control" style={btn(false)}>
                     My Shop Tools
-                  </Link>
-                  <Link to="/app/marketplace" style={btn(false)}>
+                  </OriginLink>
+                  <OriginLink to="/app/marketplace" style={btn(false)}>
                     Marketplace
-                  </Link>
+                  </OriginLink>
                 </div>
 
                 <div
@@ -1190,9 +1197,9 @@ export default function ClansPage() {
             </div>
           </div>
 
-          <Link to="/app/community" style={btn(true)}>
+          <OriginLink to="/app/community" style={btn(true)}>
             Open Community Home
-          </Link>
+          </OriginLink>
         </div>
 
         <div

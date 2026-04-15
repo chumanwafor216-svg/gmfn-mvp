@@ -10,7 +10,7 @@ type Props = {
 
 export default function EvidencePackPanel({
   title = "Evidence Pack (PDF)",
-  subtitle = "Pilot-ready audit bundle for trust + loan actions.",
+  subtitle = "Evidence bundle for trust and loan actions.",
   onDownloadFull,
   onDownloadRedacted,
   disabled = false,
@@ -46,12 +46,12 @@ export default function EvidencePackPanel({
           <li>Trust snapshot + timeline (TrustEvents)</li>
           <li>Guarantors summary + decisions (reason/note where provided)</li>
           <li>Repayments history</li>
-          <li>Clan + loan context (pilot/audit view)</li>
+          <li>Community and loan context</li>
         </ul>
 
         <div style={{ marginTop: 8 }}>
-          <b>Redacted</b> removes sensitive identifiers (for sharing externally).{" "}
-          <span style={{ color: "#6b7280" }}>Use Full for internal evidence, Redacted for stakeholders.</span>
+          <b>Redacted</b> removes sensitive identifiers for external sharing.{" "}
+          <span style={{ color: "#6b7280" }}>Use Full for complete records, Redacted for external review.</span>
         </div>
       </div>
     </div>

@@ -1,0 +1,13 @@
+﻿src/components/leaderboard.ts(1,24): error TS2307: Cannot find module './trust' or its corresponding type declarations.
+src/components/TrustGraphEdgeList.tsx(3,10): error TS2724: '"../lib/api"' has no exported member named 'TrustGraphEdgeOut'. Did you mean 'TrustGraphNodeOut'?
+src/components/TrustGraphEdgeList.tsx(216,40): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/components/TrustGraphSummaryCard.tsx(3,10): error TS2305: Module '"../lib/api"' has no exported member 'TrustGraphSummaryOut'.
+src/components/TrustGraphSummaryCard.tsx(81,37): error TS7006: Parameter 'flag' implicitly has an 'any' type.
+src/pages/AdminIdentityRiskPage.tsx(112,8): error TS2741: Property 'sectionLabel' is missing in type '{ title: string; subtitle: string; }' but required in type 'PageTopNavProps'.
+src/pages/AppearancePage.tsx(57,8): error TS2741: Property 'sectionLabel' is missing in type '{ title: string; subtitle: string; }' but required in type 'PageTopNavProps'.
+src/pages/CommunityJoinRequestsPage.tsx(273,8): error TS2741: Property 'sectionLabel' is missing in type '{ title: string; subtitle: string; }' but required in type 'PageTopNavProps'.
+src/pages/ExposurePage.tsx(7,3): error TS2305: Module '"../lib/api"' has no exported member 'runOverdueDetector'.
+src/pages/ExposurePage.tsx(9,3): error TS2305: Module '"../lib/api"' has no exported member 'getCciScore'.
+src/pages/ExposurePage.tsx(164,40): error TS2559: Type '120' has no properties in common with type '{ clan_id?: number | undefined; user_id?: number | undefined; loan_id?: number | undefined; limit?: number | undefined; }'.
+src/pages/MarketplaceWorkspacePage.tsx(539,8): error TS2741: Property 'sectionLabel' is missing in type '{ title: string; subtitle: string; }' but required in type 'PageTopNavProps'.
+src/pages/MemberActivationPage.tsx(147,8): error TS2741: Property 'sectionLabel' is missing in type '{ title: string; subtitle: string; }' but required in type 'PageTopNavProps'.

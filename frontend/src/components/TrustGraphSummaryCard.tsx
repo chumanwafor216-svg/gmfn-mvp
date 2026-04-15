@@ -78,7 +78,7 @@ export default function TrustGraphSummaryCard(props: {
         <div style={{ fontSize: 12, color: "#64748b", fontWeight: 900 }}>Risk flags</div>
         <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
           {Array.isArray(summary.risk_flags) && summary.risk_flags.length > 0 ? (
-            summary.risk_flags.map((flag) => (
+            summary.risk_flags.map((flag: any) => (
               <Pill key={flag} kind="red">
                 {flag}
               </Pill>

@@ -81,6 +81,8 @@ type ClanMember = {
   phone_e164?: string | null;
 };
 
+type ShopVisibilityMode = "community_visible" | "vault_private";
+
 type MarketplaceShop = {
   id?: number;
   user_id?: number;
@@ -91,8 +93,17 @@ type MarketplaceShop = {
   description?: string | null;
   whatsapp_number?: string | null;
   telegram_handle?: string | null;
+  visibility_mode?: string | null;
+  shop_visibility_mode?: string | null;
+  mode?: string | null;
+  shop_mode?: string | null;
+  shop_type?: string | null;
+  visibility?: string | null;
+  type?: string | null;
+  is_vault?: boolean | null;
+  vault_private?: boolean | null;
+  is_private?: boolean | null;
 };
-
 type LoanSupportItem = {
   id?: number;
   clan_id?: number;
@@ -590,15 +601,88 @@ function communityName(row: CommunityRow | null | undefined): string {
     ) || "Selected community"
   );
 }
-
 function communityDescription(row: CommunityRow | null | undefined): string {
   return (
     firstTruthy(
       row?.marketplace_description,
       row?.description,
-      "Marketplace is the selected-community launcher surface. Community profile comes first, money routes come next, then stable tools, member rows, and support movement."
+      "This is the marketplace home for your selected community."
     )
   );
+}
+
+function normalizeMarketplaceShopVisibility(raw: any): ShopVisibilityMode {
+  const src = raw?.item || raw?.shop || raw || {};
+
+  const modeText = firstTruthy(
+    src?.visibility_mode,
+    src?.shop_visibility_mode,
+    src?.mode,
+    src?.shop_mode,
+    src?.shop_type,
+    src?.visibility,
+    src?.type
+  ).toLowerCase();
+
+  if (
+    modeText.includes("vault") ||
+    modeText.includes("lock") ||
+    modeText.includes("private") ||
+    src?.is_vault === true ||
+    src?.vault_private === true ||
+    src?.is_private === true
+  ) {
+    return "vault_private";
+  }
+
+  return "community_visible";
+}
+
+function normalizeMarketplaceShop(raw: any): MarketplaceShop | null {
+  if (!raw) return null;
+
+  const src = raw?.item || raw?.shop || raw;
+
+  return {
+    id: positiveNumber(firstDefined(src?.id, src?.shop_id)) || undefined,
+    user_id: positiveNumber(firstDefined(src?.user_id)),
+    owner_user_id: positiveNumber(
+      firstDefined(src?.owner_user_id, src?.owner_id)
+    ),
+    gmfn_id: firstTruthy(src?.gmfn_id, src?.gmfnId),
+    owner_gmfn_id: firstTruthy(
+      src?.owner_gmfn_id,
+      src?.owner_gmfn,
+      src?.ownerGmfnId
+    ),
+    name: firstTruthy(src?.name, src?.shop_name, src?.title),
+    description: firstTruthy(
+      src?.description,
+      src?.shop_description,
+      src?.about,
+      src?.summary
+    ),
+    whatsapp_number: firstTruthy(
+      src?.whatsapp_number,
+      src?.whatsapp,
+      src?.phone_whatsapp
+    ),
+    telegram_handle: firstTruthy(
+      src?.telegram_handle,
+      src?.telegram,
+      src?.telegram_username
+    ),
+    visibility_mode: firstTruthy(src?.visibility_mode),
+    shop_visibility_mode: firstTruthy(src?.shop_visibility_mode),
+    mode: firstTruthy(src?.mode),
+    shop_mode: firstTruthy(src?.shop_mode),
+    shop_type: firstTruthy(src?.shop_type),
+    visibility: firstTruthy(src?.visibility),
+    type: firstTruthy(src?.type),
+    is_vault: src?.is_vault ?? null,
+    vault_private: src?.vault_private ?? null,
+    is_private: src?.is_private ?? null,
+  };
 }
 
 function communityIdentity(row: CommunityRow | null | undefined): string {
@@ -1384,14 +1468,20 @@ export default function MarketplacePage() {
           listMyLoans().catch(() => []),
         ]);
 
-      const memberRows = rowsOf<ClanMember>(membersRes);
-      const shopRows = rowsOf<MarketplaceShop>(shopsRes);
-      const normalizedLoans = rowsOf<any>(loansRes)
-        .map((row) => normalizeLoan(row))
-        .filter(Boolean) as LoanSupportItem[];
+            const memberRows = rowsOf<ClanMember>(membersRes);
+            const shopRows = rowsOf<any>(shopsRes)
+              .map((row) => normalizeMarketplaceShop(row))
+              .filter(Boolean)
+              .filter(
+                (row) => normalizeMarketplaceShopVisibility(row) !== "vault_private"
+              ) as MarketplaceShop[];
 
-      const filteredLoans = normalizedLoans.filter((item) => {
-        const loanClanId = Number(item?.clan_id || 0);
+            const normalizedLoans = rowsOf<any>(loansRes)
+             .map((row) => normalizeLoan(row))
+             .filter(Boolean) as LoanSupportItem[];
+
+            const filteredLoans = normalizedLoans.filter((item) => {
+            const loanClanId = Number(item?.clan_id || 0);
         return loanClanId <= 0 || loanClanId === currentCommunityId;
       });
 
@@ -1582,7 +1672,7 @@ export default function MarketplacePage() {
         gmfnId: gmfn,
         userId,
         supportKey,
-        shopName: firstTruthy(shop?.name, "No visible shop yet"),
+        shopName: firstTruthy(shop?.name, "No community-visible shop yet"),
         shopTo: gmfn ? `/app/shop/${encodeURIComponent(gmfn)}` : "",
       };
     });
@@ -1812,7 +1902,7 @@ export default function MarketplacePage() {
       if ((loaded?.suggestions || []).length === 0) {
         showNotice(
           "error",
-          "No fit guarantor suggestion was returned for this amount right now."
+          "No fit guarantor suggestion is available for this amount right now."
         );
       } else {
         showNotice("success", "Fit suggestions refreshed.");
@@ -1988,13 +2078,13 @@ export default function MarketplacePage() {
         }}
       >
         <section
-          style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+          style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
         >
           <div style={sectionLabel()}>Marketplace</div>
           <div
             style={{
               marginTop: 10,
-              color: "#0B1F33",
+              color: "#F8FBFF",
               fontSize: isCompact ? 30 : 40,
               fontWeight: 900,
               lineHeight: 1.08,
@@ -2002,7 +2092,7 @@ export default function MarketplacePage() {
           >
             Selected community marketplace
           </div>
-          <div style={{ marginTop: 12, ...helperText() }}>
+          <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1" }}>
             Loading selected community...
           </div>
         </section>
@@ -2024,14 +2114,14 @@ export default function MarketplacePage() {
         {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
         <section
-          style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+          style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
         >
           <div style={sectionLabel()}>Marketplace</div>
 
           <div
             style={{
               marginTop: 10,
-              color: "#0B1F33",
+              color: "#F8FBFF",
               fontSize: isCompact ? 30 : 40,
               fontWeight: 900,
               lineHeight: 1.08,
@@ -2041,9 +2131,9 @@ export default function MarketplacePage() {
             Selected community marketplace
           </div>
 
-          <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
-            Marketplace is the selected-community launcher surface. Choose a
-            community first from Community Home.
+          <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
+            Choose a community in Community Home first, then return here to open
+            its marketplace.
           </div>
 
           <div
@@ -2097,14 +2187,16 @@ export default function MarketplacePage() {
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        style={pageCard(
+          "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+        )}
       >
         <div style={sectionLabel()}>Marketplace</div>
 
         <div
           style={{
             marginTop: 10,
-            color: "#0B1F33",
+            color: "#F8FBFF",
             fontSize: isCompact ? 30 : 40,
             fontWeight: 900,
             lineHeight: 1.08,
@@ -2114,12 +2206,20 @@ export default function MarketplacePage() {
           Selected community marketplace
         </div>
 
-        <div style={{ marginTop: 12, ...helperText(), maxWidth: 920 }}>
-          Marketplace is the launcher surface for this selected community.
-          Community profile stays first. Money routes stay second. Stable tools
-          stay above members and support. Once Money In, Money Out, or Finance is
-          chosen, the broader app should give way to the chosen journey until that
-          journey reaches a real outcome.
+        <div
+          style={{
+            marginTop: 12,
+            ...helperText(),
+            color: "#D7E3F1",
+            maxWidth: 920,
+          }}
+        >
+          This is the marketplace for your selected community. From here you can
+          view the community profile, open money tools, browse community-visible
+          shop links, and continue into support when needed. Private Vault Shops
+          do not appear in ordinary browsing here. Once a money or support route
+          starts, that route should take over and guide the member to a clear
+          conclusion.
         </div>
 
         <div
@@ -2135,11 +2235,13 @@ export default function MarketplacePage() {
             Pool: {visiblePoolAmount} {visiblePoolCurrency}
           </span>
           <span style={badge(false)}>
-            Community account: {communitySettlementReady ? "Ready" : "Pending"}
+            Community account: {communitySettlementReady ? "Ready" : "Awaiting issue"}
           </span>
           <span style={badge(false)}>
-            Payout account: {payoutReady ? "Ready" : "Pending"}
+            Payout account: {payoutReady ? "Ready" : "Awaiting issue"}
           </span>
+          <span style={badge(false)}>Current page: Marketplace</span>
+          <span style={badge(false)}>Current step: Launch community work</span>
         </div>
 
         <div
@@ -2231,7 +2333,7 @@ export default function MarketplacePage() {
           <div>
             <div style={sectionLabel()}>Community profile</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              The stable identity block of the current community stays first.
+               See the identity and current picture of this community first.
             </div>
           </div>
 
@@ -2261,42 +2363,98 @@ export default function MarketplacePage() {
                 style={{
                   width: "100%",
                   minHeight: 230,
-                  borderRadius: 22,
-                  border: "1px solid rgba(11,31,51,0.08)",
-                  background: "linear-gradient(180deg, #E8F0FF 0%, #DDEBFF 100%)",
+                  borderRadius: 28,
+                  border: "1px solid rgba(212,175,55,0.18)",
+                  background:
+                    "linear-gradient(180deg, #0B1625 0%, #10263C 52%, #153756 100%)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   overflow: "hidden",
+                  padding: 10,
+                  boxShadow:
+                    "0 22px 48px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.04)",
                 }}
               >
-                <AuthResolvedImage
-                  candidates={communityImageCandidates}
-                  alt={communityName(selectedCommunity)}
-                  clanId={activeCommunityId}
-                  refreshSeed={communityPictureRefreshSeed}
+                <div
                   style={{
                     width: "100%",
-                    height: 230,
-                    objectFit: "cover",
-                    objectPosition: "center 18%",
-                    display: "block",
+                    minHeight: 210,
+                    borderRadius: 22,
+                    overflow: "hidden",
+                    border: "1px solid rgba(212,175,55,0.14)",
+                    background:
+                      "linear-gradient(180deg, #11263B 0%, #193A58 100%)",
+                    position: "relative",
                   }}
-                  fallback={
-                    <div
-                      style={{
-                        padding: 18,
-                        textAlign: "center",
-                        color: "#37506A",
-                        fontWeight: 900,
-                        fontSize: 22,
-                        lineHeight: 1.3,
-                      }}
-                    >
-                      {communityName(selectedCommunity)}
-                    </div>
-                  }
-                />
+                >
+                  <AuthResolvedImage
+                    candidates={communityImageCandidates}
+                    alt={communityName(selectedCommunity)}
+                    clanId={activeCommunityId}
+                    refreshSeed={communityPictureRefreshSeed}
+                    style={{
+                      width: "100%",
+                      height: 230,
+                      objectFit: "cover",
+                      objectPosition: "center 18%",
+                      display: "block",
+                    }}
+                    fallback={
+                      <div
+                        style={{
+                          minHeight: 230,
+                          padding: 18,
+                          textAlign: "center",
+                          color: "#F8FBFF",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 14,
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: 88,
+                            height: 88,
+                            borderRadius: 999,
+                            border: "1px solid rgba(212,175,55,0.24)",
+                            background:
+                              "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18) 0%, rgba(212,175,55,0.14) 28%, rgba(11,31,51,0.18) 100%)",
+                            boxShadow:
+                              "0 16px 34px rgba(2,12,27,0.22), inset 0 1px 0 rgba(255,255,255,0.06)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontWeight: 900,
+                            fontSize: 28,
+                            letterSpacing: 1,
+                          }}
+                        >
+                          {communityName(selectedCommunity)
+                            .split(/\s+/)
+                            .filter(Boolean)
+                            .slice(0, 2)
+                            .map((part) => part.slice(0, 1).toUpperCase())
+                            .join("") || "GC"}
+                        </div>
+
+                        <div
+                          style={{
+                            maxWidth: 220,
+                            color: "#D7E3F1",
+                            fontWeight: 900,
+                            fontSize: 22,
+                            lineHeight: 1.3,
+                          }}
+                        >
+                          {communityName(selectedCommunity)}
+                        </div>
+                      </div>
+                    }
+                  />
+                </div>
               </div>
             </div>
 
@@ -2478,9 +2636,8 @@ export default function MarketplacePage() {
           <div>
             <div style={sectionLabel()}>Money routes</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Marketplace is the launcher. Once the member chooses Money In,
-              Money Out, or Finance, the chosen process should own the screen
-              until that route reaches a real conclusion.
+              Use these routes when you want to pay in, withdraw, or open the
+              finance view for this community.
             </div>
           </div>
 
@@ -2592,8 +2749,9 @@ export default function MarketplacePage() {
               </div>
 
               <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                Choosing Money In should move the member into a guided pay-in
-                journey until reference, rail, confirmation, and result are complete.
+                  Start the guided pay-in route for this community. Once opened, the
+                  pay-in route should carry the member through reference generation,
+                  payment confirmation, and reconciliation.
               </div>
 
               <div style={{ marginTop: 14 }}>
@@ -2619,8 +2777,9 @@ export default function MarketplacePage() {
               </div>
 
               <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                Choosing Money Out should move the member into the guided
-                withdrawal path until direct result or support continuation is resolved.
+                  Start the guided withdrawal route for this community. The route
+                  decides direct withdrawal or support-backed continuation from the
+                  requested amount and available position.
               </div>
 
               <div style={{ marginTop: 14 }}>
@@ -2649,8 +2808,8 @@ export default function MarketplacePage() {
               </div>
 
               <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                Finance should become the full money truth of the member inside
-                the selected community context, not just a balance card.
+                  Open the full financial truth for this community, including pay-in,
+                  withdrawal, support, locks, releases, and visible event history.
               </div>
 
               <div style={{ marginTop: 14 }}>
@@ -2676,7 +2835,7 @@ export default function MarketplacePage() {
           <div>
             <div style={sectionLabel()}>Stable community tools</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Keep the fixed community tools near the top and keep the block compact.
+               Keep your main community tools close at hand.
             </div>
           </div>
 
@@ -2812,7 +2971,8 @@ export default function MarketplacePage() {
           <div>
             <div style={sectionLabel()}>Member rows</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Member rows stay below the stable community frame and shop links remain easy to open.
+              Browse members and open community-visible shop galleries from here.
+              Private Vault Shops do not appear in this listing.
             </div>
           </div>
 
@@ -2829,7 +2989,7 @@ export default function MarketplacePage() {
           <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
             {memberRows.length === 0 ? (
               <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                No member rows are visible yet for this selected community.
+                No member rows are shown yet for this selected community.
               </div>
             ) : (
               memberRows.map((row, index) => {
@@ -2958,9 +3118,8 @@ export default function MarketplacePage() {
           <div>
             <div style={sectionLabel()}>Loans & Support</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Start the support draft here. Once the support path is active, the
-              guided support pages should take over instead of leaving the person
-              halfway between mixed surfaces.
+              Start a support request here. If guarantors are needed, the app can
+              show suitable people to ask next.
             </div>
           </div>
 
@@ -3144,7 +3303,7 @@ export default function MarketplacePage() {
 
                       {suggestedSupporters.length === 0 ? (
                         <div style={{ marginTop: 10, ...helperText() }}>
-                          No fit guarantor suggestion is visible yet for this amount.
+                          No fit guarantor suggestion is shown yet for this amount.
                         </div>
                       ) : (
                         <div style={{ marginTop: 10, display: "grid", gap: 10 }}>

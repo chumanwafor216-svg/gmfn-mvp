@@ -1,430 +1,100 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
-import * as api from "../lib/api";
+import { getMe, getSelectedClanId } from "../lib/api";
 
 type ShopRecord = {
-  id?: number;
-  user_id?: number;
-  owner_user_id?: number;
+  id: number;
+  clan_id?: number | null;
+  owner_user_id?: number | null;
   gmfn_id?: string | null;
-  owner_gmfn_id?: string | null;
-  owner_name?: string | null;
-  owner_display_name?: string | null;
-  owner_nickname?: string | null;
-  trust_band?: string | null;
   name?: string | null;
   description?: string | null;
   whatsapp_number?: string | null;
   telegram_handle?: string | null;
   image_url?: string | null;
-  photo_url?: string | null;
-  cover_image_url?: string | null;
-  banner_url?: string | null;
-  logo_url?: string | null;
-  shop_logo_url?: string | null;
+  marketplace_name?: string | null;
+  is_active?: boolean;
+  created_at?: string | null;
 };
 
-type ShopProduct = {
-  id?: number;
+type ProductRecord = {
+  id: number;
+  shop_id: number;
+  clan_id?: number;
   name?: string | null;
   description?: string | null;
-  price?: string | number | null;
+  price?: string | null;
   currency?: string | null;
-  display_price?: string | null;
   image_url?: string | null;
-  video_url?: string | null;
+  visibility_mode?: string | null;
+  is_active?: boolean;
+  created_at?: string | null;
 };
 
-type FeedbackTone = "success" | "error";
-
-type CollapseState = {
-  identity: boolean;
-  actions: boolean;
-  profile: boolean;
-  composer: boolean;
-  products: boolean;
+type BroadcastRecord = {
+  id: number;
+  shop_id?: number | null;
+  message?: string | null;
+  image_url?: string | null;
+  priority_mode?: string | null;
+  visibility_scope?: string | null;
+  expires_at?: string | null;
+  created_at?: string | null;
 };
 
-type ProfileDraft = {
-  name: string;
-  description: string;
-  whatsapp: string;
-  telegram: string;
-  imageUrl: string;
+type VaultLinkRecord = {
+  id: number;
+  shop_id: number;
+  token?: string | null;
+  status?: string | null;
+  expires_at?: string | null;
+  max_views?: number | null;
+  views_used?: number | null;
+  allow_download?: boolean;
+  allow_print?: boolean;
+  allow_reshare?: boolean;
+  watermark_enabled?: boolean;
+  frontend_hint_path?: string | null;
+  api_view_url?: string | null;
 };
 
-type ProductDraft = {
+type ExpectedPaymentRecord = {
   id?: number;
-  name: string;
-  description: string;
-  price: string;
-  currency: string;
-  imageUrl: string;
+  expected_type?: string | null;
+  amount?: string | null;
+  currency?: string | null;
+  reference_display?: string | null;
+  status?: string | null;
+  due_at?: string | null;
+  matched_bank_event_id?: number | null;
+  confirmed_at?: string | null;
+  meta?: any;
 };
 
-const SECTION_STORAGE_KEY = "gmfn.shopControl.sections.v1";
-const PROFILE_DRAFT_PREFIX = "gmfn.shopControl.profileDraft.";
-const PRODUCT_DRAFT_PREFIX = "gmfn.shopControl.productDraft.";
+type TrustSlipFeatureSummary = {
+  merchant_verify_active?: boolean | null;
+  merchant_verify_subscription_required?: boolean | null;
+  merchant_verify_detail?: string | null;
+  public_verify_url?: string | null;
+  code?: string | null;
+  verification_code?: string | null;
+  token?: string | null;
+};
 
-function safeStr(x: any): string {
-  return String(x ?? "").trim();
+type NoticeTone = "success" | "error" | "info";
+
+function safeStr(value: unknown): string {
+  return String(value ?? "").trim();
 }
 
-function firstTruthy(...values: any[]): string {
+function firstTruthy(...values: unknown[]): string {
   for (const value of values) {
     const text = safeStr(value);
     if (text) return text;
   }
   return "";
-}
-
-function firstDefined(...values: any[]): any {
-  for (const value of values) {
-    if (value === undefined || value === null) continue;
-    if (typeof value === "string" && value.trim() === "") continue;
-    return value;
-  }
-  return undefined;
-}
-
-function positiveNumber(value: any): number {
-  const n = Number(value || 0);
-  return Number.isFinite(n) && n > 0 ? n : 0;
-}
-
-function rowsOf<T = any>(input: any): T[] {
-  if (Array.isArray(input)) return input as T[];
-  if (Array.isArray(input?.items)) return input.items as T[];
-  if (Array.isArray(input?.data?.items)) return input.data.items as T[];
-  if (Array.isArray(input?.results)) return input.results as T[];
-  if (Array.isArray(input?.rows)) return input.rows as T[];
-  return [];
-}
-
-function dedupeStrings(values: any[]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-
-  for (const value of values) {
-    const text = safeStr(value);
-    if (!text || seen.has(text)) continue;
-    seen.add(text);
-    out.push(text);
-  }
-
-  return out;
-}
-
-function apiBase(): string {
-  const raw =
-    (typeof import.meta !== "undefined" &&
-      (import.meta as any)?.env &&
-      (import.meta as any).env.VITE_API_BASE_URL) ||
-    "/api";
-
-  return String(raw || "").trim().replace(/\/+$/, "");
-}
-
-function browserOrigin(): string {
-  try {
-    if (typeof window === "undefined") return "";
-    return String(window.location.origin || "").trim().replace(/\/+$/, "");
-  } catch {
-    return "";
-  }
-}
-
-function buildApiUrl(path: string): string {
-  const base = apiBase();
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return `${base}${normalizedPath}`;
-}
-
-function authHeaders(clanId?: number, withJson = false): Record<string, string> {
-  const headers: Record<string, string> = {
-    Accept: "application/json",
-  };
-
-  const token = (api as any).getAccessToken?.();
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  if (positiveNumber(clanId) > 0) {
-    headers["X-Clan-Id"] = String(clanId);
-  }
-
-  if (withJson) {
-    headers["Content-Type"] = "application/json";
-  }
-
-  return headers;
-}
-
-async function requestApi(
-  path: string,
-  init: RequestInit,
-  clanId?: number
-): Promise<any> {
-  const isFormData =
-    typeof FormData !== "undefined" && init.body instanceof FormData;
-
-  const headers = {
-    ...authHeaders(clanId, !isFormData && Boolean(init.body)),
-    ...(init.headers || {}),
-  };
-
-  const res = await fetch(buildApiUrl(path), {
-    ...init,
-    headers,
-    credentials: "include",
-  });
-
-  const text = await res.text().catch(() => "");
-  let payload: any = null;
-
-  if (text) {
-    try {
-      payload = JSON.parse(text);
-    } catch {
-      payload = text;
-    }
-  }
-
-  if (!res.ok) {
-    throw new Error(
-      safeStr(
-        payload?.detail ||
-          payload?.message ||
-          payload?.error ||
-          text ||
-          `HTTP ${res.status}`
-      ) || `HTTP ${res.status}`
-    );
-  }
-
-  return payload;
-}
-
-function getMediaOrigins(): string[] {
-  const out: string[] = [];
-  const base = apiBase();
-  const webOrigin = browserOrigin();
-
-  if (base.startsWith("http://") || base.startsWith("https://")) {
-    try {
-      const u = new URL(base);
-      out.push(`${u.protocol}//${u.host}`);
-    } catch {
-      // ignore
-    }
-  }
-
-  if (webOrigin) {
-    out.push(webOrigin);
-
-    try {
-      const u = new URL(webOrigin);
-      if (u.hostname) {
-        out.push(`${u.protocol}//${u.hostname}:8012`);
-      }
-    } catch {
-      // ignore
-    }
-  }
-
-  out.push("http://127.0.0.1:8012");
-  out.push("http://localhost:8012");
-
-  return dedupeStrings(out);
-}
-
-function buildResolvedMediaCandidates(src: string): string[] {
-  const raw = safeStr(src);
-  if (!raw) return [];
-
-  if (
-    raw.startsWith("http://") ||
-    raw.startsWith("https://") ||
-    raw.startsWith("blob:") ||
-    raw.startsWith("data:")
-  ) {
-    return [raw];
-  }
-
-  const origins = getMediaOrigins();
-  const trimmed = raw.replace(/^\/+/, "");
-  const out: string[] = [];
-
-  if (raw.startsWith("/")) {
-    for (const origin of origins) out.push(`${origin}${raw}`);
-  } else {
-    for (const origin of origins) out.push(`${origin}/${trimmed}`);
-  }
-
-  out.push(raw);
-  return dedupeStrings(out);
-}
-
-function normalizeShopRecord(raw: any): ShopRecord | null {
-  if (!raw) return null;
-
-  const src = raw?.shop || raw?.item || raw;
-
-  return {
-    id: positiveNumber(
-      firstDefined(src?.id, src?.shop_id, src?.marketplace_shop_id)
-    ),
-    user_id: positiveNumber(firstDefined(src?.user_id)),
-    owner_user_id: positiveNumber(
-      firstDefined(src?.owner_user_id, src?.owner_id)
-    ),
-    gmfn_id: firstTruthy(src?.gmfn_id, src?.gmfnId),
-    owner_gmfn_id: firstTruthy(
-      src?.owner_gmfn_id,
-      src?.owner_gmfn,
-      src?.ownerGmfnId
-    ),
-    owner_name: firstTruthy(src?.owner_name, src?.seller_name),
-    owner_display_name: firstTruthy(
-      src?.owner_display_name,
-      src?.display_name,
-      src?.shop_owner_display_name
-    ),
-    owner_nickname: firstTruthy(src?.owner_nickname, src?.nickname),
-    trust_band: firstTruthy(
-      src?.trust_band,
-      src?.trust_status,
-      src?.credibility_status,
-      src?.verification_status
-    ),
-    name: firstTruthy(
-      src?.name,
-      src?.shop_name,
-      src?.title,
-      src?.display_name
-    ),
-    description: firstTruthy(
-      src?.description,
-      src?.shop_description,
-      src?.about,
-      src?.summary
-    ),
-    whatsapp_number: firstTruthy(
-      src?.whatsapp_number,
-      src?.whatsapp,
-      src?.phone_whatsapp
-    ),
-    telegram_handle: firstTruthy(
-      src?.telegram_handle,
-      src?.telegram,
-      src?.telegram_username
-    ),
-    image_url: firstTruthy(src?.image_url, src?.image),
-    photo_url: firstTruthy(src?.photo_url, src?.photo),
-    cover_image_url: firstTruthy(src?.cover_image_url, src?.cover_photo_url),
-    banner_url: firstTruthy(src?.banner_url, src?.banner_image_url),
-    logo_url: firstTruthy(src?.logo_url, src?.logo),
-    shop_logo_url: firstTruthy(src?.shop_logo_url, src?.shop_logo),
-  };
-}
-
-function normalizeProductRecord(raw: any): ShopProduct | null {
-  if (!raw) return null;
-
-  const src = raw?.product || raw?.item || raw?.marketplace_product || raw;
-
-  return {
-    id: positiveNumber(firstDefined(src?.id, src?.product_id, raw?.product_id)),
-    name: firstTruthy(
-      src?.name,
-      src?.title,
-      src?.product_name,
-      raw?.name,
-      raw?.title,
-      raw?.product_name
-    ),
-    description: firstTruthy(
-      src?.description,
-      src?.product_description,
-      src?.details,
-      src?.summary,
-      src?.short_description,
-      raw?.description,
-      raw?.product_description,
-      raw?.details,
-      raw?.summary,
-      raw?.short_description
-    ),
-    price: firstDefined(
-      src?.price,
-      src?.amount,
-      src?.unit_price,
-      src?.selling_price,
-      src?.price_value,
-      raw?.price,
-      raw?.amount,
-      raw?.unit_price,
-      raw?.selling_price,
-      raw?.price_value
-    ),
-    currency: firstTruthy(
-      src?.currency,
-      src?.currency_code,
-      raw?.currency,
-      raw?.currency_code
-    ),
-    display_price: firstTruthy(
-      src?.display_price,
-      src?.formatted_price,
-      raw?.display_price,
-      raw?.formatted_price
-    ),
-    image_url: firstTruthy(
-      raw?.image_url,
-      raw?.photo_url,
-      raw?.thumbnail_url,
-      raw?.cover_image_url,
-      raw?.banner_url,
-      raw?.media_url,
-      raw?.image,
-      src?.image_url,
-      src?.photo_url,
-      src?.thumbnail_url,
-      src?.cover_image_url,
-      src?.banner_url,
-      src?.media_url,
-      src?.image
-    ),
-    video_url: firstTruthy(
-      raw?.video_url,
-      raw?.video,
-      src?.video_url,
-      src?.video
-    ),
-  };
-}
-
-function getShopImage(shop: ShopRecord | null): string {
-  return firstTruthy(
-    shop?.image_url,
-    shop?.photo_url,
-    shop?.cover_image_url,
-    shop?.banner_url,
-    shop?.logo_url,
-    shop?.shop_logo_url
-  );
-}
-
-function displayPrice(product: ShopProduct): string {
-  const display = safeStr(product?.display_price);
-  if (display) return display;
-
-  const value = safeStr(product?.price);
-  const currency = safeStr(product?.currency);
-
-  if (!value && !currency) return "Price not shown";
-  if (value && currency) return `${value} ${currency}`;
-  return value || currency || "Price not shown";
 }
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
@@ -457,23 +127,48 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
-function statTile(bg = "#FFFFFF"): React.CSSProperties {
-  return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 14,
-  };
-}
-
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
     color: "#5D7389",
     fontWeight: 900,
     letterSpacing: 0.35,
-    textTransform: "uppercase" as const,
+    textTransform: "uppercase",
   };
+}
+
+function helperText(): React.CSSProperties {
+  return {
+    color: "#5F7287",
+    fontSize: 14,
+    lineHeight: 1.75,
+  };
+}
+
+function safeDateTime(value: unknown): string {
+  const raw = safeStr(value);
+  if (!raw) return "";
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return raw;
+  return parsed.toLocaleString();
+}
+
+function featureProofLine(
+  payment: ExpectedPaymentRecord | null | undefined,
+  options: {
+    active: boolean;
+    activeText: string;
+    awaitingText: string;
+    confirmedText: string;
+  }
+): string {
+  if (options.active) return options.activeText;
+  if (!payment) return options.awaitingText;
+  if (safeStr(payment.confirmed_at)) return options.confirmedText;
+  return `Waiting for payment confirmation after reference ${firstTruthy(
+    payment.reference_display,
+    "is issued"
+  )}.`;
 }
 
 function badge(primary = false): React.CSSProperties {
@@ -488,7 +183,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap" as const,
+    whiteSpace: "nowrap",
   };
 }
 
@@ -555,24 +250,6 @@ function actionBtn(
   };
 }
 
-function collapseToggle(): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 38,
-    padding: "8px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
-    color: "#24415C",
-    fontWeight: 800,
-    fontSize: 13,
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-  };
-}
-
 function inputStyle(): React.CSSProperties {
   return {
     width: "100%",
@@ -584,175 +261,148 @@ function inputStyle(): React.CSSProperties {
     fontSize: 14,
     color: "#0B1F33",
     outline: "none",
-    boxSizing: "border-box" as const,
+    boxSizing: "border-box",
   };
 }
 
 function textAreaStyle(): React.CSSProperties {
   return {
     ...inputStyle(),
-    minHeight: 108,
-    resize: "vertical" as const,
+    minHeight: 96,
+    resize: "vertical",
     lineHeight: 1.6,
   };
 }
 
-function mediaBox(minHeight = 220): React.CSSProperties {
+function statTile(): React.CSSProperties {
   return {
-    width: "100%",
-    minHeight,
-    borderRadius: 18,
+    borderRadius: 16,
     border: "1px solid rgba(11,31,51,0.08)",
-    background: "linear-gradient(180deg, #E8F0FF 0%, #DDEBFF 100%)",
-    overflow: "hidden",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  };
-}
-
-function feedbackCard(tone: FeedbackTone): React.CSSProperties {
-  return {
-    ...pageCard(tone === "success" ? "#F3FBF5" : "#FEF2F2"),
-    color: tone === "success" ? "#166534" : "#991B1B",
-    border:
-      tone === "success"
-        ? "1px solid rgba(34,197,94,0.16)"
-        : "1px solid rgba(239,68,68,0.16)",
-    fontWeight: 800,
+    background: "#FFFFFF",
     padding: 14,
   };
 }
 
-function helperText(): React.CSSProperties {
+function noticeCard(tone: NoticeTone): React.CSSProperties {
+  if (tone === "success") {
+    return {
+      ...softCard("#F3FBF5"),
+      color: "#166534",
+      border: "1px solid rgba(34,197,94,0.16)",
+      fontWeight: 800,
+    };
+  }
+
+  if (tone === "error") {
+    return {
+      ...softCard("#FEF2F2"),
+      color: "#991B1B",
+      border: "1px solid rgba(239,68,68,0.16)",
+      fontWeight: 800,
+    };
+  }
+
   return {
-    color: "#5F7287",
-    fontSize: 14,
-    lineHeight: 1.75,
+    ...softCard("#F8FBFF"),
+    color: "#24415C",
+    border: "1px solid rgba(11,31,51,0.08)",
+    fontWeight: 800,
   };
 }
 
-function readLocalJSON<T>(key: string, fallback: T): T {
+function getToken(): string {
   try {
-    if (typeof window === "undefined") return fallback;
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw) as T;
+    return localStorage.getItem("access_token") || "";
   } catch {
-    return fallback;
+    return "";
   }
 }
 
-function writeLocalJSON(key: string, value: any) {
-  try {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // ignore
+async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = getToken();
+  const headers = new Headers(init?.headers || {});
+  if (!headers.has("Accept")) headers.set("Accept", "application/json");
+  if (!headers.has("Content-Type") && !(init?.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
   }
-}
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
 
-function defaultCollapseState(): CollapseState {
-  return {
-    identity: false,
-    actions: true,
-    profile: false,
-    composer: false,
-    products: false,
-  };
-}
+  const res = await fetch(path, {
+    ...init,
+    headers,
+    credentials: "include",
+  });
 
-function normalizeCollapseState(raw: any): CollapseState {
-  const base = defaultCollapseState();
+  const text = await res.text();
+  const contentType = String(res.headers.get("content-type") || "").toLowerCase();
 
-  return {
-    identity: Boolean(raw?.identity ?? base.identity),
-    actions: Boolean(raw?.actions ?? base.actions),
-    profile: Boolean(raw?.profile ?? base.profile),
-    composer: Boolean(raw?.composer ?? base.composer),
-    products: Boolean(raw?.products ?? base.products),
-  };
-}
-
-function defaultProfileDraft(): ProfileDraft {
-  return {
-    name: "",
-    description: "",
-    whatsapp: "",
-    telegram: "",
-    imageUrl: "",
-  };
-}
-
-function defaultProductDraft(): ProductDraft {
-  return {
-    name: "",
-    description: "",
-    price: "",
-    currency: "NGN",
-    imageUrl: "",
-  };
-}
-
-function hasAnyApi(names: string[]): boolean {
-  return names.some((name) => typeof (api as any)[name] === "function");
-}
-
-async function callFirstAvailable<T = any>(
-  names: string[],
-  ...args: any[]
-): Promise<T | undefined> {
-  for (const name of names) {
-    const fn = (api as any)[name];
-    if (typeof fn === "function") {
-      return (await fn(...args)) as T;
+  if (!res.ok) {
+    try {
+      const parsed = text ? JSON.parse(text) : {};
+      throw new Error(parsed?.detail || parsed?.message || text || `HTTP ${res.status}`);
+    } catch {
+      throw new Error(text || `HTTP ${res.status}`);
     }
   }
 
-  return undefined;
+  if (!text) return {} as T;
+  if (contentType.includes("application/json")) return JSON.parse(text) as T;
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return { raw: text } as T;
+  }
 }
 
-function profileDraftStorageKey(gmfnId: string): string {
-  return `${PROFILE_DRAFT_PREFIX}${gmfnId || "me"}`;
-}
+async function uploadShopImageFile(file: File): Promise<string> {
+  const token = getToken();
+  const routes = [
+    "/api/marketplace-media/upload-image",
+    "/api/marketplace-media/images",
+    "/api/marketplace-media/upload",
+  ];
 
-function productDraftStorageKey(gmfnId: string): string {
-  return `${PRODUCT_DRAFT_PREFIX}${gmfnId || "me"}`;
-}
+  for (const route of routes) {
+    try {
+      const form = new FormData();
+      form.append("file", file);
 
-function RotatingImage(props: {
-  candidates: string[];
-  alt: string;
-  style: React.CSSProperties;
-  fallback: React.ReactNode;
-}) {
-  const [index, setIndex] = useState(0);
+      const res = await fetch(route, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: form,
+        credentials: "include",
+      });
 
-  useEffect(() => {
-    setIndex(0);
-  }, [props.candidates.join("|")]);
+      if (!res.ok) continue;
+      const data = await res.json().catch(() => ({}));
+      const url =
+        firstTruthy(
+          data?.image_url,
+          data?.url,
+          data?.path,
+          data?.item?.image_url,
+          data?.item?.url,
+          data?.data?.image_url,
+          data?.data?.url
+        ) || "";
 
-  const src = props.candidates[index] || "";
+      if (url) return url;
+    } catch {
+      // try next candidate
+    }
+  }
 
-  if (!src) return <>{props.fallback}</>;
-
-  return (
-    <img
-      src={src}
-      alt={props.alt}
-      onError={() =>
-        setIndex((prev) => {
-          const next = prev + 1;
-          return next <= props.candidates.length ? next : prev;
-        })
-      }
-      style={props.style}
-    />
+  throw new Error(
+    "We could not prepare an image from that upload. Paste an image URL instead and continue."
   );
 }
 
 export default function ShopControlPage() {
-  const selectedClanId = Number(api.getSelectedClanId() || 0);
+  const navigate = useNavigate();
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -760,66 +410,38 @@ export default function ShopControlPage() {
   });
 
   const [loading, setLoading] = useState(true);
-  const [feedback, setFeedback] = useState<{
-    tone: FeedbackTone;
-    text: string;
-  } | null>(null);
+  const [notice, setNotice] = useState<{ tone: NoticeTone; text: string } | null>(
+    null
+  );
 
   const [me, setMe] = useState<any>(null);
-  const [currentClan, setCurrentClan] = useState<any>(null);
   const [shop, setShop] = useState<ShopRecord | null>(null);
-  const [products, setProducts] = useState<ShopProduct[]>([]);
-
-  const [collapsed, setCollapsed] = useState<CollapseState>(() =>
-    normalizeCollapseState(readLocalJSON(SECTION_STORAGE_KEY, defaultCollapseState()))
+  const [products, setProducts] = useState<ProductRecord[]>([]);
+  const [spotlights, setSpotlights] = useState<BroadcastRecord[]>([]);
+  const [vaultLinks, setVaultLinks] = useState<VaultLinkRecord[]>([]);
+  const [spotlightOpen, setSpotlightOpen] = useState(false);
+  const [expectedPayments, setExpectedPayments] = useState<ExpectedPaymentRecord[]>([]);
+  const [trustSlipFeature, setTrustSlipFeature] = useState<TrustSlipFeatureSummary | null>(
+    null
   );
+  const [creatingVaultInstruction, setCreatingVaultInstruction] = useState(false);
+  const [creatingMerchantVerifyInstruction, setCreatingMerchantVerifyInstruction] =
+    useState(false);
+  const [creatingSpotlightInstruction, setCreatingSpotlightInstruction] = useState(false);
 
-  const [profileDraft, setProfileDraft] = useState<ProfileDraft>(defaultProfileDraft());
-  const [productDraft, setProductDraft] = useState<ProductDraft>(defaultProductDraft());
+  const [shopName, setShopName] = useState("");
+  const [shopDescription, setShopDescription] = useState("");
+  const [whatsApp, setWhatsApp] = useState("");
+  const [telegramHandle, setTelegramHandle] = useState("");
+  const [imageUrlInput, setImageUrlInput] = useState("");
+  const [savingShop, setSavingShop] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
-  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
-  const [profileImagePreview, setProfileImagePreview] = useState("");
-  const [productImageFile, setProductImageFile] = useState<File | null>(null);
-  const [productImagePreview, setProductImagePreview] = useState("");
+  const [spotlightMessage, setSpotlightMessage] = useState("");
+  const [spotlightImageUrl, setSpotlightImageUrl] = useState("");
+  const [creatingSpotlight, setCreatingSpotlight] = useState(false);
 
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [savingProduct, setSavingProduct] = useState(false);
-  const [deletingProductId, setDeletingProductId] = useState<number>(0);
-
-  const [editingProductId, setEditingProductId] = useState<number>(0);
-
-  const hasShopSaveApi = useMemo(
-    () =>
-      hasAnyApi([
-        "updateMarketplaceShop",
-        "saveMarketplaceShop",
-        "updateShopProfile",
-        "upsertMarketplaceShop",
-        "createMarketplaceShop",
-      ]),
-    []
-  );
-
-  const hasCreateProductApi = useMemo(
-    () =>
-      hasAnyApi([
-        "createMarketplaceProduct",
-        "createShopProduct",
-        "createMarketplaceListing",
-        "createShopListing",
-      ]),
-    []
-  );
-
-  const hasUpdateProductApi = useMemo(
-    () =>
-      hasAnyApi([
-        "updateMarketplaceProduct",
-        "updateShopProduct",
-        "updateMarketplaceListing",
-      ]),
-    []
-  );
+  const selectedClanId = Number(getSelectedClanId() || 0);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -830,598 +452,496 @@ export default function ShopControlPage() {
 
     handleResize();
     window.addEventListener("resize", handleResize);
-
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   useEffect(() => {
-    writeLocalJSON(SECTION_STORAGE_KEY, collapsed);
-  }, [collapsed]);
-
-  useEffect(() => {
-    if (!feedback) return;
-
-    const timer = window.setTimeout(() => {
-      setFeedback(null);
-    }, 2600);
-
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(null), 2600);
     return () => window.clearTimeout(timer);
-  }, [feedback]);
+  }, [notice]);
 
-  useEffect(() => {
-    if (!profileImageFile) {
-      setProfileImagePreview("");
-      return;
-    }
+  function showNotice(tone: NoticeTone, text: string) {
+    setNotice({ tone, text });
+  }
 
-    const objectUrl = URL.createObjectURL(profileImageFile);
-    setProfileImagePreview(objectUrl);
-
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [profileImageFile]);
-
-  useEffect(() => {
-    if (!productImageFile) {
-      setProductImagePreview("");
-      return;
-    }
-
-    const objectUrl = URL.createObjectURL(productImageFile);
-    setProductImagePreview(objectUrl);
-
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [productImageFile]);
-
-  async function loadShopContext() {
+  async function loadPage() {
     setLoading(true);
 
     try {
-      const [meRes, clanRes] = await Promise.all([
-        api.getMe().catch(() => null),
-        api.getCurrentClan().catch(() => null),
-      ]);
+      const meRes = await getMe().catch(() => null);
+      setMe(meRes || null);
 
       const gmfnId = firstTruthy(meRes?.gmfn_id);
-      let resolvedShop: ShopRecord | null = null;
-
-      if (gmfnId) {
-        const directShopRes = await api
-          .getMarketplaceShopByGmfnId(gmfnId, {
-            clan_id: selectedClanId || undefined,
-          })
-          .catch(() => null);
-
-        resolvedShop = normalizeShopRecord(directShopRes);
+      if (!gmfnId) {
+        setShop(null);
+        setProducts([]);
+        setSpotlights([]);
+        setVaultLinks([]);
+        return;
       }
 
-      if (!resolvedShop) {
-        const getMarketplaceShops = (api as any).getMarketplaceShops;
-        const listRes =
-          typeof getMarketplaceShops === "function"
-            ? await getMarketplaceShops({
-                clan_id: selectedClanId || undefined,
-                only_active: true,
-                limit: 200,
-              }).catch(() => ({ items: [] }))
-            : { items: [] };
+      const shopRes = await apiJson<any>(
+        `/api/marketplace/shops/by-gmfn/${encodeURIComponent(gmfnId)}?clan_id=${selectedClanId || 0}`
+      ).catch(() => null);
 
-        const rows = rowsOf<any>(listRes)
-          .map((row) => normalizeShopRecord(row))
-          .filter(Boolean) as ShopRecord[];
+      const shopItem = (shopRes?.item || null) as ShopRecord | null;
+      const shopProducts = Array.isArray(shopRes?.products)
+        ? (shopRes.products as ProductRecord[])
+        : [];
 
-        const targetGmfn = safeStr(gmfnId).toUpperCase();
+      setShop(shopItem);
+      setProducts(shopProducts);
+      setShopName(firstTruthy(shopItem?.name));
+      setShopDescription(firstTruthy(shopItem?.description));
+      setWhatsApp(firstTruthy(shopItem?.whatsapp_number));
+      setTelegramHandle(firstTruthy(shopItem?.telegram_handle));
+      setImageUrlInput(firstTruthy(shopItem?.image_url));
 
-        resolvedShop =
-          rows.find((row) => {
-            const rowGmfn = safeStr(row?.gmfn_id || row?.owner_gmfn_id).toUpperCase();
-            return targetGmfn && rowGmfn === targetGmfn;
-          }) || null;
+      if (shopItem?.id) {
+        const expectedPaymentsPath =
+          `/api/bank-reconciliation/expected?clan_id=${selectedClanId || 0}&limit=100` +
+          (Number(meRes?.id || 0) > 0 ? `&user_id=${Number(meRes?.id)}` : "");
+
+        const [broadcastsRes, vaultLinksRes, privateProductsRes, expectedRes, trustSlipRes] =
+          await Promise.all([
+          apiJson<any>(
+            `/api/marketplace/broadcasts?clan_id=${selectedClanId || 0}&limit=20`
+          ).catch(() => ({ items: [] })),
+          apiJson<any>(
+            `/api/vault-access/links?shop_id=${shopItem.id}`
+          ).catch(() => ({ items: [] })),
+          apiJson<any>(
+            `/api/marketplace/products?clan_id=${selectedClanId || 0}&shop_id=${shopItem.id}&include_private_manage=true&limit=200`
+          ).catch(() => ({ items: [] })),
+          apiJson<any>(expectedPaymentsPath).catch(() => []),
+          apiJson<any>("/api/trust-slips/me").catch(() => null),
+        ]);
+
+        const visibleSpotlights = Array.isArray(broadcastsRes?.items)
+          ? (broadcastsRes.items as BroadcastRecord[]).filter(
+              (item) => Number(item?.shop_id || 0) === Number(shopItem.id)
+            )
+          : [];
+
+        const privateManagedProducts = Array.isArray(privateProductsRes?.items)
+          ? (privateProductsRes.items as ProductRecord[])
+          : [];
+
+        setProducts(privateManagedProducts.length > 0 ? privateManagedProducts : shopProducts);
+        setSpotlights(visibleSpotlights);
+        setVaultLinks(
+          Array.isArray(vaultLinksRes?.items) ? (vaultLinksRes.items as VaultLinkRecord[]) : []
+        );
+        setExpectedPayments(
+          Array.isArray(expectedRes)
+            ? (expectedRes as ExpectedPaymentRecord[])
+            : Array.isArray(expectedRes?.items)
+              ? (expectedRes.items as ExpectedPaymentRecord[])
+              : []
+        );
+        setTrustSlipFeature((trustSlipRes || null) as TrustSlipFeatureSummary | null);
+      } else {
+        setSpotlights([]);
+        setVaultLinks([]);
+        setExpectedPayments([]);
+        setTrustSlipFeature(null);
       }
-
-      let productRows: ShopProduct[] = [];
-
-      if (resolvedShop?.id) {
-        const productsRes = await (api as any)
-          .getMarketplaceProducts({
-            clan_id: selectedClanId || undefined,
-            shop_id: resolvedShop.id,
-            only_active: true,
-            include_reposted: true,
-            limit: 200,
-          })
-          .catch(() => ({ items: [] }));
-
-        productRows = rowsOf<any>(productsRes)
-          .map((row) => normalizeProductRecord(row))
-          .filter(Boolean) as ShopProduct[];
-      }
-
-      setMe(meRes || null);
-      setCurrentClan(clanRes || null);
-      setShop(resolvedShop || null);
-      setProducts(productRows);
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    void loadShopContext();
+    void loadPage();
   }, [selectedClanId]);
 
-  const gmfnId = useMemo(
-    () => firstTruthy(me?.gmfn_id, shop?.gmfn_id, shop?.owner_gmfn_id, "Pending"),
-    [me, shop]
+  const publicProducts = useMemo(
+    () =>
+      products.filter(
+        (item) =>
+          firstTruthy(item?.visibility_mode, "community_visible") === "community_visible" &&
+          item?.is_active !== false
+      ),
+    [products]
   );
 
-  const memberName = useMemo(() => {
-    return (
-      firstTruthy(
-        me?.display_name,
-        me?.nickname,
-        me?.name,
-        me?.first_name,
-        me?.email,
-        shop?.owner_name,
-        shop?.owner_display_name,
-        shop?.owner_nickname
-      ) || "Member"
+  const vaultProducts = useMemo(
+    () =>
+      products.filter(
+        (item) =>
+          firstTruthy(item?.visibility_mode, "community_visible") === "vault_private" &&
+          item?.is_active !== false
+      ),
+    [products]
+  );
+
+  const activeSpotlights = useMemo(() => {
+    const now = Date.now();
+    return spotlights.filter((item) => {
+      const expiresRaw = safeStr(item?.expires_at);
+      if (!expiresRaw) return true;
+      const parsed = new Date(expiresRaw);
+      if (Number.isNaN(parsed.getTime())) return true;
+      return parsed.getTime() > now;
+    });
+  }, [spotlights]);
+
+  const publicShopLink = useMemo(() => {
+    const gmfnId = firstTruthy(shop?.gmfn_id, me?.gmfn_id);
+    if (!gmfnId || typeof window === "undefined") return "";
+    return `${window.location.origin}/shop/${encodeURIComponent(gmfnId)}`;
+  }, [shop, me]);
+
+  const communityName = useMemo(() => {
+    return firstTruthy(
+      shop?.marketplace_name,
+      shop?.clan_id ? `Community ${shop.clan_id}` : "",
+      "Selected community"
     );
-  }, [me, shop]);
-
-  const communityLabel = useMemo(() => {
-    return (
-      firstTruthy(
-        currentClan?.marketplace_name,
-        currentClan?.name,
-        currentClan?.display_name,
-        currentClan?.title
-      ) || (selectedClanId ? `Community ${selectedClanId}` : "No community selected")
-    );
-  }, [currentClan, selectedClanId]);
-
-  const publicShopLink =
-    safeStr(gmfnId) && gmfnId !== "Pending"
-      ? `/shop/${encodeURIComponent(gmfnId)}`
-      : "";
-
-  const shopImageCandidates = useMemo(() => {
-    return buildResolvedMediaCandidates(getShopImage(shop));
   }, [shop]);
 
-  useEffect(() => {
-    const key = profileDraftStorageKey(gmfnId);
-    const saved = readLocalJSON<ProfileDraft>(key, defaultProfileDraft());
-
-    setProfileDraft({
-      name: firstTruthy(shop?.name, saved.name),
-      description: firstTruthy(shop?.description, saved.description),
-      whatsapp: firstTruthy(shop?.whatsapp_number, saved.whatsapp),
-      telegram: firstTruthy(shop?.telegram_handle, saved.telegram),
-      imageUrl: firstTruthy(getShopImage(shop), saved.imageUrl),
-    });
-  }, [gmfnId, shop]);
-
-  useEffect(() => {
-    const key = profileDraftStorageKey(gmfnId);
-    writeLocalJSON(key, profileDraft);
-  }, [gmfnId, profileDraft]);
-
-  useEffect(() => {
-    const key = productDraftStorageKey(gmfnId);
-    const saved = readLocalJSON<ProductDraft>(key, defaultProductDraft());
-    setProductDraft((prev) => {
-      if (editingProductId > 0) return prev;
-      return saved;
-    });
-  }, [gmfnId, editingProductId]);
-
-  useEffect(() => {
-    if (editingProductId > 0) return;
-    const key = productDraftStorageKey(gmfnId);
-    writeLocalJSON(key, productDraft);
-  }, [gmfnId, productDraft, editingProductId]);
-
-  function showFeedback(tone: FeedbackTone, text: string) {
-    setFeedback({ tone, text });
-  }
-
-  function toggleSection(key: keyof CollapseState) {
-    setCollapsed((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-  }
-
-  function copyShopLink() {
-    if (!publicShopLink) {
-      showFeedback("error", "Public shop link is not ready yet.");
-      return;
-    }
-
-    const url =
-      typeof window !== "undefined"
-        ? `${window.location.origin}${publicShopLink}`
-        : publicShopLink;
-
-    api.safeCopy(url);
-    showFeedback("success", "Public shop link copied.");
-  }
-
-  function copyGmfnId() {
-    if (!gmfnId || gmfnId === "Pending") {
-      showFeedback("error", "GMFN ID is not ready yet.");
-      return;
-    }
-
-    api.safeCopy(gmfnId);
-    showFeedback("success", "GMFN ID copied.");
-  }
-
-  function clearProfileDraft() {
-    setProfileDraft({
-      name: firstTruthy(shop?.name),
-      description: firstTruthy(shop?.description),
-      whatsapp: firstTruthy(shop?.whatsapp_number),
-      telegram: firstTruthy(shop?.telegram_handle),
-      imageUrl: firstTruthy(getShopImage(shop)),
-    });
-    setProfileImageFile(null);
-  }
-
-  function beginEditProduct(product: ShopProduct) {
-    setEditingProductId(positiveNumber(product?.id));
-    setProductDraft({
-      id: positiveNumber(product?.id) || undefined,
-      name: firstTruthy(product?.name),
-      description: firstTruthy(product?.description),
-      price: safeStr(product?.price),
-      currency: firstTruthy(product?.currency, "NGN"),
-      imageUrl: firstTruthy(product?.image_url),
-    });
-    setProductImageFile(null);
-    setCollapsed((prev) => ({ ...prev, composer: false }));
-  }
-
-  function clearProductDraft() {
-    setEditingProductId(0);
-    setProductDraft(defaultProductDraft());
-    setProductImageFile(null);
-  }
-
-  async function maybeUploadImage(file: File | null): Promise<string> {
-    if (!file) return "";
-
-    const uploadFn = (api as any).uploadMarketplaceImageFile;
-    if (typeof uploadFn !== "function") {
-      throw new Error("Image upload is not wired in the API yet.");
-    }
-
-    const uploadRes = await uploadFn(file, selectedClanId || undefined);
-
-    return firstTruthy(
-      uploadRes?.image_url,
-      uploadRes?.url,
-      uploadRes?.file_url,
-      uploadRes?.path,
-      uploadRes?.item?.image_url,
-      uploadRes?.data?.image_url
+  const featurePayments = useMemo(() => {
+    return expectedPayments.filter((item) =>
+      ["vault_subscription", "merchant_verify_subscription", "spotlight_subscription"].includes(
+        firstTruthy(item?.expected_type).toLowerCase()
+      )
     );
-  }
+  }, [expectedPayments]);
 
-  async function saveProfile() {
-    setSavingProfile(true);
+  const latestVaultPayment = useMemo(
+    () =>
+      featurePayments.find(
+        (item) => firstTruthy(item?.expected_type).toLowerCase() === "vault_subscription"
+      ) || null,
+    [featurePayments]
+  );
 
-    try {
-      const uploadedImageUrl = await maybeUploadImage(profileImageFile).catch((err: any) => {
-        if (profileImageFile) throw err;
-        return "";
-      });
+  const latestMerchantVerifyPayment = useMemo(
+    () =>
+      featurePayments.find(
+        (item) =>
+          firstTruthy(item?.expected_type).toLowerCase() === "merchant_verify_subscription"
+      ) || null,
+    [featurePayments]
+  );
 
-      const payload = {
-        shop_id: shop?.id || undefined,
-        clan_id: selectedClanId || undefined,
-        gmfn_id: gmfnId !== "Pending" ? gmfnId : undefined,
-        name: safeStr(profileDraft.name),
-        description: safeStr(profileDraft.description),
-        whatsapp_number: safeStr(profileDraft.whatsapp),
-        telegram_handle: safeStr(profileDraft.telegram),
-        image_url: uploadedImageUrl || safeStr(profileDraft.imageUrl) || undefined,
-      };
+  const latestSpotlightPayment = useMemo(
+    () =>
+      featurePayments.find(
+        (item) => firstTruthy(item?.expected_type).toLowerCase() === "spotlight_subscription"
+      ) || null,
+    [featurePayments]
+  );
 
-      const saved =
-        shop?.id || hasShopSaveApi
-          ? await callFirstAvailable(
-              [
-                "updateMarketplaceShop",
-                "saveMarketplaceShop",
-                "updateShopProfile",
-                "upsertMarketplaceShop",
-                "createMarketplaceShop",
-              ],
-              payload
-            )
-          : undefined;
+  const activePaidSpotlights = useMemo(
+    () =>
+      activeSpotlights.filter(
+        (item) => firstTruthy(item?.priority_mode, "free").toLowerCase() === "paid"
+      ),
+    [activeSpotlights]
+  );
 
-      if (!saved) {
-        const nextProfileDraft = {
-          ...profileDraft,
-          imageUrl: uploadedImageUrl || profileDraft.imageUrl,
-        };
-        setProfileDraft(nextProfileDraft);
-        showFeedback(
-          "success",
-          "Shop profile draft saved locally. Backend shop save API is not wired in this build yet."
-        );
-      } else {
-        showFeedback("success", "Shop profile updated.");
-        await loadShopContext();
-      }
+  const vaultProofText = useMemo(
+    () =>
+      featureProofLine(latestVaultPayment, {
+        active: vaultProducts.length > 0 || vaultLinks.length > 0,
+        activeText:
+          "Vault is active. You can now add private offers and share access links.",
+        awaitingText:
+          "Vault is not active yet. Start a Vault payment request first.",
+        confirmedText:
+          "Vault payment is confirmed. You can now add private offers.",
+      }),
+    [latestVaultPayment, vaultLinks.length, vaultProducts.length]
+  );
 
-      setProfileImageFile(null);
-    } catch (err: any) {
-      showFeedback(
-        "error",
-        safeStr(err?.message) || "Shop profile could not be saved right now."
-      );
-    } finally {
-      setSavingProfile(false);
-    }
-  }
+  const merchantVerifyProofText = useMemo(
+    () =>
+      featureProofLine(latestMerchantVerifyPayment, {
+        active: Boolean(trustSlipFeature?.merchant_verify_active),
+        activeText:
+          "Merchant Verify is active. Outside merchants can now rely on your verification page.",
+        awaitingText:
+          "Merchant Verify is not active yet. Start the payment request first.",
+        confirmedText:
+          "Merchant Verify payment is confirmed. Your verification page should now be active for outside merchants.",
+      }),
+    [latestMerchantVerifyPayment, trustSlipFeature?.merchant_verify_active]
+  );
 
-  async function saveProduct() {
-    if (!safeStr(productDraft.name)) {
-      showFeedback("error", "Add the product name first.");
+  const spotlightProofText = useMemo(
+    () =>
+      featureProofLine(latestSpotlightPayment, {
+        active: activePaidSpotlights.length > 0,
+        activeText:
+          "Paid spotlight is active. Your shop now has priority visibility.",
+        awaitingText:
+          "No paid spotlight is active yet. Start the spotlight payment request first.",
+        confirmedText:
+          "Spotlight payment is confirmed. You can now start one paid spotlight for this shop.",
+      }),
+    [activePaidSpotlights.length, latestSpotlightPayment]
+  );
+
+  const vaultStateLabel = vaultProducts.length > 0 || vaultLinks.length > 0
+    ? "Usable now"
+    : safeStr(latestVaultPayment?.confirmed_at)
+      ? "Confirmed"
+      : latestVaultPayment
+        ? "Awaiting confirmation"
+        : "No payment request";
+
+  const merchantVerifyStateLabel = Boolean(trustSlipFeature?.merchant_verify_active)
+    ? "Usable now"
+    : safeStr(latestMerchantVerifyPayment?.confirmed_at)
+      ? "Confirmed"
+      : latestMerchantVerifyPayment
+        ? "Awaiting confirmation"
+        : "No payment request";
+
+  const spotlightStateLabel = activePaidSpotlights.length > 0
+    ? "Usable now"
+    : safeStr(latestSpotlightPayment?.confirmed_at)
+      ? "Confirmed"
+      : latestSpotlightPayment
+        ? "Awaiting confirmation"
+        : "No payment request";
+
+  function copyText(text: string, successMessage: string) {
+    if (!text) {
+      showNotice("error", "Nothing to copy yet.");
       return;
     }
 
-    setSavingProduct(true);
-
-    try {
-      const uploadedImageUrl = await maybeUploadImage(productImageFile).catch((err: any) => {
-        if (productImageFile) throw err;
-        return "";
-      });
-
-      const payload = {
-        id: editingProductId || undefined,
-        product_id: editingProductId || undefined,
-        shop_id: shop?.id || undefined,
-        clan_id: selectedClanId || undefined,
-        gmfn_id: gmfnId !== "Pending" ? gmfnId : undefined,
-        name: safeStr(productDraft.name),
-        description: safeStr(productDraft.description),
-        price: safeStr(productDraft.price),
-        currency: safeStr(productDraft.currency) || "NGN",
-        image_url: uploadedImageUrl || safeStr(productDraft.imageUrl) || undefined,
-      };
-
-      const saved =
-        editingProductId > 0
-          ? await callFirstAvailable(
-              [
-                "updateMarketplaceProduct",
-                "updateShopProduct",
-                "updateMarketplaceListing",
-              ],
-              payload
-            )
-          : await callFirstAvailable(
-              [
-                "createMarketplaceProduct",
-                "createShopProduct",
-                "createMarketplaceListing",
-                "createShopListing",
-              ],
-              payload
-            );
-
-      if (!saved) {
-        const nextDraft = {
-          ...productDraft,
-          imageUrl: uploadedImageUrl || productDraft.imageUrl,
-        };
-        setProductDraft(nextDraft);
-        showFeedback(
-          "success",
-          editingProductId > 0
-            ? "Product draft changes saved locally. Backend product update API is not wired in this build yet."
-            : "Product draft saved locally. Backend product create API is not wired in this build yet."
-        );
-      } else {
-        showFeedback(
-          "success",
-          editingProductId > 0
-            ? "Product block updated."
-            : "Product block published."
-        );
-        clearProductDraft();
-        await loadShopContext();
-      }
-
-      setProductImageFile(null);
-    } catch (err: any) {
-      showFeedback(
-        "error",
-        safeStr(err?.message) || "Product block could not be saved right now."
-      );
-    } finally {
-      setSavingProduct(false);
+    if (navigator?.clipboard?.writeText) {
+      void navigator.clipboard.writeText(text);
     }
+    showNotice("success", successMessage);
   }
 
-  async function tryDirectDeleteProduct(productId: number): Promise<boolean> {
-    const payload = {
-      clan_id: selectedClanId || undefined,
-      shop_id: shop?.id || undefined,
-      product_id: productId,
-      id: productId,
-      is_active: false,
-      archived: true,
-    };
-
-    const attempts: Array<() => Promise<any>> = [
-      () =>
-        requestApi(
-          `/marketplace/products/${productId}`,
-          { method: "DELETE" },
-          selectedClanId || undefined
-        ),
-      () =>
-        requestApi(
-          `/marketplace/products/${productId}/delete`,
-          {
-            method: "POST",
-            body: JSON.stringify(payload),
-          },
-          selectedClanId || undefined
-        ),
-      () =>
-        requestApi(
-          `/marketplace/products/${productId}`,
-          {
-            method: "PATCH",
-            body: JSON.stringify(payload),
-          },
-          selectedClanId || undefined
-        ),
-      () =>
-        requestApi(
-          `/marketplace/products/${productId}`,
-          {
-            method: "PUT",
-            body: JSON.stringify(payload),
-          },
-          selectedClanId || undefined
-        ),
-      () =>
-        requestApi(
-          `/marketplace/products/${productId}/archive`,
-          {
-            method: "POST",
-            body: JSON.stringify(payload),
-          },
-          selectedClanId || undefined
-        ),
-    ];
-
-    for (const attempt of attempts) {
-      try {
-        await attempt();
-        return true;
-      } catch {
-        // try next
-      }
-    }
-
-    return false;
-  }
-
-  async function deleteProduct(product: ShopProduct) {
-    const productId = positiveNumber(product?.id);
-
-    if (!productId) {
-      showFeedback("error", "This product is missing a usable ID.");
+  async function createVaultInstruction(quantityTotal: 1 | 6) {
+    if (!shop?.id) {
+      showNotice("error", "Shop record is not available.");
       return;
     }
 
-    const proceed =
-      typeof window === "undefined"
-        ? true
-        : window.confirm("Remove this visible block from the shop?");
-
-    if (!proceed) return;
-
-    setDeletingProductId(productId);
-
+    setCreatingVaultInstruction(true);
     try {
-      let removed = false;
+      const result = await apiJson<any>("/api/payment-instructions/vault", {
+        method: "POST",
+        body: JSON.stringify({
+          clan_id: Number(shop?.clan_id || selectedClanId || 0),
+          shop_id: Number(shop.id),
+          quantity_total: quantityTotal,
+          currency: "GBP",
+        }),
+      });
 
-      const apiDeleteNames = [
-        "deleteMarketplaceProduct",
-        "removeMarketplaceProduct",
-        "archiveMarketplaceProduct",
-        "deleteShopProduct",
-      ];
-
-      for (const name of apiDeleteNames) {
-        const fn = (api as any)[name];
-        if (typeof fn !== "function") continue;
-
-        try {
-          await fn({
-            id: productId,
-            product_id: productId,
-            shop_id: shop?.id || undefined,
-            clan_id: selectedClanId || undefined,
-          });
-          removed = true;
-          break;
-        } catch {
-          // try direct fallback next
-        }
-      }
-
-      if (!removed) {
-        removed = await tryDirectDeleteProduct(productId);
-      }
-
-      if (!removed) {
-        throw new Error(
-          "Product remove endpoint is not responding yet. The block could not be removed."
-        );
-      }
-
-      showFeedback("success", "Product block removed.");
-
-      if (editingProductId === productId) {
-        clearProductDraft();
-      }
-
-      await loadShopContext();
+      await loadPage();
+      copyText(
+        firstTruthy(result?.reference_display, result?.reference),
+        "Vault payment reference copied."
+      );
+      showNotice(
+        "success",
+        `Vault payment request created for ${quantityTotal} slot${quantityTotal > 1 ? "s" : ""}.`
+      );
     } catch (err: any) {
-      showFeedback(
+      showNotice("error", safeStr(err?.message) || "Vault payment request could not be created.");
+    } finally {
+      setCreatingVaultInstruction(false);
+    }
+  }
+
+  async function createMerchantVerifyInstruction() {
+    if (!shop?.id) {
+      showNotice("error", "Shop record is not available.");
+      return;
+    }
+
+    setCreatingMerchantVerifyInstruction(true);
+    try {
+      const result = await apiJson<any>("/api/payment-instructions/merchant-verify", {
+        method: "POST",
+        body: JSON.stringify({
+          clan_id: Number(shop?.clan_id || selectedClanId || 0),
+          shop_id: Number(shop.id),
+          amount: "1.00",
+          currency: "GBP",
+        }),
+      });
+
+      await loadPage();
+      copyText(
+        firstTruthy(result?.reference_display, result?.reference),
+        "Merchant Verify payment reference copied."
+      );
+      showNotice("success", "Merchant Verify payment request created.");
+    } catch (err: any) {
+      showNotice(
         "error",
-        safeStr(err?.message) || "Product block could not be removed right now."
+        safeStr(err?.message) || "Merchant Verify payment request could not be created."
       );
     } finally {
-      setDeletingProductId(0);
+      setCreatingMerchantVerifyInstruction(false);
+    }
+  }
+
+  async function createSpotlightInstruction() {
+    if (!shop?.id) {
+      showNotice("error", "Shop record is not available.");
+      return;
+    }
+
+    setCreatingSpotlightInstruction(true);
+    try {
+      const result = await apiJson<any>("/api/payment-instructions/spotlight", {
+        method: "POST",
+        body: JSON.stringify({
+          clan_id: Number(shop?.clan_id || selectedClanId || 0),
+          shop_id: Number(shop.id),
+          amount: "1.00",
+          quantity_total: 1,
+          currency: "GBP",
+          visibility_scope: "direct_communities",
+        }),
+      });
+
+      await loadPage();
+      copyText(
+        firstTruthy(result?.reference_display, result?.reference),
+        "Spotlight payment reference copied."
+      );
+      showNotice("success", "Paid spotlight payment request created.");
+    } catch (err: any) {
+      showNotice(
+        "error",
+        safeStr(err?.message) || "Paid spotlight payment request could not be created."
+      );
+    } finally {
+      setCreatingSpotlightInstruction(false);
+    }
+  }
+
+  async function saveShopDetails(extra?: Partial<ShopRecord> & { clear_image?: boolean }) {
+    if (!shop?.id) {
+      showNotice("error", "Shop record is not available yet.");
+      return;
+    }
+
+    setSavingShop(true);
+
+    try {
+      const body: any = {
+        name: safeStr(extra?.name ?? shopName),
+        description: safeStr(extra?.description ?? shopDescription) || null,
+        whatsapp_number: safeStr(extra?.whatsapp_number ?? whatsApp) || null,
+        telegram_handle: safeStr(extra?.telegram_handle ?? telegramHandle) || null,
+      };
+
+      if (extra?.clear_image) {
+        body.clear_image = true;
+      } else if (extra && "image_url" in extra) {
+        body.image_url = safeStr(extra.image_url) || null;
+      } else {
+        body.image_url = safeStr(imageUrlInput) || null;
+      }
+
+      const res = await apiJson<any>(`/api/marketplace/shops/${shop.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      });
+
+      const updated = (res?.item || shop) as ShopRecord;
+      setShop(updated);
+      setShopName(firstTruthy(updated?.name));
+      setShopDescription(firstTruthy(updated?.description));
+      setWhatsApp(firstTruthy(updated?.whatsapp_number));
+      setTelegramHandle(firstTruthy(updated?.telegram_handle));
+      setImageUrlInput(firstTruthy(updated?.image_url));
+      showNotice("success", "Shop control details saved.");
+    } catch (err: any) {
+      showNotice("error", safeStr(err?.message) || "Shop details could not be saved.");
+    } finally {
+      setSavingShop(false);
+    }
+  }
+
+  async function handleFilePicked(file: File | null) {
+    if (!file) return;
+
+    setUploadingImage(true);
+    try {
+      const uploadedUrl = await uploadShopImageFile(file);
+      setImageUrlInput(uploadedUrl);
+      await saveShopDetails({ image_url: uploadedUrl });
+      showNotice("success", "Shop picture uploaded.");
+    } catch (err: any) {
+      showNotice(
+        "error",
+        safeStr(err?.message) || "Shop picture upload failed."
+      );
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
+  async function handleCreateSpotlight() {
+    if (!shop?.id) {
+      showNotice("error", "Shop record is not available.");
+      return;
+    }
+
+    if (!safeStr(spotlightMessage)) {
+      showNotice("error", "Add the spotlight message first.");
+      return;
+    }
+
+    setCreatingSpotlight(true);
+
+    try {
+      await apiJson<any>("/api/marketplace/broadcasts", {
+        method: "POST",
+        body: JSON.stringify({
+          clan_id: Number(shop?.clan_id || selectedClanId || 0),
+          shop_id: Number(shop.id),
+          message: safeStr(spotlightMessage),
+          image_url: safeStr(spotlightImageUrl) || null,
+          priority_mode: "free",
+          visibility_scope: "direct_communities",
+        }),
+      });
+
+      setSpotlightMessage("");
+      setSpotlightImageUrl("");
+      setSpotlightOpen(false);
+      await loadPage();
+      showNotice("success", "Spotlight created.");
+    } catch (err: any) {
+      showNotice(
+        "error",
+        safeStr(err?.message) || "Spotlight could not be created."
+      );
+    } finally {
+      setCreatingSpotlight(false);
     }
   }
 
   if (loading) {
     return (
-      <div
-        style={{
-          maxWidth: 1180,
-          margin: "0 auto",
-          paddingBottom: 40,
-          display: "grid",
-          gap: 18,
-        }}
-      >
+      <div style={{ maxWidth: 1180, margin: "0 auto", display: "grid", gap: 18 }}>
         <PageTopNav
           sectionLabel="Shop Control"
           title="Shop Control"
-          subtitle="Preparing your shop control surface..."
+          subtitle="Loading shop control..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
-          backTo="/app/dashboard"
-          nextLinks={[
-            { label: "Shop Gallery", to: publicShopLink || "/shop/preview" },
-            { label: "Marketplace", to: "/app/marketplace" },
-            { label: "Notifications", to: "/app/notifications" },
-          ]}
-          utilityLinks={[
-            { label: "Trust", to: "/app/trust" },
-            { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
-          ]}
+          backTo="/app/marketplace"
+          backLabel="Marketplace"
         />
-
-        <section style={pageCard("#FFFFFF")}>
-          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-            Loading shop control...
-          </div>
+        <section style={pageCard()}>
+          <div style={helperText()}>Loading shop control...</div>
         </section>
       </div>
     );
@@ -1440,84 +960,62 @@ export default function ShopControlPage() {
       <PageTopNav
         sectionLabel="Shop Control"
         title="Shop Control"
-        subtitle="A calmer control room for your shop identity, visible blocks, and direct movement into your public shop and marketplace."
+        subtitle="Restore the missing shop gallery controls, upload picture control, and keep spotlight compact instead of taking over the page."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
-        backTo="/app/dashboard"
+        backTo="/app/marketplace"
+        backLabel="Marketplace"
         nextLinks={[
-          { label: "Public Shop", to: publicShopLink || "/shop/preview" },
+          { label: "Shop Assets", to: "/app/shop-assets" },
+          { label: "TrustSlip", to: "/app/trust-slip" },
           { label: "Marketplace", to: "/app/marketplace" },
-          { label: "Notifications", to: "/app/notifications" },
         ]}
         utilityLinks={[
-          { label: "Trust", to: "/app/trust" },
+          { label: "Community Home", to: "/app/community" },
           { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
         ]}
       />
 
-      {feedback ? <div style={feedbackCard(feedback.tone)}>{feedback.text}</div> : null}
+      {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        style={pageCard(
+          "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+        )}
       >
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompact
-              ? "1fr"
-              : "300px minmax(0, 1fr)",
-            gap: 18,
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.08fr) 320px",
+            gap: 16,
             alignItems: "start",
           }}
         >
-          <div style={mediaBox(250)}>
-            <RotatingImage
-              candidates={shopImageCandidates}
-              alt={firstTruthy(shop?.name, "Shop")}
-              style={{
-                width: "100%",
-                height: "100%",
-                minHeight: 250,
-                objectFit: "cover",
-                display: "block",
-              }}
-              fallback={
-                <div
-                  style={{
-                    padding: 18,
-                    textAlign: "center",
-                    color: "#37506A",
-                    fontWeight: 900,
-                    fontSize: 22,
-                    lineHeight: 1.3,
-                  }}
-                >
-                  {firstTruthy(shop?.name, "Shop not fully set up yet")}
-                </div>
-              }
-            />
-          </div>
-
           <div>
-            <div style={sectionLabel()}>Shop identity</div>
+            <div style={sectionLabel()}>Shop summary</div>
 
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: isCompact ? 28 : 34,
-                lineHeight: 1.08,
+                lineHeight: 1.1,
               }}
             >
-              {firstTruthy(shop?.name, "Your shop control room")}
+              {firstTruthy(shop?.name, "My Shop")}
             </div>
 
-            <div style={{ marginTop: 12, ...helperText(), maxWidth: 820 }}>
-              {firstTruthy(
-                shop?.description,
-                "This page controls your shop identity and the visible selling blocks that appear in the public shop gallery."
-              )}
+            <div
+              style={{
+                marginTop: 12,
+                ...helperText(),
+                maxWidth: 860,
+                color: "#D7E3F1",
+              }}
+            >
+              Keep the main control page practical. Picture upload, shop gallery, and asset control
+              should stay visible. Spotlight should remain available, but compact.
             </div>
 
             <div
@@ -1528,12 +1026,18 @@ export default function ShopControlPage() {
                 flexWrap: "wrap",
               }}
             >
-              <span style={badge(true)}>GMFN ID: {gmfnId}</span>
-              <span style={badge(false)}>Community: {communityLabel}</span>
+              <span style={badge(true)}>Community: {communityName}</span>
               <span style={badge(false)}>
-                Trust: {firstTruthy(shop?.trust_band, "Visible seller")}
+                Community ID: {firstTruthy(shop?.clan_id, selectedClanId, "Awaiting issue")}
               </span>
-              <span style={badge(false)}>Visible blocks: {products.length}</span>
+              <span style={badge(false)}>
+                GMFN ID: {firstTruthy(shop?.gmfn_id, me?.gmfn_id, "Awaiting issue")}
+              </span>
+              <span style={badge(false)}>Current page: Shop control</span>
+              <span style={badge(false)}>Current step: Manage commerce access</span>
+              <span style={badge(false)}>Community slots used: {publicProducts.length} / 12</span>
+              <span style={badge(false)}>Vault slots used: {vaultProducts.length} / 6</span>
+              <span style={badge(false)}>Active spotlights: {activeSpotlights.length}</span>
             </div>
 
             <div
@@ -1544,784 +1048,775 @@ export default function ShopControlPage() {
                 flexWrap: "wrap",
               }}
             >
-              <button type="button" onClick={copyShopLink} style={actionBtn("primary")}>
-                Copy Shop Link
+              <OriginLink to="/app/shop-assets" style={actionBtn("primary")}>
+                Open Shop Assets
+              </OriginLink>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (publicShopLink) {
+                    window.open(publicShopLink, "_blank", "noopener,noreferrer");
+                  }
+                }}
+                style={actionBtn("secondary", !publicShopLink)}
+                disabled={!publicShopLink}
+              >
+                Open Shop Gallery
               </button>
 
-              <button type="button" onClick={copyGmfnId} style={actionBtn("secondary")}>
-                Copy GMFN ID
+              <button
+                type="button"
+                onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
+                style={actionBtn("secondary", !publicShopLink)}
+                disabled={!publicShopLink}
+              >
+                Copy Gallery Link
               </button>
 
-              {publicShopLink ? (
-                <Link to={publicShopLink} style={actionBtn("secondary")}>
-                  Open Public Shop
-                </Link>
-              ) : null}
+              <OriginLink to="/app/trust-slip" style={actionBtn("soft")}>
+                Merchant Verify
+              </OriginLink>
             </div>
+          </div>
+
+          <div
+            style={{
+              ...softCard("rgba(255,255,255,0.96)"),
+              border: "1px solid rgba(212,175,55,0.14)",
+              boxShadow: "0 18px 38px rgba(2,12,27,0.16)",
+            }}
+          >
+            <div style={sectionLabel()}>Compact spotlight panel</div>
 
             <div
               style={{
-                marginTop: 16,
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr 1fr"
-                  : "repeat(4, minmax(0, 1fr))",
-                gap: 10,
+                marginTop: 10,
+                color: "#0B1F33",
+                fontWeight: 900,
+                fontSize: 18,
+                lineHeight: 1.35,
               }}
             >
-              <div style={statTile("#F8FBFF")}>
-                <div style={sectionLabel()}>Owner</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    lineHeight: 1.35,
-                  }}
-                >
-                  {memberName}
-                </div>
-              </div>
+              Spotlight kept smaller
+            </div>
 
-              <div style={statTile()}>
-                <div style={sectionLabel()}>WhatsApp</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    lineHeight: 1.35,
-                  }}
-                >
-                  {firstTruthy(shop?.whatsapp_number, "Not set")}
-                </div>
-              </div>
+            <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+              Spotlight no longer takes over the page. Open it only when needed.
+            </div>
 
-              <div style={statTile()}>
-                <div style={sectionLabel()}>Telegram</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    lineHeight: 1.35,
-                  }}
-                >
-                  {firstTruthy(shop?.telegram_handle, "Not set")}
-                </div>
-              </div>
+            <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={() => setSpotlightOpen((prev) => !prev)}
+                style={spotlightOpen ? actionBtn("primary") : actionBtn("secondary")}
+              >
+                {spotlightOpen ? "Close Spotlight" : "Open Spotlight"}
+              </button>
 
-              <div style={statTile()}>
-                <div style={sectionLabel()}>Public surface</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    lineHeight: 1.35,
-                  }}
-                >
-                  {publicShopLink ? "Ready" : "Pending"}
-                </div>
-              </div>
+              <span style={badge(false)}>{activeSpotlights.length} active</span>
             </div>
           </div>
         </div>
       </section>
 
       <section style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>Quick actions</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Keep the main movements together and easy to find.
-            </div>
-          </div>
+        <div style={sectionLabel()}>Commercial unlocks</div>
 
-          <button
-            type="button"
-            onClick={() =>
-              setCollapsed((prev) => ({ ...prev, actions: !prev.actions }))
-            }
-            style={collapseToggle()}
-          >
-            {collapsed.actions ? "Open" : "Collapse"}
-          </button>
+        <div style={{ marginTop: 10, ...helperText(), maxWidth: 900 }}>
+          These controls show the full path clearly: start the payment request, use the exact
+          reference, wait for payment confirmation, then use the feature.
         </div>
 
-        {!collapsed.actions ? (
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+            gap: 12,
+          }}
+        >
           <div
             style={{
-              marginTop: 16,
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
-              gap: 10,
+              ...innerCard("rgba(255,255,255,0.98)"),
+              border: "1px solid rgba(212,175,55,0.12)",
+              boxShadow: "0 16px 34px rgba(2,12,27,0.10)",
             }}
           >
-            {publicShopLink ? (
-              <Link to={publicShopLink} style={actionBtn("primary")}>
-                Public Shop
-              </Link>
+            <div style={sectionLabel()}>Vault</div>
+            <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 18, fontWeight: 900 }}>
+              Vault access
+            </div>
+            <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+              Start with a Vault payment request. Once payment is confirmed, you can add private
+              offers and share access links.
+            </div>
+            <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <span style={badge(true)}>Vault slots used: {vaultProducts.length} / 6</span>
+              <span style={badge(false)}>Vault links: {vaultLinks.length}</span>
+              <span style={badge(false)}>State: {vaultStateLabel}</span>
+              <span style={badge(false)}>
+                Latest status: {firstTruthy(latestVaultPayment?.status, "No payment request yet")}
+              </span>
+            </div>
+            {latestVaultPayment ? (
+              <div style={{ marginTop: 12, display: "grid", gap: 6 }}>
+                <div style={helperText()}>
+                  Reference: {firstTruthy(latestVaultPayment.reference_display, "Awaiting reference")}
+                </div>
+                <div style={helperText()}>
+                  Amount: {firstTruthy(latestVaultPayment.amount, "0.00")}{" "}
+                  {firstTruthy(latestVaultPayment.currency, "GBP")}
+                </div>
+                <div style={helperText()}>
+                  Reconciliation:
+                  {" "}
+                  {safeStr(latestVaultPayment.confirmed_at)
+                    ? `Confirmed ${safeDateTime(latestVaultPayment.confirmed_at)}`
+                    : firstTruthy(latestVaultPayment.status, "Expected")}
+                </div>
+                <div style={helperText()}>
+                  Bank match: {latestVaultPayment.matched_bank_event_id ? `Bank event ${latestVaultPayment.matched_bank_event_id}` : "Waiting for bank match"}
+                </div>
+              </div>
             ) : null}
-            <Link to="/app/marketplace" style={actionBtn("secondary")}>
-              Marketplace
-            </Link>
-            <Link to="/app/notifications" style={actionBtn("secondary")}>
-              Notifications
-            </Link>
-            <Link to="/app/trust" style={actionBtn("secondary")}>
-              Trust
-            </Link>
-            <Link to="/app/demand-box" style={actionBtn("secondary")}>
-              Demand Box
-            </Link>
-            <Link to="/app/my-gmfn-and-i" style={actionBtn("soft")}>
-              My GMFN and I
-            </Link>
-            <Link to="/app/my-gmfn-and-i?tab=settings" style={actionBtn("soft")}>
-              Settings
-            </Link>
+            <div style={{ marginTop: 10, ...helperText() }}>{vaultProofText}</div>
+            <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={() => void createVaultInstruction(1)}
+                disabled={creatingVaultInstruction}
+                style={actionBtn("primary", creatingVaultInstruction)}
+              >
+                {creatingVaultInstruction ? "Creating..." : "Start 1-slot payment"}
+              </button>
+              <button
+                type="button"
+                onClick={() => void createVaultInstruction(6)}
+                disabled={creatingVaultInstruction}
+                style={actionBtn("secondary", creatingVaultInstruction)}
+              >
+                Start 6-slot payment
+              </button>
+              <OriginLink to="/app/shop-assets" style={actionBtn("secondary")}>
+                Open Shop Assets
+              </OriginLink>
+            </div>
           </div>
-        ) : null}
+
+          <div style={innerCard("#FFFFFF")}>
+            <div style={sectionLabel()}>Merchant Verify</div>
+            <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 18, fontWeight: 900 }}>
+              Merchant verification
+            </div>
+            <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+              This controls whether outside merchants can rely on your TrustSlip verification page.
+            </div>
+            <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <span style={badge(true)}>
+                {trustSlipFeature?.merchant_verify_active ? "Active" : "Subscription required"}
+              </span>
+              <span style={badge(false)}>State: {merchantVerifyStateLabel}</span>
+              <span style={badge(false)}>
+                Latest status: {firstTruthy(latestMerchantVerifyPayment?.status, "No payment request yet")}
+              </span>
+            </div>
+            <div style={{ marginTop: 12, display: "grid", gap: 6 }}>
+              <div style={helperText()}>
+                {firstTruthy(
+                  trustSlipFeature?.merchant_verify_detail,
+                  "Merchant-facing verification is not active yet."
+                )}
+              </div>
+              {latestMerchantVerifyPayment ? (
+                <>
+                  <div style={helperText()}>
+                    Reference: {firstTruthy(latestMerchantVerifyPayment.reference_display, "Awaiting reference")}
+                  </div>
+                  <div style={helperText()}>
+                    Amount: {firstTruthy(latestMerchantVerifyPayment.amount, "0.00")}{" "}
+                    {firstTruthy(latestMerchantVerifyPayment.currency, "GBP")}
+                  </div>
+                  <div style={helperText()}>
+                    Reconciliation:
+                    {" "}
+                    {safeStr(latestMerchantVerifyPayment.confirmed_at)
+                      ? `Confirmed ${safeDateTime(latestMerchantVerifyPayment.confirmed_at)}`
+                      : firstTruthy(latestMerchantVerifyPayment.status, "Expected")}
+                  </div>
+                  <div style={helperText()}>
+                    Bank match: {latestMerchantVerifyPayment.matched_bank_event_id ? `Bank event ${latestMerchantVerifyPayment.matched_bank_event_id}` : "Waiting for bank match"}
+                  </div>
+                </>
+              ) : null}
+            </div>
+            <div style={{ marginTop: 10, ...helperText() }}>{merchantVerifyProofText}</div>
+            <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={() => void createMerchantVerifyInstruction()}
+                disabled={creatingMerchantVerifyInstruction}
+                style={actionBtn("primary", creatingMerchantVerifyInstruction)}
+              >
+                {creatingMerchantVerifyInstruction ? "Creating..." : "Start verification payment"}
+              </button>
+              <OriginLink to="/app/trust-slip" style={actionBtn("secondary")}>
+                Open TrustSlip
+              </OriginLink>
+              {safeStr(trustSlipFeature?.public_verify_url) ? (
+                <a
+                  href={String(trustSlipFeature?.public_verify_url)}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={actionBtn("secondary")}
+                >
+                  Open Verify Link
+                </a>
+              ) : null}
+            </div>
+          </div>
+
+          <div style={innerCard("#FCFEFF")}>
+            <div style={sectionLabel()}>Paid spotlight</div>
+            <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 18, fontWeight: 900 }}>
+              Paid spotlight
+            </div>
+            <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+              Free spotlight stays available under the normal limit. Paid spotlight needs its own
+              payment and only one paid spotlight can run at a time.
+            </div>
+            <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <span style={badge(true)}>Active paid spotlights: {activePaidSpotlights.length}</span>
+              <span style={badge(false)}>State: {spotlightStateLabel}</span>
+              <span style={badge(false)}>
+                Latest status: {firstTruthy(latestSpotlightPayment?.status, "No payment request yet")}
+              </span>
+            </div>
+            {latestSpotlightPayment ? (
+              <div style={{ marginTop: 12, display: "grid", gap: 6 }}>
+                <div style={helperText()}>
+                  Reference: {firstTruthy(latestSpotlightPayment.reference_display, "Awaiting reference")}
+                </div>
+                <div style={helperText()}>
+                  Reconciliation:
+                  {" "}
+                  {safeStr(latestSpotlightPayment.confirmed_at)
+                    ? `Confirmed ${safeDateTime(latestSpotlightPayment.confirmed_at)}`
+                    : firstTruthy(latestSpotlightPayment.status, "Expected")}
+                </div>
+                <div style={helperText()}>
+                  Amount: {firstTruthy(latestSpotlightPayment.amount, "0.00")}{" "}
+                  {firstTruthy(latestSpotlightPayment.currency, "GBP")}
+                </div>
+                <div style={helperText()}>
+                  Bank match: {latestSpotlightPayment.matched_bank_event_id ? `Bank event ${latestSpotlightPayment.matched_bank_event_id}` : "Waiting for bank match"}
+                </div>
+              </div>
+            ) : null}
+            <div style={{ marginTop: 10, ...helperText() }}>{spotlightProofText}</div>
+            <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={() => void createSpotlightInstruction()}
+                disabled={creatingSpotlightInstruction}
+                style={actionBtn("primary", creatingSpotlightInstruction)}
+              >
+                {creatingSpotlightInstruction ? "Creating..." : "Start spotlight payment"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSpotlightOpen(true)}
+                style={actionBtn("secondary")}
+              >
+                Open Spotlight Tools
+              </button>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section style={pageCard("#FFFFFF")}>
+        <div style={sectionLabel()}>Shop picture and gallery controls</div>
+
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "300px minmax(0, 1fr)",
+            gap: 18,
+            alignItems: "start",
           }}
         >
           <div>
-            <div style={sectionLabel()}>Shop profile</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Calmly update the visible identity of your shop.
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() =>
-              setCollapsed((prev) => ({ ...prev, profile: !prev.profile }))
-            }
-            style={collapseToggle()}
-          >
-            {collapsed.profile ? "Open" : "Collapse"}
-          </button>
-        </div>
-
-        {!collapsed.profile ? (
-          <div
-            style={{
-              marginTop: 16,
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr"
-                : "minmax(0, 1.02fr) minmax(320px, 0.98fr)",
-              gap: 16,
-              alignItems: "start",
-            }}
-          >
-            <div style={innerCard("#FCFEFF")}>
-              <div style={sectionLabel()}>Edit profile</div>
-
-              <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
-                <div>
-                  <div style={sectionLabel()}>Shop name</div>
-                  <input
-                    value={profileDraft.name}
-                    onChange={(e) =>
-                      setProfileDraft((prev) => ({ ...prev, name: e.target.value }))
-                    }
-                    placeholder="Enter shop name"
-                    style={{ ...inputStyle(), marginTop: 8 }}
-                  />
-                </div>
-
-                <div>
-                  <div style={sectionLabel()}>Shop description</div>
-                  <textarea
-                    value={profileDraft.description}
-                    onChange={(e) =>
-                      setProfileDraft((prev) => ({
-                        ...prev,
-                        description: e.target.value,
-                      }))
-                    }
-                    placeholder="Describe the shop in calm, plain language..."
-                    style={{ ...textAreaStyle(), marginTop: 8 }}
-                  />
-                </div>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-                    gap: 12,
-                  }}
-                >
-                  <div>
-                    <div style={sectionLabel()}>WhatsApp</div>
-                    <input
-                      value={profileDraft.whatsapp}
-                      onChange={(e) =>
-                        setProfileDraft((prev) => ({
-                          ...prev,
-                          whatsapp: e.target.value,
-                        }))
-                      }
-                      placeholder="WhatsApp number"
-                      style={{ ...inputStyle(), marginTop: 8 }}
-                    />
-                  </div>
-
-                  <div>
-                    <div style={sectionLabel()}>Telegram</div>
-                    <input
-                      value={profileDraft.telegram}
-                      onChange={(e) =>
-                        setProfileDraft((prev) => ({
-                          ...prev,
-                          telegram: e.target.value,
-                        }))
-                      }
-                      placeholder="Telegram handle"
-                      style={{ ...inputStyle(), marginTop: 8 }}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <div style={sectionLabel()}>Profile / cover image</div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setProfileImageFile(e.target.files?.[0] || null)}
-                    style={{ ...inputStyle(), marginTop: 8, paddingTop: 10 }}
-                  />
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 10,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => void saveProfile()}
-                    disabled={savingProfile}
-                    style={actionBtn("primary", savingProfile)}
-                  >
-                    {savingProfile
-                      ? "Saving..."
-                      : hasShopSaveApi
-                      ? "Save Shop Profile"
-                      : "Save Draft Locally"}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={clearProfileDraft}
-                    style={actionBtn("secondary")}
-                  >
-                    Reset Draft
-                  </button>
-                </div>
-
-                {!hasShopSaveApi ? (
-                  <div style={{ ...helperText(), fontSize: 13 }}>
-                    This build will preserve the draft locally if the backend shop-save API is not yet wired.
-                  </div>
-                ) : null}
-              </div>
-            </div>
-
-            <div style={innerCard("#FFFFFF")}>
-              <div style={sectionLabel()}>Preview</div>
-
-              <div style={{ marginTop: 14, ...mediaBox(230) }}>
-                <RotatingImage
-                  candidates={
-                    profileImagePreview
-                      ? [profileImagePreview]
-                      : buildResolvedMediaCandidates(profileDraft.imageUrl)
-                  }
-                  alt={safeStr(profileDraft.name || "Shop preview")}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    minHeight: 230,
-                    objectFit: "cover",
-                    display: "block",
-                  }}
-                  fallback={
-                    <div
-                      style={{
-                        padding: 18,
-                        textAlign: "center",
-                        color: "#37506A",
-                        fontWeight: 900,
-                        fontSize: 18,
-                        lineHeight: 1.4,
-                      }}
-                    >
-                      {safeStr(profileDraft.name || "No image selected yet")}
-                    </div>
-                  }
-                />
-              </div>
-
+            <div
+              style={{
+                width: "100%",
+                minHeight: 240,
+                borderRadius: 28,
+                border: "1px solid rgba(212,175,55,0.16)",
+                background:
+                  "linear-gradient(180deg, #0A1625 0%, #11263B 56%, #193A58 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                overflow: "hidden",
+                padding: 10,
+                boxShadow:
+                  "0 22px 48px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.04)",
+              }}
+            >
               <div
                 style={{
-                  marginTop: 14,
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 20,
-                  lineHeight: 1.3,
+                  width: "100%",
+                  minHeight: 220,
+                  borderRadius: 22,
+                  border: "1px solid rgba(212,175,55,0.14)",
+                  overflow: "hidden",
+                  background:
+                    "linear-gradient(180deg, #11263B 0%, #193A58 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  position: "relative",
                 }}
               >
-                {safeStr(profileDraft.name || "Shop name")}
+                {safeStr(imageUrlInput) ? (
+                  <img
+                    src={imageUrlInput}
+                    alt={firstTruthy(shop?.name, "Shop")}
+                    style={{
+                      width: "100%",
+                      height: 240,
+                      objectFit: "cover",
+                      display: "block",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      padding: 18,
+                      textAlign: "center",
+                      color: "#F8FBFF",
+                      fontWeight: 900,
+                      fontSize: 18,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    Executive shop picture awaiting release
+                  </div>
+                )}
               </div>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gap: 14 }}>
+            <div
+              style={{
+                ...innerCard("rgba(255,255,255,0.98)"),
+                border: "1px solid rgba(212,175,55,0.12)",
+                boxShadow: "0 16px 34px rgba(2,12,27,0.10)",
+              }}
+            >
+              <div style={sectionLabel()}>Upload picture</div>
 
               <div style={{ marginTop: 10, ...helperText() }}>
-                {safeStr(
-                  profileDraft.description ||
-                    "Shop description preview will appear here."
-                )}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 12,
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                }}
-              >
-                {safeStr(profileDraft.whatsapp) ? (
-                  <span style={badge(true)}>WhatsApp ready</span>
-                ) : (
-                  <span style={badge(false)}>No WhatsApp yet</span>
-                )}
-
-                {safeStr(profileDraft.telegram) ? (
-                  <span style={badge(true)}>Telegram ready</span>
-                ) : (
-                  <span style={badge(false)}>No Telegram yet</span>
-                )}
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </section>
-
-      <section style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>
-              {editingProductId > 0 ? "Edit visible block" : "Visible block composer"}
-            </div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Prepare one calm selling block at a time.
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() =>
-              setCollapsed((prev) => ({ ...prev, composer: !prev.composer }))
-            }
-            style={collapseToggle()}
-          >
-            {collapsed.composer ? "Open" : "Collapse"}
-          </button>
-        </div>
-
-        {!collapsed.composer ? (
-          <div
-            style={{
-              marginTop: 16,
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr"
-                : "minmax(0, 1.02fr) minmax(320px, 0.98fr)",
-              gap: 16,
-              alignItems: "start",
-            }}
-          >
-            <div style={innerCard("#FCFEFF")}>
-              <div style={sectionLabel()}>
-                {editingProductId > 0 ? "Edit visible block" : "New visible block"}
+                Upload a file when available, or paste an image URL and save it directly.
               </div>
 
               <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
-                <div>
-                  <div style={sectionLabel()}>Name</div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => void handleFilePicked(e.target.files?.[0] || null)}
+                  style={inputStyle()}
+                />
+
+                <div style={{ display: "grid", gap: 8 }}>
+                  <div style={sectionLabel()}>Image URL</div>
                   <input
-                    value={productDraft.name}
-                    onChange={(e) =>
-                      setProductDraft((prev) => ({ ...prev, name: e.target.value }))
-                    }
-                    placeholder="Product or service name"
-                    style={{ ...inputStyle(), marginTop: 8 }}
+                    value={imageUrlInput}
+                    onChange={(e) => setImageUrlInput(e.target.value)}
+                    placeholder="Paste image URL"
+                    style={inputStyle()}
                   />
                 </div>
 
-                <div>
-                  <div style={sectionLabel()}>Description</div>
-                  <textarea
-                    value={productDraft.description}
-                    onChange={(e) =>
-                      setProductDraft((prev) => ({
-                        ...prev,
-                        description: e.target.value,
-                      }))
-                    }
-                    placeholder="Describe the visible block clearly..."
-                    style={{ ...textAreaStyle(), marginTop: 8 }}
-                  />
-                </div>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: isCompact ? "1fr" : "1fr 160px",
-                    gap: 12,
-                  }}
-                >
-                  <div>
-                    <div style={sectionLabel()}>Price</div>
-                    <input
-                      value={productDraft.price}
-                      onChange={(e) =>
-                        setProductDraft((prev) => ({ ...prev, price: e.target.value }))
-                      }
-                      placeholder="Enter price"
-                      style={{ ...inputStyle(), marginTop: 8 }}
-                    />
-                  </div>
-
-                  <div>
-                    <div style={sectionLabel()}>Currency</div>
-                    <input
-                      value={productDraft.currency}
-                      onChange={(e) =>
-                        setProductDraft((prev) => ({
-                          ...prev,
-                          currency: e.target.value,
-                        }))
-                      }
-                      placeholder="NGN"
-                      style={{ ...inputStyle(), marginTop: 8 }}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <div style={sectionLabel()}>Image</div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setProductImageFile(e.target.files?.[0] || null)}
-                    style={{ ...inputStyle(), marginTop: 8, paddingTop: 10 }}
-                  />
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 10,
-                    flexWrap: "wrap",
-                  }}
-                >
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <button
                     type="button"
-                    onClick={() => void saveProduct()}
-                    disabled={savingProduct}
-                    style={actionBtn("primary", savingProduct)}
+                    onClick={() => void saveShopDetails({ image_url: imageUrlInput })}
+                    disabled={savingShop || uploadingImage}
+                    style={actionBtn("primary", savingShop || uploadingImage)}
                   >
-                    {savingProduct
-                      ? "Saving..."
-                      : editingProductId > 0
-                      ? hasUpdateProductApi
-                        ? "Update Block"
-                        : "Save Edit Draft"
-                      : hasCreateProductApi
-                      ? "Publish Block"
-                      : "Save Draft"}
+                    {savingShop ? "Saving..." : uploadingImage ? "Uploading..." : "Save Picture"}
                   </button>
 
                   <button
                     type="button"
-                    onClick={clearProductDraft}
-                    style={actionBtn("secondary")}
+                    onClick={() => void saveShopDetails({ clear_image: true, image_url: null })}
+                    disabled={savingShop || uploadingImage || !safeStr(imageUrlInput)}
+                    style={actionBtn(
+                      "secondary",
+                      savingShop || uploadingImage || !safeStr(imageUrlInput)
+                    )}
                   >
-                    Clear
+                    Remove Picture
                   </button>
                 </div>
               </div>
             </div>
 
             <div style={innerCard("#FFFFFF")}>
-              <div style={sectionLabel()}>Block preview</div>
+              <div style={sectionLabel()}>Gallery shortcuts</div>
 
-              <div style={{ marginTop: 14, ...mediaBox(220) }}>
-                <RotatingImage
-                  candidates={
-                    productImagePreview
-                      ? [productImagePreview]
-                      : buildResolvedMediaCandidates(productDraft.imageUrl)
-                  }
-                  alt={safeStr(productDraft.name || "Block preview")}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    minHeight: 220,
-                    objectFit: "cover",
-                    display: "block",
+              <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <OriginLink to="/app/shop-assets" style={actionBtn("secondary")}>
+                  Shop Assets
+                </OriginLink>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (publicShopLink) {
+                      window.open(publicShopLink, "_blank", "noopener,noreferrer");
+                    }
                   }}
-                  fallback={
-                    <div
-                      style={{
-                        padding: 18,
-                        textAlign: "center",
-                        color: "#37506A",
-                        fontWeight: 800,
-                        fontSize: 16,
-                        lineHeight: 1.45,
-                      }}
-                    >
-                      {safeStr(productDraft.name || "No image selected yet")}
-                    </div>
-                  }
-                />
-              </div>
+                  style={actionBtn("secondary", !publicShopLink)}
+                  disabled={!publicShopLink}
+                >
+                  Public Gallery
+                </button>
 
-              <div
-                style={{
-                  marginTop: 14,
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 18,
-                  lineHeight: 1.35,
-                }}
-              >
-                {safeStr(productDraft.name || "Product name")}
-              </div>
-
-              <div style={{ marginTop: 8, ...helperText() }}>
-                {safeStr(
-                  productDraft.description ||
-                    "Visible product description preview will appear here."
-                )}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 12,
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                }}
-              >
-                <span style={badge(true)}>
-                  {productDraft.price || productDraft.currency
-                    ? `${safeStr(productDraft.price)} ${safeStr(productDraft.currency)}`
-                    : "Price not entered yet"}
-                </span>
-
-                {editingProductId > 0 ? (
-                  <span style={badge(false)}>Editing existing block</span>
-                ) : (
-                  <span style={badge(false)}>New block</span>
-                )}
+                <button
+                  type="button"
+                    onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
+                  style={actionBtn("soft", !publicShopLink)}
+                  disabled={!publicShopLink}
+                >
+                  Copy Link
+                </button>
               </div>
             </div>
           </div>
-        ) : null}
+        </div>
       </section>
 
       <section style={pageCard("#FFFFFF")}>
+        <div style={sectionLabel()}>Shop details</div>
+
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
             gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
           }}
         >
-          <div>
-            <div style={sectionLabel()}>Visible selling blocks</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Edit or review the blocks already visible in your public shop.
-            </div>
+          <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
+            <div style={sectionLabel()}>Shop name</div>
+            <input
+              value={shopName}
+              onChange={(e) => setShopName(e.target.value)}
+              placeholder="Shop name"
+              style={{ ...inputStyle(), marginTop: 8 }}
+            />
           </div>
 
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={badge(false)}>{products.length} blocks</span>
-            <button
-              type="button"
-              onClick={() =>
-                setCollapsed((prev) => ({ ...prev, products: !prev.products }))
-              }
-              style={collapseToggle()}
-            >
-              {collapsed.products ? "Open" : "Collapse"}
-            </button>
+          <div>
+            <div style={sectionLabel()}>WhatsApp</div>
+            <input
+              value={whatsApp}
+              onChange={(e) => setWhatsApp(e.target.value)}
+              placeholder="WhatsApp number"
+              style={{ ...inputStyle(), marginTop: 8 }}
+            />
+          </div>
+
+          <div>
+            <div style={sectionLabel()}>Telegram</div>
+            <input
+              value={telegramHandle}
+              onChange={(e) => setTelegramHandle(e.target.value)}
+              placeholder="Telegram handle"
+              style={{ ...inputStyle(), marginTop: 8 }}
+            />
+          </div>
+
+          <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
+            <div style={sectionLabel()}>Description</div>
+            <textarea
+              value={shopDescription}
+              onChange={(e) => setShopDescription(e.target.value)}
+              placeholder="Describe the shop..."
+              style={{ ...textAreaStyle(), marginTop: 8 }}
+            />
           </div>
         </div>
 
-        {!collapsed.products ? (
-          <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
-            {products.length === 0 ? (
-              <div
-                style={{
-                  ...innerCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
-                  border: "1px solid rgba(11,99,209,0.10)",
-                }}
-              >
-                <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 18 }}>
-                  No visible selling block is available yet.
-                </div>
-                <div style={{ marginTop: 10, ...helperText() }}>
-                  Start by drafting one calm product or service block, then publish it here.
-                </div>
-              </div>
-            ) : (
-              products.map((product, index) => {
-                const currentId = positiveNumber(product?.id);
-                const isDeleting = deletingProductId === currentId;
+        <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            onClick={() => void saveShopDetails()}
+            disabled={savingShop}
+            style={actionBtn("primary", savingShop)}
+          >
+            {savingShop ? "Saving..." : "Save Shop Details"}
+          </button>
 
-                return (
-                  <div key={`${product.id || index}`} style={innerCard("#FCFEFF")}>
+          <OriginLink to="/app/shop-assets" style={actionBtn("secondary")}>
+            Manage Products
+          </OriginLink>
+        </div>
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div style={sectionLabel()}>Slot usage</div>
+
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr 1fr" : "repeat(4, minmax(0, 1fr))",
+            gap: 12,
+          }}
+        >
+          <div style={statTile()}>
+            <div style={sectionLabel()}>Community</div>
+            <div
+              style={{
+                marginTop: 8,
+                color: "#0B1F33",
+                fontSize: 24,
+                fontWeight: 900,
+              }}
+            >
+              {publicProducts.length} / 12
+            </div>
+          </div>
+
+          <div style={statTile()}>
+            <div style={sectionLabel()}>Vault</div>
+            <div
+              style={{
+                marginTop: 8,
+                color: "#0B1F33",
+                fontSize: 24,
+                fontWeight: 900,
+              }}
+            >
+              {vaultProducts.length} / 6
+            </div>
+          </div>
+
+          <div style={statTile()}>
+            <div style={sectionLabel()}>Spotlights</div>
+            <div
+              style={{
+                marginTop: 8,
+                color: "#0B1F33",
+                fontSize: 24,
+                fontWeight: 900,
+              }}
+            >
+              {activeSpotlights.length}
+            </div>
+          </div>
+
+          <div style={statTile()}>
+            <div style={sectionLabel()}>Vault links</div>
+            <div
+              style={{
+                marginTop: 8,
+                color: "#0B1F33",
+                fontSize: 24,
+                fontWeight: 900,
+              }}
+            >
+              {vaultLinks.length}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {spotlightOpen ? (
+        <section style={pageCard("#FFFFFF")}>
+          <div style={sectionLabel()}>Spotlight</div>
+
+          <div
+            style={{
+              marginTop: 12,
+              ...helperText(),
+              maxWidth: 860,
+            }}
+          >
+            Spotlight is still here, but kept tighter so it does not swallow the control page.
+          </div>
+
+          <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+            <textarea
+              value={spotlightMessage}
+              onChange={(e) => setSpotlightMessage(e.target.value)}
+              placeholder="Spotlight message"
+              style={textAreaStyle()}
+            />
+
+            <input
+              value={spotlightImageUrl}
+              onChange={(e) => setSpotlightImageUrl(e.target.value)}
+              placeholder="Spotlight image URL (optional)"
+              style={inputStyle()}
+            />
+
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={() => void handleCreateSpotlight()}
+                disabled={creatingSpotlight}
+                style={actionBtn("primary", creatingSpotlight)}
+              >
+                {creatingSpotlight ? "Publishing..." : "Create Spotlight"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSpotlightOpen(false)}
+                style={actionBtn("secondary")}
+              >
+                Collapse Spotlight
+              </button>
+            </div>
+
+            {activeSpotlights.length > 0 ? (
+              <div style={{ marginTop: 8, display: "grid", gap: 10 }}>
+                {activeSpotlights.slice(0, 4).map((item) => (
+                  <div key={item.id} style={innerCard("#FCFEFF")}>
                     <div
                       style={{
-                        display: "grid",
-                        gridTemplateColumns: isCompact
-                          ? "1fr"
-                          : "170px minmax(0, 1fr) auto",
-                        gap: 14,
-                        alignItems: "center",
+                        color: "#0B1F33",
+                        fontWeight: 900,
+                        fontSize: 15,
+                        lineHeight: 1.35,
                       }}
                     >
-                      <div style={mediaBox(132)}>
-                        <RotatingImage
-                          candidates={buildResolvedMediaCandidates(
-                            firstTruthy(product?.image_url)
-                          )}
-                          alt={firstTruthy(product?.name, "Product")}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            minHeight: 132,
-                            objectFit: "cover",
-                            display: "block",
-                          }}
-                          fallback={
-                            <div
-                              style={{
-                                padding: 12,
-                                textAlign: "center",
-                                color: "#37506A",
-                                fontWeight: 800,
-                                fontSize: 14,
-                                lineHeight: 1.4,
-                              }}
-                            >
-                              {firstTruthy(product?.name, "Product")}
-                            </div>
-                          }
-                        />
-                      </div>
+                      {firstTruthy(item?.message, "Spotlight")}
+                    </div>
 
-                      <div>
-                        <div
-                          style={{
-                            color: "#0B1F33",
-                            fontSize: 17,
-                            fontWeight: 900,
-                            lineHeight: 1.35,
-                          }}
-                        >
-                          {firstTruthy(product?.name, "Product")}
-                        </div>
-
-                        <div style={{ marginTop: 8, ...helperText() }}>
-                          {firstTruthy(
-                            product?.description,
-                            "No additional description is visible yet."
-                          )}
-                        </div>
-
-                        <div
-                          style={{
-                            marginTop: 10,
-                            display: "flex",
-                            gap: 8,
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          <span style={badge(true)}>{displayPrice(product)}</span>
-                          {currentId ? (
-                            <span style={badge(false)}>ID: {currentId}</span>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: isCompact ? "flex-start" : "flex-end",
-                          gap: 10,
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => beginEditProduct(product)}
-                          style={actionBtn("secondary")}
-                        >
-                          Edit Block
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => void deleteProduct(product)}
-                          disabled={!currentId || isDeleting}
-                          style={actionBtn("secondary", !currentId || isDeleting)}
-                        >
-                          {isDeleting ? "Removing..." : "Remove"}
-                        </button>
-                      </div>
+                    <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <span style={badge(false)}>
+                        {firstTruthy(item?.priority_mode, "free")}
+                      </span>
+                      <span style={badge(false)}>
+                        {firstTruthy(item?.visibility_scope, "direct_communities")}
+                      </span>
                     </div>
                   </div>
-                );
-              })
-            )}
+                ))}
+              </div>
+            ) : null}
           </div>
-        ) : null}
+        </section>
+      ) : null}
+
+      <section style={pageCard("#FFFFFF")}>
+        <div style={sectionLabel()}>Vault and private access</div>
+
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+            gap: 12,
+          }}
+        >
+          <div style={innerCard("#FCFEFF")}>
+            <div
+              style={{
+                color: "#0B1F33",
+                fontWeight: 900,
+                fontSize: 16,
+              }}
+            >
+              Community-visible products
+            </div>
+
+            <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+              {publicProducts.length > 0 ? (
+                publicProducts.slice(0, 5).map((item) => (
+                  <div key={item.id} style={helperText()}>
+                    {firstTruthy(item?.name, "Product")}
+                  </div>
+                ))
+              ) : (
+                <div style={helperText()}>
+                  Community-visible products have not been released yet.
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div
+            style={{
+              ...innerCard(
+                "linear-gradient(180deg, #0A1625 0%, #11263B 56%, #193A58 100%)"
+              ),
+              border: "1px solid rgba(212,175,55,0.16)",
+              boxShadow: "0 18px 40px rgba(2,12,27,0.20)",
+            }}
+          >
+            <div
+              style={{
+                color: "#F8FBFF",
+                fontWeight: 900,
+                fontSize: 16,
+              }}
+            >
+              Vault private offers
+            </div>
+
+            <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+              <div style={{ ...helperText(), color: "#D7E3F1" }}>
+                Private offers ready: {vaultProducts.length}
+              </div>
+              <div style={{ ...helperText(), color: "#D7E3F1" }}>
+                Access links ready: {vaultLinks.length}
+              </div>
+
+              {vaultLinks.slice(0, 3).map((item) => (
+                <div
+                  key={item.id}
+                  style={{
+                    ...innerCard("rgba(255,255,255,0.06)"),
+                    border: "1px solid rgba(212,175,55,0.10)",
+                    padding: 12,
+                  }}
+                >
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <span style={badge(true)}>Link #{item.id}</span>
+                    <span
+                      style={{
+                        ...badge(false),
+                        background: "rgba(212,175,55,0.10)",
+                        color: "#F6D77A",
+                      }}
+                    >
+                      {firstTruthy(item?.status, "active")}
+                    </span>
+                  </div>
+                  <div style={{ marginTop: 8, ...helperText(), color: "#D7E3F1" }}>
+                    Access ends: {safeDateTime(item?.expires_at)}
+                  </div>
+                </div>
+              ))}
+
+              {vaultProducts.length === 0 && vaultLinks.length === 0 ? (
+                <div style={{ ...helperText(), color: "#D7E3F1" }}>
+                  Vault is not open yet. Private offers and permission-based access links will show
+                  here after you activate Vault and release access.
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
       </section>
     </div>
   );

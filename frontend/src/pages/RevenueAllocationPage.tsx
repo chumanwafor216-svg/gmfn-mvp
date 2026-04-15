@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
   getCurrentClan,
@@ -565,7 +565,7 @@ export default function RevenueAllocationPage() {
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
         <div
           style={{
@@ -583,7 +583,7 @@ export default function RevenueAllocationPage() {
                 marginTop: 10,
                 fontSize: 30,
                 fontWeight: 1000,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 lineHeight: 1.15,
               }}
             >
@@ -593,7 +593,7 @@ export default function RevenueAllocationPage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#6B7A88",
+                color: "#D7E3F1",
                 lineHeight: 1.8,
               }}
             >
@@ -1031,7 +1031,7 @@ export default function RevenueAllocationPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Working routes</div>
+            <div style={sectionLabel()}>Next routes</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Move from allocation reading into the exact next page you need.
             </div>
@@ -1055,7 +1055,7 @@ export default function RevenueAllocationPage() {
               gap: 12,
             }}
           >
-            <Link to={currentLoanId ? `/app/loan-summary/${currentLoanId}` : "/app/loans"} style={routeTile(true)}>
+            <OriginLink to={currentLoanId ? `/app/loan-summary/${currentLoanId}` : "/app/loans"} style={routeTile(true)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1069,9 +1069,9 @@ export default function RevenueAllocationPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Return to the exact support item summary after reading the allocation.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/loan-workbench" style={routeTile(false)}>
+            <OriginLink to="/app/loan-workbench" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1085,9 +1085,9 @@ export default function RevenueAllocationPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when you need the deeper support work item behind the allocation.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/finance" style={routeTile(false)}>
+            <OriginLink to="/app/finance" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1101,9 +1101,9 @@ export default function RevenueAllocationPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when the next question is the broader money truth inside the selected community.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/loans" style={routeTile(false)}>
+            <OriginLink to="/app/loans" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1117,9 +1117,9 @@ export default function RevenueAllocationPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Return to the broader support overview.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/marketplace" style={routeTile(false)}>
+            <OriginLink to="/app/marketplace" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1133,9 +1133,9 @@ export default function RevenueAllocationPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Return to the selected-community launcher surface only after the allocation reading is complete.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/withdrawal-instructions" style={routeTile(false)}>
+            <OriginLink to="/app/withdrawal-instructions" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1149,7 +1149,7 @@ export default function RevenueAllocationPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when the money question becomes a guided withdrawal question again.
               </div>
-            </Link>
+            </OriginLink>
           </div>
         ) : null}
       </section>

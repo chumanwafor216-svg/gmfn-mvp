@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
   getClanInviteLink,
@@ -9,6 +10,7 @@ import {
   safeCopy,
   setSelectedClanId,
 } from "../lib/api";
+import { navigateWithOrigin } from "../lib/nav";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -173,7 +175,7 @@ function getCommunityTrustState(source: any): CommunityTrustState {
       classText,
       scoreText:
         scoreNum === null || Number.isNaN(scoreNum)
-          ? "—"
+          ? "Not available yet"
           : String(Math.round(scoreNum)),
       tone:
         classText === "A" || classText === "A+" || classText === "B"
@@ -226,10 +228,10 @@ function getCommunityTrustState(source: any): CommunityTrustState {
   }
 
   return {
-    classText: "Pending",
-    scoreText: "—",
+    classText: "Awaiting reading",
+    scoreText: "Not available yet",
     tone: "neutral",
-    statusText: "Preparing",
+    statusText: "Loading",
   };
 }
 
@@ -266,6 +268,7 @@ function communityToneStyles(tone: "green" | "yellow" | "red" | "neutral") {
 }
 
 export default function MarketplaceWorkspacePage() {
+  const location = useLocation();
   const navigate = useNavigate();
   const params = useParams();
 
@@ -412,9 +415,9 @@ export default function MarketplaceWorkspacePage() {
 
   const guideUrl = useMemo(() => {
     if (typeof window !== "undefined" && window.location?.origin) {
-      return `${window.location.origin}/GSN_FINAL_WHITE.pdf`;
+      return `${window.location.origin}/GMFN_FINAL_WHITE.pdf`;
     }
-    return "/GSN_FINAL_WHITE.pdf";
+    return "/GMFN_FINAL_WHITE.pdf";
   }, []);
 
   const pendingCount = useMemo(() => {
@@ -531,12 +534,12 @@ export default function MarketplaceWorkspacePage() {
       setMsg("This member does not yet have a visible GMFN shop identity.");
       return;
     }
-    navigate(`/app/shop/${encodeURIComponent(gmfnId)}`);
+    navigateWithOrigin(navigate, `/app/shop/${encodeURIComponent(gmfnId)}`, location);
   }
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", paddingBottom: 36 }}>
-      <PageTopNav title={communityName} subtitle="Community workspace." />
+      <PageTopNav sectionLabel="Community Workspace" title={communityName} subtitle="Community workspace." />
 
       {err ? (
         <div
@@ -639,7 +642,7 @@ export default function MarketplaceWorkspacePage() {
               }}
             >
               <span style={badge(true)}>
-                Community ID: {communityIdentity || "Pending"}
+                Community ID: {communityIdentity || "Not available yet"}
               </span>
               <span style={badge(false)}>Members: {memberRows.length}</span>
               <span style={badge(false)}>Alerts: {pendingCount}</span>
@@ -666,15 +669,15 @@ export default function MarketplaceWorkspacePage() {
                 flexWrap: "wrap",
               }}
             >
-              <Link to={communityHomeLink} style={btn(false)}>
+              <OriginLink to={communityHomeLink} style={btn(false)}>
                 Community Home
-              </Link>
-              <Link to="/app/marketplace" style={btn(false)}>
+              </OriginLink>
+              <OriginLink to="/app/marketplace" style={btn(false)}>
                 Marketplace
-              </Link>
-              <Link to="/app/clans" style={btn(false)}>
+              </OriginLink>
+              <OriginLink to="/app/clans" style={btn(false)}>
                 Create Community
-              </Link>
+              </OriginLink>
             </div>
           </div>
         </div>
@@ -880,15 +883,15 @@ export default function MarketplaceWorkspacePage() {
                   flexWrap: "wrap",
                 }}
               >
-                <Link to="/app/demand-box" style={btn(false)}>
+                <OriginLink to="/app/demand-box" style={btn(false)}>
                   Demand
-                </Link>
-                <Link to="/app/marketplace" style={btn(false)}>
+                </OriginLink>
+                <OriginLink to="/app/marketplace" style={btn(false)}>
                   Spotlight
-                </Link>
-                <Link to="/app/clans" style={btn(false)}>
+                </OriginLink>
+                <OriginLink to="/app/clans" style={btn(false)}>
                   Create Community
-                </Link>
+                </OriginLink>
               </div>
             </div>
 
@@ -981,49 +984,49 @@ export default function MarketplaceWorkspacePage() {
             <button
               type="button"
               style={btn(false)}
-              onClick={() => navigate("/app/payment/pool")}
+              onClick={() => navigateWithOrigin(navigate, "/app/payment/pool", location)}
             >
               Money In
             </button>
             <button
               type="button"
               style={btn(false)}
-              onClick={() => navigate("/app/withdrawal-instructions")}
+              onClick={() => navigateWithOrigin(navigate, "/app/withdrawal-instructions", location)}
             >
               Money Out
             </button>
             <button
               type="button"
               style={btn(false)}
-              onClick={() => navigate("/app/loans")}
+              onClick={() => navigateWithOrigin(navigate, "/app/loans", location)}
             >
               Loans
             </button>
             <button
               type="button"
               style={btn(false)}
-              onClick={() => navigate("/app/loan-readiness")}
+              onClick={() => navigateWithOrigin(navigate, "/app/loan-readiness", location)}
             >
               Readiness
             </button>
             <button
               type="button"
               style={btn(false)}
-              onClick={() => navigate("/app/loan-workbench")}
+              onClick={() => navigateWithOrigin(navigate, "/app/loan-workbench", location)}
             >
               Workbench
             </button>
             <button
               type="button"
               style={btn(false)}
-              onClick={() => navigate("/app/guarantor-earnings")}
+              onClick={() => navigateWithOrigin(navigate, "/app/guarantor-earnings", location)}
             >
               Earnings
             </button>
             <button
               type="button"
               style={btn(false)}
-              onClick={() => navigate("/app/loan-suggestions")}
+              onClick={() => navigateWithOrigin(navigate, "/app/loan-suggestions", location)}
             >
               Suggestions
             </button>
@@ -1087,7 +1090,7 @@ export default function MarketplaceWorkspacePage() {
                   >
                     <div>
                       <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
-                        Membership request #{safeNum(req?.id) || "—"}
+                        Membership request #{safeNum(req?.id) || "Not available yet"}
                       </div>
                       <div style={{ marginTop: 6, ...muted() }}>
                         Status: {safeStr(req?.status || "pending")}
@@ -1095,12 +1098,12 @@ export default function MarketplaceWorkspacePage() {
                     </div>
 
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <Link
+                      <OriginLink
                         to={`/app/community/${activeClanId}/join-requests`}
                         style={btn(true)}
                       >
                         Open Requests
-                      </Link>
+                      </OriginLink>
                     </div>
                   </div>
                 </div>
@@ -1120,7 +1123,7 @@ export default function MarketplaceWorkspacePage() {
             flexWrap: "wrap",
           }}
         >
-          <div style={sectionTitle()}>Members → Shop mapping</div>
+          <div style={sectionTitle()}>Members to shop mapping</div>
           <button
             type="button"
             onClick={() => setMembersOpen((v) => !v)}
@@ -1212,7 +1215,7 @@ export default function MarketplaceWorkspacePage() {
                       selectedMember?.full_name ||
                       selectedMember?.nickname ||
                       selectedMember?.email ||
-                      "—"
+                      "Not available yet"
                   )}
                 </div>
                 <div style={muted()}>
@@ -1221,7 +1224,7 @@ export default function MarketplaceWorkspacePage() {
                     selectedMember?.gmfn_id ||
                       selectedMember?.member_gmfn_id ||
                       selectedMember?.user?.gmfn_id ||
-                      "—"
+                      "Not available yet"
                   )}
                 </div>
                 <div style={muted()}>

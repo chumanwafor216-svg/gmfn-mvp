@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import {
   clearPublicEntryState,
   createEntry,
@@ -266,7 +267,7 @@ export default function CreateEntryPage() {
     <div style={pageShell()}>
       <div style={{ maxWidth: 960, margin: "0 auto", display: "grid", gap: 18 }}>
         <div
-          style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+          style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
         >
           <div style={sectionLabel()}>Create entry</div>
 
@@ -275,7 +276,7 @@ export default function CreateEntryPage() {
               marginTop: 10,
               fontSize: 30,
               fontWeight: 1000,
-              color: "#0B1F33",
+              color: "#F8FBFF",
               lineHeight: 1.15,
             }}
           >
@@ -285,7 +286,7 @@ export default function CreateEntryPage() {
           <div
             style={{
               marginTop: 10,
-              color: "#64748B",
+              color: "#D7E3F1",
               lineHeight: 1.8,
               maxWidth: 760,
             }}
@@ -304,21 +305,21 @@ export default function CreateEntryPage() {
             }}
           >
             <a
-              href="/GSN_FINAL_WHITE.pdf"
+              href="/GMFN_FINAL_WHITE.pdf"
               target="_blank"
               rel="noreferrer"
               style={secondaryBtn()}
             >
-              Understand GSN first
+              Understand GMFN first
             </a>
 
-            <Link to="/welcome" style={secondaryBtn()}>
+            <OriginLink to="/welcome" style={secondaryBtn()}>
               Back
-            </Link>
+            </OriginLink>
 
-            <Link to="/login" style={secondaryBtn()}>
+            <OriginLink to="/login" style={secondaryBtn()}>
               Already have access?
-            </Link>
+            </OriginLink>
           </div>
         </div>
 

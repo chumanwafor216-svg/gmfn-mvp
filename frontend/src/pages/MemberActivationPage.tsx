@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import { activateApprovedMember } from "../lib/api";
 
@@ -145,13 +146,14 @@ export default function MemberActivationPage() {
   return (
     <div style={{ padding: 20, maxWidth: 760, margin: "0 auto", paddingBottom: 30 }}>
       <PageTopNav
+        sectionLabel="Complete Membership Activation"
         title="Complete Membership Activation"
         subtitle="Finish your approved entry by confirming your identity reference and creating your password."
       />
 
       <div
         style={{
-          ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
+          ...pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
           marginTop: 18,
         }}
       >
@@ -162,7 +164,7 @@ export default function MemberActivationPage() {
             marginTop: 8,
             fontSize: 28,
             fontWeight: 1000,
-            color: "#0B1F33",
+            color: "#F8FBFF",
             lineHeight: 1.15,
           }}
         >
@@ -172,7 +174,7 @@ export default function MemberActivationPage() {
         <div
           style={{
             marginTop: 10,
-            color: "#64748B",
+            color: "#D7E3F1",
             lineHeight: 1.8,
           }}
         >
@@ -192,9 +194,9 @@ export default function MemberActivationPage() {
             ← Back
           </button>
 
-          <Link to="/welcome" style={actionBtn(false)}>
+          <OriginLink to="/welcome" style={actionBtn(false)}>
             Welcome
-          </Link>
+          </OriginLink>
         </div>
       </div>
 

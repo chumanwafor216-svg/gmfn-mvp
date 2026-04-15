@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 
 /**
  * TrustTimelinePage — MVP pilot
@@ -257,11 +257,11 @@ export default function TrustTimelinePage() {
         </div>
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <Link to="/trust-slip" style={{ textDecoration: "none" }}>
+          <OriginLink to="/app/trust-slip" style={{ textDecoration: "none" }}>
             <button style={{ padding: "10px 12px", borderRadius: 12, border: "1px solid #ddd", background: "white" }}>
               Back to TrustSlip
             </button>
-          </Link>
+          </OriginLink>
 
           <button
             onClick={loadAll}
@@ -281,7 +281,7 @@ export default function TrustTimelinePage() {
 
       {err && (
         <div style={{ marginTop: 12, padding: 12, border: "1px solid #fecaca", background: "#fef2f2", borderRadius: 12 }}>
-          <b>Problem:</b> {err}
+          <b>Issue:</b> {err}
         </div>
       )}
 
@@ -320,7 +320,7 @@ export default function TrustTimelinePage() {
         <div style={card}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "baseline" }}>
             <div style={{ fontSize: 14, fontWeight: 800 }}>Evidence Pack</div>
-            <div style={{ fontSize: 12, ...muted }}>Pilot support reference</div>
+            <div style={{ fontSize: 12, ...muted }}>Reference bundle</div>
           </div>
 
           <div style={{ marginTop: 10 }}>
@@ -359,7 +359,7 @@ export default function TrustTimelinePage() {
             </div>
 
             <div style={{ marginTop: 10, fontSize: 12, ...muted }}>
-              Tip: If the merchant calls you, ask them to quote your Pack ID.
+              Use the Pack ID when you need to reference this evidence bundle.
             </div>
           </div>
         </div>
@@ -369,7 +369,7 @@ export default function TrustTimelinePage() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
           <div style={{ fontSize: 14, fontWeight: 800 }}>Events</div>
           <div style={{ fontSize: 12, ...muted }}>
-            Deterministic log derived from TrustEvents (pilot).
+            Chronological trust event log.
           </div>
         </div>
 
@@ -377,7 +377,7 @@ export default function TrustTimelinePage() {
           {loading ? (
             <div style={muted}>Loading…</div>
           ) : items.length === 0 ? (
-            <div style={muted}>No events yet.</div>
+            <div style={muted}>No trust events are shown yet.</div>
           ) : (
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 860 }}>
@@ -428,7 +428,7 @@ export default function TrustTimelinePage() {
           )}
 
           <div style={{ marginTop: 12, fontSize: 12, ...muted }}>
-            Disclaimer: This timeline is a community trust record (pilot). It is not a bank guarantee and does not auto-debit any guarantor.
+            Disclaimer: This timeline is a community trust record. It is not a bank guarantee and does not auto-debit any guarantor.
           </div>
         </div>
       </div>

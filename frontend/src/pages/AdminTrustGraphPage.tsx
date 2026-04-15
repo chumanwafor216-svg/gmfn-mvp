@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
 
@@ -663,7 +663,7 @@ export default function AdminTrustGraphPage() {
         <PageTopNav
           sectionLabel="Trust Graph"
           title="Trust Graph"
-          subtitle="Preparing the trust graph surface..."
+          subtitle="Loading the trust graph..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/command-center"
@@ -697,7 +697,7 @@ export default function AdminTrustGraphPage() {
       <PageTopNav
         sectionLabel="Trust Graph"
         title="Trust Graph"
-        subtitle="Read connectedness, structural concentration, and relationship-based trust shape from the operator layer."
+        subtitle="Read connectedness, structural concentration, and relationship-based trust shape from the operator workspace."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/command-center"
@@ -710,7 +710,7 @@ export default function AdminTrustGraphPage() {
       />
 
       <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
         <div
           style={{
@@ -726,7 +726,7 @@ export default function AdminTrustGraphPage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: isCompact ? 28 : 34,
                 lineHeight: 1.1,
@@ -936,7 +936,7 @@ export default function AdminTrustGraphPage() {
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 {topNodes.length === 0 ? (
                   <div style={helperText()}>
-                    No graph node feed is visible right now.
+                    No graph node data is currently shown.
                   </div>
                 ) : (
                   topNodes.map((node) => (
@@ -1001,7 +1001,7 @@ export default function AdminTrustGraphPage() {
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 {riskEdges.length === 0 ? (
                   <div style={helperText()}>
-                    No explicit flagged edge feed is visible right now.
+                    No flagged relationship data is currently shown.
                   </div>
                 ) : (
                   riskEdges.map((edge) => (
@@ -1133,7 +1133,7 @@ export default function AdminTrustGraphPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Working routes</div>
+            <div style={sectionLabel()}>Next routes</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Move from structural reading into the next operator surface you need.
             </div>
@@ -1159,7 +1159,7 @@ export default function AdminTrustGraphPage() {
               gap: 12,
             }}
           >
-            <Link to="/app/command-center/trust-analytics" style={routeTile(true)}>
+            <OriginLink to="/app/command-center/trust-analytics" style={routeTile(true)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1173,9 +1173,9 @@ export default function AdminTrustGraphPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when the next step is broader pattern reading rather than structure-only interpretation.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/command-center/system-operations" style={routeTile(false)}>
+            <OriginLink to="/app/command-center/system-operations" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1189,9 +1189,9 @@ export default function AdminTrustGraphPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when the structural signal now needs live operational handling.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/command-center/exposure" style={routeTile(false)}>
+            <OriginLink to="/app/command-center/exposure" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1205,9 +1205,9 @@ export default function AdminTrustGraphPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when relationship shape is contributing to concentration or pressure.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/command-center" style={routeTile(false)}>
+            <OriginLink to="/app/command-center" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1221,7 +1221,7 @@ export default function AdminTrustGraphPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Return to the operator entry surface when you need to choose another admin path.
               </div>
-            </Link>
+            </OriginLink>
           </div>
         ) : null}
       </section>

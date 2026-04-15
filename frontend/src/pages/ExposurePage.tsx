@@ -161,7 +161,7 @@ export default function ExposurePage() {
 
   async function loadDefaultedLoansUI() {
     try {
-      const res = await getTrustEvents(120);
+      const res = await getTrustEvents({ limit: 120 });
       const events = safeEvents(res)
         .filter((e) => String(e.event_type || "").toLowerCase() === "loan_defaulted")
         .sort((a, b) => String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")))

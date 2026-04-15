@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "./OriginLink";
 import * as api from "../lib/api";
 
 type NoticeTone = "success" | "error";
@@ -642,14 +642,14 @@ export default function CommunityShopControlPanel() {
                       flexWrap: "wrap",
                     }}
                   >
-                    <Link to="/app/shop-control" style={actionBtn("primary")}>
+                    <OriginLink to="/app/shop-control" style={actionBtn("primary")}>
                       Open Shop Control
-                    </Link>
+                    </OriginLink>
 
                     {publicShopTo ? (
-                      <Link to={publicShopTo} style={actionBtn("secondary")}>
+                      <OriginLink to={publicShopTo} style={actionBtn("secondary")}>
                         Open Public Shop
-                      </Link>
+                      </OriginLink>
                     ) : (
                       <button type="button" disabled style={actionBtn("secondary", true)}>
                         Open Public Shop
@@ -660,9 +660,9 @@ export default function CommunityShopControlPanel() {
                       Copy Shop Link
                     </button>
 
-                    <Link to="/app/marketplace" style={actionBtn("secondary")}>
+                    <OriginLink to="/app/marketplace" style={actionBtn("secondary")}>
                       Marketplace
-                    </Link>
+                    </OriginLink>
                   </div>
                 </div>
               </div>

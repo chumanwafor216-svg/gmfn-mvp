@@ -31,6 +31,7 @@ type ShopProduct = {
   priceText: string;
   currency: string;
   imageUrl: string;
+  visibilityMode: string;
 };
 
 type ShopBroadcast = {
@@ -289,6 +290,9 @@ function normalizeProduct(raw: any, slotNumber: number): ShopProduct | null {
     ),
     currency: firstMeaningful(src?.currency, src?.currency_code, "NGN") || "NGN",
     imageUrl,
+    visibilityMode:
+      firstMeaningful(src?.visibility_mode, "community_visible") ||
+      "community_visible",
   };
 }
 
@@ -491,6 +495,13 @@ export default function ShopGalleryPage() {
         }
 
         const normalizedProducts = rowsOf<any>(productRes)
+          .filter((row) => {
+            const src = row?.item || row?.product || row?.data || row;
+            return (
+              firstMeaningful(src?.visibility_mode, "community_visible") ===
+              "community_visible"
+            );
+          })
           .map((row, index) => normalizeProduct(row, index + 1))
           .filter(Boolean) as ShopProduct[];
 
@@ -612,7 +623,7 @@ export default function ShopGalleryPage() {
       communityName: effectiveCommunityName,
       trustBand: firstMeaningful(shop?.trustBand, broadcast?.trustBand),
       trustScore: firstMeaningful(shop?.trustScore, broadcast?.trustScore),
-      imageUrl: firstMeaningful(broadcast?.imageUrl, shop?.imageUrl),
+      imageUrl: firstMeaningful(shop?.imageUrl),
       whatsapp: firstMeaningful(shop?.whatsapp),
       telegram: firstMeaningful(shop?.telegram),
     };
@@ -620,19 +631,9 @@ export default function ShopGalleryPage() {
 
   const visibleProducts = useMemo(() => products.slice(0, GALLERY_SLOTS_TOTAL), [products]);
 
-  const productSlots = useMemo(() => {
-    return Array.from({ length: GALLERY_SLOTS_TOTAL }, (_, index) => {
-      return visibleProducts[index] || null;
-    });
-  }, [visibleProducts]);
-
   const heroImage = useMemo(() => {
-    return (
-      effectiveShop?.imageUrl ||
-      visibleProducts.find((item) => safeStr(item.imageUrl))?.imageUrl ||
-      ""
-    );
-  }, [effectiveShop, visibleProducts]);
+    return effectiveShop?.imageUrl || "";
+  }, [effectiveShop]);
 
   const absoluteShopLink = useMemo(() => {
     if (typeof window === "undefined") return location.pathname;
@@ -690,7 +691,7 @@ export default function ShopGalleryPage() {
       title: shopTitle,
       text: shopText,
       url: absoluteShopLink,
-      successText: "Shop repost handle opened.",
+      successText: "Shop share opened.",
     });
   }
 
@@ -703,9 +704,49 @@ export default function ShopGalleryPage() {
 
     void shareOrCopy({
       title: product.name,
-      text: `${product.description || "Shop product"} • ${product.priceText}`,
+      text: `${product.description || "Shop product"} - ${product.priceText}`,
       url: productUrl,
-      successText: "Product repost handle opened.",
+      successText: "Product share opened.",
+    });
+  }
+
+  function askForVaultAccess() {
+    const shopTitle = firstMeaningful(
+      effectiveShop?.shopName,
+      effectiveShop?.ownerName,
+      "this shop"
+    );
+
+    const requestText = `Hello, I would like to ask for Vault access for ${shopTitle}. Please let me know if private offers are available by permission.`;
+
+    const whatsapp = safeStr(effectiveShop?.whatsapp).replace(/[^\d+]/g, "");
+    if (whatsapp && typeof window !== "undefined") {
+      window.open(
+        `https://wa.me/${encodeURIComponent(whatsapp)}?text=${encodeURIComponent(requestText)}`,
+        "_blank",
+        "noopener,noreferrer"
+      );
+      return;
+    }
+
+    const telegram = safeStr(effectiveShop?.telegram).replace(/^@+/, "");
+    if (telegram && typeof window !== "undefined") {
+      window.open(
+        `https://t.me/${encodeURIComponent(telegram)}`,
+        "_blank",
+        "noopener,noreferrer"
+      );
+      setNotice({
+        tone: "success",
+        text: "Telegram opened. Ask for Vault access there.",
+      });
+      return;
+    }
+
+    safeCopy(`${requestText}\n${absoluteShopLink}`);
+    setNotice({
+      tone: "success",
+      text: "Vault access request copied. Send it to the shop owner.",
     });
   }
 
@@ -725,8 +766,8 @@ export default function ShopGalleryPage() {
       <section
         style={pageCard(
           heroImage
-            ? "linear-gradient(180deg, rgba(15,59,116,0.08) 0%, rgba(255,255,255,0.98) 100%)"
-            : "linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"
+            ? "linear-gradient(180deg, rgba(8,17,31,0.82) 0%, rgba(11,31,51,0.94) 52%, rgba(16,42,67,0.98) 100%)"
+            : "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
         )}
       >
         <div
@@ -942,7 +983,7 @@ export default function ShopGalleryPage() {
                   </div>
 
                   <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
-                    Share this shop outside the community with a clean shop link and repost handle.
+                    Share this shop outside the community with a clean public shop link.
                   </div>
                 </div>
               </div>
@@ -963,9 +1004,9 @@ export default function ShopGalleryPage() {
 
                 <span style={badge(false)}>
                   Trust:{" "}
-                  {safeStr(effectiveShop?.trustBand || "Trust pending")}
+                  {safeStr(effectiveShop?.trustBand || "Trust reading not available yet")}
                   {safeStr(effectiveShop?.trustScore)
-                    ? ` • ${safeStr(effectiveShop?.trustScore)}`
+                    ? ` - ${safeStr(effectiveShop?.trustScore)}`
                     : ""}
                 </span>
 
@@ -974,6 +1015,9 @@ export default function ShopGalleryPage() {
                     {safeStr(effectiveShop?.communityName)}
                   </span>
                 ) : null}
+
+                <span style={badge(false)}>Vault</span>
+                <span style={badge(false)}>Private access by permission</span>
 
                 {safeStr(effectiveShop?.whatsapp) ? (
                   <span style={badge(false)}>
@@ -997,13 +1041,219 @@ export default function ShopGalleryPage() {
                 }}
               >
                 <button type="button" onClick={repostShop} style={primaryBtn(false)}>
-                  Repost shop
+                  Share shop
                 </button>
 
                 <button type="button" onClick={copyShopLink} style={secondaryBtn(false)}>
                   Copy shop link
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {broadcast ? (
+        <section
+          style={pageCard(
+            "linear-gradient(180deg, #091523 0%, #10263C 52%, #153756 100%)"
+          )}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <div>
+              <div style={{ ...sectionLabel(), color: "#D7E3F1" }}>Spotlight strip</div>
+              <div style={{ marginTop: 8, ...helperText(), color: "#D7E3F1" }}>
+                Spotlight stays separate from the shop signboard and the product blocks.
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <span style={badge(true)}>Community spotlight</span>
+              {safeStr(broadcast.sourceClanName) ? (
+                <span style={badge(false)}>{safeStr(broadcast.sourceClanName)}</span>
+              ) : null}
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: 18,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "280px minmax(0, 1fr)",
+              gap: 16,
+              alignItems: "stretch",
+            }}
+          >
+            <div
+              style={{
+                ...innerCard(
+                  "linear-gradient(180deg, #0A1625 0%, #10263C 50%, #163A58 100%)"
+                ),
+                padding: 0,
+                overflow: "hidden",
+                minHeight: 220,
+                border: "1px solid rgba(212,175,55,0.18)",
+                boxShadow: "0 20px 42px rgba(2,12,27,0.26)",
+              }}
+            >
+              {safeStr(broadcast.imageUrl) ? (
+                <img
+                  src={broadcast.imageUrl}
+                  alt={safeStr(broadcast.sourceShopName || "Spotlight")}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    minHeight: 220,
+                    objectFit: "cover",
+                    display: "block",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    minHeight: 220,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    textAlign: "center",
+                    padding: 18,
+                    color: "#D7E3F1",
+                    fontWeight: 800,
+                  }}
+                >
+                  Spotlight image coming soon
+                </div>
+              )}
+            </div>
+
+            <div
+              style={{
+                ...innerCard("rgba(255,255,255,0.96)"),
+                border: "1px solid rgba(212,175,55,0.14)",
+                boxShadow: "0 18px 38px rgba(2,12,27,0.18)",
+              }}
+            >
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {safeStr(broadcast.sourceShopName) ? (
+                  <span style={badge(true)}>{safeStr(broadcast.sourceShopName)}</span>
+                ) : null}
+                {safeStr(broadcast.trustBand) ? (
+                  <span style={badge(false)}>
+                    Trust: {safeStr(broadcast.trustBand)}
+                    {safeStr(broadcast.trustScore)
+                      ? ` - ${safeStr(broadcast.trustScore)}`
+                      : ""}
+                  </span>
+                ) : null}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 14,
+                  color: "#0B1F33",
+                  fontSize: 20,
+                  fontWeight: 900,
+                  lineHeight: 1.35,
+                }}
+              >
+                {safeStr(broadcast.message || "This shop is active in the community spotlight.")}
+              </div>
+
+              <div style={{ marginTop: 12, ...helperText() }}>
+                This strip shows current spotlight context only. Product access remains inside the community-visible product blocks below.
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      <section
+        style={pageCard(
+          "linear-gradient(180deg, #091523 0%, #10263C 52%, #153756 100%)"
+        )}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.1fr) 320px",
+            gap: 16,
+            alignItems: "stretch",
+          }}
+        >
+          <div
+            style={{
+              ...innerCard("rgba(255,255,255,0.96)"),
+              border: "1px solid rgba(212,175,55,0.14)",
+              boxShadow: "0 18px 38px rgba(2,12,27,0.18)",
+            }}
+          >
+            <div style={{ ...sectionLabel(), color: "#5D7389" }}>Vault</div>
+            <div
+              style={{
+                marginTop: 10,
+                color: "#0B1F33",
+                fontSize: 22,
+                fontWeight: 900,
+                lineHeight: 1.3,
+              }}
+            >
+              Some offers are private.
+            </div>
+            <div style={{ marginTop: 12, ...helperText() }}>
+              Vault is the private access layer for this shop. Private offers and products are not
+              shown publicly here. The shop owner decides who can view them.
+            </div>
+            <div style={{ marginTop: 12, ...helperText() }}>
+              If you want access, ask the owner directly. Private access is shared by permission
+              only.
+            </div>
+            <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <span style={badge(true)}>Vault</span>
+              <span style={badge(false)}>Private access</span>
+              <span style={badge(false)}>Controlled commerce</span>
+            </div>
+          </div>
+
+          <div
+            style={{
+              ...innerCard(
+                "linear-gradient(180deg, #0A1625 0%, #10263C 56%, #173B59 100%)"
+              ),
+              border: "1px solid rgba(212,175,55,0.16)",
+              boxShadow: "0 18px 40px rgba(2,12,27,0.24)",
+            }}
+          >
+            <div style={{ ...sectionLabel(), color: "#D7E3F1" }}>Private access</div>
+            <div
+              style={{
+                marginTop: 10,
+                color: "#F8FBFF",
+                fontSize: 18,
+                fontWeight: 900,
+                lineHeight: 1.35,
+              }}
+            >
+              Ask for access
+            </div>
+            <div style={{ marginTop: 10, ...helperText(), color: "#D7E3F1" }}>
+              Ask the owner if private offers are available for you. Nothing inside Vault is shown
+              publicly until access is granted.
+            </div>
+            <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button type="button" onClick={askForVaultAccess} style={primaryBtn(false)}>
+                Ask for access
+              </button>
+              <button type="button" onClick={copyShopLink} style={secondaryBtn(false)}>
+                Copy shop link
+              </button>
             </div>
           </div>
         </div>
@@ -1020,22 +1270,41 @@ export default function ShopGalleryPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Visible products</div>
+            <div style={sectionLabel()}>Product blocks</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Twelve product frames stay complete here. This is a visitor-facing gallery, so management controls remain outside this surface.
+              Public products appear here. Vault stays separate, so private offers are not mixed
+              into the public gallery.
             </div>
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <span style={badge(true)}>
-              {visibleProducts.length} live / {GALLERY_SLOTS_TOTAL} frames
+              {visibleProducts.length} public products live
             </span>
+            <span style={badge(false)}>Up to {GALLERY_SLOTS_TOTAL} public slots</span>
           </div>
         </div>
 
         {loading ? (
           <div style={{ marginTop: 18, color: "#64748B", lineHeight: 1.8 }}>
             Loading shop gallery...
+          </div>
+        ) : visibleProducts.length === 0 ? (
+          <div
+            style={{
+              marginTop: 18,
+              ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"),
+              border: "1px solid rgba(11,31,51,0.10)",
+              boxShadow: "0 18px 40px rgba(2,12,27,0.08)",
+            }}
+          >
+            <div style={{ color: "#0B1F33", fontSize: 18, fontWeight: 900, lineHeight: 1.3 }}>
+              No public products are showing yet.
+            </div>
+            <div style={{ marginTop: 10, ...helperText(), maxWidth: 760 }}>
+              Check back later for public offers. If you are looking for something private, use the
+              Vault card above to ask the owner for access.
+            </div>
           </div>
         ) : (
           <div
@@ -1048,102 +1317,20 @@ export default function ShopGalleryPage() {
               gap: 14,
             }}
           >
-            {productSlots.map((product, index) => {
+            {visibleProducts.map((product, index) => {
               const slotNumber = String(index + 1).padStart(2, "0");
-
-              if (!product) {
-                return (
-                  <div
-                    key={`empty-slot-${slotNumber}`}
-                    style={{
-                      ...innerCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
-                      padding: 0,
-                      overflow: "hidden",
-                      border: "1px solid rgba(11,99,209,0.10)",
-                      minHeight: 430,
-                      display: "flex",
-                      flexDirection: "column",
-                    }}
-                  >
-                    <div
-                      style={{
-                        height: 360,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        background:
-                          "linear-gradient(180deg, #EEF5FF 0%, #F8FBFF 100%)",
-                        borderBottom: "1px solid rgba(11,31,51,0.08)",
-                        position: "relative",
-                      }}
-                    >
-                      <span
-                        style={{
-                          position: "absolute",
-                          top: 12,
-                          left: 12,
-                          ...badge(true),
-                        }}
-                      >
-                        Slot {slotNumber}
-                      </span>
-
-                      <div
-                        style={{
-                          color: "#64748B",
-                          fontSize: 14,
-                          fontWeight: 800,
-                          textAlign: "center",
-                          maxWidth: 220,
-                          lineHeight: 1.75,
-                          padding: 20,
-                        }}
-                      >
-                        More products soon
-                      </div>
-                    </div>
-
-                    <div
-                      style={{
-                        padding: 10,
-                        display: "grid",
-                        gap: 6,
-                      }}
-                    >
-                      <div
-                        style={{
-                          color: "#0B1F33",
-                          fontWeight: 900,
-                          fontSize: 16,
-                          lineHeight: 1.3,
-                        }}
-                      >
-                        Reserved display slot
-                      </div>
-
-                      <div style={{ ...helperText(), fontSize: 13 }}>
-                        The 12-frame gallery stays complete even when fewer live products are visible.
-                      </div>
-
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                        <span style={badge(false)}>Visitor frame</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
 
               return (
                 <div
                   key={`shop-product-${product.id || slotNumber}`}
                   id={product.id ? `product-${product.id}` : undefined}
                   style={{
-                    ...innerCard("#FFFFFF"),
+                    ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"),
                     padding: 0,
                     overflow: "hidden",
-                    border: "1px solid rgba(11,31,51,0.08)",
+                    border: "1px solid rgba(11,31,51,0.10)",
                     boxShadow:
-                      "0 18px 40px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.02)",
+                      "0 24px 48px rgba(2,12,27,0.08), 0 8px 18px rgba(2,12,27,0.04)",
                     minHeight: 430,
                     display: "flex",
                     flexDirection: "column",
@@ -1154,7 +1341,7 @@ export default function ShopGalleryPage() {
                       position: "relative",
                       height: 360,
                       background:
-                        "linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%)",
+                        "linear-gradient(180deg, #0F2133 0%, #173B59 100%)",
                       borderBottom: "1px solid rgba(11,31,51,0.08)",
                       overflow: "hidden",
                     }}
@@ -1179,14 +1366,14 @@ export default function ShopGalleryPage() {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          color: "#64748B",
+                          color: "#D7E3F1",
                           fontSize: 14,
                           fontWeight: 800,
                           textAlign: "center",
                           padding: 16,
                         }}
                       >
-                        Product image pending
+                        Product image coming soon
                       </div>
                     )}
 
@@ -1215,11 +1402,16 @@ export default function ShopGalleryPage() {
 
                   <div
                     style={{
-                      padding: 10,
+                      padding: 12,
                       display: "grid",
-                      gap: 6,
+                      gap: 8,
                     }}
                   >
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <span style={badge(false)}>Storefront block</span>
+                      <span style={badge(false)}>Community-visible</span>
+                    </div>
+
                     <div
                       style={{
                         color: "#0B1F33",
@@ -1268,7 +1460,7 @@ export default function ShopGalleryPage() {
                         onClick={() => repostProduct(product)}
                         style={secondaryBtn(false)}
                       >
-                        Repost
+                        Share
                       </button>
                     </div>
                   </div>

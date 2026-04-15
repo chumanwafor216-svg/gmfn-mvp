@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 
 type Preview = {
   code: string;
@@ -219,7 +220,7 @@ export default function JoinByInvitePage() {
 
   useEffect(() => {
     if (typeof document !== "undefined") {
-      document.title = "GSN | Invitation Preview";
+      document.title = "GMFN | Invitation Preview";
     }
   }, []);
 
@@ -543,13 +544,13 @@ export default function JoinByInvitePage() {
                   {continuing ? "Continuing..." : "Continue invited route"}
                 </button>
 
-                <Link to="/guide" style={btn(false)}>
+                <OriginLink to="/guide" style={btn(false)}>
                   Open My GMFN and I
-                </Link>
+                </OriginLink>
 
-                <Link to="/welcome" style={btn(false)}>
+                <OriginLink to="/welcome" style={btn(false)}>
                   Open Welcome
-                </Link>
+                </OriginLink>
               </div>
 
               <div style={{ marginTop: 12, ...helperText() }}>

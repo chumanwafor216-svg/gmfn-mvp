@@ -140,7 +140,7 @@ export default function TrustGraphEdgeList(props: {
                 }}
               >
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                  <Pill kind={edgeKind(e.edge_type) as any}>{safeStr(e.edge_type)}</Pill>
+                  <Pill kind={edgeKind(String(e.edge_type)) as any}>{safeStr(e.edge_type)}</Pill>
                   {isInbound ? <Pill kind="green">inbound</Pill> : null}
                   {isOutbound ? <Pill kind="gold">outbound</Pill> : null}
                 </div>
@@ -213,8 +213,8 @@ export default function TrustGraphEdgeList(props: {
                 <div style={{ marginTop: 10 }}>
                   <div style={{ fontSize: 11, color: "#64748b", fontWeight: 900 }}>Provenance</div>
                   <div style={{ marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {e.provenance.map((p) => (
-                      <Pill key={p} kind="gray">
+                    {e.provenance.map((p: any) => (
+                      <Pill key={String(p)} kind="gray">
                         {p}
                       </Pill>
                     ))}

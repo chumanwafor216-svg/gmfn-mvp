@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import {
   activateMembership,
   setAccessToken,
@@ -246,7 +247,7 @@ export default function ActivateMembershipPage() {
 
   useEffect(() => {
     if (typeof document !== "undefined") {
-      document.title = "GSN | Activate Membership";
+      document.title = "GMFN | Activate Membership";
     }
   }, []);
 
@@ -342,7 +343,11 @@ export default function ActivateMembershipPage() {
   return (
     <div style={pageShell()}>
       <div style={{ maxWidth: 920, margin: "0 auto", display: "grid", gap: 18 }}>
-        <div style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}>
+        <div
+          style={pageCard(
+            "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+          )}
+        >
           <div style={labelText()}>Approved member route</div>
 
           <div
@@ -351,7 +356,7 @@ export default function ActivateMembershipPage() {
               fontSize: isCompact ? 30 : 36,
               lineHeight: 1.08,
               fontWeight: 1000,
-              color: "#0B1F33",
+              color: "#F8FBFF",
               maxWidth: 760,
             }}
           >
@@ -361,7 +366,7 @@ export default function ActivateMembershipPage() {
           <div
             style={{
               marginTop: 12,
-              color: "#5F768D",
+              color: "#D7E3F1",
               lineHeight: 1.75,
               fontSize: 15,
               maxWidth: 840,
@@ -527,17 +532,17 @@ export default function ActivateMembershipPage() {
                   flexWrap: "wrap",
                 }}
               >
-                <Link to="/guide" style={secondaryLink()}>
+                <OriginLink to="/guide" style={secondaryLink()}>
                   Open My GMFN and I
-                </Link>
+                </OriginLink>
 
-                <Link to="/login" style={secondaryLink()}>
+                <OriginLink to="/login" style={secondaryLink()}>
                   Go to Login
-                </Link>
+                </OriginLink>
 
-                <Link to="/welcome" style={secondaryLink()}>
+                <OriginLink to="/welcome" style={secondaryLink()}>
                   Back to Welcome
-                </Link>
+                </OriginLink>
               </div>
             </div>
           </div>

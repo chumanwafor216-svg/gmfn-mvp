@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
 
@@ -663,7 +663,7 @@ export default function LoanReadinessPage() {
   }, [me]);
 
   const gmfnId = useMemo(() => {
-    return firstTruthy(me?.gmfn_id, "Pending");
+    return firstTruthy(me?.gmfn_id, "Awaiting issue");
   }, [me]);
 
   const communityLabel = useMemo(() => {
@@ -863,7 +863,7 @@ export default function LoanReadinessPage() {
     }
 
     if (guarantorLoans.length === 0) {
-      rows.push("No active guarantor-side support burden is visible right now.");
+      rows.push("No active guarantor-side support burden is currently shown.");
     }
 
     if (poolNumber > 0) {
@@ -966,9 +966,12 @@ export default function LoanReadinessPage() {
         }
       : {
           bg: "#F3FBF5",
-          border: "1px solid rgba(34,197,94,0.16)",
-          text: "#166534",
-        };
+        border: "1px solid rgba(34,197,94,0.16)",
+        text: "#166534",
+      };
+
+  const readinessSupportActive =
+    cameFromWithdrawalSupport || Boolean(activeBorrowerLoan) || guarantorInbox.length > 0;
 
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
@@ -990,8 +993,8 @@ export default function LoanReadinessPage() {
       >
         <PageTopNav
           sectionLabel="Loan Readiness"
-          title="Loan Readiness"
-          subtitle="Preparing the support-readiness surface..."
+          title="Support Readiness"
+          subtitle="Loading the support-readiness surface..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/withdrawal-instructions"
@@ -1027,7 +1030,7 @@ export default function LoanReadinessPage() {
     >
       <PageTopNav
         sectionLabel="Loan Readiness"
-        title="Loan Readiness"
+        title="Support Readiness"
         subtitle="This page is a support-continuation stage. It helps the member see whether the next support move is clean enough to continue, especially after Money Out has already determined that support is needed."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
@@ -1037,14 +1040,18 @@ export default function LoanReadinessPage() {
           { label: "Loan Suggestions", to: "/app/loan-suggestions" },
           { label: "Loan Workbench", to: "/app/loan-workbench" },
         ]}
-        utilityLinks={[
-          { label: "Marketplace", to: "/app/marketplace" },
-          { label: "Loans", to: "/app/loans" },
-        ]}
+        utilityLinks={
+          readinessSupportActive
+            ? [{ label: "Loans", to: "/app/loans" }]
+            : [
+                { label: "Marketplace", to: "/app/marketplace" },
+                { label: "Loans", to: "/app/loans" },
+              ]
+        }
       />
 
       <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
         <div
           style={{
@@ -1060,9 +1067,10 @@ export default function LoanReadinessPage() {
                 width: "100%",
                 height: 148,
                 borderRadius: 20,
-                border: "1px solid rgba(11,31,51,0.08)",
+                border: "1px solid rgba(212,175,55,0.22)",
                 overflow: "hidden",
-                background: "linear-gradient(180deg, #E8F0FF 0%, #DDEBFF 100%)",
+                background: "linear-gradient(180deg, rgba(8,17,31,0.88) 0%, rgba(16,42,67,0.96) 100%)",
+                boxShadow: "0 20px 44px rgba(2,12,27,0.32)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1082,7 +1090,7 @@ export default function LoanReadinessPage() {
               ) : (
                 <div
                   style={{
-                    color: "#37506A",
+                    color: "#F8FBFF",
                     fontWeight: 900,
                     fontSize: 20,
                     textAlign: "center",
@@ -1102,7 +1110,7 @@ export default function LoanReadinessPage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: isCompact ? 28 : 34,
                 lineHeight: 1.1,
@@ -1111,7 +1119,7 @@ export default function LoanReadinessPage() {
               Support readiness for {memberName}
             </div>
 
-            <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
+            <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
               Loan readiness is not a loose side page. Once a support-backed movement
               begins, this stage should help the member understand whether the next
               support move is clean enough to continue, or whether an earlier pressure
@@ -1129,6 +1137,7 @@ export default function LoanReadinessPage() {
               <span style={badge(true)}>Community ID: {publicCommunityId}</span>
               <span style={badge(false)}>GMFN ID: {gmfnId}</span>
               {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
+              <span style={badge(false)}>Current page: Loan readiness</span>
               <span style={badge(false)}>Current step: Readiness</span>
               {cameFromWithdrawalSupport ? (
                 <span style={badge(false)}>Source: Money Out support handoff</span>
@@ -1316,7 +1325,7 @@ export default function LoanReadinessPage() {
                   lineHeight: 1.25,
                 }}
               >
-                {cameFromWithdrawalSupport ? safeStr(supportGap || "Pending") : "—"}
+                {cameFromWithdrawalSupport ? safeStr(supportGap || "Awaiting issue") : "Not available yet"}
               </div>
             </div>
 
@@ -1346,7 +1355,7 @@ export default function LoanReadinessPage() {
                   lineHeight: 1.35,
                 }}
               >
-                {safeDateTime(activeBorrowerLoan?.createdAt) || "—"}
+                {safeDateTime(activeBorrowerLoan?.createdAt) || "Not available yet"}
               </div>
             </div>
           </div>
@@ -1448,10 +1457,10 @@ export default function LoanReadinessPage() {
 
                 <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                   <div style={helperText()}>
-                    Requested withdrawal amount: {withdrawalAmount || "Pending"} {poolCurrency}
+                    Requested withdrawal amount: {withdrawalAmount || "Awaiting issue"} {poolCurrency}
                   </div>
                   <div style={helperText()}>
-                    Support gap: {safeStr(supportGap || "Pending")}
+                    Support gap: {safeStr(supportGap || "Awaiting issue")}
                   </div>
                   {withdrawalNote ? (
                     <div style={helperText()}>
@@ -1604,9 +1613,13 @@ export default function LoanReadinessPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Working routes</div>
+            <div style={sectionLabel()}>
+              {readinessSupportActive ? "Support continuation routes" : "Next routes"}
+            </div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Move from readiness reading into the exact support-continuation page you need.
+              {readinessSupportActive
+                ? "Stay inside the support path and move only to the next exact continuation surface."
+                : "Move from readiness reading into the exact support-continuation page you need."}
             </div>
           </div>
 
@@ -1630,7 +1643,7 @@ export default function LoanReadinessPage() {
               gap: 12,
             }}
           >
-            <Link to={recommendedNext.ctaTo} style={routeTile(true)}>
+            <OriginLink to={recommendedNext.ctaTo} style={routeTile(true)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1647,9 +1660,9 @@ export default function LoanReadinessPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 {recommendedNext.detail}
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/loan-suggestions" style={routeTile(false)}>
+            <OriginLink to="/app/loan-suggestions" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1663,9 +1676,9 @@ export default function LoanReadinessPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when the next question is candidate fit after readiness is clear.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/loan-workbench" style={routeTile(false)}>
+            <OriginLink to="/app/loan-workbench" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1679,25 +1692,27 @@ export default function LoanReadinessPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this for deeper support handling once readiness is clear.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/marketplace#marketplace-loans-support" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
-                Support Start Surface
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Return to the selected-community support surface when the draft itself must be started or resumed.
-              </div>
-            </Link>
+            {(!readinessSupportActive || !activeBorrowerLoan) ? (
+              <OriginLink to="/app/marketplace#marketplace-loans-support" style={routeTile(false)}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 17,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  Support Start Surface
+                </div>
+                <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                  Return to the selected-community support surface when the draft itself must be started or resumed.
+                </div>
+              </OriginLink>
+            ) : null}
 
-            <Link to="/app/guarantor-inbox" style={routeTile(false)}>
+            <OriginLink to="/app/guarantor-inbox" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1711,42 +1726,47 @@ export default function LoanReadinessPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open the queue if someone is waiting directly on your decision.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/withdrawal-instructions" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
-                Money Out
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Return to the originating withdrawal path only when you need to verify the handoff source.
-              </div>
-            </Link>
+            {!readinessSupportActive ? (
+              <>
+                <OriginLink to="/app/withdrawal-instructions" style={routeTile(false)}>
+                  <div
+                    style={{
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      fontSize: 17,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    Money Out
+                  </div>
+                  <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                    Return to the originating withdrawal path only when you need to verify the handoff source.
+                  </div>
+                </OriginLink>
 
-            <Link to="/app/notifications" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
-                Action Inbox
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the broader waiting picture matters around support response.
-              </div>
-            </Link>
+                <OriginLink to="/app/notifications" style={routeTile(false)}>
+                  <div
+                    style={{
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      fontSize: 17,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    Action Inbox
+                  </div>
+                  <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                    Use this when the broader waiting picture matters around support response.
+                  </div>
+                </OriginLink>
+              </>
+            ) : null}
           </div>
         ) : null}
       </section>
     </div>
   );
 }
+

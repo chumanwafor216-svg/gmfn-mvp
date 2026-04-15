@@ -35,7 +35,7 @@ const memberRoutes = [
 const adminRoutes = [
   ["/admin/exposure", "Safety & Risk"],
   ["/admin/incomplete-loans", "Incomplete Loans"],
-  ["/admin/trust-events", "Audit Log"],
+  ["/admin/trust-events", "Trust Events"],
   ["/admin/trust-graph", "Trust Graph"],
   ["/admin/identity-risk", "Identity Risk"],
   ["/admin/revenue-allocation", "Revenue Allocation"],

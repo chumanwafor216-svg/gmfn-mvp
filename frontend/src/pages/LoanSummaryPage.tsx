@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
   decideLoanGuarantor,
@@ -8,6 +9,7 @@ import {
   getLoanGuarantorSuggestions,
   getLoanGuarantors,
   getLoanSummary,
+  listExpectedPayments,
   getMe,
   getRevenueAllocation,
   getSelectedClanId,
@@ -89,6 +91,23 @@ type Repayment = {
   id?: number;
   amount: number | string;
   created_at?: string;
+};
+
+type ExpectedPayment = {
+  id?: number | string | null;
+  expected_type?: string | null;
+  status?: string | null;
+  amount?: string | number | null;
+  currency?: string | null;
+  reference_display?: string | null;
+  reference_normalized?: string | null;
+  confirmed_at?: string | null;
+  due_at?: string | null;
+  status_reason?: string | null;
+  matched_bank_event_id?: number | string | null;
+  meta?: any;
+  meta_json?: any;
+  loan_id?: number | string | null;
 };
 
 type Suggestion = {
@@ -721,6 +740,7 @@ export default function LoanSummaryPage() {
   const [summary, setSummary] = useState<LoanSummary | null>(null);
   const [guarantors, setGuarantors] = useState<LoanGuarantor[]>([]);
   const [repayments, setRepayments] = useState<Repayment[]>([]);
+  const [expectedPayments, setExpectedPayments] = useState<ExpectedPayment[]>([]);
   const [events, setEvents] = useState<TrustEvent[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [revenuePreview, setRevenuePreview] = useState<RevenuePreview | null>(null);
@@ -770,6 +790,10 @@ export default function LoanSummaryPage() {
   const loanStatus = lc(summary?.status);
   const canActOnGuarantors = loanStatus === "pending";
   const canRepay = loanStatus === "approved" || loanStatus === "disbursed";
+  const supportItemActive =
+    loanStatus === "pending" ||
+    loanStatus === "approved" ||
+    loanStatus === "disbursed";
 
   const latestEvent = useMemo(() => {
     const xs = [...events].filter((e) => !!e.created_at);
@@ -788,6 +812,20 @@ export default function LoanSummaryPage() {
 
   const latestReason = safeStr(latestMeta?.reason || "");
   const latestNote = safeStr(latestMeta?.note || latestMeta?.message || "");
+
+  const latestRepaymentExpectedPayment = useMemo(() => {
+    const rows = [...expectedPayments];
+    rows.sort((a, b) => {
+      const ta = new Date(
+        firstTruthy(a?.confirmed_at, a?.due_at, a?.meta?.created_at, a?.meta_json?.created_at)
+      ).getTime();
+      const tb = new Date(
+        firstTruthy(b?.confirmed_at, b?.due_at, b?.meta?.created_at, b?.meta_json?.created_at)
+      ).getTime();
+      return (Number.isFinite(tb) ? tb : 0) - (Number.isFinite(ta) ? ta : 0);
+    });
+    return rows[0] || null;
+  }, [expectedPayments]);
 
   const memberName = useMemo(() => {
     return (
@@ -874,6 +912,33 @@ export default function LoanSummaryPage() {
         setRepayments(safeItems<Repayment>(repaymentsRes));
       } catch {
         setRepayments([]);
+      }
+
+      try {
+        const expectedRes = await listExpectedPayments({
+          clan_id: loanClanId || undefined,
+          expected_type: "repayment",
+          limit: 100,
+        }).catch(() => null);
+
+        const expectedItems = Array.isArray(expectedRes)
+          ? expectedRes
+          : Array.isArray((expectedRes as any)?.items)
+          ? (expectedRes as any).items
+          : Array.isArray((expectedRes as any)?.data?.items)
+          ? (expectedRes as any).data.items
+          : [];
+
+        setExpectedPayments(
+          expectedItems.filter((item: any) => {
+            const itemLoanId = Number(
+              item?.loan_id || item?.meta?.loan_id || item?.meta_json?.loan_id || 0
+            );
+            return itemLoanId === Number(summaryRes.id);
+          }) as ExpectedPayment[]
+        );
+      } catch {
+        setExpectedPayments([]);
       }
 
       try {
@@ -1038,7 +1103,7 @@ export default function LoanSummaryPage() {
         <PageTopNav
           sectionLabel="Loan Summary"
           title="Loan Summary"
-          subtitle="Preparing the loan detail surface..."
+          subtitle="Loading the loan detail surface..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/loans"
@@ -1116,16 +1181,20 @@ export default function LoanSummaryPage() {
           { label: "Loan Workbench", to: "/app/loan-workbench" },
           { label: "Finance", to: "/app/finance" },
         ]}
-        utilityLinks={[
-          { label: "Marketplace", to: "/app/marketplace" },
-          { label: "Notifications", to: "/app/notifications" },
-        ]}
+        utilityLinks={
+          supportItemActive
+            ? [{ label: "Loans & Support", to: "/app/loans" }]
+            : [
+                { label: "Marketplace", to: "/app/marketplace" },
+                { label: "Notifications", to: "/app/notifications" },
+              ]
+        }
       />
 
       {feedback ? <div style={feedbackCard(feedback.tone)}>{feedback.text}</div> : null}
 
       <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
         <div
           style={{
@@ -1143,9 +1212,10 @@ export default function LoanSummaryPage() {
                 width: "100%",
                 height: 148,
                 borderRadius: 20,
-                border: "1px solid rgba(11,31,51,0.08)",
+                border: "1px solid rgba(212,175,55,0.22)",
                 overflow: "hidden",
-                background: "linear-gradient(180deg, #E8F0FF 0%, #DDEBFF 100%)",
+                background: "linear-gradient(180deg, rgba(8,17,31,0.88) 0%, rgba(16,42,67,0.96) 100%)",
+                boxShadow: "0 20px 44px rgba(2,12,27,0.32)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1165,7 +1235,7 @@ export default function LoanSummaryPage() {
               ) : (
                 <div
                   style={{
-                    color: "#37506A",
+                    color: "#F8FBFF",
                     fontWeight: 900,
                     fontSize: 20,
                     textAlign: "center",
@@ -1185,7 +1255,7 @@ export default function LoanSummaryPage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontSize: 30,
                 fontWeight: 1000,
                 lineHeight: 1.12,
@@ -1689,7 +1759,7 @@ export default function LoanSummaryPage() {
             <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
               {suggestions.length === 0 ? (
                 <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                  No fit suggestion is visible right now.
+                  No fit suggestion is currently shown.
                 </div>
               ) : (
                 suggestions.map((s, index) => (
@@ -1785,9 +1855,51 @@ export default function LoanSummaryPage() {
           {!collapsed.repayment ? (
             <>
               <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+                {latestRepaymentExpectedPayment ? (
+                  <div
+                    style={innerCard(
+                      latestRepaymentExpectedPayment.matched_bank_event_id
+                        ? "#F3FBF5"
+                        : "#F8FBFF"
+                    )}
+                  >
+                    <div style={sectionLabel()}>Repayment expectation</div>
+                    <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
+                      <div style={helperText()}>
+                        Status: {safeStr(latestRepaymentExpectedPayment.status || "expected")}
+                      </div>
+                      <div style={helperText()}>
+                        Reference: {firstTruthy(
+                          latestRepaymentExpectedPayment.reference_display,
+                          latestRepaymentExpectedPayment.reference_normalized,
+                          "Awaiting reference"
+                        )}
+                      </div>
+                      <div style={helperText()}>
+                        Amount: {safeStr(latestRepaymentExpectedPayment.amount || "0.00")}{" "}
+                        {safeStr(latestRepaymentExpectedPayment.currency || currency)}
+                      </div>
+                      <div style={helperText()}>
+                        {latestRepaymentExpectedPayment.matched_bank_event_id
+                          ? `Matched bank event visible: ${safeStr(latestRepaymentExpectedPayment.matched_bank_event_id)}`
+                          : latestRepaymentExpectedPayment.confirmed_at
+                          ? `Confirmed at: ${safeDateTime(latestRepaymentExpectedPayment.confirmed_at)}`
+                          : latestRepaymentExpectedPayment.due_at
+                          ? `Due at: ${safeDateTime(latestRepaymentExpectedPayment.due_at)}`
+                          : "Awaiting reconciliation visibility in Finance"}
+                      </div>
+                      {safeStr(latestRepaymentExpectedPayment.status_reason) ? (
+                        <div style={helperText()}>
+                          Reason: {safeStr(latestRepaymentExpectedPayment.status_reason)}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
+
                 {repayments.length === 0 ? (
                   <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                    No repayment record is visible yet.
+                    No repayment record is shown yet.
                   </div>
                 ) : (
                   repayments.map((repayment, index) => (
@@ -1839,16 +1951,16 @@ export default function LoanSummaryPage() {
                   flexWrap: "wrap",
                 }}
               >
-                <Link
+                <OriginLink
                   to={`/app/payment/loans/${summary.id}`}
                   style={primaryBtn(!canRepay)}
                 >
                   {canRepay ? "Loan Payment Instructions" : "Repayment Opens After Approval"}
-                </Link>
+                </OriginLink>
 
-                <Link to="/app/finance" style={secondaryBtn(false)}>
+                <OriginLink to="/app/finance" style={secondaryBtn(false)}>
                   Open Finance
-                </Link>
+                </OriginLink>
               </div>
             </>
           ) : null}
@@ -2018,9 +2130,9 @@ export default function LoanSummaryPage() {
             )}
 
             <div style={{ marginTop: 14 }}>
-              <Link to="/app/revenue-allocation" style={secondaryBtn(false)}>
+              <OriginLink to="/app/revenue-allocation" style={secondaryBtn(false)}>
                 Open Revenue Allocation
-              </Link>
+              </OriginLink>
             </div>
           </div>
         </div>
@@ -2037,9 +2149,13 @@ export default function LoanSummaryPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Working routes</div>
+            <div style={sectionLabel()}>
+              {supportItemActive ? "Support continuation routes" : "Next routes"}
+            </div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Move from loan summary into the exact next page you need.
+              {supportItemActive
+                ? "Stay inside the current support item and move only to the next exact continuation surface."
+                : "Move from loan summary into the exact next page you need."}
             </div>
           </div>
 
@@ -2061,7 +2177,7 @@ export default function LoanSummaryPage() {
               gap: 12,
             }}
           >
-            <Link to="/app/loan-workbench" style={routeTile(true)}>
+            <OriginLink to="/app/loan-workbench" style={routeTile(true)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -2075,9 +2191,9 @@ export default function LoanSummaryPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Continue deeper support handling here.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/loan-suggestions" style={routeTile(false)}>
+            <OriginLink to="/app/loan-suggestions" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -2091,9 +2207,9 @@ export default function LoanSummaryPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when the next question is guarantor fit.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/loan-readiness" style={routeTile(false)}>
+            <OriginLink to="/app/loan-readiness" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -2107,9 +2223,9 @@ export default function LoanSummaryPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when the question is whether the path is clean enough to continue.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/revenue-allocation" style={routeTile(false)}>
+            <OriginLink to="/app/revenue-allocation" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -2123,9 +2239,9 @@ export default function LoanSummaryPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Read fee and distribution logic here.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link
+            <OriginLink
               to={canRepay ? `/app/payment/loans/${summary.id}` : "/app/finance"}
               style={routeTile(false)}
             >
@@ -2144,23 +2260,25 @@ export default function LoanSummaryPage() {
                   ? "Use this when the support item has moved into repayment."
                   : "Use this when the next question is the broader money truth."}
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/loans" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
-                Loans & Support
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Return to the broader support overview.
-              </div>
-            </Link>
+            {!supportItemActive ? (
+              <OriginLink to="/app/loans" style={routeTile(false)}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 17,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  Loans & Support
+                </div>
+                <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                  Return to the broader support overview.
+                </div>
+              </OriginLink>
+            ) : null}
           </div>
         ) : null}
       </section>

@@ -866,7 +866,7 @@ export default function BuildFirstCirclePage() {
         <PageTopNav
           sectionLabel="Build First Circle"
           title="Build Your First Circle"
-          subtitle="Preparing your calmer first-circle page..."
+          subtitle="Loading your first-circle page..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/community"
@@ -921,7 +921,7 @@ export default function BuildFirstCirclePage() {
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
         <div
           style={{
@@ -937,7 +937,7 @@ export default function BuildFirstCirclePage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: isCompact ? 28 : 34,
                 lineHeight: 1.1,
@@ -946,7 +946,7 @@ export default function BuildFirstCirclePage() {
               Build your real trusted starting circle
             </div>
 
-            <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
+            <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
               This page is not for random people. It is for the people you already
               know in real life: buyers, sellers, family-support people, remittance
               contacts, group officers, suppliers, savings partners, and other
@@ -965,7 +965,7 @@ export default function BuildFirstCirclePage() {
               <span style={badge(false)}>
                 Role: {roleText(draft.memberRole)}
               </span>
-              <span style={badge(false)}>GMFN ID: {gmfnId || "Pending"}</span>
+              <span style={badge(false)}>GMFN ID: {gmfnId || "Awaiting issue"}</span>
             </div>
           </div>
 

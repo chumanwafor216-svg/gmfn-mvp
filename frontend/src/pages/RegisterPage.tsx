@@ -1,5 +1,6 @@
 import React from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 
 import Mark from "../assets/gmfn-mark.svg";
 import Wordmark from "../assets/gmfn-wordmark.svg";
@@ -126,8 +127,8 @@ export default function RegisterPage() {
       >
         <div style={{ maxWidth: 1180, margin: "0 auto", padding: "28px 24px 38px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
-            <img src={Mark} alt="GSN mark" style={{ width: 36, height: 36 }} />
-            <img src={Wordmark} alt="GSN wordmark" style={{ height: 30, width: "auto" }} />
+            <img src={Mark} alt="GMFN mark" style={{ width: 36, height: 36 }} />
+            <img src={Wordmark} alt="GMFN wordmark" style={{ height: 30, width: "auto" }} />
           </div>
 
           <div style={sectionLabel()}>Founder registration</div>
@@ -281,17 +282,17 @@ export default function RegisterPage() {
                 Continue to Sign In
               </button>
 
-              <Link to="/activate-membership" style={button(false)}>
+              <OriginLink to="/activate-membership" style={button(false)}>
                 Activate Approved Membership
-              </Link>
+              </OriginLink>
 
-              <Link to="/create" style={button(false)}>
+              <OriginLink to="/create" style={button(false)}>
                 Back to Create Entry
-              </Link>
+              </OriginLink>
 
-              <Link to="/welcome" style={button(false)}>
+              <OriginLink to="/welcome" style={button(false)}>
                 Back to Welcome
-              </Link>
+              </OriginLink>
             </div>
 
             <div

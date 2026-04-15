@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "./OriginLink";
 import {
   getMarketplaceBroadcasts,
   getMarketplaceProducts,
@@ -340,9 +340,9 @@ export default function CommunityMarketplaceSpotlight() {
                 </div>
 
                 <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <Link to="/app/marketplace" style={btn(true)}>
+                  <OriginLink to="/app/marketplace" style={btn(true)}>
                     Open Marketplace
-                  </Link>
+                  </OriginLink>
                 </div>
               </>
             ) : (
@@ -360,9 +360,9 @@ export default function CommunityMarketplaceSpotlight() {
                 </div>
 
                 <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <Link to="/app/marketplace" style={btn(true)}>
+                  <OriginLink to="/app/marketplace" style={btn(true)}>
                     Open Marketplace
-                  </Link>
+                  </OriginLink>
                 </div>
               </>
             )}

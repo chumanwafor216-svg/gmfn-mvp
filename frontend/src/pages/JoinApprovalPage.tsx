@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import { getJoinApprovalStatus } from "../lib/api";
+import { navigateWithOrigin, withOriginState } from "../lib/nav";
 
 type ApprovalStatus = {
   request_id?: number | string;
@@ -100,7 +102,7 @@ function safeStr(x: any, fallback = ""): string {
 
 function safeDateTime(value: any): string {
   const raw = safeStr(value);
-  if (!raw) return "—";
+  if (!raw) return "Not available yet";
   const d = new Date(raw);
   if (Number.isNaN(d.getTime())) return raw;
   return d.toLocaleString();
@@ -222,7 +224,7 @@ export default function JoinApprovalPage() {
 
   useEffect(() => {
     if (typeof document !== "undefined") {
-      document.title = "GSN | Join Approval";
+      document.title = "GMFN | Join Approval";
     }
   }, []);
 
@@ -283,11 +285,13 @@ export default function JoinApprovalPage() {
   }, [data?.message, status]);
 
   const communityLabel = useMemo(() => {
-    return safeStr(data?.community_name || data?.marketplace_name || "—");
+    return safeStr(
+      data?.community_name || data?.marketplace_name || "Not available yet"
+    );
   }, [data]);
 
   const requestLabel = useMemo(() => {
-    return safeStr(data?.request_id || requestId || "—");
+    return safeStr(data?.request_id || requestId || "Not available yet");
   }, [data, requestId]);
 
   const gmfnId = useMemo(() => {
@@ -315,7 +319,7 @@ export default function JoinApprovalPage() {
 
       <div
         style={{
-          ...pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
+          ...pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
           marginTop: 18,
         }}
       >
@@ -335,27 +339,27 @@ export default function JoinApprovalPage() {
                 marginTop: 8,
                 fontSize: isCompact ? 28 : 34,
                 fontWeight: 1000,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 lineHeight: 1.12,
                 maxWidth: 760,
               }}
             >
-              Application Status
+              Join request status
             </div>
-            <div style={{ marginTop: 8, ...helperText() }}>
+            <div style={{ marginTop: 8, ...helperText(), color: "#D7E3F1" }}>
               Review the outcome of your request, then move to the right next public step.
             </div>
           </div>
 
           <button type="button" onClick={goBack} style={actionBtn(false)}>
-            ← Back
+            Back
           </button>
         </div>
       </div>
 
       {loading ? (
         <div style={{ ...pageCard(), marginTop: 18 }}>
-          <strong>Loading...</strong>
+          <strong>Loading approval status...</strong>
         </div>
       ) : null}
 
@@ -414,9 +418,25 @@ export default function JoinApprovalPage() {
               >
                 <span style={badge(true)}>Status: {tone.title}</span>
                 <span style={badge(false)}>Request ID: {requestLabel}</span>
-                {communityLabel !== "—" ? (
+                <span style={badge(false)}>
+                  Current step:{" "}
+                  {status === "approved"
+                    ? "Activation ready"
+                    : status === "pending"
+                    ? "Awaiting decision"
+                    : status === "rejected"
+                    ? "Request closed"
+                    : "Status review"}
+                </span>
+                {communityLabel !== "Not available yet" ? (
                   <span style={badge(false)}>Community: {communityLabel}</span>
                 ) : null}
+                {safeStr(data?.community_code) ? (
+                  <span style={badge(false)}>
+                    Community ID: {safeStr(data?.community_code)}
+                  </span>
+                ) : null}
+                {gmfnId ? <span style={badge(false)}>GMFN ID: {gmfnId}</span> : null}
               </div>
             </div>
 
@@ -506,7 +526,7 @@ export default function JoinApprovalPage() {
                         wordBreak: "break-word",
                       }}
                     >
-                      {gmfnId || "Pending issuance"}
+                      {gmfnId || "Awaiting issue"}
                     </div>
                   </div>
                 ) : null}
@@ -557,12 +577,17 @@ export default function JoinApprovalPage() {
                     type="button"
                     style={actionBtn(true)}
                     onClick={() =>
-                      navigate(mergeSearchIntoPath("/activate-membership", location.search), {
-                        state: {
-                          gmfn_id: gmfnId,
-                          request_id: requestId || "",
-                        },
-                      })
+                      navigateWithOrigin(
+                        navigate,
+                        mergeSearchIntoPath("/activate-membership", location.search),
+                        location,
+                        {
+                          state: {
+                            gmfn_id: gmfnId,
+                            request_id: requestId || "",
+                          },
+                        }
+                      )
                     }
                   >
                     Continue Activation
@@ -570,20 +595,20 @@ export default function JoinApprovalPage() {
                 ) : null}
 
                 {status === "pending" ? (
-                  <Link
+                  <OriginLink
                     to={mergeSearchIntoPath("/join-request/pending", location.search)}
                     style={actionBtn(false)}
                   >
-                    Open pending page
-                  </Link>
+                    Open pending status
+                  </OriginLink>
                 ) : null}
 
-                <Link
+                <OriginLink
                   to={mergeSearchIntoPath("/welcome", location.search)}
                   style={actionBtn(false)}
                 >
-                  Open Welcome
-                </Link>
+                  Return to Welcome
+                </OriginLink>
               </div>
             </div>
 
@@ -603,9 +628,14 @@ export default function JoinApprovalPage() {
                   flexWrap: "wrap",
                 }}
               >
-                <Link to="/guide" style={actionBtn(false)}>
+                <OriginLink
+                  to="/guide"
+                  preserveSearch
+                  state={withOriginState(location)}
+                  style={actionBtn(false)}
+                >
                   Open My GMFN and I
-                </Link>
+                </OriginLink>
               </div>
             </div>
           </div>

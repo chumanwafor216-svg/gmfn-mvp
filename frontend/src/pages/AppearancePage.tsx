@@ -55,6 +55,7 @@ export default function AppearancePage() {
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       <PageTopNav
+        sectionLabel="Settings"
         title="Settings"
         subtitle="Manage your visual preferences and the financial identity details used in your pilot workflow."
       />

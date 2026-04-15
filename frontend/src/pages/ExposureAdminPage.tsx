@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
   getCurrentClan,
@@ -699,7 +699,7 @@ export default function ExposureAdminPage() {
         <PageTopNav
           sectionLabel="Exposure"
           title="Exposure"
-          subtitle="Preparing the exposure reading surface..."
+          subtitle="Loading the exposure reading..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/command-center"
@@ -713,7 +713,7 @@ export default function ExposureAdminPage() {
 
         <section style={pageCard("#FFFFFF")}>
           <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-            Loading exposure view...
+            Loading exposure reading...
           </div>
         </section>
       </div>
@@ -746,7 +746,7 @@ export default function ExposureAdminPage() {
       />
 
       <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
         <div
           style={{
@@ -762,7 +762,7 @@ export default function ExposureAdminPage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: isCompact ? 28 : 34,
                 lineHeight: 1.1,
@@ -1092,9 +1092,9 @@ export default function ExposureAdminPage() {
                       {row.title}
                     </div>
 
-                    <Link to={row.route} style={actionBtn("secondary")}>
+                    <OriginLink to={row.route} style={actionBtn("secondary")}>
                       {row.routeLabel}
-                    </Link>
+                    </OriginLink>
                   </div>
 
                   <div style={{ marginTop: 8, ...helperText() }}>{row.detail}</div>
@@ -1116,7 +1116,7 @@ export default function ExposureAdminPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Working routes</div>
+            <div style={sectionLabel()}>Next routes</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Move from exposure reading into the exact next surface you need.
             </div>
@@ -1142,7 +1142,7 @@ export default function ExposureAdminPage() {
               gap: 12,
             }}
           >
-            <Link to="/app/command-center/system-operations" style={routeTile(true)}>
+            <OriginLink to="/app/command-center/system-operations" style={routeTile(true)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1156,9 +1156,9 @@ export default function ExposureAdminPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when the work is live operational handling and immediate intervention.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/command-center/trust-analytics" style={routeTile(false)}>
+            <OriginLink to="/app/command-center/trust-analytics" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1172,9 +1172,9 @@ export default function ExposureAdminPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when the work is pattern reading rather than exposure-heavy handling.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/command-center/trust-graph" style={routeTile(false)}>
+            <OriginLink to="/app/command-center/trust-graph" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1188,9 +1188,9 @@ export default function ExposureAdminPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when the work is structural relationship analysis behind concentration or pressure.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/notifications" style={routeTile(false)}>
+            <OriginLink to="/app/notifications" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1204,7 +1204,7 @@ export default function ExposureAdminPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when the work needs direct queue handling from the member-facing side.
               </div>
-            </Link>
+            </OriginLink>
           </div>
         ) : null}
       </section>

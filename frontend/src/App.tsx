@@ -24,6 +24,7 @@ import TrustScorePage from "./pages/TrustScorePage";
 import TrustSlipPage from "./pages/TrustSlipPage";
 import TrustSlipVerifyPage from "./pages/TrustSlipVerifyPage";
 import PaymentInstructionsPage from "./pages/PaymentInstructionsPage";
+import RepaymentPage from "./pages/RepaymentPage";
 import WithdrawalInstructionsPage from "./pages/WithdrawalInstructionsPage";
 import LoanReadinessPage from "./pages/LoanReadinessPage";
 import LoanSuggestionsPage from "./pages/LoanSuggestionsPage";
@@ -38,14 +39,16 @@ import MyGMFNAndIPage from "./pages/MyGMFNAndIPage";
 import TrustAnalyticsPage from "./pages/TrustAnalyticsPage";
 import TrustCommandCentrePage from "./pages/TrustCommandCentrePage";
 import ShopControlPage from "./pages/ShopControlPage";
+import ShopAssetsPage from "./pages/ShopAssetsPage";
+import ShopAccessPage from "./pages/ShopAccessPage";
 import BuildFirstCirclePage from "./pages/BuildFirstCirclePage";
 import FinancePage from "./pages/FinancePage";
+import LoanSummaryPage from "./pages/LoanSummaryPage";
 import AppLayout from "./layout/AppLayout";
 import RequireAuth from "./components/RequireAuth";
 import CommunityJoinRequestsPage from "./pages/CommunityJoinRequestsPage";
 import JoinApprovalPage from "./pages/JoinApprovalPage";
 import MemberActivationPage from "./pages/MemberActivationPage";
-import ActivatePage from "./pages/ActivatePage";
 import DemandBoxPage from "./pages/DemandBoxPage";
 import JoinRequestPendingPage from "./pages/JoinRequestPendingPage";
 
@@ -70,6 +73,7 @@ const APP_ROUTES = {
   GUIDE: "/app/my-gmfn-and-i",
   SETTINGS: "/app/my-gmfn-and-i?tab=settings",
   SHOP_ME: "/app/shop-control",
+  SHOP_ASSETS: "/app/shop-assets",
 } as const;
 
 function splitTarget(raw: string): {
@@ -189,6 +193,23 @@ function RedirectCommunityMarketplaceAlias() {
   );
 }
 
+function RedirectVaultAlias() {
+  const location = useLocation();
+  const params = useParams<Record<string, string | undefined>>();
+  const token = String(params.token || "").trim();
+
+  return (
+    <Navigate
+      to={mergeTargetWithCurrent(
+        token ? `/vault/${encodeURIComponent(token)}` : "/cover",
+        location.search,
+        location.hash
+      )}
+      replace
+    />
+  );
+}
+
 export default function App() {
   return (
     <Routes>
@@ -276,19 +297,9 @@ export default function App() {
       <Route path="/existing" element={<RedirectToCover entry="existing" />} />
 
       <Route path="/create" element={<CreateEntryPage />} />
-      <Route path="/register" element={<RedirectToCover entry="create" />} />
+      <Route path="/register" element={<PreserveRedirect to="/create" />} />
       <Route path="/founder" element={<RedirectToCover entry="create" />} />
       <Route path="/public-create" element={<RedirectToCover entry="create" />} />
-      <Route
-        path="/signup/invite/:code"
-        element={
-          <RedirectToCover
-            entry="create"
-            sourceParam="code"
-            targetQueryKey="create_code"
-          />
-        }
-      />
 
       <Route path="/join" element={<JoinEntryPage />} />
       <Route path="/join/community/:clanId" element={<JoinEntryPage />} />
@@ -304,26 +315,6 @@ export default function App() {
       />
       <Route
         path="/get-invite/:code"
-        element={
-          <RedirectToCover
-            entry="invite"
-            sourceParam="code"
-            targetQueryKey="invite_code"
-          />
-        }
-      />
-      <Route
-        path="/invite-interest/:code"
-        element={
-          <RedirectToCover
-            entry="invite"
-            sourceParam="code"
-            targetQueryKey="invite_code"
-          />
-        }
-      />
-      <Route
-        path="/join-clan/:code"
         element={
           <RedirectToCover
             entry="invite"
@@ -352,7 +343,10 @@ export default function App() {
         }
       />
 
-      <Route path="/activate" element={<ActivatePage />} />
+      <Route
+        path="/activate"
+        element={<PreserveRedirect to="/activate-membership" />}
+      />
       <Route path="/activate-membership" element={<MemberActivationPage />} />
 
       <Route path="/t/:code" element={<TrustSlipVerifyPage />} />
@@ -360,6 +354,10 @@ export default function App() {
       <Route path="/shop-gallery/:gmfnId" element={<RedirectPublicShopAlias />} />
       <Route path="/open-shop/:gmfnId" element={<RedirectPublicShopAlias />} />
       <Route path="/community/:clanId" element={<MarketplaceWorkspacePage />} />
+
+      <Route path="/vault/:token" element={<ShopAccessPage />} />
+      <Route path="/shop-access/:token" element={<RedirectVaultAlias />} />
+      <Route path="/vault-shop-access/:token" element={<RedirectVaultAlias />} />
 
       <Route
         path="/app"
@@ -417,6 +415,7 @@ export default function App() {
         <Route path="join-requests" element={<PreserveRedirect to={APP_ROUTES.COMMUNITY} />} />
 
         <Route path="loans" element={<LoansPage />} />
+        <Route path="loan-summary/:loanId" element={<LoanSummaryPage />} />
         <Route path="money" element={<Navigate to={APP_ROUTES.LOANS} replace />} />
         <Route path="support" element={<PreserveRedirect to={APP_ROUTES.LOANS} />} />
         <Route path="support-path" element={<PreserveRedirect to={APP_ROUTES.LOANS} />} />
@@ -431,7 +430,7 @@ export default function App() {
         <Route path="finance-meter" element={<PreserveRedirect to={APP_ROUTES.FINANCE} />} />
 
         <Route path="payment/pool" element={<PaymentInstructionsPage />} />
-        <Route path="payment/loans/:loanId" element={<PaymentInstructionsPage />} />
+        <Route path="payment/loans/:loanId" element={<RepaymentPage />} />
         <Route path="pool" element={<PreserveRedirect to={APP_ROUTES.MONEY_IN} />} />
         <Route path="money-in" element={<PreserveRedirect to={APP_ROUTES.MONEY_IN} />} />
 
@@ -476,6 +475,8 @@ export default function App() {
         <Route path="open-demand" element={<PreserveRedirect to={APP_ROUTES.DEMAND_BOX} />} />
 
         <Route path="shop-control" element={<ShopControlPage />} />
+        <Route path="shop-assets" element={<ShopAssetsPage />} />
+        <Route path="shop-assets-page" element={<PreserveRedirect to={APP_ROUTES.SHOP_ASSETS} />} />
         <Route path="shop-manager" element={<PreserveRedirect to="/app/shop-control" />} />
         <Route path="shop" element={<Navigate to={APP_ROUTES.SHOP_ME} replace />} />
         <Route path="my-shop" element={<Navigate to={APP_ROUTES.SHOP_ME} replace />} />

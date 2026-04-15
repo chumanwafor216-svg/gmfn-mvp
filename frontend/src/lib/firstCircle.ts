@@ -364,6 +364,10 @@ export function clearFirstCircleDraft(): void {
   } catch {}
 }
 
+export const persistFirstCircleDraft = saveFirstCircleDraft;
+export const setFirstCircleDraft = saveFirstCircleDraft;
+export const resetFirstCircleDraft = clearFirstCircleDraft;
+
 export function roleLabel(role: FirstCircleMemberRole | ""): string {
   const match = FIRST_CIRCLE_ROLE_OPTIONS.find(
     (option: FirstCircleRoleOption) => option.value === role

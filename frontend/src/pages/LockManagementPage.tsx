@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
@@ -328,20 +328,20 @@ export default function LockManagementPage() {
             flexWrap: "wrap",
           }}
         >
-          <Link to="/app/loan-workbench" style={actionBtn("primary")}>
+          <OriginLink to="/app/loan-workbench" style={actionBtn("primary")}>
             Open Loan Workbench
-          </Link>
+          </OriginLink>
 
-          <Link
+          <OriginLink
             to="/app/command-center/system-operations"
             style={actionBtn("secondary")}
           >
             Open System Operations
-          </Link>
+          </OriginLink>
 
-          <Link to="/app/dashboard" style={actionBtn("soft")}>
+          <OriginLink to="/app/dashboard" style={actionBtn("soft")}>
             Back to Dashboard
-          </Link>
+          </OriginLink>
         </div>
       </section>
     </div>

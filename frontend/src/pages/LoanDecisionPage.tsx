@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import { listMyLoans } from "../lib/api";
 
 function safeStr(x: any): string {
@@ -174,12 +174,12 @@ export default function LoanDecisionPage() {
 
           <div style={{ marginTop: 18, ...card() }}>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <Link to="/loan-workbench" style={actionLink()}>
+              <OriginLink to="/loan-workbench" style={actionLink()}>
                 Workbench →
-              </Link>
-              <Link to="/loans" style={actionLink()}>
+              </OriginLink>
+              <OriginLink to="/loans" style={actionLink()}>
                 Return to finances →
-              </Link>
+              </OriginLink>
             </div>
           </div>
         </div>

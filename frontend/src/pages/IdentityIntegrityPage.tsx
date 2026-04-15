@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
   getCurrentClan,
@@ -1157,7 +1157,7 @@ export default function IdentityIntegrityPage() {
         <PageTopNav
           sectionLabel="Identity & Integrity"
           title="Identity & Integrity"
-          subtitle="Preparing your identity and integrity page..."
+          subtitle="Loading your identity and integrity page..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/dashboard"
@@ -1212,7 +1212,7 @@ export default function IdentityIntegrityPage() {
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
         <div
           style={{
@@ -1229,8 +1229,9 @@ export default function IdentityIntegrityPage() {
                 height: isCompact ? 240 : 270,
                 borderRadius: 28,
                 overflow: "hidden",
-                border: "1px solid rgba(11,31,51,0.10)",
-                background: "linear-gradient(180deg, #E8F0FF 0%, #DDEBFF 100%)",
+                border: "1px solid rgba(212,175,55,0.22)",
+                background: "linear-gradient(180deg, rgba(8,17,31,0.9) 0%, rgba(16,42,67,0.98) 100%)",
+                boxShadow: "0 20px 44px rgba(2,12,27,0.32)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1251,7 +1252,7 @@ export default function IdentityIntegrityPage() {
               ) : (
                 <div
                   style={{
-                    color: "#0B63D1",
+                    color: "#F8FBFF",
                     fontWeight: 900,
                     fontSize: 44,
                   }}
@@ -1268,7 +1269,7 @@ export default function IdentityIntegrityPage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: isCompact ? 28 : 34,
                 lineHeight: 1.12,
@@ -1277,7 +1278,7 @@ export default function IdentityIntegrityPage() {
               {displayName}
             </div>
 
-            <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
+            <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
               Identity should stay stable while trust reacts to conduct. This page keeps the identity layer and the integrity layer together so the user does not need to search for both separately.
             </div>
 
@@ -1292,7 +1293,7 @@ export default function IdentityIntegrityPage() {
               <span style={badge(true)}>GMFN ID: {gmfnId}</span>
               <span style={badge(false)}>Community: {communityLabel}</span>
               <span style={badge(false)}>
-                TrustSlip: {trustSlipCode || "Pending"}
+                TrustSlip: {trustSlipCode || "Awaiting issue"}
               </span>
             </div>
 
@@ -1322,9 +1323,9 @@ export default function IdentityIntegrityPage() {
                 Copy TrustSlip Code
               </button>
 
-              <Link to="/app/trust" style={actionBtn("secondary")}>
+              <OriginLink to="/app/trust" style={actionBtn("secondary")}>
                 Open Trust Passport
-              </Link>
+              </OriginLink>
             </div>
           </div>
         </div>
@@ -1512,7 +1513,7 @@ export default function IdentityIntegrityPage() {
 
                 {explainers.helps.length === 0 ? (
                   <div style={helperText()}>
-                    No positive movement explanation is visible right now.
+                    No positive movement explanation is currently shown.
                   </div>
                 ) : null}
               </div>
@@ -1539,7 +1540,7 @@ export default function IdentityIntegrityPage() {
 
                 {explainers.weakens.length === 0 ? (
                   <div style={helperText()}>
-                    No weakening signal is visible right now.
+                    No weakening signal is currently shown.
                   </div>
                 ) : null}
               </div>
@@ -1566,7 +1567,7 @@ export default function IdentityIntegrityPage() {
 
                 {explainers.next.length === 0 ? (
                   <div style={helperText()}>
-                    No next-step improvement line is visible right now.
+                    No next-step improvement line is currently shown.
                   </div>
                 ) : null}
               </div>
@@ -1610,7 +1611,7 @@ export default function IdentityIntegrityPage() {
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             {timelineRows.length === 0 ? (
               <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                No recent identity or trust event is visible right now.
+                No recent identity or trust event is currently shown.
               </div>
             ) : (
               timelineRows.map((row) => {
@@ -1735,17 +1736,17 @@ export default function IdentityIntegrityPage() {
                   flexWrap: "wrap",
                 }}
               >
-                <Link to={nextMoveTo} style={actionBtn("primary")}>
+                <OriginLink to={nextMoveTo} style={actionBtn("primary")}>
                   {nextMoveLabel}
-                </Link>
+                </OriginLink>
 
-                <Link to="/app/trust-slip" style={actionBtn("secondary")}>
+                <OriginLink to="/app/trust-slip" style={actionBtn("secondary")}>
                   TrustSlip
-                </Link>
+                </OriginLink>
 
-                <Link to="/app/notifications" style={actionBtn("secondary")}>
+                <OriginLink to="/app/notifications" style={actionBtn("secondary")}>
                   Action Inbox
-                </Link>
+                </OriginLink>
               </div>
             </div>
 

@@ -67,7 +67,7 @@ function classify(row: any): { level: "green" | "yellow" | "red"; label: string;
   if (type.includes("device")) score += 15;
   if (score >= 60) return { level: "red", label: "Intervention required", score };
   if (score >= 25) return { level: "yellow", label: "Monitor this account", score };
-  return { level: "green", label: "Healthy / low concern", score };
+  return { level: "green", label: "Low visible concern", score };
 }
 
 export default function AdminIdentityRiskPage() {
@@ -101,7 +101,7 @@ export default function AdminIdentityRiskPage() {
           if (c.score > acc.score) return c;
           return acc;
         },
-        { level: "green" as const, label: "Healthy / low concern", score: 0 }
+        { level: "green" as const, label: "Low visible concern", score: 0 }
       );
       return { userId, rows, risk: max };
     });
@@ -110,6 +110,7 @@ export default function AdminIdentityRiskPage() {
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto" }}>
       <PageTopNav
+        sectionLabel="Identity Risk"
         title="Identity Risk"
         subtitle="Use this page to monitor suspicious device overlap, identity clusters, and signals that may suggest multi-account misuse."
       />
@@ -133,7 +134,7 @@ export default function AdminIdentityRiskPage() {
         <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>How to use this page</div>
         <div style={{ marginTop: 12, color: "#475569", lineHeight: 1.8 }}>
           Green means normal identity behaviour.
-          Yellow means a staff member should monitor the account.
+          Yellow means a staff member should monitor the account more closely.
           Red means unusual overlap or signal concentration is strong enough to justify intervention or manual review.
         </div>
       </div>
@@ -141,7 +142,7 @@ export default function AdminIdentityRiskPage() {
       <div style={{ marginTop: 18, display: "grid", gap: 14 }}>
         {grouped.length === 0 ? (
           <div style={card()}>
-            <div style={{ color: "#6B7A88" }}>No identity risk signals found.</div>
+            <div style={{ color: "#6B7A88" }}>No identity-risk signals are currently shown.</div>
           </div>
         ) : null}
 
@@ -191,7 +192,7 @@ export default function AdminIdentityRiskPage() {
 
             <details style={{ marginTop: 14 }}>
               <summary style={{ cursor: "pointer", fontWeight: 900, color: "#0B1F33" }}>
-                Raw identity data
+                Detailed identity signals
               </summary>
               <pre
                 style={{

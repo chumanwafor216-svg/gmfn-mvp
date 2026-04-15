@@ -14,6 +14,7 @@ type CollapseState = {
   borrower: boolean;
   guarantor: boolean;
   events: boolean;
+  reconciliation: boolean;
   routes: boolean;
 };
 
@@ -62,6 +63,19 @@ type ClanLiquidity = {
   lockedTotal?: string | null;
   releasedTotal?: string | null;
   note?: string | null;
+};
+
+type ExpectedPaymentRecord = {
+  id?: number | null;
+  expected_type?: string | null;
+  amount?: string | null;
+  currency?: string | null;
+  reference_display?: string | null;
+  status?: string | null;
+  status_reason?: string | null;
+  due_at?: string | null;
+  matched_bank_event_id?: number | null;
+  confirmed_at?: string | null;
 };
 
 const FINANCE_UI_STORAGE_KEY = "gmfn.finance.sections.v1";
@@ -126,6 +140,71 @@ function safeDateTime(x: any): string {
   const d = new Date(raw);
   if (!Number.isFinite(d.getTime())) return raw;
   return d.toLocaleString();
+}
+
+function expectedPaymentState(item: ExpectedPaymentRecord): string {
+  if (safeStr(item.confirmed_at)) return "Confirmed";
+  if (item.matched_bank_event_id) return "Matched";
+  if (safeStr(item.reference_display)) return "Awaiting reconciliation";
+  return "Awaiting issue";
+}
+
+function expectedPaymentNextAction(item: ExpectedPaymentRecord): string {
+  const state = expectedPaymentState(item);
+  if (state === "Confirmed") {
+    return "Use the unlocked route or feature that depends on this payment.";
+  }
+  if (state === "Matched") {
+    return "Reconciliation is in progress. Wait for confirmation to complete.";
+  }
+  if (state === "Awaiting reconciliation") {
+    return "Pay with the exact reference, then wait for the bank match to appear.";
+  }
+  return "Generate or refresh the payment instruction so the reference can be issued.";
+}
+
+function apiBaseOrigin(): string {
+  const raw =
+    (typeof import.meta !== "undefined" &&
+      (import.meta as any)?.env &&
+      (import.meta as any).env.VITE_API_BASE_URL) ||
+    "/api";
+  const base = String(raw || "").trim().replace(/\/+$/, "");
+
+  if (base.startsWith("http://") || base.startsWith("https://")) {
+    try {
+      const url = new URL(base);
+      return `${url.protocol}//${url.host}`;
+    } catch {
+      return "";
+    }
+  }
+
+  if (typeof window !== "undefined") {
+    return String(window.location.origin || "").trim().replace(/\/+$/, "");
+  }
+
+  return "";
+}
+
+function resolveMediaUrl(src: any): string {
+  const raw = safeStr(src);
+  if (!raw) return "";
+
+  if (
+    raw.startsWith("http://") ||
+    raw.startsWith("https://") ||
+    raw.startsWith("data:") ||
+    raw.startsWith("blob:")
+  ) {
+    return raw;
+  }
+
+  const origin = apiBaseOrigin();
+  if (!origin) return raw;
+
+  if (raw.startsWith("/")) return `${origin}${raw}`;
+  return `${origin}/${raw.replace(/^\/+/, "")}`;
 }
 
 function apiBase(): string {
@@ -527,6 +606,7 @@ function defaultCollapseState(): CollapseState {
     borrower: false,
     guarantor: false,
     events: false,
+    reconciliation: false,
     routes: false,
   };
 }
@@ -540,8 +620,48 @@ function normalizeCollapseState(raw: any): CollapseState {
     borrower: Boolean(raw?.borrower ?? base.borrower),
     guarantor: Boolean(raw?.guarantor ?? base.guarantor),
     events: Boolean(raw?.events ?? base.events),
+    reconciliation: Boolean(raw?.reconciliation ?? base.reconciliation),
     routes: Boolean(raw?.routes ?? base.routes),
   };
+}
+
+function communityPublicId(currentClan: any): string {
+  return (
+    firstTruthy(
+      currentClan?.community_code,
+      currentClan?.community?.community_code,
+      currentClan?.profile?.community_code,
+      currentClan?.marketplace?.community_code
+    ) || "Awaiting issue"
+  );
+}
+
+function communityRole(currentClan: any): string {
+  return (
+    firstTruthy(
+      currentClan?.role,
+      currentClan?.member_role,
+      currentClan?.membership_role,
+      currentClan?.participant_role
+    ) || ""
+  );
+}
+
+function communityImageSrc(currentClan: any): string {
+  return resolveMediaUrl(
+    firstTruthy(
+      currentClan?.community_image_url,
+      currentClan?.profile_image_url,
+      currentClan?.marketplace_image_url,
+      currentClan?.cover_image_url,
+      currentClan?.banner_url,
+      currentClan?.image_url,
+      currentClan?.logo_url,
+      currentClan?.community?.community_image_url,
+      currentClan?.community?.image_url,
+      currentClan?.profile?.profile_image_url
+    )
+  );
 }
 
 function toneStyles(kind: "calm" | "watch" | "pressure") {
@@ -595,6 +715,9 @@ export default function FinancePage() {
   );
   const [poolEvents, setPoolEvents] = useState<PoolEvent[]>([]);
   const [clanLiquidity, setClanLiquidity] = useState<ClanLiquidity | null>(null);
+  const [expectedPayments, setExpectedPayments] = useState<ExpectedPaymentRecord[]>(
+    []
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -684,22 +807,29 @@ export default function FinancePage() {
         const gmfnId = firstTruthy(meRes?.gmfn_id);
 
         if (selectedClanId && gmfnId) {
-          const [surface, liquidityRes] = await Promise.all([
+          const [surface, liquidityRes, expectedRes] = await Promise.all([
             getCommunityMoneySurface(selectedClanId, gmfnId, "NGN").catch(
               () => null
             ),
             fetchJson("/analytics/clan-liquidity", selectedClanId).catch(
               () => null
             ),
+            typeof (api as any).listExpectedPayments === "function"
+              ? (api as any)
+                  .listExpectedPayments({ clan_id: selectedClanId, limit: 100 })
+                  .catch(() => ({ items: [] }))
+              : Promise.resolve({ items: [] }),
           ]);
 
           if (!alive) return;
 
           setMoneySurface(surface);
           setClanLiquidity(normalizeClanLiquidity(liquidityRes));
+          setExpectedPayments(rowsOf<ExpectedPaymentRecord>(expectedRes));
         } else {
           setMoneySurface(null);
           setClanLiquidity(null);
+          setExpectedPayments([]);
         }
 
         const summaryPairs = await Promise.all(
@@ -760,6 +890,22 @@ export default function FinancePage() {
     );
   }, [currentClan, selectedClanId]);
 
+  const publicCommunityCode = useMemo(() => {
+    return communityPublicId(currentClan);
+  }, [currentClan]);
+
+  const memberRole = useMemo(() => {
+    return communityRole(currentClan);
+  }, [currentClan]);
+
+  const pictureSrc = useMemo(() => {
+    return communityImageSrc(currentClan);
+  }, [currentClan]);
+
+  const gmfnId = useMemo(() => {
+    return firstTruthy(me?.gmfn_id, "Awaiting issue");
+  }, [me]);
+
   const activeLoans = useMemo(() => loans.filter(isActiveLoan), [loans]);
   const borrowerLoans = useMemo(
     () => activeLoans.filter(isBorrowerLoan),
@@ -800,6 +946,39 @@ export default function FinancePage() {
   const poolReference = safeStr(
     moneySurface?.poolReference || poolState?.reference || ""
   );
+
+  const activeExpectedPayments = useMemo(() => {
+    return expectedPayments.filter((item) => {
+      const status = safeStr(item?.status).toLowerCase();
+      return !["applied", "cancelled", "expired"].includes(status);
+    });
+  }, [expectedPayments]);
+
+  const pendingReconciliationCount = useMemo(() => {
+    return activeExpectedPayments.filter((item) => {
+      const status = safeStr(item?.status).toLowerCase();
+      return status === "expected" || status === "matched";
+    }).length;
+  }, [activeExpectedPayments]);
+
+  const expectedPaymentStateCounts = useMemo(() => {
+    return activeExpectedPayments.reduce(
+      (acc, item) => {
+        const state = expectedPaymentState(item);
+        if (state === "Confirmed") acc.confirmed += 1;
+        else if (state === "Matched") acc.matched += 1;
+        else if (state === "Awaiting reconciliation") acc.awaitingReconciliation += 1;
+        else acc.awaitingIssue += 1;
+        return acc;
+      },
+      {
+        confirmed: 0,
+        matched: 0,
+        awaitingReconciliation: 0,
+        awaitingIssue: 0,
+      }
+    );
+  }, [activeExpectedPayments]);
 
   const borrowerRemainingTotal = useMemo(() => {
     return borrowerLoans.reduce((sum, row) => {
@@ -849,7 +1028,7 @@ export default function FinancePage() {
       tone: "calm" as const,
       title: "Your finance surface is currently calm.",
       detail:
-        "No active borrower-side pressure or live guarantor-side locked exposure is visible right now.",
+        "No active borrower-side pressure or live guarantor-side locked exposure is currently shown.",
     };
   }, [borrowerLoans.length, guarantorExposure]);
 
@@ -876,7 +1055,7 @@ export default function FinancePage() {
         <PageTopNav
           sectionLabel="Finance"
           title="Finance"
-          subtitle="Preparing the finance surface..."
+          subtitle="Loading the finance surface..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/marketplace"
@@ -929,23 +1108,67 @@ export default function FinancePage() {
       />
 
       <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        style={pageCard(
+          "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+        )}
       >
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.08fr) 320px",
+            gridTemplateColumns: isCompact ? "1fr" : "180px minmax(0, 1fr) 320px",
             gap: 16,
             alignItems: "start",
           }}
         >
           <div>
-            <div style={sectionLabel()}>Finance overview</div>
+            <div
+              style={{
+                width: "100%",
+                height: 148,
+                borderRadius: 20,
+                border: "1px solid rgba(148,163,184,0.16)",
+                overflow: "hidden",
+                background: "linear-gradient(180deg, #102A43 0%, #12304D 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {pictureSrc ? (
+                <img
+                  src={pictureSrc}
+                  alt={communityLabel}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    color: "#E2E8F0",
+                    fontWeight: 900,
+                    fontSize: 20,
+                    textAlign: "center",
+                    padding: 12,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {communityLabel}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <div style={sectionLabel()}>Fixed finance context</div>
 
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: isCompact ? 28 : 34,
                 lineHeight: 1.1,
@@ -954,7 +1177,14 @@ export default function FinancePage() {
               Finance for {memberName}
             </div>
 
-            <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
+            <div
+              style={{
+                marginTop: 12,
+                ...helperText(),
+                color: "#D7E3F1",
+                maxWidth: 860,
+              }}
+            >
               This is the finance surface. It should tell you what is in your pool,
               what is effectively available, what is locked because of guarantor
               support, what you currently owe through borrower-side support, and the
@@ -969,13 +1199,21 @@ export default function FinancePage() {
                 flexWrap: "wrap",
               }}
             >
-              <span style={badge(true)}>Community: {communityLabel}</span>
-              <span style={badge(false)}>Pool ref: {poolReference || "Pending"}</span>
+              <span style={badge(true)}>Community ID: {publicCommunityCode}</span>
+              <span style={badge(false)}>GMFN ID: {gmfnId}</span>
+              <span style={badge(false)}>Member: {memberName}</span>
+              {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
+              <span style={badge(false)}>Current page: Finance</span>
+              <span style={badge(false)}>Current step: Full financial truth</span>
+              <span style={badge(false)}>Pool ref: {poolReference || "Awaiting reference"}</span>
               <span style={badge(false)}>
                 Borrower items: {borrowerLoans.length}
               </span>
               <span style={badge(false)}>
                 Active guarantees: {guarantorExposure?.activeGuarantees || 0}
+              </span>
+              <span style={badge(false)}>
+                Expected payments: {activeExpectedPayments.length}
               </span>
             </div>
           </div>
@@ -1090,7 +1328,7 @@ export default function FinancePage() {
             </div>
 
             <div style={statTile()}>
-              <div style={sectionLabel()}>Pending withdrawals</div>
+              <div style={sectionLabel()}>Withdrawals awaiting completion</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1105,7 +1343,7 @@ export default function FinancePage() {
             </div>
 
             <div style={statTile()}>
-              <div style={sectionLabel()}>Pending deposits</div>
+              <div style={sectionLabel()}>Deposits awaiting completion</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1235,6 +1473,125 @@ export default function FinancePage() {
           }}
         >
           <div>
+            <div style={sectionLabel()}>Expected payments and reconciliation</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              This shows which payments are waiting, which are confirmed, and what to do next.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => toggleSection("reconciliation")}
+            style={collapseToggle()}
+          >
+            {collapsed.reconciliation ? "Open" : "Collapse"}
+          </button>
+        </div>
+
+        {!collapsed.reconciliation ? (
+          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
+              <span style={badge(true)}>Active expected payments: {activeExpectedPayments.length}</span>
+              <span style={badge(false)}>Waiting for confirmation: {pendingReconciliationCount}</span>
+              <span style={badge(false)}>Confirmed: {expectedPaymentStateCounts.confirmed}</span>
+              <span style={badge(false)}>Matched: {expectedPaymentStateCounts.matched}</span>
+              <span style={badge(false)}>
+                Awaiting issue: {expectedPaymentStateCounts.awaitingIssue}
+              </span>
+            </div>
+
+            {activeExpectedPayments.length === 0 ? (
+              <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+                No payment is waiting here right now.
+              </div>
+            ) : (
+              activeExpectedPayments.slice(0, 8).map((item, index) => (
+                <div key={`${item.id || index}`} style={innerCard("#FCFEFF")}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isCompact
+                        ? "1fr"
+                        : "minmax(0, 1.1fr) minmax(0, 0.9fr)",
+                      gap: 12,
+                      alignItems: "center",
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          color: "#0B1F33",
+                          fontWeight: 900,
+                          lineHeight: 1.35,
+                        }}
+                      >
+                        {safeStr(item.expected_type || "Expected payment")}
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: 8,
+                          display: "flex",
+                          gap: 8,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <span style={badge(true)}>
+                          {safeStr(item.amount || "0.00")} {safeStr(item.currency || poolCurrency)}
+                        </span>
+                        <span style={badge(false)}>
+                          State: {expectedPaymentState(item)}
+                        </span>
+                        <span style={badge(false)}>
+                          Status: {safeStr(item.status || "expected")}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ ...helperText(), fontSize: 13 }}>
+                      {[
+                        item.reference_display
+                          ? `Reference: ${safeStr(item.reference_display)}`
+                          : "",
+                        item.confirmed_at
+                          ? `Confirmed at: ${safeDateTime(item.confirmed_at)}`
+                          : item.due_at
+                            ? `Due at: ${safeDateTime(item.due_at)}`
+                            : "",
+                        item.status_reason ? `Reason: ${safeStr(item.status_reason)}` : "",
+                        item.matched_bank_event_id
+                          ? `Bank confirmation visible: ${safeStr(item.matched_bank_event_id)}`
+                          : "",
+                        `Next action: ${expectedPaymentNextAction(item)}`,
+                      ]
+                        .filter(Boolean)
+                        .join(" - ")}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        ) : null}
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
             <div style={sectionLabel()}>Finance reading</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Borrower-side, guarantor-side, and community liquidity context.
@@ -1281,10 +1638,10 @@ export default function FinancePage() {
                   Reserved / locked: {reservedPool} {poolCurrency}
                 </div>
                 <div style={helperText()}>
-                  Pending deposits: {pendingDeposits} {poolCurrency}
+                  Deposits awaiting completion: {pendingDeposits} {poolCurrency}
                 </div>
                 <div style={helperText()}>
-                  Pending withdrawals: {pendingWithdrawals} {poolCurrency}
+                  Withdrawals awaiting completion: {pendingWithdrawals} {poolCurrency}
                 </div>
               </div>
             </div>
@@ -1320,7 +1677,7 @@ export default function FinancePage() {
                 <div style={helperText()}>
                   {safeStr(
                     guarantorExposure?.note ||
-                      "Guarantor exposure is informational here."
+                      "Guarantor exposure is shown here for visibility."
                   )}
                 </div>
               </div>
@@ -1356,7 +1713,7 @@ export default function FinancePage() {
                 <div style={helperText()}>
                   {safeStr(
                     clanLiquidity?.note ||
-                      "Community liquidity is informational in pilot."
+                      "Community liquidity is shown here for context."
                   )}
                 </div>
               </div>
@@ -1395,7 +1752,7 @@ export default function FinancePage() {
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             {borrowerLoans.length === 0 ? (
               <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                No active borrower-side finance item is visible right now.
+                No active borrower-side finance item is currently shown.
               </div>
             ) : (
               borrowerLoans.map((row, index) => {
@@ -1459,7 +1816,7 @@ export default function FinancePage() {
                             : "",
                         ]
                           .filter(Boolean)
-                          .join(" • ") || "Borrower-side finance item"}
+                          .join(" - ") || "Borrower-side finance item"}
                       </div>
 
                       <div
@@ -1548,7 +1905,7 @@ export default function FinancePage() {
                 <div style={helperText()}>
                   {safeStr(
                     guarantorExposure?.note ||
-                      "Guarantor exposure is informational in MVP."
+                      "Guarantor exposure is shown here for visibility."
                   )}
                 </div>
               </div>
@@ -1568,7 +1925,7 @@ export default function FinancePage() {
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 {guarantorLoans.length === 0 ? (
                   <div style={helperText()}>
-                    No active guarantor-side finance item is visible right now.
+                    No active guarantor-side finance item is currently shown.
                   </div>
                 ) : (
                   guarantorLoans.map((row, index) => {
@@ -1598,7 +1955,7 @@ export default function FinancePage() {
                             row.createdAt ? `Started: ${safeDateTime(row.createdAt)}` : "",
                           ]
                             .filter(Boolean)
-                            .join(" • ")}
+                            .join(" - ")}
                         </div>
                       </div>
                     );
@@ -1640,7 +1997,7 @@ export default function FinancePage() {
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             {poolEvents.length === 0 ? (
               <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                No recent finance event is visible right now.
+                No recent finance event is currently shown.
               </div>
             ) : (
               poolEvents.map((row, index) => (
@@ -1697,7 +2054,7 @@ export default function FinancePage() {
                           : "",
                       ]
                         .filter(Boolean)
-                        .join(" • ")}
+                        .join(" - ")}
                     </div>
                   </div>
                 </div>
@@ -1718,7 +2075,7 @@ export default function FinancePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Working routes</div>
+            <div style={sectionLabel()}>Next routes</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Move from finance into the next exact money page you need.
             </div>

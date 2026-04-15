@@ -1,6 +1,6 @@
 // FILE: src/pages/BorrowerPreflightPage.tsx
 import React from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 
 function card(): React.CSSProperties {
@@ -109,12 +109,12 @@ export default function BorrowerPreflightPage() {
         </div>
 
         <div style={{ marginTop: 18, display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <Link to="/app/loans" style={actionLink(false)}>
+          <OriginLink to="/app/loans" style={actionLink(false)}>
             Open Loans & Support
-          </Link>
-          <Link to="/app/loan-readiness" style={actionLink(true)}>
+          </OriginLink>
+          <OriginLink to="/app/loan-readiness" style={actionLink(true)}>
             Check Loan Readiness
-          </Link>
+          </OriginLink>
         </div>
       </div>
     </div>

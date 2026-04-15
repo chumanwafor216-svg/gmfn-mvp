@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
   getCurrentClan,
@@ -551,7 +551,7 @@ export default function SystemOperationsPage() {
         <PageTopNav
           sectionLabel="System Operations"
           title="System Operations"
-          subtitle="Preparing the system operations surface..."
+          subtitle="Loading system operations..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/command-center"
@@ -598,7 +598,7 @@ export default function SystemOperationsPage() {
       />
 
       <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
         <div
           style={{
@@ -614,7 +614,7 @@ export default function SystemOperationsPage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: isCompact ? 28 : 34,
                 lineHeight: 1.1,
@@ -821,7 +821,7 @@ export default function SystemOperationsPage() {
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             {recentSignals.length === 0 ? (
               <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                No live operational signal is visible right now.
+                No live operational signal is currently shown.
               </div>
             ) : (
               recentSignals.map((row) => {
@@ -876,9 +876,9 @@ export default function SystemOperationsPage() {
                         {safeDateTime(row.createdAt)}
                       </div>
 
-                      <Link to={row.ctaTo} style={actionBtn("secondary")}>
+                      <OriginLink to={row.ctaTo} style={actionBtn("secondary")}>
                         {row.ctaLabel}
-                      </Link>
+                      </OriginLink>
                     </div>
                   </div>
                 );
@@ -995,7 +995,7 @@ export default function SystemOperationsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Working routes</div>
+            <div style={sectionLabel()}>Next routes</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Move from live reading into the exact admin surface you need.
             </div>
@@ -1021,7 +1021,7 @@ export default function SystemOperationsPage() {
               gap: 12,
             }}
           >
-            <Link to="/app/notifications" style={routeTile(true)}>
+            <OriginLink to="/app/notifications" style={routeTile(true)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1035,9 +1035,9 @@ export default function SystemOperationsPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when the work is immediate response or member-facing queue handling.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/command-center/trust-analytics" style={routeTile(false)}>
+            <OriginLink to="/app/command-center/trust-analytics" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1051,9 +1051,9 @@ export default function SystemOperationsPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when the work is trend reading rather than live handling.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/command-center/exposure" style={routeTile(false)}>
+            <OriginLink to="/app/command-center/exposure" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1067,9 +1067,9 @@ export default function SystemOperationsPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when the work is about concentration, pressure, or imbalance.
               </div>
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/command-center/trust-graph" style={routeTile(false)}>
+            <OriginLink to="/app/command-center/trust-graph" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1083,7 +1083,7 @@ export default function SystemOperationsPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Use this when the work is about structure, connectedness, or relationship trust shape.
               </div>
-            </Link>
+            </OriginLink>
           </div>
         ) : null}
       </section>

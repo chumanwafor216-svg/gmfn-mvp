@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import PageTopNav from "../components/PageTopNav";
 import { listMyLoans } from "../lib/api";
 
 function safeStr(x: any): string {
@@ -53,6 +54,16 @@ export default function AdminIncompleteLoansPage() {
 
   return (
     <div style={{ maxWidth: 1260, margin: "0 auto" }}>
+      <PageTopNav
+        sectionLabel="Incomplete Loans"
+        title="Incomplete Loans"
+        subtitle="Review loans that are still active, unresolved, or otherwise not yet fully concluded."
+        homeTo="/app/dashboard"
+        homeLabel="Dashboard"
+        backTo="/app/command-center"
+        backLabel="Command Center"
+      />
+
       <div
         style={{
           backgroundImage: `url("${pattern}")`,
@@ -88,7 +99,7 @@ export default function AdminIncompleteLoansPage() {
           )}
 
           <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-            {rows.length === 0 && <div style={{ ...card(), color: "#7A8D9F" }}>No incomplete loans visible.</div>}
+            {rows.length === 0 && <div style={{ ...card(), color: "#7A8D9F" }}>No incomplete loans are currently shown.</div>}
 
             {rows.map((loan, i) => (
               <div key={loan?.id || i} style={card()}>

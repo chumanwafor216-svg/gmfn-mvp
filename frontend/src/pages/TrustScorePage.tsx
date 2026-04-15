@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
 import {
@@ -637,6 +637,16 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
   };
 }
 
+function documentMetaCard(bg = "#F7FAFC"): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    border: "1px solid rgba(148,163,184,0.18)",
+    background: bg,
+    padding: 14,
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.45)",
+  };
+}
+
 function readLocalJSON<T>(key: string, fallback: T): T {
   try {
     if (typeof window === "undefined") return fallback;
@@ -914,7 +924,7 @@ export default function TrustScorePage() {
   }, [trustSlipSummary, me]);
 
   const gmfnId = useMemo(() => {
-    return firstTruthy(trustSlipSummary?.gmfn_id, me?.gmfn_id, "Pending");
+    return firstTruthy(trustSlipSummary?.gmfn_id, me?.gmfn_id, "Awaiting issue");
   }, [trustSlipSummary, me]);
 
   const communityName = useMemo(() => {
@@ -933,7 +943,7 @@ export default function TrustScorePage() {
   const communityCode = useMemo(() => {
     return (
       firstTruthy(matchedClan?.community_code, currentClan?.community_code) ||
-      "Pending"
+      "Awaiting issue"
      );
   }, [matchedClan, currentClan]);
 
@@ -944,7 +954,7 @@ export default function TrustScorePage() {
       explainability?.band,
       trustSlipSummary?.band,
       trustSlipSummary?.level,
-      "Pending"
+      "Awaiting issue"
     );
   }, [recompute, explainability, trustSlipSummary]);
 
@@ -1089,7 +1099,7 @@ export default function TrustScorePage() {
         <PageTopNav
           sectionLabel="Trust Passport"
           title="Trust Passport"
-          subtitle="Preparing the trust passport..."
+          subtitle="Loading the trust passport..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/dashboard"
@@ -1120,10 +1130,17 @@ export default function TrustScorePage() {
         gap: 18,
       }}
     >
+      <style>{`
+        @media print {
+          body { background: #ffffff !important; }
+          a[href]:after { content: "" !important; }
+          button { display: none !important; }
+        }
+      `}</style>
       <PageTopNav
         sectionLabel="Trust Passport"
         title="Trust Passport"
-        subtitle="Trust Passport is the full explanation surface: trust score, current band, why trust changed, recent events, and supporting evidence."
+        subtitle="Trust Passport shows the current trust reading, why it changed, what evidence supports it, and what this unlocks next."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
@@ -1138,7 +1155,9 @@ export default function TrustScorePage() {
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        style={pageCard(
+          "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+        )}
       >
         <div
           style={{
@@ -1156,7 +1175,7 @@ export default function TrustScorePage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: isCompact ? 28 : 34,
                 lineHeight: 1.12,
@@ -1165,8 +1184,15 @@ export default function TrustScorePage() {
               Full trust reading for {memberName}
             </div>
 
-            <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
-              This page is now wired to the real recompute-me and trust explainability responses. It shows the current trust reading, what changed it, the recent events behind it, and the evidence context around exposure and capacity.
+            <div
+              style={{
+                marginTop: 12,
+                ...helperText(),
+                color: "#D7E3F1",
+                maxWidth: 860,
+              }}
+            >
+              This page shows the current trust reading, what changed it, the recent events behind it, and the evidence context around exposure and capacity.
             </div>
 
             <div
@@ -1180,6 +1206,8 @@ export default function TrustScorePage() {
               <span style={badge(true)}>GMFN ID: {gmfnId}</span>
               <span style={badge(false)}>Community: {communityName}</span>
               <span style={badge(false)}>Community ID: {communityCode}</span>
+              <span style={badge(false)}>Current page: Trust Passport</span>
+              <span style={badge(false)}>Current step: Review full trust reading</span>
             </div>
 
             <div
@@ -1205,13 +1233,25 @@ export default function TrustScorePage() {
                   handleCopy(
                     gmfnId,
                     "GMFN ID copied.",
-                    "GMFN ID is not ready yet."
+                    "GMFN ID is not available yet."
                   )
                 }
-                style={actionBtn("secondary", !gmfnId || gmfnId === "Pending")}
-                disabled={!gmfnId || gmfnId === "Pending"}
+                style={actionBtn("secondary", !gmfnId || gmfnId === "Awaiting issue")}
+                disabled={!gmfnId || gmfnId === "Awaiting issue"}
               >
                 Copy GMFN ID
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== "undefined" && typeof window.print === "function") {
+                    window.print();
+                  }
+                }}
+                style={actionBtn("soft")}
+              >
+                Print Trust Passport
               </button>
 
               {verifyUrl ? (
@@ -1221,7 +1261,7 @@ export default function TrustScorePage() {
                   rel="noreferrer"
                   style={actionBtn("secondary")}
                 >
-                  Open Merchant Verify
+                  Open TrustSlip Verify
                 </a>
               ) : null}
             </div>
@@ -1265,6 +1305,35 @@ export default function TrustScorePage() {
 
             <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
               {nextStep.detail}
+            </div>
+
+            <div
+              style={{
+                marginTop: 12,
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                gap: 10,
+              }}
+            >
+              <div style={documentMetaCard("#FFFFFF")}>
+                <div style={sectionLabel()}>Document reference</div>
+                <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                  GMFN ID: {gmfnId || "Awaiting issue"}
+                </div>
+                <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
+                  Verification code: {safeStr(trustSlipSummary?.verification_code || "Not stated")}
+                </div>
+              </div>
+
+              <div style={documentMetaCard("#F8FBFF")}>
+                <div style={sectionLabel()}>Issue window</div>
+                <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                  Issued: {safeDateTime(trustSlipSummary?.issued_at) || "Not stated"}
+                </div>
+                <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
+                  Expires: {safeDateTime(trustSlipSummary?.expires_at) || "Not stated"}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1494,7 +1563,7 @@ export default function TrustScorePage() {
           <div>
             <div style={sectionLabel()}>Why did my trust change?</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              This section is driven by the explainability endpoint.
+              This section explains the most recent trust movement and the events behind it.
             </div>
           </div>
 
@@ -1529,13 +1598,13 @@ export default function TrustScorePage() {
 
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 <div style={helperText()}>
-                  Latest reason: {safeStr(explainability?.latest_reason || "No reason returned yet.")}
+                  Latest reason: {safeStr(explainability?.latest_reason || "No reason is shown yet.")}
                 </div>
                 <div style={helperText()}>
-                  Latest note: {safeStr(explainability?.latest_note || "No note returned yet.")}
+                  Latest note: {safeStr(explainability?.latest_note || "No note is shown yet.")}
                 </div>
                 <div style={helperText()}>
-                  Latest source: {safeStr(explainability?.latest_source || "No source returned yet.")}
+                  Latest source: {safeStr(explainability?.latest_source || "No source is shown yet.")}
                 </div>
               </div>
             </div>
@@ -1554,7 +1623,7 @@ export default function TrustScorePage() {
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 {recentEvents.length === 0 ? (
                   <div style={helperText()}>
-                    No recent explainability event is visible right now.
+                    No recent trust event is currently shown.
                   </div>
                 ) : (
                   recentEvents.slice(0, 6).map((item, index) => (
@@ -1617,7 +1686,7 @@ export default function TrustScorePage() {
           <div>
             <div style={sectionLabel()}>Recomputed breakdown</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              This section is driven by the recompute-me endpoint.
+              This section shows the current score breakdown used for the latest trust reading.
             </div>
           </div>
 
@@ -1689,7 +1758,7 @@ export default function TrustScorePage() {
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 {eventCounts.length === 0 ? (
                   <div style={helperText()}>
-                    No event-type count is visible right now.
+                    No event-type count is currently shown.
                   </div>
                 ) : (
                   eventCounts.map(([key, value]) => (
@@ -1728,7 +1797,7 @@ export default function TrustScorePage() {
           <div>
             <div style={sectionLabel()}>Evidence and institutional context</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Exposure, capacity, risk flags, sponsorship, and trust-slip context stay together here.
+              Exposure, capacity, risk flags, sponsorship, and TrustSlip context stay together here.
             </div>
           </div>
 
@@ -1857,9 +1926,9 @@ export default function TrustScorePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Working routes</div>
+            <div style={sectionLabel()}>Next routes</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Move from trust explanation into the next page you need.
+              Move from this trust reading into the next page you need.
             </div>
           </div>
 
@@ -1881,9 +1950,9 @@ export default function TrustScorePage() {
               gap: 12,
             }}
           >
-            <Link to="/app/trust-slip" style={actionBtn("primary")}>
+            <OriginLink to="/app/trust-slip" style={actionBtn("primary")}>
               Open TrustSlip
-            </Link>
+            </OriginLink>
 
             {verifyUrl ? (
               <a
@@ -1892,29 +1961,29 @@ export default function TrustScorePage() {
                 rel="noreferrer"
                 style={actionBtn("secondary")}
               >
-                Open Merchant Verify
+                Open TrustSlip Verify
               </a>
             ) : (
               <button type="button" style={actionBtn("secondary", true)} disabled>
-                Open Merchant Verify
+                Open TrustSlip Verify
               </button>
             )}
 
-            <Link to={nextStep.ctaTo} style={actionBtn("secondary")}>
+            <OriginLink to={nextStep.ctaTo} style={actionBtn("secondary")}>
               {nextStep.ctaLabel}
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/notifications" style={actionBtn("secondary")}>
+            <OriginLink to="/app/notifications" style={actionBtn("secondary")}>
               Action Inbox
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/marketplace" style={actionBtn("secondary")}>
+            <OriginLink to="/app/marketplace" style={actionBtn("secondary")}>
               Marketplace
-            </Link>
+            </OriginLink>
 
-            <Link to="/app/my-gmfn-and-i" style={actionBtn("secondary")}>
+            <OriginLink to="/app/my-gmfn-and-i" style={actionBtn("secondary")}>
               My GMFN and I
-            </Link>
+            </OriginLink>
           </div>
         ) : null}
       </section>

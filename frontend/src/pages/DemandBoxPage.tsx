@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
   createMarketplaceRequest,
@@ -510,7 +510,7 @@ export default function DemandBoxPage() {
         <PageTopNav
           sectionLabel="Demand Box"
           title="Demand Box"
-          subtitle="Preparing the demand surface..."
+          subtitle="Loading the demand surface..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/marketplace"
@@ -600,12 +600,12 @@ export default function DemandBoxPage() {
               flexWrap: "wrap",
             }}
           >
-            <Link to="/app/community" style={primaryBtn(false)}>
+            <OriginLink to="/app/community" style={primaryBtn(false)}>
               Open Community Home
-            </Link>
-            <Link to="/app/dashboard" style={secondaryBtn(false)}>
+            </OriginLink>
+            <OriginLink to="/app/dashboard" style={secondaryBtn(false)}>
               Dashboard
-            </Link>
+            </OriginLink>
           </div>
         </section>
       </div>
@@ -645,7 +645,9 @@ export default function DemandBoxPage() {
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+        style={pageCard(
+          "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+        )}
       >
         <div
           style={{
@@ -663,7 +665,7 @@ export default function DemandBoxPage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: isCompact ? 28 : 34,
                 lineHeight: 1.12,
@@ -676,6 +678,7 @@ export default function DemandBoxPage() {
               style={{
                 marginTop: 12,
                 ...helperText(),
+                color: "#D7E3F1",
                 maxWidth: 840,
               }}
             >
@@ -698,7 +701,13 @@ export default function DemandBoxPage() {
             </div>
           </div>
 
-          <div style={softCard("#FFFFFF")}>
+          <div
+            style={{
+              ...softCard("rgba(255,255,255,0.96)"),
+              border: "1px solid rgba(212,175,55,0.14)",
+              boxShadow: "0 18px 38px rgba(2,12,27,0.16)",
+            }}
+          >
             <div style={sectionLabel()}>Step order</div>
 
             <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
@@ -834,9 +843,9 @@ export default function DemandBoxPage() {
                 {creating ? "Posting..." : "Post Demand"}
               </button>
 
-              <Link to="/app/notifications" style={secondaryBtn(false)}>
+              <OriginLink to="/app/notifications" style={secondaryBtn(false)}>
                 Open Action Inbox
-              </Link>
+              </OriginLink>
             </div>
           </div>
 
@@ -1097,12 +1106,12 @@ export default function DemandBoxPage() {
           </div>
 
           <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <Link to="/app/marketplace" style={secondaryBtn(false)}>
+            <OriginLink to="/app/marketplace" style={secondaryBtn(false)}>
               Marketplace
-            </Link>
-            <Link to="/app/notifications" style={secondaryBtn(false)}>
+            </OriginLink>
+            <OriginLink to="/app/notifications" style={secondaryBtn(false)}>
               Action Inbox
-            </Link>
+            </OriginLink>
           </div>
         </section>
       </section>

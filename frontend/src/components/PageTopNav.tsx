@@ -1,4 +1,5 @@
 import React from "react";
+import { useLocation } from "react-router-dom";
 import OriginLink from "./OriginLink";
 
 type NavItem = {
@@ -22,11 +23,11 @@ type PageTopNavProps = {
 function wrapCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
+    border: "1px solid rgba(148,163,184,0.16)",
     background: bg,
     padding: 20,
     boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
+      "0 18px 40px rgba(2,6,23,0.28), 0 4px 12px rgba(2,6,23,0.18)",
     overflow: "hidden",
   };
 }
@@ -34,7 +35,7 @@ function wrapCard(bg = "#FFFFFF"): React.CSSProperties {
 function topLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#5D7389",
+    color: "#93A9C4",
     fontWeight: 900,
     letterSpacing: 0.35,
     textTransform: "uppercase",
@@ -43,7 +44,7 @@ function topLabel(): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#5F7287",
+    color: "#C7D4E5",
     fontSize: 14,
     lineHeight: 1.75,
   };
@@ -62,7 +63,7 @@ function actionBtn(
       padding: "10px 14px",
       borderRadius: 14,
       border: "none",
-      background: disabled ? "#CBD5E1" : "#0B63D1",
+      background: disabled ? "#475569" : "#0B63D1",
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
@@ -81,9 +82,9 @@ function actionBtn(
       minHeight: 38,
       padding: "8px 12px",
       borderRadius: 12,
-      border: "1px solid rgba(11,31,51,0.08)",
-      background: "#F8FBFF",
-      color: disabled ? "#94A3B8" : "#24415C",
+      border: "1px solid rgba(148,163,184,0.18)",
+      background: "rgba(15,23,42,0.36)",
+      color: disabled ? "#64748B" : "#D8E2EF",
       fontWeight: 800,
       fontSize: 13,
       textDecoration: "none",
@@ -100,9 +101,9 @@ function actionBtn(
     minHeight: 42,
     padding: "10px 14px",
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
-    color: disabled ? "#94A3B8" : "#0B1F33",
+    border: "1px solid rgba(148,163,184,0.18)",
+    background: "rgba(15,23,42,0.42)",
+    color: disabled ? "#64748B" : "#E5EEF8",
     fontWeight: 800,
     fontSize: 14,
     textDecoration: "none",
@@ -146,6 +147,7 @@ function renderNavRow(
 }
 
 export default function PageTopNav(props: PageTopNavProps) {
+  const location = useLocation();
   const {
     sectionLabel,
     title,
@@ -158,21 +160,34 @@ export default function PageTopNav(props: PageTopNavProps) {
     utilityLinks,
   } = props;
 
+  const originPath =
+    typeof location.state === "object" && location.state
+      ? String(
+          (location.state as any).originPath || (location.state as any).from || ""
+        ).trim()
+      : "";
+
+  const currentPath = `${location.pathname}${location.search}${location.hash}`;
+  const resolvedBackTo =
+    originPath && originPath !== currentPath ? originPath : backTo || "";
+
   const topLinks: NavItem[] = [
     homeTo && homeLabel ? { label: homeLabel, to: homeTo } : null,
-    backTo && backLabel ? { label: backLabel, to: backTo } : null,
+    resolvedBackTo && backLabel ? { label: backLabel, to: resolvedBackTo } : null,
   ].filter(Boolean) as NavItem[];
 
   return (
     <section
-      style={wrapCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}
+      style={wrapCard(
+        "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+      )}
     >
       <div style={topLabel()}>{sectionLabel}</div>
 
       <div
         style={{
           marginTop: 10,
-          color: "#0B1F33",
+          color: "#F8FBFF",
           fontSize: 34,
           fontWeight: 900,
           lineHeight: 1.08,

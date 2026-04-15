@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 
 import Mark from "../assets/gmfn-mark.svg";
 import Wordmark from "../assets/gmfn-wordmark.svg";
@@ -140,7 +141,7 @@ export default function IntroductionPage() {
 
   useEffect(() => {
     if (typeof document !== "undefined") {
-      document.title = "GSN | Introduction";
+      document.title = "GMFN | Introduction";
     }
   }, []);
 
@@ -182,8 +183,8 @@ export default function IntroductionPage() {
               flexWrap: "wrap",
             }}
           >
-            <img src={Mark} alt="GSN mark" style={{ width: 36, height: 36 }} />
-            <img src={Wordmark} alt="GSN wordmark" style={{ height: 30, width: "auto" }} />
+            <img src={Mark} alt="GMFN mark" style={{ width: 36, height: 36 }} />
+            <img src={Wordmark} alt="GMFN wordmark" style={{ height: 30, width: "auto" }} />
           </div>
 
           <div style={sectionLabel()}>Introduction</div>
@@ -315,13 +316,13 @@ export default function IntroductionPage() {
             gap: 10,
           }}
         >
-          <Link to={welcomeTo} style={secondaryLinkStyle()}>
+          <OriginLink to={welcomeTo} style={secondaryLinkStyle()}>
             Welcome
-          </Link>
+          </OriginLink>
 
-          <Link to={guideTo} style={secondaryLinkStyle()}>
+          <OriginLink to={guideTo} style={secondaryLinkStyle()}>
             My GMFN and I
-          </Link>
+          </OriginLink>
         </div>
       </div>
     </div>
