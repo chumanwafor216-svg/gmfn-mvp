@@ -182,7 +182,7 @@ function buildInviteState(
   const guideUrl = buildGuideUrl();
   const fallbackGuideUrl = buildGuideFallbackUrl();
 
-  const defaultMessage = `You are invited to join ${selectedCommunityName} on GMFN.`;
+  const defaultMessage = `You are invited to join ${selectedCommunityName} on GSN.`;
   const effectiveMessage = safeStr(shortMessage) || defaultMessage;
 
   const packagedShareText = [
@@ -195,7 +195,7 @@ function buildInviteState(
     code ? `Invite code: ${code}` : "",
     expiresAt ? `Expiry: ${safeDateTime(expiresAt)}` : "",
     "",
-    "Guide: My GMFN and I",
+    "Guide: My GSN and I",
     guideUrl,
     "",
     "Fallback PDF guide:",
@@ -425,7 +425,7 @@ export default function ClansPage() {
                 maxWidth: 760,
               }}
             >
-              This page is for creation first. Create a community, select the one
+              Start here with community creation. Create a community, select the one
               you want active, then move into invite, demand, marketplace, shop,
               or Community Home.
             </div>
@@ -542,8 +542,8 @@ export default function ClansPage() {
                 lineHeight: 1.7,
               }}
             >
-              Keep the name clear and the description short. This page should stay
-              creation-first, not overloaded with extra control surfaces.
+              Keep the name clear and the description short. This stays
+              creation-first, not overloaded with extra control pages.
             </div>
 
             {createMessage ? (
@@ -654,7 +654,7 @@ export default function ClansPage() {
 
           <div style={softCard("#FFFFFF")}>
             <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-              Current community context
+              Current community
             </div>
 
             <div
@@ -665,7 +665,7 @@ export default function ClansPage() {
                 lineHeight: 1.7,
               }}
             >
-              Use one selected community as your active context for next steps.
+              Use one current community as your active base for next steps.
             </div>
 
             <div style={{ marginTop: 14 }}>
@@ -765,7 +765,7 @@ export default function ClansPage() {
                     lineHeight: 1.7,
                   }}
                 >
-                  Move from creation into the surfaces that matter next.
+                  Move from creation into the pages that matter next.
                 </div>
 
                 <div
@@ -833,7 +833,7 @@ export default function ClansPage() {
                 lineHeight: 1.7,
               }}
             >
-              Create a join package for the selected community with sender,
+              Create a join package for your current community with sender,
               receiver, message, guide link, share-ready copy, and WhatsApp copy.
             </div>
           </div>
@@ -981,7 +981,7 @@ export default function ClansPage() {
                       lineHeight: 1.7,
                     }}
                   >
-                    This package uses the selected community plus the guide link
+                    This package uses your current community plus the guide link
                     and fallback PDF.
                   </div>
 
@@ -1193,7 +1193,7 @@ export default function ClansPage() {
                 lineHeight: 1.7,
               }}
             >
-              Keep this compact. Community Home remains the real control surface.
+              Keep this compact. Community Home remains the real main page.
             </div>
           </div>
 
@@ -1340,3 +1340,4 @@ export default function ClansPage() {
     </div>
   );
 }
+

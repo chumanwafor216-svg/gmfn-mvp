@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
 import {
   getVaultShopAccessView,
+  recordVaultShopAccessOpen,
   type VaultShopAccessProduct,
   type VaultShopAccessView,
 } from "../lib/api";
@@ -120,7 +121,7 @@ export default function ShopAccessPage() {
 
   useEffect(() => {
     if (typeof document !== "undefined") {
-      document.title = "GMFN | Vault Access";
+      document.title = "GSN | Vault Access";
     }
   }, []);
 
@@ -142,7 +143,15 @@ export default function ShopAccessPage() {
         if (!alive) return;
         setView(res || null);
 
-        if (safeStr(res?.status).toLowerCase() !== "active") {
+        const nextStatus = safeStr(res?.status).toLowerCase();
+
+        if (nextStatus === "active") {
+          void recordVaultShopAccessOpen(token).catch(() => {
+            // Opening the Vault view should not fail only because telemetry/open tracking did not return.
+          });
+        }
+
+        if (nextStatus !== "active") {
           setErrorText(
             firstTruthy(
               res?.disclaimer,
@@ -290,7 +299,7 @@ export default function ShopAccessPage() {
           <div style={{ marginTop: 12, ...helperText(), maxWidth: 860, color: "#D7E3F1" }}>
             {firstTruthy(
               view?.shop_description,
-              "This is a private shop view. You can see it because the owner shared access with you."
+              "You can see this private shop because the owner shared access with you."
             )}
           </div>
 
@@ -300,7 +309,7 @@ export default function ShopAccessPage() {
               Community: {firstTruthy(view?.community_name, "Private community")}
             </span>
             <span style={badge(false)}>
-              Merchant: {firstTruthy(view?.owner_name, view?.gmfn_id, "GMFN merchant")}
+              Merchant: {firstTruthy(view?.owner_name, view?.gmfn_id, "GSN merchant")}
             </span>
             <span style={badge(false)}>Current page: Vault access</span>
             <span style={badge(false)}>Current step: Private access</span>
@@ -336,6 +345,20 @@ export default function ShopAccessPage() {
               <div style={sectionLabel()}>What can end access</div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
                 Access can end when the link expires, is turned off, or reaches its view limit.
+              </div>
+            </div>
+
+            <div
+              style={{
+                ...innerCard("rgba(248,251,255,0.98)"),
+                border: "1px solid rgba(11,99,209,0.10)",
+              }}
+            >
+              <div style={sectionLabel()}>Current route state</div>
+              <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                This Vault route is now active and recorded as a private-access open. Stay on this
+                path until you finish reviewing the approved private offers or the owner gives you a
+                different next step.
               </div>
             </div>
           </div>

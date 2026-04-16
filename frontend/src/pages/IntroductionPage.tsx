@@ -76,7 +76,7 @@ function actionButton(primary?: boolean): React.CSSProperties {
     padding: "15px 24px",
     borderRadius: 16,
     border: primary ? "none" : "1px solid #D7E3F0",
-    background: primary ? "#0B1F33" : "#FFFFFF",
+    background: primary ? "#1D4ED8" : "#FFFFFF",
     color: primary ? "#FFFFFF" : "#0B1F33",
     fontWeight: 1000,
     fontSize: 16,
@@ -141,7 +141,7 @@ export default function IntroductionPage() {
 
   useEffect(() => {
     if (typeof document !== "undefined") {
-      document.title = "GMFN | Introduction";
+      document.title = "GSN | Introduction";
     }
   }, []);
 
@@ -152,6 +152,11 @@ export default function IntroductionPage() {
 
   const guideTo = useMemo(
     () => mergeSearchIntoPath("/guide", location.search),
+    [location.search]
+  );
+
+  const commitmentTo = useMemo(
+    () => mergeSearchIntoPath("/app/dashboard#focus-commitments", location.search),
     [location.search]
   );
 
@@ -183,8 +188,8 @@ export default function IntroductionPage() {
               flexWrap: "wrap",
             }}
           >
-            <img src={Mark} alt="GMFN mark" style={{ width: 36, height: 36 }} />
-            <img src={Wordmark} alt="GMFN wordmark" style={{ height: 30, width: "auto" }} />
+            <img src={Mark} alt="GSN mark" style={{ width: 36, height: 36 }} />
+            <img src={Wordmark} alt="GSN wordmark" style={{ height: 30, width: "auto" }} />
           </div>
 
           <div style={sectionLabel()}>Introduction</div>
@@ -214,7 +219,7 @@ export default function IntroductionPage() {
               maxWidth: 980,
             }}
           >
-            GMFN is designed to help communities organise support responsibly,
+            GSN is designed to help communities organise support responsibly,
             make trust visible, and preserve a clear evidence trail around commitments,
             guarantees, and repayment behaviour.
           </p>
@@ -243,6 +248,11 @@ export default function IntroductionPage() {
             title="Portable reliability"
             text="TrustSlip allows reliability to be presented clearly to merchants and partners without claiming to be a bank guarantee."
           />
+
+          <FeatureCard
+            title="Commitment Builder"
+            text="GSN can also help members turn intentions into steadier follow-through around savings, repayment, business targets, and retirement readiness over time."
+          />
         </div>
 
         <div
@@ -261,9 +271,21 @@ export default function IntroductionPage() {
             </div>
 
             <div style={{ marginTop: 10, ...helperText() }}>
-              This page should not open member surfaces directly. The correct next
-              public move is to continue to the Welcome page, where the app guides
-              one decision at a time.
+              Continue to the Welcome page. From there, the app will guide one
+              decision at a time.
+            </div>
+
+            <div
+              style={{
+                marginTop: 12,
+                color: "#5B7693",
+                fontSize: 13,
+                lineHeight: 1.75,
+              }}
+            >
+              GSN is not only about trust records and support decisions. It also
+              helps people build steadier follow-through once they are inside the
+              guided flow.
             </div>
 
             <div
@@ -274,8 +296,8 @@ export default function IntroductionPage() {
                 lineHeight: 1.75,
               }}
             >
-              Pilot note: this public entry remains structured so people are not
-              forced to choose too many things at once.
+              Public entry stays structured so you do not have to choose too many
+              things at once.
             </div>
 
             {signedIn ? (
@@ -287,8 +309,8 @@ export default function IntroductionPage() {
                   lineHeight: 1.7,
                 }}
               >
-                Active session detected. Keep using the guided flow here, or return
-                to your dashboard from the authenticated workspace.
+                Active session detected. Keep using the guided flow here, or
+                return to your dashboard.
               </div>
             ) : null}
           </div>
@@ -299,7 +321,11 @@ export default function IntroductionPage() {
             </button>
 
             <button onClick={() => nav(guideTo)} style={actionButton(false)}>
-              Open My GMFN and I
+              Open My GSN and I
+            </button>
+
+            <button onClick={() => nav(commitmentTo)} style={actionButton(false)}>
+              Open Commitment Builder
             </button>
 
             <button onClick={() => nav(loginTo)} style={actionButton(false)}>
@@ -321,7 +347,11 @@ export default function IntroductionPage() {
           </OriginLink>
 
           <OriginLink to={guideTo} style={secondaryLinkStyle()}>
-            My GMFN and I
+            My GSN and I
+          </OriginLink>
+
+          <OriginLink to={commitmentTo} style={secondaryLinkStyle()}>
+            Commitment Builder
           </OriginLink>
         </div>
       </div>

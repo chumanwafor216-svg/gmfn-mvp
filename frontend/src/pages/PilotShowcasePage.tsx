@@ -49,7 +49,7 @@ export default function PilotShowcasePage() {
           Pilot Showcase
         </div>
         <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
-          Operational readiness snapshot for GMFN pilot deployment.
+          Operational readiness snapshot for GSN pilot deployment.
         </div>
 
         {err ? (

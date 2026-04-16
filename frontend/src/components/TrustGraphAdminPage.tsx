@@ -150,7 +150,7 @@ export default function TrustGraphAdminPage() {
       <Card style={{ marginTop: 12 }}>
         <div style={{ fontSize: 16, fontWeight: 1000, color: "#0B1F33" }}>Lookup</div>
         <div style={{ marginTop: 6, color: "#64748b", fontSize: 12 }}>
-          Search by internal user ID or permanent GMFN identity.
+          Search by internal user ID or permanent member identity.
         </div>
 
         <div
@@ -334,3 +334,5 @@ export default function TrustGraphAdminPage() {
     </div>
   );
 }
+
+

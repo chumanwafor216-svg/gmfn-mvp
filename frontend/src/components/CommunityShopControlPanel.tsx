@@ -488,7 +488,7 @@ export default function CommunityShopControlPanel() {
     if (!shop) return "Shop control is ready inside Community Home.";
     return firstTruthy(
       shop.description,
-      "Manage the owner surface here, then keep the public shop page clean for visitors."
+      "Manage the owner page here, then keep the public shop page clean for visitors."
     );
   }, [shop]);
 
@@ -525,7 +525,7 @@ export default function CommunityShopControlPanel() {
         <div>
           <div style={sectionLabel()}>Shop control</div>
           <div style={{ marginTop: 8, ...helperText(), maxWidth: 820 }}>
-            This is the owner-side shop control entry inside Community Home. Public Shop Gallery stays visitor-clean while the full working surface remains here.
+            This owner-side shop control entry lives inside Community Home. Public Shop Gallery stays visitor-clean while the full page remains here.
           </div>
         </div>
 
@@ -600,7 +600,7 @@ export default function CommunityShopControlPanel() {
                     }}
                   >
                     <span style={badge(true)}>Community Home</span>
-                    <span style={badge(false)}>Owner-side surface</span>
+                    <span style={badge(false)}>Owner-side page</span>
                     <span style={badge(false)}>
                       Visible blocks: {positiveNumber(shop?.visibleBlocks)}
                     </span>
@@ -772,3 +772,6 @@ export default function CommunityShopControlPanel() {
     </section>
   );
 }
+
+
+

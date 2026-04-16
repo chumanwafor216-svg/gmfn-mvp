@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
+import OriginLink from "../components/OriginLink";
 import {
   getCurrentClan,
   getMarketplaceBroadcasts,
@@ -40,10 +41,12 @@ type ShopBroadcast = {
   message: string;
   sourceShopName: string;
   sourceClanName: string;
+  sourceClanId?: number;
   trustBand: string;
   trustScore: string;
   authorName: string;
   authorGmfnId: string;
+  createdAt?: string;
 };
 
 type NoticeTone = "success" | "error";
@@ -103,6 +106,18 @@ function moneyText(value: any, currency: any): string {
 
   if (!amount) return "Price on request";
   return `${amount} ${unit}`.trim();
+}
+
+function formatWhen(value?: string | null): string {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return cleanText(value);
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 function apiBase(): string {
@@ -247,11 +262,35 @@ function normalizeBroadcast(raw: any): ShopBroadcast | null {
     message: firstMeaningful(src?.message),
     sourceShopName: firstMeaningful(src?.source_shop_name),
     sourceClanName: firstMeaningful(src?.source_clan_name),
+    sourceClanId: positiveNumber(src?.source_clan_id || src?.clan_id) || undefined,
     trustBand: firstMeaningful(src?.trust_band),
     trustScore: firstMeaningful(src?.trust_score),
     authorName: firstMeaningful(src?.author_name),
     authorGmfnId: firstMeaningful(src?.author_gmfn_id),
+    createdAt: firstMeaningful(src?.created_at),
   };
+}
+
+function spotlightBroadcastKey(item: ShopBroadcast | null): string {
+  if (!item) return "";
+
+  const numericId = positiveNumber(item.id);
+  if (numericId > 0) return `broadcast-${numericId}`;
+
+  return [
+    firstMeaningful(item.authorGmfnId),
+    firstMeaningful(item.createdAt),
+    firstMeaningful(item.message),
+    firstMeaningful(item.sourceShopName),
+  ]
+    .filter(Boolean)
+    .join("|");
+}
+
+function spotlightBroadcastSortValue(item: ShopBroadcast | null): number {
+  if (!item?.createdAt) return 0;
+  const timestamp = new Date(item.createdAt).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
 function normalizeProduct(raw: any, slotNumber: number): ShopProduct | null {
@@ -342,8 +381,8 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     padding: "6px 10px",
     borderRadius: 999,
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
+    background: primary ? "rgba(29,78,216,0.08)" : "rgba(100,116,139,0.10)",
+    color: primary ? "#1D4ED8" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "nowrap",
@@ -359,7 +398,7 @@ function primaryBtn(disabled = false): React.CSSProperties {
     padding: "10px 14px",
     borderRadius: 14,
     border: "none",
-    background: disabled ? "#CBD5E1" : "#0B63D1",
+    background: disabled ? "#CBD5E1" : "#1D4ED8",
     color: "#FFFFFF",
     fontWeight: 900,
     fontSize: 14,
@@ -377,8 +416,8 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     minHeight: 40,
     padding: "9px 12px",
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(11,99,209,0.12)",
+    background: "#FDFEFF",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
@@ -401,6 +440,74 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
   };
 }
 
+function executiveImageShellStyle(minHeight: number): React.CSSProperties {
+  return {
+    position: "relative",
+    minHeight,
+    borderRadius: 28,
+    padding: 10,
+    overflow: "hidden",
+    background:
+      "linear-gradient(180deg, rgba(16,36,58,0.98) 0%, rgba(23,54,84,0.96) 54%, rgba(38,82,124,0.96) 100%)",
+    border: "1px solid rgba(212,175,55,0.2)",
+    boxShadow:
+      "0 26px 56px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.05)",
+  };
+}
+
+function executiveImageInnerStyle(minHeight: number): React.CSSProperties {
+  return {
+    position: "relative",
+    minHeight,
+    borderRadius: 22,
+    overflow: "hidden",
+    border: "1px solid rgba(212,175,55,0.14)",
+    background:
+      "linear-gradient(180deg, rgba(24,58,88,0.98) 0%, rgba(38,84,122,0.98) 100%)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
+  };
+}
+
+function executiveFrameLabelStyle(): React.CSSProperties {
+  return {
+    position: "absolute",
+    top: 14,
+    right: 14,
+    zIndex: 2,
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    minHeight: 30,
+    padding: "6px 10px",
+    borderRadius: 999,
+    background: "rgba(7,16,28,0.72)",
+    border: "1px solid rgba(212,175,55,0.22)",
+    color: "#F6D77A",
+    fontSize: 11,
+    fontWeight: 900,
+    letterSpacing: 0.24,
+    textTransform: "uppercase",
+    backdropFilter: "blur(8px)",
+    whiteSpace: "nowrap",
+  };
+}
+
+function executiveFallbackStyle(): React.CSSProperties {
+  return {
+    width: "100%",
+    height: "100%",
+    minHeight: "inherit",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    textAlign: "center",
+    padding: 20,
+    color: "#E2E8F0",
+  };
+}
+
 export default function ShopGalleryPage() {
   const { gmfnId } = useParams();
   const location = useLocation();
@@ -414,6 +521,10 @@ export default function ShopGalleryPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [shop, setShop] = useState<ShopProfile | null>(null);
   const [broadcast, setBroadcast] = useState<ShopBroadcast | null>(null);
+  const [communitySpotlights, setCommunitySpotlights] = useState<ShopBroadcast[]>([]);
+  const [miniSpotlightIndex, setMiniSpotlightIndex] = useState(0);
+  const communitySpotlightsRef = useRef<ShopBroadcast[]>([]);
+  const miniSpotlightIndexRef = useRef(0);
   const [products, setProducts] = useState<ShopProduct[]>([]);
   const [currentClan, setCurrentClan] = useState<any>(null);
   const [notice, setNotice] = useState<{ tone: NoticeTone; text: string } | null>(
@@ -541,11 +652,38 @@ export default function ShopGalleryPage() {
             }) || null;
 
         if (!alive) return;
+        const normalizedBroadcasts = rowsOf<any>(broadcastRes)
+          .map((row) => normalizeBroadcast(row))
+          .filter(Boolean)
+          .sort((a, b) => {
+            const timeDelta =
+              spotlightBroadcastSortValue(b) - spotlightBroadcastSortValue(a);
+            if (timeDelta !== 0) return timeDelta;
+            return spotlightBroadcastKey(a).localeCompare(spotlightBroadcastKey(b));
+          }) as ShopBroadcast[];
+        const currentSpotlight =
+          communitySpotlightsRef.current[miniSpotlightIndexRef.current] ||
+          communitySpotlightsRef.current[0] ||
+          null;
+        const currentKey = spotlightBroadcastKey(currentSpotlight);
+        const matchedSpotlightIndex = currentKey
+          ? normalizedBroadcasts.findIndex(
+              (item) => spotlightBroadcastKey(item) === currentKey
+            )
+          : -1;
 
         setCurrentClan(clanRes || null);
         setShop(normalizedShop);
         setProducts(normalizedProducts);
         setBroadcast(relevantBroadcast);
+        setCommunitySpotlights(normalizedBroadcasts);
+        setMiniSpotlightIndex(
+          normalizedBroadcasts.length <= 0
+            ? 0
+            : matchedSpotlightIndex >= 0
+            ? matchedSpotlightIndex
+            : 0
+        );
       } catch (err: any) {
         if (!alive) return;
         setError(
@@ -560,6 +698,39 @@ export default function ShopGalleryPage() {
       alive = false;
     };
   }, [gmfnId, selectedClanId]);
+
+  useEffect(() => {
+    setMiniSpotlightIndex(0);
+  }, [selectedClanId, gmfnId]);
+
+  useEffect(() => {
+    communitySpotlightsRef.current = communitySpotlights;
+  }, [communitySpotlights]);
+
+  useEffect(() => {
+    miniSpotlightIndexRef.current = miniSpotlightIndex;
+  }, [miniSpotlightIndex]);
+
+  useEffect(() => {
+    if (communitySpotlights.length <= 1) return;
+
+    const timer = window.setInterval(() => {
+      setMiniSpotlightIndex((prev) => (prev + 1) % communitySpotlights.length);
+    }, 45000);
+
+    return () => window.clearInterval(timer);
+  }, [communitySpotlights.length]);
+
+  useEffect(() => {
+    if (communitySpotlights.length <= 0 && miniSpotlightIndex !== 0) {
+      setMiniSpotlightIndex(0);
+      return;
+    }
+
+    if (communitySpotlights.length > 0 && miniSpotlightIndex >= communitySpotlights.length) {
+      setMiniSpotlightIndex(0);
+    }
+  }, [communitySpotlights.length, miniSpotlightIndex]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -635,6 +806,52 @@ export default function ShopGalleryPage() {
     return effectiveShop?.imageUrl || "";
   }, [effectiveShop]);
 
+  const miniSpotlight = useMemo(() => {
+    if (communitySpotlights.length === 0) return null;
+    return communitySpotlights[miniSpotlightIndex % communitySpotlights.length] || communitySpotlights[0];
+  }, [communitySpotlights, miniSpotlightIndex]);
+
+  const miniSpotlightView = useMemo(() => {
+    const currentShopGmfnId = firstMeaningful(effectiveShop?.gmfnId).toUpperCase();
+    const spotlightShopGmfnId = firstMeaningful(miniSpotlight?.authorGmfnId);
+    const spotlightClanId = positiveNumber(miniSpotlight?.sourceClanId);
+    const isCurrentShop =
+      Boolean(currentShopGmfnId) &&
+      Boolean(spotlightShopGmfnId) &&
+      currentShopGmfnId === spotlightShopGmfnId.toUpperCase();
+    const shopTo = spotlightShopGmfnId
+      ? `/shop/${encodeURIComponent(spotlightShopGmfnId)}`
+      : "";
+    const marketplaceTo = spotlightClanId
+      ? `/community/${encodeURIComponent(String(spotlightClanId))}`
+      : "/app/marketplace";
+
+    return {
+      title: firstMeaningful(miniSpotlight?.sourceShopName, "Mini Spotlight"),
+      detail: firstMeaningful(
+        miniSpotlight?.message,
+        "Live promoted visibility from the current community spotlight source."
+      ),
+      communityName: firstMeaningful(miniSpotlight?.sourceClanName, effectiveShop?.communityName),
+      trustBand: firstMeaningful(miniSpotlight?.trustBand, "Trusted visibility"),
+      createdAt: firstMeaningful(miniSpotlight?.createdAt),
+      createdLabel: miniSpotlight?.createdAt ? formatWhen(miniSpotlight.createdAt) : "",
+      imageUrl: firstMeaningful(miniSpotlight?.imageUrl),
+      shopTo,
+      marketplaceTo,
+      isCurrentShop,
+      primaryLabel: shopTo
+        ? "Open Shop"
+        : "Open Marketplace",
+      secondaryLabel: spotlightClanId ? "Open community" : "Open marketplace",
+      helperLine: isCurrentShop
+        ? "This live spotlight currently belongs to the shop you are already viewing."
+        : shopTo
+        ? "Open the shop owner behind the current live spotlight item."
+        : "Open the wider marketplace page tied to the current spotlight context.",
+    };
+  }, [miniSpotlight, effectiveShop]);
+
   const absoluteShopLink = useMemo(() => {
     if (typeof window === "undefined") return location.pathname;
     return `${window.location.origin}${location.pathname}`;
@@ -684,7 +901,7 @@ export default function ShopGalleryPage() {
       effectiveShop?.communityName
         ? `${effectiveShop?.communityName} shop`
         : "",
-      "Visit this trusted shop surface."
+      "Visit this trusted shop."
     );
 
     void shareOrCopy({
@@ -766,8 +983,8 @@ export default function ShopGalleryPage() {
       <section
         style={pageCard(
           heroImage
-            ? "linear-gradient(180deg, rgba(8,17,31,0.82) 0%, rgba(11,31,51,0.94) 52%, rgba(16,42,67,0.98) 100%)"
-            : "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+            ? "linear-gradient(180deg, rgba(16,36,58,0.82) 0%, rgba(23,54,84,0.92) 52%, rgba(35,79,118,0.98) 100%)"
+            : "linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)"
         )}
       >
         <div
@@ -775,21 +992,49 @@ export default function ShopGalleryPage() {
             position: "relative",
             borderRadius: 28,
             overflow: "hidden",
-            border: "1px solid rgba(11,31,51,0.08)",
+            padding: 10,
+            border: "1px solid rgba(212,175,55,0.18)",
             background:
-              "linear-gradient(135deg, #12304D 0%, #0B63D1 55%, #2563EB 100%)",
+              "linear-gradient(135deg, rgba(16,36,58,0.98) 0%, rgba(23,54,84,0.96) 55%, rgba(38,82,124,0.96) 100%)",
+            boxShadow:
+              "0 26px 56px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.05)",
             minHeight: isCompact ? 300 : 360,
           }}
         >
+          <div
+            style={{
+              position: "absolute",
+              top: 18,
+              right: 18,
+              zIndex: 2,
+              display: "inline-flex",
+              alignItems: "center",
+              minHeight: 30,
+              padding: "6px 10px",
+              borderRadius: 999,
+              background: "rgba(7,16,28,0.72)",
+              border: "1px solid rgba(212,175,55,0.22)",
+              color: "#F6D77A",
+              fontSize: 11,
+              fontWeight: 900,
+              letterSpacing: 0.24,
+              textTransform: "uppercase",
+              backdropFilter: "blur(8px)",
+            }}
+          >
+            Public shop identity
+          </div>
           {heroImage ? (
             <img
               src={heroImage}
               alt={safeStr(effectiveShop?.shopName || "Shop")}
               style={{
                 position: "absolute",
-                inset: 0,
+                inset: 10,
                 width: "100%",
-                height: "100%",
+                height: "calc(100% - 20px)",
+                borderRadius: 22,
+                border: "1px solid rgba(212,175,55,0.14)",
                 objectFit: "cover",
                 objectPosition: "center",
                 display: "block",
@@ -800,9 +1045,10 @@ export default function ShopGalleryPage() {
           <div
             style={{
               position: "absolute",
-              inset: 0,
+              inset: 10,
+              borderRadius: 22,
               background:
-                "linear-gradient(180deg, rgba(7,26,46,0.12) 0%, rgba(7,26,46,0.24) 25%, rgba(7,26,46,0.76) 100%)",
+                "linear-gradient(180deg, rgba(12,34,56,0.10) 0%, rgba(12,34,56,0.16) 25%, rgba(12,34,56,0.60) 100%)",
             }}
           />
 
@@ -836,7 +1082,7 @@ export default function ShopGalleryPage() {
                     color: "#FFFFFF",
                   }}
                 >
-                  Visitor shop surface
+                  Visitor shop page
                 </span>
 
                 <span
@@ -875,7 +1121,7 @@ export default function ShopGalleryPage() {
               >
                 {safeStr(
                   effectiveShop?.description ||
-                    "A premium visitor surface for trusted products. Internal management controls stay out of this page."
+                    "A premium visitor page for trusted products. Management controls stay out of this page."
                 )}
               </div>
 
@@ -956,7 +1202,7 @@ export default function ShopGalleryPage() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    color: "#0B63D1",
+                    color: "#1D4ED8",
                     fontWeight: 900,
                     fontSize: 24,
                   }}
@@ -1053,138 +1299,16 @@ export default function ShopGalleryPage() {
         </div>
       </section>
 
-      {broadcast ? (
-        <section
-          style={pageCard(
-            "linear-gradient(180deg, #091523 0%, #10263C 52%, #153756 100%)"
-          )}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <div style={{ ...sectionLabel(), color: "#D7E3F1" }}>Spotlight strip</div>
-              <div style={{ marginTop: 8, ...helperText(), color: "#D7E3F1" }}>
-                Spotlight stays separate from the shop signboard and the product blocks.
-              </div>
-            </div>
-
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span style={badge(true)}>Community spotlight</span>
-              {safeStr(broadcast.sourceClanName) ? (
-                <span style={badge(false)}>{safeStr(broadcast.sourceClanName)}</span>
-              ) : null}
-            </div>
-          </div>
-
-          <div
-            style={{
-              marginTop: 18,
-              display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "280px minmax(0, 1fr)",
-              gap: 16,
-              alignItems: "stretch",
-            }}
-          >
-            <div
-              style={{
-                ...innerCard(
-                  "linear-gradient(180deg, #0A1625 0%, #10263C 50%, #163A58 100%)"
-                ),
-                padding: 0,
-                overflow: "hidden",
-                minHeight: 220,
-                border: "1px solid rgba(212,175,55,0.18)",
-                boxShadow: "0 20px 42px rgba(2,12,27,0.26)",
-              }}
-            >
-              {safeStr(broadcast.imageUrl) ? (
-                <img
-                  src={broadcast.imageUrl}
-                  alt={safeStr(broadcast.sourceShopName || "Spotlight")}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    minHeight: 220,
-                    objectFit: "cover",
-                    display: "block",
-                  }}
-                />
-              ) : (
-                <div
-                  style={{
-                    minHeight: 220,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    textAlign: "center",
-                    padding: 18,
-                    color: "#D7E3F1",
-                    fontWeight: 800,
-                  }}
-                >
-                  Spotlight image coming soon
-                </div>
-              )}
-            </div>
-
-            <div
-              style={{
-                ...innerCard("rgba(255,255,255,0.96)"),
-                border: "1px solid rgba(212,175,55,0.14)",
-                boxShadow: "0 18px 38px rgba(2,12,27,0.18)",
-              }}
-            >
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {safeStr(broadcast.sourceShopName) ? (
-                  <span style={badge(true)}>{safeStr(broadcast.sourceShopName)}</span>
-                ) : null}
-                {safeStr(broadcast.trustBand) ? (
-                  <span style={badge(false)}>
-                    Trust: {safeStr(broadcast.trustBand)}
-                    {safeStr(broadcast.trustScore)
-                      ? ` - ${safeStr(broadcast.trustScore)}`
-                      : ""}
-                  </span>
-                ) : null}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 14,
-                  color: "#0B1F33",
-                  fontSize: 20,
-                  fontWeight: 900,
-                  lineHeight: 1.35,
-                }}
-              >
-                {safeStr(broadcast.message || "This shop is active in the community spotlight.")}
-              </div>
-
-              <div style={{ marginTop: 12, ...helperText() }}>
-                This strip shows current spotlight context only. Product access remains inside the community-visible product blocks below.
-              </div>
-            </div>
-          </div>
-        </section>
-      ) : null}
-
       <section
         style={pageCard(
-          "linear-gradient(180deg, #091523 0%, #10263C 52%, #153756 100%)"
+          "linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)"
         )}
       >
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.1fr) 320px",
-            gap: 16,
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.16fr) 296px",
+            gap: 8,
             alignItems: "stretch",
           }}
         >
@@ -1193,67 +1317,242 @@ export default function ShopGalleryPage() {
               ...innerCard("rgba(255,255,255,0.96)"),
               border: "1px solid rgba(212,175,55,0.14)",
               boxShadow: "0 18px 38px rgba(2,12,27,0.18)",
+              padding: 9,
             }}
           >
             <div style={{ ...sectionLabel(), color: "#5D7389" }}>Vault</div>
             <div
               style={{
-                marginTop: 10,
+                marginTop: 4,
                 color: "#0B1F33",
-                fontSize: 22,
+                fontSize: 17,
                 fontWeight: 900,
-                lineHeight: 1.3,
+                lineHeight: 1.2,
               }}
             >
-              Some offers are private.
+              Vault: private stock by permission.
             </div>
-            <div style={{ marginTop: 12, ...helperText() }}>
-              Vault is the private access layer for this shop. Private offers and products are not
-              shown publicly here. The shop owner decides who can view them.
+            <div style={{ marginTop: 4, ...helperText(), fontSize: 11.5, lineHeight: 1.45 }}>
+              Private stock may exist here, but it is not shown publicly.
             </div>
-            <div style={{ marginTop: 12, ...helperText() }}>
-              If you want access, ask the owner directly. Private access is shared by permission
-              only.
+            <div style={{ marginTop: 2, ...helperText(), fontSize: 11.5, lineHeight: 1.45 }}>
+              Access is owner-controlled and granted by permission only.
             </div>
-            <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span style={badge(true)}>Vault</span>
-              <span style={badge(false)}>Private access</span>
-              <span style={badge(false)}>Controlled commerce</span>
+            <div style={{ marginTop: 4, display: "flex", gap: 4, flexWrap: "wrap" }}>
+              <span style={{ ...badge(true), minHeight: 26, padding: "4px 8px", fontSize: 11 }}>
+                Vault
+              </span>
+              <span style={{ ...badge(false), minHeight: 24, padding: "3px 8px", fontSize: 10.5 }}>
+                Private warehouse
+              </span>
+              <span style={{ ...badge(false), minHeight: 24, padding: "3px 8px", fontSize: 10.5 }}>
+                Controlled commerce
+              </span>
+              <span style={{ ...badge(false), minHeight: 24, padding: "3px 8px", fontSize: 10.5 }}>
+                Permission only
+              </span>
             </div>
           </div>
 
           <div
             style={{
-              ...innerCard(
-                "linear-gradient(180deg, #0A1625 0%, #10263C 56%, #173B59 100%)"
-              ),
-              border: "1px solid rgba(212,175,55,0.16)",
-              boxShadow: "0 18px 40px rgba(2,12,27,0.24)",
+              display: "grid",
+              gap: 8,
             }}
           >
-            <div style={{ ...sectionLabel(), color: "#D7E3F1" }}>Private access</div>
             <div
               style={{
-                marginTop: 10,
-                color: "#F8FBFF",
-                fontSize: 18,
-                fontWeight: 900,
-                lineHeight: 1.35,
+                ...innerCard(
+                  "linear-gradient(180deg, #15314C 0%, #21496C 56%, #2B5E88 100%)"
+                ),
+                border: "1px solid rgba(212,175,55,0.16)",
+                boxShadow: "0 18px 40px rgba(2,12,27,0.24)",
+                padding: 9,
               }}
             >
-              Ask for access
+              <div style={{ ...sectionLabel(), color: "#D7E3F1" }}>Private access</div>
+              <div
+                style={{
+                  marginTop: 4,
+                  color: "#F8FBFF",
+                  fontSize: 13.5,
+                  fontWeight: 900,
+                  lineHeight: 1.24,
+                }}
+              >
+                Ask for access to the private warehouse
+              </div>
+              <div style={{ marginTop: 3, ...helperText(), color: "#E2E8F0", fontSize: 11, lineHeight: 1.38 }}>
+                Ask if private offers are available for you. Nothing inside Vault is shown until access is granted.
+              </div>
+              <div style={{ marginTop: 4, display: "flex", gap: 5, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  onClick={askForVaultAccess}
+                  style={{ ...primaryBtn(false), minHeight: 34, padding: "6px 10px", fontSize: 12 }}
+                >
+                  Ask for access
+                </button>
+                <button
+                  type="button"
+                  onClick={copyShopLink}
+                  style={{ ...secondaryBtn(false), minHeight: 34, padding: "6px 10px", fontSize: 12 }}
+                >
+                  Copy shop link
+                </button>
+              </div>
             </div>
-            <div style={{ marginTop: 10, ...helperText(), color: "#D7E3F1" }}>
-              Ask the owner if private offers are available for you. Nothing inside Vault is shown
-              publicly until access is granted.
-            </div>
-            <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button type="button" onClick={askForVaultAccess} style={primaryBtn(false)}>
-                Ask for access
-              </button>
-              <button type="button" onClick={copyShopLink} style={secondaryBtn(false)}>
-                Copy shop link
-              </button>
+
+            <div
+              style={{
+                position: "relative",
+                ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"),
+                border: "1px solid rgba(11,99,209,0.14)",
+                boxShadow: "0 18px 38px rgba(29,78,216,0.10)",
+                padding: 9,
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 4,
+                  background:
+                    "linear-gradient(90deg, #1D4ED8 0%, #3B82F6 52%, #93C5FD 100%)",
+                }}
+              />
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 6,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={sectionLabel()}>Mini Spotlight</div>
+                <span
+                  style={{
+                    ...badge(true),
+                    minHeight: 24,
+                    padding: "3px 8px",
+                    fontSize: 10.5,
+                  }}
+                >
+                  Live promo
+                </span>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 6,
+                  borderRadius: 14,
+                  overflow: "hidden",
+                  border: "1px solid rgba(11,99,209,0.14)",
+                  background:
+                    "linear-gradient(180deg, rgba(24,58,88,0.98) 0%, rgba(38,84,122,0.98) 100%)",
+                  minHeight: 88,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {miniSpotlightView.imageUrl ? (
+                  <img
+                    src={miniSpotlightView.imageUrl}
+                    alt={miniSpotlightView.title}
+                    style={{
+                      width: "100%",
+                      minHeight: 88,
+                      maxHeight: 108,
+                      objectFit: "cover",
+                      display: "block",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      padding: 10,
+                      textAlign: "center",
+                      color: "#D7E3F1",
+                      fontWeight: 800,
+                      fontSize: 11,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {miniSpotlight
+                      ? "Live community spotlight is active here, but this current item has no image."
+                      : "No live community spotlight is visible right now."}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ marginTop: 4, display: "flex", gap: 4, flexWrap: "wrap" }}>
+                <span style={{ ...badge(true), minHeight: 24, padding: "3px 8px", fontSize: 10.5 }}>
+                  Community spotlight
+                </span>
+                <span style={{ ...badge(false), minHeight: 24, padding: "3px 8px", fontSize: 10.5 }}>
+                  {miniSpotlightView.communityName || "Current community"}
+                </span>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 4,
+                  color: "#0B1F33",
+                  fontSize: 13,
+                  fontWeight: 900,
+                  lineHeight: 1.18,
+                  display: "-webkit-box",
+                  WebkitLineClamp: 1,
+                  WebkitBoxOrient: "vertical" as any,
+                  overflow: "hidden",
+                }}
+              >
+                {miniSpotlightView.title}
+              </div>
+              <div
+                style={{
+                  marginTop: 2,
+                  ...helperText(),
+                  fontSize: 10.8,
+                  lineHeight: 1.32,
+                  display: "-webkit-box",
+                  WebkitLineClamp: 1,
+                  WebkitBoxOrient: "vertical" as any,
+                  overflow: "hidden",
+                }}
+              >
+                {miniSpotlightView.detail}
+              </div>
+              <div style={{ marginTop: 3, display: "flex", gap: 4, flexWrap: "wrap" }}>
+                <span style={{ ...badge(false), minHeight: 24, padding: "3px 8px", fontSize: 10.5 }}>
+                  {miniSpotlightView.trustBand}
+                </span>
+                {miniSpotlightView.createdLabel ? (
+                  <span style={{ ...badge(false), minHeight: 24, padding: "3px 8px", fontSize: 10.5 }}>
+                    {miniSpotlightView.createdLabel}
+                  </span>
+                ) : null}
+              </div>
+              <div style={{ marginTop: 4, display: "flex", gap: 5, flexWrap: "wrap" }}>
+                <OriginLink
+                  to={miniSpotlightView.shopTo || miniSpotlightView.marketplaceTo}
+                  style={{ ...primaryBtn(false), minHeight: 34, padding: "6px 10px", fontSize: 12 }}
+                >
+                  {miniSpotlightView.primaryLabel}
+                </OriginLink>
+                <OriginLink
+                  to={miniSpotlightView.marketplaceTo}
+                  style={{ ...secondaryBtn(false), minHeight: 34, padding: "6px 10px", fontSize: 12 }}
+                >
+                  {miniSpotlightView.secondaryLabel}
+                </OriginLink>
+              </div>
             </div>
           </div>
         </div>
@@ -1341,11 +1640,35 @@ export default function ShopGalleryPage() {
                       position: "relative",
                       height: 360,
                       background:
-                        "linear-gradient(180deg, #0F2133 0%, #173B59 100%)",
+                        "linear-gradient(180deg, #14314C 0%, #21496C 52%, #2B5E88 100%)",
                       borderBottom: "1px solid rgba(11,31,51,0.08)",
                       overflow: "hidden",
+                      padding: 10,
                     }}
                   >
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 22,
+                        right: 22,
+                        zIndex: 2,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        minHeight: 30,
+                        padding: "6px 10px",
+                        borderRadius: 999,
+                        background: "rgba(7,16,28,0.72)",
+                        border: "1px solid rgba(212,175,55,0.22)",
+                        color: "#F6D77A",
+                        fontSize: 11,
+                        fontWeight: 900,
+                        letterSpacing: 0.24,
+                        textTransform: "uppercase",
+                        backdropFilter: "blur(8px)",
+                      }}
+                    >
+                      Product frame
+                    </div>
                     {safeStr(product.imageUrl) ? (
                       <img
                         src={product.imageUrl}
@@ -1353,6 +1676,8 @@ export default function ShopGalleryPage() {
                         style={{
                           width: "100%",
                           height: "100%",
+                          borderRadius: 18,
+                          border: "1px solid rgba(212,175,55,0.14)",
                           objectFit: "cover",
                           objectPosition: "center",
                           display: "block",
@@ -1373,7 +1698,15 @@ export default function ShopGalleryPage() {
                           padding: 16,
                         }}
                       >
-                        Product image coming soon
+                        <div>
+                          <div style={{ color: "#F8FBFF", fontSize: 18, fontWeight: 900 }}>
+                            Product image coming soon
+                          </div>
+                          <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.7 }}>
+                            This public slot is live, but the executive product picture has not
+                            been released yet.
+                          </div>
+                        </div>
                       </div>
                     )}
 
@@ -1391,7 +1724,7 @@ export default function ShopGalleryPage() {
                         style={{
                           ...badge(true),
                           background: "rgba(255,255,255,0.86)",
-                          color: "#0B63D1",
+                          color: "#1D4ED8",
                           backdropFilter: "blur(6px)",
                         }}
                       >
@@ -1473,3 +1806,5 @@ export default function ShopGalleryPage() {
     </div>
   );
 }
+
+

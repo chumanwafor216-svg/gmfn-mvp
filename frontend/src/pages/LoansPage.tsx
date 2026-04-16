@@ -246,12 +246,12 @@ function routeTile(primary = false): React.CSSProperties {
     minHeight: 104,
     borderRadius: 18,
     border: primary
-      ? "1px solid rgba(11,99,209,0.18)"
+      ? "1px solid rgba(29,78,216,0.16)"
       : "1px solid rgba(11,31,51,0.08)",
-    background: primary ? "#F7FAFF" : "#FFFFFF",
+    background: primary ? "linear-gradient(180deg, #F7FAFF 0%, #FFFFFF 100%)" : "#FFFFFF",
     padding: 16,
     textDecoration: "none",
-    boxShadow: primary ? "0 10px 24px rgba(11,99,209,0.05)" : "none",
+    boxShadow: primary ? "0 10px 24px rgba(29,78,216,0.05)" : "none",
   };
 }
 
@@ -273,8 +273,8 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
+    background: primary ? "rgba(29,78,216,0.08)" : "rgba(100,116,139,0.10)",
+    color: primary ? "#1D4ED8" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "nowrap",
@@ -294,7 +294,7 @@ function actionBtn(
       padding: "10px 14px",
       borderRadius: 14,
       border: "none",
-      background: disabled ? "#CBD5E1" : "#0B63D1",
+      background: disabled ? "#CBD5E1" : "#1D4ED8",
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
@@ -313,9 +313,9 @@ function actionBtn(
       minHeight: 38,
       padding: "8px 12px",
       borderRadius: 12,
-      border: "1px solid rgba(11,31,51,0.08)",
-      background: "#F8FBFF",
-      color: disabled ? "#94A3B8" : "#24415C",
+      border: "1px solid rgba(29,78,216,0.10)",
+      background: "#F5FAFF",
+      color: disabled ? "#94A3B8" : "#1E4063",
       fontWeight: 800,
       fontSize: 13,
       textDecoration: "none",
@@ -332,8 +332,8 @@ function actionBtn(
     minHeight: 42,
     padding: "10px 14px",
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(29,78,216,0.12)",
+    background: "#FDFEFF",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
@@ -352,9 +352,9 @@ function collapseToggle(): React.CSSProperties {
     minHeight: 38,
     padding: "8px 12px",
     borderRadius: 12,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
-    color: "#24415C",
+    border: "1px solid rgba(29,78,216,0.12)",
+    background: "#FDFEFF",
+    color: "#1E4063",
     fontWeight: 800,
     fontSize: 13,
     cursor: "pointer",
@@ -549,7 +549,7 @@ export default function LoansPage() {
         currentClan?.name,
         currentClan?.display_name,
         currentClan?.title
-      ) || (selectedClanId ? `Community ${selectedClanId}` : "No selected community")
+      ) || (selectedClanId ? `Community ${selectedClanId}` : "No current community")
     );
   }, [currentClan, selectedClanId]);
 
@@ -584,12 +584,12 @@ export default function LoansPage() {
     if (borrowerLoans.length > 0) {
       const first = borrowerLoans[0];
       return {
-        title: "Your borrower-side support path is still active",
+        title: "Your borrower-side support activity is still active",
         detail: safeStr(first.title)
           ? `${safeStr(first.title)} is still active with status '${safeStr(
               first.status || "open"
             )}'.`
-          : `Your borrower-side support path is still active with status '${safeStr(
+          : `Your borrower-side support activity is still active with status '${safeStr(
               first.status || "open"
             )}'.`,
         ctaLabel: "Open Support Start",
@@ -622,7 +622,7 @@ export default function LoansPage() {
     }
 
     return {
-      title: "Your support path is currently calm",
+      title: "Your support activity is currently calm",
       detail:
         "No urgent borrower-side or guarantor-side support pressure is currently shown.",
       ctaLabel: "Open Support Start",
@@ -654,7 +654,7 @@ export default function LoansPage() {
         <PageTopNav
           sectionLabel="Loans & Support"
           title="Loans & Support"
-          subtitle="Loading the support surface..."
+          subtitle="Loading the support page..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/dashboard"
@@ -690,7 +690,7 @@ export default function LoansPage() {
       <PageTopNav
         sectionLabel="Loans & Support"
         title="Loans & Support"
-        subtitle="A calmer support page for borrower-side steps, guarantor-side requests, and the money routes around them."
+        subtitle="A calmer page for borrower-side steps, guarantor-side requests, and the money routes around them."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
@@ -704,16 +704,26 @@ export default function LoansPage() {
         }
         utilityLinks={
           supportFlowActive
-            ? [{ label: "Guarantor Inbox", to: "/app/guarantor-inbox" }]
+            ? [
+                { label: "Guarantor Inbox", to: "/app/guarantor-inbox" },
+                {
+                  label: "Commitment Builder",
+                  to: "/app/dashboard#focus-commitments",
+                },
+              ]
             : [
                 { label: "Demand Box", to: "/app/demand-box" },
                 { label: "Trust", to: "/app/trust" },
+                {
+                  label: "Commitment Builder",
+                  to: "/app/dashboard#focus-commitments",
+                },
               ]
         }
       />
 
       <section
-        style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
+        style={pageCard("linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)")}
       >
         <div
           style={{
@@ -739,7 +749,7 @@ export default function LoansPage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
-              This page keeps the support path calmer. Use it when the work is borrower-side progress, guarantor-side responsibility, payment, withdrawal, or support readiness.
+              This keeps the support flow calmer. Use it for borrower-side progress, guarantor-side responsibility, payment, withdrawal, or support readiness.
             </div>
 
             <div
@@ -776,7 +786,7 @@ export default function LoansPage() {
             </div>
 
             <div style={{ marginTop: 10, ...helperText() }}>
-              This is your visible pool position in the current community context.
+              This shows the pool amount currently visible to you in this community.
             </div>
           </div>
         </div>
@@ -852,7 +862,7 @@ export default function LoansPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B63D1",
+                  color: "#1D4ED8",
                   fontSize: 24,
                   fontWeight: 900,
                 }}
@@ -968,10 +978,10 @@ export default function LoansPage() {
 
               <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                 <div style={helperText()}>
-                  Borrower-side load means your own support request path is active.
+                  Borrower-side load means your own support request flow is active.
                 </div>
                 <div style={helperText()}>
-                  Guarantor-side load means you are attached to someone else's support path.
+                  Guarantor-side load means you are attached to someone else's support flow.
                 </div>
                 <div style={helperText()}>
                   Pending guarantor requests mean someone is waiting for your decision now.
@@ -993,7 +1003,7 @@ export default function LoansPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Borrower-side support path</div>
+            <div style={sectionLabel()}>Borrower-side support flow</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               These are your active borrower-side support items.
             </div>
@@ -1012,7 +1022,7 @@ export default function LoansPage() {
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             {borrowerLoans.length === 0 ? (
               <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                No borrower-side support path is active right now.
+                No borrower-side support flow is active right now.
               </div>
             ) : (
               borrowerLoans.map((row, index) => (
@@ -1230,8 +1240,8 @@ export default function LoansPage() {
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {supportFlowActive
-                ? "Stay inside the support lifecycle and move only to the next exact support surface."
-                : "Move from this calmer overview into the exact support page you need."}
+                ? "Stay inside the support lifecycle and move only to the next support step."
+                : "Move from this overview into the next page you need."}
             </div>
           </div>
 
@@ -1267,7 +1277,7 @@ export default function LoansPage() {
                 Start Support Request
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Begin or continue the borrower-side support path.
+                Begin or continue the borrower-side support flow.
               </div>
             </OriginLink>
 
@@ -1285,7 +1295,7 @@ export default function LoansPage() {
                     Money In
                   </div>
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    Use this when the work is payment into the pool.
+                    Open this when the next step is payment into the pool.
                   </div>
                 </OriginLink>
 
@@ -1301,7 +1311,7 @@ export default function LoansPage() {
                     Money Out
                   </div>
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    Use this when the work is withdrawal handling.
+                    Open this when the next step is withdrawal handling.
                   </div>
                 </OriginLink>
               </>
@@ -1319,7 +1329,24 @@ export default function LoansPage() {
                 Loan Readiness
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Read whether the current support path looks ready.
+                Read whether the current support flow looks ready.
+              </div>
+            </OriginLink>
+
+            <OriginLink to="/app/dashboard#focus-commitments" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                Commitment Builder
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Open this when savings discipline, repayment follow-through, or a
+                business target needs a steadier visible plan.
               </div>
             </OriginLink>
 
@@ -1335,7 +1362,7 @@ export default function LoansPage() {
                 Loan Suggestions
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when you need the next suggestions around the support path.
+                Open this when you need the next suggestions around the support flow.
               </div>
             </OriginLink>
 
@@ -1351,7 +1378,7 @@ export default function LoansPage() {
                 Loan Workbench
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this for deeper support handling and workbench-style operations.
+                Open this for deeper support handling and workbench-style activity.
               </div>
             </OriginLink>
 
@@ -1399,7 +1426,7 @@ export default function LoansPage() {
                 Action Inbox
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when someone is waiting directly on your response.
+                Open this when someone is waiting directly on your response.
               </div>
             </OriginLink>
 
@@ -1415,7 +1442,7 @@ export default function LoansPage() {
                 Marketplace
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Return to the selected-community working surface.
+                Return to your community page.
               </div>
             </OriginLink>
           </div>

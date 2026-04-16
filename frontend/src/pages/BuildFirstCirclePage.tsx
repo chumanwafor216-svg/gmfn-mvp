@@ -877,7 +877,7 @@ export default function BuildFirstCirclePage() {
           ]}
           utilityLinks={[
             { label: "Marketplace", to: "/app/marketplace" },
-            { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+            { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
           ]}
         />
 
@@ -914,7 +914,7 @@ export default function BuildFirstCirclePage() {
         ]}
         utilityLinks={[
           { label: "Marketplace", to: "/app/marketplace" },
-          { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+          { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
         ]}
       />
 
@@ -947,7 +947,7 @@ export default function BuildFirstCirclePage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
-              This page is not for random people. It is for the people you already
+              Keep this focused on the people you already
               know in real life: buyers, sellers, family-support people, remittance
               contacts, group officers, suppliers, savings partners, and other
               trusted working people.
@@ -1576,3 +1576,5 @@ export default function BuildFirstCirclePage() {
     </div>
   );
 }
+
+

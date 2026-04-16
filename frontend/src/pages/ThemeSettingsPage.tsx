@@ -95,7 +95,7 @@ export default function ThemeSettingsPage() {
       <div style={{ marginTop: 14, ...card() }}>
         <div style={{ fontSize: 16, fontWeight: 1000 }}>Watermark / Emboss tint</div>
         <div style={{ color: "#64748b", fontSize: 12, marginTop: 6 }}>
-          This controls the faint “GMFN” background watermark and subtle embossed highlights. (Grey base background stays fixed.)
+          This controls the faint “GSN” background watermark and subtle embossed highlights. (Grey base background stays fixed.)
         </div>
 
         <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -169,7 +169,7 @@ export default function ThemeSettingsPage() {
                   whiteSpace: "nowrap",
                 }}
               >
-                GMFN • GMFN • GMFN • GMFN • GMFN •
+                GSN • GSN • GSN • GSN • GSN •
               </div>
               <div style={{ position: "absolute", inset: 0, padding: 10, fontWeight: 1000, color: "#0f172a" }}>
                 Card

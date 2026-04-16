@@ -274,7 +274,7 @@ export default function CommunityJoinRequestsPage() {
       <PageTopNav
         sectionLabel="Community Join Requests"
         title="Community Join Requests"
-        subtitle="Review incoming requests for the selected community and decide whether to approve or reject them."
+        subtitle="Review incoming requests for your current community and decide whether to approve or reject them."
       />
 
       <div
@@ -304,7 +304,7 @@ export default function CommunityJoinRequestsPage() {
             lineHeight: 1.8,
           }}
         >
-          This page belongs to the community approval flow. Review join requests
+          This belongs to the community approval flow. Review join requests
           here, then return to Community Home or Marketplace when this review task is complete.
         </div>
 
@@ -656,3 +656,5 @@ export default function CommunityJoinRequestsPage() {
     </div>
   );
 }
+
+

@@ -127,8 +127,8 @@ export default function RegisterPage() {
       >
         <div style={{ maxWidth: 1180, margin: "0 auto", padding: "28px 24px 38px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
-            <img src={Mark} alt="GMFN mark" style={{ width: 36, height: 36 }} />
-            <img src={Wordmark} alt="GMFN wordmark" style={{ height: 30, width: "auto" }} />
+            <img src={Mark} alt="GSN mark" style={{ width: 36, height: 36 }} />
+            <img src={Wordmark} alt="GSN wordmark" style={{ height: 30, width: "auto" }} />
           </div>
 
           <div style={sectionLabel()}>Founder registration</div>
@@ -157,7 +157,7 @@ export default function RegisterPage() {
               maxWidth: 980,
             }}
           >
-            This page is the founder registration handoff. It should confirm the
+            This founder registration handoff should confirm the
             community details already entered and route you onward without becoming a
             second create form.
           </p>
@@ -307,7 +307,7 @@ export default function RegisterPage() {
                 fontSize: 14,
               }}
             >
-              This page should remain a clean handoff page. Community creation belongs
+              This remains a clean handoff page. Community creation belongs
               to public create entry, and private community control belongs after
               proper access.
             </div>
@@ -329,7 +329,7 @@ export default function RegisterPage() {
             </div>
             <p style={{ marginTop: 12, marginBottom: 0, color: "#5F768D", lineHeight: 1.85 }}>
               Founder details should begin in the public create page, not be scattered
-              across multiple public surfaces.
+              across multiple public pages.
             </p>
           </div>
 
@@ -348,7 +348,7 @@ export default function RegisterPage() {
               No duplicate public workflow
             </div>
             <p style={{ marginTop: 12, marginBottom: 0, color: "#5F768D", lineHeight: 1.85 }}>
-              This page should confirm and route, not ask for the same community details
+              This should confirm and route, not ask for the same community details
               all over again.
             </p>
           </div>

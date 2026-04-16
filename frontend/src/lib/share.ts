@@ -1,5 +1,5 @@
 // src/lib/share.ts
-// GMFN share helpers (low-end friendly)
+// GSN share helpers (low-end friendly)
 // - Copy link
 // - WhatsApp prefilled message
 // - QR image (hosted generator) for screenshot-based sharing
@@ -24,7 +24,7 @@ export function buildWhatsAppUrl(text: string): string {
 }
 
 export function buildShareText(target: ShareTarget): string {
-  const title = String(target.title || "GMFN").trim();
+  const title = String(target.title || "GSN").trim();
   const url = normalizeUrl(target.url);
   const extra = String(target.message || "").trim();
 

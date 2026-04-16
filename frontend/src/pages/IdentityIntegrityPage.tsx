@@ -518,7 +518,7 @@ function getCciState(me: any): ReadingState {
 
   return {
     classText: "Pending",
-    scoreText: "â€”",
+    scoreText: "—",
     tone: "neutral",
     statusText: "CCI is being prepared",
     whyText: "A fuller cross-community reading will appear when available.",
@@ -673,7 +673,7 @@ function getOpenTrustState(
   if (!hasSelectedCommunity) {
     return {
       classText: "Pending",
-      scoreText: "â€”",
+      scoreText: "—",
       tone: "neutral",
       statusText: "Select a community to view Open Trust",
       whyText:
@@ -683,11 +683,11 @@ function getOpenTrustState(
 
   return {
     classText: "Pending",
-    scoreText: "â€”",
+    scoreText: "—",
     tone: "neutral",
     statusText: "Open Trust is being prepared",
     whyText:
-      "Open Trust reflects your standing in the currently selected community and will appear here when available.",
+      "Open Trust reflects your standing in your current community and will appear here when available.",
   };
 }
 
@@ -944,7 +944,7 @@ export default function IdentityIntegrityPage() {
         currentClan?.name,
         currentClan?.display_name,
         currentClan?.title
-      ) || (selectedClanId ? `Community ${selectedClanId}` : "No selected community")
+      ) || (selectedClanId ? `Community ${selectedClanId}` : "No current community")
     );
   }, [currentClan, selectedClanId]);
 
@@ -1168,7 +1168,7 @@ export default function IdentityIntegrityPage() {
           ]}
           utilityLinks={[
             { label: "Marketplace", to: "/app/marketplace" },
-            { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+            { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
           ]}
         />
 
@@ -1194,7 +1194,7 @@ export default function IdentityIntegrityPage() {
       <PageTopNav
         sectionLabel="Identity & Integrity"
         title="Identity & Integrity"
-        subtitle="Your stable GMFN identity, your integrity reading across communities, what strengthened it, what weakened it, and the next clean repair or continuity step."
+        subtitle="Your stable GSN identity, your integrity reading across communities, what strengthened it, what weakened it, and the next clean repair or continuity step."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
@@ -1205,7 +1205,7 @@ export default function IdentityIntegrityPage() {
         ]}
         utilityLinks={[
           { label: "Marketplace", to: "/app/marketplace" },
-          { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+          { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
         ]}
       />
 
@@ -1279,7 +1279,7 @@ export default function IdentityIntegrityPage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
-              Identity should stay stable while trust reacts to conduct. This page keeps the identity layer and the integrity layer together so the user does not need to search for both separately.
+              Identity should remain stable while trust reacts to conduct. This keeps the identity layer and the integrity layer together so the user does not need to search for both separately.
             </div>
 
             <div
@@ -1425,8 +1425,8 @@ export default function IdentityIntegrityPage() {
                 </div>
                 <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                   {trustSlipCode
-                    ? "Portable verification surface ready."
-                    : "Portable verification surface still preparing."}
+                    ? "Portable verification record ready."
+                    : "Portable verification record still preparing."}
                 </div>
               </div>
             </div>
@@ -1771,3 +1771,10 @@ export default function IdentityIntegrityPage() {
     </div>
   );
 }
+
+
+
+
+
+
+

@@ -31,7 +31,7 @@ export default function PilotRiskDisclosureGate({ storageKey = DEFAULT_KEY, titl
             <li>This is <b>not</b> a bank guarantee.</li>
             <li>Guarantors are <b>not auto-debited</b> in MVP.</li>
             <li>Breach triggers <b>reputation + network consequences</b> (visibility + reduced future access).</li>
-            <li>This is a pilot: use careful judgement and store reasons/notes honestly.</li>
+            <li>Pilot status: use careful judgement and store reasons/notes honestly.</li>
           </ul>
 
           <div style={{ marginTop: 10, color: "#64748b", fontSize: 12 }}>

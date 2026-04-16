@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import { getPaymentRails } from "../lib/api";
@@ -603,9 +603,9 @@ export default function PaymentRailsPage() {
         tone: "red",
         title: "No readable payment rail is currently shown",
         detail:
-          "This page is only for intelligence. If rails are missing here, Money In or Money Out should be treated carefully until the rail picture becomes clearer.",
-        nowLine: "Do not rely on this page for action until rail visibility improves.",
-        nextLine: "Use the task pages and backend-confirmed route surfaces directly.",
+          "This view is only for reading rail visibility. If rails are missing here, treat Money In or Money Out carefully until the picture becomes clearer.",
+        nowLine: "Do not rely on this page until rail visibility improves.",
+        nextLine: "Use the guided pages directly.",
       };
     }
 
@@ -614,8 +614,8 @@ export default function PaymentRailsPage() {
         tone: "green",
         title: "Inbound and outbound rails are both visible",
         detail:
-          "This page is behaving like a supporting intelligence surface. It tells you that both money directions are at least partially visible, but action should still happen on the guided Money In and Money Out task pages.",
-        nowLine: "Use this page to understand rail visibility, not to execute money movement.",
+          "Both money directions are at least partly visible here, but action should still happen on the guided Money In and Money Out routes.",
+        nowLine: "Understand rail visibility here, not act here.",
         nextLine: "Return to Money In or Money Out when you are ready to act.",
       };
     }
@@ -625,9 +625,9 @@ export default function PaymentRailsPage() {
         tone: "blue",
         title: "Inbound rails are visible, but outbound rails look weaker",
         detail:
-          "Deposit-side movement looks more available than withdrawal-side movement right now. This is useful intelligence, but not the action surface itself.",
+          "Deposit-side movement looks more available than withdrawal-side movement right now. This is useful reading, but it is not the place to act.",
         nowLine: "Money In may be clearer than Money Out at the moment.",
-        nextLine: "Check the Money Out task page carefully before assuming payout rails are ready.",
+        nextLine: "Check Money Out carefully before assuming payout rails are ready.",
       };
     }
 
@@ -638,7 +638,7 @@ export default function PaymentRailsPage() {
         detail:
           "Withdrawal-side movement looks more available than deposit-side movement right now. This remains an intelligence page, not the task execution page.",
         nowLine: "Money Out may be clearer than Money In at the moment.",
-        nextLine: "Check the Money In task page carefully before assuming deposit rails are ready.",
+        nextLine: "Check the Money In page carefully before assuming deposit rails are ready.",
       };
     }
 
@@ -648,7 +648,7 @@ export default function PaymentRailsPage() {
       detail:
         "Some rail information is coming through, but the current statuses do not read as confidently active. Use this as a caution signal, not as a blocker by itself.",
       nowLine: "Review the visible statuses before choosing a money direction.",
-      nextLine: "Return to the exact task page and rely on the route shown there.",
+      nextLine: "Return to the guided page and rely on the route shown there.",
     };
   }, [loading, rails.length, activeInboundCount, activeOutboundCount]);
 
@@ -659,7 +659,7 @@ export default function PaymentRailsPage() {
       <PageTopNav
         sectionLabel="Payment Rails"
         title="Payment Rails"
-        subtitle="Read-only intelligence about inbound and outbound rails. Money actions should still happen on the guided task pages."
+        subtitle="Read-only intelligence about inbound and outbound rails. Money actions should still happen on the guided pages."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/loans"
@@ -709,7 +709,7 @@ export default function PaymentRailsPage() {
                 lineHeight: 1.15,
               }}
             >
-              Payment rails should stay readable, not hidden in a JSON wall
+              Payment rails should remain readable, not buried in raw JSON
             </div>
 
             <div
@@ -719,9 +719,8 @@ export default function PaymentRailsPage() {
                 lineHeight: 1.8,
               }}
             >
-              This page is not the finance ledger and not the action surface. It is a
-              supporting intelligence page that helps the member understand which rail
-              families are visible before returning to the guided Money In or Money Out path.
+              Review which rail families are visible before you go
+              back to Money In or Money Out.
             </div>
 
             <div
@@ -883,14 +882,16 @@ export default function PaymentRailsPage() {
                 lineHeight: 1.8,
               }}
             >
-              The page keeps a structured view when the response supports it. The full raw response remains available below.
+              Review the structured rail view here. If you need the full response,
+              you can still open it below.
             </div>
           </div>
 
           <div style={softCard("#F8FBFF")}>
             <div style={sectionLabel()}>How to use this page</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Use it to understand whether deposit or withdrawal looks more available. Do not treat it as the execution page. When you decide to act, return to the guided Money In or Money Out task.
+              Use it to see whether deposit or withdrawal looks more available.
+              When you are ready to act, return to the guided Money In or Money Out route.
             </div>
             <div
               style={{
@@ -923,8 +924,8 @@ export default function PaymentRailsPage() {
           </div>
         ) : rails.length === 0 ? (
           <div style={{ marginTop: 16, color: "#64748B", lineHeight: 1.8 }}>
-            No structured rail listing is shown yet. The raw response stays
-            available below.
+            No structured rail listing is shown yet. You can still open the full
+            response below.
           </div>
         ) : (
           <div style={{ marginTop: 16, display: "grid", gap: 18 }}>
@@ -1088,7 +1089,7 @@ export default function PaymentRailsPage() {
               lineHeight: 1.8,
             }}
           >
-            Move back into the exact task page you need after reading the rail picture.
+            Move back into the page you need after reading the rail picture.
           </div>
         </div>
 
@@ -1114,7 +1115,7 @@ export default function PaymentRailsPage() {
               Money In
             </div>
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-              Use this when you are actively paying into the pool.
+              Open this when you are actively paying into the pool.
             </div>
           </OriginLink>
 
@@ -1130,7 +1131,7 @@ export default function PaymentRailsPage() {
               Money Out
             </div>
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-              Use this when you are actively withdrawing or checking payout route readiness.
+              Open this when you are actively withdrawing or checking payout route readiness.
             </div>
           </OriginLink>
 
@@ -1146,7 +1147,7 @@ export default function PaymentRailsPage() {
               Loan Readiness
             </div>
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-              Use this when the money question has already become a support-continuation question.
+              Open this when the money question has already become a support-continuation question.
             </div>
           </OriginLink>
 
@@ -1162,7 +1163,7 @@ export default function PaymentRailsPage() {
               Loan Workbench
             </div>
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-              Use this when the support path is already deep and operational.
+              Open this when the support flow is already deep and operational.
             </div>
           </OriginLink>
 
@@ -1178,7 +1179,7 @@ export default function PaymentRailsPage() {
               Marketplace
             </div>
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-              Go back to the selected-community working surface only after the current money reading is complete.
+              Go back to your community page after the current money reading is complete.
             </div>
           </OriginLink>
 
@@ -1194,7 +1195,7 @@ export default function PaymentRailsPage() {
               Community Home
             </div>
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-              Return to the wider community control room.
+              Return to the wider community page.
             </div>
           </OriginLink>
         </div>
@@ -1202,4 +1203,5 @@ export default function PaymentRailsPage() {
     </div>
   );
 }
+
 

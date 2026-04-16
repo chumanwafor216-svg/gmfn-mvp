@@ -315,7 +315,7 @@ export default function TrustCommandCentrePage() {
         currentClan?.name,
         currentClan?.display_name,
         currentClan?.title
-      ) || (selectedClanId ? `Community ${selectedClanId}` : "No selected community")
+      ) || (selectedClanId ? `Community ${selectedClanId}` : "No current community")
     );
   }, [currentClan, selectedClanId]);
 
@@ -357,10 +357,12 @@ export default function TrustCommandCentrePage() {
           backTo="/app/dashboard"
           nextLinks={[
             { label: "Trust Analytics", to: "/app/command-center/trust-analytics" },
+            { label: "Trust Events", to: "/app/command-center/trust-events" },
             { label: "System Operations", to: "/app/command-center/system-operations" },
           ]}
           utilityLinks={[
             { label: "Exposure", to: "/app/command-center/exposure" },
+            { label: "Identity Risk", to: "/app/command-center/identity-risk" },
             { label: "Trust Graph", to: "/app/command-center/trust-graph" },
           ]}
         />
@@ -387,16 +389,18 @@ export default function TrustCommandCentrePage() {
       <PageTopNav
         sectionLabel="Command Center"
         title="Trust Command Centre"
-        subtitle="Use this page for platform trust operations and move from here into the exact operator route required for the current task."
+        subtitle="Review platform trust operations here and move into the admin page required for the current task."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
         nextLinks={[
           { label: "Trust Analytics", to: "/app/command-center/trust-analytics" },
+          { label: "Trust Events", to: "/app/command-center/trust-events" },
           { label: "System Operations", to: "/app/command-center/system-operations" },
         ]}
         utilityLinks={[
           { label: "Exposure", to: "/app/command-center/exposure" },
+          { label: "Identity Risk", to: "/app/command-center/identity-risk" },
           { label: "Trust Graph", to: "/app/command-center/trust-graph" },
         ]}
       />
@@ -428,7 +432,7 @@ export default function TrustCommandCentrePage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
-              This surface should remain calmer than a raw admin console. Start here, then move into the exact admin page required for the current job.
+              Start here for a calmer view than a raw admin console, then move into the page required for the current job.
             </div>
 
             <div
@@ -441,7 +445,7 @@ export default function TrustCommandCentrePage() {
             >
               <span style={badge(true)}>Role: {roleLabel}</span>
               <span style={badge(false)}>Community context: {communityLabel}</span>
-              <span style={badge(false)}>Admin surface</span>
+              <span style={badge(false)}>Admin page</span>
             </div>
           </div>
 
@@ -450,13 +454,13 @@ export default function TrustCommandCentrePage() {
 
             <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
               <div style={helperText()}>
-                Use this page as the front door into the operator workspace.
+                Start here before moving into the admin page you need.
               </div>
               <div style={helperText()}>
                 Pick the specific admin page that matches the current task instead of scanning everything at once.
               </div>
               <div style={helperText()}>
-                Keep member-facing work in the member pages. Keep system-facing work here.
+                Keep member work in the member pages. Keep system work here.
               </div>
             </div>
           </div>
@@ -476,7 +480,7 @@ export default function TrustCommandCentrePage() {
           <div>
             <div style={sectionLabel()}>Command summary</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              The main operator areas stay visible together here.
+              The main admin areas stay visible together here.
             </div>
           </div>
 
@@ -512,6 +516,21 @@ export default function TrustCommandCentrePage() {
                 }}
               >
                 Reading and trend view
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Trust Events</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 18,
+                  lineHeight: 1.25,
+                }}
+              >
+                Recent event oversight
               </div>
             </div>
 
@@ -559,6 +578,66 @@ export default function TrustCommandCentrePage() {
                 Relationship structure view
               </div>
             </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Identity Risk</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 18,
+                  lineHeight: 1.25,
+                }}
+              >
+                Device and cluster review
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Incomplete Loans</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 18,
+                  lineHeight: 1.25,
+                }}
+              >
+                Active unresolved queue
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Bank Console</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 18,
+                  lineHeight: 1.25,
+                }}
+              >
+                Reconciliation operations
+              </div>
+            </div>
+
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Revenue Allocation</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 18,
+                  lineHeight: 1.25,
+                }}
+              >
+                Fee and distribution view
+              </div>
+            </div>
           </div>
         ) : null}
       </section>
@@ -576,7 +655,7 @@ export default function TrustCommandCentrePage() {
           <div>
             <div style={sectionLabel()}>Command routes</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Enter the exact admin page you need instead of carrying too much at once.
+              Enter the admin page you need instead of carrying too much at once.
             </div>
           </div>
 
@@ -616,6 +695,22 @@ export default function TrustCommandCentrePage() {
               </div>
             </OriginLink>
 
+            <OriginLink to="/app/command-center/trust-events" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 18,
+                  lineHeight: 1.3,
+                }}
+              >
+                Trust Events
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Review recent trust-event records for evidence, oversight, and explainability.
+              </div>
+            </OriginLink>
+
             <OriginLink to="/app/command-center/system-operations" style={routeTile(false)}>
               <div
                 style={{
@@ -628,7 +723,7 @@ export default function TrustCommandCentrePage() {
                 System Operations
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Review live system operations and operational health.
+                Review live system activity and operational health.
               </div>
             </OriginLink>
 
@@ -661,6 +756,70 @@ export default function TrustCommandCentrePage() {
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Read network structure and relationship-based trust shape.
+              </div>
+            </OriginLink>
+
+            <OriginLink to="/app/command-center/identity-risk" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 18,
+                  lineHeight: 1.3,
+                }}
+              >
+                Identity Risk
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Review device overlap, account clusters, and identity pressure signals.
+              </div>
+            </OriginLink>
+
+            <OriginLink to="/app/command-center/incomplete-loans" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 18,
+                  lineHeight: 1.3,
+                }}
+              >
+                Incomplete Loans
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Inspect the unresolved loan queue and active items still in motion.
+              </div>
+            </OriginLink>
+
+            <OriginLink to="/app/command-center/bank-console" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 18,
+                  lineHeight: 1.3,
+                }}
+              >
+                Bank Console
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Ingest bank events, run reconciliation, and review matched or unmatched movement.
+              </div>
+            </OriginLink>
+
+            <OriginLink to="/app/command-center/revenue-allocation" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 18,
+                  lineHeight: 1.3,
+                }}
+              >
+                Revenue Allocation
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Review service fee, platform revenue, guarantor pool, and net disbursed reading.
               </div>
             </OriginLink>
           </div>
@@ -725,10 +884,26 @@ export default function TrustCommandCentrePage() {
                   fontSize: 15,
                 }}
               >
-                If you need live operational handling
+                If you need recent event evidence
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Start in System Operations. Use it when the task is about live conditions, active processes, or operator monitoring.
+                Start in Trust Events. Use it when the task is to inspect recent trust-event records,
+                evidence trails, or explainability inputs before moving into deeper analysis.
+              </div>
+            </div>
+
+            <div style={innerCard("#FFFFFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 15,
+                }}
+              >
+                If you need live handling
+              </div>
+              <div style={{ marginTop: 8, ...helperText() }}>
+                Start in System Operations. Use it when the task is about live conditions, active processes, or admin monitoring.
               </div>
             </div>
 
@@ -761,6 +936,66 @@ export default function TrustCommandCentrePage() {
                 Start in Trust Graph. Use it when the task is about connectedness, relationship patterns, or network trust structure.
               </div>
             </div>
+
+            <div style={innerCard("#F8FBFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 15,
+                }}
+              >
+                If you need identity misuse monitoring
+              </div>
+              <div style={{ marginTop: 8, ...helperText() }}>
+                Start in Identity Risk. Use it when the task is about suspicious overlap, clustered activity, or device-linked pressure.
+              </div>
+            </div>
+
+            <div style={innerCard("#FFFFFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 15,
+                }}
+              >
+                If you need unresolved loan oversight
+              </div>
+              <div style={{ marginTop: 8, ...helperText() }}>
+                Start in Incomplete Loans. Use it when the task is to review loans that have not yet reached a visible conclusion.
+              </div>
+            </div>
+
+            <div style={innerCard("#F8FBFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 15,
+                }}
+              >
+                If you need reconciliation operations
+              </div>
+              <div style={{ marginTop: 8, ...helperText() }}>
+                Start in Bank Console. Use it when the task is about bank events, matching, unmatched items, or reconciliation execution.
+              </div>
+            </div>
+
+            <div style={innerCard("#FFFFFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 15,
+                }}
+              >
+                If you need fee and distribution reading
+              </div>
+              <div style={{ marginTop: 8, ...helperText() }}>
+                Start in Revenue Allocation. Use it when the task is about fee treatment, pool use, guarantee gap, or net distribution reading.
+              </div>
+            </div>
           </div>
         ) : null}
       </section>
@@ -778,7 +1013,7 @@ export default function TrustCommandCentrePage() {
           <div>
             <div style={sectionLabel()}>Separation of layers</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Keep the operator workspace distinct from the ordinary member layer.
+              Keep the admin workspace distinct from the ordinary member side.
             </div>
           </div>
 
@@ -808,10 +1043,10 @@ export default function TrustCommandCentrePage() {
                   fontSize: 15,
                 }}
               >
-                Member pages stay member-facing
+                Member pages stay user-facing
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Dashboard, Marketplace, Trust Passport, TrustSlip, Community Home, and Notifications should stay readable and calmer for ordinary users.
+                Dashboard, Marketplace, Trust Passport, TrustSlip, Community Home, and Notifications should remain readable and calmer for ordinary users.
               </div>
             </div>
 
@@ -823,10 +1058,10 @@ export default function TrustCommandCentrePage() {
                   fontSize: 15,
                 }}
               >
-                Command pages stay operator-facing
+                Command pages stay admin-led
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                This operator workspace can hold more system detail, but it should still be organized enough that an operator can move without confusion.
+                The admin workspace can hold more system detail, but it should still be organized enough that an admin can move without confusion.
               </div>
             </div>
           </div>
@@ -847,6 +1082,21 @@ export default function TrustCommandCentrePage() {
           <OriginLink to="/app/command-center/trust-analytics" style={actionBtn("primary")}>
             Trust Analytics
           </OriginLink>
+          <OriginLink to="/app/command-center/trust-events" style={actionBtn("secondary")}>
+            Trust Events
+          </OriginLink>
+          <OriginLink to="/app/command-center/identity-risk" style={actionBtn("secondary")}>
+            Identity Risk
+          </OriginLink>
+          <OriginLink to="/app/command-center/incomplete-loans" style={actionBtn("secondary")}>
+            Incomplete Loans
+          </OriginLink>
+          <OriginLink to="/app/command-center/bank-console" style={actionBtn("secondary")}>
+            Bank Console
+          </OriginLink>
+          <OriginLink to="/app/command-center/revenue-allocation" style={actionBtn("secondary")}>
+            Revenue Allocation
+          </OriginLink>
           <OriginLink to="/app/command-center/system-operations" style={actionBtn("secondary")}>
             System Operations
           </OriginLink>
@@ -861,3 +1111,4 @@ export default function TrustCommandCentrePage() {
     </div>
   );
 }
+

@@ -438,7 +438,7 @@ export default function RevenueAllocationPage() {
         currentClan?.name,
         currentClan?.display_name,
         currentClan?.title
-      ) || (selectedClanId ? `Community ${selectedClanId}` : "No selected community")
+      ) || (selectedClanId ? `Community ${selectedClanId}` : "No current community")
     );
   }, [currentClan, selectedClanId]);
 
@@ -597,9 +597,9 @@ export default function RevenueAllocationPage() {
                 lineHeight: 1.8,
               }}
             >
-              This page is a deeper finance-support reading, not a loose raw-data wall.
-              It should keep fee and distribution logic readable inside the selected
-              community context.
+              This deeper finance-support reading is not a loose raw data wall.
+              It keeps fee and distribution logic readable in your current
+              community.
             </div>
 
             <div
@@ -957,9 +957,9 @@ export default function RevenueAllocationPage() {
               </div>
 
               <div style={{ marginTop: 10, ...helperText() }}>
-                This page is a finance-support explanation surface. After the
-                member understands the breakdown, the next move should be the
-                exact workbench, summary, or broader finance path they need.
+                This finance-support explanation helps make the breakdown clear.
+                After that, the next move should be the
+                workbench, summary, or broader finance path they need.
               </div>
             </div>
           </div>
@@ -1033,7 +1033,7 @@ export default function RevenueAllocationPage() {
           <div>
             <div style={sectionLabel()}>Next routes</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Move from allocation reading into the exact next page you need.
+              Move from allocation reading into the next page you need.
             </div>
           </div>
 
@@ -1067,7 +1067,7 @@ export default function RevenueAllocationPage() {
                 Loan Summary
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Return to the exact support item summary after reading the allocation.
+                Return to the support item summary after reading the allocation.
               </div>
             </OriginLink>
 
@@ -1083,7 +1083,7 @@ export default function RevenueAllocationPage() {
                 Loan Workbench
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when you need the deeper support work item behind the allocation.
+                Open this when you need the deeper support work item behind the allocation.
               </div>
             </OriginLink>
 
@@ -1099,7 +1099,7 @@ export default function RevenueAllocationPage() {
                 Finance
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the next question is the broader money truth inside the selected community.
+                Open this when the next question is the broader money truth in your current community.
               </div>
             </OriginLink>
 
@@ -1131,7 +1131,7 @@ export default function RevenueAllocationPage() {
                 Marketplace
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Return to the selected-community launcher surface only after the allocation reading is complete.
+                Return to Marketplace only after the allocation reading is complete.
               </div>
             </OriginLink>
 
@@ -1147,7 +1147,7 @@ export default function RevenueAllocationPage() {
                 Money Out
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the money question becomes a guided withdrawal question again.
+                Open this when the money question becomes a guided withdrawal question again.
               </div>
             </OriginLink>
           </div>
@@ -1156,3 +1156,6 @@ export default function RevenueAllocationPage() {
     </div>
   );
 }
+
+
+

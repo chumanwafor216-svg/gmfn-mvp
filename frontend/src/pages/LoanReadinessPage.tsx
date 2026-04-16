@@ -300,12 +300,12 @@ function routeTile(primary = false): React.CSSProperties {
     minHeight: 104,
     borderRadius: 18,
     border: primary
-      ? "1px solid rgba(11,99,209,0.18)"
+      ? "1px solid rgba(29,78,216,0.16)"
       : "1px solid rgba(11,31,51,0.08)",
-    background: primary ? "#F7FAFF" : "#FFFFFF",
+    background: primary ? "linear-gradient(180deg, #F7FAFF 0%, #FFFFFF 100%)" : "#FFFFFF",
     padding: 16,
     textDecoration: "none",
-    boxShadow: primary ? "0 10px 24px rgba(11,99,209,0.05)" : "none",
+    boxShadow: primary ? "0 10px 24px rgba(29,78,216,0.05)" : "none",
   };
 }
 
@@ -327,8 +327,8 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
+    background: primary ? "rgba(29,78,216,0.08)" : "rgba(100,116,139,0.10)",
+    color: primary ? "#1D4ED8" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "nowrap",
@@ -348,7 +348,7 @@ function actionBtn(
       padding: "10px 14px",
       borderRadius: 14,
       border: "none",
-      background: disabled ? "#CBD5E1" : "#0B63D1",
+      background: disabled ? "#CBD5E1" : "#1D4ED8",
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
@@ -367,9 +367,9 @@ function actionBtn(
       minHeight: 38,
       padding: "8px 12px",
       borderRadius: 12,
-      border: "1px solid rgba(11,31,51,0.08)",
-      background: "#F8FBFF",
-      color: disabled ? "#94A3B8" : "#24415C",
+      border: "1px solid rgba(29,78,216,0.10)",
+      background: "#F5FAFF",
+      color: disabled ? "#94A3B8" : "#1E4063",
       fontWeight: 800,
       fontSize: 13,
       textDecoration: "none",
@@ -386,8 +386,8 @@ function actionBtn(
     minHeight: 42,
     padding: "10px 14px",
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(29,78,216,0.12)",
+    background: "#FDFEFF",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
@@ -406,9 +406,9 @@ function collapseToggle(): React.CSSProperties {
     minHeight: 38,
     padding: "8px 12px",
     borderRadius: 12,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
-    color: "#24415C",
+    border: "1px solid rgba(29,78,216,0.12)",
+    background: "#FDFEFF",
+    color: "#1E4063",
     fontWeight: 800,
     fontSize: 13,
     cursor: "pointer",
@@ -443,7 +443,7 @@ function communityName(currentClan: any, clanId: number): string {
       currentClan?.name,
       currentClan?.display_name,
       currentClan?.title
-    ) || (clanId ? `Community ${clanId}` : "No selected community")
+    ) || (clanId ? `Community ${clanId}` : "No current community")
   );
 }
 
@@ -730,9 +730,9 @@ export default function LoanReadinessPage() {
     if (!selectedClanId || !safeStr(me?.gmfn_id)) {
       return {
         level: "blocked" as const,
-        title: "Community or GMFN context is not ready.",
+        title: "Community or member identity is not ready.",
         detail:
-          "The support route should not continue without a selected community and visible GMFN identity.",
+          "The support route should not continue without your current community and visible member identity.",
       };
     }
 
@@ -741,7 +741,7 @@ export default function LoanReadinessPage() {
         level: "watch" as const,
         title: "Money Out has handed off into support continuation.",
         detail:
-          "The withdrawal route has already determined that support is needed. The next clean move is to start or continue the borrower-side support draft in the selected-community support surface.",
+          "The withdrawal route has already determined that support is needed. The next clean move is to start or continue the borrower-side support draft now.",
       };
     }
 
@@ -751,7 +751,7 @@ export default function LoanReadinessPage() {
         title:
           "Readiness is blocked by active borrower load and waiting guarantor decisions.",
         detail:
-          "Your borrower-side support path is already active, and guarantor decisions are still waiting. Clear one pressure area before starting another.",
+          "Your borrower-side support activity is already active, and guarantor decisions are still waiting. Clear one pressure area before starting another.",
       };
     }
 
@@ -759,7 +759,7 @@ export default function LoanReadinessPage() {
       return {
         level: "watch" as const,
         title:
-          "Readiness is reduced because your borrower-side support path is still active.",
+          "Readiness is reduced because your borrower-side support activity is still active.",
         detail:
           "Finish or stabilize the current borrower-side path before starting another support movement.",
       };
@@ -851,11 +851,11 @@ export default function LoanReadinessPage() {
     const rows: string[] = [];
 
     if (!cameFromWithdrawalSupport) {
-      rows.push("This page can read readiness before the next support move becomes heavier.");
+      rows.push("This can read readiness before the next support move becomes heavier.");
     }
 
     if (borrowerLoans.length === 0) {
-      rows.push("No active borrower-side support path is visibly blocking you right now.");
+      rows.push("No active borrower-side support flow is visibly blocking you right now.");
     }
 
     if (guarantorInbox.length === 0) {
@@ -888,9 +888,9 @@ export default function LoanReadinessPage() {
   const recommendedNext = useMemo(() => {
     if (!selectedClanId) {
       return {
-        title: "Choose the community context first.",
+        title: "Choose the community first.",
         detail:
-          "Support readiness should stay tied to the selected community before the member continues.",
+          "Support readiness is clearer once your current community is in place.",
         ctaTo: "/app/community",
         ctaLabel: "Open Community Home",
       };
@@ -900,9 +900,9 @@ export default function LoanReadinessPage() {
       return {
         title: "Start or continue the borrower-side support draft.",
         detail:
-          "Money Out has already handed off into support continuation. Open the selected-community support start surface and carry the withdrawal need forward.",
+          "Money Out has already handed off into support continuation. Open the support start page and carry the withdrawal need forward.",
         ctaTo: "/app/marketplace#marketplace-loans-support",
-        ctaLabel: "Open Support Start Surface",
+        ctaLabel: "Open Support Start Page",
       };
     }
 
@@ -930,7 +930,7 @@ export default function LoanReadinessPage() {
       return {
         title: "Review your guarantor-side commitments before expanding further.",
         detail:
-          "Existing guarantor-side responsibility should stay visible before another support load is added.",
+          "Existing guarantor-side responsibility should remain visible before another support load is added.",
         ctaTo: "/app/loans",
         ctaLabel: "Open Loans & Support",
       };
@@ -994,7 +994,7 @@ export default function LoanReadinessPage() {
         <PageTopNav
           sectionLabel="Loan Readiness"
           title="Support Readiness"
-          subtitle="Loading the support-readiness surface..."
+          subtitle="Loading the support-readiness page..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/withdrawal-instructions"
@@ -1031,7 +1031,7 @@ export default function LoanReadinessPage() {
       <PageTopNav
         sectionLabel="Loan Readiness"
         title="Support Readiness"
-        subtitle="This page is a support-continuation stage. It helps the member see whether the next support move is clean enough to continue, especially after Money Out has already determined that support is needed."
+        subtitle="Use this stage to see whether the next support move is clean enough to continue, especially after Money Out has already determined that support is needed."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/withdrawal-instructions"
@@ -1042,16 +1042,26 @@ export default function LoanReadinessPage() {
         ]}
         utilityLinks={
           readinessSupportActive
-            ? [{ label: "Loans", to: "/app/loans" }]
+            ? [
+                { label: "Loans", to: "/app/loans" },
+                {
+                  label: "Commitment Builder",
+                  to: "/app/dashboard#focus-commitments",
+                },
+              ]
             : [
                 { label: "Marketplace", to: "/app/marketplace" },
                 { label: "Loans", to: "/app/loans" },
+                {
+                  label: "Commitment Builder",
+                  to: "/app/dashboard#focus-commitments",
+                },
               ]
         }
       />
 
       <section
-        style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
+        style={pageCard("linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)")}
       >
         <div
           style={{
@@ -1069,7 +1079,7 @@ export default function LoanReadinessPage() {
                 borderRadius: 20,
                 border: "1px solid rgba(212,175,55,0.22)",
                 overflow: "hidden",
-                background: "linear-gradient(180deg, rgba(8,17,31,0.88) 0%, rgba(16,42,67,0.96) 100%)",
+                background: "linear-gradient(180deg, rgba(16,36,58,0.88) 0%, rgba(38,82,124,0.96) 100%)",
                 boxShadow: "0 20px 44px rgba(2,12,27,0.32)",
                 display: "flex",
                 alignItems: "center",
@@ -1120,10 +1130,8 @@ export default function LoanReadinessPage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
-              Loan readiness is not a loose side page. Once a support-backed movement
-              begins, this stage should help the member understand whether the next
-              support move is clean enough to continue, or whether an earlier pressure
-              should be settled first.
+              Use this stage to see whether the next support move is clean enough
+              to continue now, or whether an earlier pressure should be settled first.
             </div>
 
             <div
@@ -1137,10 +1145,9 @@ export default function LoanReadinessPage() {
               <span style={badge(true)}>Community ID: {publicCommunityId}</span>
               <span style={badge(false)}>GMFN ID: {gmfnId}</span>
               {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
-              <span style={badge(false)}>Current page: Loan readiness</span>
-              <span style={badge(false)}>Current step: Readiness</span>
+              <span style={badge(false)}>Readiness stage</span>
               {cameFromWithdrawalSupport ? (
-                <span style={badge(false)}>Source: Money Out support handoff</span>
+                <span style={badge(false)}>Money Out support handoff</span>
               ) : null}
             </div>
           </div>
@@ -1228,7 +1235,7 @@ export default function LoanReadinessPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B63D1",
+                  color: "#1D4ED8",
                   fontSize: 24,
                   fontWeight: 900,
                 }}
@@ -1618,8 +1625,8 @@ export default function LoanReadinessPage() {
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {readinessSupportActive
-                ? "Stay inside the support path and move only to the next exact continuation surface."
-                : "Move from readiness reading into the exact support-continuation page you need."}
+                ? "Stay inside the support flow and move only to the next continuation step."
+                : "Move from readiness reading into the next page you need."}
             </div>
           </div>
 
@@ -1674,7 +1681,7 @@ export default function LoanReadinessPage() {
                 Loan Suggestions
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the next question is candidate fit after readiness is clear.
+                Open this when the next question is candidate fit after readiness is clear.
               </div>
             </OriginLink>
 
@@ -1690,7 +1697,24 @@ export default function LoanReadinessPage() {
                 Loan Workbench
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this for deeper support handling once readiness is clear.
+                Open this for deeper support handling once readiness is clear.
+              </div>
+            </OriginLink>
+
+            <OriginLink to="/app/dashboard#focus-commitments" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                Commitment Builder
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Open this when readiness depends on steadier repayment follow-through,
+                savings discipline, or a clearer action plan.
               </div>
             </OriginLink>
 
@@ -1704,10 +1728,10 @@ export default function LoanReadinessPage() {
                     lineHeight: 1.3,
                   }}
                 >
-                  Support Start Surface
+                  Support Start Page
                 </div>
                 <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                  Return to the selected-community support surface when the draft itself must be started or resumed.
+                  Return here when the draft itself must be started or resumed.
                 </div>
               </OriginLink>
             ) : null}
@@ -1758,7 +1782,7 @@ export default function LoanReadinessPage() {
                     Action Inbox
                   </div>
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    Use this when the broader waiting picture matters around support response.
+                    Open this when the broader waiting picture matters around support response.
                   </div>
                 </OriginLink>
               </>
@@ -1769,4 +1793,8 @@ export default function LoanReadinessPage() {
     </div>
   );
 }
+
+
+
+
 

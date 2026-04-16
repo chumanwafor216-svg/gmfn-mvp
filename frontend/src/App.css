@@ -41,7 +41,7 @@ body {
 }
 
 .gmfn-shell::before {
-  content: "GMFN  GMFN  GMFN  GMFN  GMFN  GMFN  GMFN  GMFN";
+  content: "GSN  GSN  GSN  GSN  GSN  GSN  GSN  GSN";
   position: fixed;
   inset: 0;
   z-index: -1;

@@ -65,7 +65,7 @@ const CAPABILITY_WISDOM: MarketWisdomPair[] = [
     title: "Release Before Payment",
     proverb: "Release Before Payment reduces risk before money moves.",
     gmfn:
-      "GMFN makes trust visible before payment so identity, trust, and community can improve access and reduce risk.",
+      "GSN makes trust visible before payment so identity, trust, and community can improve access and reduce risk.",
     category: "trade",
     tone: "focus",
     priority: 6,
@@ -76,7 +76,7 @@ const CAPABILITY_WISDOM: MarketWisdomPair[] = [
     title: "Trusted Buying and Selling",
     proverb: "Trusted Buying and Selling turns reputation into safer trade.",
     gmfn:
-      "GMFN helps buyers and sellers act with more confidence because identity, trust, and community are visible in one flow.",
+      "GSN helps buyers and sellers act with more confidence because identity, trust, and community are visible in one flow.",
     category: "trade",
     tone: "focus",
     priority: 6,
@@ -87,7 +87,7 @@ const CAPABILITY_WISDOM: MarketWisdomPair[] = [
     title: "Cross-Community Trade",
     proverb: "Cross-Community Trade expands trust beyond one circle.",
     gmfn:
-      "GMFN carries visible trust across communities so economic access grows without losing accountability.",
+      "GSN carries visible trust across communities so economic access grows without losing accountability.",
     category: "trade",
     tone: "focus",
     priority: 6,
@@ -98,7 +98,7 @@ const CAPABILITY_WISDOM: MarketWisdomPair[] = [
     title: "Fraud Reduction Before Action",
     proverb: "Fraud Reduction Before Action protects people before loss happens.",
     gmfn:
-      "GMFN reduces risk before action by making trust visible early, not after damage is done.",
+      "GSN reduces risk before action by making trust visible early, not after damage is done.",
     category: "identity",
     tone: "alert",
     priority: 8,
@@ -109,7 +109,7 @@ const CAPABILITY_WISDOM: MarketWisdomPair[] = [
     title: "Spotlight Visibility",
     proverb: "Spotlight Visibility helps the right value get seen first.",
     gmfn:
-      "GMFN uses visible trust to improve presence and confidence around spotlighted goods, services, and people.",
+      "GSN uses visible trust to improve presence and confidence around spotlighted goods, services, and people.",
     category: "visibility",
     tone: "spotlight",
     priority: 7,
@@ -120,7 +120,7 @@ const CAPABILITY_WISDOM: MarketWisdomPair[] = [
     title: "Reputation-Based Visibility",
     proverb: "Reputation-Based Visibility gives stronger trust more reach.",
     gmfn:
-      "GMFN makes visibility depend on visible trust, not noise alone, so access improves while risk falls.",
+      "GSN makes visibility depend on visible trust, not noise alone, so access improves while risk falls.",
     category: "visibility",
     tone: "spotlight",
     priority: 7,
@@ -131,7 +131,7 @@ const CAPABILITY_WISDOM: MarketWisdomPair[] = [
     title: "Marketplace Presence Across Communities",
     proverb: "Marketplace Presence Across Communities lets trust travel with the merchant.",
     gmfn:
-      "GMFN gives a merchant usable presence beyond one market by carrying identity, trust, and community context together.",
+      "GSN gives a merchant usable presence beyond one market by carrying identity, trust, and community context together.",
     category: "visibility",
     tone: "spotlight",
     priority: 7,
@@ -142,7 +142,7 @@ const CAPABILITY_WISDOM: MarketWisdomPair[] = [
     title: "People-Backed Loans",
     proverb: "People-Backed Loans make support more relational and accountable.",
     gmfn:
-      "GMFN turns visible trust into a support signal so lending can improve access while keeping risk clearer.",
+      "GSN turns visible trust into a support signal so lending can improve access while keeping risk clearer.",
     category: "finance",
     tone: "focus",
     priority: 7,
@@ -153,7 +153,7 @@ const CAPABILITY_WISDOM: MarketWisdomPair[] = [
     title: "Supporting Others",
     proverb: "Supporting Others makes trust productive, not passive.",
     gmfn:
-      "GMFN shows when support is visible, accountable, and community-backed so help becomes measurable.",
+      "GSN shows when support is visible, accountable, and community-backed so help becomes measurable.",
     category: "support",
     tone: "calm",
     priority: 6,
@@ -164,7 +164,7 @@ const CAPABILITY_WISDOM: MarketWisdomPair[] = [
     title: "Emergency Support",
     proverb: "Emergency Support works better when trust is already visible.",
     gmfn:
-      "GMFN shortens uncertainty in urgent moments by making identity, trust, and community context easier to read.",
+      "GSN shortens uncertainty in urgent moments by making identity, trust, and community context easier to read.",
     category: "support",
     tone: "alert",
     priority: 8,
@@ -175,7 +175,7 @@ const CAPABILITY_WISDOM: MarketWisdomPair[] = [
     title: "Diaspora Trust Bridge",
     proverb: "Diaspora Trust Bridge carries confidence across distance.",
     gmfn:
-      "GMFN helps people transact, support, and verify across borders by making trust portable instead of local only.",
+      "GSN helps people transact, support, and verify across borders by making trust portable instead of local only.",
     category: "community",
     tone: "focus",
     priority: 6,
@@ -186,7 +186,7 @@ const CAPABILITY_WISDOM: MarketWisdomPair[] = [
     title: "Trust Savings (ROSCA Support)",
     proverb: "Trust Savings gives familiar savings culture a visible trust layer.",
     gmfn:
-      "GMFN helps savings groups become more accountable by making contribution trust visible inside community structures.",
+      "GSN helps savings groups become more accountable by making contribution trust visible inside community structures.",
     category: "finance",
     tone: "calm",
     priority: 6,
@@ -197,7 +197,7 @@ const CAPABILITY_WISDOM: MarketWisdomPair[] = [
     title: "Contribution Tracking",
     proverb: "Contribution Tracking turns memory into visible economic record.",
     gmfn:
-      "GMFN helps contribution history become visible proof so access and accountability improve together.",
+      "GSN helps contribution history become visible proof so access and accountability improve together.",
     category: "finance",
     tone: "focus",
     priority: 6,
@@ -208,7 +208,7 @@ const CAPABILITY_WISDOM: MarketWisdomPair[] = [
     title: "Continuity Across Distance",
     proverb: "Continuity Across Distance keeps trust from breaking when people move.",
     gmfn:
-      "GMFN preserves identity, trust, and participation across time and location so opportunity does not reset from zero.",
+      "GSN preserves identity, trust, and participation across time and location so opportunity does not reset from zero.",
     category: "community",
     tone: "calm",
     priority: 6,
@@ -219,7 +219,7 @@ const CAPABILITY_WISDOM: MarketWisdomPair[] = [
     title: "Portable Trust Identity",
     proverb: "Portable Trust Identity lets trust move with the person.",
     gmfn:
-      "GMFN makes trust portable so verified standing can travel across communities, markets, and decisions.",
+      "GSN makes trust portable so verified standing can travel across communities, markets, and decisions.",
     category: "identity",
     tone: "focus",
     priority: 8,
@@ -230,7 +230,7 @@ const CAPABILITY_WISDOM: MarketWisdomPair[] = [
     title: "Reputation Mobility",
     proverb: "Reputation Mobility stops trust from staying trapped in one place.",
     gmfn:
-      "GMFN helps earned reputation stay usable across new spaces, which improves access without losing accountability.",
+      "GSN helps earned reputation stay usable across new spaces, which improves access without losing accountability.",
     category: "identity",
     tone: "focus",
     priority: 7,
@@ -241,7 +241,7 @@ const CAPABILITY_WISDOM: MarketWisdomPair[] = [
     title: "One Global Shop",
     proverb: "One Global Shop gives one identity a wider trusted market presence.",
     gmfn:
-      "GMFN helps one merchant identity stay visible across communities instead of rebuilding from zero in each market.",
+      "GSN helps one merchant identity stay visible across communities instead of rebuilding from zero in each market.",
     category: "visibility",
     tone: "spotlight",
     priority: 7,
@@ -252,7 +252,7 @@ const CAPABILITY_WISDOM: MarketWisdomPair[] = [
     title: "Service Economy Participation",
     proverb: "Service Economy Participation brings trust into work that often stays informal.",
     gmfn:
-      "GMFN helps service work become more visible and trusted so access improves for workers and buyers alike.",
+      "GSN helps service work become more visible and trusted so access improves for workers and buyers alike.",
     category: "work",
     tone: "focus",
     priority: 6,
@@ -263,7 +263,7 @@ const CAPABILITY_WISDOM: MarketWisdomPair[] = [
     title: "Trust-Based Hiring",
     proverb: "Trust-Based Hiring helps work decisions rely on visible credibility.",
     gmfn:
-      "GMFN makes trust readable before hiring, so decisions can go beyond guesswork and weak informal signals.",
+      "GSN makes trust readable before hiring, so decisions can go beyond guesswork and weak informal signals.",
     category: "work",
     tone: "focus",
     priority: 6,
@@ -274,7 +274,7 @@ const CAPABILITY_WISDOM: MarketWisdomPair[] = [
     title: "Demand Box",
     proverb: "Demand Box makes real needs visible before the market misses them.",
     gmfn:
-      "GMFN helps demand become readable and actionable so opportunity can meet need with less friction.",
+      "GSN helps demand become readable and actionable so opportunity can meet need with less friction.",
     category: "trade",
     tone: "focus",
     priority: 7,
@@ -285,9 +285,21 @@ const CAPABILITY_WISDOM: MarketWisdomPair[] = [
     title: "Community Economic Power",
     proverb: "Community Economic Power grows when trust becomes visible and usable.",
     gmfn:
-      "GMFN turns trust into shared economic strength by linking identity, trust, and community into one working layer.",
+      "GSN turns trust into shared economic strength by linking identity, trust, and community into one working layer.",
     category: "community",
     tone: "calm",
+    priority: 8,
+  },
+  {
+    id: "mw-cap-22",
+    capability: 22,
+    title: "Commitment Builder",
+    proverb:
+      "The point is not to collect goals. The point is to build execution discipline that supports savings, repayment, retirement readiness, and dependable follow-through.",
+    gmfn:
+      "GSN helps members turn intentions into structured, achievable follow-through through reminders, progress guidance, and visible commitment support.",
+    category: "operating",
+    tone: "focus",
     priority: 8,
   },
 ];
@@ -298,7 +310,7 @@ const LEGACY_WISDOM: MarketWisdomPair[] = [
     title: "Trust before transaction",
     proverb: "Before money moves, trust should be readable.",
     gmfn:
-      "GMFN turns trust from hidden social knowledge into visible economic signal.",
+      "GSN turns trust from hidden social knowledge into visible economic signal.",
     category: "operating",
     tone: "focus",
     priority: 3,
@@ -318,7 +330,7 @@ const LEGACY_WISDOM: MarketWisdomPair[] = [
     title: "Carry one clean proof",
     proverb: "Portable proof is stronger than repeated explanation.",
     gmfn:
-      "GMFN helps a person or merchant carry usable trust instead of starting from zero again.",
+      "GSN helps a person or merchant carry usable trust instead of starting from zero again.",
     category: "identity",
     tone: "focus",
     priority: 3,
@@ -328,7 +340,7 @@ const LEGACY_WISDOM: MarketWisdomPair[] = [
     title: "One clear next step",
     proverb: "A clean next action is stronger than scattered effort.",
     gmfn:
-      "GMFN works best when people can see what matters now and what comes after it.",
+      "GSN works best when people can see what matters now and what comes after it.",
     category: "operating",
     tone: "calm",
     priority: 3,
@@ -348,7 +360,7 @@ const LEGACY_WISDOM: MarketWisdomPair[] = [
     title: "Consistency compounds",
     proverb: "Small visible reliability becomes larger access over time.",
     gmfn:
-      "GMFN rewards steady proof, not noise, by making visible conduct economically useful.",
+      "GSN rewards steady proof, not noise, by making visible conduct economically useful.",
     category: "operating",
     tone: "focus",
     priority: 3,
@@ -358,7 +370,7 @@ const LEGACY_WISDOM: MarketWisdomPair[] = [
     title: "Support needs structure",
     proverb: "Goodwill works better when trust and responsibility are visible.",
     gmfn:
-      "GMFN helps support move from sentiment into accountable structure.",
+      "GSN helps support move from sentiment into accountable structure.",
     category: "support",
     tone: "calm",
     priority: 3,
@@ -368,10 +380,40 @@ const LEGACY_WISDOM: MarketWisdomPair[] = [
     title: "Trust opens markets",
     proverb: "Where trust becomes visible, opportunity can travel further.",
     gmfn:
-      "GMFN helps trade move beyond familiar circles without losing confidence or accountability.",
+      "GSN helps trade move beyond familiar circles without losing confidence or accountability.",
     category: "trade",
     tone: "spotlight",
     priority: 3,
+  },
+  {
+    id: "mw-legacy-09",
+    title: "Commitment turns intention into dependable follow-through",
+    proverb: "Commitment turns intention into dependable follow-through.",
+    gmfn:
+      "GSN should not only record what happened. It should help steady what happens next through visible commitment support.",
+    category: "operating",
+    tone: "focus",
+    priority: 4,
+  },
+  {
+    id: "mw-legacy-10",
+    title: "Dependable follow-through is also a form of trust",
+    proverb: "A plan becomes powerful only when the person can follow it repeatedly.",
+    gmfn:
+      "Savings, repayment, and retirement readiness grow stronger when commitment becomes visible and dependable action can be seen over time.",
+    category: "finance",
+    tone: "calm",
+    priority: 4,
+  },
+  {
+    id: "mw-legacy-11",
+    title: "Commitment becomes economic power",
+    proverb: "Commitment is where discipline becomes economic power.",
+    gmfn:
+      "A member who keeps a commitment becomes easier to support, trust, and finance because visible discipline strengthens future decisions.",
+    category: "community",
+    tone: "focus",
+    priority: 4,
   },
 ];
 
@@ -506,3 +548,4 @@ export function getSmartMarketWisdomPair(
 
   return topPool[0] || CAPABILITY_WISDOM[0];
 }
+

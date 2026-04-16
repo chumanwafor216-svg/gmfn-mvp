@@ -445,7 +445,7 @@ export default function TrustAnalyticsPage() {
         currentClan?.name,
         currentClan?.display_name,
         currentClan?.title
-      ) || (selectedClanId ? `Community ${selectedClanId}` : "No selected community")
+      ) || (selectedClanId ? `Community ${selectedClanId}` : "No current community")
     );
   }, [currentClan, selectedClanId]);
 
@@ -565,7 +565,7 @@ export default function TrustAnalyticsPage() {
         <PageTopNav
           sectionLabel="Trust Analytics"
           title="Trust Analytics"
-          subtitle="Loading the trust analytics surface..."
+          subtitle="Loading the trust analytics page..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/command-center"
@@ -599,7 +599,7 @@ export default function TrustAnalyticsPage() {
       <PageTopNav
         sectionLabel="Trust Analytics"
         title="Trust Analytics"
-        subtitle="Read the visible trust pattern, signal mix, and recent trend before stepping into deeper operator intervention."
+        subtitle="Read the visible trust pattern, signal mix, and recent trend before stepping into deeper admin intervention."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/command-center"
@@ -638,7 +638,7 @@ export default function TrustAnalyticsPage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
-              This page is for pattern reading. Use it to understand trend and signal mix before jumping into deeper intervention surfaces.
+              Read pattern trends and signal mix here before moving into deeper intervention pages.
             </div>
 
             <div
@@ -1053,10 +1053,10 @@ export default function TrustAnalyticsPage() {
                   fontSize: 15,
                 }}
               >
-                Use this page for reading
+                Read patterns here
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                This page is for pattern reading, signal mix, and trust trend interpretation.
+                Read pattern mix and trust trends before moving into deeper intervention pages.
               </div>
             </div>
 
@@ -1106,3 +1106,4 @@ export default function TrustAnalyticsPage() {
     </div>
   );
 }
+

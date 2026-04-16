@@ -513,3 +513,35 @@ Admin-only lifecycle controls with TrustEvent audit:
 - public/minimal verify endpoint using signed token (rate limited)
 - expand evidence pack PDFs to include trust-why excerpts
 - migrate rate limiting to Redis for multi-worker deployment
+
+## Capability Upgrade: 22. Commitment Builder (2026-04-16)
+**Approved outward label:** Commitment Builder
+
+GMFN now carries 22 core capabilities, not 21. The 22nd capability extends the product beyond borrowing, trust visibility, records, and commerce into execution discipline.
+
+**Official insertion text:**
+
+**22. Commitment Builder**  
+The point is not to collect goals. The point is to build execution discipline that can support savings behavior, retirement readiness, repayment follow-through, business targets, and more dependable action over time. GMFN helps members turn intentions into structured, achievable follow-through through reminders, progress guidance, and visible commitment support.
+
+**Working meaning:**
+- supports savings targets, business targets, repayment targets, retirement-readiness targets, and other structured commitments
+- helps convert intention into structure, structure into repeated action, and repeated action into more dependable behavior
+- strengthens trust by making follow-through visible instead of leaving good intentions untracked
+
+**Product significance:**
+- GMFN is not only a borrowing surface
+- not only a trust surface
+- not only a records surface
+- not only a commerce surface
+- it is also a follow-through surface and a discipline-building support surface
+
+**Approved Market Wisdom lines for this capability:**
+- Commitment turns intention into dependable follow-through.
+- The point is not to collect goals. The point is to keep moving toward them.
+- Savings, repayment, and retirement readiness grow stronger when commitment becomes visible.
+- A plan becomes powerful only when the person can follow it repeatedly.
+- GMFN should not only record what happened. It should help steady what happens next.
+- Dependable follow-through is also a form of trust.
+- Commitment is where discipline becomes economic power.
+- A member who keeps a commitment becomes easier to support, trust, and finance.

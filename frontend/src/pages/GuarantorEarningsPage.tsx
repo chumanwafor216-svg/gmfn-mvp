@@ -542,12 +542,12 @@ export default function GuarantorEarningsPage() {
   const nextStep = useMemo<NextStepState>(() => {
     if (!selectedClanId) {
       return {
-        title: "Choose the community context first",
+        title: "Choose the community first",
         detail:
-          "Guarantor earnings should stay anchored to the selected community support path before you read them as current context.",
+          "Guarantor earnings make more sense when they stay tied to your current community.",
         today: "Open Community Home and confirm the community you are working in.",
         tomorrow:
-          "A selected community keeps support history and earnings easier to interpret.",
+          "Your current community keeps support history and earnings easier to interpret.",
         ctaLabel: "Open Community Home",
         ctaTo: "/app/community",
       };
@@ -560,8 +560,8 @@ export default function GuarantorEarningsPage() {
             ? "One guarantor earning is still pending"
             : `${totals.pendingCount} guarantor earnings are still pending`,
         detail:
-          "Your next move is to watch the active support path, not to ignore it. Earnings become meaningful when the support cycle closes properly.",
-        today: "Review the active support items and keep the pending path moving.",
+          "Your next move is to watch the active support flow, not to ignore it. Earnings become meaningful when the support cycle closes properly.",
+        today: "Review the active support items and keep the pending work moving.",
         tomorrow:
           "Settled support creates clearer earnings and stronger visible contribution.",
         ctaLabel: "Return to Loans & Support",
@@ -573,7 +573,7 @@ export default function GuarantorEarningsPage() {
       return {
         title: "Your guarantor contribution is now visible value",
         detail:
-          "Supporting responsible borrowers should not remain invisible. This page keeps that contribution readable and measurable inside the selected community context.",
+          "Supporting responsible borrowers should not remain invisible. This keeps that contribution readable and measurable in your current community.",
         today: "Review your recent earnings and keep your support behaviour steady.",
         tomorrow:
           "Consistent guarantor support can strengthen both visible value and visible reputation over time.",
@@ -586,7 +586,7 @@ export default function GuarantorEarningsPage() {
       title: "No guarantor earnings are shown yet",
       detail:
         "That does not mean the path is useless. It means the earnings side of the support cycle has not materialized yet in your visible records.",
-      today: "Continue using the guided support path rather than forcing the earnings question too early.",
+      today: "Continue using the guided support flow rather than forcing the earnings question too early.",
       tomorrow:
         "Visible earnings usually come after responsible support behaviour has had time to settle.",
       ctaLabel: "Return to Loans & Support",
@@ -685,8 +685,8 @@ export default function GuarantorEarningsPage() {
                 lineHeight: 1.8,
               }}
             >
-              This page is the member-facing earnings record for guarantor participation.
-              It should keep that contribution readable inside the selected community
+              This earnings record keeps guarantor participation
+              readable in your current community
               instead of leaving it buried under the wider support flow.
             </div>
 
@@ -844,10 +844,9 @@ export default function GuarantorEarningsPage() {
               lineHeight: 1.8,
             }}
           >
-            This earnings feed is not returning community tags yet. The page is
-            staying inside your selected community context, but the API response
-            should later become stricter so every earning row is explicitly
-            community-scoped.
+            This earnings feed is not returning community tags yet. It is still
+            being shown through your current community, and each earnings row
+            should later carry clearer community matching.
           </div>
         </section>
       ) : null}
@@ -871,7 +870,7 @@ export default function GuarantorEarningsPage() {
               <div>
                 <div style={sectionLabel()}>Earnings overview</div>
                 <div style={{ marginTop: 8, ...helperText() }}>
-                  Core earnings totals for the selected community context.
+                  Core earnings totals for your current community.
                 </div>
               </div>
 
@@ -1029,7 +1028,7 @@ export default function GuarantorEarningsPage() {
                       lineHeight: 1.8,
                     }}
                   >
-                    As your guarantor earnings grow, GMFN should remind you that
+                    As your guarantor earnings grow, GSN should remind you that
                     standing behind responsible people can also create visible value
                     and visible reputation for you.
                   </div>
@@ -1195,7 +1194,7 @@ export default function GuarantorEarningsPage() {
               <div>
                 <div style={sectionLabel()}>Next routes</div>
                 <div style={{ marginTop: 8, ...helperText() }}>
-                  Move from earnings reading into the exact next support page you need.
+                  Move from earnings reading into the next page you need.
                 </div>
               </div>
 
@@ -1245,7 +1244,7 @@ export default function GuarantorEarningsPage() {
                     Loan Workbench
                   </div>
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    Use this when you need the deeper support work item behind the earnings result.
+                    Open this when you need the deeper support work item behind the earnings result.
                   </div>
                 </OriginLink>
 
@@ -1261,7 +1260,7 @@ export default function GuarantorEarningsPage() {
                     Loan Suggestions
                   </div>
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    Use this when the next question is candidate fit rather than earnings history.
+                    Open this when the next question is candidate fit rather than earnings history.
                   </div>
                 </OriginLink>
 
@@ -1277,7 +1276,7 @@ export default function GuarantorEarningsPage() {
                     Community Home
                   </div>
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    Return to the wider selected-community control surface.
+                    Return to the wider community page.
                   </div>
                 </OriginLink>
 
@@ -1293,7 +1292,7 @@ export default function GuarantorEarningsPage() {
                     Marketplace
                   </div>
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    Return to the selected-community launcher surface only after this earnings reading is complete.
+                    Return to Marketplace only after this earnings reading is complete.
                   </div>
                 </OriginLink>
 
@@ -1309,7 +1308,7 @@ export default function GuarantorEarningsPage() {
                     Money Out
                   </div>
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    Use this when the money question becomes a guided withdrawal question again.
+                    Open this when the money question becomes a guided withdrawal question again.
                   </div>
                 </OriginLink>
               </div>
@@ -1320,3 +1319,5 @@ export default function GuarantorEarningsPage() {
     </div>
   );
 }
+
+

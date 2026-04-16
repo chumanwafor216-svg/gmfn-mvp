@@ -238,7 +238,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (typeof document !== "undefined") {
-      document.title = "GMFN | Sign In";
+      document.title = "GSN | Sign In";
     }
   }, []);
 

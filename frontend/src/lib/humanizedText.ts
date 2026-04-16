@@ -1,9 +1,9 @@
 export const HUMANIZED = {
   // Core positioning
   headline: "Turn the people you already trust into real financial power.",
-  subtext: "You already support each other. GMFN helps you keep record of it and use it better.",
+  subtext: "You already support each other. GSN helps you keep record of it and use it better.",
 
-  trustStatement: "GMFN is not for strangers. It is for people who already know each other.",
+  trustStatement: "GSN is not for strangers. It is for people who already know each other.",
 
   // Actions
   askToJoin: "Ask to join",

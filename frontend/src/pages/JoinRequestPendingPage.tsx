@@ -35,7 +35,7 @@ function actionBtn(primary = false): React.CSSProperties {
     padding: "10px 14px",
     borderRadius: 12,
     border: primary ? "none" : "1px solid rgba(11,31,51,0.12)",
-    background: primary ? "#0B63D1" : "#FFFFFF",
+    background: primary ? "#1D4ED8" : "#FFFFFF",
     color: primary ? "#FFFFFF" : "#0B1F33",
     fontWeight: 900,
     textDecoration: "none",
@@ -72,9 +72,9 @@ function badge(primary = false): React.CSSProperties {
     borderRadius: 999,
     background: primary ? "#EAF2FF" : "#F8FAFC",
     border: primary
-      ? "1px solid rgba(11,99,209,0.14)"
+      ? "1px solid rgba(29,78,216,0.16)"
       : "1px solid rgba(11,31,51,0.08)",
-    color: primary ? "#0B63D1" : "#475569",
+    color: primary ? "#1D4ED8" : "#475569",
     fontWeight: 900,
     fontSize: 12,
     whiteSpace: "nowrap",
@@ -141,7 +141,7 @@ export default function JoinRequestPendingPage() {
 
   useEffect(() => {
     if (typeof document !== "undefined") {
-      document.title = "GMFN | Join Request Pending";
+      document.title = "GSN | Join Request Pending";
     }
   }, []);
 
@@ -208,7 +208,7 @@ export default function JoinRequestPendingPage() {
       <div
         style={{
           ...pageCard(
-            "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+            "linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)"
           ),
           marginTop: 18,
         }}
@@ -295,7 +295,7 @@ export default function JoinRequestPendingPage() {
                 2. Approval outcome
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                If approved, your GMFN identity will be issued and you will
+                If approved, your GSN identity will be issued and you will
                 continue to activation.
               </div>
             </div>
@@ -311,15 +311,15 @@ export default function JoinRequestPendingPage() {
                 3. Activation
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Activation is the step where you create your password and enter
-                your personal surfaces properly.
+                Activation is where you create your password and enter your
+                personal pages properly.
               </div>
             </div>
           </div>
 
           <div style={{ marginTop: 16, ...pendingNotice() }}>
             The app is holding this route steady until the community has made its
-            decision. This is why wider member movement is not opened yet.
+            decision. Wider member movement will open after that decision.
           </div>
         </div>
 
@@ -343,7 +343,7 @@ export default function JoinRequestPendingPage() {
                 </div>
 
                 <div style={{ marginTop: 10, ...helperText() }}>
-                  Use this request ID to check the approval outcome later.
+                  Keep this request ID so you can check the approval outcome later.
                 </div>
 
                 {submittedAt ? (
@@ -386,6 +386,12 @@ export default function JoinRequestPendingPage() {
           <div style={pageCard()}>
             <div style={sectionLabel()}>Useful links</div>
 
+            <div style={{ marginTop: 10, ...helperText() }}>
+              While you wait for a community decision, the wider GSN guide can
+              explain how trust, participation, and steadier follow-through work
+              after entry.
+            </div>
+
             <div
               style={{
                 marginTop: 16,
@@ -395,7 +401,11 @@ export default function JoinRequestPendingPage() {
               }}
             >
               <OriginLink to="/guide" style={actionBtn(false)}>
-                Open My GMFN and I
+                Open My GSN and I
+              </OriginLink>
+
+              <OriginLink to="/app/dashboard#focus-commitments" style={actionBtn(false)}>
+                Open Commitment Builder
               </OriginLink>
 
               <OriginLink to="/welcome" style={actionBtn(false)}>
@@ -408,3 +418,6 @@ export default function JoinRequestPendingPage() {
     </div>
   );
 }
+
+
+

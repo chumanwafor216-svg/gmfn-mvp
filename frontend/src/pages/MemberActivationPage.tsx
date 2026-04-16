@@ -179,7 +179,7 @@ export default function MemberActivationPage() {
           }}
         >
           Use your approved GMFN ID or request ID to finish activation and move into
-          your personal surfaces.
+          your personal pages.
         </div>
 
         <div
@@ -191,7 +191,7 @@ export default function MemberActivationPage() {
           }}
         >
           <button type="button" onClick={goBack} style={actionBtn(false)}>
-            ← Back
+            ? Back
           </button>
 
           <OriginLink to="/welcome" style={actionBtn(false)}>
@@ -334,3 +334,6 @@ export default function MemberActivationPage() {
     </div>
   );
 }
+
+
+

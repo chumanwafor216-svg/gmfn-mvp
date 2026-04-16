@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.db.bank_models import BankEvent, ExpectedPayment
 from app.db.models import PoolEvent, User
+from app.services.feature_entitlements_service import grant_or_extend_entitlement
 from app.services.repayments_service import create_repayment
 from app.services.trust_events_services import log_trust_event
 
@@ -47,6 +48,20 @@ def _append_note(existing: Optional[str], extra: str) -> str:
     if not x:
         return e
     return f"{e} | {x}"
+
+
+def _safe_str(value: Any, default: str = "") -> str:
+    if value is None:
+        return default
+    text = str(value).strip()
+    return text if text else default
+
+
+def _safe_int(value: Any, default: int = 0) -> int:
+    try:
+        return int(value)
+    except Exception:
+        return default
 
 
 def _find_pool_event_for_expected(db: Session, *, exp: ExpectedPayment) -> Optional[PoolEvent]:
@@ -259,7 +274,9 @@ def _apply_repayment(
             "applied_to_loan_amount": str(_d(already_applied + delta)),
             "repayment_id": int(repayment.id),
             "loan_status_after_application": str(getattr(loan, "status", "")),
-            "loan_remaining_after_application": str(getattr(loan, "remaining_amount", "0")),
+            "loan_remaining_after_application": str(
+                getattr(loan, "remaining_amount", "0")
+            ),
         },
     )
 
@@ -304,6 +321,155 @@ def _apply_repayment(
     }
 
 
+def _apply_feature_subscription(
+    db: Session,
+    *,
+    be: BankEvent,
+    exp: ExpectedPayment,
+) -> Dict[str, Any]:
+    """
+    Apply paid feature subscriptions only when the expected payment is fully confirmed.
+
+    Supported expected_type values:
+    - vault_subscription
+    - merchant_verify_subscription
+    - spotlight_subscription
+    """
+    if (exp.status or "").lower() != "confirmed":
+        return {
+            "ok": True,
+            "applied": False,
+            "kind": "feature_subscription",
+            "reason": "expected_not_fully_confirmed",
+        }
+
+    meta = _safe_meta_json(getattr(exp, "meta_json", None))
+
+    existing_entitlement_id = _safe_int(meta.get("entitlement_id"), 0)
+    if existing_entitlement_id > 0:
+        return {
+            "ok": True,
+            "applied": False,
+            "kind": "feature_subscription",
+            "reason": "already_applied",
+            "entitlement_id": existing_entitlement_id,
+        }
+
+    feature_code = _safe_str(meta.get("feature_code"))
+    plan_code = _safe_str(meta.get("plan_code"))
+    owner_user_id = _safe_int(meta.get("owner_user_id"), int(exp.user_id))
+    shop_id = _safe_int(meta.get("shop_id"), 0) or None
+    clan_id = _safe_int(meta.get("clan_id"), int(exp.clan_id)) or int(exp.clan_id)
+    quantity_total = max(1, _safe_int(meta.get("quantity_total"), 1))
+    billing_cycle = _safe_str(meta.get("billing_cycle"), "annual")
+    payment_reference = _safe_str(
+        meta.get("payment_reference"),
+        _safe_str(exp.reference_normalized) or _safe_str(exp.reference_display),
+    )
+
+    if not feature_code:
+        expected_type = _safe_str(exp.expected_type).lower()
+        if expected_type == "vault_subscription":
+            feature_code = "vault_slot"
+        elif expected_type == "merchant_verify_subscription":
+            feature_code = "merchant_verify"
+        elif expected_type == "spotlight_subscription":
+            feature_code = "spotlight_priority"
+
+    if not feature_code or not plan_code:
+        return {
+            "ok": False,
+            "applied": False,
+            "kind": "feature_subscription",
+            "reason": "missing_feature_meta",
+        }
+
+    entitlement = grant_or_extend_entitlement(
+        db,
+        owner_user_id=int(owner_user_id),
+        clan_id=int(clan_id) if clan_id is not None else None,
+        shop_id=int(shop_id) if shop_id is not None else None,
+        feature_code=feature_code,
+        plan_code=plan_code,
+        quantity_total=quantity_total,
+        billing_cycle=billing_cycle,
+        payment_reference=payment_reference,
+        commit=False,
+        refresh=False,
+    )
+
+    _mark_expected_applied(
+        db,
+        exp=exp,
+        be=be,
+        application_kind="feature_subscription",
+        applied_amount=_d(exp.amount),
+        extra={
+            "entitlement_id": int(entitlement.id),
+            "feature_code": feature_code,
+            "plan_code": plan_code,
+            "quantity_total": quantity_total,
+            "billing_cycle": billing_cycle,
+            "payment_reference": payment_reference,
+            "shop_id": int(shop_id) if shop_id is not None else None,
+        },
+    )
+
+    event_type_map = {
+        "vault_slot": "feature.vault_subscription.activated",
+        "merchant_verify": "feature.merchant_verify_subscription.activated",
+        "spotlight_priority": "feature.spotlight_subscription.activated",
+    }
+
+    log_trust_event(
+        db,
+        event_type=event_type_map.get(feature_code, "feature.subscription.activated"),
+        clan_id=int(clan_id or exp.clan_id or 0),
+        loan_id=None,
+        guarantor_id=None,
+        actor_user_id=int(owner_user_id),
+        subject_user_id=int(owner_user_id),
+        meta={
+            "reason": "reconciled_payment_activated_feature",
+            "bank_event_id": int(be.id),
+            "expected_payment_id": int(exp.id),
+            "entitlement_id": int(entitlement.id),
+            "feature_code": feature_code,
+            "plan_code": plan_code,
+            "quantity_total": quantity_total,
+            "billing_cycle": billing_cycle,
+            "amount": str(_d(exp.amount)),
+            "currency": str(exp.currency),
+            "reference": str(exp.reference_display),
+            "shop_id": int(shop_id) if shop_id is not None else None,
+            "expires_at": entitlement.expires_at.isoformat()
+            if getattr(entitlement, "expires_at", None)
+            else None,
+        },
+        commit=False,
+        refresh=False,
+    )
+
+    db.add(exp)
+    db.add(entitlement)
+    db.commit()
+    db.refresh(exp)
+    db.refresh(entitlement)
+
+    return {
+        "ok": True,
+        "applied": True,
+        "kind": "feature_subscription",
+        "feature_code": feature_code,
+        "plan_code": plan_code,
+        "entitlement_id": int(entitlement.id),
+        "quantity_total": int(entitlement.quantity_total),
+        "expires_at": entitlement.expires_at.isoformat()
+        if getattr(entitlement, "expires_at", None)
+        else None,
+    }
+
+
 def apply_expected_payment_match(
     db: Session,
     *,
@@ -325,6 +491,13 @@ def apply_expected_payment_match(
 
     if expected_type == "repayment":
         return _apply_repayment(db, be=be, exp=exp)
+
+    if expected_type in {
+        "vault_subscription",
+        "merchant_verify_subscription",
+        "spotlight_subscription",
+    }:
+        return _apply_feature_subscription(db, be=be, exp=exp)
 
     return {
         "ok": True,

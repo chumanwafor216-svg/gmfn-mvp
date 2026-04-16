@@ -440,6 +440,7 @@ export default function ShopControlPage() {
   const [spotlightMessage, setSpotlightMessage] = useState("");
   const [spotlightImageUrl, setSpotlightImageUrl] = useState("");
   const [creatingSpotlight, setCreatingSpotlight] = useState(false);
+  const [spotlightPriorityMode, setSpotlightPriorityMode] = useState<"free" | "paid">("free");
 
   const selectedClanId = Number(getSelectedClanId() || 0);
 
@@ -554,6 +555,29 @@ export default function ShopControlPage() {
 
   useEffect(() => {
     void loadPage();
+
+    const timer = window.setInterval(() => {
+      void loadPage();
+    }, 60000);
+
+    function handleFocusRefresh() {
+      void loadPage();
+    }
+
+    function handleVisibilityRefresh() {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        void loadPage();
+      }
+    }
+
+    window.addEventListener("focus", handleFocusRefresh);
+    document.addEventListener("visibilitychange", handleVisibilityRefresh);
+
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", handleFocusRefresh);
+      document.removeEventListener("visibilitychange", handleVisibilityRefresh);
+    };
   }, [selectedClanId]);
 
   const publicProducts = useMemo(
@@ -586,6 +610,18 @@ export default function ShopControlPage() {
       return parsed.getTime() > now;
     });
   }, [spotlights]);
+
+  const currentActiveSpotlight = useMemo(() => {
+    if (activeSpotlights.length === 0) return null;
+
+    return [...activeSpotlights].sort((a, b) => {
+      const aTime = new Date(safeStr(a?.created_at || "")).getTime();
+      const bTime = new Date(safeStr(b?.created_at || "")).getTime();
+      const safeATime = Number.isFinite(aTime) ? aTime : 0;
+      const safeBTime = Number.isFinite(bTime) ? bTime : 0;
+      return safeBTime - safeATime;
+    })[0];
+  }, [activeSpotlights]);
 
   const publicShopLink = useMemo(() => {
     const gmfnId = firstTruthy(shop?.gmfn_id, me?.gmfn_id);
@@ -707,6 +743,48 @@ export default function ShopControlPage() {
       : latestSpotlightPayment
         ? "Awaiting confirmation"
         : "No payment request";
+
+  const canStartPaidSpotlight = Boolean(
+    safeStr(latestSpotlightPayment?.confirmed_at) && activePaidSpotlights.length === 0
+  );
+
+  const spotlightNextAction = useMemo(() => {
+    if (activePaidSpotlights.length > 0) {
+      return {
+        title: "Wait for the current paid spotlight to conclude",
+        detail:
+          "A paid spotlight is already live for this shop. Keep monitoring the live view until it expires, then start another paid run if needed.",
+      };
+    }
+
+    if (canStartPaidSpotlight) {
+      return {
+        title: "Open spotlight tools and publish the paid run",
+        detail:
+          "Payment has been confirmed. Switch the spotlight composer to paid mode and publish when the message and image are ready.",
+      };
+    }
+
+    if (latestSpotlightPayment) {
+      return {
+        title: "Complete payment and wait for reconciliation",
+        detail:
+          "The paid spotlight entitlement is not active yet. Use the payment reference, then return here after bank reconciliation reaches the backend.",
+      };
+    }
+
+    return {
+      title: "Start a paid spotlight payment request",
+      detail:
+        "Create the payment instruction first. After confirmation, this page will unlock the paid publish path for the shop.",
+    };
+  }, [activePaidSpotlights.length, canStartPaidSpotlight, latestSpotlightPayment]);
+
+  useEffect(() => {
+    if (spotlightPriorityMode === "paid" && !canStartPaidSpotlight) {
+      setSpotlightPriorityMode("free");
+    }
+  }, [canStartPaidSpotlight, spotlightPriorityMode]);
 
   function copyText(text: string, successMessage: string) {
     if (!text) {
@@ -908,16 +986,20 @@ export default function ShopControlPage() {
           shop_id: Number(shop.id),
           message: safeStr(spotlightMessage),
           image_url: safeStr(spotlightImageUrl) || null,
-          priority_mode: "free",
+          priority_mode: spotlightPriorityMode,
           visibility_scope: "direct_communities",
         }),
       });
 
       setSpotlightMessage("");
       setSpotlightImageUrl("");
+      setSpotlightPriorityMode("free");
       setSpotlightOpen(false);
       await loadPage();
-      showNotice("success", "Spotlight created.");
+      showNotice(
+        "success",
+        `${spotlightPriorityMode === "paid" ? "Paid" : "Free"} spotlight created.`
+      );
     } catch (err: any) {
       showNotice(
         "error",
@@ -972,7 +1054,7 @@ export default function ShopControlPage() {
         ]}
         utilityLinks={[
           { label: "Community Home", to: "/app/community" },
-          { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+          { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
         ]}
       />
 
@@ -1014,8 +1096,8 @@ export default function ShopControlPage() {
                 color: "#D7E3F1",
               }}
             >
-              Keep the main control page practical. Picture upload, shop gallery, and asset control
-              should stay visible. Spotlight should remain available, but compact.
+              Keep the main page practical. Picture upload, shop gallery, and asset control
+              should remain visible. Spotlight should remain available, but compact.
             </div>
 
             <div
@@ -1314,6 +1396,29 @@ export default function ShopControlPage() {
               </div>
             ) : null}
             <div style={{ marginTop: 10, ...helperText() }}>{spotlightProofText}</div>
+            <div
+              style={{
+                marginTop: 12,
+                ...innerCard("#FFFFFF"),
+                border: "1px solid rgba(11,31,51,0.08)",
+              }}
+            >
+              <div style={sectionLabel()}>Current next action</div>
+              <div
+                style={{
+                  marginTop: 10,
+                  color: "#0B1F33",
+                  fontSize: 16,
+                  fontWeight: 900,
+                  lineHeight: 1.35,
+                }}
+              >
+                {spotlightNextAction.title}
+              </div>
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                {spotlightNextAction.detail}
+              </div>
+            </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button
                 type="button"
@@ -1380,6 +1485,29 @@ export default function ShopControlPage() {
                   position: "relative",
                 }}
               >
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 14,
+                    right: 14,
+                    zIndex: 2,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    minHeight: 30,
+                    padding: "6px 10px",
+                    borderRadius: 999,
+                    background: "rgba(7,16,28,0.72)",
+                    border: "1px solid rgba(212,175,55,0.22)",
+                    color: "#F6D77A",
+                    fontSize: 11,
+                    fontWeight: 900,
+                    letterSpacing: 0.24,
+                    textTransform: "uppercase",
+                    backdropFilter: "blur(8px)",
+                  }}
+                >
+                  Release preview
+                </div>
                 {safeStr(imageUrlInput) ? (
                   <img
                     src={imageUrlInput}
@@ -1387,6 +1515,8 @@ export default function ShopControlPage() {
                     style={{
                       width: "100%",
                       height: 240,
+                      borderRadius: 16,
+                      border: "1px solid rgba(212,175,55,0.14)",
                       objectFit: "cover",
                       display: "block",
                     }}
@@ -1402,7 +1532,19 @@ export default function ShopControlPage() {
                       lineHeight: 1.35,
                     }}
                   >
-                    Executive shop picture awaiting release
+                    <div>Executive shop picture awaiting release</div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#D7E3F1",
+                        fontSize: 13,
+                        lineHeight: 1.7,
+                        maxWidth: 220,
+                      }}
+                    >
+                      This preview frame shows how the public image shell will look once you save
+                      the picture.
+                    </div>
                   </div>
                 )}
               </div>
@@ -1649,10 +1791,122 @@ export default function ShopControlPage() {
               maxWidth: 860,
             }}
           >
-            Spotlight is still here, but kept tighter so it does not swallow the control page.
+            Spotlight is still here, but kept tighter so it does not take over the main page.
           </div>
 
           <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+            <div
+              style={{
+                ...innerCard("#FCFEFF"),
+                border: "1px solid rgba(11,31,51,0.08)",
+              }}
+            >
+              <div style={sectionLabel()}>Current live spotlight</div>
+              {currentActiveSpotlight ? (
+                <>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      fontSize: 16,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {firstTruthy(currentActiveSpotlight?.message, "Spotlight is active.")}
+                  </div>
+                  <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <span style={badge(true)}>
+                      {firstTruthy(currentActiveSpotlight?.priority_mode, "free")}
+                    </span>
+                    <span style={badge(false)}>
+                      Scope: {firstTruthy(currentActiveSpotlight?.visibility_scope, "direct_communities")}
+                    </span>
+                    <span style={badge(false)}>
+                      {safeStr(currentActiveSpotlight?.expires_at)
+                        ? `Expires: ${safeDateTime(currentActiveSpotlight?.expires_at) || safeStr(currentActiveSpotlight?.expires_at)}`
+                        : "No expiry set"}
+                    </span>
+                  </div>
+                  <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                    This live spotlight remains
+                    visible across the live spotlight pages until it expires or is replaced.
+                  </div>
+                  <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (publicShopLink) {
+                          window.open(publicShopLink, "_blank", "noopener,noreferrer");
+                        }
+                      }}
+                      style={actionBtn("secondary", !publicShopLink)}
+                      disabled={!publicShopLink}
+                    >
+                      Open live shop view
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
+                      style={actionBtn("soft", !publicShopLink)}
+                      disabled={!publicShopLink}
+                    >
+                      Copy live link
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ marginTop: 10, ...helperText() }}>
+                    No active spotlight is live for this shop right now.
+                  </div>
+                  <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                    Use the free publish path below, or confirm a paid spotlight first if you want
+                    priority visibility.
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <button
+                type="button"
+                onClick={() => setSpotlightPriorityMode("free")}
+                style={
+                  spotlightPriorityMode === "free"
+                    ? actionBtn("primary")
+                    : actionBtn("secondary")
+                }
+              >
+                Free spotlight
+              </button>
+              <button
+                type="button"
+                onClick={() => setSpotlightPriorityMode("paid")}
+                disabled={!canStartPaidSpotlight}
+                style={
+                  spotlightPriorityMode === "paid"
+                    ? actionBtn("primary", !canStartPaidSpotlight)
+                    : actionBtn("secondary", !canStartPaidSpotlight)
+                }
+              >
+                Paid spotlight
+              </button>
+              <span style={badge(false)}>
+                Publishing as: {spotlightPriorityMode === "paid" ? "paid priority" : "free"}
+              </span>
+            </div>
+
+            <div style={{ ...helperText(), fontSize: 13 }}>
+              {spotlightPriorityMode === "paid"
+                ? "This publish will use your confirmed paid spotlight entitlement for priority visibility."
+                : canStartPaidSpotlight
+                ? "A paid spotlight is available, but you can still publish a normal free spotlight if you prefer."
+                : safeStr(latestSpotlightPayment?.confirmed_at)
+                ? "A paid spotlight is already active for this shop. Start another one only after the current paid run ends."
+                : "Free spotlight stays available now. Paid spotlight becomes publishable here after payment confirmation reaches the backend."}
+            </div>
+
             <textarea
               value={spotlightMessage}
               onChange={(e) => setSpotlightMessage(e.target.value)}
@@ -1821,3 +2075,6 @@ export default function ShopControlPage() {
     </div>
   );
 }
+
+
+

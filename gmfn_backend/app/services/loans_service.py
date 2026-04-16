@@ -192,11 +192,21 @@ def evaluate_loan_after_guarantor_change(db: Session, *, loan_id: int) -> Loan:
     coverage = _sum_approved_locked(db, loan_id=int(loan_id))
 
     if approved >= required_count and coverage >= required_gap:
-        approve_loan(
-            db=db,
-            loan=loan,
-            decided_by_user_id=int(getattr(loan, "borrower_user_id", 0) or 0),
-        )
+        try:
+            approve_loan(
+                db=db,
+                loan=loan,
+                decided_by_user_id=int(getattr(loan, "borrower_user_id", 0) or 0),
+            )
+        except HTTPException as exc:
+            if exc.status_code not in {400, 500}:
+                raise
+            loan.status = "incomplete"
+            loan.decision_at = _now_utc()
+            db.add(loan)
+            db.commit()
+            db.refresh(loan)
+            return loan
 
         log_trust_event(
             db,

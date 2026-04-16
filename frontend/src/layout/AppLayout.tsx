@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
-import { getMe } from "../lib/api";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { getMe, logout } from "../lib/api";
 import WorkspaceSettingsBridge from "../components/WorkspaceSettingsBridge";
 import WorkspaceCompanionBridge from "../components/WorkspaceCompanionBridge";
 
@@ -37,6 +37,22 @@ function readRole(): string {
       .toLowerCase();
   } catch {
     return "";
+  }
+}
+
+function writeRole(role: string): void {
+  try {
+    if (typeof window === "undefined") return;
+    const next = String(role || "").trim().toLowerCase();
+
+    if (!next) {
+      window.localStorage.removeItem("gmfn_role");
+      return;
+    }
+
+    window.localStorage.setItem("gmfn_role", next);
+  } catch {
+    // ignore storage write issues
   }
 }
 
@@ -114,7 +130,7 @@ function makeSettingsItem(): NavLinkItem {
 
 function makeGuideItem(): NavLinkItem {
   return {
-    label: "My GMFN and I",
+    label: "My GSN and I",
     to: "/app/my-gmfn-and-i",
     match: (pathname, search) =>
       pathname === "/app/my-gmfn-and-i" && !search.includes("tab=settings"),
@@ -129,6 +145,7 @@ function makeAdminItem(): NavLinkItem {
       pathname.startsWith("/app/command-center") ||
       pathname.startsWith("/app/trust-command-centre") ||
       pathname.startsWith("/app/trust-analytics") ||
+      pathname.startsWith("/app/trust-events") ||
       pathname.startsWith("/app/system-operations") ||
       pathname.startsWith("/app/admin/exposure") ||
       pathname.startsWith("/app/admin/trust-graph"),
@@ -181,6 +198,16 @@ function buildLoansItems(): NavLinkItem[] {
   ];
 }
 
+function uniqueNavItems(items: NavLinkItem[]): NavLinkItem[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = `${pathOnly(item.to)}::${item.label}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function getTaskModeMeta(pathname: string): TaskModeMeta | null {
   if (pathname === "/app/demand-box") {
     return {
@@ -228,6 +255,8 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
     pathname === "/app/loan-workbench" ||
     pathname === "/app/guarantor-earnings" ||
     pathname === "/app/payment/pool" ||
+    pathname === "/app/payment-rails" ||
+    pathname === "/app/payout-details" ||
     pathname.startsWith("/app/payment/loans/") ||
     pathname === "/app/withdrawal-instructions"
   ) {
@@ -319,7 +348,7 @@ function getSpecialRouteMeta(
   if (pathname === "/app/my-gmfn-and-i") {
     return {
       section: "Identity",
-      page: "My GMFN and I",
+      page: "My GSN and I",
     };
   }
 
@@ -328,6 +357,13 @@ function getSpecialRouteMeta(
       return {
         section: "Main movement",
         page: "Trust Analytics",
+      };
+    }
+
+    if (pathname.startsWith("/app/command-center/trust-events")) {
+      return {
+        section: "Main movement",
+        page: "Trust Events",
       };
     }
 
@@ -400,7 +436,7 @@ function findCurrentRouteMeta(
   }
 
   return {
-    section: "GMFN / GSN",
+    section: "GSN",
     page: "Workspace",
   };
 }
@@ -411,58 +447,61 @@ function getPageActions(
   myShopGalleryTo: string
 ): NavLinkItem[] {
   if (pathname === "/app/dashboard") {
-    return [
+    return uniqueNavItems([
       makeCommunityItem(),
       makeMarketplaceItem(),
+      { label: "Finance", to: "/app/finance" },
       { label: "Notifications", to: "/app/notifications" },
       { label: "Trust Passport", to: "/app/trust" },
-    ];
+    ]);
   }
 
   if (pathname === "/app/build-first-circle") {
-    return [
+    return uniqueNavItems([
       makeCommunityItem(),
       { label: "Notifications", to: "/app/notifications" },
       makeDashboardItem(),
-      { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
-    ];
+      { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
+    ]);
   }
 
   if (pathname === "/app/shop-control") {
-    return [
+    return uniqueNavItems([
       makeCommunityItem(),
       makeMarketplaceItem(),
       { label: "Shop Gallery", to: myShopGalleryTo },
       makeDashboardItem(),
-    ];
+    ]);
   }
 
   if (pathname.startsWith("/app/community")) {
-    return [
+    return uniqueNavItems([
       makeShopControlItem(),
       { label: "Demand Box", to: "/app/demand-box" },
+      { label: "Finance", to: "/app/finance" },
       { label: "Notifications", to: "/app/notifications" },
       { label: "Money In", to: "/app/payment/pool" },
       { label: "Money Out", to: "/app/withdrawal-instructions" },
-    ];
+    ]);
   }
 
   if (pathname === "/app/marketplace") {
-    return [
+    return uniqueNavItems([
       { label: "Loans & Support", to: "/app/loans" },
       makeShopControlItem(),
+      { label: "Finance", to: "/app/finance" },
       { label: "Notifications", to: "/app/notifications" },
       { label: "Trust", to: "/app/trust" },
-    ];
+    ]);
   }
 
   if (pathname.startsWith("/app/shop/")) {
-    return [
+    return uniqueNavItems([
       makeShopControlItem(),
       makeMarketplaceItem(),
       makeCommunityItem(),
       { label: "Notifications", to: "/app/notifications" },
-    ];
+    ]);
   }
 
   if (
@@ -471,24 +510,28 @@ function getPageActions(
     pathname.startsWith("/app/loan-suggestions") ||
     pathname.startsWith("/app/loan-workbench") ||
     pathname.startsWith("/app/payment") ||
+    pathname.startsWith("/app/payment-rails") ||
+    pathname.startsWith("/app/payout-details") ||
     pathname.startsWith("/app/withdrawal-instructions") ||
     pathname.startsWith("/app/guarantor-earnings")
   ) {
-    return [
+    return uniqueNavItems([
       makeMarketplaceItem(),
       makeCommunityItem(),
+      { label: "Payment Rails", to: "/app/payment-rails" },
+      { label: "Payout Details", to: "/app/payout-details" },
       { label: "Notifications", to: "/app/notifications" },
       makeDashboardItem(),
-    ];
+    ]);
   }
 
   if (pathname.startsWith("/app/notifications")) {
-    return [
+    return uniqueNavItems([
       makeMarketplaceItem(),
       makeCommunityItem(),
       { label: "Loans & Support", to: "/app/loans" },
       { label: "Demand Box", to: "/app/demand-box" },
-    ];
+    ]);
   }
 
   if (
@@ -496,42 +539,47 @@ function getPageActions(
     pathname.startsWith("/app/trust-slip") ||
     pathname.startsWith("/app/identity")
   ) {
-    return [
+    return uniqueNavItems([
       { label: "Notifications", to: "/app/notifications" },
       makeCommunityItem(),
       makeMarketplaceItem(),
-      { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
-    ];
+      { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
+    ]);
   }
 
   if (pathname === "/app/my-gmfn-and-i" && search.includes("tab=settings")) {
-    return [
+    return uniqueNavItems([
       makeDashboardItem(),
       makeCommunityItem(),
       makeMarketplaceItem(),
       { label: "Notifications", to: "/app/notifications" },
-    ];
+    ]);
   }
 
   if (pathname.startsWith("/app/my-gmfn-and-i")) {
-    return [
+    return uniqueNavItems([
       makeCommunityItem(),
       makeMarketplaceItem(),
       { label: "Notifications", to: "/app/notifications" },
       { label: "Trust", to: "/app/trust" },
-    ];
+    ]);
   }
 
   if (pathname.startsWith("/app/command-center")) {
-    return [makeDashboardItem(), makeCommunityItem(), makeMarketplaceItem()];
+    return uniqueNavItems([
+      makeDashboardItem(),
+      makeCommunityItem(),
+      { label: "Trust Events", to: "/app/command-center/trust-events" },
+      makeMarketplaceItem(),
+    ]);
   }
 
-  return [
+  return uniqueNavItems([
     makeCommunityItem(),
     makeMarketplaceItem(),
     { label: "Notifications", to: "/app/notifications" },
     { label: "Loans & Support", to: "/app/loans" },
-  ];
+  ]);
 }
 
 function desktopShell(): React.CSSProperties {
@@ -941,6 +989,7 @@ function bottomNavItem(active = false, disabled = false): React.CSSProperties {
 
 export default function AppLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -950,11 +999,12 @@ export default function AppLayout() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [myGmfnId, setMyGmfnId] = useState<string>("");
+  const [myRole, setMyRole] = useState<string>(() => readRole());
 
   const isAdmin = useMemo(() => {
-    const role = readRole();
+    const role = String(myRole || "").trim().toLowerCase();
     return role === "admin" || role === "superadmin";
-  }, []);
+  }, [myRole]);
 
   useEffect(() => {
     let alive = true;
@@ -964,7 +1014,20 @@ export default function AppLayout() {
       if (!alive) return;
 
       const gmfnId = String(me?.gmfn_id || "").trim();
+      const role = String(
+        me?.role ||
+          me?.account_role ||
+          me?.user_role ||
+          (Array.isArray(me?.permissions) && me.permissions.includes("admin")
+            ? "admin"
+            : "")
+      )
+        .trim()
+        .toLowerCase();
+
       setMyGmfnId(gmfnId);
+      setMyRole(role);
+      writeRole(role);
     })();
 
     return () => {
@@ -1024,7 +1087,7 @@ export default function AppLayout() {
         key: "trust-passport",
         label: "Trust Passport",
         hint:
-          "Trust surfaces stay grouped here instead of competing with the main movement row.",
+          "Trust pages stay grouped here instead of competing with the main movement row.",
         items: trustPassportItems,
       },
       {
@@ -1135,6 +1198,13 @@ export default function AppLayout() {
     setIsActionsOpen(false);
   }
 
+  function handleLogout() {
+    logout();
+    setIsDrawerOpen(false);
+    setIsActionsOpen(false);
+    navigate("/login?force=1", { replace: true });
+  }
+
   const routeMeta = findCurrentRouteMeta(
     location.pathname,
     location.search,
@@ -1216,7 +1286,7 @@ export default function AppLayout() {
             style={{ textDecoration: "none", color: "inherit" }}
           >
             <div style={brandCard()}>
-              <div style={brandEyebrow()}>GMFN / GSN</div>
+              <div style={brandEyebrow()}>GSN</div>
               <div style={brandTitle()}>Member workspace</div>
               <div style={brandText()}>
                 A guided, calmer workspace for community movement, marketplace,
@@ -1290,6 +1360,20 @@ export default function AppLayout() {
               );
             })}
           </nav>
+
+          <div style={{ marginTop: "auto", paddingTop: 16 }}>
+            <button
+              type="button"
+              onClick={handleLogout}
+              style={groupHeader(false)}
+            >
+              <span>Log out</span>
+              <span style={{ fontSize: 16, lineHeight: 1 }}>&rarr;</span>
+            </button>
+            <div style={groupHint()}>
+              Leave the workspace cleanly and return to the sign-in screen.
+            </div>
+          </div>
         </aside>
       ) : (
         <>
@@ -1300,7 +1384,7 @@ export default function AppLayout() {
               aria-label="Open navigation"
               style={mobileIconButton()}
             >
-              ☰
+              ?
             </button>
 
             <div style={mobileTopMeta()}>
@@ -1314,7 +1398,7 @@ export default function AppLayout() {
               aria-label="Open page actions"
               style={mobileIconButton()}
             >
-              ⋯
+              ?
             </button>
           </header>
 
@@ -1323,7 +1407,7 @@ export default function AppLayout() {
           <aside style={drawerPanel(isDrawerOpen)} aria-hidden={!isDrawerOpen}>
             <div style={drawerHeader()}>
               <div>
-                <div style={brandEyebrow()}>GMFN / GSN</div>
+                <div style={brandEyebrow()}>GSN</div>
                 <div style={{ marginTop: 6, fontSize: 18, fontWeight: 900 }}>
                   Navigation
                 </div>
@@ -1335,7 +1419,7 @@ export default function AppLayout() {
                 aria-label="Close navigation"
                 style={overlayCloseButton(true)}
               >
-                ×
+                �
               </button>
             </div>
 
@@ -1349,7 +1433,7 @@ export default function AppLayout() {
               <div style={brandText()}>
                 {taskMode
                   ? taskMode.hint
-                  : "The main routes stay simple. This drawer holds the grouped supporting surfaces."}
+                  : "The main routes stay simple. This drawer holds the grouped supporting pages."}
               </div>
             </div>
 
@@ -1373,6 +1457,17 @@ export default function AppLayout() {
                 </div>
               </div>
             ))}
+
+            <div style={{ marginTop: 18 }}>
+              <div style={drawerSectionTitle()}>Session</div>
+              <button
+                type="button"
+                onClick={handleLogout}
+                style={drawerLink(false, false)}
+              >
+                Log out
+              </button>
+            </div>
           </aside>
 
           <div
@@ -1412,7 +1507,7 @@ export default function AppLayout() {
                 aria-label="Close page actions"
                 style={overlayCloseButton(false)}
               >
-                ×
+                �
               </button>
             </div>
 
@@ -1442,6 +1537,13 @@ export default function AppLayout() {
                   {item.label}
                 </Link>
               ))}
+              <button
+                type="button"
+                onClick={handleLogout}
+                style={actionsLink(false, false)}
+              >
+                Log out
+              </button>
             </div>
           </div>
         </>
@@ -1472,3 +1574,5 @@ export default function AppLayout() {
     </div>
   );
 }
+
+

@@ -647,6 +647,55 @@ function documentMetaCard(bg = "#F7FAFC"): React.CSSProperties {
   };
 }
 
+function documentFrameStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    overflow: "hidden",
+    border: "1px solid rgba(148,163,184,0.2)",
+    boxShadow:
+      "0 22px 58px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.08)",
+  };
+}
+
+function documentWatermarkStyle(): React.CSSProperties {
+  return {
+    position: "absolute",
+    top: 18,
+    right: -18,
+    transform: "rotate(-90deg)",
+    transformOrigin: "top right",
+    letterSpacing: 3.1,
+    fontSize: 11,
+    fontWeight: 900,
+    color: "rgba(215,227,241,0.2)",
+    pointerEvents: "none",
+    textTransform: "uppercase",
+  };
+}
+
+function documentFooterGrid(isCompact: boolean): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 1,
+    marginTop: 18,
+    paddingTop: 14,
+    borderTop: "1px solid rgba(215,227,241,0.16)",
+    display: "grid",
+    gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+    gap: 12,
+  };
+}
+
+function documentFooterLabel(): React.CSSProperties {
+  return {
+    fontSize: 11,
+    letterSpacing: 0.28,
+    fontWeight: 900,
+    textTransform: "uppercase",
+    color: "#AFC4D9",
+  };
+}
+
 function readLocalJSON<T>(key: string, fallback: T): T {
   try {
     if (typeof window === "undefined") return fallback;
@@ -937,7 +986,7 @@ export default function TrustScorePage() {
         currentClan?.title,
         matchedClan?.marketplace_name,
         matchedClan?.name
-      ) || (selectedClanId ? `Community ${selectedClanId}` : "No selected community")
+      ) || (selectedClanId ? `Community ${selectedClanId}` : "No current community")
     );
   }, [trustSlipSummary, currentClan, matchedClan, selectedClanId]);
   const communityCode = useMemo(() => {
@@ -1108,7 +1157,7 @@ export default function TrustScorePage() {
             { label: "Notifications", to: "/app/notifications" },
             { label: "Marketplace", to: "/app/marketplace" },
           ]}
-          utilityLinks={[{ label: "My GMFN and I", to: "/app/my-gmfn-and-i" }]}
+          utilityLinks={[{ label: "My GSN and I", to: "/app/my-gmfn-and-i" }]}
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -1131,36 +1180,66 @@ export default function TrustScorePage() {
       }}
     >
       <style>{`
+        @page { margin: 14mm; }
         @media print {
           body { background: #ffffff !important; }
           a[href]:after { content: "" !important; }
           button { display: none !important; }
+          .print-trust-nav { display: none !important; }
+          .print-trust-document,
+          .print-trust-support {
+            box-shadow: none !important;
+            border: 1px solid rgba(148,163,184,0.34) !important;
+            background: #ffffff !important;
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+          .print-trust-document {
+            color: #0b1f33 !important;
+          }
+          .print-trust-document * {
+            color: inherit;
+          }
+          .print-trust-document .print-watermark {
+            color: rgba(11,31,51,0.08) !important;
+          }
         }
       `}</style>
-      <PageTopNav
-        sectionLabel="Trust Passport"
-        title="Trust Passport"
-        subtitle="Trust Passport shows the current trust reading, why it changed, what evidence supports it, and what this unlocks next."
-        homeTo="/app/dashboard"
-        homeLabel="Dashboard"
-        backTo="/app/dashboard"
-        nextLinks={[
-          { label: "TrustSlip", to: "/app/trust-slip" },
-          { label: "Notifications", to: "/app/notifications" },
-          { label: "Marketplace", to: "/app/marketplace" },
-        ]}
-        utilityLinks={[{ label: "My GMFN and I", to: "/app/my-gmfn-and-i" }]}
-      />
+      <div className="print-trust-nav">
+        <PageTopNav
+          sectionLabel="Trust Passport"
+          title="Trust Passport"
+          subtitle="Trust Passport shows the current trust reading, why it changed, what evidence supports it, and what this unlocks next."
+          homeTo="/app/dashboard"
+          homeLabel="Dashboard"
+          backTo="/app/dashboard"
+          nextLinks={[
+            { label: "TrustSlip", to: "/app/trust-slip" },
+            { label: "Notifications", to: "/app/notifications" },
+            { label: "Marketplace", to: "/app/marketplace" },
+          ]}
+          utilityLinks={[{ label: "My GSN and I", to: "/app/my-gmfn-and-i" }]}
+        />
+      </div>
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
-        style={pageCard(
-          "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
-        )}
+        className="print-trust-document"
+        style={{
+          ...pageCard(
+            "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+          ),
+          ...documentFrameStyle(),
+        }}
       >
+        <div className="print-watermark" aria-hidden style={documentWatermarkStyle()}>
+          GSN Trust Passport
+        </div>
         <div
           style={{
+            position: "relative",
+            zIndex: 1,
             display: "grid",
             gridTemplateColumns: isCompact
               ? "1fr"
@@ -1170,6 +1249,11 @@ export default function TrustScorePage() {
           }}
         >
           <div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <span style={badge(true)}>Issued trust passport</span>
+              <span style={badge(false)}>Explanatory trust record</span>
+            </div>
+
             <div style={sectionLabel()}>Trust passport overview</div>
 
             <div
@@ -1192,7 +1276,7 @@ export default function TrustScorePage() {
                 maxWidth: 860,
               }}
             >
-              This page shows the current trust reading, what changed it, the recent events behind it, and the evidence context around exposure and capacity.
+              This shows the current trust reading, what changed it, the recent events behind it, and the evidence context around exposure and capacity.
             </div>
 
             <div
@@ -1318,7 +1402,7 @@ export default function TrustScorePage() {
               <div style={documentMetaCard("#FFFFFF")}>
                 <div style={sectionLabel()}>Document reference</div>
                 <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                  GMFN ID: {gmfnId || "Awaiting issue"}
+                  GSN ID: {gmfnId || "Awaiting issue"}
                 </div>
                 <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
                   Verification code: {safeStr(trustSlipSummary?.verification_code || "Not stated")}
@@ -1334,6 +1418,38 @@ export default function TrustScorePage() {
                   Expires: {safeDateTime(trustSlipSummary?.expires_at) || "Not stated"}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={documentFooterGrid(isCompact)}>
+          <div>
+            <div style={documentFooterLabel()}>Issue and expiry</div>
+            <div style={{ marginTop: 6, ...helperText(), color: "#D7E3F1" }}>
+              Issued: {safeDateTime(trustSlipSummary?.issued_at) || "Not stated"}
+            </div>
+            <div style={{ marginTop: 4, ...helperText(), color: "#D7E3F1" }}>
+              Expires: {safeDateTime(trustSlipSummary?.expires_at) || "Not stated"}
+            </div>
+          </div>
+
+          <div>
+            <div style={documentFooterLabel()}>Reference control</div>
+            <div style={{ marginTop: 6, ...helperText(), color: "#D7E3F1" }}>
+              GSN ID: {gmfnId || "Awaiting issue"}
+            </div>
+            <div style={{ marginTop: 4, ...helperText(), color: "#D7E3F1" }}>
+              Verification code: {safeStr(trustSlipSummary?.verification_code || "Not stated")}
+            </div>
+          </div>
+
+          <div>
+            <div style={documentFooterLabel()}>Institutional note</div>
+            <div style={{ marginTop: 6, ...helperText(), color: "#D7E3F1" }}>
+              {safeStr(
+                trustSlipSummary?.disclaimer ||
+                  "Trust Passport explains the current trust reading and the evidence context behind it."
+              )}
             </div>
           </div>
         </div>
@@ -1900,7 +2016,7 @@ export default function TrustScorePage() {
                 <div style={helperText()}>
                   Disclaimer: {safeStr(
                     trustSlipSummary?.disclaimer ||
-                      "TrustSlip is a portable summary derived from GMFN trust history."
+                      "TrustSlip is a portable summary derived from GSN trust history."
                   )}
                 </div>
                 <div style={helperText()}>
@@ -1982,7 +2098,7 @@ export default function TrustScorePage() {
             </OriginLink>
 
             <OriginLink to="/app/my-gmfn-and-i" style={actionBtn("secondary")}>
-              My GMFN and I
+              My GSN and I
             </OriginLink>
           </div>
         ) : null}
@@ -1990,3 +2106,6 @@ export default function TrustScorePage() {
     </div>
   );
 }
+
+
+

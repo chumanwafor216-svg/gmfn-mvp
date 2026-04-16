@@ -515,7 +515,7 @@ export default function MarketplaceWorkspacePage() {
   function copyShopViewMessage() {
     const title = safeStr(communityName || "this community");
     const text = [
-      `Take a look at shops visible from ${title}.`,
+      `Take a look at shops visible in ${title}.`,
       shopViewLink || "(shop view link unavailable)",
       `Guide: ${guideUrl}`,
     ]
@@ -531,7 +531,7 @@ export default function MarketplaceWorkspacePage() {
       member?.gmfn_id || member?.member_gmfn_id || member?.user?.gmfn_id
     );
     if (!gmfnId) {
-      setMsg("This member does not yet have a visible GMFN shop identity.");
+      setMsg("This member does not yet have a visible shop identity.");
       return;
     }
     navigateWithOrigin(navigate, `/app/shop/${encodeURIComponent(gmfnId)}`, location);
@@ -658,7 +658,7 @@ export default function MarketplaceWorkspacePage() {
               }}
             >
               {communityDescription ||
-                "This is the dedicated page for this one community. Its invite links, money and support routes, demand, spotlight, and member-to-shop mapping should stay clear here."}
+                "This keeps one community's invite links, money and support routes, demand, spotlight, and member-to-shop mapping clear."}
             </div>
 
             <div
@@ -907,7 +907,7 @@ export default function MarketplaceWorkspacePage() {
                   lineHeight: 1.7,
                 }}
               >
-                Share the viewing link for this community’s shop-facing surface.
+                Share the viewing link for this community's shop-facing page.
               </div>
 
               <div
@@ -1046,7 +1046,8 @@ export default function MarketplaceWorkspacePage() {
             Some private community blocks require sign-in
           </div>
           <div style={{ marginTop: 8, color: "#475569", lineHeight: 1.8 }}>
-            Invite details are visible here, but full alerts and member mapping may
+            Invite details are visible here, but full alerts and member mapping
+            may
             require signed-in community access.
           </div>
         </div>
@@ -1249,3 +1250,9 @@ export default function MarketplaceWorkspacePage() {
     </div>
   );
 }
+
+
+
+
+
+

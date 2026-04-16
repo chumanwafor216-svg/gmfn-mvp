@@ -567,9 +567,9 @@ export default function GuarantorInboxPage() {
   }>(() => {
     if (!selectedClanId) {
       return {
-        title: "Choose the community context first.",
+        title: "Choose the community first.",
         detail:
-          "Incoming guarantor requests should stay tied to the selected community before you act on them.",
+          "Incoming guarantor requests make more sense when they stay tied to your current community.",
         ctaLabel: "Open Community Home",
         ctaTo: "/app/community",
       };
@@ -582,7 +582,7 @@ export default function GuarantorInboxPage() {
             ? "One guarantor request is waiting on you."
             : `${counts.pending} guarantor requests are waiting on you.`,
         detail:
-          "This queue is only the intake surface. Once you choose to continue, the deeper workbench should take over instead of leaving you halfway between routes.",
+          "This queue is only the intake page. Once you choose to continue, the deeper workbench should take over instead of leaving you halfway between routes.",
         ctaLabel: "Open Loan Workbench",
         ctaTo: "/app/loan-workbench",
       };
@@ -592,7 +592,7 @@ export default function GuarantorInboxPage() {
       return {
         title: "Approved guarantor responses are visible.",
         detail:
-          "The next move is usually to continue the broader support path rather than staying only in the queue.",
+          "The next move is usually to continue the broader support flow rather than staying only in the queue.",
         ctaLabel: "Return to Loans & Support",
         ctaTo: "/app/loans",
       };
@@ -638,7 +638,7 @@ export default function GuarantorInboxPage() {
       <PageTopNav
         sectionLabel="Incoming Guarantor Requests"
         title="Incoming Guarantor Requests"
-        subtitle="Review requests that need your guarantor response inside the current community context."
+        subtitle="Review requests that need your guarantor response in your current community."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/loans"
@@ -686,7 +686,7 @@ export default function GuarantorInboxPage() {
             </div>
 
             <div style={{ marginTop: 10, ...helperText(), maxWidth: 860 }}>
-              This page is the incoming queue surface for guarantor requests. Once
+              This incoming queue gathers guarantor requests. Once
               a request is chosen, the deeper support workbench should take over
               instead of leaving the person inside a loose queue.
             </div>
@@ -934,7 +934,7 @@ export default function GuarantorInboxPage() {
           <div>
             <div style={sectionLabel()}>Filter and queue</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Filter the queue, then continue from the right support page.
+              Filter the queue, then continue into the page you need.
             </div>
           </div>
 
@@ -1128,7 +1128,7 @@ export default function GuarantorInboxPage() {
               </div>
               <div style={{ marginTop: 10, ...helperText() }}>
                 This queue is where incoming guarantor decisions first become visible.
-                It is not the final support surface. Once you choose a request,
+                It is not the final step. Once you choose a request,
                 the deeper workbench should take over.
               </div>
             </div>
@@ -1144,8 +1144,8 @@ export default function GuarantorInboxPage() {
                 What to avoid
               </div>
               <div style={{ marginTop: 10, ...helperText() }}>
-                Do not leave the person stuck in a queue-only experience. The queue
-                should lead into the correct support path, then return to the broader
+                Do not leave the person stuck only in the queue. The queue
+                should lead into the right support flow, then return to the broader
                 app only after the current decision is properly handled.
               </div>
             </div>
@@ -1166,7 +1166,7 @@ export default function GuarantorInboxPage() {
           <div>
             <div style={sectionLabel()}>Next routes</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Move from queue reading into the exact next page you need.
+              Move from queue reading into the next page you need.
             </div>
           </div>
 
@@ -1216,7 +1216,7 @@ export default function GuarantorInboxPage() {
                 Loan Workbench
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when you are continuing the deeper support decision path.
+                Open this when you are continuing the deeper support decision.
               </div>
             </OriginLink>
 
@@ -1232,7 +1232,7 @@ export default function GuarantorInboxPage() {
                 Loan Suggestions
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the next question is candidate fit rather than queue state.
+                Open this when the next question is candidate fit rather than queue state.
               </div>
             </OriginLink>
 
@@ -1264,7 +1264,7 @@ export default function GuarantorInboxPage() {
                 Marketplace
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Return to the selected-community launcher surface only after the current queue reading is complete.
+                Return to Marketplace only after the current queue reading is complete.
               </div>
             </OriginLink>
 
@@ -1280,7 +1280,7 @@ export default function GuarantorInboxPage() {
                 Action Inbox
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the broader notification picture matters around the support decision.
+                Open this when the broader notification picture matters around the support decision.
               </div>
             </OriginLink>
           </div>
@@ -1289,3 +1289,5 @@ export default function GuarantorInboxPage() {
     </div>
   );
 }
+
+

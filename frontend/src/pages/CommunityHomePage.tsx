@@ -11,11 +11,17 @@ import {
   getMe,
   getPoolMe,
   getSelectedClanId,
+  listMarketplaceRequests,
   listMyClans,
+  listExpectedPayments,
   safeCopy,
   selectClan,
   uploadMarketplaceImageFile,
 } from "../lib/api";
+import {
+  getCommunityMoneySurface,
+  type CommunityMoneySurface,
+} from "../lib/communityMoney";
 import {
   buildInviteBundle,
   getFirstCircleProgress,
@@ -63,6 +69,41 @@ type SpotlightDraftState = {
   expiry: string;
 };
 
+type ActiveCommunitySpotlight = {
+  id?: number;
+  message: string;
+  imageUrl: string;
+  expiresAt: string;
+  createdAt: string;
+};
+
+type DemandRow = {
+  id?: number;
+  title?: string | null;
+  description?: string | null;
+  urgency?: string | null;
+  status?: string | null;
+  created_at?: string | null;
+  area?: string | null;
+  requester_gmfn_id?: string | null;
+  requester_email?: string | null;
+  is_mine?: boolean;
+  mine?: boolean;
+};
+
+type ExpectedPaymentRecord = {
+  id?: number | null;
+  expected_type?: string | null;
+  amount?: string | null;
+  currency?: string | null;
+  reference_display?: string | null;
+  status?: string | null;
+  status_reason?: string | null;
+  due_at?: string | null;
+  matched_bank_event_id?: number | null;
+  confirmed_at?: string | null;
+};
+
 const COMMUNITY_HOME_COLLAPSE_KEY = "gmfn.communityHome.sections.v1";
 const SPOTLIGHT_DRAFT_PREFIX = "gmfn.communityHome.spotlightDraft.";
 
@@ -76,6 +117,15 @@ function firstTruthy(...values: any[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function rowsOf<T = any>(input: any): T[] {
+  if (Array.isArray(input)) return input as T[];
+  if (Array.isArray(input?.items)) return input.items as T[];
+  if (Array.isArray(input?.data?.items)) return input.data.items as T[];
+  if (Array.isArray(input?.results)) return input.results as T[];
+  if (Array.isArray(input?.rows)) return input.rows as T[];
+  return [];
 }
 
 function getClanId(clan: ClanItem | null | undefined): number {
@@ -189,8 +239,8 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
+    background: primary ? "rgba(29,78,216,0.08)" : "rgba(100,116,139,0.10)",
+    color: primary ? "#1D4ED8" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "nowrap",
@@ -210,7 +260,7 @@ function actionBtn(
       padding: "10px 14px",
       borderRadius: 14,
       border: "none",
-      background: disabled ? "#CBD5E1" : "#0B63D1",
+      background: disabled ? "#CBD5E1" : "#1D4ED8",
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
@@ -229,9 +279,9 @@ function actionBtn(
       minHeight: 38,
       padding: "8px 12px",
       borderRadius: 12,
-      border: "1px solid rgba(11,31,51,0.08)",
-      background: "#F8FBFF",
-      color: disabled ? "#94A3B8" : "#24415C",
+      border: "1px solid rgba(29,78,216,0.10)",
+      background: "#F5FAFF",
+      color: disabled ? "#94A3B8" : "#1E4063",
       fontWeight: 800,
       fontSize: 13,
       textDecoration: "none",
@@ -248,8 +298,8 @@ function actionBtn(
     minHeight: 42,
     padding: "10px 14px",
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(11,99,209,0.12)",
+    background: "#FDFEFF",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
@@ -268,9 +318,9 @@ function collapseToggle(): React.CSSProperties {
     minHeight: 38,
     padding: "8px 12px",
     borderRadius: 12,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
-    color: "#24415C",
+    border: "1px solid rgba(11,99,209,0.12)",
+    background: "#FDFEFF",
+    color: "#1E4063",
     fontWeight: 800,
     fontSize: 13,
     cursor: "pointer",
@@ -320,7 +370,7 @@ function previewMediaBox(): React.CSSProperties {
     minHeight: 220,
     borderRadius: 22,
     border: "1px solid rgba(212,175,55,0.16)",
-    background: "linear-gradient(180deg, #0A1625 0%, #11263B 56%, #193A58 100%)",
+    background: "linear-gradient(180deg, #15314C 0%, #21496C 56%, #2B5E88 100%)",
     overflow: "hidden",
     display: "flex",
     alignItems: "center",
@@ -366,6 +416,54 @@ function getInviteUrl(payload: any): string {
     payload?.link,
     payload?.invite_link
   );
+}
+
+function demandUrgencyLabel(value?: string | null): string {
+  const urgency = safeStr(value).toLowerCase();
+  if (urgency === "high") return "Urgent";
+  if (urgency === "low") return "Low pressure";
+  return "Normal";
+}
+
+function safeDateTime(value: any): string {
+  const raw = safeStr(value);
+  if (!raw) return "";
+  const d = new Date(raw);
+  if (!Number.isFinite(d.getTime())) return raw;
+  return d.toLocaleString();
+}
+
+function isMineDemandRow(row: DemandRow, me: any): boolean {
+  if (row?.is_mine === true || row?.mine === true) return true;
+
+  const myGmfnId = safeStr(me?.gmfn_id).toUpperCase();
+  const rowGmfnId = safeStr(row?.requester_gmfn_id).toUpperCase();
+  if (myGmfnId && rowGmfnId && myGmfnId === rowGmfnId) return true;
+
+  const myEmail = safeStr(me?.email).toLowerCase();
+  const rowEmail = safeStr(row?.requester_email).toLowerCase();
+  return Boolean(myEmail && rowEmail && myEmail === rowEmail);
+}
+
+function expectedPaymentState(item: ExpectedPaymentRecord): string {
+  if (safeStr(item.confirmed_at)) return "Confirmed";
+  if (item.matched_bank_event_id) return "Matched";
+  if (safeStr(item.reference_display)) return "Awaiting reconciliation";
+  return "Awaiting issue";
+}
+
+function expectedPaymentNextAction(item: ExpectedPaymentRecord): string {
+  const state = expectedPaymentState(item);
+  if (state === "Confirmed") {
+    return "Use the unlocked money route or dependent feature.";
+  }
+  if (state === "Matched") {
+    return "Wait for reconciliation to finish and confirmation to post.";
+  }
+  if (state === "Awaiting reconciliation") {
+    return "Pay with the exact reference, then wait for the bank match.";
+  }
+  return "Generate or refresh the instruction so a usable reference can be issued.";
 }
 
 function readLocalJSON<T>(key: string, fallback: T): T {
@@ -452,7 +550,21 @@ export default function CommunityHomePage() {
   );
   const [spotlightPreviewUrl, setSpotlightPreviewUrl] = useState("");
   const [spotlightFileInputKey, setSpotlightFileInputKey] = useState(0);
+  const [activeCommunitySpotlight, setActiveCommunitySpotlight] =
+    useState<ActiveCommunitySpotlight | null>(null);
+  const [activeCommunitySpotlightLoading, setActiveCommunitySpotlightLoading] =
+    useState(false);
+  const [activeCommunitySpotlightSyncIssue, setActiveCommunitySpotlightSyncIssue] =
+    useState("");
   const [publishingSpotlight, setPublishingSpotlight] = useState(false);
+  const [moneySurface, setMoneySurface] = useState<CommunityMoneySurface | null>(null);
+  const [expectedPayments, setExpectedPayments] = useState<ExpectedPaymentRecord[]>([]);
+  const [financeLoading, setFinanceLoading] = useState(false);
+  const [financeSyncIssue, setFinanceSyncIssue] = useState("");
+  const [myOpenDemands, setMyOpenDemands] = useState<DemandRow[]>([]);
+  const [visibleDemands, setVisibleDemands] = useState<DemandRow[]>([]);
+  const [demandLoading, setDemandLoading] = useState(false);
+  const [demandSyncIssue, setDemandSyncIssue] = useState("");
 
   const [firstCircleDraft, setFirstCircleDraft] = useState(() =>
     loadFirstCircleDraft()
@@ -603,6 +715,136 @@ export default function CommunityHomePage() {
   }, [selectedClan]);
 
   useEffect(() => {
+    let alive = true;
+
+    const clanId = getClanId(selectedClan);
+
+    if (!clanId) {
+      setMyOpenDemands([]);
+      setVisibleDemands([]);
+      setDemandSyncIssue("");
+      setDemandLoading(false);
+      return;
+    }
+
+    (async () => {
+      setDemandLoading(true);
+
+      try {
+        const [myRes, visibleRes] = await Promise.all([
+          listMarketplaceRequests({
+            clan_id: clanId,
+            mine_only: true,
+            status: "open",
+            limit: 20,
+          }).catch((err) => ({
+            items: [],
+            __failed: String(err?.message || err || "My demand refresh failed."),
+          })),
+          listMarketplaceRequests({
+            clan_id: clanId,
+            mine_only: false,
+            status: "open",
+            limit: 20,
+          }).catch((err) => ({
+            items: [],
+            __failed: String(
+              err?.message || err || "Visible demand refresh failed."
+            ),
+          })),
+        ]);
+
+        if (!alive) return;
+
+        const myRows = rowsOf<DemandRow>(myRes).sort((a, b) =>
+          safeStr(b?.created_at).localeCompare(safeStr(a?.created_at))
+        );
+        const visibleRows = rowsOf<DemandRow>(visibleRes)
+          .filter((row) => !isMineDemandRow(row, me))
+          .sort((a, b) =>
+            safeStr(b?.created_at).localeCompare(safeStr(a?.created_at))
+          );
+
+        setMyOpenDemands(myRows);
+        setVisibleDemands(visibleRows);
+        setDemandSyncIssue(
+          [safeStr((myRes as any)?.__failed), safeStr((visibleRes as any)?.__failed)]
+            .filter(Boolean)
+            .join(" ")
+        );
+      } finally {
+        if (alive) {
+          setDemandLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [selectedClan, me]);
+
+  useEffect(() => {
+    let alive = true;
+
+    const clanId = getClanId(selectedClan);
+    const gmfnId = safeStr(me?.gmfn_id);
+
+    if (!clanId || !gmfnId) {
+      setMoneySurface(null);
+      setExpectedPayments([]);
+      setFinanceSyncIssue("");
+      setFinanceLoading(false);
+      return;
+    }
+
+    (async () => {
+      setFinanceLoading(true);
+
+      try {
+        const [surfaceRes, expectedRes] = await Promise.all([
+          getCommunityMoneySurface(clanId, gmfnId, "NGN").catch((err) => ({
+            __failed: String(err?.message || err || "Finance page refresh failed."),
+          })),
+          listExpectedPayments({ clan_id: clanId, limit: 30 }).catch((err) => ({
+            items: [],
+            __failed: String(err?.message || err || "Expected payment refresh failed."),
+          })),
+        ]);
+
+        if (!alive) return;
+
+        const nextSurface =
+          surfaceRes && !("__failed" in (surfaceRes as any))
+            ? (surfaceRes as CommunityMoneySurface)
+            : null;
+        const nextExpectedPayments = rowsOf<ExpectedPaymentRecord>(expectedRes).filter(
+          (item) => !["applied", "cancelled", "expired"].includes(safeStr(item?.status).toLowerCase())
+        );
+
+        setMoneySurface(nextSurface);
+        setExpectedPayments(nextExpectedPayments);
+        setFinanceSyncIssue(
+          [
+            safeStr((surfaceRes as any)?.__failed),
+            safeStr((expectedRes as any)?.__failed),
+          ]
+            .filter(Boolean)
+            .join(" ")
+        );
+      } finally {
+        if (alive) {
+          setFinanceLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [selectedClan, me]);
+
+  useEffect(() => {
     const clanId = getClanId(selectedClan);
     if (!clanId) {
       setSpotlightDescription("");
@@ -656,6 +898,100 @@ export default function CommunityHomePage() {
     return [...clans].sort((a, b) => getClanName(a).localeCompare(getClanName(b)));
   }, [clans]);
 
+  const urgentDemandCount = useMemo(() => {
+    return [...myOpenDemands, ...visibleDemands].filter(
+      (row) => safeStr(row?.urgency).toLowerCase() === "high"
+    ).length;
+  }, [myOpenDemands, visibleDemands]);
+
+  const demandPreviewRows = useMemo(() => {
+    return [...myOpenDemands, ...visibleDemands]
+      .sort((a, b) => safeStr(b?.created_at).localeCompare(safeStr(a?.created_at)))
+      .slice(0, 3);
+  }, [myOpenDemands, visibleDemands]);
+
+  const demandNextAction = useMemo(() => {
+    if (!selectedClanId) {
+      return {
+        title: "Select a community before managing demand",
+        detail:
+          "Demand belongs to a real community. Choose your active community first, then create or review live need signals here.",
+      };
+    }
+
+    if (urgentDemandCount > 0) {
+      return {
+        title: "Review urgent demand before it drifts",
+        detail:
+          "Urgent need signals are already live in this community. Open Demand Box or Action Inbox and decide the next clean follow-up.",
+      };
+    }
+
+    if (myOpenDemands.length > 0) {
+      return {
+        title: "Keep your open demand current",
+        detail:
+          "You already have live demand in this community. Review it, update it, or close it cleanly so notices and visibility stay credible.",
+      };
+    }
+
+    return {
+      title: "Create the next real demand from Community Home",
+      detail:
+        "Start the next real demand here, then continue in Demand Box when you want the fuller follow-up view.",
+    };
+  }, [selectedClanId, urgentDemandCount, myOpenDemands.length]);
+
+  const activeExpectedPayments = useMemo(() => {
+    return expectedPayments;
+  }, [expectedPayments]);
+
+  const pendingFinanceCount = useMemo(() => {
+    return activeExpectedPayments.filter((item) => {
+      const state = expectedPaymentState(item);
+      return state === "Matched" || state === "Awaiting reconciliation";
+    }).length;
+  }, [activeExpectedPayments]);
+
+  const financePreviewPayments = useMemo(() => {
+    return activeExpectedPayments
+      .slice()
+      .sort((a, b) => safeStr(b?.due_at).localeCompare(safeStr(a?.due_at)))
+      .slice(0, 3);
+  }, [activeExpectedPayments]);
+
+  const financeNextAction = useMemo(() => {
+    if (!selectedClanId) {
+      return {
+        title: "Select a community before reviewing the finance file",
+        detail:
+          "Choose your community first, then review pool position, references, and payment follow-through here.",
+      };
+    }
+
+    if (pendingFinanceCount > 0) {
+    return {
+      title: "Reconciliation is waiting inside the finance record",
+      detail:
+        "One or more expected payments are still waiting for confirmation or bank match. Open Finance and review the live record before moving on.",
+    };
+  }
+
+    if (moneySurface?.pendingWithdrawals && safeStr(moneySurface.pendingWithdrawals) !== "0.00") {
+      return {
+        title: "A money-out record is already open",
+        detail:
+          "Withdrawal movement is already visible in the community finance file. Review the current record and destination details before opening another page.",
+      };
+    }
+
+    return {
+      title: "Community Home holds the live finance file",
+      detail:
+        "Review the current money record here first, then open Finance when you need the deeper event history and fuller finance page.",
+    };
+  }, [selectedClanId, pendingFinanceCount, moneySurface]);
+
   const firstCircleProgress = useMemo(
     () => getFirstCircleProgress(firstCircleDraft),
     [firstCircleDraft]
@@ -670,6 +1006,131 @@ export default function CommunityHomePage() {
   const firstCircleRelationshipHints = useMemo(() => {
     return getSuggestedRelationshipsForRole(firstCircleDraft.memberRole);
   }, [firstCircleDraft.memberRole]);
+
+  const communitySpotlightNextAction = useMemo(() => {
+    const hasDraft =
+      Boolean(safeStr(spotlightDescription)) ||
+      Boolean(safeStr(spotlightTagNumber)) ||
+      Boolean(safeStr(spotlightExpiry)) ||
+      Boolean(spotlightImageFile);
+
+    if (activeCommunitySpotlight) {
+      return {
+        title: "Keep the live spotlight visible or replace it deliberately",
+        detail: activeCommunitySpotlight.expiresAt
+          ? "A spotlight is already active for this community. Let it run until expiry unless there is a real reason to replace the current live item."
+          : "A spotlight is already active without an expiry. Replace it only when you are ready for the new image and message to become the live community signal.",
+      };
+    }
+
+    if (hasDraft) {
+      return {
+        title: "Publish the prepared spotlight when the message is ready",
+        detail:
+          "Your draft is already in progress. Review the preview carefully, then publish so the live community spotlight state updates from backend truth.",
+      };
+    }
+
+    return {
+      title: "Prepare a spotlight draft first",
+      detail:
+        "Add the description, optional expiry, and image here. Once the draft looks right, publish it so the live state can appear below.",
+    };
+  }, [
+    activeCommunitySpotlight,
+    spotlightDescription,
+    spotlightTagNumber,
+    spotlightExpiry,
+    spotlightImageFile,
+  ]);
+
+  async function refreshActiveCommunitySpotlight(clanId: number) {
+    if (!clanId) {
+      setActiveCommunitySpotlight(null);
+      setActiveCommunitySpotlightLoading(false);
+      setActiveCommunitySpotlightSyncIssue("");
+      return;
+    }
+
+    setActiveCommunitySpotlightLoading(true);
+
+    try {
+      const res = await getMarketplaceBroadcasts({
+        clan_id: clanId,
+        active_only: true,
+        limit: 12,
+      }).catch((err) => ({
+        items: [],
+        __failed: String(err?.message || err || "Spotlight refresh failed."),
+      }));
+
+      const rows = Array.isArray((res as any)?.items)
+        ? (res as any).items
+        : Array.isArray(res)
+        ? res
+        : [];
+
+      const firstActive = rows[0] || null;
+
+      setActiveCommunitySpotlight(
+        firstActive
+          ? {
+              id: Number(firstActive?.id || 0) || undefined,
+              message: safeStr(firstActive?.message || ""),
+              imageUrl: safeStr(firstActive?.image_url || ""),
+              expiresAt: safeStr(firstActive?.expires_at || ""),
+              createdAt: safeStr(firstActive?.created_at || ""),
+            }
+          : null
+      );
+      setActiveCommunitySpotlightSyncIssue(safeStr((res as any)?.__failed || ""));
+    } finally {
+      setActiveCommunitySpotlightLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    const clanId = getClanId(selectedClan);
+
+    if (!clanId) {
+      setActiveCommunitySpotlight(null);
+      setActiveCommunitySpotlightLoading(false);
+      return;
+    }
+
+    let alive = true;
+
+    async function loadIfAlive() {
+      if (!alive) return;
+      await refreshActiveCommunitySpotlight(clanId);
+    }
+
+    void loadIfAlive();
+
+    const timer = window.setInterval(() => {
+      void loadIfAlive();
+    }, 60000);
+
+    function handleFocusRefresh() {
+      void loadIfAlive();
+    }
+
+    function handleVisibilityRefresh() {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        void loadIfAlive();
+      }
+    }
+
+    window.addEventListener("focus", handleFocusRefresh);
+    document.addEventListener("visibilitychange", handleVisibilityRefresh);
+
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", handleFocusRefresh);
+      document.removeEventListener("visibilitychange", handleVisibilityRefresh);
+    };
+  }, [selectedClan]);
 
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });
@@ -728,7 +1189,7 @@ export default function CommunityHomePage() {
       } else {
         showNotice(
           "success",
-          `${getClanName(clan)} is now your selected community.`
+          `${getClanName(clan)} is now your current community.`
         );
       }
     } catch (err: any) {
@@ -867,6 +1328,7 @@ export default function CommunityHomePage() {
         expires_at: expiry || undefined,
       });
 
+      await refreshActiveCommunitySpotlight(selectedClanId);
       clearSpotlightDraft();
 
       showNotice(
@@ -894,7 +1356,7 @@ export default function CommunityHomePage() {
         <PageTopNav
           sectionLabel="Community Home"
           title="Community Home"
-          subtitle="Loading your current community workspace..."
+          subtitle="Loading your current community..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/dashboard"
@@ -927,12 +1389,12 @@ export default function CommunityHomePage() {
         <PageTopNav
           sectionLabel="Community Home"
           title="Community Home"
-          subtitle="This page helps you choose a working community, confirm the context, and move into the right community route."
+          subtitle="Choose a working community here, confirm where you are, and move into the right community route."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/dashboard"
           nextLinks={[
-            { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+            { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
             { label: "Trust", to: "/app/trust" },
           ]}
         />
@@ -962,9 +1424,9 @@ export default function CommunityHomePage() {
               maxWidth: 860,
             }}
           >
-            Community Home is where you choose a working community, confirm the
-            current context, use invite tools, grow your trusted circle, and
-            move into the right community route when one is available.
+            Choose a working community here, confirm where you are, use invite
+            tools, grow your trusted circle, and move into the right community
+            route when one is available.
           </div>
 
           <div
@@ -1003,7 +1465,7 @@ export default function CommunityHomePage() {
       <PageTopNav
         sectionLabel="Community Home"
         title="Community Home"
-        subtitle="Choose your working community, confirm the current context, use community tools, and move into the right route when you are ready."
+        subtitle="Choose your working community, confirm where you are, use community tools, and move into the right route when you are ready."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
@@ -1013,7 +1475,7 @@ export default function CommunityHomePage() {
         ]}
         utilityLinks={[
           { label: "Trust", to: "/app/trust" },
-          { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+          { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
         ]}
       />
 
@@ -1021,7 +1483,7 @@ export default function CommunityHomePage() {
 
       <section
         style={pageCard(
-          "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+          "linear-gradient(180deg, #10243A 0%, #163552 52%, #244B72 100%)"
         )}
       >
         <div
@@ -1034,7 +1496,7 @@ export default function CommunityHomePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Selected community</div>
+            <div style={{ ...sectionLabel(), color: "#D7E3F1" }}>Selected community</div>
             <div
               style={{
                 marginTop: 8,
@@ -1043,7 +1505,7 @@ export default function CommunityHomePage() {
                 lineHeight: 1.75,
               }}
             >
-              This is the community context you are working in now.
+              You are currently working in this community.
             </div>
           </div>
 
@@ -1100,11 +1562,56 @@ export default function CommunityHomePage() {
                   flexWrap: "wrap",
                 }}
               >
-                <span style={badge(true)}>Community ID: {selectedClanGlobalId}</span>
-                <span style={badge(false)}>Trust: {selectedClanTrust}</span>
-                <span style={badge(false)}>Members: {selectedClanMemberCount}</span>
-                <span style={badge(false)}>Current page: Community Home</span>
-                <span style={badge(false)}>Current step: Confirm community context</span>
+                <span
+                  style={{
+                    ...badge(true),
+                    background: "rgba(255,255,255,0.16)",
+                    color: "#FFFFFF",
+                    border: "1px solid rgba(255,255,255,0.10)",
+                  }}
+                >
+                  Community ID: {selectedClanGlobalId}
+                </span>
+                <span
+                  style={{
+                    ...badge(false),
+                    background: "rgba(255,255,255,0.12)",
+                    color: "#F8FBFF",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}
+                >
+                  Trust: {selectedClanTrust}
+                </span>
+                <span
+                  style={{
+                    ...badge(false),
+                    background: "rgba(255,255,255,0.12)",
+                    color: "#F8FBFF",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}
+                >
+                  Members: {selectedClanMemberCount}
+                </span>
+                <span
+                  style={{
+                    ...badge(false),
+                    background: "rgba(255,255,255,0.12)",
+                    color: "#F8FBFF",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}
+                >
+                  Current page: Community Home
+                </span>
+                <span
+                  style={{
+                    ...badge(false),
+                    background: "rgba(255,255,255,0.12)",
+                    color: "#F8FBFF",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}
+                >
+                  Current step: Confirm community
+                </span>
               </div>
 
               <div
@@ -1167,8 +1674,8 @@ export default function CommunityHomePage() {
                   lineHeight: 1.8,
                 }}
               >
-                This shows only your own visible pool position in the currently
-                selected community context.
+                This shows only your own visible pool position in your current
+                community.
               </div>
             </div>
           </div>
@@ -1287,6 +1794,422 @@ export default function CommunityHomePage() {
         ) : null}
       </section>
 
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Finance File & Record</div>
+            <div
+              style={{
+                marginTop: 8,
+                color: "#5F7287",
+                fontSize: 14,
+                lineHeight: 1.75,
+                maxWidth: 860,
+              }}
+            >
+              Review your current pool position, pending money movement, payment
+              reference state, and next finance action here before you open the
+              fuller finance record.
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span style={badge(true)}>
+              Pool: {safeStr(moneySurface?.poolAmount || poolAmount)} {safeStr(moneySurface?.poolCurrency || poolCurrency)}
+            </span>
+            <span style={badge(false)}>
+              Expected payments: {activeExpectedPayments.length}
+            </span>
+            <span style={badge(false)}>Waiting: {pendingFinanceCount}</span>
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            display: "grid",
+            gridTemplateColumns: isCompact
+              ? "1fr"
+              : "minmax(0, 1.12fr) minmax(320px, 0.88fr)",
+            gap: 16,
+            alignItems: "start",
+          }}
+        >
+          <div style={softCard("#F8FBFF")}>
+            <div style={sectionLabel()}>Current next action</div>
+            <div
+              style={{
+                marginTop: 10,
+                color: "#0B1F33",
+                fontSize: 22,
+                fontWeight: 900,
+                lineHeight: 1.28,
+              }}
+            >
+              {financeNextAction.title}
+            </div>
+            <div style={{ marginTop: 10, color: "#5F7287", fontSize: 14, lineHeight: 1.78 }}>
+              {financeNextAction.detail}
+            </div>
+
+            {financeSyncIssue ? (
+              <div style={{ marginTop: 12, ...noticeCard("error") }}>
+                {financeSyncIssue}
+              </div>
+            ) : null}
+
+            <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <OriginLink to="/app/finance" style={actionBtn("primary")}>
+                Open Finance
+              </OriginLink>
+              <OriginLink to="/app/payment/pool" style={actionBtn("secondary")}>
+                Money In
+              </OriginLink>
+              <OriginLink to="/app/withdrawal-instructions" style={actionBtn("secondary")}>
+                Money Out
+              </OriginLink>
+              <OriginLink to="/app/payment-rails" style={actionBtn("soft")}>
+                Payment Rails
+              </OriginLink>
+              <OriginLink to="/app/payout-details" style={actionBtn("soft")}>
+                Payout Details
+              </OriginLink>
+            </div>
+          </div>
+
+          <div style={softCard("#FFFFFF")}>
+            <div style={sectionLabel()}>Live finance record</div>
+
+            {financeLoading ? (
+              <div style={{ marginTop: 10, color: "#5F7287", fontSize: 14, lineHeight: 1.75 }}>
+                Loading your current community finance record.
+              </div>
+            ) : (
+              <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+                <div style={innerCard("#FCFEFF")}>
+                  <div style={sectionLabel()}>Pool position</div>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      color: "#0B1F33",
+                      fontSize: 20,
+                      fontWeight: 900,
+                      lineHeight: 1.28,
+                    }}
+                  >
+                    {safeStr(moneySurface?.poolAmount || poolAmount)} {safeStr(moneySurface?.poolCurrency || poolCurrency)}
+                  </div>
+                  <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <span style={badge(true)}>
+                      Available: {safeStr(moneySurface?.effectiveAvailable || "0.00")}
+                    </span>
+                    <span style={badge(false)}>
+                      Reserved: {safeStr(moneySurface?.reservedPool || "0.00")}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={innerCard("#FCFEFF")}>
+                  <div style={sectionLabel()}>Movement</div>
+                  <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <span style={badge(true)}>
+                      Pending in: {safeStr(moneySurface?.pendingDeposits || "0.00")}
+                    </span>
+                    <span style={badge(false)}>
+                      Pending out: {safeStr(moneySurface?.pendingWithdrawals || "0.00")}
+                    </span>
+                    <span style={badge(false)}>
+                      Recent events: {Array.isArray(moneySurface?.recentPoolEvents) ? moneySurface?.recentPoolEvents.length : 0}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={innerCard("#FCFEFF")}>
+                  <div style={sectionLabel()}>Record status</div>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {safeStr(moneySurface?.poolReference)
+                      ? `Reference ${safeStr(moneySurface?.poolReference)} is active in the current finance file.`
+                      : "No active pool reference is visible in the current finance file."}
+                  </div>
+                  <div style={{ marginTop: 8, color: "#5F7287", fontSize: 13, lineHeight: 1.7 }}>
+                    {activeExpectedPayments.length > 0
+                      ? `${activeExpectedPayments.length} expected payment record${
+                          activeExpectedPayments.length === 1 ? "" : "s"
+                        } are open in this community.`
+                      : "No expected payment record is open right now."}
+                  </div>
+                </div>
+
+                <div style={innerCard("#FCFEFF")}>
+                  <div style={sectionLabel()}>Money routes</div>
+                  <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                    <div>
+                      <div style={{ color: "#0B1F33", fontWeight: 900, lineHeight: 1.35 }}>
+                        {safeStr(moneySurface?.depositRoute?.title || "Money In route")}
+                      </div>
+                      <div style={{ marginTop: 6, color: "#5F7287", fontSize: 13, lineHeight: 1.7 }}>
+                        {safeStr(
+                          moneySurface?.depositRoute?.detail ||
+                            "Generate and use the current deposit instruction from the finance file."
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ color: "#0B1F33", fontWeight: 900, lineHeight: 1.35 }}>
+                        {safeStr(moneySurface?.withdrawalRoute?.title || "Money Out route")}
+                      </div>
+                      <div style={{ marginTop: 6, color: "#5F7287", fontSize: 13, lineHeight: 1.7 }}>
+                        {safeStr(
+                          moneySurface?.withdrawalRoute?.detail ||
+                            "Use the current payout route only after the finance file is ready."
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <OriginLink to="/app/payment-rails" style={actionBtn("soft")}>
+                        Review Payment Rails
+                      </OriginLink>
+                      <OriginLink to="/app/payout-details" style={actionBtn("soft")}>
+                        Review Payout Details
+                      </OriginLink>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={innerCard("#FCFEFF")}>
+                  <div style={sectionLabel()}>Expected payments & reconciliation</div>
+                  {financePreviewPayments.length === 0 ? (
+                    <div style={{ marginTop: 10, color: "#5F7287", fontSize: 13, lineHeight: 1.7 }}>
+                      No payment is waiting here right now.
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                      {financePreviewPayments.map((item, index) => (
+                        <div key={`${item.id || index}`} style={innerCard("#FFFFFF")}>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            <span style={badge(true)}>
+                              {safeStr(item.expected_type || "Expected payment")}
+                            </span>
+                            <span style={badge(false)}>
+                              State: {expectedPaymentState(item)}
+                            </span>
+                            {safeStr(item.status) ? (
+                              <span style={badge(false)}>
+                                Status: {safeStr(item.status)}
+                              </span>
+                            ) : null}
+                          </div>
+                          <div
+                            style={{
+                              marginTop: 10,
+                              color: "#0B1F33",
+                              fontWeight: 900,
+                              lineHeight: 1.35,
+                            }}
+                          >
+                            {safeStr(item.amount || "0.00")} {safeStr(item.currency || moneySurface?.poolCurrency || poolCurrency)}
+                          </div>
+                          <div style={{ marginTop: 8, color: "#5F7287", fontSize: 13, lineHeight: 1.7 }}>
+                            {[
+                              item.reference_display
+                                ? `Reference: ${safeStr(item.reference_display)}`
+                                : "",
+                              item.confirmed_at
+                                ? `Confirmed: ${safeDateTime(item.confirmed_at)}`
+                                : item.due_at
+                                ? `Due: ${safeDateTime(item.due_at)}`
+                                : "",
+                              `Next action: ${expectedPaymentNextAction(item)}`,
+                            ]
+                              .filter(Boolean)
+                              .join(" - ")}
+                          </div>
+                          <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            <OriginLink to="/app/finance" style={actionBtn("soft")}>
+                              Open Finance Record
+                            </OriginLink>
+                            <OriginLink
+                              to={
+                                expectedPaymentState(item) === "Awaiting issue"
+                                  ? "/app/payment/pool"
+                                  : "/app/payment-rails"
+                              }
+                              style={actionBtn("soft")}
+                            >
+                              {expectedPaymentState(item) === "Awaiting issue"
+                                ? "Open Money In"
+                                : "Open Payment Rails"}
+                            </OriginLink>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Demand Control Box</div>
+            <div
+              style={{
+                marginTop: 8,
+                color: "#5F7287",
+                fontSize: 14,
+                lineHeight: 1.75,
+                maxWidth: 860,
+              }}
+            >
+              Raise demand here, review what is already open, and continue into
+              Demand Box when you need the fuller follow-up path.
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span style={badge(true)}>My open: {myOpenDemands.length}</span>
+            <span style={badge(false)}>Community open: {visibleDemands.length}</span>
+            <span style={badge(false)}>Urgent: {urgentDemandCount}</span>
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            display: "grid",
+            gridTemplateColumns: isCompact
+              ? "1fr"
+              : "minmax(0, 1.12fr) minmax(320px, 0.88fr)",
+            gap: 16,
+            alignItems: "start",
+          }}
+        >
+          <div style={softCard("#F8FBFF")}>
+            <div style={sectionLabel()}>Current next action</div>
+            <div
+              style={{
+                marginTop: 10,
+                color: "#0B1F33",
+                fontSize: 22,
+                fontWeight: 900,
+                lineHeight: 1.28,
+              }}
+            >
+              {demandNextAction.title}
+            </div>
+            <div style={{ marginTop: 10, color: "#5F7287", fontSize: 14, lineHeight: 1.78 }}>
+              {demandNextAction.detail}
+            </div>
+
+            {demandSyncIssue ? (
+              <div style={{ marginTop: 12, ...noticeCard("error") }}>
+                {demandSyncIssue}
+              </div>
+            ) : null}
+
+            <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <OriginLink to="/app/demand-box#demand-box-create" style={actionBtn("primary")}>
+                Create Demand
+              </OriginLink>
+              <OriginLink to="/app/demand-box" style={actionBtn("secondary")}>
+                Open Demand Box
+              </OriginLink>
+              <OriginLink to="/app/notifications" style={actionBtn("soft")}>
+                Open Action Inbox
+              </OriginLink>
+            </div>
+          </div>
+
+          <div style={softCard("#FFFFFF")}>
+            <div style={sectionLabel()}>Live demand summary</div>
+
+            {demandLoading ? (
+              <div style={{ marginTop: 10, color: "#5F7287", fontSize: 14, lineHeight: 1.75 }}>
+                Loading the current demand state for this community.
+              </div>
+            ) : demandPreviewRows.length === 0 ? (
+              <div style={{ marginTop: 10, color: "#5F7287", fontSize: 14, lineHeight: 1.75 }}>
+                No open demand is visible right now. Create the next real need here
+                when the community has something that should become a live signal.
+              </div>
+            ) : (
+              <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+                {demandPreviewRows.map((row, index) => (
+                  <div key={`${row?.id || index}`} style={innerCard("#FCFEFF")}>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <span style={badge(true)}>{demandUrgencyLabel(row?.urgency)}</span>
+                      {safeStr(row?.status) ? (
+                        <span style={badge(false)}>{safeStr(row?.status)}</span>
+                      ) : null}
+                      {safeStr(row?.area) ? (
+                        <span style={badge(false)}>{safeStr(row?.area)}</span>
+                      ) : null}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 10,
+                        color: "#0B1F33",
+                        fontWeight: 900,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      {firstTruthy(row?.title, row?.description, "Open community demand")}
+                    </div>
+                    <div style={{ marginTop: 8, color: "#5F7287", fontSize: 13, lineHeight: 1.7 }}>
+                      {safeDateTime(row?.created_at) || "Recently posted"}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 12,
+                        display: "flex",
+                        gap: 8,
+                        flexWrap: "wrap",
+                        alignItems: "center",
+                      }}
+                    >
+                      <span style={badge(false)}>
+                        {isMineDemandRow(row, me) ? "My demand" : "Community demand"}
+                      </span>
+                      <OriginLink to="/app/demand-box" style={actionBtn("soft")}>
+                        Manage in Demand Box
+                      </OriginLink>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
       <div id="community-home-shop-control">
         <CommunityShopControlPanel />
       </div>
@@ -1315,7 +2238,7 @@ export default function CommunityHomePage() {
               }}
             >
               Bring in the people you already trust and already do real life with.
-              This is not a random invite tool.
+              Keep this circle deliberate.
             </div>
           </div>
 
@@ -1616,6 +2539,140 @@ export default function CommunityHomePage() {
                   Clear Draft
                 </button>
               </div>
+
+              <div
+                style={{
+                  marginTop: 14,
+                  ...innerCard("#FFFFFF"),
+                  border: "1px solid rgba(11,31,51,0.08)",
+                }}
+              >
+                <div style={sectionLabel()}>Live spotlight state</div>
+                {activeCommunitySpotlightLoading ? (
+                  <div style={{ marginTop: 10, color: "#5F7287", fontSize: 14, lineHeight: 1.75 }}>
+                    Refreshing live spotlight state...
+                  </div>
+                ) : activeCommunitySpotlight ? (
+                  <>
+                    <div
+                      style={{
+                        marginTop: 12,
+                        borderRadius: 18,
+                        overflow: "hidden",
+                        border: "1px solid rgba(212,175,55,0.14)",
+                        background:
+                  "linear-gradient(180deg, rgba(24,58,88,0.98) 0%, rgba(38,84,122,0.98) 100%)",
+                        minHeight: 180,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {activeCommunitySpotlight.imageUrl ? (
+                        <img
+                          src={activeCommunitySpotlight.imageUrl}
+                          alt="Live community spotlight"
+                          style={{
+                            width: "100%",
+                            minHeight: 180,
+                            maxHeight: 260,
+                            objectFit: "cover",
+                            display: "block",
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            padding: 20,
+                            textAlign: "center",
+                            color: "#D7E3F1",
+                            fontWeight: 800,
+                            fontSize: 14,
+                            lineHeight: 1.7,
+                          }}
+                        >
+                          The active spotlight is live, but no image is attached to it.
+                        </div>
+                      )}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 10,
+                        color: "#0B1F33",
+                        fontSize: 16,
+                        fontWeight: 900,
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {activeCommunitySpotlight.message || "Live spotlight is active."}
+                    </div>
+                    <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <span style={badge(true)}>Active now</span>
+                      {activeCommunitySpotlight.expiresAt ? (
+                        <span style={badge(false)}>
+                          Expires: {new Date(activeCommunitySpotlight.expiresAt).toLocaleString()}
+                        </span>
+                      ) : (
+                        <span style={badge(false)}>No expiry set</span>
+                      )}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 10,
+                        color: "#5F7287",
+                        fontSize: 13,
+                        lineHeight: 1.75,
+                      }}
+                    >
+                      This live spotlight belongs to your current community and
+                      should return after refresh or restart while it remains active.
+                    </div>
+                  </>
+                ) : activeCommunitySpotlightSyncIssue ? (
+                  <div style={{ marginTop: 10, color: "#5F7287", fontSize: 14, lineHeight: 1.75 }}>
+                    Live spotlight data could not be confirmed just now. Refresh from this page or
+                    retry after the community spotlight source becomes available again.
+                    <div style={{ marginTop: 8, color: "#8A1C1C" }}>
+                      Refresh note: {activeCommunitySpotlightSyncIssue}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ marginTop: 10, color: "#5F7287", fontSize: 14, lineHeight: 1.75 }}>
+                    No active community spotlight is live right now. Publish from this panel and
+                    the active state will appear here after backend confirmation.
+                  </div>
+                )}
+                <div
+                  style={{
+                    marginTop: 12,
+                    ...innerCard("#FCFEFF"),
+                    border: "1px solid rgba(11,31,51,0.08)",
+                  }}
+                >
+                  <div style={sectionLabel()}>Current next action</div>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      color: "#0B1F33",
+                      fontSize: 16,
+                      fontWeight: 900,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {communitySpotlightNextAction.title}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#5F7287",
+                      fontSize: 13,
+                      lineHeight: 1.75,
+                    }}
+                  >
+                    {communitySpotlightNextAction.detail}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div
@@ -1719,8 +2776,8 @@ export default function CommunityHomePage() {
                 lineHeight: 1.75,
               }}
             >
-              Choose the community you want to work with, then open that selected
-              community surface separately.
+              Choose the community you want to work with, then open it when you
+              are ready to continue there.
             </div>
           </div>
 
@@ -1809,8 +2866,8 @@ export default function CommunityHomePage() {
                       }}
                     >
                       {active
-                        ? "This is your current community context."
-                        : "Select this community to make it your current community context."}
+                        ? "You are in your current community."
+                        : "Select this community to make it current."}
                     </div>
 
                     <div
@@ -1849,3 +2906,5 @@ export default function CommunityHomePage() {
     </div>
   );
 }
+
+

@@ -291,9 +291,9 @@ export default function CreateEntryPage() {
               maxWidth: 760,
             }}
           >
-            This is the public create entry. Start with a community name, add a
-            short description, and continue into founder creation. If GMFN access
-            is issued here, the next guided step will be Build Your First Circle.
+            Start with a community name, add a short description, and continue
+            into founder creation. If GSN access is issued here, the next guided
+            step will be Build Your First Circle.
           </div>
 
           <div
@@ -310,7 +310,7 @@ export default function CreateEntryPage() {
               rel="noreferrer"
               style={secondaryBtn()}
             >
-              Understand GMFN first
+              Understand GSN first
             </a>
 
             <OriginLink to="/welcome" style={secondaryBtn()}>
@@ -393,9 +393,9 @@ export default function CreateEntryPage() {
                 <br />
                 2. Complete founder creation.
                 <br />
-                3. If GMFN access is issued, move into Build Your First Circle.
+                3. If GSN access is issued, move into Build Your First Circle.
                 <br />
-                4. Then continue into your wider member surfaces.
+                4. Then continue into your wider member pages.
               </div>
             </div>
 
@@ -409,8 +409,8 @@ export default function CreateEntryPage() {
                   fontSize: 14,
                 }}
               >
-                This page is only for public create entry. It should not become a
-                full community management page or a private control center.
+                Start public create entry here. Community management happens
+                later in the guided member workspace.
               </div>
             </div>
 
@@ -424,8 +424,8 @@ export default function CreateEntryPage() {
                   fontSize: 14,
                 }}
               >
-                The guided founder path should stay focused: start, validate,
-                issue GMFN access, build the first circle, then reopen wider
+                The guided founder path stays focused: start, validate,
+                issue GSN access, build the first circle, then reopen wider
                 movement.
               </div>
             </div>
@@ -435,3 +435,5 @@ export default function CreateEntryPage() {
     </div>
   );
 }
+
+

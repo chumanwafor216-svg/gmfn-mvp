@@ -35,7 +35,7 @@ export default function PaymentInstructionsPanel({ loanId, borrowerUserId, curre
   // ✅ Replace these with your real bank details (pilot-safe)
   const bank = {
     bankName: "Your Bank Name",
-    accountName: "GMFN Pilot Account",
+    accountName: "GSN Pilot Account",
     accountNumber: "00000000",
     sortCode: "00-00-00",
     note: "If you’re in Nigeria, replace sort code with NUBAN details.",

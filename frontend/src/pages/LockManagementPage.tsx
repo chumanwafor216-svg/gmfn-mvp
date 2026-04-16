@@ -143,7 +143,7 @@ export default function LockManagementPage() {
       <PageTopNav
         sectionLabel="Lock Management"
         title="Guarantee Lock Management"
-        subtitle="This surface is intentionally read-only in the MVP because the backend does not expose a guarantee lock-release endpoint yet."
+        subtitle="This is intentionally read-only in the MVP because the backend does not expose a guarantee lock-release endpoint yet."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
@@ -154,7 +154,7 @@ export default function LockManagementPage() {
         ]}
         utilityLinks={[
           { label: "Trust Passport", to: "/app/trust" },
-          { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+          { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
         ]}
       />
 
@@ -178,9 +178,9 @@ export default function LockManagementPage() {
 
         <div style={{ marginTop: 12, ...helperText(), maxWidth: 900 }}>
           Do not pretend this action exists when the backend cannot perform it.
-          A fake control surface wastes testing time and creates false confidence.
+          A fake page wastes testing time and creates false confidence.
           Until the backend exposes a real audited release-lock endpoint, this page
-          should stay informational only.
+          remains informational only.
         </div>
 
         <div
@@ -316,7 +316,7 @@ export default function LockManagementPage() {
         <div style={sectionLabel()}>Use these pages instead</div>
 
         <div style={{ marginTop: 14, ...helperText(), maxWidth: 860 }}>
-          For this pass, keep operators on the real pages that already exist and
+          For this pass, keep people on the real pages that already exist and
           already work.
         </div>
 
@@ -347,3 +347,4 @@ export default function LockManagementPage() {
     </div>
   );
 }
+

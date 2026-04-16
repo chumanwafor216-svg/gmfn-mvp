@@ -468,7 +468,7 @@ export default function SystemOperationsPage() {
         currentClan?.name,
         currentClan?.display_name,
         currentClan?.title
-      ) || (selectedClanId ? `Community ${selectedClanId}` : "No selected community")
+      ) || (selectedClanId ? `Community ${selectedClanId}` : "No current community")
     );
   }, [currentClan, selectedClanId]);
 
@@ -585,7 +585,7 @@ export default function SystemOperationsPage() {
       <PageTopNav
         sectionLabel="System Operations"
         title="System Operations"
-        subtitle="Use this page for live operational reading, alert handling, and immediate movement into the correct admin or member surface."
+        subtitle="Review live operational reading, handle alerts, and move into the right admin or member page."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/command-center"
@@ -624,7 +624,7 @@ export default function SystemOperationsPage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
-              This surface is for live operational awareness. Use it when you need to see what is happening now, what needs follow-up, and where to move next.
+              Review live operational awareness here when you need to see what is happening now, what needs follow-up, and where to move next.
             </div>
 
             <div
@@ -637,7 +637,7 @@ export default function SystemOperationsPage() {
             >
               <span style={badge(true)}>Role: {roleLabel}</span>
               <span style={badge(false)}>Community: {communityLabel}</span>
-              <span style={badge(false)}>Operational surface</span>
+              <span style={badge(false)}>Operational page</span>
             </div>
           </div>
 
@@ -660,7 +660,7 @@ export default function SystemOperationsPage() {
 
             <div style={{ marginTop: 10, ...helperText() }}>
               {operationalFocus
-                ? safeStr((operationalFocus as any).detail || "Review the top signal and move into the correct working surface.")
+                ? safeStr((operationalFocus as any).detail || "Review the top signal and move into the right page.")
                 : "No immediate or due-soon signal is currently dominating the visible operational feed."}
             </div>
           </div>
@@ -997,7 +997,7 @@ export default function SystemOperationsPage() {
           <div>
             <div style={sectionLabel()}>Next routes</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Move from live reading into the exact admin surface you need.
+              Move from live reading into the admin page you need next.
             </div>
           </div>
 
@@ -1033,7 +1033,7 @@ export default function SystemOperationsPage() {
                 Action Inbox
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the work is immediate response or member-facing queue handling.
+                Open this when the work is immediate response or queue handling on the member side.
               </div>
             </OriginLink>
 
@@ -1049,7 +1049,7 @@ export default function SystemOperationsPage() {
                 Trust Analytics
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the work is trend reading rather than live handling.
+                Open this when the work is trend reading rather than live handling.
               </div>
             </OriginLink>
 
@@ -1065,7 +1065,7 @@ export default function SystemOperationsPage() {
                 Exposure
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the work is about concentration, pressure, or imbalance.
+                Open this when the work is about concentration, pressure, or imbalance.
               </div>
             </OriginLink>
 
@@ -1081,7 +1081,7 @@ export default function SystemOperationsPage() {
                 Trust Graph
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the work is about structure, connectedness, or relationship trust shape.
+                Open this when the work is about structure, connectedness, or relationship trust shape.
               </div>
             </OriginLink>
           </div>
@@ -1090,3 +1090,5 @@ export default function SystemOperationsPage() {
     </div>
   );
 }
+
+

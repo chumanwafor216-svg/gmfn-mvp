@@ -170,9 +170,9 @@ function actionBtn(primary = false, disabled = false): React.CSSProperties {
     padding: "14px 18px",
     borderRadius: 14,
     border: primary
-      ? "1px solid rgba(11,31,51,0.75)"
+      ? "1px solid rgba(29,78,216,0.18)"
       : "1px solid rgba(11,31,51,0.12)",
-    background: disabled ? "#CBD5E1" : primary ? "#0F172A" : "#FFFFFF",
+    background: disabled ? "#CBD5E1" : primary ? "#1D4ED8" : "#FFFFFF",
     color: primary ? "#FFFFFF" : "#0B1F33",
     fontWeight: 900,
     cursor: disabled ? "not-allowed" : "pointer",
@@ -240,7 +240,7 @@ export default function InviteLandingPage() {
 
   useEffect(() => {
     if (typeof document !== "undefined") {
-      document.title = "GMFN | Founder Invitation";
+      document.title = "GSN | Founder Invitation";
     }
   }, []);
 
@@ -303,7 +303,7 @@ export default function InviteLandingPage() {
   return (
     <div style={pageShell()}>
       <div style={{ maxWidth: 960, margin: "0 auto", display: "grid", gap: 18 }}>
-        <div style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}>
+        <div style={pageCard("linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)")}>
           <div
             style={{
               display: "flex",
@@ -401,7 +401,7 @@ export default function InviteLandingPage() {
                         color: "#0F172A",
                       }}
                     >
-                      {safeStr(invite.clan_name, "GMFN Community")}
+                      {safeStr(invite.clan_name, "GSN Community")}
                     </div>
                   </div>
 
@@ -437,7 +437,7 @@ export default function InviteLandingPage() {
                           color: "#0F172A",
                         }}
                       >
-                        {safeStr(invite.inviter_display, "GMFN Network")}
+                        {safeStr(invite.inviter_display, "GSN Network")}
                       </div>
                     </div>
                   </div>
@@ -501,7 +501,7 @@ export default function InviteLandingPage() {
                   />
                   <FeatureCard
                     title="No direct app access yet"
-                    text="This page is still public. It verifies the invitation and then hands you into Cover and Welcome before Create Entry."
+                    text="This public step verifies the invitation, then guides you into Cover and Welcome before Create Entry."
                   />
                 </div>
               </div>
@@ -533,9 +533,13 @@ export default function InviteLandingPage() {
               <div style={sectionLabel()}>Next step</div>
 
               <div style={{ marginTop: 10, ...helperText(), maxWidth: 780 }}>
-                The correct next move is to continue into the public founder flow.
-                The app will then guide you from Cover to Welcome and from Welcome
-                to Create Entry.
+                Continue into the public founder flow. The app will then guide
+                you from Cover to Welcome and from Welcome to Create Entry.
+              </div>
+
+              <div style={{ marginTop: 10, ...helperText(), maxWidth: 780 }}>
+                Once you are inside the workspace, GSN also supports steadier
+                follow-through through Commitment Builder.
               </div>
 
               <div
@@ -556,7 +560,11 @@ export default function InviteLandingPage() {
                 </button>
 
                 <OriginLink to="/guide" style={actionBtn(false)}>
-                  Open My GMFN and I
+                  Open My GSN and I
+                </OriginLink>
+
+                <OriginLink to="/app/dashboard#focus-commitments" style={actionBtn(false)}>
+                  Open Commitment Builder
                 </OriginLink>
 
                 <OriginLink to="/welcome" style={actionBtn(false)}>

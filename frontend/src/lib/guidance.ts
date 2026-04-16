@@ -175,6 +175,7 @@ const GUIDANCE_TARGETS = {
   LOAN_READINESS: "/app/loan-readiness",
   LOAN_SUGGESTIONS: "/app/loan-suggestions",
   LOAN_WORKBENCH: "/app/loan-workbench",
+  COMMITMENT_BUILDER: "/app/dashboard#focus-commitments",
   GUIDE: "/app/my-gmfn-and-i",
   SETTINGS: "/app/my-gmfn-and-i?tab=settings",
   BUILD_FIRST_CIRCLE: "/app/build-first-circle",
@@ -254,6 +255,11 @@ const EXACT_TARGET_ALIASES: Record<string, string> = {
 
   "loan-workbench": GUIDANCE_TARGETS.LOAN_WORKBENCH,
   workbench: GUIDANCE_TARGETS.LOAN_WORKBENCH,
+
+  "commitment-builder": GUIDANCE_TARGETS.COMMITMENT_BUILDER,
+  commitment: GUIDANCE_TARGETS.COMMITMENT_BUILDER,
+  commitments: GUIDANCE_TARGETS.COMMITMENT_BUILDER,
+  "focus-commitments": GUIDANCE_TARGETS.COMMITMENT_BUILDER,
 
   "my-gmfn-and-i": GUIDANCE_TARGETS.GUIDE,
   guide: GUIDANCE_TARGETS.GUIDE,
@@ -865,6 +871,23 @@ function resolveNoticeTarget(raw: any): string {
 
   if (containsAny(text, ["my gmfn and i", "guide"])) {
     return GUIDANCE_TARGETS.GUIDE;
+  }
+
+  if (
+    containsAny(text, [
+      "commitment builder",
+      "focus commitment",
+      "commitment checkpoint",
+      "replan",
+      "check in",
+      "savings target",
+      "repayment target",
+      "business target",
+      "retirement readiness",
+      "follow-through",
+    ])
+  ) {
+    return GUIDANCE_TARGETS.COMMITMENT_BUILDER;
   }
 
   if (containsAny(text, ["community"])) {
@@ -1957,7 +1980,7 @@ function buildNextBestStep(params: {
     tomorrowText: pickVariant(
       voice === "warm"
         ? [
-            "Small consistency today protects tomorrow’s options.",
+            "The point is not to collect goals. The point is to keep moving toward them.",
             "A calm day today makes tomorrow easier to carry.",
           ]
         : voice === "direct"
@@ -2097,17 +2120,17 @@ function buildMarketWisdomCard(params: {
     text: pickVariant(
       params.voice === "warm"
         ? [
-            "Small consistency today protects tomorrow’s options.",
+            "The point is not to collect goals. The point is to keep moving toward them.",
             "Calm visible follow-through is stronger than noise.",
           ]
         : params.voice === "direct"
         ? [
-            "Consistency compounds.",
-            "One clean step is stronger than scattered effort.",
+            "Commitment turns intention into dependable follow-through.",
+            "One clean step repeated is stronger than scattered effort.",
           ]
         : [
-            "Small consistency today protects tomorrow’s options.",
-            "A clear next step is often stronger than many good intentions.",
+            "GSN should not only record what happened. It should help steady what happens next.",
+            "A clear next step repeated over time is stronger than many good intentions.",
           ],
       "wisdom-default",
       params.voice
@@ -2431,3 +2454,6 @@ export async function buildGuidanceSnapshot(): Promise<GuidanceSnapshot> {
     },
   };
 }
+
+
+

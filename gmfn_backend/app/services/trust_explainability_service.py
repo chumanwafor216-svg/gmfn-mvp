@@ -138,8 +138,16 @@ def build_trust_explainability(
         recent_events.append(
             {
                 "id": int(getattr(row, "id")),
-                "subject_user_id": int(getattr(row, "subject_user_id")),
-                "actor_user_id": int(getattr(row, "actor_user_id")),
+                "subject_user_id": int(
+                    getattr(row, "subject_user_id", getattr(row, "user_id", user_id))
+                ),
+                "actor_user_id": int(
+                    getattr(
+                        row,
+                        "actor_user_id",
+                        getattr(row, "subject_user_id", getattr(row, "user_id", user_id)),
+                    )
+                ),
                 "event_type": str(getattr(row, "event_type", "trust.event")),
                 "delta": _decimal_str(_event_delta(row)),
                 "created_at": _event_created_at_iso(row),

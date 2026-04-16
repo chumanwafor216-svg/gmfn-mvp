@@ -26,6 +26,8 @@ import TrustSlipVerifyPage from "./pages/TrustSlipVerifyPage";
 import PaymentInstructionsPage from "./pages/PaymentInstructionsPage";
 import RepaymentPage from "./pages/RepaymentPage";
 import WithdrawalInstructionsPage from "./pages/WithdrawalInstructionsPage";
+import PaymentRailsPage from "./pages/PaymentRailsPage";
+import PayoutDetailsPage from "./pages/PayoutDetailsPage";
 import LoanReadinessPage from "./pages/LoanReadinessPage";
 import LoanSuggestionsPage from "./pages/LoanSuggestionsPage";
 import LoanWorkbenchPage from "./pages/LoanWorkbenchPage";
@@ -38,6 +40,11 @@ import AdminTrustGraphPage from "./pages/AdminTrustGraphPage";
 import MyGMFNAndIPage from "./pages/MyGMFNAndIPage";
 import TrustAnalyticsPage from "./pages/TrustAnalyticsPage";
 import TrustCommandCentrePage from "./pages/TrustCommandCentrePage";
+import AdminTrustEventsPage from "./pages/AdminTrustEventsPage";
+import AdminIdentityRiskPage from "./pages/AdminIdentityRiskPage";
+import AdminIncompleteLoansPage from "./pages/AdminIncompleteLoansPage";
+import BankConsolePage from "./pages/BankConsolePage";
+import RevenueAllocationPage from "./pages/RevenueAllocationPage";
 import ShopControlPage from "./pages/ShopControlPage";
 import ShopAssetsPage from "./pages/ShopAssetsPage";
 import ShopAccessPage from "./pages/ShopAccessPage";
@@ -431,6 +438,9 @@ export default function App() {
 
         <Route path="payment/pool" element={<PaymentInstructionsPage />} />
         <Route path="payment/loans/:loanId" element={<RepaymentPage />} />
+        <Route path="payment-rails" element={<PaymentRailsPage />} />
+        <Route path="payment-rails-overview" element={<PreserveRedirect to="/app/payment-rails" />} />
+        <Route path="payout-details" element={<PayoutDetailsPage />} />
         <Route path="pool" element={<PreserveRedirect to={APP_ROUTES.MONEY_IN} />} />
         <Route path="money-in" element={<PreserveRedirect to={APP_ROUTES.MONEY_IN} />} />
 
@@ -548,6 +558,11 @@ export default function App() {
         >
           <Route index element={<TrustCommandCentrePage />} />
           <Route path="trust-analytics" element={<TrustAnalyticsPage />} />
+          <Route path="trust-events" element={<AdminTrustEventsPage />} />
+          <Route path="identity-risk" element={<AdminIdentityRiskPage />} />
+          <Route path="incomplete-loans" element={<AdminIncompleteLoansPage />} />
+          <Route path="bank-console" element={<BankConsolePage />} />
+          <Route path="revenue-allocation" element={<RevenueAllocationPage />} />
           <Route path="system-operations" element={<SystemOperationsPage />} />
           <Route path="exposure" element={<ExposureAdminPage />} />
           <Route path="trust-graph" element={<AdminTrustGraphPage />} />
@@ -562,12 +577,56 @@ export default function App() {
           element={<PreserveRedirect to="/app/command-center/trust-analytics" />}
         />
         <Route
+          path="trust-events"
+          element={<PreserveRedirect to="/app/command-center/trust-events" />}
+        />
+        <Route
+          path="identity-risk"
+          element={<PreserveRedirect to="/app/command-center/identity-risk" />}
+        />
+        <Route
+          path="incomplete-loans"
+          element={<PreserveRedirect to="/app/command-center/incomplete-loans" />}
+        />
+        <Route
+          path="bank-console"
+          element={<PreserveRedirect to="/app/command-center/bank-console" />}
+        />
+        <Route
+          path="revenue-allocation"
+          element={<PreserveRedirect to="/app/command-center/revenue-allocation" />}
+        />
+        <Route
           path="system-operations"
           element={<PreserveRedirect to="/app/command-center/system-operations" />}
         />
         <Route
           path="admin/exposure"
           element={<PreserveRedirect to="/app/command-center/exposure" />}
+        />
+        <Route
+          path="admin/trust-events"
+          element={<PreserveRedirect to="/app/command-center/trust-events" />}
+        />
+        <Route
+          path="admin/identity-risk"
+          element={<PreserveRedirect to="/app/command-center/identity-risk" />}
+        />
+        <Route
+          path="admin/incomplete-loans"
+          element={<PreserveRedirect to="/app/command-center/incomplete-loans" />}
+        />
+        <Route
+          path="admin/revenue-allocation"
+          element={<PreserveRedirect to="/app/command-center/revenue-allocation" />}
+        />
+        <Route
+          path="admin/bank-console"
+          element={<PreserveRedirect to="/app/command-center/bank-console" />}
+        />
+        <Route
+          path="admin/payment-rails"
+          element={<PreserveRedirect to="/app/payment-rails" />}
         />
         <Route
           path="admin/trust-graph"

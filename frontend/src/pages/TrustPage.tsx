@@ -401,7 +401,7 @@ export default function TrustPage() {
       </div>
 
       <div style={{ marginTop: 14, fontSize: 12, color: "#666" }}>
-        Note: This page is optimized for low-end devices — small payloads, minimal rendering, deterministic sources.
+        Note: Optimized for low-end devices: small payloads, minimal rendering, deterministic sources.
       </div>
     </div>
   );

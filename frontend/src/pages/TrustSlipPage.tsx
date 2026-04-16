@@ -445,6 +445,55 @@ function documentMetaCard(bg = "#F7FAFC"): React.CSSProperties {
   };
 }
 
+function documentFrameStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    overflow: "hidden",
+    border: "1px solid rgba(148,163,184,0.2)",
+    boxShadow:
+      "0 22px 58px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
+  };
+}
+
+function documentWatermarkStyle(): React.CSSProperties {
+  return {
+    position: "absolute",
+    top: 18,
+    right: -14,
+    transform: "rotate(-90deg)",
+    transformOrigin: "top right",
+    letterSpacing: 3.4,
+    fontSize: 11,
+    fontWeight: 900,
+    color: "rgba(215,227,241,0.2)",
+    pointerEvents: "none",
+    textTransform: "uppercase",
+  };
+}
+
+function documentFooterGrid(isCompact: boolean): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 1,
+    marginTop: 18,
+    paddingTop: 14,
+    borderTop: "1px solid rgba(215,227,241,0.16)",
+    display: "grid",
+    gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+    gap: 12,
+  };
+}
+
+function documentFooterLabel(): React.CSSProperties {
+  return {
+    fontSize: 11,
+    letterSpacing: 0.28,
+    fontWeight: 900,
+    textTransform: "uppercase",
+    color: "#AFC4D9",
+  };
+}
+
 function readLocalJSON<T>(key: string, fallback: T): T {
   try {
     if (typeof window === "undefined") return fallback;
@@ -734,7 +783,7 @@ export default function TrustSlipPage() {
         currentClan?.name,
         currentClan?.display_name,
         currentClan?.title
-      ) || (selectedClanId ? `Community ${selectedClanId}` : "No selected community")
+      ) || (selectedClanId ? `Community ${selectedClanId}` : "No current community")
     );
   }, [summary, currentClan, selectedClanId]);
 
@@ -839,7 +888,7 @@ export default function TrustSlipPage() {
   const disclaimer = firstTruthy(
     summary?.merchant_view?.disclaimer,
     summary?.disclaimer,
-    "TrustSlip is a portable summary derived from GMFN trust history."
+    "TrustSlip is a portable summary derived from GSN trust history."
   );
 
   const capacityContext = summary?.evidence_summary?.capacity_context || null;
@@ -891,7 +940,7 @@ export default function TrustSlipPage() {
         <PageTopNav
           sectionLabel="TrustSlip"
           title="TrustSlip"
-          subtitle="Loading the TrustSlip surface..."
+          subtitle="Loading the TrustSlip summary..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/dashboard"
@@ -900,7 +949,7 @@ export default function TrustSlipPage() {
             { label: "Notifications", to: "/app/notifications" },
             { label: "Marketplace", to: "/app/marketplace" },
           ]}
-          utilityLinks={[{ label: "My GMFN and I", to: "/app/my-gmfn-and-i" }]}
+          utilityLinks={[{ label: "My GSN and I", to: "/app/my-gmfn-and-i" }]}
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -923,36 +972,66 @@ export default function TrustSlipPage() {
       }}
     >
       <style>{`
+        @page { margin: 14mm; }
         @media print {
           body { background: #ffffff !important; }
           a[href]:after { content: "" !important; }
           button { display: none !important; }
+          .print-trust-nav { display: none !important; }
+          .print-trust-document,
+          .print-trust-support {
+            box-shadow: none !important;
+            border: 1px solid rgba(148,163,184,0.34) !important;
+            background: #ffffff !important;
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+          .print-trust-document {
+            color: #0b1f33 !important;
+          }
+          .print-trust-document * {
+            color: inherit;
+          }
+          .print-trust-document .print-watermark {
+            color: rgba(11,31,51,0.08) !important;
+          }
         }
       `}</style>
-      <PageTopNav
-        sectionLabel="TrustSlip"
-        title="TrustSlip"
-        subtitle="TrustSlip is the public trust summary surface. TrustSlip Verify follows the current TrustSlip summary."
-        homeTo="/app/dashboard"
-        homeLabel="Dashboard"
-        backTo="/app/dashboard"
-        nextLinks={[
-          { label: "Trust Passport", to: "/app/trust" },
-          { label: "Notifications", to: "/app/notifications" },
-          { label: "Marketplace", to: "/app/marketplace" },
-        ]}
-        utilityLinks={[{ label: "My GMFN and I", to: "/app/my-gmfn-and-i" }]}
-      />
+      <div className="print-trust-nav">
+        <PageTopNav
+          sectionLabel="TrustSlip"
+          title="TrustSlip"
+          subtitle="Use TrustSlip to review the public trust summary. Open TrustSlip Verify when you need to confirm the current public reading."
+          homeTo="/app/dashboard"
+          homeLabel="Dashboard"
+          backTo="/app/dashboard"
+          nextLinks={[
+            { label: "Trust Passport", to: "/app/trust" },
+            { label: "Notifications", to: "/app/notifications" },
+            { label: "Marketplace", to: "/app/marketplace" },
+          ]}
+          utilityLinks={[{ label: "My GSN and I", to: "/app/my-gmfn-and-i" }]}
+        />
+      </div>
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
-        style={pageCard(
-          "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
-        )}
+        className="print-trust-document"
+        style={{
+          ...pageCard(
+            "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+          ),
+          ...documentFrameStyle(),
+        }}
       >
+        <div className="print-watermark" aria-hidden style={documentWatermarkStyle()}>
+          GSN TrustSlip
+        </div>
         <div
           style={{
+            position: "relative",
+            zIndex: 1,
             display: "grid",
             gridTemplateColumns: isCompact
               ? "1fr"
@@ -962,6 +1041,11 @@ export default function TrustSlipPage() {
           }}
         >
           <div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <span style={badge(true)}>Issued trust instrument</span>
+              <span style={badge(false)}>Portable verification summary</span>
+            </div>
+
             <div style={sectionLabel()}>Portable trust verification</div>
 
             <div
@@ -986,7 +1070,7 @@ export default function TrustSlipPage() {
                 maxWidth: 840,
               }}
             >
-              This page shows your current portable trust state, verify link,
+              This shows your current portable trust state, verify link,
               code, CCI, trust limit, and institutional notes.
             </div>
 
@@ -1173,9 +1257,42 @@ export default function TrustSlipPage() {
             </div>
           </div>
         </div>
+
+        <div style={documentFooterGrid(isCompact)}>
+          <div>
+            <div style={documentFooterLabel()}>Issue and expiry</div>
+            <div style={{ marginTop: 6, ...helperText(), color: "#D7E3F1" }}>
+              Issued: {safeDateTime(summary?.issued_at) || "Not stated"}
+            </div>
+            <div style={{ marginTop: 4, ...helperText(), color: "#D7E3F1" }}>
+              Expires: {safeDateTime(summary?.expires_at) || "Not stated"}
+            </div>
+          </div>
+
+          <div>
+            <div style={documentFooterLabel()}>Verification control</div>
+            <div style={{ marginTop: 6, ...helperText(), color: "#D7E3F1" }}>
+              TrustSlip code: {trustSlipCode || "Awaiting issue"}
+            </div>
+            <div style={{ marginTop: 4, ...helperText(), color: "#D7E3F1" }}>
+              Verify path: {verifyUrl || "Not available yet"}
+            </div>
+          </div>
+
+          <div>
+            <div style={documentFooterLabel()}>Institutional notice</div>
+            <div style={{ marginTop: 6, ...helperText(), color: "#D7E3F1" }}>
+              {disclaimer}
+            </div>
+          </div>
+        </div>
       </section>
 
-      <section id="merchant-verify-portal" style={pageCard("#FFFFFF")}>
+      <section
+        id="merchant-verify-portal"
+        className="print-trust-support"
+        style={pageCard("#FFFFFF")}
+      >
         <div
           style={{
             display: "flex",
@@ -1430,7 +1547,7 @@ export default function TrustSlipPage() {
 
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 <div style={helperText()}>
-                  GMFN ID: {safeStr(summary?.merchant_summary?.gmfn_id || gmfnId)}
+                  GSN ID: {safeStr(summary?.merchant_summary?.gmfn_id || gmfnId)}
                 </div>
                 <div style={helperText()}>
                   Code: {safeStr(summary?.merchant_summary?.code || trustSlipCode || "Awaiting issue")}
@@ -1523,7 +1640,7 @@ export default function TrustSlipPage() {
           <div>
             <div style={sectionLabel()}>Evidence and exposure context</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              This is where capacity and exposure indicators appear.
+              Capacity and exposure indicators appear here.
             </div>
           </div>
 
@@ -1717,7 +1834,7 @@ export default function TrustSlipPage() {
                 Executive summary PDF
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Keep the executive summary visible from the trust side. Place the file in{" "}
+                Keep the executive summary visible here. Place the file in{" "}
                 <strong style={{ color: "#0B1F33" }}>/public/gmfn-executive-summary.pdf</strong>{" "}
                 so the button can open it.
               </div>
@@ -1750,3 +1867,7 @@ export default function TrustSlipPage() {
     </div>
   );
 }
+
+
+
+

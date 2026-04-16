@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
@@ -302,6 +303,7 @@ function isMineRow(row: DemandRow, me: any): boolean {
 }
 
 export default function DemandBoxPage() {
+  const location = useLocation();
   const selectedClanId = Number(getSelectedClanId() || 0);
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
@@ -496,6 +498,21 @@ export default function DemandBoxPage() {
 
   const visiblePreview = useMemo(() => visibleRows.slice(0, 6), [visibleRows]);
 
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (loading) return;
+    if (location.hash !== "#demand-box-create") return;
+
+    const timer = window.setTimeout(() => {
+      document.getElementById("demand-box-create")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 80);
+
+    return () => window.clearTimeout(timer);
+  }, [location.hash, loading]);
+
   if (loading) {
     return (
       <div
@@ -510,7 +527,7 @@ export default function DemandBoxPage() {
         <PageTopNav
           sectionLabel="Demand Box"
           title="Demand Box"
-          subtitle="Loading the demand surface..."
+          subtitle="Loading Demand Box..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/marketplace"
@@ -521,13 +538,13 @@ export default function DemandBoxPage() {
           ]}
           utilityLinks={[
             { label: "Trust", to: "/app/trust" },
-            { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+            { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
           ]}
         />
 
         <section style={pageCard("#FFFFFF")}>
           <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-            Loading demand surface...
+            Loading Demand Box...
           </div>
         </section>
       </div>
@@ -548,7 +565,7 @@ export default function DemandBoxPage() {
         <PageTopNav
           sectionLabel="Demand Box"
           title="Demand Box"
-          subtitle="Demand stays identity-based and should run inside a selected community context."
+          subtitle="Demand stays identity-based and works in your current community."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/community"
@@ -558,7 +575,7 @@ export default function DemandBoxPage() {
             { label: "Marketplace", to: "/app/marketplace" },
           ]}
           utilityLinks={[
-            { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+            { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
             { label: "Settings", to: "/app/my-gmfn-and-i?tab=settings" },
           ]}
         />
@@ -566,7 +583,7 @@ export default function DemandBoxPage() {
         {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
         <section style={pageCard("#FFFFFF")}>
-          <div style={sectionLabel()}>No selected community</div>
+          <div style={sectionLabel()}>No current community</div>
 
           <div
             style={{
@@ -588,8 +605,8 @@ export default function DemandBoxPage() {
               maxWidth: 860,
             }}
           >
-            Demand should stay attached to identity and current community context,
-            not float around without a selected community.
+            Demand should remain attached to identity and your current community,
+            not float around without a chosen community.
           </div>
 
           <div
@@ -637,7 +654,7 @@ export default function DemandBoxPage() {
         ]}
         utilityLinks={[
           { label: "Trust", to: "/app/trust" },
-          { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+          { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
           { label: "Settings", to: "/app/my-gmfn-and-i?tab=settings" },
         ]}
       />
@@ -757,7 +774,7 @@ export default function DemandBoxPage() {
         </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section id="demand-box-create" style={pageCard("#FFFFFF")}>
         <div style={sectionLabel()}>Post a new need</div>
 
         <div
@@ -1043,7 +1060,7 @@ export default function DemandBoxPage() {
               maxWidth: 760,
             }}
           >
-            These are open visible requests from other people in your current community context.
+            These are open visible requests from other people in your current community.
           </div>
 
           <div style={{ marginTop: 16, display: "grid", gap: 10 }}>

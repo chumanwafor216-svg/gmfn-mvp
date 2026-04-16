@@ -54,7 +54,7 @@ function primaryBtn(disabled = false): React.CSSProperties {
     width: "100%",
     padding: "14px 18px",
     borderRadius: 16,
-    background: disabled ? "#93B7E3" : "#0B63D1",
+    background: disabled ? "#A9C4EE" : "#1D4ED8",
     color: "#FFFFFF",
     textDecoration: "none",
     fontWeight: 1000,
@@ -125,9 +125,9 @@ function badge(primary = false): React.CSSProperties {
     borderRadius: 999,
     background: primary ? "#EAF2FF" : "#F8FAFC",
     border: primary
-      ? "1px solid rgba(11,99,209,0.14)"
+      ? "1px solid rgba(29,78,216,0.16)"
       : "1px solid rgba(11,31,51,0.08)",
-    color: primary ? "#0B63D1" : "#475569",
+    color: primary ? "#1D4ED8" : "#475569",
     fontWeight: 900,
     fontSize: 12,
     whiteSpace: "nowrap",
@@ -194,15 +194,15 @@ function emailPrefix(value: string): string {
 
 function humanInviterLabel(rawInviter: string): string {
   const v = decodeFriendly(rawInviter);
-  if (!v) return "A known GMFN member";
+  if (!v) return "A known GSN member";
 
   if (looksLikeSystemId(v)) {
-    return "A known GMFN member";
+    return "A known GSN member";
   }
 
   if (v.includes("@")) {
     const prefix = emailPrefix(v);
-    return prefix || "A known GMFN member";
+    return prefix || "A known GSN member";
   }
 
   return v;
@@ -240,7 +240,7 @@ export default function JoinEntryPage() {
 
   useEffect(() => {
     if (typeof document !== "undefined") {
-      document.title = "GMFN | Join Entry";
+      document.title = "GSN | Join Entry";
     }
   }, []);
 
@@ -257,7 +257,7 @@ export default function JoinEntryPage() {
     return decodeFriendly(
       searchParams.get("community_name") ||
         searchParams.get("clan_name") ||
-        "this GMFN community"
+        "this GSN community"
     );
   }, [searchParams]);
 
@@ -434,7 +434,7 @@ export default function JoinEntryPage() {
               maxWidth: 980,
             }}
           >
-            This path is only for people invited into an existing GMFN community.
+            This path is only for people invited into an existing GSN community.
             It is guided, trust-based, and not automatic.
           </div>
 
@@ -511,7 +511,7 @@ export default function JoinEntryPage() {
               >
                 <div>
                   <strong style={{ color: "#0B1F33" }}>Community:</strong>{" "}
-                  {communityName || "This GMFN community"}
+                  {communityName || "This GSN community"}
                 </div>
 
                 {marketplaceName ? (
@@ -629,13 +629,23 @@ export default function JoinEntryPage() {
               </div>
 
               <div style={{ marginTop: 8, ...helperText() }}>
-                Before joining, read My GMFN and I and understand how trust-based
+                Before joining, read My GSN and I and understand how trust-based
                 participation works.
+              </div>
+
+              <div style={{ marginTop: 8, ...helperText() }}>
+                GSN also helps members build steadier follow-through after entry,
+                so savings discipline, repayment behavior, and business targets do
+                not stay as loose intentions.
               </div>
 
               <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <OriginLink to="/guide" style={secondaryLink()}>
-                  Open My GMFN and I
+                  Open My GSN and I
+                </OriginLink>
+
+                <OriginLink to="/app/dashboard#focus-commitments" style={secondaryLink()}>
+                  Open Commitment Builder
                 </OriginLink>
               </div>
             </div>
@@ -719,7 +729,7 @@ export default function JoinEntryPage() {
                 <div>
                   Your request has been sent for community review. Admission is
                   not automatic. Once approval is reached, you will be able to
-                  proceed to activation with your GMFN identity.
+                  proceed to activation with your GSN identity.
                 </div>
 
                 <div style={{ marginTop: 12 }}>
@@ -864,3 +874,6 @@ export default function JoinEntryPage() {
     </div>
   );
 }
+
+
+

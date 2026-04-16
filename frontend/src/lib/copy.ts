@@ -1,7 +1,7 @@
 // frontend/src/lib/copy.ts
 
 export const copy = {
-  appName: "GMFN",
+  appName: "GSN",
   labels: {
     guarantor: "Supporter",
     guarantors: "Supporters",

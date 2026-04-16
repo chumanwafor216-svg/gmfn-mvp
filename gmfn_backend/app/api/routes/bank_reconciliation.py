@@ -1,4 +1,3 @@
-# app/api/routes/bank_reconciliation.py
 from __future__ import annotations
 
 from datetime import datetime
@@ -13,6 +12,11 @@ from app.deps import get_db
 from app.core.auth import get_current_user
 
 from app.db.bank_models import BankEvent, ExpectedPayment
+from app.services.expected_payments_service import (
+    create_expected_payment as create_expected_payment_row,
+    get_expected_payment_by_id,
+    list_expected_payments as list_expected_payment_rows,
+)
 from app.services.reconciliation_service import create_bank_event, reconcile_batch
 
 router = APIRouter(prefix="/bank", tags=["bank"])
@@ -33,12 +37,36 @@ def _iso(dt: Optional[datetime]) -> Optional[str]:
     return dt.isoformat() if dt else None
 
 
+def _expected_payment_out(row: ExpectedPayment) -> Dict[str, Any]:
+    return {
+        "id": int(row.id),
+        "clan_id": int(row.clan_id),
+        "user_id": int(row.user_id),
+        "expected_type": row.expected_type,
+        "amount": _dstr(row.amount),
+        "currency": row.currency,
+        "paid_amount": _dstr(getattr(row, "paid_amount", None)),
+        "remaining_amount": _dstr(getattr(row, "remaining_amount", None)),
+        "due_at": _iso(getattr(row, "due_at", None)),
+        "reference_display": row.reference_display,
+        "reference_normalized": row.reference_normalized,
+        "status": row.status,
+        "status_reason": row.status_reason,
+        "bank_event_id": getattr(row, "bank_event_id", None),
+        "trust_event_id": getattr(row, "trust_event_id", None),
+        "created_at": _iso(getattr(row, "created_at", None)),
+    }
+
+
 # -----------------------------
 # Schemas
 # -----------------------------
 class BankEventIn(BaseModel):
     clan_id: int
-    source_type: str = Field(..., description="statement_csv|webhook_api|email_alert|sms_alert")
+    source_type: str = Field(
+        ...,
+        description="statement_csv|webhook_api|email_alert|sms_alert|manual_api",
+    )
     source_id: Optional[str] = None
 
     direction: str = Field(..., description="credit|debit")
@@ -80,15 +108,30 @@ class BankEventOut(BaseModel):
 class ExpectedPaymentIn(BaseModel):
     clan_id: int
     user_id: int
-    expected_type: str = Field(..., description="contribution|repayment|payout(later)")
+    expected_type: str = Field(
+        ...,
+        description=(
+            "contribution|repayment|vault_subscription|"
+            "merchant_verify_subscription|spotlight_subscription|other"
+        ),
+    )
     amount: str = Field(..., description="Decimal as string")
     currency: str = Field(..., description="e.g. NGN, GBP")
     due_at: Optional[datetime] = None
 
-    # reference standard
-    reference_display: str = Field(..., description="What member must put in bank reference")
-    reference_normalized: str = Field(..., description="Normalized reference (usually derived)")
+    # Canonical input is reference_display.
+    # reference_normalized is accepted for backward compatibility but ignored;
+    # normalization must happen server-side.
+    reference_display: str = Field(
+        ...,
+        description="What the member / payer must put in the bank reference",
+    )
+    reference_normalized: Optional[str] = Field(
+        default=None,
+        description="Accepted for backward compatibility; server computes the canonical normalized reference.",
+    )
 
+    trust_event_id: Optional[int] = None
     meta: Optional[Dict[str, Any]] = None
 
 
@@ -100,6 +143,8 @@ class ExpectedPaymentOut(BaseModel):
 
     amount: str
     currency: str
+    paid_amount: str
+    remaining_amount: str
     due_at: Optional[str]
 
     reference_display: str
@@ -110,7 +155,7 @@ class ExpectedPaymentOut(BaseModel):
 
     bank_event_id: Optional[int]
     trust_event_id: Optional[int]
-    created_at: str
+    created_at: Optional[str]
 
 
 class ReconcileRunIn(BaseModel):
@@ -127,7 +172,6 @@ def ingest_bank_event(
     db: Session = Depends(get_db),
     user: Any = Depends(get_current_user),
 ):
-    # Minimal MVP guard: must be authenticated. (Clan membership enforcement can be layered later.)
     try:
         amt = Decimal(str(payload.amount))
     except Exception:
@@ -150,8 +194,8 @@ def ingest_bank_event(
     )
 
     return BankEventOut(
-        id=row.id,
-        clan_id=row.clan_id,
+        id=int(row.id),
+        clan_id=int(row.clan_id),
         source_type=row.source_type,
         ingested_at=row.ingested_at.isoformat(),
         direction=row.direction,
@@ -181,12 +225,13 @@ def list_bank_events(
     if status:
         q = q.filter(BankEvent.status == status)
     rows = q.order_by(BankEvent.id.desc()).limit(lim).all()
+
     out: list[BankEventOut] = []
     for r in rows:
         out.append(
             BankEventOut(
-                id=r.id,
-                clan_id=r.clan_id,
+                id=int(r.id),
+                clan_id=int(r.clan_id),
                 source_type=r.source_type,
                 ingested_at=r.ingested_at.isoformat(),
                 direction=r.direction,
@@ -206,7 +251,7 @@ def list_bank_events(
 
 
 @router.post("/expected", response_model=ExpectedPaymentOut)
-def create_expected_payment(
+def create_expected_payment_route(
     payload: ExpectedPaymentIn,
     db: Session = Depends(get_db),
     user: Any = Depends(get_current_user),
@@ -216,78 +261,64 @@ def create_expected_payment(
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid amount")
 
-    row = ExpectedPayment(
-        clan_id=int(payload.clan_id),
-        user_id=int(payload.user_id),
-        expected_type=payload.expected_type,
-        amount=amt,
-        currency=(payload.currency or "").upper(),
-        due_at=payload.due_at,
-        reference_display=payload.reference_display,
-        reference_normalized=payload.reference_normalized,
-        status="expected",
-        status_reason=None,
-        bank_event_id=None,
-        trust_event_id=None,
-        meta_json=(None if not payload.meta else __import__("json").dumps(payload.meta)),
-    )
-    db.add(row)
-    db.commit()
-    db.refresh(row)
+    try:
+        row = create_expected_payment_row(
+            db,
+            clan_id=int(payload.clan_id),
+            user_id=int(payload.user_id),
+            expected_type=payload.expected_type,
+            amount=amt,
+            currency=payload.currency,
+            reference_display=payload.reference_display,
+            due_at=payload.due_at,
+            trust_event_id=payload.trust_event_id,
+            meta=payload.meta,
+            commit=True,
+            refresh=True,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
-    return ExpectedPaymentOut(
-        id=row.id,
-        clan_id=row.clan_id,
-        user_id=row.user_id,
-        expected_type=row.expected_type,
-        amount=_dstr(row.amount),
-        currency=row.currency,
-        due_at=_iso(row.due_at),
-        reference_display=row.reference_display,
-        reference_normalized=row.reference_normalized,
-        status=row.status,
-        status_reason=row.status_reason,
-        bank_event_id=row.bank_event_id,
-        trust_event_id=row.trust_event_id,
-        created_at=row.created_at.isoformat(),
-    )
+    return ExpectedPaymentOut(**_expected_payment_out(row))
 
 
 @router.get("/expected", response_model=list[ExpectedPaymentOut])
-def list_expected_payments(
+def list_expected_payments_route(
     clan_id: int,
     limit: int = 50,
     status: Optional[str] = None,
+    expected_type: Optional[str] = None,
+    user_id: Optional[int] = None,
+    currency: Optional[str] = None,
     db: Session = Depends(get_db),
     user: Any = Depends(get_current_user),
 ):
-    lim = max(1, min(int(limit or 50), 200))
-    q = db.query(ExpectedPayment).filter(ExpectedPayment.clan_id == int(clan_id))
-    if status:
-        q = q.filter(ExpectedPayment.status == status)
-    rows = q.order_by(ExpectedPayment.id.desc()).limit(lim).all()
+    rows = list_expected_payment_rows(
+        db,
+        clan_id=int(clan_id),
+        user_id=int(user_id) if user_id is not None else None,
+        expected_type=expected_type,
+        status=status,
+        currency=currency,
+        limit=max(1, min(int(limit or 50), 200)),
+    )
+    return [ExpectedPaymentOut(**_expected_payment_out(r)) for r in rows]
 
-    out: list[ExpectedPaymentOut] = []
-    for r in rows:
-        out.append(
-            ExpectedPaymentOut(
-                id=r.id,
-                clan_id=r.clan_id,
-                user_id=r.user_id,
-                expected_type=r.expected_type,
-                amount=_dstr(r.amount),
-                currency=r.currency,
-                due_at=_iso(r.due_at),
-                reference_display=r.reference_display,
-                reference_normalized=r.reference_normalized,
-                status=r.status,
-                status_reason=r.status_reason,
-                bank_event_id=r.bank_event_id,
-                trust_event_id=r.trust_event_id,
-                created_at=r.created_at.isoformat(),
-            )
-        )
-    return out
+
+@router.get("/expected/{expected_payment_id}", response_model=ExpectedPaymentOut)
+def get_expected_payment_route(
+    expected_payment_id: int,
+    db: Session = Depends(get_db),
+    user: Any = Depends(get_current_user),
+):
+    row = get_expected_payment_by_id(
+        db,
+        expected_payment_id=int(expected_payment_id),
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="Expected payment not found")
+
+    return ExpectedPaymentOut(**_expected_payment_out(row))
 
 
 @router.post("/reconcile")

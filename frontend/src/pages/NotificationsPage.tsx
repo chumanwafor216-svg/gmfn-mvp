@@ -90,6 +90,7 @@ const NOTIFICATION_TARGETS = {
   LOAN_READINESS: "/app/loan-readiness",
   LOAN_SUGGESTIONS: "/app/loan-suggestions",
   LOAN_WORKBENCH: "/app/loan-workbench",
+  COMMITMENT_BUILDER: "/app/dashboard#focus-commitments",
   GUIDE: "/app/my-gmfn-and-i",
   SETTINGS: "/app/my-gmfn-and-i?tab=settings",
   BUILD_FIRST_CIRCLE: "/app/build-first-circle",
@@ -169,6 +170,11 @@ const EXACT_TARGET_ALIASES: Record<string, string> = {
 
   "loan-workbench": NOTIFICATION_TARGETS.LOAN_WORKBENCH,
   workbench: NOTIFICATION_TARGETS.LOAN_WORKBENCH,
+
+  "commitment-builder": NOTIFICATION_TARGETS.COMMITMENT_BUILDER,
+  commitment: NOTIFICATION_TARGETS.COMMITMENT_BUILDER,
+  commitments: NOTIFICATION_TARGETS.COMMITMENT_BUILDER,
+  "focus-commitments": NOTIFICATION_TARGETS.COMMITMENT_BUILDER,
 
   "my-gmfn-and-i": NOTIFICATION_TARGETS.GUIDE,
   guide: NOTIFICATION_TARGETS.GUIDE,
@@ -262,8 +268,8 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
+    background: primary ? "rgba(29,78,216,0.08)" : "rgba(100,116,139,0.10)",
+    color: primary ? "#1D4ED8" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "nowrap",
@@ -283,7 +289,7 @@ function actionBtn(
       padding: "10px 14px",
       borderRadius: 14,
       border: "none",
-      background: disabled ? "#CBD5E1" : "#0B63D1",
+      background: disabled ? "#CBD5E1" : "#1D4ED8",
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
@@ -545,6 +551,23 @@ function resolveNoticeTarget(raw: any): string {
     return NOTIFICATION_TARGETS.GUIDE;
   }
 
+  if (
+    containsAny(text, [
+      "commitment builder",
+      "focus commitment",
+      "commitment checkpoint",
+      "replan",
+      "check in",
+      "savings target",
+      "repayment target",
+      "business target",
+      "retirement readiness",
+      "follow-through",
+    ])
+  ) {
+    return NOTIFICATION_TARGETS.COMMITMENT_BUILDER;
+  }
+
   return NOTIFICATION_TARGETS.NOTIFICATIONS;
 }
 
@@ -605,7 +628,7 @@ function bucketDescription(bucket: GuidanceInboxBucketKey): string {
     return "These are the live steps that need immediate decision or visible response.";
   }
   if (bucket === "dueSoon") {
-    return "These are not yet urgent, but they should be handled before they drift.";
+    return "These are not urgent yet, but they should be handled before they drift further.";
   }
   if (bucket === "watchAndWait") {
     return "These items are already moving. Keep an eye on them without overreacting.";
@@ -948,7 +971,7 @@ export default function NotificationsPage() {
       <PageTopNav
         sectionLabel="Notifications"
         title="Action Inbox"
-        subtitle="This page follows the same guidance language as the dashboard: act now, due soon, watch and wait, then general updates."
+        subtitle="Follow the same guidance language as the dashboard here: act now, due soon, watch and wait, then general updates."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
@@ -959,12 +982,13 @@ export default function NotificationsPage() {
         ]}
         utilityLinks={[
           { label: "Marketplace", to: "/app/marketplace" },
-          { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+          { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
+          { label: "Commitment Builder", to: "/app/dashboard#focus-commitments" },
         ]}
       />
 
       <section
-        style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
+        style={pageCard("linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)")}
       >
         <div style={sectionLabel()}>Action inbox summary</div>
 
@@ -989,7 +1013,7 @@ export default function NotificationsPage() {
             maxWidth: 880,
           }}
         >
-          This page is calmer than a raw notification stream. It groups updates by urgency and next action so the dashboard, companion reminders, and inbox all speak the same language.
+          This view is calmer than a raw notification stream. It groups updates by urgency and next action so the dashboard, companion reminders, and inbox all speak the same language.
         </div>
 
         <div
@@ -1209,7 +1233,7 @@ export default function NotificationsPage() {
                   </div>
 
                   <div style={helperText()}>
-                    When “Open directly” is enabled, the primary button takes you straight to the working page. When it is off, the same action first opens a local review panel here.
+                    When "Open directly" is enabled, the primary button takes you straight to the page you need. When it is off, the same action first opens a local review panel here.
                   </div>
                 </div>
               </div>
@@ -1497,7 +1521,7 @@ export default function NotificationsPage() {
                   ...helperText(),
                 }}
               >
-                This is the raw chronological stream under the structured action buckets.
+                See the full chronological stream here when you want the ungrouped feed.
               </div>
             </div>
 
@@ -1631,7 +1655,7 @@ export default function NotificationsPage() {
                   Due soon
                 </div>
                 <div style={{ marginTop: 8, ...helperText() }}>
-                  This is not yet urgent, but early action prevents drift and repair.
+                  This is not urgent yet, but early action may help prevent drift and extra repair later.
                 </div>
               </div>
 
@@ -1671,3 +1695,5 @@ export default function NotificationsPage() {
     </div>
   );
 }
+
+

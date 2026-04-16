@@ -1,4 +1,4 @@
-ï»¿import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
 import { navigateWithOrigin } from "../lib/nav";
@@ -406,7 +406,7 @@ const EXACT_TARGET_ALIASES: Record<string, string> = {
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
+    border: "1px solid rgba(15,59,116,0.18)",
     background: bg,
     padding: 20,
     boxShadow:
@@ -427,7 +427,7 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
+    border: "1px solid rgba(15,59,116,0.18)",
     background: bg,
     padding: 16,
   };
@@ -840,7 +840,7 @@ function daysUntil(value: unknown): number | null {
 
 function formatDateLabel(value: unknown): string {
   const d = toDateSafe(value);
-  if (!d) return "â€”";
+  if (!d) return "—";
   return d.toLocaleDateString();
 }
 
@@ -905,7 +905,7 @@ function formatFocusProgress(
 
   const target =
     targetValue === null || Number.isNaN(Number(targetValue))
-      ? "â€”"
+      ? "—"
       : String(targetValue);
 
   if (unit === "?") {
@@ -1053,7 +1053,7 @@ function getCciState(me: any): ReadingState {
         classText,
         scoreText:
           scoreNum === null || Number.isNaN(scoreNum)
-            ? "â€”"
+            ? "—"
             : String(Math.round(scoreNum)),
         tone: "green",
         statusText: "Healthy across visible communities",
@@ -1066,7 +1066,7 @@ function getCciState(me: any): ReadingState {
         classText,
         scoreText:
           scoreNum === null || Number.isNaN(scoreNum)
-            ? "â€”"
+            ? "—"
             : String(Math.round(scoreNum)),
         tone: "green",
         statusText: "Stable and growing",
@@ -1081,7 +1081,7 @@ function getCciState(me: any): ReadingState {
         classText,
         scoreText:
           scoreNum === null || Number.isNaN(scoreNum)
-            ? "â€”"
+            ? "—"
             : String(Math.round(scoreNum)),
         tone: "yellow",
         statusText: "Needs attention",
@@ -1095,7 +1095,7 @@ function getCciState(me: any): ReadingState {
       classText,
       scoreText:
         scoreNum === null || Number.isNaN(scoreNum)
-          ? "â€”"
+          ? "—"
           : String(Math.round(scoreNum)),
       tone: "red",
       statusText: "At risk",
@@ -1149,7 +1149,7 @@ function getCciState(me: any): ReadingState {
 
   return {
     classText: "Pending",
-    scoreText: "â€”",
+    scoreText: "—",
     tone: "neutral",
     statusText: "CCI is being prepared",
     whyText: "A fuller cross-community reading will appear when available.",
@@ -1208,7 +1208,7 @@ function getOpenTrustState(
         classText: rawClass,
         scoreText:
           rawScore === null || Number.isNaN(rawScore)
-            ? "â€”"
+            ? "—"
             : String(Math.round(rawScore)),
         tone: "green",
         statusText: "Strong in your current community",
@@ -1221,7 +1221,7 @@ function getOpenTrustState(
         classText: rawClass,
         scoreText:
           rawScore === null || Number.isNaN(rawScore)
-            ? "â€”"
+            ? "—"
             : String(Math.round(rawScore)),
         tone: "green",
         statusText: "Stable in your current community",
@@ -1235,7 +1235,7 @@ function getOpenTrustState(
         classText: rawClass,
         scoreText:
           rawScore === null || Number.isNaN(rawScore)
-            ? "â€”"
+            ? "—"
             : String(Math.round(rawScore)),
         tone: "yellow",
         statusText: "Needs attention in your current community",
@@ -1249,7 +1249,7 @@ function getOpenTrustState(
       classText: rawClass,
       scoreText:
         rawScore === null || Number.isNaN(rawScore)
-          ? "â€”"
+          ? "—"
           : String(Math.round(rawScore)),
       tone: "red",
       statusText: "At risk in your current community",
@@ -1307,7 +1307,7 @@ function getOpenTrustState(
   if (!hasSelectedCommunity) {
     return {
       classText: "Pending",
-      scoreText: "â€”",
+      scoreText: "—",
       tone: "neutral",
       statusText: "Select a community to view Open Trust",
       whyText:
@@ -1317,11 +1317,11 @@ function getOpenTrustState(
 
   return {
     classText: "Pending",
-    scoreText: "â€”",
+    scoreText: "—",
     tone: "neutral",
     statusText: "Open Trust is being prepared",
     whyText:
-      "Open Trust reflects your standing in the currently selected community and will appear here when available.",
+      "Open Trust reflects your standing in the community you are using now and will appear here when available.",
   };
 }
 
@@ -1552,7 +1552,7 @@ function dashboardNoticeMeta(bucket: DashboardNoticeBucket) {
 
   return {
     title: "Unread",
-    detail: "Unread items still visible across the dashboard surfaces.",
+    detail: "Unread items are still waiting across your dashboard.",
     bg: "#F8FAFC",
     border: "1px solid rgba(148,163,184,0.16)",
     text: "#334155",
@@ -1585,7 +1585,7 @@ function renderDashboardNoticeCard(item: DashboardNoticeItem) {
           style={{
             color: "#0B1F33",
             fontWeight: 900,
-            lineHeight: 1.35,
+            lineHeight: 1.32,
           }}
         >
           {item.title}
@@ -1768,7 +1768,7 @@ function buildMostUsedAppFallback(params: {
     community: {
       key: "community",
       label: "Community",
-      detail: "Private community control room.",
+      detail: "Your community page.",
       to: DASHBOARD_TARGETS.COMMUNITY,
       count: 0,
       lastOpenedAt: "",
@@ -1776,7 +1776,7 @@ function buildMostUsedAppFallback(params: {
     marketplace: {
       key: "marketplace",
       label: "Marketplace",
-      detail: "Selected-community market surface.",
+      detail: "Your community marketplace page.",
       to: DASHBOARD_TARGETS.MARKETPLACE,
       count: 0,
       lastOpenedAt: "",
@@ -1800,7 +1800,7 @@ function buildMostUsedAppFallback(params: {
     shop: {
       key: "shop",
       label: "Shop",
-      detail: "Your visible trade surface.",
+      detail: "Your public trade page.",
       to: params.myShopLink,
       count: 0,
       lastOpenedAt: "",
@@ -1832,14 +1832,14 @@ function buildMostUsedAppFallback(params: {
     "demand-box": {
       key: "demand-box",
       label: "Demand Box",
-      detail: "Identity-based demand surface.",
+      detail: "Your demand page.",
       to: DASHBOARD_TARGETS.DEMAND_BOX,
       count: 0,
       lastOpenedAt: "",
     },
     guide: {
       key: "guide",
-      label: "My GMFN and I",
+      label: "My GSN and I",
       detail: "Plain-language guide and settings path.",
       to: DASHBOARD_TARGETS.GUIDE,
       count: 0,
@@ -1944,13 +1944,13 @@ function buildPriorityRoutes(params: {
     {
       key: "community",
       label: "Community",
-      detail: "Private community control room.",
+      detail: "Your community page.",
       to: DASHBOARD_TARGETS.COMMUNITY,
     },
     {
       key: "marketplace",
       label: "Marketplace",
-      detail: "Selected-community market surface.",
+      detail: "Your community marketplace page.",
       to: DASHBOARD_TARGETS.MARKETPLACE,
     },
     {
@@ -1974,7 +1974,7 @@ function buildPriorityRoutes(params: {
     {
       key: "demand-box",
       label: "Demand Box",
-      detail: "Identity-based demand surface.",
+      detail: "Your demand page.",
       to: DASHBOARD_TARGETS.DEMAND_BOX,
     },
   ];
@@ -1993,12 +1993,12 @@ function buildPriorityRoutes(params: {
     return {
       title: "Repair trust before expanding",
       detail:
-        "Your current trust position is under pressure. Protect tomorrowâ€™s options before chasing more visibility or movement.",
+        "Your current trust position is under pressure. Protect tomorrow’s options before chasing more visibility or movement.",
       primaryRoute: trustPrimary
         ? {
             key: "trust",
             label: "Open Trust",
-            detail: "Read the current community trust pressure.",
+            detail: "Review the trust pressure in your community.",
             to: DASHBOARD_TARGETS.TRUST,
             reason: "Trust pressure should be handled before new exposure.",
           }
@@ -2026,13 +2026,13 @@ function buildPriorityRoutes(params: {
         {
           key: "trust-slip",
           label: "Open TrustSlip",
-          detail: "Check portable verification readiness.",
+          detail: "Check whether your verification record is ready.",
           to: DASHBOARD_TARGETS.TRUST_SLIP,
         },
         {
           key: "notifications",
           label: "Open What Matters Now",
-          detail: "Review the exact actions waiting on you.",
+          detail: "Review the actions waiting for you now.",
           to: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
         },
       ],
@@ -2051,7 +2051,7 @@ function buildPriorityRoutes(params: {
         label: "Open Join Requests",
         detail: "Review pending community approvals directly.",
         to: joinRequestsTo,
-        reason: "This is the highest-value response waiting on you.",
+        reason: "Highest-value response waiting on you right now.",
       },
       supportingRoutes: [
         {
@@ -2086,8 +2086,8 @@ function buildPriorityRoutes(params: {
         key: "trust-slip",
         label: "Open TrustSlip",
         detail: safeStr(params.trustSlipCode)
-          ? "Review the verification surface."
-          : "Complete the portable verification surface.",
+          ? "Review your verification record."
+          : "Complete your verification record.",
         to: DASHBOARD_TARGETS.TRUST_SLIP,
         reason: "A weak setup creates friction everywhere else.",
       },
@@ -2106,7 +2106,7 @@ function buildPriorityRoutes(params: {
         },
         {
           key: "guide",
-          label: "Open My GMFN and I",
+          label: "Open My GSN and I",
           detail: "Use the plain-language guide to complete the basics.",
           to: DASHBOARD_TARGETS.GUIDE,
         },
@@ -2159,15 +2159,15 @@ function buildPriorityRoutes(params: {
 
   if (params.userClass === "seller") {
     return {
-      title: "Use your visible trade surfaces deliberately",
+      title: "Use your trade pages deliberately",
       detail:
         "Your trust, shop, and marketplace presence should work together rather than compete for attention.",
       primaryRoute: {
         key: "shop",
         label: "Open Shop",
-        detail: "Work from the seller-facing surface first.",
+        detail: "Start from the seller page first.",
         to: params.myShopLink,
-        reason: "Your visible trade surface is the clearest value engine right now.",
+        reason: "Your trade page is the clearest value signal right now.",
       },
       supportingRoutes: [
         {
@@ -2330,11 +2330,11 @@ function buildTrustJourneyModel(params: {
       posture: "unverified",
       postureTitle: "Incomplete and unverified",
       postureDetail:
-        "Your portable verification surface is not fully ready yet. Complete it before expecting stronger institutional confidence.",
+        "Your verification record is not fully ready yet. Complete it before expecting stronger trust and confidence.",
       primaryRoute: {
         key: "trust-slip",
         label: "Open TrustSlip",
-        detail: "Complete the portable verification surface.",
+        detail: "Complete your verification record.",
         to: DASHBOARD_TARGETS.TRUST_SLIP,
       },
       secondaryRoute: {
@@ -2361,7 +2361,7 @@ function buildTrustJourneyModel(params: {
           ? {
               key: "trust",
               label: "Open Trust",
-              detail: "Read the current community trust pressure.",
+              detail: "Review the trust pressure in your community.",
               to: DASHBOARD_TARGETS.TRUST,
             }
           : {
@@ -3041,8 +3041,8 @@ export default function DashboardPage() {
                 } visible`,
           detail:
             urgentCount > 0
-              ? "Demand Box has urgent need signals visible from the dashboard. Review high-pressure requests before they drift."
-              : "Demand Box has open need signals visible from the dashboard. Review what is moving and decide if you need to respond.",
+              ? "Urgent requests are active in Demand Box. Review the highest-pressure requests before they drift further."
+              : "Open requests are active in Demand Box. Review what is moving and decide whether you need to respond.",
           ctaLabel: "Open Demand Box",
           ctaTo: DASHBOARD_TARGETS.DEMAND_BOX,
           source: "Demand Box",
@@ -3064,7 +3064,7 @@ export default function DashboardPage() {
           detail: safeStr(
             activeSpotlight.body ||
               activeSpotlight.message ||
-              "Spotlight is live on the marketplace surface. Watch visibility, demand, and trust cues from this seller signal."
+              "Spotlight is live in the marketplace. Watch the visibility, demand, and trust signals around this seller."
           ),
           ctaLabel: "Open Marketplace",
           ctaTo: spotlightMarketplaceTo(activeSpotlight),
@@ -3101,9 +3101,9 @@ export default function DashboardPage() {
           id: "synthetic-trust-review",
           title: !trustSlipCode
             ? "TrustSlip still preparing"
-            : "Trust review due soon",
+            : "Trust review coming up",
           detail: !trustSlipCode
-            ? "TrustSlip is still preparing. Open the verification surface and confirm your current trust tools are complete."
+            ? "TrustSlip is still preparing. Open it now and make sure your verification record is ready."
             : "Open Trust or CCI to review the current reading before it drifts into pressure.",
           ctaLabel: !trustSlipCode ? "Open TrustSlip" : "Open Trust",
           ctaTo: !trustSlipCode
@@ -3119,9 +3119,9 @@ export default function DashboardPage() {
     pushItem(
       makeItem({
         id: "synthetic-finance-review",
-        title: "Finance surface ready to review",
+        title: "Finance record ready to review",
         detail:
-          "Open Finance to review pool position, money-in events, money-out movement, locks, and support exposure from the dashboard path.",
+          "Open Finance to review pool position, money-in events, money-out movement, locks, and support needs.",
         ctaLabel: "Open Finance",
         ctaTo: DASHBOARD_TARGETS.FINANCE,
         source: "Open Finance",
@@ -3414,6 +3414,17 @@ export default function DashboardPage() {
     () => buildMostUsedAppRows(appUsage, mostUsedAppFallback),
     [appUsage, mostUsedAppFallback]
   );
+  const mostUsedAppPreview = useMemo(() => {
+    const primary = mostUsedApps[0] || null;
+    const financeApp =
+      mostUsedApps.find((app) => app.key === "finance") ||
+      mostUsedAppFallback.find((app) => app.key === "finance") ||
+      null;
+    if (primary && financeApp && financeApp.key !== primary.key) {
+      return [primary, financeApp];
+    }
+    return mostUsedApps.slice(0, 2);
+  }, [mostUsedApps, mostUsedAppFallback]);
 
   const trustJourneyModel = useMemo(
     () =>
@@ -3802,7 +3813,7 @@ export default function DashboardPage() {
         <div
           style={{
             ...innerCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
-            border: "1px solid rgba(212,175,55,0.18)",
+            border: "1px solid rgba(212,175,55,0.24)",
             boxShadow: "0 18px 38px rgba(2,12,27,0.18)",
             padding: isCompact ? 16 : 18,
           }}
@@ -3824,7 +3835,7 @@ export default function DashboardPage() {
                 opacity: 0.88,
               }}
             >
-              GMFN
+              GSN
             </div>
 
             <div
@@ -3854,12 +3865,12 @@ export default function DashboardPage() {
                   style={{
                     marginTop: 10,
                     fontSize: 15,
-                    lineHeight: 1.8,
+                    lineHeight: 1.75,
                     color: "rgba(255,255,255,0.92)",
                     maxWidth: 860,
                   }}
                 >
-                  GMFN makes it visible, portable, and usable before trade,
+                  GSN makes it visible, portable, and usable before trade,
                   support, or decision.
                 </div>
               </div>
@@ -3930,7 +3941,7 @@ export default function DashboardPage() {
               <div
                 style={{
                   width: "100%",
-                  borderRadius: 30,
+                  borderRadius: 34,
                   padding: 10,
                   border: "1px solid rgba(212,175,55,0.22)",
                   background:
@@ -4215,13 +4226,13 @@ export default function DashboardPage() {
                       <div
                         style={{
                           marginTop: 6,
-                          color: "#0B63D1",
+                          color: "#0F3B74",
                           fontSize: 13,
                           fontWeight: 800,
                           lineHeight: 1.45,
                         }}
                       >
-                        Portable verification surface
+                        Portable verification record
                       </div>
                     </div>
                   </div>
@@ -4231,11 +4242,11 @@ export default function DashboardPage() {
                   style={{
                     position: "relative",
                     ...innerCard(
-                      "linear-gradient(135deg, #F8FBFF 0%, #EEF5FF 42%, #FFFFFF 100%)"
+                      "linear-gradient(135deg, #F4F8FD 0%, #E7F0FB 40%, #FDFEFF 100%)"
                     ),
-                    border: "1px solid rgba(11,99,209,0.16)",
+                    border: "1px solid rgba(15,59,116,0.18)",
                     boxShadow:
-                      "0 18px 38px rgba(11,99,209,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
+                      "0 20px 42px rgba(15,59,116,0.10), inset 0 1px 0 rgba(255,255,255,0.92)",
                     overflow: "hidden",
                   }}
                 >
@@ -4266,8 +4277,8 @@ export default function DashboardPage() {
                         ...innerCard(
                           "linear-gradient(180deg, #0A1625 0%, #11263B 100%)"
                         ),
-                        border: "1px solid rgba(212,175,55,0.20)",
-                        boxShadow: "0 18px 36px rgba(2,12,27,0.26)",
+                        border: "1px solid rgba(212,175,55,0.26)",
+                        boxShadow: "0 20px 38px rgba(2,12,27,0.30)",
                         padding: 12,
                         display: "flex",
                         flexDirection: "column",
@@ -4296,13 +4307,13 @@ export default function DashboardPage() {
                             width: 88,
                             height: 88,
                             borderRadius: 12,
-                            border: "1px solid rgba(212,175,55,0.18)",
+                            border: "1px solid rgba(212,175,55,0.24)",
                             background:
                               "linear-gradient(180deg, #11263B 0%, #193A58 100%)",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            color: "#D7E3F1",
+                            color: "#F8FBFF",
                             fontSize: 12,
                             textAlign: "center",
                             padding: 8,
@@ -4315,8 +4326,8 @@ export default function DashboardPage() {
                       <div
                         style={{
                           fontSize: 12,
-                          color: "#D7E3F1",
-                          fontWeight: 800,
+                          color: "#F8FBFF",
+                          fontWeight: 900,
                           textAlign: "center",
                           letterSpacing: 0.15,
                         }}
@@ -4334,12 +4345,14 @@ export default function DashboardPage() {
                           alignItems: "center",
                         }}
                       >
-                        <span style={badge(true)}>Verification Dock</span>
+                        <span style={{ ...badge(true), background: "rgba(226,240,255,0.96)", color: "#16324F", border: "1px solid rgba(22,50,79,0.10)", boxShadow: "0 8px 18px rgba(15,23,42,0.08)" }}>Verification Dock</span>
                         <span
                           style={{
                             ...badge(false),
-                            background: "rgba(212,175,55,0.12)",
-                            color: "#F6D77A",
+                            background: "rgba(255,244,214,0.96)",
+                            color: "#7A4B00",
+                            border: "1px solid rgba(184,137,45,0.24)",
+                            boxShadow: "0 8px 18px rgba(15,23,42,0.08)",
                           }}
                         >
                           {verificationStatus}
@@ -4349,27 +4362,25 @@ export default function DashboardPage() {
                       <div
                         style={{
                           marginTop: 10,
-                          color: "#F8FBFF",
+                          color: "#102A43",
                           fontSize: 21,
                           fontWeight: 900,
                           lineHeight: 1.22,
                         }}
                       >
-                        Carry a verification surface that feels official.
+                        Keep your verification record visible, readable, and ready to share.
                       </div>
 
                       <div
                         style={{
                           marginTop: 8,
-                          color: "#D7E3F1",
+                          color: "#28445E",
                           fontSize: 14,
                           lineHeight: 1.78,
                           maxWidth: 760,
                         }}
                       >
-                        Trust Passport explains the full trust path. CCI reads your
-                        cross-community integrity. TrustSlip carries your portable
-                        verification state for merchants and institutions.
+                        Use this verification dock to open trust explanation, read integrity status, and share your verification record when someone needs confirmation.
                       </div>
 
                       <div
@@ -4384,11 +4395,11 @@ export default function DashboardPage() {
                           Open Trust Passport
                         </OriginLink>
 
-                        <OriginLink to="/app/identity" style={secondaryBtn(false)}>
+                        <OriginLink to="/app/identity" style={{ ...secondaryBtn(false), background: "#FFFFFF", color: "#14324C", border: "1px solid rgba(15,59,116,0.18)", boxShadow: "0 10px 20px rgba(15,23,42,0.08)" }}>
                           Open CCI
                         </OriginLink>
 
-                        <OriginLink to="/app/trust-slip" style={secondaryBtn(false)}>
+                        <OriginLink to="/app/trust-slip" style={{ ...secondaryBtn(false), background: "#FFFFFF", color: "#14324C", border: "1px solid rgba(15,59,116,0.18)", boxShadow: "0 10px 20px rgba(15,23,42,0.08)" }}>
                           Open TrustSlip
                         </OriginLink>
 
@@ -4397,7 +4408,7 @@ export default function DashboardPage() {
                             href={merchantVerifyHref}
                             target="_blank"
                             rel="noreferrer"
-                            style={secondaryBtn(false)}
+                            style={{ ...secondaryBtn(false), background: "#FFFFFF", color: "#14324C", border: "1px solid rgba(15,59,116,0.18)", boxShadow: "0 10px 20px rgba(15,23,42,0.08)" }}
                           >
                             Merchant Verify
                           </a>
@@ -4413,7 +4424,7 @@ export default function DashboardPage() {
       </section>
 
       <section
-        style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}
+        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%)")}
       >
         <div
           style={{
@@ -4435,7 +4446,7 @@ export default function DashboardPage() {
                 maxWidth: 780,
               }}
             >
-              Spotlight is the main visibility surface for trusted value in the
+              Spotlight is the main visibility window for trusted value in the
               marketplace. It should feel premium, clear, and instantly
               actionable.
             </div>
@@ -4544,7 +4555,7 @@ export default function DashboardPage() {
                       activeSpotlight?.author_name ||
                       "Community seller"
                   )}{" "}
-                  â€¢{" "}
+                  •{" "}
                   {safeStr(
                     activeSpotlight?.source_clan_name ||
                       currentCommunityName(currentClan, selectedClanId)
@@ -4593,14 +4604,16 @@ export default function DashboardPage() {
               style={{
                 position: "relative",
                 width: "100%",
-                minHeight: isCompact ? 300 : 430,
-                borderRadius: 30,
+                minHeight: isCompact ? 320 : 450,
+                borderRadius: 36,
                 overflow: "hidden",
-                border: "1px solid rgba(11,31,51,0.08)",
+                border: "1px solid rgba(184,137,45,0.32)",
+                outline: "1px solid rgba(255,255,255,0.14)",
+                outlineOffset: "-8px",
                 background:
-                  "linear-gradient(180deg, #0F3B74 0%, #0B63D1 55%, #083267 100%)",
+                  "linear-gradient(180deg, #081625 0%, #0D2742 42%, #0F3B74 74%, #0B63D1 100%)",
                 boxShadow:
-                  "0 20px 44px rgba(11,99,209,0.10), 0 6px 18px rgba(15,23,42,0.05)",
+                  "0 34px 70px rgba(2,12,27,0.30), 0 14px 34px rgba(15,59,116,0.20), inset 0 0 0 1px rgba(255,255,255,0.10), inset 0 1px 0 rgba(255,255,255,0.16)",
               }}
             >
               {spotlightImageCandidates.length > 0 ? (
@@ -4614,7 +4627,7 @@ export default function DashboardPage() {
                   style={{
                     width: "100%",
                     height: "100%",
-                    minHeight: isCompact ? 300 : 430,
+                    minHeight: isCompact ? 320 : 450,
                     objectFit: "cover",
                     objectPosition: "center 20%",
                     display: "block",
@@ -4627,7 +4640,7 @@ export default function DashboardPage() {
                   position: "absolute",
                   inset: 0,
                   background:
-                    "linear-gradient(180deg, rgba(7,26,46,0.12) 0%, rgba(7,26,46,0.18) 20%, rgba(7,26,46,0.38) 55%, rgba(7,26,46,0.82) 100%)",
+                    "linear-gradient(180deg, rgba(4,18,33,0.06) 0%, rgba(4,18,33,0.18) 14%, rgba(4,18,33,0.44) 46%, rgba(4,18,33,0.84) 82%, rgba(2,10,20,0.94) 100%)",
                 }}
               />
 
@@ -4656,7 +4669,7 @@ export default function DashboardPage() {
                       ...badge(true),
                       background: "rgba(255,255,255,0.16)",
                       color: "#FFFFFF",
-                      backdropFilter: "blur(8px)",
+                      backdropFilter: "blur(10px)",
                     }}
                   >
                     Spotlight Visibility
@@ -4667,7 +4680,7 @@ export default function DashboardPage() {
                       ...badge(false),
                       background: "rgba(255,255,255,0.12)",
                       color: "#FFFFFF",
-                      backdropFilter: "blur(8px)",
+                      backdropFilter: "blur(10px)",
                     }}
                   >
                     Reputation-Based Visibility
@@ -4678,7 +4691,7 @@ export default function DashboardPage() {
                       ...badge(false),
                       background: "rgba(255,255,255,0.12)",
                       color: "#FFFFFF",
-                      backdropFilter: "blur(8px)",
+                      backdropFilter: "blur(10px)",
                     }}
                   >
                     One Global Shop
@@ -4698,7 +4711,7 @@ export default function DashboardPage() {
                       ...badge(false),
                       background: "rgba(255,255,255,0.12)",
                       color: "#FFFFFF",
-                      backdropFilter: "blur(8px)",
+                      backdropFilter: "blur(10px)",
                     }}
                   >
                     {safeStr(activeSpotlight.trust_band || "Trusted member")}
@@ -4709,10 +4722,10 @@ export default function DashboardPage() {
                       ...badge(false),
                       background: "rgba(255,255,255,0.12)",
                       color: "#FFFFFF",
-                      backdropFilter: "blur(8px)",
+                      backdropFilter: "blur(10px)",
                     }}
                   >
-                    {safeDateTime(activeSpotlight.created_at) || "â€”"}
+                    {safeDateTime(activeSpotlight.created_at) || "—"}
                   </span>
                 </div>
               </div>
@@ -4747,10 +4760,10 @@ export default function DashboardPage() {
                   style={{
                     color: "#FFFFFF",
                     fontWeight: 900,
-                    fontSize: isCompact ? 28 : 42,
+                    fontSize: isCompact ? 30 : 44,
                     lineHeight: 1.08,
                     maxWidth: 900,
-                    textShadow: "0 4px 18px rgba(0,0,0,0.22)",
+                    textShadow: "0 10px 28px rgba(0,0,0,0.32)",
                   }}
                 >
                   {safeStr(
@@ -4764,7 +4777,7 @@ export default function DashboardPage() {
                   style={{
                     color: "rgba(255,255,255,0.90)",
                     fontSize: 15,
-                    lineHeight: 1.8,
+                    lineHeight: 1.75,
                     maxWidth: 860,
                   }}
                 >
@@ -4781,8 +4794,8 @@ export default function DashboardPage() {
               style={{
                 position: "relative",
                 ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
-                border: "1px solid rgba(11,99,209,0.12)",
-                boxShadow: "0 18px 38px rgba(11,99,209,0.05)",
+                border: "1px solid rgba(184,137,45,0.18)",
+                boxShadow: "0 24px 46px rgba(15,59,116,0.10), inset 0 1px 0 rgba(255,255,255,0.72)",
                 overflow: "hidden",
               }}
             >
@@ -4864,7 +4877,7 @@ export default function DashboardPage() {
                       ...innerCard(
                         "linear-gradient(180deg, #0D1B2A 0%, #12293F 100%)"
                       ),
-                      border: "1px solid rgba(212,175,55,0.18)",
+                      border: "1px solid rgba(212,175,55,0.24)",
                       boxShadow: "0 18px 36px rgba(2,12,27,0.24)",
                     }}
                   >
@@ -4921,7 +4934,7 @@ export default function DashboardPage() {
                             marginTop: 8,
                             color: "#F8FBFF",
                             fontWeight: 900,
-                            lineHeight: 1.35,
+                            lineHeight: 1.32,
                           }}
                         >
                           {safeStr(
@@ -4943,10 +4956,10 @@ export default function DashboardPage() {
                             marginTop: 8,
                             color: "#F8FBFF",
                             fontWeight: 900,
-                            lineHeight: 1.35,
+                            lineHeight: 1.32,
                           }}
                         >
-                          {safeDateTime(activeSpotlight.created_at) || "â€”"}
+                          {safeDateTime(activeSpotlight.created_at) || "—"}
                         </div>
                       </div>
 
@@ -4963,7 +4976,7 @@ export default function DashboardPage() {
                               marginTop: 8,
                               color: "#F8FBFF",
                               fontWeight: 900,
-                              lineHeight: 1.35,
+                              lineHeight: 1.32,
                               wordBreak: "break-word",
                             }}
                           >
@@ -4979,7 +4992,7 @@ export default function DashboardPage() {
                       ...innerCard(
                         "linear-gradient(180deg, #0D1B2A 0%, #12293F 100%)"
                       ),
-                      border: "1px solid rgba(212,175,55,0.18)",
+                      border: "1px solid rgba(212,175,55,0.24)",
                       minHeight: 220,
                       boxShadow: "0 18px 36px rgba(2,12,27,0.24)",
                     }}
@@ -5013,13 +5026,13 @@ export default function DashboardPage() {
                         lineHeight: 1.3,
                       }}
                     >
-                      Trusted visibility before the buyer decides.
+                      Featured visibility before the buyer decides.
                     </div>
 
                     <div
                       style={{
                         marginTop: 10,
-                        color: "#D7E3F1",
+                        color: "#F8FBFF",
                         fontSize: 14,
                         lineHeight: 1.78,
                       }}
@@ -5052,7 +5065,7 @@ export default function DashboardPage() {
                         style={{
                           ...badge(false),
                           background: "rgba(255,255,255,0.10)",
-                          color: "#D7E3F1",
+                          color: "#F8FBFF",
                         }}
                       >
                         One Global Shop
@@ -5096,6 +5109,7 @@ export default function DashboardPage() {
                       </button>
                     </div>
                   </div>
+
                 </div>
               ) : null}
             </div>
@@ -5108,7 +5122,168 @@ export default function DashboardPage() {
       </section>
 
       <section
-        style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}
+        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%)")}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={{ ...sectionLabel(), color: "#0F3B74" }}>Demand Control</div>
+            <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
+              Read the live need signal in your community and decide whether to review, respond, or return later.
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span style={badge(true)}>Open requests: {demandItems.length}</span>
+            <span style={badge(false)}>
+              Urgent now: {demandItems.filter((item) => safeStr(item.urgency).toLowerCase() === "high").length}
+            </span>
+          </div>
+        </div>
+        <div
+          style={{
+            marginTop: 16,
+            display: "grid",
+            gridTemplateColumns: isCompact
+              ? "1fr"
+              : "minmax(0, 1.1fr) minmax(280px, 0.9fr)",
+            gap: 14,
+            alignItems: "start",
+          }}
+        >
+          <div
+            style={{
+              ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F6FAFF 100%)"),
+              border: "1px solid rgba(11,99,209,0.12)",
+              boxShadow: "0 14px 30px rgba(11,99,209,0.05)",
+            }}
+          >
+            <div style={{ ...sectionLabel(), color: "#0F3B74" }}>Current request</div>
+            <div
+              style={{
+                marginTop: 10,
+                color: "#0B1F33",
+                fontSize: 20,
+                fontWeight: 900,
+                lineHeight: 1.3,
+              }}
+            >
+              {safeStr(
+                demandItems[0]?.title || "No open request is pressing right now"
+              )}
+            </div>
+            <div
+              style={{
+                marginTop: 8,
+                color: "#35516B",
+                fontSize: 14,
+                lineHeight: 1.75,
+                maxWidth: 760,
+              }}
+            >
+              {safeStr(
+                demandItems[0]?.description ||
+                  "No request is pressing right now. You can open Demand Box to create one or review the wider queue."
+              )}
+            </div>
+            {demandItems[0] ? (
+              <div
+                style={{
+                  marginTop: 10,
+                  color: "#4C647B",
+                  fontSize: 13,
+                  lineHeight: 1.65,
+                  maxWidth: 760,
+                }}
+              >
+                {safeStr(demandItems[0]?.requester_name || demandItems[0]?.requester_nickname)
+                  ? `A member in ${currentCommunityName(currentClan, selectedClanId)} raised this request${safeDateTime(demandItems[0]?.created_at) ? ` on ${safeDateTime(demandItems[0]?.created_at)}` : ""}.`
+                  : `This request is active in ${currentCommunityName(currentClan, selectedClanId)}${safeDateTime(demandItems[0]?.created_at) ? ` since ${safeDateTime(demandItems[0]?.created_at)}` : ""}.`}
+              </div>
+            ) : null}
+            {demandItems[0] ? (
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                }}
+              >
+                <span style={badge(true)}>
+                  {safeStr(demandItems[0]?.urgency).toLowerCase() === "high"
+                    ? "Urgent"
+                    : "Normal"}
+                </span>
+                {safeStr(demandItems[0]?.requester_name || demandItems[0]?.requester_nickname) ? (
+                  <span style={badge(false)}>
+                    Raised by {safeStr(demandItems[0]?.requester_name || demandItems[0]?.requester_nickname)}
+                  </span>
+                ) : null}
+                <span style={badge(false)}>
+                  {currentCommunityName(currentClan, selectedClanId)}
+                </span>
+                {safeDateTime(demandItems[0]?.created_at) ? (
+                  <span style={badge(false)}>{safeDateTime(demandItems[0]?.created_at)}</span>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+          <div
+            style={{
+              ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #FCFEFF 100%)"),
+              border: "1px solid rgba(15,59,116,0.18)",
+            }}
+          >
+            <div style={{ ...sectionLabel(), color: "#0F3B74" }}>What you can do now</div>
+            <div
+              style={{
+                marginTop: 10,
+                color: "#0B1F33",
+                fontSize: 18,
+                fontWeight: 900,
+                lineHeight: 1.3,
+              }}
+            >
+              {demandItems.length > 1
+                ? demandItems.filter((item) => safeStr(item.urgency).toLowerCase() === "high").length > 0
+                  ? "High-pressure requests need review now."
+                  : "Several open requests are waiting for review in your community."
+                : demandItems.length === 1
+                ? "This request is waiting for your decision."
+                : "No live request is pressing right now."}
+            </div>
+            <div style={{ marginTop: 10, ...helperText() }}>
+              {demandItems.length > 1
+                ? "Open the queue and start with the strongest live need first."
+                : demandItems.length === 1
+                ? "Check the details and decide whether to respond now or continue later."
+                : "Create a new request or open Demand Box to review the wider queue."}
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <OriginLink
+                to={demandItems.length === 0 ? "/app/demand-box#demand-box-create" : DASHBOARD_TARGETS.DEMAND_BOX}
+                style={primaryBtn(false)}
+              >
+                {demandItems.length > 1
+                  ? "Review open demands"
+                  : demandItems.length === 1
+                  ? "Open Demand Box"
+                  : "Create demand"}
+              </OriginLink>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%)")}
       >
         <div
           style={{
@@ -5124,7 +5299,7 @@ export default function DashboardPage() {
             <div style={{ marginTop: 8, ...helperText() }}>
               Organised signals from spotlight demand, demand box, join links,
               trust events, open finance, community voting, and other dashboard
-              surfaces.
+              signals.
             </div>
           </div>
 
@@ -5389,7 +5564,7 @@ export default function DashboardPage() {
                         <div
                           style={{
                             color: meta.text,
-                            fontSize: 16,
+                            fontSize: 18,
                             fontWeight: 900,
                             lineHeight: 1.25,
                           }}
@@ -5439,7 +5614,7 @@ export default function DashboardPage() {
                   color: "#0B1F33",
                   fontSize: 18,
                   fontWeight: 900,
-                  lineHeight: 1.35,
+                  lineHeight: 1.32,
                 }}
               >
                 {weeklyFocus?.title || "Next clean route"}
@@ -5497,7 +5672,7 @@ export default function DashboardPage() {
               <div style={{ marginTop: 8, ...helperText() }}>
                 {dashboardNoticeSummary.actNow[0]?.detail ||
                   guidancePulse?.nowLine ||
-                  "Open notifications to review organised dashboard signals."}
+                  "Open notifications to review your organised signals."}
               </div>
             </div>
           </div>
@@ -5512,7 +5687,7 @@ export default function DashboardPage() {
             display: "flex",
             justifyContent: "space-between",
             gap: 12,
-            alignItems: "center",
+            alignItems: "flex-start",
             flexWrap: "wrap",
           }}
         >
@@ -5531,72 +5706,44 @@ export default function DashboardPage() {
                 color: "rgba(226,232,240,0.76)",
                 fontSize: 14,
                 lineHeight: 1.75,
+                maxWidth: 760,
               }}
             >
-              A separate signal block for market reading, capability, and current wisdom.
+              Read one clear market signal first, then use the supporting insight only if it helps your next move.
             </div>
           </div>
 
           <span
             style={{
               ...badge(true),
-              background: "rgba(184,137,45,0.16)",
+              background: "rgba(255,255,255,0.12)",
               color: "#F4D58D",
+              border: "1px solid rgba(184,137,45,0.28)",
             }}
           >
-            Live signal
+            Today
           </span>
         </div>
 
         <div
           style={{
-            marginTop: 10,
+            marginTop: 12,
             ...innerCard(
-              "linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)"
+              "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)"
             ),
-            border: "1px solid rgba(184,137,45,0.24)",
-            padding: 14,
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
+            border: "1px solid rgba(184,137,45,0.22)",
+            padding: 16,
+            boxShadow:
+              "inset 0 1px 0 rgba(255,255,255,0.06), 0 12px 24px rgba(2,12,27,0.10)",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              flexWrap: "wrap",
-              alignItems: "center",
-            }}
-          >
-            <span
-              style={{
-                ...badge(true),
-                background: "rgba(255,255,255,0.08)",
-                color: "#FFFFFF",
-              }}
-            >
-              Market Wisdom
-            </span>
-            {activeWisdomCapability ? (
-              <span
-                style={{
-                  ...badge(false),
-                  background: "rgba(184,137,45,0.14)",
-                  color: "#F4D58D",
-                }}
-              >
-                Capability {activeWisdomCapability}
-              </span>
-            ) : null}
-          </div>
-
           {activeWisdomTitle ? (
             <div
               style={{
-                marginTop: 10,
                 color: "#FFFFFF",
-                fontSize: 16,
+                fontSize: 20,
                 fontWeight: 900,
-                lineHeight: 1.35,
+                lineHeight: 1.28,
               }}
             >
               {activeWisdomTitle}
@@ -5605,11 +5752,12 @@ export default function DashboardPage() {
 
           <div
             style={{
-              marginTop: activeWisdomTitle ? 8 : 10,
-              color: "#E2E8F0",
-              fontSize: 14,
+              marginTop: activeWisdomTitle ? 8 : 0,
+              color: "#F8FBFF",
+              fontSize: 15,
               fontWeight: 800,
-              lineHeight: 1.8,
+              lineHeight: 1.72,
+              maxWidth: 860,
             }}
           >
             {guidancePulse?.wisdomLine || signalText}
@@ -5618,13 +5766,90 @@ export default function DashboardPage() {
           {signalSupport ? (
             <div
               style={{
-                marginTop: 10,
-                color: "rgba(226,232,240,0.74)",
+                marginTop: 8,
+                color: "rgba(226,232,240,0.82)",
                 fontSize: 13,
-                lineHeight: 1.7,
+                lineHeight: 1.68,
+                maxWidth: 760,
               }}
             >
               {signalSupport}
+            </div>
+          ) : null}
+
+          {activeWisdomCapability ? (
+            <div
+              style={{
+                marginTop: 12,
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
+              <span
+                style={{
+                  ...badge(false),
+                  background: "rgba(184,137,45,0.18)",
+                  color: "#F4D58D",
+                  border: "1px solid rgba(184,137,45,0.22)",
+                }}
+              >
+                Capability {activeWisdomCapability}
+              </span>
+            </div>
+          ) : null}
+
+          {activeWisdomCapability === "22" ? (
+            <div
+              style={{
+                marginTop: 10,
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "12px 14px",
+                borderRadius: 16,
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(191,219,254,0.16)",
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    color: "#F8FBFF",
+                    fontSize: 14,
+                    fontWeight: 900,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  Commitment Builder
+                </div>
+                <div
+                  style={{
+                    marginTop: 4,
+                    color: "rgba(226,232,240,0.82)",
+                    fontSize: 12,
+                    lineHeight: 1.6,
+                  }}
+                >
+                  Turn goals into steadier follow-through after today's main signal is clear.
+                </div>
+              </div>
+
+              <OriginLink
+                to={`${DASHBOARD_TARGETS.DASHBOARD}#focus-commitments`}
+                style={{
+                  ...secondaryBtn(false),
+                  background: "rgba(255,255,255,0.94)",
+                  color: "#173654",
+                  border: "1px solid rgba(23,54,84,0.14)",
+                  boxShadow: "0 8px 18px rgba(15,23,42,0.06)",
+                }}
+              >
+                Open Commitment Builder
+              </OriginLink>
             </div>
           ) : null}
         </div>
@@ -5646,8 +5871,8 @@ export default function DashboardPage() {
           <div>
             <div style={sectionLabel()}>Operational Focus</div>
             <div style={{ marginTop: 8, ...helperText(), maxWidth: 840 }}>
-              Priority routes, regular app surfaces, structured commitments, and trust
-              consequence in one disciplined working block.
+              Priority routes, regular app pages, structured commitments, and trust
+              consequence in one disciplined working view.
             </div>
           </div>
 
@@ -6021,7 +6246,7 @@ export default function DashboardPage() {
               <div>
                 <div style={sectionLabel()}>Most Used Apps</div>
                 <div style={{ marginTop: 8, ...helperText() }}>
-                  Regular working surfaces from this dashboard path.
+                  Regular pages you may want close at hand.
                 </div>
               </div>
 
@@ -6036,6 +6261,13 @@ export default function DashboardPage() {
                 <span style={badge(false)}>
                   {appUsage.length > 0 ? "Usage-aware" : "Building usage"}
                 </span>
+
+                <OriginLink
+                  to={DASHBOARD_TARGETS.FINANCE}
+                  style={primaryBtn(false)}
+                >
+                  Open Finance
+                </OriginLink>
 
                 <button
                   type="button"
@@ -6119,7 +6351,7 @@ export default function DashboardPage() {
                     >
                       {app.lastOpenedAt
                         ? `Last opened ${safeDateTime(app.lastOpenedAt)}`
-                        : "Ready from this dashboard"}
+                        : "Ready when you need it"}
                     </div>
                   </button>
                 ))}
@@ -6129,7 +6361,7 @@ export default function DashboardPage() {
                 <div
                   style={{
                     ...innerCard("linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%)"),
-                    border: "1px solid rgba(11,31,51,0.08)",
+                    border: "1px solid rgba(15,59,116,0.18)",
                   }}
                 >
                   <div
@@ -6159,7 +6391,7 @@ export default function DashboardPage() {
 
                   <div style={{ marginTop: 8, ...helperText() }}>
                     Keep the full app set one click away, but let the card collapse to
-                    the surfaces you actually use most.
+                    the pages you actually use most.
                   </div>
                 </div>
 
@@ -6172,7 +6404,7 @@ export default function DashboardPage() {
                     gap: 10,
                   }}
                 >
-                  {mostUsedApps.slice(0, 2).map((app) => (
+                  {mostUsedAppPreview.map((app) => (
                     <button
                       key={`most-used-app-preview-${app.key}`}
                       type="button"
@@ -6681,7 +6913,7 @@ export default function DashboardPage() {
                               marginTop: 8,
                               color: "#0B1F33",
                               fontWeight: 900,
-                              lineHeight: 1.35,
+                              lineHeight: 1.32,
                             }}
                           >
                             {formatDateLabel(item.nextCheckInDate)}
@@ -6700,10 +6932,10 @@ export default function DashboardPage() {
                               marginTop: 8,
                               color: "#0B1F33",
                               fontWeight: 900,
-                              lineHeight: 1.35,
+                              lineHeight: 1.32,
                             }}
                           >
-                            {daysUntil(item.dueDate) ?? "â€”"}
+                            {daysUntil(item.dueDate) ?? "—"}
                           </div>
                         </div>
 
@@ -6714,7 +6946,7 @@ export default function DashboardPage() {
                               marginTop: 8,
                               color: meta.text,
                               fontWeight: 900,
-                              lineHeight: 1.35,
+                              lineHeight: 1.32,
                             }}
                           >
                             {meta.label}
@@ -6781,7 +7013,7 @@ export default function DashboardPage() {
                   <div
                     style={{
                       ...innerCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
-                      border: "1px solid rgba(212,175,55,0.18)",
+                      border: "1px solid rgba(212,175,55,0.24)",
                     }}
                   >
                     <div
@@ -6795,7 +7027,7 @@ export default function DashboardPage() {
                     No active focus commitment is visible yet.
                   </div>
 
-                  <div style={{ marginTop: 10, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
+                  <div style={{ marginTop: 10, ...helperText(), color: "#F8FBFF", maxWidth: 860 }}>
                     Use one or two serious targets only. The point is not to collect
                     goals. The point is to build execution discipline that can later
                     support trust, savings behavior, repayment readiness, and more
@@ -6967,7 +7199,7 @@ export default function DashboardPage() {
                     marginTop: 8,
                     color: "#0B1F33",
                     fontWeight: 900,
-                    fontSize: 16,
+                    fontSize: 18,
                     lineHeight: 1.3,
                     wordBreak: "break-word",
                   }}
@@ -7184,4 +7416,29 @@ export default function DashboardPage() {
     </div>
   );
 } 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

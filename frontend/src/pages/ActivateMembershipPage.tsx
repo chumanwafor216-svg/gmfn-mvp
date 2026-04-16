@@ -58,7 +58,7 @@ function primaryBtn(disabled = false): React.CSSProperties {
     width: "100%",
     padding: "14px 18px",
     borderRadius: 16,
-    background: disabled ? "#93B7E3" : "#0B63D1",
+    background: disabled ? "#A9C4EE" : "#1D4ED8",
     color: "#FFFFFF",
     textDecoration: "none",
     fontWeight: 1000,
@@ -178,9 +178,9 @@ function badge(primary = false): React.CSSProperties {
     borderRadius: 999,
     background: primary ? "#EAF2FF" : "#F8FAFC",
     border: primary
-      ? "1px solid rgba(11,99,209,0.14)"
+      ? "1px solid rgba(29,78,216,0.16)"
       : "1px solid rgba(11,31,51,0.08)",
-    color: primary ? "#0B63D1" : "#475569",
+    color: primary ? "#1D4ED8" : "#475569",
     fontWeight: 900,
     fontSize: 12,
     whiteSpace: "nowrap",
@@ -247,7 +247,7 @@ export default function ActivateMembershipPage() {
 
   useEffect(() => {
     if (typeof document !== "undefined") {
-      document.title = "GMFN | Activate Membership";
+      document.title = "GSN | Activate Membership";
     }
   }, []);
 
@@ -345,7 +345,7 @@ export default function ActivateMembershipPage() {
       <div style={{ maxWidth: 920, margin: "0 auto", display: "grid", gap: 18 }}>
         <div
           style={pageCard(
-            "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+            "linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)"
           )}
         >
           <div style={labelText()}>Approved member route</div>
@@ -497,7 +497,7 @@ export default function ActivateMembershipPage() {
                     1. Password binding
                   </div>
                   <div style={{ marginTop: 8, ...helperText() }}>
-                    Your approved GMFN identity becomes linked to your password.
+                    Your approved GSN identity becomes linked to your password.
                   </div>
                 </div>
 
@@ -524,6 +524,12 @@ export default function ActivateMembershipPage() {
             <div style={pageCard()}>
               <div style={labelText()}>Support links</div>
 
+              <div style={{ marginTop: 10, ...helperText() }}>
+                After activation, GSN can also help turn savings, repayment,
+                and business intentions into steadier follow-through inside the
+                member workspace.
+              </div>
+
               <div
                 style={{
                   marginTop: 16,
@@ -533,7 +539,11 @@ export default function ActivateMembershipPage() {
                 }}
               >
                 <OriginLink to="/guide" style={secondaryLink()}>
-                  Open My GMFN and I
+                  Open My GSN and I
+                </OriginLink>
+
+                <OriginLink to="/app/dashboard#focus-commitments" style={secondaryLink()}>
+                  Open Commitment Builder
                 </OriginLink>
 
                 <OriginLink to="/login" style={secondaryLink()}>
@@ -551,3 +561,6 @@ export default function ActivateMembershipPage() {
     </div>
   );
 }
+
+
+

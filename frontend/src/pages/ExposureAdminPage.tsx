@@ -559,7 +559,7 @@ export default function ExposureAdminPage() {
         currentClan?.name,
         currentClan?.display_name,
         currentClan?.title
-      ) || (selectedClanId ? `Community ${selectedClanId}` : "No selected community")
+      ) || (selectedClanId ? `Community ${selectedClanId}` : "No current community")
     );
   }, [currentClan, selectedClanId]);
 
@@ -607,7 +607,7 @@ export default function ExposureAdminPage() {
         level: "high" as const,
         title: "Visible exposure pressure is high.",
         detail:
-          "Borrower-side support pressure, stale demand, and urgent operational signals are stacking together in the visible surface.",
+          "Borrower-side support pressure, stale demand, and urgent operational signals are stacking together in the visible view.",
       };
     }
 
@@ -785,7 +785,7 @@ export default function ExposureAdminPage() {
             >
               <span style={badge(true)}>Role: {roleLabel}</span>
               <span style={badge(false)}>Community: {communityLabel}</span>
-              <span style={badge(false)}>Exposure surface</span>
+              <span style={badge(false)}>Exposure page</span>
             </div>
           </div>
 
@@ -986,7 +986,7 @@ export default function ExposureAdminPage() {
                 Support-side pressure
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Borrower-side active load and guarantor-side active load together indicate how much support pressure is currently visible in the surface.
+                Borrower-side active load and guarantor-side active load together indicate how much support pressure is currently visible in this view.
               </div>
 
               <div
@@ -1051,7 +1051,7 @@ export default function ExposureAdminPage() {
           <div>
             <div style={sectionLabel()}>Visible queues</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              The queues most likely to need operator attention next.
+              The queues most likely to need attention next.
             </div>
           </div>
 
@@ -1118,7 +1118,7 @@ export default function ExposureAdminPage() {
           <div>
             <div style={sectionLabel()}>Next routes</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Move from exposure reading into the exact next surface you need.
+              Move from exposure reading into the next page you need.
             </div>
           </div>
 
@@ -1154,7 +1154,7 @@ export default function ExposureAdminPage() {
                 System Operations
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the work is live operational handling and immediate intervention.
+                Open this when the work needs live handling and immediate intervention.
               </div>
             </OriginLink>
 
@@ -1170,7 +1170,7 @@ export default function ExposureAdminPage() {
                 Trust Analytics
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the work is pattern reading rather than exposure-heavy handling.
+                Open this when the work is pattern reading rather than exposure-heavy handling.
               </div>
             </OriginLink>
 
@@ -1186,7 +1186,7 @@ export default function ExposureAdminPage() {
                 Trust Graph
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the work is structural relationship analysis behind concentration or pressure.
+                Open this when the work is structural relationship analysis behind concentration or pressure.
               </div>
             </OriginLink>
 
@@ -1202,7 +1202,7 @@ export default function ExposureAdminPage() {
                 Action Inbox
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the work needs direct queue handling from the member-facing side.
+                Open this when the work needs direct queue handling from the member side.
               </div>
             </OriginLink>
           </div>

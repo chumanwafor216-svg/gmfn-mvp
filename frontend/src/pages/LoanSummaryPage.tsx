@@ -407,7 +407,7 @@ function normalizeCommunityName(clan: CommunityLite | null, selectedClanId: numb
       clan?.name,
       clan?.display_name,
       clan?.title
-    ) || (selectedClanId ? `Community ${selectedClanId}` : "No selected community")
+    ) || (selectedClanId ? `Community ${selectedClanId}` : "No current community")
   );
 }
 
@@ -697,7 +697,7 @@ function nextStepText(status: string) {
   const s = lc(status);
 
   if (s === "pending") {
-    return "Next: review guarantor movement, keep the pending decisions moving, and stay inside the support path until the approval picture is clear.";
+    return "Next: review guarantor movement, keep the pending decisions moving, and stay inside the support flow until the approval picture is clear.";
   }
 
   if (s === "approved") {
@@ -705,7 +705,7 @@ function nextStepText(status: string) {
   }
 
   if (s === "disbursed") {
-    return "Next: repayments should continue according to the active support path.";
+    return "Next: repayments should continue according to the active support flow.";
   }
 
   if (s === "repaid") {
@@ -1103,7 +1103,7 @@ export default function LoanSummaryPage() {
         <PageTopNav
           sectionLabel="Loan Summary"
           title="Loan Summary"
-          subtitle="Loading the loan detail surface..."
+          subtitle="Loading the loan detail page..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/loans"
@@ -1141,7 +1141,7 @@ export default function LoanSummaryPage() {
         <PageTopNav
           sectionLabel="Loan Summary"
           title="Loan Summary"
-          subtitle="This page summarizes one support item."
+          subtitle="Review one support item here."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/loans"
@@ -1172,7 +1172,7 @@ export default function LoanSummaryPage() {
       <PageTopNav
         sectionLabel="Loan Summary"
         title={`Loan #${summary.id}`}
-        subtitle="Review the support item, guarantor progress, repayment state, evidence trail, and finance distribution in one calmer surface."
+        subtitle="Review the support item, guarantor progress, repayment state, evidence trail, and finance distribution in one calmer page."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/loans"
@@ -1340,7 +1340,7 @@ export default function LoanSummaryPage() {
                   lineHeight: 1.65,
                 }}
               >
-                A clearer summary and evidence trail keeps the support path easier
+                A clearer summary and evidence trail keeps the support flow easier
                 to understand and easier to defend.
               </div>
             </div>
@@ -1839,7 +1839,7 @@ export default function LoanSummaryPage() {
             <div>
               <div style={sectionLabel()}>Repayment evidence</div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Existing repayment records are shown here. This is the money stage after approval or disbursement.
+                Existing repayment records are shown here. This is where the money stage continues after approval or disbursement.
               </div>
             </div>
 
@@ -2041,7 +2041,7 @@ export default function LoanSummaryPage() {
                     lineHeight: 1.8,
                   }}
                 >
-                  No trust event evidence is visible from this page right now.
+                  No trust event evidence is visible here right now.
                 </div>
               )
             ) : null}
@@ -2154,8 +2154,8 @@ export default function LoanSummaryPage() {
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {supportItemActive
-                ? "Stay inside the current support item and move only to the next exact continuation surface."
-                : "Move from loan summary into the exact next page you need."}
+                ? "Stay inside the current support item and move only to the next continuation page."
+                : "Move from loan summary into the next page you need."}
             </div>
           </div>
 
@@ -2205,7 +2205,7 @@ export default function LoanSummaryPage() {
                 Loan Suggestions
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the next question is guarantor fit.
+                Open this when the next question is guarantor fit.
               </div>
             </OriginLink>
 
@@ -2221,7 +2221,7 @@ export default function LoanSummaryPage() {
                 Loan Readiness
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the question is whether the path is clean enough to continue.
+                Open this when the question is whether the path is clean enough to continue.
               </div>
             </OriginLink>
 
@@ -2257,8 +2257,8 @@ export default function LoanSummaryPage() {
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 {canRepay
-                  ? "Use this when the support item has moved into repayment."
-                  : "Use this when the next question is the broader money truth."}
+                  ? "Open this when the support item has moved into repayment."
+                  : "Open this when the next question is the broader money truth."}
               </div>
             </OriginLink>
 
@@ -2285,3 +2285,5 @@ export default function LoanSummaryPage() {
     </div>
   );
 }
+
+

@@ -91,6 +91,7 @@ class User(Base):
         nullable=False,
     )
 
+
 class Clan(Base):
     __tablename__ = "clans"
 
@@ -122,10 +123,11 @@ class Clan(Base):
     invite_max_uses = Column(Integer, nullable=True)
     invite_uses = Column(Integer, nullable=False, default=0)
 
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     creator = relationship("User", foreign_keys=[created_by_user_id])
-    
+
+
 class ClanMembership(Base):
     __tablename__ = "clan_memberships"
 
@@ -409,7 +411,6 @@ class ClanJoinRequest(Base):
         nullable=True,
     )
 
-    # Auto-generated activation handoff package after approval
     activation_link: Mapped[Optional[str]] = mapped_column(
         Text,
         nullable=True,
@@ -423,9 +424,6 @@ class ClanJoinRequest(Base):
         nullable=True,
     )
 
-    # pending = generated but not yet sent through delivery rail
-    # sent = sent by delivery channel
-    # failed = attempted but failed
     activation_delivery_status: Mapped[Optional[str]] = mapped_column(
         String(20),
         nullable=True,
@@ -435,6 +433,7 @@ class ClanJoinRequest(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+
 
 class ClanJoinVote(Base):
     __tablename__ = "clan_join_votes"
@@ -804,11 +803,11 @@ class MarketplaceShop(Base):
     )
 
     name: Mapped[str] = mapped_column("shop_name", String(120), nullable=False, index=True)
-
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     whatsapp_number: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
     telegram_handle: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     is_active: Mapped[bool] = mapped_column(
         Boolean,
@@ -848,11 +847,9 @@ class MarketplaceProduct(Base):
     )
 
     name: Mapped[str] = mapped_column("title", String(160), nullable=False, index=True)
-
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     price: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
-
     currency: Mapped[Optional[str]] = mapped_column(
         String(8),
         nullable=True,
@@ -862,6 +859,14 @@ class MarketplaceProduct(Base):
 
     image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     video_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    visibility_mode: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="community_visible",
+        server_default="community_visible",
+        index=True,
+    )
 
     is_active: Mapped[bool] = mapped_column(
         Boolean,
@@ -895,9 +900,30 @@ class MarketplaceBroadcast(Base):
         index=True,
     )
 
-    message: Mapped[str] = mapped_column(Text, nullable=False)
+    shop_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("marketplace_shops.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
+    message: Mapped[str] = mapped_column(Text, nullable=False)
     image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    priority_mode: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="free",
+        server_default="free",
+        index=True,
+    )
+
+    visibility_scope: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="direct_communities",
+        server_default="direct_communities",
+        index=True,
+    )
 
     expires_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True),
@@ -955,6 +981,7 @@ class MarketplaceReview(Base):
         index=True,
     )
 
+
 class MarketplaceProductRepost(Base):
     __tablename__ = "marketplace_product_reposts"
 
@@ -975,6 +1002,311 @@ class MarketplaceProductRepost(Base):
         nullable=False,
         index=True,
     )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        index=True,
+    )
+
+
+class FeaturePlan(Base):
+    __tablename__ = "feature_plans"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    feature_code: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        index=True,
+    )
+    plan_code: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+
+    title: Mapped[str] = mapped_column(String(120), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    billing_cycle: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="annual",
+        server_default="annual",
+    )
+    currency: Mapped[str] = mapped_column(
+        String(8),
+        nullable=False,
+        default="GBP",
+        server_default="GBP",
+    )
+    price_amount: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2),
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+
+    quantity_total: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=1,
+        server_default="1",
+    )
+
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="1",
+        index=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+
+class FeatureEntitlement(Base):
+    __tablename__ = "feature_entitlements"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "feature_code",
+            "payment_reference",
+            name="uq_feature_entitlements_feature_payment_ref_v1",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    owner_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    clan_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("clans.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    shop_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("marketplace_shops.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    feature_code: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        index=True,
+    )
+    plan_code: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        index=True,
+    )
+
+    quantity_total: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=1,
+        server_default="1",
+    )
+    quantity_used: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="active",
+        server_default="active",
+        index=True,
+    )
+
+    starts_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+    )
+    expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+    )
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+    )
+
+    payment_reference: Mapped[Optional[str]] = mapped_column(
+        String(128),
+        nullable=True,
+        index=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
+class VaultAccessLink(Base):
+    __tablename__ = "vault_access_links"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    shop_id: Mapped[int] = mapped_column(
+        ForeignKey("marketplace_shops.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    owner_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    token: Mapped[str] = mapped_column(
+        String(128),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="active",
+        server_default="active",
+        index=True,
+    )
+
+    expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+    )
+
+    max_views: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    views_used: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+
+    allow_download: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="0",
+    )
+    allow_print: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="0",
+    )
+    allow_reshare: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="0",
+    )
+    watermark_enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="1",
+    )
+
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+    )
+    last_opened_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        index=True,
+    )
+
+
+class FeatureUsageEvent(Base):
+    __tablename__ = "feature_usage_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    entitlement_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("feature_entitlements.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    owner_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    clan_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("clans.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    shop_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("marketplace_shops.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    feature_code: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        index=True,
+    )
+
+    units_used: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=1,
+        server_default="1",
+    )
+
+    reference_key: Mapped[Optional[str]] = mapped_column(
+        String(128),
+        nullable=True,
+        index=True,
+    )
+
+    note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -1037,6 +1369,8 @@ class MarketplaceRequest(Base):
     )
 
     user = relationship("User")
+
+
 class UserSettings(Base):
     __tablename__ = "user_settings"
 
@@ -1179,4 +1513,4 @@ class UserSettings(Base):
         nullable=False,
         server_default=func.now(),
         onupdate=func.now(),
-    )    
+    )

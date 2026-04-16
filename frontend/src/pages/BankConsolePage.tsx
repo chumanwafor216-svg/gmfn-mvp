@@ -459,12 +459,12 @@ export default function BankConsolePage() {
   const nextStep = useMemo<NextStepState>(() => {
     if (!selectedClanId) {
       return {
-        title: "Choose the community context first",
+        title: "Choose the community first",
         detail:
-          "Bank operations should stay anchored to the selected community before ingesting or reconciling any event.",
-        today: "Open Community Home and confirm the operations context first.",
+          "Bank operations are clearer once your current community is in place.",
+        today: "Open Community Home and confirm the community first.",
         tomorrow:
-          "A clear community context keeps operations disciplined and traceable.",
+          "A clear community keeps operations disciplined and traceable.",
         ctaLabel: "Open Community Home",
         ctaTo: "/app/community",
       };
@@ -689,7 +689,7 @@ export default function BankConsolePage() {
       <PageTopNav
         sectionLabel="Bank Console"
         title="Bank Console"
-        subtitle="Use this page to ingest bank events, run reconciliation, and review what has matched or remained unmatched."
+        subtitle="Review bank events here, run reconciliation, and see what has matched or remained unmatched."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/command-center"
@@ -730,7 +730,7 @@ export default function BankConsolePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Operations surface</div>
+            <div style={sectionLabel()}>Operations page</div>
 
             <div
               style={{
@@ -745,8 +745,8 @@ export default function BankConsolePage() {
             </div>
 
             <div style={{ marginTop: 10, color: "#D7E3F1", lineHeight: 1.8 }}>
-              This page helps operations staff detect incoming bank events, match
-              them against expected references, and understand which items are
+              Review incoming bank events, match
+              them against expected references, and see which items are
               confirmed and which still need review.
             </div>
 
@@ -979,7 +979,7 @@ export default function BankConsolePage() {
       >
         {renderList(
           "Recent Events",
-          "Newest bank-side items visible in this community context.",
+          "Newest bank-side items visible in this community.",
           recent,
           "No recent bank event is currently shown."
         )}

@@ -30,7 +30,7 @@ function actionLink(primary = false): React.CSSProperties {
     padding: "11px 14px",
     borderRadius: 14,
     border: primary ? "none" : "1px solid rgba(11,31,51,0.10)",
-    background: primary ? "#0B63D1" : "#FFFFFF",
+    background: primary ? "#1D4ED8" : "#FFFFFF",
     color: primary ? "#FFFFFF" : "#0B1F33",
     textDecoration: "none",
     fontWeight: 1000,
@@ -68,7 +68,7 @@ export default function BorrowerPreflightPage() {
       <PageTopNav
         sectionLabel="Support Readiness"
         title="Support Readiness"
-        subtitle="Use this page to quickly check whether you are in a good position to move toward a support request."
+        subtitle="Quickly check here whether you are in a good position to move toward a support request."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/loans"
@@ -78,6 +78,10 @@ export default function BorrowerPreflightPage() {
           { label: "Loan Suggestions", to: "/app/loan-suggestions" },
           { label: "Marketplace", to: "/app/marketplace" },
         ]}
+        utilityLinks={[
+          { label: "Loans & Support", to: "/app/loans" },
+          { label: "Commitment Builder", to: "/app/dashboard#focus-commitments" },
+        ]}
       />
 
       <div style={{ ...card(), marginTop: 18 }}>
@@ -85,8 +89,8 @@ export default function BorrowerPreflightPage() {
           Why this matters
         </div>
         <div style={{ marginTop: 10, color: "#475569", lineHeight: 1.8 }}>
-          This page does not approve or reject your request. It helps you avoid wasting time
-          and understand whether your visible signals are strong enough before moving forward.
+          It does not approve or reject your request. It helps you see whether
+          your visible signals are strong enough before you move forward.
         </div>
       </div>
 
@@ -114,6 +118,9 @@ export default function BorrowerPreflightPage() {
           </OriginLink>
           <OriginLink to="/app/loan-readiness" style={actionLink(true)}>
             Check Loan Readiness
+          </OriginLink>
+          <OriginLink to="/app/dashboard#focus-commitments" style={actionLink(false)}>
+            Open Commitment Builder
           </OriginLink>
         </div>
       </div>

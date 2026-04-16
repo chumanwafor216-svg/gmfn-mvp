@@ -140,9 +140,9 @@ function btn(primary = false, disabled = false): React.CSSProperties {
     padding: "12px 14px",
     borderRadius: 14,
     border: primary
-      ? "1px solid rgba(11,31,51,0.75)"
+      ? "1px solid rgba(29,78,216,0.18)"
       : "1px solid rgba(11,31,51,0.12)",
-    background: disabled ? "#CBD5E1" : primary ? "#0B1F33" : "#fff",
+    background: disabled ? "#CBD5E1" : primary ? "#1D4ED8" : "#fff",
     color: primary ? "#fff" : "#0B1F33",
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
@@ -220,7 +220,7 @@ export default function JoinByInvitePage() {
 
   useEffect(() => {
     if (typeof document !== "undefined") {
-      document.title = "GMFN | Invitation Preview";
+      document.title = "GSN | Invitation Preview";
     }
   }, []);
 
@@ -338,8 +338,8 @@ export default function JoinByInvitePage() {
                   maxWidth: 700,
                 }}
               >
-                This page checks the invitation first. It does not open member
-                surfaces directly. The app will guide you step by step.
+                This step checks the invitation first. Member areas open later,
+                and the app will guide you one step at a time.
               </div>
             </div>
 
@@ -522,8 +522,7 @@ export default function JoinByInvitePage() {
                     lineHeight: 1.7,
                   }}
                 >
-                  This invite is valid. Continue into the guided invited-member
-                  route.
+                  This invite is valid. Continue into the guided invited entry.
                 </div>
               )}
 
@@ -545,7 +544,11 @@ export default function JoinByInvitePage() {
                 </button>
 
                 <OriginLink to="/guide" style={btn(false)}>
-                  Open My GMFN and I
+                  Open My GSN and I
+                </OriginLink>
+
+                <OriginLink to="/app/dashboard#focus-commitments" style={btn(false)}>
+                  Open Commitment Builder
                 </OriginLink>
 
                 <OriginLink to="/welcome" style={btn(false)}>
@@ -554,9 +557,14 @@ export default function JoinByInvitePage() {
               </div>
 
               <div style={{ marginTop: 12, ...helperText() }}>
-                This invite does not directly create membership. It moves you
-                into the guided public route so the system can keep the entry path
-                controlled and clear.
+                This invite does not create membership immediately. It moves you
+                into the guided public route so the entry path stays clear and
+                controlled.
+              </div>
+
+              <div style={{ marginTop: 10, ...helperText() }}>
+                After entry, GSN can also help you build steadier
+                follow-through around savings, repayment, and business targets.
               </div>
             </>
           ) : null}

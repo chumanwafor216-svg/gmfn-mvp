@@ -252,7 +252,7 @@ export default function TrustTimelinePage() {
         <div>
           <h2 style={{ margin: 0 }}>Trust Timeline</h2>
           <div style={{ ...muted, marginTop: 4 }}>
-            Explainability surface — <b>“Why did my trust change?”</b>
+            Explainability page — <b>“Why did my trust change?”</b>
           </div>
         </div>
 

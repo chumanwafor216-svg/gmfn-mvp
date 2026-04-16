@@ -33,7 +33,7 @@ html, body {
 }
 
 /* ---- Watermark layer ----
-   Very faint repeating GMFN text.
+   very faint repeating GSN text.
    User can only change tint (via --gmfn-tint).
 */
 .gmfn-watermark{
@@ -43,7 +43,7 @@ html, body {
 }
 
 .gmfn-watermark::before{
-  content: "GMFN  GMFN  GMFN  GMFN  GMFN  GMFN  GMFN  GMFN  GMFN  GMFN  GMFN  GMFN";
+  content: "GSN  GSN  GSN  GSN  GSN  GSN  GSN  GSN  GSN  GSN  GSN  GSN";
   position: fixed;
   left: -20vw;
   top: -10vh;
@@ -67,3 +67,4 @@ html, body {
   position: relative;
   z-index: 1;
 }
+

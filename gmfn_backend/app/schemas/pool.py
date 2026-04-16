@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 from datetime import datetime
+from decimal import Decimal
 from typing import Any, Dict, List, Optional, Literal
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_serializer
 
 
 PoolEventType = Literal[
@@ -13,13 +14,6 @@ PoolEventType = Literal[
     "withdrawal.requested",
     "withdrawal.confirmed",
 ]
-
-
-from decimal import Decimal
-from datetime import datetime
-from pydantic import BaseModel, ConfigDict
-
-
 class PoolEventOut(BaseModel):
     id: int
     clan_id: int
@@ -35,8 +29,13 @@ class PoolEventOut(BaseModel):
 
     model_config = ConfigDict(
         from_attributes=True,
-        json_encoders={Decimal: lambda v: str(v)},
     )
+
+    @field_serializer("amount", when_used="json")
+    def serialize_amount(self, value: Decimal) -> str:
+        return str(value)
+
+
 class PoolMeOut(BaseModel):
     clan_id: int
     user_id: int

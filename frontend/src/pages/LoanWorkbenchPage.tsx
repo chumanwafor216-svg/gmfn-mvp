@@ -196,7 +196,7 @@ function communityName(currentClan: any, clanId: number): string {
       currentClan?.name,
       currentClan?.display_name,
       currentClan?.title
-    ) || (clanId ? `Community ${clanId}` : "No selected community")
+    ) || (clanId ? `Community ${clanId}` : "No current community")
   );
 }
 
@@ -1049,9 +1049,9 @@ export default function LoanWorkbenchPage() {
   const nextRoute = useMemo(() => {
     if (!selectedClanId) {
       return {
-        title: "Choose the community context first.",
+        title: "Choose the community first.",
         detail:
-          "The workbench should stay tied to the selected community before the support path continues.",
+          "The workbench is clearer once your current community is in place.",
         ctaTo: "/app/community",
         ctaLabel: "Open Community Home",
       };
@@ -1061,9 +1061,9 @@ export default function LoanWorkbenchPage() {
       return {
         title: "Start or resume the borrower-side support draft from the Money Out handoff.",
         detail:
-          "The withdrawal route has already identified a support-backed need. Resume the selected-community support surface, then return to the deeper workbench.",
+          "Money Out has already identified a support-backed need. Resume the support draft, then return to the deeper workbench.",
         ctaTo: "/app/marketplace#marketplace-loans-support",
-        ctaLabel: "Open Support Start Surface",
+        ctaLabel: "Open Support Start Page",
       };
     }
 
@@ -1071,7 +1071,7 @@ export default function LoanWorkbenchPage() {
       return {
         title: "Continue the current support item from the deeper workbench.",
         detail:
-          "This is the deeper institutional stage for the active support item. Stay here until the next exact step is clear.",
+          "Stay here with the active support item until the next step is clear.",
         ctaTo: `/app/loan-summary/${selectedLoanId}`,
         ctaLabel: "Open Loan Summary",
       };
@@ -1140,7 +1140,7 @@ export default function LoanWorkbenchPage() {
       <PageTopNav
         sectionLabel="Loan Workbench"
         title="Support Workbench"
-        subtitle="This is the deeper institutional stage of the support path. Once the member reaches workbench, the app should stay inside the real support item until the next exact move is clear."
+        subtitle="Use workbench for the deeper support stage when the next move needs closer handling."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/loan-suggestions"
@@ -1231,9 +1231,8 @@ export default function LoanWorkbenchPage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
-              This stage is the deeper institutional work surface for the current support item.
-              It should keep the member inside the real support item rather than dropping them
-              back into unrelated routes.
+              Use this stage to stay with the current support item until the next
+              exact move is clear.
             </div>
 
             <div
@@ -1247,10 +1246,9 @@ export default function LoanWorkbenchPage() {
               <span style={badge(true)}>Community ID: {publicCommunityId}</span>
               <span style={badge(false)}>GMFN ID: {gmfnId}</span>
               {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
-              <span style={badge(false)}>Current page: Loan workbench</span>
-              <span style={badge(false)}>Current step: Workbench</span>
+              <span style={badge(false)}>Workbench stage</span>
               {cameFromWithdrawalSupport ? (
-                <span style={badge(false)}>Source: Money Out support handoff</span>
+                <span style={badge(false)}>Money Out support handoff</span>
               ) : null}
             </div>
           </div>
@@ -1337,7 +1335,7 @@ export default function LoanWorkbenchPage() {
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             {loans.length === 0 ? (
               <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                No support item is visible for this selected community.
+                No support item is visible for your current community.
               </div>
             ) : (
               loans.map((item) => {
@@ -1430,7 +1428,7 @@ export default function LoanWorkbenchPage() {
           <div>
             <div style={sectionLabel()}>Workbench summary</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Exact backend support fields should stay readable here.
+              Keep the detailed support fields readable here.
             </div>
           </div>
 
@@ -1963,8 +1961,8 @@ export default function LoanWorkbenchPage() {
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {workbenchSupportActive
-                ? "Stay inside the current support item and move only to the next exact continuation surface."
-                : "Move from the deeper workbench into the exact next support-continuation page you need."}
+                ? "Stay inside the current support item and move only to the next continuation step."
+                : "Move into the next page you need."}
             </div>
           </div>
 
@@ -2017,7 +2015,7 @@ export default function LoanWorkbenchPage() {
                 Loan Readiness
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the question is whether the current support path is clean enough to continue.
+                Open this when the question is whether the current support flow is clean enough to continue.
               </div>
             </OriginLink>
 
@@ -2033,7 +2031,7 @@ export default function LoanWorkbenchPage() {
                 Loan Suggestions
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the next question is candidate fit rather than deeper workbench state.
+                Open this when the next question is candidate fit rather than deeper workbench state.
               </div>
             </OriginLink>
 
@@ -2081,7 +2079,7 @@ export default function LoanWorkbenchPage() {
                 Loan Payment Instructions
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the support item has moved into repayment.
+                Open this when the support item has moved into repayment.
               </div>
             </OriginLink>
 
@@ -2108,3 +2106,5 @@ export default function LoanWorkbenchPage() {
     </div>
   );
 }
+
+

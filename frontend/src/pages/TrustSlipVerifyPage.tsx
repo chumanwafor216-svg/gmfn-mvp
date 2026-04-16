@@ -268,6 +268,55 @@ function documentMetaCard(bg = "#F7FAFC"): React.CSSProperties {
   };
 }
 
+function documentFrameStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    overflow: "hidden",
+    border: "1px solid rgba(148,163,184,0.2)",
+    boxShadow:
+      "0 20px 54px rgba(2,6,23,0.12), inset 0 1px 0 rgba(255,255,255,0.5)",
+  };
+}
+
+function documentWatermarkStyle(): React.CSSProperties {
+  return {
+    position: "absolute",
+    top: 18,
+    right: -16,
+    transform: "rotate(-90deg)",
+    transformOrigin: "top right",
+    letterSpacing: 3.1,
+    fontSize: 11,
+    fontWeight: 900,
+    color: "rgba(11,31,51,0.08)",
+    pointerEvents: "none",
+    textTransform: "uppercase",
+  };
+}
+
+function documentFooterGrid(isCompact: boolean): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 1,
+    marginTop: 16,
+    paddingTop: 14,
+    borderTop: "1px solid rgba(148,163,184,0.2)",
+    display: "grid",
+    gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+    gap: 12,
+  };
+}
+
+function documentFooterLabel(): React.CSSProperties {
+  return {
+    fontSize: 11,
+    letterSpacing: 0.28,
+    fontWeight: 900,
+    textTransform: "uppercase",
+    color: "#64748B",
+  };
+}
+
 function apiBase(): string {
   const raw =
     (typeof import.meta !== "undefined" &&
@@ -435,7 +484,7 @@ function deriveBanner(record: TrustSlipVerifyRecord | null): {
       tone: "error",
       title: "This TrustSlip is not currently valid",
       detail:
-        "A record was found, but the visible verification state suggests it should not be treated as currently valid.",
+        "A record was found, but the visible verification state suggests it is not currently valid.",
     };
   }
 
@@ -456,7 +505,7 @@ function deriveBanner(record: TrustSlipVerifyRecord | null): {
     tone: "success",
     title: "A TrustSlip record was found",
     detail:
-      "This page is showing the current verification reading returned for the supplied TrustSlip code.",
+      "This shows the current verification reading returned for the supplied TrustSlip code.",
   };
 }
 
@@ -739,27 +788,39 @@ export default function TrustSlipVerifyPage() {
       }}
     >
       <style>{`
+        @page { margin: 14mm; }
         @media print {
           body { background: #ffffff !important; }
           a[href]:after { content: "" !important; }
           button { display: none !important; }
+          .print-trust-nav { display: none !important; }
+          .print-trust-document,
+          .print-trust-support {
+            box-shadow: none !important;
+            border: 1px solid rgba(148,163,184,0.34) !important;
+            background: #ffffff !important;
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
         }
       `}</style>
       {isAppRoute ? (
-        <PageTopNav
-          sectionLabel="TrustSlip Verify"
-          title="TrustSlip Verify"
-          subtitle="This page confirms who this TrustSlip belongs to, whether it is valid now, and when the current verification window ends."
-          homeTo="/app/dashboard"
-          homeLabel="Dashboard"
-          backTo="/app/trust-slip"
-          backLabel="TrustSlip"
-          nextLinks={[
-            { label: "Trust Passport", to: "/app/trust" },
-            { label: "Notifications", to: "/app/notifications" },
-          ]}
-          utilityLinks={[{ label: "My GMFN and I", to: "/app/my-gmfn-and-i" }]}
-        />
+        <div className="print-trust-nav">
+          <PageTopNav
+            sectionLabel="TrustSlip Verify"
+            title="TrustSlip Verify"
+            subtitle="Confirm who this TrustSlip belongs to, whether it is valid now, and when the current verification window ends."
+            homeTo="/app/dashboard"
+            homeLabel="Dashboard"
+            backTo="/app/trust-slip"
+            backLabel="TrustSlip"
+            nextLinks={[
+              { label: "Trust Passport", to: "/app/trust" },
+              { label: "Notifications", to: "/app/notifications" },
+            ]}
+            utilityLinks={[{ label: "My GSN and I", to: "/app/my-gmfn-and-i" }]}
+          />
+        </div>
       ) : (
         <section
           style={pageCard(
@@ -788,7 +849,7 @@ export default function TrustSlipVerifyPage() {
               color: "#D7E3F1",
             }}
           >
-            This page confirms identity, visible trust reading, and current validity. It is not the full trust explanation page.
+            It confirms identity, visible trust reading, and current validity. It is not the full trust explanation page.
           </div>
 
           <div
@@ -803,7 +864,7 @@ export default function TrustSlipVerifyPage() {
               Welcome
             </OriginLink>
             <OriginLink to="/guide" style={actionBtn("secondary")}>
-              My GMFN and I
+              My GSN and I
             </OriginLink>
           </div>
         </section>
@@ -858,11 +919,19 @@ export default function TrustSlipVerifyPage() {
         </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section
+        className="print-trust-document"
+        style={{ ...pageCard("#FFFFFF"), ...documentFrameStyle() }}
+      >
+        <div className="print-watermark" aria-hidden style={documentWatermarkStyle()}>
+          GSN Verify
+        </div>
         <div style={sectionLabel()}>Verification summary</div>
 
         <div
           style={{
+            position: "relative",
+            zIndex: 1,
             marginTop: 14,
             display: "grid",
             gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
@@ -1009,9 +1078,39 @@ export default function TrustSlipVerifyPage() {
             </div>
           </div>
         </div>
+
+        <div style={documentFooterGrid(isCompact)}>
+          <div>
+            <div style={documentFooterLabel()}>Verification control</div>
+            <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
+              Code: {resolvedCode || "Not available"}
+            </div>
+            <div style={{ marginTop: 4, ...helperText(), color: "#0B1F33" }}>
+              Public path: {verifyPath || "Not available"}
+            </div>
+          </div>
+
+          <div>
+            <div style={documentFooterLabel()}>Validity window</div>
+            <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
+              Issued: {safeDateTime(record?.issued_at) || "Not stated"}
+            </div>
+            <div style={{ marginTop: 4, ...helperText(), color: "#0B1F33" }}>
+              Expires: {safeDateTime(record?.expires_at) || "Not stated"}
+            </div>
+          </div>
+
+          <div>
+            <div style={documentFooterLabel()}>Verification note</div>
+            <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
+              This confirms current public validity only. Trust Passport
+              gives the fuller explanation.
+            </div>
+          </div>
+        </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section className="print-trust-support" style={pageCard("#FFFFFF")}>
         <div style={sectionLabel()}>What this page means</div>
 
         <div
@@ -1030,10 +1129,11 @@ export default function TrustSlipVerifyPage() {
                 fontSize: 15,
               }}
             >
-              This page confirms current validity
+              Current validity
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              This is the public verification surface. It is designed for someone who needs to confirm identity, trust reading, and current validity quickly.
+              Use this public verification page to confirm identity, trust
+              reading, and current validity quickly.
             </div>
           </div>
 
@@ -1045,7 +1145,7 @@ export default function TrustSlipVerifyPage() {
                 fontSize: 15,
               }}
             >
-              This page is not the full trust story
+              This is not the full trust story
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               The full trust explanation still belongs in Trust Passport, where the why, change path, repair path, and trust journey are explained in more detail.
@@ -1054,7 +1154,7 @@ export default function TrustSlipVerifyPage() {
         </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section className="print-trust-support" style={pageCard("#FFFFFF")}>
         <div style={sectionLabel()}>Quick actions</div>
 
         <div
@@ -1110,7 +1210,7 @@ export default function TrustSlipVerifyPage() {
             </OriginLink>
           ) : (
             <OriginLink to="/guide" style={actionBtn("soft")}>
-              My GMFN and I
+              My GSN and I
             </OriginLink>
           )}
         </div>
@@ -1118,3 +1218,6 @@ export default function TrustSlipVerifyPage() {
     </div>
   );
 }
+
+
+

@@ -14,6 +14,13 @@ type SettingsState = {
 };
 
 type NoticeTone = "success" | "error";
+type CapabilityItem = {
+  id: number;
+  title: string;
+  whatItIs?: string;
+  howItWorks?: string;
+  whyItMatters?: string;
+};
 
 const SETTINGS_STORAGE_KEY = "gmfn.myGmfnAndI.settings.v2";
 
@@ -24,7 +31,7 @@ const DEFAULT_SETTINGS: SettingsState = {
   tonePreset: "balanced-default",
 };
 
-const CAPABILITIES = [
+const CAPABILITIES: readonly CapabilityItem[] = [
   { id: 1, title: "Release Before Payment" },
   { id: 2, title: "Trusted Buying and Selling" },
   { id: 3, title: "Cross-Community Trade" },
@@ -46,6 +53,16 @@ const CAPABILITIES = [
   { id: 19, title: "Trust-Based Hiring" },
   { id: 20, title: "Demand Box" },
   { id: 21, title: "Community Economic Power" },
+  {
+    id: 22,
+    title: "Commitment Builder",
+    whatItIs:
+      "Commitment Builder helps members turn savings goals, business targets, repayment plans, retirement readiness, and other intentions into structured, achievable follow-through.",
+    howItWorks:
+      "The app can help a member start a savings target, business target, repayment target, retirement-readiness target, or another structured commitment, then turn that intention into a clearer plan, reminders, step-by-step progress, and visible follow-through.",
+    whyItMatters:
+      "The point is not to collect goals. The point is to build execution discipline that can support savings behavior, retirement readiness, repayment follow-through, business targets, and more dependable action over time.",
+  },
 ] as const;
 
 function safeStr(x: any): string {
@@ -98,12 +115,12 @@ function routeTile(primary = false): React.CSSProperties {
     minHeight: 108,
     borderRadius: 18,
     border: primary
-      ? "1px solid rgba(11,99,209,0.18)"
+      ? "1px solid rgba(29,78,216,0.18)"
       : "1px solid rgba(11,31,51,0.08)",
     background: primary ? "#F7FAFF" : "#FFFFFF",
     padding: 16,
     textDecoration: "none",
-    boxShadow: primary ? "0 10px 24px rgba(11,99,209,0.05)" : "none",
+    boxShadow: primary ? "0 10px 24px rgba(29,78,216,0.05)" : "none",
   };
 }
 
@@ -111,7 +128,7 @@ function capabilityCard(primary = false): React.CSSProperties {
   return {
     borderRadius: 18,
     border: primary
-      ? "1px solid rgba(11,99,209,0.18)"
+      ? "1px solid rgba(29,78,216,0.18)"
       : "1px solid rgba(11,31,51,0.08)",
     background: primary ? "#F7FAFF" : "#FFFFFF",
     padding: 16,
@@ -136,8 +153,8 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
+    background: primary ? "rgba(29,78,216,0.08)" : "rgba(100,116,139,0.10)",
+    color: primary ? "#1D4ED8" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "nowrap",
@@ -157,7 +174,7 @@ function actionBtn(
       padding: "10px 14px",
       borderRadius: 14,
       border: "none",
-      background: disabled ? "#CBD5E1" : "#0B63D1",
+      background: disabled ? "#CBD5E1" : "#1D4ED8",
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
@@ -426,7 +443,7 @@ export default function MyGMFNAndIPage() {
         currentClan?.name,
         currentClan?.display_name,
         currentClan?.title
-      ) || "No selected community"
+      ) || "No current community"
     );
   }, [currentClan]);
 
@@ -499,8 +516,8 @@ export default function MyGMFNAndIPage() {
         }}
       >
         <PageTopNav
-          sectionLabel="My GMFN and I"
-          title="My GMFN and I"
+          sectionLabel="My GSN and I"
+          title="My GSN and I"
           subtitle="Loading your guide and workspace settings..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
@@ -536,9 +553,9 @@ export default function MyGMFNAndIPage() {
       }}
     >
       <PageTopNav
-        sectionLabel="My GMFN and I"
-        title="My GMFN and I"
-        subtitle="This page keeps the 21 core capabilities visible while leaving workspace settings in a separate tab."
+        sectionLabel="My GSN and I"
+        title="My GSN and I"
+        subtitle="Keep the 22 core capabilities visible here while workspace settings stay in a separate tab."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
@@ -557,7 +574,7 @@ export default function MyGMFNAndIPage() {
 
       <section
         style={pageCard(
-          "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+          "linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)"
         )}
       >
         <div
@@ -591,7 +608,7 @@ export default function MyGMFNAndIPage() {
                 maxWidth: 860,
               }}
             >
-              GMFN is your stable identity layer. The current executive summary says the network makes trust visible, portable, and usable across trade, finance, savings, identity, work, and community participation. This page keeps those 21 core capabilities visible in one place.
+              GSN is your stable identity layer. The current executive summary says the network makes trust visible, portable, and usable across trade, finance, savings, identity, work, community participation, and disciplined follow-through. This keeps those 22 core capabilities visible in one place.
             </div>
 
             <div
@@ -604,9 +621,8 @@ export default function MyGMFNAndIPage() {
             >
               <span style={badge(true)}>GMFN ID: {gmfnId}</span>
               <span style={badge(false)}>Community: {communityLabel}</span>
-              <span style={badge(false)}>21 core capabilities</span>
-              <span style={badge(false)}>Current page: My GMFN and I</span>
-              <span style={badge(false)}>Current step: Review member guide</span>
+              <span style={badge(false)}>22 core capabilities</span>
+              <span style={badge(false)}>Member guide</span>
             </div>
           </div>
 
@@ -633,7 +649,7 @@ export default function MyGMFNAndIPage() {
             <div style={{ marginTop: 10, ...helperText() }}>
               {safeStr(
                 nextBestStep?.detail ||
-                  "Use the guide below when you want a clear explanation of what the network can do for a member."
+                  "Use the guide below when you want a clear explanation of what the network can do for you."
               )}
             </div>
           </div>
@@ -667,10 +683,10 @@ export default function MyGMFNAndIPage() {
       {activeTab === "guide" ? (
         <>
           <section style={pageCard("#FFFFFF")}>
-            <div style={sectionLabel()}>21 things GMFN can do for you</div>
+            <div style={sectionLabel()}>22 things GSN can do for you</div>
 
             <div style={{ marginTop: 10, ...helperText(), maxWidth: 920 }}>
-              These are the 21 core capabilities. Keep this list visible. It is the core teaching section of the page.
+              These are the 22 core capabilities that explain what GSN can do for you.
             </div>
 
             <div
@@ -706,10 +722,10 @@ export default function MyGMFNAndIPage() {
           </section>
 
           <section style={pageCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Full explanation of the 21 core capabilities</div>
+            <div style={sectionLabel()}>Full explanation of the 22 core capabilities</div>
 
             <div style={{ marginTop: 10, ...helperText(), maxWidth: 920 }}>
-              The executive summary uses the same explanation structure for all 21 capabilities.
+              The executive summary uses the same explanation structure for all 22 capabilities.
             </div>
 
             <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
@@ -739,17 +755,17 @@ export default function MyGMFNAndIPage() {
                   <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
                     <div style={helperText()}>
                       <strong style={{ color: "#0B1F33" }}>What it is:</strong>{" "}
-                      Exists in real life, made visible in GSN.
+                      {item.whatItIs || "Exists in real life, made visible in GSN."}
                     </div>
 
                     <div style={helperText()}>
                       <strong style={{ color: "#0B1F33" }}>How it works:</strong>{" "}
-                      Identity + trust + community.
+                      {item.howItWorks || "Identity + trust + community."}
                     </div>
 
                     <div style={helperText()}>
                       <strong style={{ color: "#0B1F33" }}>Why it matters:</strong>{" "}
-                      Improves access, reduces risk.
+                      {item.whyItMatters || "Improves access, reduces risk."}
                     </div>
                   </div>
                 </div>
@@ -761,7 +777,7 @@ export default function MyGMFNAndIPage() {
             <div style={sectionLabel()}>Where these capabilities usually appear in the app</div>
 
             <div style={{ marginTop: 10, ...helperText(), maxWidth: 920 }}>
-              The 21 capabilities do not all live on one page. Different pages carry different parts of the system.
+              The 22 capabilities do not all live on one page. Different pages carry different parts of the system.
             </div>
 
             <div
@@ -834,7 +850,24 @@ export default function MyGMFNAndIPage() {
                   Loans
                 </div>
                 <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                  People-backed loans, supporting others, emergency support, and trust savings flow through the support path here.
+                  People-backed loans, supporting others, emergency support, and trust savings all run through the support flow here.
+                </div>
+              </OriginLink>
+
+              <OriginLink to="/app/my-gmfn-and-i" style={routeTile(false)}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 17,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  Commitment Builder
+                </div>
+                <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                  Commitment Builder, member guidance, and the 22-capability explanation live here
+                  while the execution discipline layer grows into more routes over time.
                 </div>
               </OriginLink>
 
@@ -866,7 +899,7 @@ export default function MyGMFNAndIPage() {
                   Demand Box
                 </div>
                 <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                  Demand Box is its own core capability and its own working surface.
+                  Demand Box is its own core capability and its own page.
                 </div>
               </OriginLink>
             </div>
@@ -877,7 +910,7 @@ export default function MyGMFNAndIPage() {
           <div style={sectionLabel()}>Workspace settings</div>
 
           <div style={{ marginTop: 10, ...helperText(), maxWidth: 860 }}>
-            Keep the app calmer and easier to read without changing the 21 core capabilities guide.
+            Keep the app calmer and easier to read without changing the 22 core capabilities guide.
           </div>
 
           <div
@@ -941,7 +974,7 @@ export default function MyGMFNAndIPage() {
                     }
                   />
                   <span>
-                    Open the destination page directly from primary actions instead of reviewing inside the current page first.
+                    Open the destination page directly from the primary action instead of reviewing it here first.
                   </span>
                 </label>
               </div>
@@ -1070,3 +1103,5 @@ export default function MyGMFNAndIPage() {
     </div>
   );
 }
+
+

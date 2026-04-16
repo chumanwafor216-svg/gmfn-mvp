@@ -36,6 +36,8 @@ const APP_TARGETS = {
   COMMUNITY: "/app/community",
   FINANCE: "/app/finance",
   MONEY_OUT: "/app/withdrawal-instructions",
+  PAYMENT_RAILS: "/app/payment-rails",
+  PAYOUT_DETAILS: "/app/payout-details",
   LOANS: "/app/loans",
   NOTIFICATIONS: "/app/notifications",
 } as const;
@@ -179,8 +181,8 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
+    background: primary ? "rgba(29,78,216,0.08)" : "rgba(100,116,139,0.10)",
+    color: primary ? "#1D4ED8" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "nowrap",
@@ -200,7 +202,7 @@ function actionBtn(
       padding: "10px 14px",
       borderRadius: 14,
       border: "none",
-      background: disabled ? "#CBD5E1" : "#0B63D1",
+      background: disabled ? "#CBD5E1" : "#1D4ED8",
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
@@ -379,7 +381,7 @@ function getCommunityName(currentClan: any, clanId: number): string {
       currentClan?.name,
       currentClan?.display_name,
       currentClan?.title
-    ) || (clanId ? `Community ${clanId}` : "No selected community")
+    ) || (clanId ? `Community ${clanId}` : "No current community")
   );
 }
 
@@ -700,7 +702,7 @@ export default function PaymentInstructionsPage() {
         step: "Code generation",
         title: "Generate the payment instruction.",
         detail:
-          "Money In should not continue without a real matching reference and settlement detail.",
+          "Money In cannot continue until the matching reference and settlement detail are ready.",
       };
     }
 
@@ -710,7 +712,7 @@ export default function PaymentInstructionsPage() {
         step: "Payment",
         title: "Pay using the exact generated reference.",
         detail:
-          "Once the member pays, they should confirm that payment has been made so the route can move into reconciliation.",
+          "After payment is made, confirm it here so the route can move into reconciliation.",
       };
     }
 
@@ -720,7 +722,7 @@ export default function PaymentInstructionsPage() {
         step: "Result",
         title: "A matching payment event is visible.",
         detail:
-          "The recent money surface appears to show a payment event that matches this generated reference.",
+          "A recent money record appears to show a payment event that matches this generated reference.",
       };
     }
 
@@ -729,7 +731,7 @@ export default function PaymentInstructionsPage() {
       step: "Awaiting reconciliation",
       title: "Payment is waiting for reconciliation.",
       detail:
-        "The member has confirmed payment, but the recent money surface does not yet show a visible matched event for this reference.",
+        "Payment has been confirmed, but the recent money record does not show a visible matched event for this reference yet.",
     };
   }, [instruction, paymentConfirmed, matchedEvent]);
 
@@ -764,7 +766,7 @@ export default function PaymentInstructionsPage() {
     if (!selectedClanId || !currentGmfnId) {
       setNotice({
         tone: "error",
-        text: "Community or GMFN context is not ready.",
+        text: "Community or member identity is not ready.",
       });
       return;
     }
@@ -793,7 +795,7 @@ export default function PaymentInstructionsPage() {
     if (!selectedClanId || !currentGmfnId) {
       setNotice({
         tone: "error",
-        text: "Community or GMFN context is not ready.",
+        text: "Community or member identity is not ready.",
       });
       return;
     }
@@ -984,6 +986,7 @@ export default function PaymentInstructionsPage() {
           ]}
           utilityLinks={[
             { label: "Loans", to: APP_TARGETS.LOANS },
+            { label: "Payment Rails", to: APP_TARGETS.PAYMENT_RAILS },
             { label: "Notifications", to: APP_TARGETS.NOTIFICATIONS },
           ]}
         />
@@ -1024,9 +1027,13 @@ export default function PaymentInstructionsPage() {
             : [{ label: "Finance", to: APP_TARGETS.FINANCE }]
         }
         utilityLinks={[
+          { label: "Payment Rails", to: APP_TARGETS.PAYMENT_RAILS },
           { label: "Notifications", to: APP_TARGETS.NOTIFICATIONS },
           ...(moneyInCanWidenRoutes
-            ? [{ label: "Loans", to: APP_TARGETS.LOANS }]
+            ? [
+                { label: "Payout Details", to: APP_TARGETS.PAYOUT_DETAILS },
+                { label: "Loans", to: APP_TARGETS.LOANS },
+              ]
             : []),
         ]}
       />
@@ -1034,7 +1041,7 @@ export default function PaymentInstructionsPage() {
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
-        style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
+        style={pageCard("linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)")}
       >
         <div
           style={{
@@ -1052,7 +1059,7 @@ export default function PaymentInstructionsPage() {
                 borderRadius: 20,
                 border: "1px solid rgba(212,175,55,0.22)",
                 overflow: "hidden",
-                background: "linear-gradient(180deg, rgba(8,17,31,0.88) 0%, rgba(16,42,67,0.96) 100%)",
+                background: "linear-gradient(180deg, rgba(16,36,58,0.84) 0%, rgba(38,82,124,0.92) 100%)",
                 boxShadow: "0 20px 44px rgba(2,12,27,0.32)",
                 display: "flex",
                 alignItems: "center",
@@ -1103,9 +1110,9 @@ export default function PaymentInstructionsPage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
-              GMFN is not the custodian of the money. This route generates the exact
-              matching reference so payment into the official community account can
-              later be matched and reflected correctly.
+              GSN is not the custodian of the money. This route generates the exact
+              matching reference so payment into the community account can later be
+              matched and reflected correctly.
             </div>
 
             <div
@@ -1265,7 +1272,7 @@ export default function PaymentInstructionsPage() {
           <div>
             <div style={sectionLabel()}>Non-custodial warning</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              This warning should stay explicit before the member pays.
+              Keep this warning visible before payment is made.
             </div>
           </div>
 
@@ -1283,8 +1290,8 @@ export default function PaymentInstructionsPage() {
             <div style={innerCard("#FFFBEF")}>
               <div style={sectionLabel()}>Pay-in rule</div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                GMFN is not a custodian of funds. The member must pay into the official
-                community account using the exact generated reference.
+                GSN does not hold your funds. Pay into the community account
+                using the exact generated reference.
               </div>
             </div>
 
@@ -1298,7 +1305,8 @@ export default function PaymentInstructionsPage() {
             <div style={innerCard("#FFFBEF")}>
               <div style={sectionLabel()}>Critical rule</div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                Money In does not use guarantor logic. It is a pay-in route, not a support route.
+                Money In does not use guarantor logic. It stays a pay-in route,
+                not a support route.
               </div>
             </div>
           </div>
@@ -1396,7 +1404,7 @@ export default function PaymentInstructionsPage() {
               <div style={sectionLabel()}>What generation does</div>
               <div style={{ marginTop: 8, ...helperText() }}>
                 The generated code/reference is the matching identity for the payment event.
-                It binds together the selected community, your GMFN identity, the amount, and the currency.
+                It ties together your community, GSN identity, amount, and currency.
               </div>
             </div>
           </div>
@@ -1416,7 +1424,7 @@ export default function PaymentInstructionsPage() {
           <div>
             <div style={sectionLabel()}>Payment instruction</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              The official settlement rail and exact reference.
+              Use the settlement rail and exact reference shown here.
             </div>
           </div>
 
@@ -1653,6 +1661,10 @@ export default function PaymentInstructionsPage() {
                   Open Finance
                 </OriginLink>
 
+                <OriginLink to={APP_TARGETS.PAYMENT_RAILS} style={actionBtn("secondary")}>
+                  Payment Rails
+                </OriginLink>
+
                 {moneyInCanWidenRoutes ? (
                   <OriginLink to={APP_TARGETS.MARKETPLACE} style={actionBtn("secondary")}>
                     Return To Marketplace
@@ -1726,6 +1738,14 @@ export default function PaymentInstructionsPage() {
                 Money Out
               </OriginLink>
 
+              <OriginLink to={APP_TARGETS.PAYMENT_RAILS} style={actionBtn("secondary")}>
+                Payment Rails
+              </OriginLink>
+
+              <OriginLink to={APP_TARGETS.PAYOUT_DETAILS} style={actionBtn("secondary")}>
+                Payout Details
+              </OriginLink>
+
               <OriginLink to={APP_TARGETS.LOANS} style={actionBtn("secondary")}>
                 Loans
               </OriginLink>
@@ -1759,3 +1779,7 @@ export default function PaymentInstructionsPage() {
     </div>
   );
 }
+
+
+
+

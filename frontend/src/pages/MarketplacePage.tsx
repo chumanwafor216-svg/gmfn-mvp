@@ -606,7 +606,7 @@ function communityDescription(row: CommunityRow | null | undefined): string {
     firstTruthy(
       row?.marketplace_description,
       row?.description,
-      "This is the marketplace home for your selected community."
+      "Marketplace home for your current community."
     )
   );
 }
@@ -968,8 +968,8 @@ function badgeStyle(primary = false): React.CSSProperties {
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
+    background: primary ? "rgba(29,78,216,0.08)" : "rgba(100,116,139,0.10)",
+    color: primary ? "#1D4ED8" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "nowrap",
@@ -994,7 +994,7 @@ function actionBtn(
       padding: "10px 14px",
       borderRadius: 14,
       border: "none",
-      background: disabled ? "#CBD5E1" : "#0B63D1",
+      background: disabled ? "#CBD5E1" : "#1D4ED8",
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
@@ -2093,7 +2093,7 @@ export default function MarketplacePage() {
             Selected community marketplace
           </div>
           <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1" }}>
-            Loading selected community...
+            Loading your current community...
           </div>
         </section>
       </div>
@@ -2166,7 +2166,7 @@ export default function MarketplacePage() {
               TrustSlip
             </OriginLink>
             <OriginLink to="/app/my-gmfn-and-i" style={actionBtn("soft")}>
-              My GMFN and I
+              My GSN and I
             </OriginLink>
           </div>
         </section>
@@ -2214,12 +2214,11 @@ export default function MarketplacePage() {
             maxWidth: 920,
           }}
         >
-          This is the marketplace for your selected community. From here you can
-          view the community profile, open money tools, browse community-visible
-          shop links, and continue into support when needed. Private Vault Shops
-          do not appear in ordinary browsing here. Once a money or support route
-          starts, that route should take over and guide the member to a clear
-          conclusion.
+          Use this marketplace to review the community profile, open money tools,
+          browse community-visible shop links, and continue into support when
+          needed. Private Vault Shops do not appear in ordinary browsing here.
+          Once a money or support route starts, that route should take over and
+          guide you to a clear conclusion.
         </div>
 
         <div
@@ -2366,7 +2365,7 @@ export default function MarketplacePage() {
                   borderRadius: 28,
                   border: "1px solid rgba(212,175,55,0.18)",
                   background:
-                    "linear-gradient(180deg, #0B1625 0%, #10263C 52%, #153756 100%)",
+                    "linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -2384,10 +2383,33 @@ export default function MarketplacePage() {
                     overflow: "hidden",
                     border: "1px solid rgba(212,175,55,0.14)",
                     background:
-                      "linear-gradient(180deg, #11263B 0%, #193A58 100%)",
+                      "linear-gradient(180deg, #163552 0%, #2A5B84 100%)",
                     position: "relative",
                   }}
                 >
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 14,
+                      right: 14,
+                      zIndex: 2,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      minHeight: 30,
+                      padding: "6px 10px",
+                      borderRadius: 999,
+                      background: "rgba(7,16,28,0.72)",
+                      border: "1px solid rgba(212,175,55,0.22)",
+                      color: "#F6D77A",
+                      fontSize: 11,
+                      fontWeight: 900,
+                      letterSpacing: 0.24,
+                      textTransform: "uppercase",
+                      backdropFilter: "blur(8px)",
+                    }}
+                  >
+                    Community identity
+                  </div>
                   <AuthResolvedImage
                     candidates={communityImageCandidates}
                     alt={communityName(selectedCommunity)}
@@ -2396,6 +2418,8 @@ export default function MarketplacePage() {
                     style={{
                       width: "100%",
                       height: 230,
+                      borderRadius: 18,
+                      border: "1px solid rgba(212,175,55,0.14)",
                       objectFit: "cover",
                       objectPosition: "center 18%",
                       display: "block",
@@ -2450,6 +2474,17 @@ export default function MarketplacePage() {
                           }}
                         >
                           {communityName(selectedCommunity)}
+                        </div>
+                        <div
+                          style={{
+                            maxWidth: 240,
+                            color: "#D7E3F1",
+                            fontSize: 13,
+                            lineHeight: 1.7,
+                          }}
+                        >
+                          This executive frame will hold the visible community identity picture once
+                          it is released.
                         </div>
                       </div>
                     }
@@ -2677,7 +2712,7 @@ export default function MarketplacePage() {
               </div>
 
               <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                This is the current visible pool position in the selected community context.
+                This shows the pool amount currently visible in your community.
               </div>
             </div>
 
@@ -2697,7 +2732,7 @@ export default function MarketplacePage() {
               </div>
 
               <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                This is the official community money account / settlement rail. Money In depends on it.
+                Money In uses this fixed community account and settlement route.
               </div>
 
               <div style={{ marginTop: 12 }}>
@@ -2723,7 +2758,7 @@ export default function MarketplacePage() {
               </div>
 
               <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                This is where approved Money Out should land. It is separate from the fixed community account.
+                Approved Money Out should land here. It stays separate from the fixed community account.
               </div>
 
               <div style={{ marginTop: 12 }}>
@@ -2989,7 +3024,7 @@ export default function MarketplacePage() {
           <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
             {memberRows.length === 0 ? (
               <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                No member rows are shown yet for this selected community.
+                No member rows are visible in this community yet.
               </div>
             ) : (
               memberRows.map((row, index) => {
@@ -3462,7 +3497,7 @@ export default function MarketplacePage() {
                   ...helperText(),
                 }}
               >
-                These are the support items currently visible in your selected community context.
+                These are the support items currently visible in this community.
               </div>
 
               <div
@@ -3523,7 +3558,7 @@ export default function MarketplacePage() {
                             ? `Guarantor: ${item.guarantor_name}`
                             : "",
                           item?.created_at ? `Started: ${safeDateTime(item.created_at)}` : "",
-                          "This support item is visible in the current community context."
+                          "This support item is visible in your current community."
                         )}
                       </div>
                     </div>
@@ -3537,3 +3572,5 @@ export default function MarketplacePage() {
     </div>
   );
 }
+
+

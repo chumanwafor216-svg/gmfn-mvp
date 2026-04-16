@@ -656,7 +656,7 @@ export default function RepaymentPage() {
       <PageTopNav
         sectionLabel="Repayment"
         title={`Loan Repayment #${numericLoanId}`}
-        subtitle="Repayment is its own guided money stage. It should stay tied to one support item from exact amount and reference through payment and reconciliation."
+        subtitle="Repayment is its own guided money stage. It stays tied to one support item from exact amount and reference through payment and reconciliation."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo={`/app/loan-summary/${numericLoanId}`}
@@ -722,8 +722,8 @@ export default function RepaymentPage() {
               Repay loan #{numericLoanId}
             </div>
             <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
-              This route should stay tied to one approved support item. The exact amount,
-              exact reference, and exact next step should remain visible until repayment
+              This route stays tied to one approved support item. The exact amount,
+              exact reference, and next step should remain visible until repayment
               is clearly waiting for confirmation.
             </div>
             <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -1081,3 +1081,5 @@ export default function RepaymentPage() {
     </div>
   );
 }
+
+

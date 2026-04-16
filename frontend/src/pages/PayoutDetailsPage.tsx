@@ -185,7 +185,7 @@ function removeLocalPayout(): void {
 
 function buildPayoutSummary(form: PayoutForm): string {
   return [
-    "GMFN Payout Details",
+    "GSN Payout Details",
     `Account Name: ${safeStr(form.account_name || "—")}`,
     `Account Number / Wallet: ${safeStr(form.account_number || "—")}`,
     `Bank / Wallet Provider: ${safeStr(form.bank_name || "—")}`,
@@ -297,12 +297,12 @@ export default function PayoutDetailsPage() {
   const nextStep = useMemo<NextStepState>(() => {
     if (!selectedClanId) {
       return {
-        title: "Choose the community context first",
+        title: "Choose the community first",
         detail:
-          "Payout details belong to the same money path as withdrawals and support. Confirm the community context first whenever possible.",
+          "Payout details belong to the same money path as withdrawals and support. Confirm your current community first whenever possible.",
         today: "Open Community Home and confirm the community you are working in.",
         tomorrow:
-          "A clear community context keeps payout movement easier to understand.",
+          "A clear community keeps payout movement easier to understand.",
         ctaLabel: "Open Community Home",
         ctaTo: "/app/community",
       };
@@ -312,7 +312,7 @@ export default function PayoutDetailsPage() {
       return {
         title: "Complete the payout destination first",
         detail:
-          "Approved withdrawals should not move until your own payout destination is complete enough for the route to be understood.",
+          "Approved withdrawals should wait until your payout destination is complete enough for the route to be understood.",
         today: "Complete the payout fields and save them locally for this pilot build.",
         tomorrow:
           "A clear payout destination reduces mistakes and delay when withdrawal begins.",
@@ -379,7 +379,7 @@ export default function PayoutDetailsPage() {
       <PageTopNav
         sectionLabel="Bank / Wallet Details"
         title="Bank / Wallet Details"
-        subtitle="This is where approved withdrawals should go after they leave the community settlement account."
+        subtitle="Choose where approved withdrawals should go after they leave the community settlement account."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/withdrawal-instructions"
@@ -430,10 +430,10 @@ export default function PayoutDetailsPage() {
             </div>
 
             <div style={{ marginTop: 10, color: "#D7E3F1", lineHeight: 1.8 }}>
-              GMFN does not hold funds as a custodian. When a withdrawal is processed,
+              GSN does not hold funds as a custodian. When a withdrawal is processed,
               money should move from the community settlement account into your own
-              registered payout account or wallet. This page tells the system where
-              your approved funds should go.
+              registered payout account or wallet. Confirm here where your approved
+              funds should go.
             </div>
 
             <div
@@ -508,9 +508,9 @@ export default function PayoutDetailsPage() {
         </div>
 
         <div style={{ marginTop: 10, color: "#475569", lineHeight: 1.8 }}>
-          GMFN does not hold funds as a custodian. When a withdrawal is processed,
+          GSN does not hold funds as a custodian. When a withdrawal is processed,
           money should move from the community settlement account into your own
-          registered payout account. This page tells the system where your approved
+          registered payout account. This confirms where your approved
           funds should go.
         </div>
       </section>
@@ -683,3 +683,4 @@ export default function PayoutDetailsPage() {
     </div>
   );
 }
+

@@ -455,12 +455,12 @@ function routeTile(primary = false): React.CSSProperties {
     minHeight: 104,
     borderRadius: 18,
     border: primary
-      ? "1px solid rgba(11,99,209,0.18)"
+      ? "1px solid rgba(29,78,216,0.16)"
       : "1px solid rgba(11,31,51,0.08)",
-    background: primary ? "#F7FAFF" : "#FFFFFF",
+    background: primary ? "linear-gradient(180deg, #F7FAFF 0%, #FFFFFF 100%)" : "#FFFFFF",
     padding: 16,
     textDecoration: "none",
-    boxShadow: primary ? "0 10px 24px rgba(11,99,209,0.05)" : "none",
+    boxShadow: primary ? "0 10px 24px rgba(29,78,216,0.05)" : "none",
   };
 }
 
@@ -482,8 +482,8 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
+    background: primary ? "rgba(29,78,216,0.08)" : "rgba(100,116,139,0.10)",
+    color: primary ? "#1D4ED8" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "nowrap",
@@ -503,7 +503,7 @@ function actionBtn(
       padding: "10px 14px",
       borderRadius: 14,
       border: "none",
-      background: disabled ? "#CBD5E1" : "#0B63D1",
+      background: disabled ? "#CBD5E1" : "#1D4ED8",
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
@@ -522,9 +522,9 @@ function actionBtn(
       minHeight: 38,
       padding: "8px 12px",
       borderRadius: 12,
-      border: "1px solid rgba(11,31,51,0.08)",
-      background: "#F8FBFF",
-      color: disabled ? "#94A3B8" : "#24415C",
+      border: "1px solid rgba(29,78,216,0.10)",
+      background: "#F5FAFF",
+      color: disabled ? "#94A3B8" : "#1E4063",
       fontWeight: 800,
       fontSize: 13,
       textDecoration: "none",
@@ -541,8 +541,8 @@ function actionBtn(
     minHeight: 42,
     padding: "10px 14px",
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(29,78,216,0.12)",
+    background: "#FDFEFF",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
@@ -561,9 +561,9 @@ function collapseToggle(): React.CSSProperties {
     minHeight: 38,
     padding: "8px 12px",
     borderRadius: 12,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
-    color: "#24415C",
+    border: "1px solid rgba(29,78,216,0.12)",
+    background: "#FDFEFF",
+    color: "#1E4063",
     fontWeight: 800,
     fontSize: 13,
     cursor: "pointer",
@@ -886,7 +886,7 @@ export default function FinancePage() {
         currentClan?.name,
         currentClan?.display_name,
         currentClan?.title
-      ) || (selectedClanId ? `Community ${selectedClanId}` : "No selected community")
+      ) || (selectedClanId ? `Community ${selectedClanId}` : "No current community")
     );
   }, [currentClan, selectedClanId]);
 
@@ -1002,7 +1002,7 @@ export default function FinancePage() {
         tone: "pressure" as const,
         title: "You are carrying both borrower-side and guarantor-side finance pressure.",
         detail:
-          "Your own support path is active and you also have live guarantor exposure.",
+          "Your own support activity is active and you also have live guarantor exposure.",
       };
     }
 
@@ -1026,7 +1026,7 @@ export default function FinancePage() {
 
     return {
       tone: "calm" as const,
-      title: "Your finance surface is currently calm.",
+      title: "Your finance record is currently calm.",
       detail:
         "No active borrower-side pressure or live guarantor-side locked exposure is currently shown.",
     };
@@ -1055,7 +1055,7 @@ export default function FinancePage() {
         <PageTopNav
           sectionLabel="Finance"
           title="Finance"
-          subtitle="Loading the finance surface..."
+          subtitle="Loading your finance record..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/marketplace"
@@ -1065,6 +1065,9 @@ export default function FinancePage() {
             { label: "Money Out", to: "/app/withdrawal-instructions" },
           ]}
           utilityLinks={[
+            { label: "Payment Rails", to: "/app/payment-rails" },
+            { label: "Payout Details", to: "/app/payout-details" },
+            { label: "Commitment Builder", to: "/app/dashboard#focus-commitments" },
             { label: "Loans", to: "/app/loans" },
             { label: "Notifications", to: "/app/notifications" },
           ]}
@@ -1072,7 +1075,7 @@ export default function FinancePage() {
 
         <section style={pageCard("#FFFFFF")}>
           <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-            Loading finance surface...
+            Loading your finance record...
           </div>
         </section>
       </div>
@@ -1102,6 +1105,9 @@ export default function FinancePage() {
           { label: "Money Out", to: "/app/withdrawal-instructions" },
         ]}
         utilityLinks={[
+          { label: "Payment Rails", to: "/app/payment-rails" },
+          { label: "Payout Details", to: "/app/payout-details" },
+          { label: "Commitment Builder", to: "/app/dashboard#focus-commitments" },
           { label: "Loans", to: "/app/loans" },
           { label: "Notifications", to: "/app/notifications" },
         ]}
@@ -1109,7 +1115,7 @@ export default function FinancePage() {
 
       <section
         style={pageCard(
-          "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+          "linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)"
         )}
       >
         <div
@@ -1128,7 +1134,7 @@ export default function FinancePage() {
                 borderRadius: 20,
                 border: "1px solid rgba(148,163,184,0.16)",
                 overflow: "hidden",
-                background: "linear-gradient(180deg, #102A43 0%, #12304D 100%)",
+                background: "linear-gradient(180deg, #1A3A57 0%, #295276 100%)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1185,10 +1191,10 @@ export default function FinancePage() {
                 maxWidth: 860,
               }}
             >
-              This is the finance surface. It should tell you what is in your pool,
-              what is effectively available, what is locked because of guarantor
-              support, what you currently owe through borrower-side support, and the
-              recent finance events that affect your position.
+              Review what is in your pool, what is effectively available, what is
+              locked because of guarantor support, what you currently owe through
+              borrower-side support, and the recent finance events that affect your
+              position.
             </div>
 
             <div
@@ -1199,20 +1205,106 @@ export default function FinancePage() {
                 flexWrap: "wrap",
               }}
             >
-              <span style={badge(true)}>Community ID: {publicCommunityCode}</span>
-              <span style={badge(false)}>GMFN ID: {gmfnId}</span>
-              <span style={badge(false)}>Member: {memberName}</span>
-              {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
-              <span style={badge(false)}>Current page: Finance</span>
-              <span style={badge(false)}>Current step: Full financial truth</span>
-              <span style={badge(false)}>Pool ref: {poolReference || "Awaiting reference"}</span>
-              <span style={badge(false)}>
+              <span
+                style={{
+                  ...badge(true),
+                  background: "rgba(255,255,255,0.16)",
+                  color: "#FFFFFF",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                }}
+              >
+                Community ID: {publicCommunityCode}
+              </span>
+              <span
+                style={{
+                  ...badge(false),
+                  background: "rgba(255,255,255,0.12)",
+                  color: "#F8FBFF",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                GMFN ID: {gmfnId}
+              </span>
+              <span
+                style={{
+                  ...badge(false),
+                  background: "rgba(255,255,255,0.12)",
+                  color: "#F8FBFF",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                Member: {memberName}
+              </span>
+              {memberRole ? (
+                <span
+                  style={{
+                    ...badge(false),
+                    background: "rgba(255,255,255,0.12)",
+                    color: "#F8FBFF",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}
+                >
+                  Role: {memberRole}
+                </span>
+              ) : null}
+              <span
+                style={{
+                  ...badge(false),
+                  background: "rgba(255,255,255,0.12)",
+                  color: "#F8FBFF",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                Current page: Finance
+              </span>
+              <span
+                style={{
+                  ...badge(false),
+                  background: "rgba(255,255,255,0.12)",
+                  color: "#F8FBFF",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                Current step: Full financial truth
+              </span>
+              <span
+                style={{
+                  ...badge(false),
+                  background: "rgba(255,255,255,0.12)",
+                  color: "#F8FBFF",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                Pool ref: {poolReference || "Awaiting reference"}
+              </span>
+              <span
+                style={{
+                  ...badge(false),
+                  background: "rgba(255,255,255,0.12)",
+                  color: "#F8FBFF",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
                 Borrower items: {borrowerLoans.length}
               </span>
-              <span style={badge(false)}>
+              <span
+                style={{
+                  ...badge(false),
+                  background: "rgba(255,255,255,0.12)",
+                  color: "#F8FBFF",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
                 Active guarantees: {guarantorExposure?.activeGuarantees || 0}
               </span>
-              <span style={badge(false)}>
+              <span
+                style={{
+                  ...badge(false),
+                  background: "rgba(255,255,255,0.12)",
+                  color: "#F8FBFF",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
                 Expected payments: {activeExpectedPayments.length}
               </span>
             </div>
@@ -1362,7 +1454,7 @@ export default function FinancePage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B63D1",
+                  color: "#1D4ED8",
                   fontSize: 18,
                   fontWeight: 900,
                   lineHeight: 1.25,
@@ -1392,7 +1484,7 @@ export default function FinancePage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B63D1",
+                  color: "#1D4ED8",
                   fontSize: 18,
                   fontWeight: 900,
                   lineHeight: 1.25,
@@ -2077,7 +2169,7 @@ export default function FinancePage() {
           <div>
             <div style={sectionLabel()}>Next routes</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Move from finance into the next exact money page you need.
+              Move from Finance into the next money page you need.
             </div>
           </div>
 
@@ -2113,7 +2205,7 @@ export default function FinancePage() {
                 Money In
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when you want to pay into the pool.
+                Open this when you want to pay into the pool.
               </div>
             </OriginLink>
 
@@ -2129,7 +2221,7 @@ export default function FinancePage() {
                 Money Out
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when you want to withdraw from the pool.
+                Open this when you want to withdraw from the pool.
               </div>
             </OriginLink>
 
@@ -2145,7 +2237,39 @@ export default function FinancePage() {
                 Loans & Support
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this for broader support operations.
+                Open this for broader support activity.
+              </div>
+            </OriginLink>
+
+            <OriginLink to="/app/payment-rails" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                Payment Rails
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Review the inbound and outbound rail options before choosing a money path.
+              </div>
+            </OriginLink>
+
+            <OriginLink to="/app/payout-details" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                Payout Details
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Keep the personal payout destination clear before continuing a withdrawal path.
               </div>
             </OriginLink>
 
@@ -2161,7 +2285,7 @@ export default function FinancePage() {
                 Marketplace
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Return to the selected-community working surface.
+                Return to your community page.
               </div>
             </OriginLink>
 
@@ -2193,7 +2317,24 @@ export default function FinancePage() {
                 Action Inbox
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when someone is waiting directly on your response.
+                Open this when someone is waiting directly on your response.
+              </div>
+            </OriginLink>
+
+            <OriginLink to="/app/dashboard#focus-commitments" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  lineHeight: 1.3,
+                }}
+              >
+                Commitment Builder
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Move from finance into disciplined follow-through when you need to steady savings,
+                repayment, or another visible commitment.
               </div>
             </OriginLink>
           </div>
@@ -2202,3 +2343,6 @@ export default function FinancePage() {
     </div>
   );
 }
+
+
+

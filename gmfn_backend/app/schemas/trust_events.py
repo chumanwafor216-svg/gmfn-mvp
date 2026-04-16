@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class TrustEventRowOut(BaseModel):
@@ -27,8 +27,7 @@ class TrustEventRowOut(BaseModel):
     reason: Optional[str] = None
     note: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TrustEventsListOut(BaseModel):

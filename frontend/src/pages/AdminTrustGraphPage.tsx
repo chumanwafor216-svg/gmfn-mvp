@@ -559,7 +559,7 @@ export default function AdminTrustGraphPage() {
         currentClan?.name,
         currentClan?.display_name,
         currentClan?.title
-      ) || (selectedClanId ? `Community ${selectedClanId}` : "No selected community")
+      ) || (selectedClanId ? `Community ${selectedClanId}` : "No current community")
     );
   }, [currentClan, selectedClanId]);
 
@@ -697,7 +697,7 @@ export default function AdminTrustGraphPage() {
       <PageTopNav
         sectionLabel="Trust Graph"
         title="Trust Graph"
-        subtitle="Read connectedness, structural concentration, and relationship-based trust shape from the operator workspace."
+        subtitle="Read connectedness, structural concentration, and relationship-based trust shape from the admin workspace."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/command-center"
@@ -736,7 +736,7 @@ export default function AdminTrustGraphPage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
-              This page is for connectedness and relationship structure. Use it when the work is about network shape, centrality, clusters, and structural risk signals.
+              Read connectedness and relationship structure here when the work is about network shape, centrality, clusters, and structural risk signals.
             </div>
 
             <div
@@ -973,7 +973,7 @@ export default function AdminTrustGraphPage() {
                       {safeStr(node.gmfnId || node.role || node.risk) ? (
                         <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                           {[
-                            safeStr(node.gmfnId) ? `GMFN: ${safeStr(node.gmfnId)}` : "",
+                            safeStr(node.gmfnId) ? `GSN: ${safeStr(node.gmfnId)}` : "",
                             safeStr(node.role),
                             safeStr(node.risk),
                           ]
@@ -1135,7 +1135,7 @@ export default function AdminTrustGraphPage() {
           <div>
             <div style={sectionLabel()}>Next routes</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Move from structural reading into the next operator surface you need.
+              Move from structural reading into the next admin page you need.
             </div>
           </div>
 
@@ -1171,7 +1171,7 @@ export default function AdminTrustGraphPage() {
                 Trust Analytics
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the next step is broader pattern reading rather than structure-only interpretation.
+                Open this when the next step is broader pattern reading rather than structure-only interpretation.
               </div>
             </OriginLink>
 
@@ -1187,7 +1187,7 @@ export default function AdminTrustGraphPage() {
                 System Operations
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the structural signal now needs live operational handling.
+                Open this when the structural signal now needs live handling.
               </div>
             </OriginLink>
 
@@ -1203,7 +1203,7 @@ export default function AdminTrustGraphPage() {
                 Exposure
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when relationship shape is contributing to concentration or pressure.
+                Open this when relationship shape is contributing to concentration or pressure.
               </div>
             </OriginLink>
 
@@ -1219,7 +1219,7 @@ export default function AdminTrustGraphPage() {
                 Command Center
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Return to the operator entry surface when you need to choose another admin path.
+                Return to Command Center when you need to choose another admin path.
               </div>
             </OriginLink>
           </div>
@@ -1228,3 +1228,4 @@ export default function AdminTrustGraphPage() {
     </div>
   );
 }
+

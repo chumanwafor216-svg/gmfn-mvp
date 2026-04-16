@@ -112,7 +112,7 @@ export default function AdminIdentityRiskPage() {
       <PageTopNav
         sectionLabel="Identity Risk"
         title="Identity Risk"
-        subtitle="Use this page to monitor suspicious device overlap, identity clusters, and signals that may suggest multi-account misuse."
+        subtitle="Monitor suspicious device overlap, identity clusters, and signals that may suggest multi-account misuse."
       />
 
       {err ? (

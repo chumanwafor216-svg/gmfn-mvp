@@ -13,7 +13,8 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_current_user
 from app.core.rate_limit import client_ip, rate_limiter
 from app.db.database import get_db
-from app.db.models import TrustSlip, User
+from app.db.models import MarketplaceShop, TrustSlip, User
+from app.services.feature_entitlements_service import has_active_feature
 from app.services.trust_events_services import log_trust_event
 from app.services.trust_slips_services import (
     backfill_missing_trustslip_snapshots,
@@ -33,6 +34,8 @@ except Exception:
 
 
 router = APIRouter(prefix="/trust-slips", tags=["trust-slips"])
+
+FEATURE_MERCHANT_VERIFY = "merchant_verify"
 
 
 def _is_admin(user: Any) -> bool:
@@ -139,20 +142,75 @@ def _is_expired(expires_at: Optional[datetime]) -> bool:
     return exp < _now_utc()
 
 
-def _status_effective(status: str, expires_at: Optional[datetime]) -> str:
+def _get_holder_shop(
+    db: Session,
+    *,
+    holder_user_id: int,
+) -> Optional[MarketplaceShop]:
+    return (
+        db.query(MarketplaceShop)
+        .filter(
+            MarketplaceShop.owner_user_id == int(holder_user_id),
+            MarketplaceShop.is_active.is_(True),
+        )
+        .order_by(MarketplaceShop.created_at.asc(), MarketplaceShop.id.asc())
+        .first()
+    )
+
+
+def _merchant_verify_active_for_holder(
+    db: Session,
+    *,
+    holder: Optional[User],
+) -> bool:
+    if holder is None or getattr(holder, "id", None) is None:
+        return False
+
+    shop = _get_holder_shop(db, holder_user_id=int(holder.id))
+
+    if shop is not None and has_active_feature(
+        db,
+        owner_user_id=int(holder.id),
+        feature_code=FEATURE_MERCHANT_VERIFY,
+        shop_id=int(shop.id),
+    ):
+        return True
+
+    return has_active_feature(
+        db,
+        owner_user_id=int(holder.id),
+        feature_code=FEATURE_MERCHANT_VERIFY,
+        shop_id=None,
+    )
+
+
+def _status_effective(
+    status: str,
+    expires_at: Optional[datetime],
+    *,
+    merchant_verify_active: bool = True,
+) -> str:
     s = (status or "").lower().strip()
+
     if _is_expired(expires_at):
         return "expired"
+
     if s in {"revoked", "frozen"}:
         return s
+
     if s in {"active", "issued"}:
+        if not merchant_verify_active:
+            return "merchant_verify_inactive"
         return "active"
+
     return "invalid"
 
 
 def _merchant_badge(effective_status: str) -> tuple[str, str]:
     if effective_status == "active":
         return ("VALID — OK TO RELEASE GOODS", "#0a7")
+    if effective_status == "merchant_verify_inactive":
+        return ("MERCHANT VERIFY INACTIVE — DO NOT RELEASE", "#b00")
     if effective_status == "expired":
         return ("EXPIRED — DO NOT RELEASE", "#b00")
     if effective_status == "revoked":
@@ -246,6 +304,92 @@ def _aligned_snapshot_for_slip(
     }
 
 
+def _can_manage_trust_slip(
+    *,
+    current_user: User,
+    holder: Optional[User],
+    slip: TrustSlip,
+) -> bool:
+    if _is_admin(current_user):
+        return True
+    if holder is not None and getattr(holder, "id", None) is not None:
+        return int(holder.id) == int(current_user.id)
+    return int(getattr(slip, "holder_user_id", 0) or 0) == int(current_user.id)
+
+
+def _ensure_my_trust_slip_payload(
+    db: Session,
+    *,
+    current_user: User,
+) -> Dict[str, Any]:
+    if getattr(current_user, "id", None) is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    if (
+        not getattr(current_user, "phone_verified_at", None)
+        or not getattr(current_user, "phone_e164", None)
+    ):
+        return {
+            "ok": True,
+            "active": False,
+            "reason": "phone_unverified",
+            "detail": "Verify your phone number to activate TrustSlip portability.",
+            "gmfn_id": getattr(current_user, "gmfn_id", None),
+            "merchant_verify_active": False,
+            "merchant_verify_subscription_required": True,
+        }
+
+    current = get_current_trust_slip_for_user(db, user_id=int(current_user.id))
+    if not current:
+        try:
+            issue_result = issue_trust_slip_for_user(db, user_id=int(current_user.id))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+
+        code = issue_result.get("code")
+        if bool(issue_result.get("issued")):
+            log_trust_event(
+                db,
+                event_type="trust_slip.issued",
+                clan_id=0,
+                actor_user_id=int(current_user.id),
+                subject_user_id=int(current_user.id),
+                loan_id=None,
+                guarantor_id=None,
+                meta={
+                    "reason": issue_result.get("reason"),
+                    "trust_slip_id": issue_result.get("trust_slip_id"),
+                    "code": code,
+                    "gmfn_id": issue_result.get("gmfn_id"),
+                },
+                commit=False,
+                refresh=False,
+            )
+            db.commit()
+
+    payload = _payload_with_identity(db, user_id=int(current_user.id))
+    code = payload.get("code") or payload.get("token")
+    merchant_verify_active = _merchant_verify_active_for_holder(
+        db,
+        holder=current_user,
+    )
+
+    return {
+        **payload,
+        "verification_token": code,
+        "verification_code": code,
+        "token": code,
+        "public_verify_url": _verify_page_url(code) if code else None,
+        "merchant_verify_active": bool(merchant_verify_active),
+        "merchant_verify_subscription_required": not bool(merchant_verify_active),
+        "merchant_verify_detail": (
+            "External merchant verification is active."
+            if merchant_verify_active
+            else "External merchant verification requires an active merchant verification subscription."
+        ),
+    }
+
+
 class TrustSlipReleaseIn(BaseModel):
     supplier_name: Optional[str] = None
     supplier_phone: Optional[str] = None
@@ -271,59 +415,7 @@ def get_my_trust_slip(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
-    if getattr(current_user, "id", None) is None:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
-    if (
-        not getattr(current_user, "phone_verified_at", None)
-        or not getattr(current_user, "phone_e164", None)
-    ):
-        return {
-            "ok": True,
-            "active": False,
-            "reason": "phone_unverified",
-            "detail": "Verify your phone number to activate TrustSlip portability.",
-            "gmfn_id": getattr(current_user, "gmfn_id", None),
-        }
-
-    current = get_current_trust_slip_for_user(db, user_id=int(current_user.id))
-    if not current:
-        try:
-            issue_result = issue_trust_slip_for_user(db, user_id=int(current_user.id))
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc))
-
-        code = issue_result.get("code")
-        if bool(issue_result.get("issued")):
-            log_trust_event(
-                db,
-                event_type="trust_slip.issued",
-                clan_id=0,
-                actor_user_id=int(current_user.id),
-                subject_user_id=int(current_user.id),
-                loan_id=None,
-                guarantor_id=None,
-                meta={
-                    "reason": issue_result.get("reason"),
-                    "trust_slip_id": issue_result.get("trust_slip_id"),
-                    "code": code,
-                    "gmfn_id": issue_result.get("gmfn_id"),
-                },
-                commit=False,
-                refresh=False,
-            )
-            db.commit()
-
-    payload = _payload_with_identity(db, user_id=int(current_user.id))
-    code = payload.get("code") or payload.get("token")
-
-    return {
-        **payload,
-        "verification_token": code,
-        "verification_code": code,
-        "token": code,
-        "public_verify_url": _verify_page_url(code) if code else None,
-    }
+    return _ensure_my_trust_slip_payload(db, current_user=current_user)
 
 
 @router.get("/me/summary")
@@ -331,59 +423,7 @@ def get_my_trust_slip_summary(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
-    if getattr(current_user, "id", None) is None:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
-    if (
-        not getattr(current_user, "phone_verified_at", None)
-        or not getattr(current_user, "phone_e164", None)
-    ):
-        return {
-            "ok": True,
-            "active": False,
-            "reason": "phone_unverified",
-            "detail": "Verify your phone number to activate TrustSlip portability.",
-            "gmfn_id": getattr(current_user, "gmfn_id", None),
-        }
-
-    current = get_current_trust_slip_for_user(db, user_id=int(current_user.id))
-    if not current:
-        try:
-            issue_result = issue_trust_slip_for_user(db, user_id=int(current_user.id))
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc))
-
-        code = issue_result.get("code")
-        if bool(issue_result.get("issued")):
-            log_trust_event(
-                db,
-                event_type="trust_slip.issued",
-                clan_id=0,
-                actor_user_id=int(current_user.id),
-                subject_user_id=int(current_user.id),
-                loan_id=None,
-                guarantor_id=None,
-                meta={
-                    "reason": issue_result.get("reason"),
-                    "trust_slip_id": issue_result.get("trust_slip_id"),
-                    "code": code,
-                    "gmfn_id": issue_result.get("gmfn_id"),
-                },
-                commit=False,
-                refresh=False,
-            )
-            db.commit()
-
-    payload = _payload_with_identity(db, user_id=int(current_user.id))
-    code = payload.get("code") or payload.get("token")
-
-    return {
-        **payload,
-        "verification_token": code,
-        "verification_code": code,
-        "token": code,
-        "public_verify_url": _verify_page_url(code) if code else None,
-    }
+    return _ensure_my_trust_slip_payload(db, current_user=current_user)
 
 
 @router.post("/me/issue")
@@ -421,12 +461,19 @@ def issue_my_trust_slip(
         )
         db.commit()
 
+    merchant_verify_active = _merchant_verify_active_for_holder(
+        db,
+        holder=current_user,
+    )
+
     return {
         **result,
         "verification_token": code,
         "verification_code": code,
         "token": code,
         "public_verify_url": _verify_page_url(code) if code else None,
+        "merchant_verify_active": bool(merchant_verify_active),
+        "merchant_verify_subscription_required": not bool(merchant_verify_active),
     }
 
 
@@ -563,9 +610,15 @@ def verify_trust_slip_public(
     visibility_level = aligned["visibility_level"]
     full_summary = aligned["full_summary"]
 
+    merchant_verify_active = _merchant_verify_active_for_holder(
+        db,
+        holder=holder,
+    )
+
     effective = _status_effective(
         getattr(slip, "status", "") or "",
         getattr(slip, "expires_at", None),
+        merchant_verify_active=merchant_verify_active,
     )
     badge_text, _ = _merchant_badge(effective)
 
@@ -621,6 +674,7 @@ def verify_trust_slip_public(
         "band": band,
         "visibility_level": visibility_level,
         "status": effective,
+        "merchant_verify_active": bool(merchant_verify_active),
         "merchant_summary": {
             **merchant_summary,
             "code": merchant_summary.get("code") or slip.code,
@@ -640,6 +694,8 @@ def verify_trust_slip_public(
         "public_verify_url": _verify_page_url(slip.code, visibility_level),
         "status": getattr(slip, "status", None),
         "effective_status": effective,
+        "merchant_verify_active": bool(merchant_verify_active),
+        "merchant_verify_subscription_required": not bool(merchant_verify_active),
         "merchant_message": badge_text,
         "created_at": created_at_value,
         "issued_at": created_at_value,
@@ -679,9 +735,15 @@ def trust_slip_share_text_public(
         raise HTTPException(status_code=404, detail="TrustSlip not found")
 
     holder = _slip_holder(db, slip)
+    merchant_verify_active = _merchant_verify_active_for_holder(
+        db,
+        holder=holder,
+    )
+
     effective = _status_effective(
         getattr(slip, "status", "") or "",
         getattr(slip, "expires_at", None),
+        merchant_verify_active=merchant_verify_active,
     )
     msg, _ = _merchant_badge(effective)
 
@@ -699,6 +761,7 @@ def trust_slip_share_text_public(
         "verify_page": verify_page,
         "gmfn_id": holder_gmfn_id,
         "merchant_visibility_level": visibility_level,
+        "merchant_verify_active": bool(merchant_verify_active),
         "text": text,
         "offline_note": "If link fails, open /trust-slips/verify/{code} or show this message to an admin.",
     }
@@ -728,9 +791,15 @@ def trust_slip_verify_lite_page(
     visibility_level = aligned["visibility_level"]
     full_summary = aligned["full_summary"]
 
+    merchant_verify_active = _merchant_verify_active_for_holder(
+        db,
+        holder=holder,
+    )
+
     effective = _status_effective(
         getattr(slip, "status", "") or "",
         getattr(slip, "expires_at", None),
+        merchant_verify_active=merchant_verify_active,
     )
     msg, color = _merchant_badge(effective)
 
@@ -812,9 +881,15 @@ def trust_slip_verify_page(
     visibility_level = aligned["visibility_level"]
     full_summary = aligned["full_summary"]
 
+    merchant_verify_active = _merchant_verify_active_for_holder(
+        db,
+        holder=holder,
+    )
+
     effective = _status_effective(
         getattr(slip, "status", "") or "",
         getattr(slip, "expires_at", None),
+        merchant_verify_active=merchant_verify_active,
     )
     badge_text, badge_color = _merchant_badge(effective)
 
@@ -895,6 +970,7 @@ def trust_slip_verify_page(
       <div class="row"><b>GMFN ID:</b> {holder_gmfn_id}</div>
       <div class="row"><b>Visibility:</b> {visibility_level}</div>
       <div class="row"><b>Status:</b> {effective}</div>
+      <div class="row"><b>Merchant Verify:</b> {"Active" if merchant_verify_active else "Inactive"}</div>
       <div class="row"><b>Expires:</b> {expires_text}</div>
       <div class="row"><b>Holder:</b> {_mask_email(getattr(holder, "email", None)) or "Hidden"}</div>
       {cci_row}
@@ -967,9 +1043,30 @@ def trust_slip_share_bundle(
     visibility_level = aligned["visibility_level"]
     full_summary = aligned["full_summary"]
 
+    if not _can_manage_trust_slip(
+        current_user=current_user,
+        holder=holder,
+        slip=slip,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the TrustSlip holder or an admin can open this share bundle.",
+        )
+
+    merchant_verify_active = _merchant_verify_active_for_holder(
+        db,
+        holder=holder,
+    )
+    if not merchant_verify_active:
+        raise HTTPException(
+            status_code=403,
+            detail="Merchant verification subscription is not active for this TrustSlip holder.",
+        )
+
     effective = _status_effective(
         getattr(slip, "status", "") or "",
         getattr(slip, "expires_at", None),
+        merchant_verify_active=merchant_verify_active,
     )
     msg, _ = _merchant_badge(effective)
 
@@ -1001,6 +1098,7 @@ def trust_slip_share_bundle(
         "code": code,
         "gmfn_id": holder_gmfn_id,
         "merchant_visibility_level": visibility_level,
+        "merchant_verify_active": bool(merchant_verify_active),
         "verify_page": verify_page,
         "lite_page": _lite_page_url(code, visibility_level),
         "expires_at": expires_text,
@@ -1294,4 +1392,15 @@ def get_user_trust_slip_admin(
     if user_id <= 0:
         raise HTTPException(status_code=400, detail="Invalid user_id")
 
-    return _payload_with_identity(db, user_id=int(user_id))
+    payload = _payload_with_identity(db, user_id=int(user_id))
+    holder = db.get(User, int(user_id))
+    merchant_verify_active = _merchant_verify_active_for_holder(
+        db,
+        holder=holder,
+    )
+
+    return {
+        **payload,
+        "merchant_verify_active": bool(merchant_verify_active),
+        "merchant_verify_subscription_required": not bool(merchant_verify_active),
+    }

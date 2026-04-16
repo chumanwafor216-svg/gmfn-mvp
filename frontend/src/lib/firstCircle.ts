@@ -457,12 +457,12 @@ export function buildInviteMessage(params: {
   const lines: string[] = [
     `Hello ${safeStr(params.contact.name) || "there"},`,
     "",
-    `I recently joined GMFN and received my GMFN ID ${gmfnId}.`,
-    "GMFN works best when people begin with those they already trust and already do real life with.",
+    `I recently joined GSN and received my GMFN ID ${gmfnId}.`,
+    "GSN works best when people begin with those they already trust and already do real life with.",
     "",
     `I am joining as a ${roleText.toLowerCase()}.`,
     patternText ? `My main pattern is: ${patternText}.` : "",
-    `Because of our relationship as ${relationshipText.toLowerCase()}, I would like to invite you into my first GMFN circle in ${communityName}.`,
+    `Because of our relationship as ${relationshipText.toLowerCase()}, I would like to invite you into my first GSN circle in ${communityName}.`,
     "",
     "This is not a random invite. It is trust-based and relationship-based.",
     "",
@@ -550,3 +550,4 @@ export function parsePastedContacts(text: string): FirstCircleContact[] {
 
   return out;
 }
+

@@ -17,6 +17,7 @@ import {
 } from "../lib/entryFlow";
 
 const GUIDE_TO = "/guide";
+const COMMITMENT_TO = "/app/dashboard#focus-commitments";
 
 function pageShell(): React.CSSProperties {
   return {
@@ -26,7 +27,7 @@ function pageShell(): React.CSSProperties {
     alignItems: "center",
     justifyContent: "center",
     background:
-      "radial-gradient(circle at top, rgba(47,103,196,0.18) 0%, rgba(16,37,59,0.00) 32%), linear-gradient(180deg, #0C1F33 0%, #143454 62%, #183F66 100%)",
+      "radial-gradient(circle at top, rgba(47,103,196,0.16) 0%, rgba(16,37,59,0.00) 32%), linear-gradient(180deg, #10243A 0%, #173654 62%, #26527C 100%)",
     color: "#FFFFFF",
     fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
     padding: "22px",
@@ -39,9 +40,9 @@ function heroCard(): React.CSSProperties {
     maxWidth: 980,
     width: "100%",
     borderRadius: 32,
-    background: "rgba(255,255,255,0.07)",
-    border: "1px solid rgba(255,255,255,0.12)",
-    boxShadow: "0 20px 60px rgba(0,0,0,0.22)",
+    background: "rgba(255,255,255,0.08)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
     padding: 28,
     backdropFilter: "blur(10px)",
   };
@@ -85,8 +86,8 @@ function secondaryBtn(): React.CSSProperties {
     minHeight: 44,
     padding: "11px 16px",
     borderRadius: 14,
-    border: "1px solid rgba(255,255,255,0.16)",
-    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.18)",
+    background: "rgba(255,255,255,0.08)",
     color: "#FFFFFF",
     textDecoration: "none",
     fontWeight: 800,
@@ -99,8 +100,8 @@ function secondaryBtn(): React.CSSProperties {
 function routeCard(): React.CSSProperties {
   return {
     borderRadius: 24,
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(255,255,255,0.08)",
+    border: "1px solid rgba(255,255,255,0.12)",
     padding: 22,
     display: "grid",
     gap: 12,
@@ -110,8 +111,8 @@ function routeCard(): React.CSSProperties {
 function infoCard(): React.CSSProperties {
   return {
     borderRadius: 18,
-    background: "rgba(255,255,255,0.05)",
-    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(255,255,255,0.07)",
+    border: "1px solid rgba(255,255,255,0.12)",
     padding: 16,
   };
 }
@@ -167,7 +168,7 @@ export default function WelcomePage() {
 
   useEffect(() => {
     if (typeof document !== "undefined") {
-      document.title = "GMFN | Welcome";
+      document.title = "GSN | Welcome";
     }
   }, []);
 
@@ -228,7 +229,7 @@ export default function WelcomePage() {
       : entryMode === "approved"
       ? "Your approval has already been confirmed. Finish activation below."
       : entryMode === "existing"
-      ? "Use this only if you already have an active account."
+      ? "Choose this only if you already have an active account."
       : step === "choose_new_lane"
       ? "Choose whether you are creating a new community or joining an existing one."
       : "Start with the option that matches you best. The app will guide you one step at a time.";
@@ -238,7 +239,7 @@ export default function WelcomePage() {
       <div style={heroCard()}>
         <div style={{ display: "grid", gap: 18 }}>
           <div>
-            <div style={labelText()}>GMFN Welcome</div>
+            <div style={labelText()}>GSN Welcome</div>
 
             <div
               style={{
@@ -280,7 +281,7 @@ export default function WelcomePage() {
                   Continue
                 </button>
                 <OriginLink to={GUIDE_TO} style={secondaryBtn()}>
-                  Open My GMFN and I
+                  Open My GSN and I
                 </OriginLink>
               </div>
             </div>
@@ -301,7 +302,7 @@ export default function WelcomePage() {
                   Continue
                 </button>
                 <OriginLink to={GUIDE_TO} style={secondaryBtn()}>
-                  Open My GMFN and I
+                  Open My GSN and I
                 </OriginLink>
               </div>
             </div>
@@ -322,7 +323,7 @@ export default function WelcomePage() {
                   Continue
                 </button>
                 <OriginLink to={GUIDE_TO} style={secondaryBtn()}>
-                  Open My GMFN and I
+                  Open My GSN and I
                 </OriginLink>
               </div>
             </div>
@@ -343,7 +344,7 @@ export default function WelcomePage() {
                   Continue to Login
                 </button>
                 <OriginLink to={GUIDE_TO} style={secondaryBtn()}>
-                  Open My GMFN and I
+                  Open My GSN and I
                 </OriginLink>
               </div>
             </div>
@@ -457,7 +458,11 @@ export default function WelcomePage() {
 
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <OriginLink to={GUIDE_TO} style={secondaryBtn()}>
-              Open My GMFN and I
+              Open My GSN and I
+            </OriginLink>
+
+            <OriginLink to={COMMITMENT_TO} style={secondaryBtn()}>
+              Open Commitment Builder
             </OriginLink>
           </div>
 
@@ -465,6 +470,11 @@ export default function WelcomePage() {
             <div style={labelText()}>How this works</div>
             <div style={{ marginTop: 10, ...supportText() }}>
               You will see one step at a time. Choose your path, continue, and the next page will guide you.
+            </div>
+
+            <div style={{ marginTop: 10, ...supportText() }}>
+              Inside this guided flow, GSN can also help turn intentions into
+              steadier follow-through through Commitment Builder.
             </div>
           </div>
         </div>

@@ -38,11 +38,12 @@ def approve_loan(db: Session, *, loan: Loan, decided_by_user_id: int) -> Loan:
                 detail=f"Cannot approve loan: requires {guarantors_required} approved guarantor(s), but has {approved_count}.",
             )
 
-        required_gap = Decimal(str(getattr(loan, "guarantee_gap", None) or 0))
+        raw_gap = getattr(loan, "guarantee_gap", None)
+        required_gap = Decimal(str(raw_gap if raw_gap is not None else getattr(loan, "amount", 0) or 0))
         if required_gap <= 0:
             raise HTTPException(
-                status_code=500,
-                detail="Loan guarantee_gap is missing/invalid. Add guarantee_gap to Loan and set it at creation.",
+                status_code=400,
+                detail="Loan guarantee coverage requirement is invalid.",
             )
 
         coverage_raw = (

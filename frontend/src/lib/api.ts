@@ -196,6 +196,13 @@ export function hasIssuedGmfnId(
 export function logout(): void {
   setAccessToken(null);
   setSelectedClanId(null);
+  try {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("gmfn_role");
+    }
+  } catch {
+    // ignore storage cleanup issues during logout
+  }
   clearPublicEntryState();
 }
 
@@ -493,7 +500,7 @@ export async function getPublicGuide(): Promise<any> {
     return await httpJsonPaths(["/public/guide", "/guide"], "GET");
   } catch {
     return {
-      title: "My GMFN and I",
+      title: "My GSN and I",
       detail:
         "No public guide API endpoint is enabled yet. Render this guide from the frontend page content.",
       sections: [],

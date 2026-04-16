@@ -48,7 +48,7 @@ function actionBtn(primary = false, disabled = false): React.CSSProperties {
     padding: "10px 14px",
     borderRadius: 12,
     border: primary ? "none" : "1px solid rgba(11,31,51,0.12)",
-    background: disabled ? "#CBD5E1" : primary ? "#0B63D1" : "#FFFFFF",
+    background: disabled ? "#CBD5E1" : primary ? "#1D4ED8" : "#FFFFFF",
     color: primary ? "#FFFFFF" : "#0B1F33",
     fontWeight: 900,
     cursor: disabled ? "not-allowed" : "pointer",
@@ -86,9 +86,9 @@ function badge(primary = false): React.CSSProperties {
     borderRadius: 999,
     background: primary ? "#EAF2FF" : "#F8FAFC",
     border: primary
-      ? "1px solid rgba(11,99,209,0.14)"
+      ? "1px solid rgba(29,78,216,0.16)"
       : "1px solid rgba(11,31,51,0.08)",
-    color: primary ? "#0B63D1" : "#475569",
+    color: primary ? "#1D4ED8" : "#475569",
     fontWeight: 900,
     fontSize: 12,
     whiteSpace: "nowrap",
@@ -224,7 +224,7 @@ export default function JoinApprovalPage() {
 
   useEffect(() => {
     if (typeof document !== "undefined") {
-      document.title = "GMFN | Join Approval";
+      document.title = "GSN | Join Approval";
     }
   }, []);
 
@@ -270,7 +270,7 @@ export default function JoinApprovalPage() {
     if (safeStr(data?.message)) return safeStr(data?.message);
 
     if (status === "approved") {
-      return "Your request has been approved. Continue to activation to finish entry into your personal surfaces.";
+      return "Your request has been approved. Continue to activation to finish entry into your personal pages.";
     }
 
     if (status === "pending") {
@@ -319,7 +319,7 @@ export default function JoinApprovalPage() {
 
       <div
         style={{
-          ...pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
+          ...pageCard("linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)"),
           marginTop: 18,
         }}
       >
@@ -347,7 +347,7 @@ export default function JoinApprovalPage() {
               Join request status
             </div>
             <div style={{ marginTop: 8, ...helperText(), color: "#D7E3F1" }}>
-              Review the outcome of your request, then move to the right next public step.
+              Review the outcome of your request, then continue to the right next public step.
             </div>
           </div>
 
@@ -560,8 +560,8 @@ export default function JoinApprovalPage() {
                   : status === "pending"
                   ? "You can return later to check this status again."
                   : status === "rejected"
-                  ? "You can return to the public entry surface or speak again with the inviting community."
-                  : "Return to the public entry surface or try again later."}
+                  ? "You can return to entry or speak again with the inviting community."
+                  : "Return to entry or try again later."}
               </div>
 
               <div
@@ -620,6 +620,12 @@ export default function JoinApprovalPage() {
                 open the readable guide first.
               </div>
 
+              <div style={{ marginTop: 10, ...helperText() }}>
+                GSN also supports steadier follow-through after entry, so goals
+                around savings, repayment, and business discipline can become
+                more structured once your path is active.
+              </div>
+
               <div
                 style={{
                   marginTop: 16,
@@ -634,7 +640,16 @@ export default function JoinApprovalPage() {
                   state={withOriginState(location)}
                   style={actionBtn(false)}
                 >
-                  Open My GMFN and I
+                  Open My GSN and I
+                </OriginLink>
+
+                <OriginLink
+                  to="/app/dashboard#focus-commitments"
+                  preserveSearch
+                  state={withOriginState(location)}
+                  style={actionBtn(false)}
+                >
+                  Open Commitment Builder
                 </OriginLink>
               </div>
             </div>
@@ -644,3 +659,5 @@ export default function JoinApprovalPage() {
     </div>
   );
 }
+
+

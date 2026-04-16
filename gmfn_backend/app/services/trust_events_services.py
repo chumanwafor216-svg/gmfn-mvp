@@ -177,6 +177,47 @@ def log_guarantee_released(
     )
 
 
+def log_guarantee_given(
+    db: Session,
+    *,
+    clan_id: int,
+    actor_user_id: int,
+    borrower_user_id: int,
+    guarantor_user_id: int,
+    loan_id: int,
+    guarantor_id: int,
+    pledge_amount: Any,
+    guarantee_gap: Any,
+    reason: str,
+    note: Optional[str] = None,
+    commit: bool = True,
+    refresh: bool = True,
+) -> TrustEvent:
+    meta = build_trust_meta(
+        reason=reason,
+        note=note,
+        system=True,
+        extra={
+            "pledge_amount": str(pledge_amount),
+            "guarantee_gap": str(guarantee_gap),
+            "guarantor_user_id": guarantor_user_id,
+        },
+    )
+
+    return log_trust_event(
+        db,
+        event_type="guarantee.given",
+        clan_id=clan_id,
+        loan_id=loan_id,
+        guarantor_id=guarantor_id,
+        actor_user_id=actor_user_id,
+        subject_user_id=borrower_user_id,
+        meta=meta,
+        commit=commit,
+        refresh=refresh,
+    )
+
+
 def log_loan_defaulted(
     db: Session,
     *,

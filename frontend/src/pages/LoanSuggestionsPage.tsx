@@ -513,7 +513,7 @@ function communityName(currentClan: any, clanId: number): string {
       currentClan?.name,
       currentClan?.display_name,
       currentClan?.title
-    ) || (clanId ? `Community ${clanId}` : "No selected community")
+    ) || (clanId ? `Community ${clanId}` : "No current community")
   );
 }
 
@@ -823,9 +823,9 @@ export default function LoanSuggestionsPage() {
   const fitReading = useMemo(() => {
     if (!selectedClanId || !safeStr(me?.gmfn_id)) {
       return {
-        title: "Community or GMFN context is not ready.",
+        title: "Community or member identity is not ready.",
         detail:
-          "The fit-reading stage should stay tied to the selected community and visible GMFN identity.",
+          "The fit-reading stage works best when your current community and visible member identity are ready.",
         tone: "error" as const,
       };
     }
@@ -913,9 +913,9 @@ export default function LoanSuggestionsPage() {
   const nextRoute = useMemo(() => {
     if (!selectedClanId) {
       return {
-        title: "Choose the community context first.",
+        title: "Choose the community first.",
         detail:
-          "Fit reading should stay tied to the selected community before the support path continues.",
+          "Fit reading is clearer once your current community is in place.",
         ctaTo: "/app/community",
         ctaLabel: "Open Community Home",
       };
@@ -925,9 +925,9 @@ export default function LoanSuggestionsPage() {
       return {
         title: "Start the borrower-side support draft from the Money Out handoff.",
         detail:
-          "The withdrawal route has already decided that support is needed. Resume the selected-community support surface, then return here for fit reading.",
+          "Money Out has already shown that support is needed. Resume the support draft, then return here for fit reading.",
         ctaTo: "/app/marketplace#marketplace-loans-support",
-        ctaLabel: "Open Support Start Surface",
+        ctaLabel: "Open Support Start Page",
       };
     }
 
@@ -935,7 +935,7 @@ export default function LoanSuggestionsPage() {
       return {
         title: "Start the support request first.",
         detail:
-          "This page only becomes useful after the borrower-side support item exists.",
+          "This becomes useful only after the borrower-side support item exists.",
         ctaTo: "/app/marketplace#marketplace-loans-support",
         ctaLabel: "Start Support Request",
       };
@@ -945,14 +945,14 @@ export default function LoanSuggestionsPage() {
       return {
         title: "Continue into the deeper support workbench.",
         detail:
-          "The fit picture is visible enough. The next move is the deeper workbench, not a return to a loose dashboard.",
+          "The fit picture is visible enough. The next move is the deeper workbench.",
         ctaTo: "/app/loan-workbench",
         ctaLabel: "Open Loan Workbench",
       };
     }
 
     return {
-      title: "Return to the active support path and review the draft.",
+      title: "Return to the active support draft and review it.",
       detail:
         "If the fit picture is still weak, review the active support item before moving again.",
       ctaTo: "/app/loan-workbench",
@@ -1021,7 +1021,7 @@ export default function LoanSuggestionsPage() {
       <PageTopNav
         sectionLabel="Loan Suggestions"
         title="Loan Suggestions"
-        subtitle="This page is the fit-reading stage inside support continuation. It should keep the member inside the current support path instead of sending them back into unrelated surfaces."
+        subtitle="Use this stage to read guarantor fit before you continue deeper into the support flow."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/loan-readiness"
@@ -1110,9 +1110,8 @@ export default function LoanSuggestionsPage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
-              This page is for fit reading, not for drifting away from the support path.
-              Once support continuation has begun, the member should move from readiness
-              into fit reading, then into deeper workbench handling.
+              Compare fit here, then continue into the deeper workbench
+              when the next move is clear.
             </div>
 
             <div
@@ -1126,9 +1125,9 @@ export default function LoanSuggestionsPage() {
               <span style={badge(true)}>Community ID: {publicCommunityId}</span>
               <span style={badge(false)}>GMFN ID: {gmfnId}</span>
               {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
-              <span style={badge(false)}>Current step: Fit suggestions</span>
+              <span style={badge(false)}>Fit suggestions</span>
               {cameFromWithdrawalSupport ? (
-                <span style={badge(false)}>Source: Money Out support handoff</span>
+                <span style={badge(false)}>Money Out support handoff</span>
               ) : null}
             </div>
           </div>
@@ -1433,8 +1432,8 @@ export default function LoanSuggestionsPage() {
               </div>
 
               <div style={{ marginTop: 10, ...helperText() }}>
-                This page is for fit reading only. Once the fit picture is clear enough,
-                the member should continue into the deeper workbench, not drift back into a loose launcher surface.
+                Stay with fit reading here until you are ready to continue into the
+                deeper workbench.
               </div>
             </div>
 
@@ -1595,8 +1594,8 @@ export default function LoanSuggestionsPage() {
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {suggestionsSupportActive
-                ? "Stay inside the support path and move only to the next exact continuation surface."
-                : "Move from fit reading into the exact next support-continuation page you need."}
+                ? "Stay inside the support flow and move only to the next continuation step."
+                : "Move into the next page you need."}
             </div>
           </div>
 
@@ -1651,7 +1650,7 @@ export default function LoanSuggestionsPage() {
                 Loan Readiness
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this when the question is whether the next support move is clean enough to continue.
+                Open this when the question is whether the next support move is clean enough to continue.
               </div>
             </OriginLink>
 
@@ -1667,7 +1666,7 @@ export default function LoanSuggestionsPage() {
                 Loan Workbench
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Use this for deeper support handling after the fit picture is clear enough.
+                Open this for deeper support handling after the fit picture is clear enough.
               </div>
             </OriginLink>
 
@@ -1735,7 +1734,7 @@ export default function LoanSuggestionsPage() {
                     Action Inbox
                   </div>
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    Use this when the broader waiting picture matters around support response.
+                    Open this when the broader waiting picture matters around support response.
                   </div>
                 </OriginLink>
               </>
@@ -1746,3 +1745,7 @@ export default function LoanSuggestionsPage() {
     </div>
   );
 }
+
+
+
+

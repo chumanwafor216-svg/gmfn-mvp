@@ -20,14 +20,29 @@ from app.db.models import (
     MarketplaceShop,
     User,
 )
+from app.services.feature_entitlements_service import (
+    get_active_feature_quantity,
+    has_active_feature,
+)
 from app.services.trust_events_services import log_trust_event
 
 router = APIRouter(prefix="/marketplace", tags=["marketplace"])
 
-TOTAL_PRODUCT_SLOTS = 12
+FREE_COMMUNITY_PRODUCT_SLOTS = 12
+MAX_VAULT_PRIVATE_PRODUCT_SLOTS = 6
+
 TOTAL_DISTRIBUTION_SLOTS = 10
 ORIGIN_SPOTLIGHT_RESERVED_SLOTS = 1
 MAX_REPOST_SLOTS = TOTAL_DISTRIBUTION_SLOTS - ORIGIN_SPOTLIGHT_RESERVED_SLOTS
+
+VISIBILITY_COMMUNITY = "community_visible"
+VISIBILITY_VAULT = "vault_private"
+
+SPOTLIGHT_FREE = "free"
+SPOTLIGHT_PAID = "paid"
+
+FEATURE_VAULT_SLOT = "vault_slot"
+FEATURE_SPOTLIGHT_PRIORITY = "spotlight_priority"
 
 SHOP_IMAGE_ATTRS = (
     "image_url",
@@ -59,6 +74,36 @@ def _safe_int(value: Any, default: int = 0) -> int:
 
 def _is_admin(user: Any) -> bool:
     return str(getattr(user, "role", "")).lower() == "admin"
+
+
+def _resolve_visibility_mode(value: Any) -> str:
+    raw = _safe_str(value, VISIBILITY_COMMUNITY).lower()
+
+    if raw in {VISIBILITY_COMMUNITY, "public", "community"}:
+        return VISIBILITY_COMMUNITY
+
+    if raw in {VISIBILITY_VAULT, "vault", "private", "lockup", "lock-up"}:
+        return VISIBILITY_VAULT
+
+    raise HTTPException(
+        status_code=400,
+        detail="visibility_mode must be 'community_visible' or 'vault_private'",
+    )
+
+
+def _resolve_priority_mode(value: Any) -> str:
+    raw = _safe_str(value, SPOTLIGHT_FREE).lower()
+
+    if raw in {SPOTLIGHT_FREE, "standard"}:
+        return SPOTLIGHT_FREE
+
+    if raw in {SPOTLIGHT_PAID, "priority"}:
+        return SPOTLIGHT_PAID
+
+    raise HTTPException(
+        status_code=400,
+        detail="priority_mode must be 'free' or 'paid'",
+    )
 
 
 def _resolve_clan_id(
@@ -237,6 +282,25 @@ def _count_active_spotlights_for_clan(
     )
 
 
+def _count_active_paid_spotlights_for_shop(
+    *,
+    db: Session,
+    shop_id: int,
+    now: Optional[datetime] = None,
+) -> int:
+    current_time = now or _now_utc()
+    return (
+        db.query(MarketplaceBroadcast)
+        .filter(MarketplaceBroadcast.shop_id == int(shop_id))
+        .filter(MarketplaceBroadcast.priority_mode == SPOTLIGHT_PAID)
+        .filter(
+            (MarketplaceBroadcast.expires_at.is_(None))
+            | (MarketplaceBroadcast.expires_at > current_time),
+        )
+        .count()
+    )
+
+
 def _member_count_for_clan(
     *,
     db: Session,
@@ -347,6 +411,26 @@ def _remove_product_reposts(
     return count
 
 
+def _count_active_products_for_shop(
+    db: Session,
+    *,
+    shop_id: int,
+    visibility_mode: str,
+    exclude_product_id: Optional[int] = None,
+) -> int:
+    q = (
+        db.query(MarketplaceProduct)
+        .filter(MarketplaceProduct.shop_id == int(shop_id))
+        .filter(MarketplaceProduct.is_active.is_(True))
+        .filter(MarketplaceProduct.visibility_mode == str(visibility_mode))
+    )
+
+    if exclude_product_id is not None:
+        q = q.filter(MarketplaceProduct.id != int(exclude_product_id))
+
+    return q.count()
+
+
 class MarketplaceShopCreateIn(BaseModel):
     clan_id: Optional[int] = None
     name: str = Field(min_length=2, max_length=120)
@@ -377,6 +461,7 @@ class MarketplaceProductCreateIn(BaseModel):
     currency: Optional[str] = Field(default="NGN", max_length=8)
     image_url: Optional[str] = Field(default=None, max_length=4000)
     video_url: Optional[str] = Field(default=None, max_length=4000)
+    visibility_mode: Optional[str] = Field(default=VISIBILITY_COMMUNITY, max_length=32)
 
 
 class MarketplaceProductUpdateIn(BaseModel):
@@ -388,6 +473,7 @@ class MarketplaceProductUpdateIn(BaseModel):
     currency: Optional[str] = Field(default=None, max_length=8)
     image_url: Optional[str] = Field(default=None, max_length=4000)
     video_url: Optional[str] = Field(default=None, max_length=4000)
+    visibility_mode: Optional[str] = Field(default=None, max_length=32)
     clear_image: Optional[bool] = False
     remove_image: Optional[bool] = False
     delete_image: Optional[bool] = False
@@ -398,9 +484,12 @@ class MarketplaceProductUpdateIn(BaseModel):
 
 class MarketplaceBroadcastCreateIn(BaseModel):
     clan_id: Optional[int] = None
+    shop_id: Optional[int] = Field(default=None, gt=0)
     message: str = Field(min_length=2, max_length=2000)
     image_url: Optional[str] = Field(default=None, max_length=4000)
     expires_at: Optional[datetime] = None
+    priority_mode: Optional[str] = Field(default=SPOTLIGHT_FREE, max_length=20)
+    visibility_scope: Optional[str] = Field(default="direct_communities", max_length=32)
 
 
 class MarketplaceRepostCreateIn(BaseModel):
@@ -472,6 +561,10 @@ def _product_out(db: Session, product: MarketplaceProduct) -> Dict[str, Any]:
     seller = db.query(User).filter(User.id == int(product.seller_user_id)).first()
     repost_count = _get_repost_count(db, product_id=int(product.id))
     remaining_slots = _remaining_distribution_slots(db, product_id=int(product.id))
+    visibility_mode = _safe_str(
+        getattr(product, "visibility_mode", None),
+        VISIBILITY_COMMUNITY,
+    )
 
     return {
         "id": int(product.id),
@@ -485,6 +578,7 @@ def _product_out(db: Session, product: MarketplaceProduct) -> Dict[str, Any]:
         "currency": product.currency,
         "image_url": product.image_url,
         "video_url": getattr(product, "video_url", None),
+        "visibility_mode": visibility_mode,
         "is_active": bool(product.is_active),
         "created_at": product.created_at.isoformat() if product.created_at else None,
         "origin_clan_id": int(product.clan_id),
@@ -494,17 +588,27 @@ def _product_out(db: Session, product: MarketplaceProduct) -> Dict[str, Any]:
         "distribution_slots_reserved_for_origin_spotlight": ORIGIN_SPOTLIGHT_RESERVED_SLOTS,
         "reposts_used": repost_count,
         "distribution_slots_remaining": remaining_slots,
-        "shop_product_slots_total": TOTAL_PRODUCT_SLOTS,
+        "shop_product_slots_total": FREE_COMMUNITY_PRODUCT_SLOTS,
     }
 
 
 def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
     author = db.query(User).filter(User.id == int(item.author_user_id)).first()
     clan = db.query(Clan).filter(Clan.id == int(item.clan_id)).first()
-    canonical_shop = _get_canonical_shop_by_owner(
-        db,
-        owner_user_id=int(item.author_user_id),
-    )
+    canonical_shop = None
+
+    if getattr(item, "shop_id", None):
+        canonical_shop = (
+            db.query(MarketplaceShop)
+            .filter(MarketplaceShop.id == int(item.shop_id))
+            .first()
+        )
+
+    if canonical_shop is None:
+        canonical_shop = _get_canonical_shop_by_owner(
+            db,
+            owner_user_id=int(item.author_user_id),
+        )
 
     author_name = None
     if author:
@@ -549,8 +653,14 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
         "clan_id": int(item.clan_id),
         "author_user_id": int(item.author_user_id),
         "author_gmfn_id": author_gmfn_id,
+        "shop_id": int(item.shop_id) if getattr(item, "shop_id", None) is not None else None,
         "message": item.message,
         "image_url": item.image_url,
+        "priority_mode": _safe_str(getattr(item, "priority_mode", None), SPOTLIGHT_FREE),
+        "visibility_scope": _safe_str(
+            getattr(item, "visibility_scope", None),
+            "direct_communities",
+        ),
         "expires_at": item.expires_at.isoformat() if item.expires_at else None,
         "created_at": item.created_at.isoformat() if item.created_at else None,
         "author_name": author_name,
@@ -664,15 +774,19 @@ def get_marketplace_shop_by_gmfn_id(
     visible_products = [
         _product_out(db, p)
         for p in product_rows
-        if int(p.clan_id) == int(resolved_clan_id)
-        or (
-            db.query(MarketplaceProductRepost)
-            .filter(
-                MarketplaceProductRepost.original_product_id == int(p.id),
-                MarketplaceProductRepost.target_clan_id == int(resolved_clan_id),
+        if _safe_str(getattr(p, "visibility_mode", None), VISIBILITY_COMMUNITY)
+        == VISIBILITY_COMMUNITY
+        and (
+            int(p.clan_id) == int(resolved_clan_id)
+            or (
+                db.query(MarketplaceProductRepost)
+                .filter(
+                    MarketplaceProductRepost.original_product_id == int(p.id),
+                    MarketplaceProductRepost.target_clan_id == int(resolved_clan_id),
+                )
+                .first()
+                is not None
             )
-            .first()
-            is not None
         )
     ]
 
@@ -923,6 +1037,7 @@ def list_marketplace_products(
     shop_id: Optional[int] = Query(default=None),
     only_active: bool = Query(default=True),
     include_reposted: bool = Query(default=True),
+    include_private_manage: bool = Query(default=False),
     limit: int = Query(default=100, ge=1, le=300),
     x_clan_id: Optional[str] = Header(default=None, alias="X-Clan-Id"),
     db: Session = Depends(get_db),
@@ -934,6 +1049,42 @@ def list_marketplace_products(
         explicit_clan_id=clan_id,
         header_clan_id=x_clan_id,
     )
+
+    if include_private_manage and shop_id and int(shop_id) > 0:
+        shop = (
+            db.query(MarketplaceShop)
+            .filter(MarketplaceShop.id == int(shop_id))
+            .first()
+        )
+        if not shop:
+            raise HTTPException(status_code=404, detail="Shop not found")
+
+        if not _shop_owner_can_manage(current_user=current_user, shop=shop):
+            raise HTTPException(
+                status_code=403,
+                detail="Only the shop owner can open private shop management items",
+            )
+
+        q = db.query(MarketplaceProduct).filter(
+            MarketplaceProduct.shop_id == int(shop_id)
+        )
+
+        if only_active:
+            q = q.filter(MarketplaceProduct.is_active.is_(True))
+
+        items = (
+            q.order_by(MarketplaceProduct.created_at.desc(), MarketplaceProduct.id.desc())
+            .limit(int(limit))
+            .all()
+        )
+
+        return {
+            "items": [_product_out(db, x) for x in items],
+            "total": len(items),
+            "clan_id": resolved_clan_id,
+            "shop_id": int(shop_id),
+            "include_private_manage": True,
+        }
 
     direct_products = (
         db.query(MarketplaceProduct)
@@ -973,6 +1124,9 @@ def list_marketplace_products(
 
     visible_items: list[MarketplaceProduct] = []
     for item in items:
+        if _safe_str(getattr(item, "visibility_mode", None), VISIBILITY_COMMUNITY) != VISIBILITY_COMMUNITY:
+            continue
+
         shop = (
             db.query(MarketplaceShop)
             .filter(MarketplaceShop.id == int(item.shop_id))
@@ -1046,19 +1200,49 @@ def create_marketplace_product(
     if not _safe_str(payload.image_url):
         raise HTTPException(status_code=400, detail="Product image is required")
 
-    active_product_count = (
-        db.query(MarketplaceProduct)
-        .filter(
-            MarketplaceProduct.shop_id == int(shop.id),
-            MarketplaceProduct.is_active.is_(True),
+    visibility_mode = _resolve_visibility_mode(payload.visibility_mode)
+
+    if visibility_mode == VISIBILITY_COMMUNITY:
+        active_product_count = _count_active_products_for_shop(
+            db,
+            shop_id=int(shop.id),
+            visibility_mode=VISIBILITY_COMMUNITY,
         )
-        .count()
-    )
-    if active_product_count >= TOTAL_PRODUCT_SLOTS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Maximum of {TOTAL_PRODUCT_SLOTS} products allowed per shop",
+        if active_product_count >= FREE_COMMUNITY_PRODUCT_SLOTS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Maximum of {FREE_COMMUNITY_PRODUCT_SLOTS} community-visible products allowed per shop",
+            )
+    else:
+        entitled_slots = min(
+            MAX_VAULT_PRIVATE_PRODUCT_SLOTS,
+            get_active_feature_quantity(
+                db,
+                owner_user_id=int(current_user.id),
+                feature_code=FEATURE_VAULT_SLOT,
+                shop_id=int(shop.id),
+            ),
         )
+        active_vault_count = _count_active_products_for_shop(
+            db,
+            shop_id=int(shop.id),
+            visibility_mode=VISIBILITY_VAULT,
+        )
+
+        if entitled_slots <= 0:
+            raise HTTPException(
+                status_code=403,
+                detail="No active Vault slot entitlement found for this shop.",
+            )
+
+        if active_vault_count >= entitled_slots:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Vault slot capacity reached for this shop. "
+                    f"Active private slots: {active_vault_count} / {entitled_slots}."
+                ),
+            )
 
     product = MarketplaceProduct(
         clan_id=resolved_clan_id,
@@ -1069,6 +1253,7 @@ def create_marketplace_product(
         price=_safe_str(payload.price) or None,
         currency=_safe_str(payload.currency, "NGN") or "NGN",
         image_url=_safe_str(payload.image_url) or None,
+        visibility_mode=visibility_mode,
         is_active=True,
         created_at=_now_utc(),
     )
@@ -1096,13 +1281,14 @@ def create_marketplace_product(
             "currency": product.currency,
             "image_url": product.image_url,
             "video_url": getattr(product, "video_url", None),
+            "visibility_mode": visibility_mode,
             "distribution_slots_total": TOTAL_DISTRIBUTION_SLOTS,
             "distribution_slots_reserved_for_origin_spotlight": ORIGIN_SPOTLIGHT_RESERVED_SLOTS,
             "distribution_slots_remaining": _remaining_distribution_slots(
                 db,
                 product_id=int(product.id),
             ),
-            "shop_product_slots_total": TOTAL_PRODUCT_SLOTS,
+            "shop_product_slots_total": FREE_COMMUNITY_PRODUCT_SLOTS,
             "reason": "marketplace_product_created",
         },
         commit=False,
@@ -1150,6 +1336,7 @@ def update_marketplace_product(
     changed = False
     removed_reposts = 0
 
+    target_shop_id = int(product.shop_id)
     if "shop_id" in provided and payload.shop_id is not None and int(payload.shop_id) != int(product.shop_id):
         shop = (
             db.query(MarketplaceShop)
@@ -1161,6 +1348,7 @@ def update_marketplace_product(
         if not _shop_owner_can_manage(current_user=current_user, shop=shop):
             raise HTTPException(status_code=403, detail="You cannot move this product to that shop")
         product.shop_id = int(payload.shop_id)
+        target_shop_id = int(payload.shop_id)
         changed = True
 
     if "name" in provided and payload.name is not None:
@@ -1208,6 +1396,64 @@ def update_marketplace_product(
             setattr(product, "video_url", new_video)
             changed = True
 
+    current_visibility = _safe_str(
+        getattr(product, "visibility_mode", None),
+        VISIBILITY_COMMUNITY,
+    )
+    target_visibility = current_visibility
+    if "visibility_mode" in provided and payload.visibility_mode is not None:
+        target_visibility = _resolve_visibility_mode(payload.visibility_mode)
+
+    if target_visibility == VISIBILITY_COMMUNITY:
+        active_product_count = _count_active_products_for_shop(
+            db,
+            shop_id=int(target_shop_id),
+            visibility_mode=VISIBILITY_COMMUNITY,
+            exclude_product_id=int(product.id),
+        )
+        if active_product_count >= FREE_COMMUNITY_PRODUCT_SLOTS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Maximum of {FREE_COMMUNITY_PRODUCT_SLOTS} community-visible products allowed per shop",
+            )
+    else:
+        entitled_slots = min(
+            MAX_VAULT_PRIVATE_PRODUCT_SLOTS,
+            get_active_feature_quantity(
+                db,
+                owner_user_id=int(current_user.id),
+                feature_code=FEATURE_VAULT_SLOT,
+                shop_id=int(target_shop_id),
+            ),
+        )
+        active_vault_count = _count_active_products_for_shop(
+            db,
+            shop_id=int(target_shop_id),
+            visibility_mode=VISIBILITY_VAULT,
+            exclude_product_id=int(product.id),
+        )
+
+        if entitled_slots <= 0:
+            raise HTTPException(
+                status_code=403,
+                detail="No active Vault slot entitlement found for this shop.",
+            )
+
+        if active_vault_count >= entitled_slots:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Vault slot capacity reached for this shop. "
+                    f"Active private slots: {active_vault_count} / {entitled_slots}."
+                ),
+            )
+
+    if target_visibility != current_visibility:
+        if target_visibility == VISIBILITY_VAULT:
+            removed_reposts += _remove_product_reposts(db, product_id=int(product.id))
+        product.visibility_mode = target_visibility
+        changed = True
+
     soft_remove_requested = (
         payload.archived is True
         or payload.is_active is False
@@ -1216,7 +1462,7 @@ def update_marketplace_product(
 
     if soft_remove_requested and bool(getattr(product, "is_active", True)):
         product.is_active = False
-        removed_reposts = _remove_product_reposts(db, product_id=int(product.id))
+        removed_reposts += _remove_product_reposts(db, product_id=int(product.id))
         changed = True
 
     if changed:
@@ -1235,6 +1481,7 @@ def update_marketplace_product(
             meta={
                 "product_id": int(product.id),
                 "shop_id": int(product.shop_id),
+                "visibility_mode": _safe_str(getattr(product, "visibility_mode", None), VISIBILITY_COMMUNITY),
                 "removed_reposts": removed_reposts,
                 "image_url": getattr(product, "image_url", None),
                 "reason": "marketplace_product_removed" if soft_remove_requested else "marketplace_product_updated",
@@ -1286,7 +1533,6 @@ def delete_marketplace_product(
     )
 
     removed_reposts = _remove_product_reposts(db, product_id=int(product.id))
-
     snapshot = _product_out(db, product)
 
     if hasattr(product, "is_active"):
@@ -1306,6 +1552,7 @@ def delete_marketplace_product(
             meta={
                 "product_id": int(product.id),
                 "shop_id": int(product.shop_id),
+                "visibility_mode": _safe_str(getattr(product, "visibility_mode", None), VISIBILITY_COMMUNITY),
                 "removed_reposts": removed_reposts,
                 "reason": "marketplace_product_deleted_soft",
             },
@@ -1335,6 +1582,7 @@ def delete_marketplace_product(
         meta={
             "product_id": int(snapshot["id"]),
             "shop_id": int(snapshot["shop_id"]),
+            "visibility_mode": snapshot.get("visibility_mode"),
             "removed_reposts": removed_reposts,
             "reason": "marketplace_product_deleted_hard",
         },
@@ -1365,6 +1613,12 @@ def repost_marketplace_product(
     )
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
+
+    if _safe_str(getattr(product, "visibility_mode", None), VISIBILITY_COMMUNITY) != VISIBILITY_COMMUNITY:
+        raise HTTPException(
+            status_code=400,
+            detail="Vault products cannot be reposted into ordinary community distribution.",
+        )
 
     target_clan_id = int(payload.target_clan_id)
     origin_clan_id = int(product.clan_id)
@@ -1428,6 +1682,7 @@ def repost_marketplace_product(
             "origin_clan_id": origin_clan_id,
             "target_clan_id": target_clan_id,
             "repost_id": int(repost.id),
+            "visibility_mode": _safe_str(getattr(product, "visibility_mode", None), VISIBILITY_COMMUNITY),
             "distribution_slots_total": TOTAL_DISTRIBUTION_SLOTS,
             "distribution_slots_reserved_for_origin_spotlight": ORIGIN_SPOTLIGHT_RESERVED_SLOTS,
             "distribution_slots_remaining": remaining_after,
@@ -1563,6 +1818,25 @@ def create_marketplace_broadcast(
         clan_id=resolved_clan_id,
     )
 
+    priority_mode = _resolve_priority_mode(payload.priority_mode)
+    visibility_scope = _safe_str(payload.visibility_scope, "direct_communities").lower()
+
+    shop = None
+    if payload.shop_id:
+        shop = (
+            db.query(MarketplaceShop)
+            .filter(MarketplaceShop.id == int(payload.shop_id))
+            .first()
+        )
+        if not shop:
+            raise HTTPException(status_code=404, detail="Shop not found")
+
+        if not _shop_owner_can_manage(current_user=current_user, shop=shop):
+            raise HTTPException(
+                status_code=403,
+                detail="Only the shop owner can create a spotlight for this shop",
+            )
+
     expires_at = payload.expires_at
     if expires_at is None:
         expires_at = _now_utc().replace(microsecond=0)
@@ -1584,21 +1858,51 @@ def create_marketplace_broadcast(
         raise HTTPException(status_code=400, detail="No active clan memberships found")
 
     current_time = _now_utc()
-    for clan_id in target_clan_ids:
-        active_count = _count_active_spotlights_for_clan(
-            db=db,
-            clan_id=int(clan_id),
-            now=current_time,
-        )
-        max_allowed = _max_spotlights_for_clan(
-            db=db,
-            clan_id=int(clan_id),
-        )
-        if active_count >= max_allowed:
+
+    if priority_mode == SPOTLIGHT_PAID:
+        if not shop:
             raise HTTPException(
                 status_code=400,
-                detail=f"Spotlight capacity reached for clan {clan_id}. Wait for an active spotlight to expire.",
+                detail="Paid spotlight requires a shop_id.",
             )
+
+        if not has_active_feature(
+            db,
+            owner_user_id=int(current_user.id),
+            feature_code=FEATURE_SPOTLIGHT_PRIORITY,
+            shop_id=int(shop.id),
+        ):
+            raise HTTPException(
+                status_code=403,
+                detail="No active paid spotlight entitlement found for this shop.",
+            )
+
+        active_paid_count = _count_active_paid_spotlights_for_shop(
+            db=db,
+            shop_id=int(shop.id),
+            now=current_time,
+        )
+        if active_paid_count > 0:
+            raise HTTPException(
+                status_code=400,
+                detail="A paid spotlight is already active for this shop. Wait for it to end before starting another one.",
+            )
+    else:
+        for clan_id in target_clan_ids:
+            active_count = _count_active_spotlights_for_clan(
+                db=db,
+                clan_id=int(clan_id),
+                now=current_time,
+            )
+            max_allowed = _max_spotlights_for_clan(
+                db=db,
+                clan_id=int(clan_id),
+            )
+            if active_count >= max_allowed:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Spotlight capacity reached for clan {clan_id}. Wait for an active spotlight to expire.",
+                )
 
     created_at = _now_utc()
     created_items: list[MarketplaceBroadcast] = []
@@ -1607,8 +1911,11 @@ def create_marketplace_broadcast(
         item = MarketplaceBroadcast(
             clan_id=int(clan_id),
             author_user_id=int(current_user.id),
+            shop_id=int(shop.id) if shop is not None else None,
             message=_safe_str(payload.message),
             image_url=_safe_str(payload.image_url) or None,
+            priority_mode=priority_mode,
+            visibility_scope=visibility_scope,
             expires_at=expires_at,
             created_at=created_at,
         )
@@ -1620,10 +1927,12 @@ def create_marketplace_broadcast(
     for item in created_items:
         db.refresh(item)
 
-    canonical_shop = _get_canonical_shop_by_owner(
-        db,
-        owner_user_id=int(current_user.id),
-    )
+    canonical_shop = shop
+    if canonical_shop is None:
+        canonical_shop = _get_canonical_shop_by_owner(
+            db,
+            owner_user_id=int(current_user.id),
+        )
 
     for item in created_items:
         log_trust_event(
@@ -1639,6 +1948,8 @@ def create_marketplace_broadcast(
                 "shop_id": int(canonical_shop.id) if canonical_shop else None,
                 "message_preview": _safe_str(item.message)[:120],
                 "image_url": item.image_url,
+                "priority_mode": priority_mode,
+                "visibility_scope": visibility_scope,
                 "expires_at": item.expires_at.isoformat() if item.expires_at else None,
                 "propagated_to_all_active_clans": True,
                 "propagated_clan_count": len(target_clan_ids),
@@ -1688,6 +1999,7 @@ def delete_marketplace_broadcast(
             MarketplaceBroadcast.message == item.message,
             MarketplaceBroadcast.image_url == item.image_url,
             MarketplaceBroadcast.expires_at == item.expires_at,
+            MarketplaceBroadcast.priority_mode == item.priority_mode,
         )
         .all()
     )
@@ -1709,6 +2021,9 @@ def delete_marketplace_broadcast(
             guarantor_id=None,
             meta={
                 "broadcast_id": int(deleted_snapshot["id"]),
+                "shop_id": deleted_snapshot.get("shop_id"),
+                "priority_mode": deleted_snapshot.get("priority_mode"),
+                "visibility_scope": deleted_snapshot.get("visibility_scope"),
                 "message_preview": _safe_str(deleted_snapshot.get("message"))[:120],
                 "image_url": deleted_snapshot.get("image_url"),
                 "propagated_delete": True,

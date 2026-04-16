@@ -44,6 +44,14 @@ type ProductRecord = {
 };
 
 type NoticeTone = "success" | "error" | "info";
+type CollapseState = {
+  guidance: boolean;
+  signboard: boolean;
+  products: boolean;
+  posted: boolean;
+};
+
+const SHOP_ASSETS_UI_STORAGE_KEY = "gmfn.shopAssets.sections.v1";
 
 function safeStr(value: unknown): string {
   return String(value ?? "").trim();
@@ -244,6 +252,65 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
   };
 }
 
+function collapseToggle(): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 38,
+    padding: "8px 12px",
+    borderRadius: 12,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#FFFFFF",
+    color: "#24415C",
+    fontWeight: 800,
+    fontSize: 13,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+  };
+}
+
+function readLocalJSON<T>(key: string, fallback: T): T {
+  try {
+    if (typeof window === "undefined") return fallback;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeLocalJSON(key: string, value: unknown) {
+  try {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore
+  }
+}
+
+function defaultCollapseState(): CollapseState {
+  return {
+    guidance: false,
+    signboard: false,
+    products: false,
+    posted: false,
+  };
+}
+
+function normalizeCollapseState(raw: unknown): CollapseState {
+  const src = (raw ?? {}) as Partial<CollapseState>;
+  const base = defaultCollapseState();
+
+  return {
+    guidance: Boolean(src.guidance ?? base.guidance),
+    signboard: Boolean(src.signboard ?? base.signboard),
+    products: Boolean(src.products ?? base.products),
+    posted: Boolean(src.posted ?? base.posted),
+  };
+}
+
 function getToken(): string {
   try {
     return localStorage.getItem("access_token") || "";
@@ -372,6 +439,14 @@ export default function ShopAssetsPage() {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 980;
   });
+  const [collapsed, setCollapsed] = useState<CollapseState>(() =>
+    normalizeCollapseState(
+      readLocalJSON<CollapseState>(
+        SHOP_ASSETS_UI_STORAGE_KEY,
+        defaultCollapseState()
+      )
+    )
+  );
 
   const [me, setMe] = useState<any>(null);
   const [shop, setShop] = useState<ShopRecord | null>(null);
@@ -421,6 +496,10 @@ export default function ShopAssetsPage() {
   }, [notice]);
 
   useEffect(() => {
+    writeLocalJSON(SHOP_ASSETS_UI_STORAGE_KEY, collapsed);
+  }, [collapsed]);
+
+  useEffect(() => {
     return () => {
       if (shopPreviewUrl.startsWith("blob:")) URL.revokeObjectURL(shopPreviewUrl);
       if (productPreviewUrl.startsWith("blob:")) URL.revokeObjectURL(productPreviewUrl);
@@ -429,6 +508,13 @@ export default function ShopAssetsPage() {
 
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });
+  }
+
+  function toggleSection(key: keyof CollapseState) {
+    setCollapsed((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
   }
 
   async function loadPage() {
@@ -769,7 +855,7 @@ export default function ShopAssetsPage() {
         ]}
         utilityLinks={[
           { label: "Community Home", to: "/app/community" },
-          { label: "My GMFN and I", to: "/app/my-gmfn-and-i" },
+          { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
         ]}
       />
 
@@ -811,7 +897,7 @@ export default function ShopAssetsPage() {
                 color: "#D7E3F1",
               }}
             >
-              This page handles the visual assets properly again: the signboard / identity picture
+              The visual assets are handled properly again here: the signboard / identity picture
               is separate from the product picture blocks.
             </div>
 
@@ -928,8 +1014,96 @@ export default function ShopAssetsPage() {
       </section>
 
       <section style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>1. Shop signboard / identity picture</div>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Guided release order</div>
+            <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
+              Keep one real publishing decision visible at a time: prepare the signboard first,
+              release community-visible product blocks second, and keep Vault products distinct so
+              private access never leaks into the public gallery.
+            </div>
+          </div>
 
+          <button
+            type="button"
+            onClick={() => toggleSection("guidance")}
+            style={collapseToggle()}
+          >
+            {collapsed.guidance ? "Open" : "Collapse"}
+          </button>
+        </div>
+
+        {!collapsed.guidance ? (
+          <div
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+              gap: 12,
+            }}
+          >
+            <div style={innerCard("#FCFEFF")}>
+              <div style={sectionLabel()}>1. Signboard first</div>
+              <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                Finish the executive identity frame first so the shop looks credible before product
+                blocks start competing for attention.
+              </div>
+            </div>
+
+            <div style={innerCard("#FFFFFF")}>
+              <div style={sectionLabel()}>2. Public blocks next</div>
+              <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                Community-visible products belong in the ordinary gallery. They should remain polished,
+                intentional, and ready to share by direct public link.
+              </div>
+            </div>
+
+            <div style={innerCard("#FFFBEF")}>
+              <div style={sectionLabel()}>3. Vault stays separate</div>
+              <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                Use the Vault visibility mode only when the offer is meant for private access by
+                permission. Private inventory should not appear inside the public gallery lane.
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>1. Shop signboard / identity picture</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              This public identity frame represents the shop.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => toggleSection("signboard")}
+            style={collapseToggle()}
+          >
+            {collapsed.signboard ? "Open" : "Collapse"}
+          </button>
+        </div>
+
+        {!collapsed.signboard ? (
         <div
           style={{
             marginTop: 14,
@@ -1020,7 +1194,7 @@ export default function ShopAssetsPage() {
               <div style={sectionLabel()}>Signboard controls</div>
 
               <div style={{ marginTop: 10, ...helperText() }}>
-                This is the signboard lane. Preview first, then save it.
+                Preview the signboard first, then save it.
               </div>
 
               <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
@@ -1132,11 +1306,37 @@ export default function ShopAssetsPage() {
             </div>
           </div>
         </div>
+        ) : null}
       </section>
 
       <section style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>2. Product picture blocks</div>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>2. Product picture blocks</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Use this lane for public gallery products and Vault-bound products without flattening
+              them into the same meaning.
+            </div>
+          </div>
 
+          <button
+            type="button"
+            onClick={() => toggleSection("products")}
+            style={collapseToggle()}
+          >
+            {collapsed.products ? "Open" : "Collapse"}
+          </button>
+        </div>
+
+        {!collapsed.products ? (
         <div
           style={{
             marginTop: 14,
@@ -1393,11 +1593,37 @@ export default function ShopAssetsPage() {
             </div>
           </div>
         </div>
+        ) : null}
       </section>
 
       <section style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>Posted product blocks</div>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Posted product blocks</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Review what is already live so dead placeholders and wrong visibility states are easy
+              to catch.
+            </div>
+          </div>
 
+          <button
+            type="button"
+            onClick={() => toggleSection("posted")}
+            style={collapseToggle()}
+          >
+            {collapsed.posted ? "Open" : "Collapse"}
+          </button>
+        </div>
+
+        {!collapsed.posted ? (
         <div
           style={{
             marginTop: 14,
@@ -1542,7 +1768,10 @@ export default function ShopAssetsPage() {
             })
           )}
         </div>
+        ) : null}
       </section>
     </div>
   );
 }
+
+
