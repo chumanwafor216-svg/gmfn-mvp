@@ -5,6 +5,8 @@ Revises: 36c348739e89
 Create Date: 2026-01-XX
 """
 
+import uuid
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -37,16 +39,31 @@ def upgrade() -> None:
             sa.Column("invite_code", sa.String(length=32), nullable=True),
         )
 
-    # 2) Backfill existing rows so we can enforce NOT NULL
-    #    SQLite-friendly random invite codes:
-    #    16 hex chars from randomblob(8) => e.g. "A1B2C3D4E5F6A7B8"
-    op.execute(
-        """
-        UPDATE clans
-        SET invite_code = LOWER(SUBSTR(HEX(RANDOMBLOB(8)), 1, 16))
-        WHERE invite_code IS NULL OR invite_code = '';
-        """
-    )
+    # 2) Backfill existing rows so we can enforce NOT NULL.
+    # Use Python-generated codes so the migration stays dialect-safe.
+    missing_rows = bind.execute(
+        sa.text(
+            """
+            SELECT id
+            FROM clans
+            WHERE invite_code IS NULL OR invite_code = ''
+            """
+        )
+    ).fetchall()
+    for row in missing_rows:
+        bind.execute(
+            sa.text(
+                """
+                UPDATE clans
+                SET invite_code = :invite_code
+                WHERE id = :clan_id
+                """
+            ),
+            {
+                "invite_code": uuid.uuid4().hex[:16],
+                "clan_id": row[0],
+            },
+        )
 
     # 3) Enforce NOT NULL using batch_alter_table (SQLite requires this)
     with op.batch_alter_table("clans") as batch_op:

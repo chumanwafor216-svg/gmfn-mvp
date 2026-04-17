@@ -18,8 +18,8 @@ depends_on = None
 
 
 def _has_column(conn, table: str, column: str) -> bool:
-    rows = conn.execute(sa.text(f"PRAGMA table_info('{table}')")).fetchall()
-    cols = {r[1] for r in rows}  # (cid, name, type, notnull, dflt_value, pk)
+    inspector = sa.inspect(conn)
+    cols = {col_info["name"] for col_info in inspector.get_columns(table)}
     return column in cols
 
 
@@ -27,11 +27,18 @@ def upgrade() -> None:
     bind = op.get_bind()
 
     if bind.dialect.name != "sqlite":
-        op.add_column("clans", sa.Column("invite_created_at", sa.DateTime(timezone=True), nullable=True))
-        op.add_column("clans", sa.Column("invite_expires_at", sa.DateTime(timezone=True), nullable=True))
-        op.add_column("clans", sa.Column("max_members", sa.Integer(), nullable=True))
-        op.add_column("clans", sa.Column("auto_refill_invites", sa.Boolean(), nullable=False, server_default="0"))
-        op.add_column("clans", sa.Column("created_at", sa.DateTime(timezone=True), nullable=True))
+        # Keep Postgres/MySQL/etc. idempotent too; earlier migrations may
+        # already have added some of these columns.
+        if not _has_column(bind, "clans", "invite_created_at"):
+            op.add_column("clans", sa.Column("invite_created_at", sa.DateTime(timezone=True), nullable=True))
+        if not _has_column(bind, "clans", "invite_expires_at"):
+            op.add_column("clans", sa.Column("invite_expires_at", sa.DateTime(timezone=True), nullable=True))
+        if not _has_column(bind, "clans", "max_members"):
+            op.add_column("clans", sa.Column("max_members", sa.Integer(), nullable=True))
+        if not _has_column(bind, "clans", "auto_refill_invites"):
+            op.add_column("clans", sa.Column("auto_refill_invites", sa.Boolean(), nullable=False, server_default="0"))
+        if not _has_column(bind, "clans", "created_at"):
+            op.add_column("clans", sa.Column("created_at", sa.DateTime(timezone=True), nullable=True))
         return
 
     # SQLite-safe drift-tolerant adds

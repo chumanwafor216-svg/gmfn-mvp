@@ -22,6 +22,17 @@ def upgrade() -> None:
     bind = op.get_bind()
     inspector = inspect(bind)
 
+    # Later revisions use identifiers longer than Alembic's default 32 chars.
+    # Widen the tracking column before the migration chain reaches them.
+    if bind.dialect.name != "sqlite" and "alembic_version" in inspector.get_table_names():
+        op.alter_column(
+            "alembic_version",
+            "version_num",
+            existing_type=sa.String(length=32),
+            type_=sa.String(length=128),
+            existing_nullable=False,
+        )
+
     # 1) Add partial fields if not present
     columns = [col["name"] for col in inspector.get_columns("expected_payments")]
 

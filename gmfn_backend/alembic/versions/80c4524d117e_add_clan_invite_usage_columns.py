@@ -18,8 +18,8 @@ depends_on = None
 
 
 def _has_column(conn, table: str, column: str) -> bool:
-    rows = conn.execute(sa.text(f"PRAGMA table_info('{table}')")).fetchall()
-    cols = {r[1] for r in rows}  # (cid, name, type, notnull, dflt_value, pk)
+    inspector = sa.inspect(conn)
+    cols = {col_info["name"] for col_info in inspector.get_columns(table)}
     return column in cols
 
 
