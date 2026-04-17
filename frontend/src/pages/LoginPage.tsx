@@ -193,6 +193,9 @@ export default function LoginPage() {
   const nav = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
+  const isDevBuild =
+    typeof import.meta !== "undefined" &&
+    Boolean((import.meta as any)?.env?.DEV);
 
   const routeState =
     (location.state as {
@@ -221,8 +224,8 @@ export default function LoginPage() {
     return window.innerWidth <= 920;
   });
 
-  const [email, setEmail] = useState(founderEmail || "admin@test.com");
-  const [password, setPassword] = useState("pass1234");
+  const [email, setEmail] = useState(founderEmail || (isDevBuild ? "admin@test.com" : ""));
+  const [password, setPassword] = useState(isDevBuild ? "pass1234" : "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -283,12 +286,21 @@ export default function LoginPage() {
         nav(redirectTarget, { replace: true });
       }, 500);
     } catch (e: any) {
-      setErr(
-        String(
-          e?.message ||
-            "Unable to sign in. Confirm that your account is already active."
-        )
+      const raw = String(
+        e?.message ||
+          "Unable to sign in. Confirm that your account is already active."
       );
+
+      if (
+        raw.toLowerCase().includes("invalid credentials") ||
+        raw.toLowerCase().includes("not yet activated")
+      ) {
+        setErr(
+          "Those details did not match an active account. If this is your first time on the live system, use Activate Membership or start through Create Community first."
+        );
+      } else {
+        setErr(raw);
+      }
     } finally {
       setBusy(false);
     }
@@ -447,17 +459,29 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div style={{ ...noticeStyle("info"), marginBottom: 16 }}>
-            <div style={{ fontWeight: 1000, marginBottom: 8 }}>
-              Test details for this environment
+          {isDevBuild ? (
+            <div style={{ ...noticeStyle("info"), marginBottom: 16 }}>
+              <div style={{ fontWeight: 1000, marginBottom: 8 }}>
+                Test details for this environment
+              </div>
+              <div>
+                Email: <strong>admin@test.com</strong>
+              </div>
+              <div>
+                Password: <strong>pass1234</strong>
+              </div>
             </div>
-            <div>
-              Email: <strong>admin@test.com</strong>
+          ) : (
+            <div style={{ ...noticeStyle("info"), marginBottom: 16 }}>
+              <div style={{ fontWeight: 1000, marginBottom: 8 }}>
+                Live system sign-in
+              </div>
+              <div>
+                Sign in only works for accounts that already exist and have
+                completed activation.
+              </div>
             </div>
-            <div>
-              Password: <strong>pass1234</strong>
-            </div>
-          </div>
+          )}
 
           {err ? (
             <div style={{ marginBottom: 16, ...noticeStyle("error") }}>{err}</div>
