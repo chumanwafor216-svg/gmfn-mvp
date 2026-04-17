@@ -20,9 +20,13 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
+def _database_url_from_env() -> str:
+    return str(os.getenv("DATABASE_URL", "") or "").strip()
+
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
-    url = os.getenv("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
+    url = _database_url_from_env() or config.get_main_option("sqlalchemy.url")
 
     context.configure(
         url=url,
@@ -45,7 +49,7 @@ def run_migrations_online() -> None:
     connection = config.attributes.get("connection", None)
 
     # Prefer env var DATABASE_URL if present (Docker / deploy)
-    db_url = os.getenv("DATABASE_URL")
+    db_url = _database_url_from_env()
     if db_url:
         config.set_main_option("sqlalchemy.url", db_url)
 
