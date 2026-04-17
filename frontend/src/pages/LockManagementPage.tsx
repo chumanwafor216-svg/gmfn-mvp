@@ -62,7 +62,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -85,7 +85,8 @@ function actionBtn(
       fontSize: 14,
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
+      textAlign: "center",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -105,7 +106,8 @@ function actionBtn(
       fontSize: 13,
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
+      textAlign: "center",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -124,7 +126,8 @@ function actionBtn(
     fontSize: 14,
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    textAlign: "center",
     opacity: disabled ? 0.86 : 1,
   };
 }

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
@@ -240,16 +241,7 @@ function buildApiRoots(): string[] {
 
   if (base) out.push(base);
 
-  if (origin) {
-    try {
-      const u = new URL(origin);
-      out.push(`${u.protocol}//${u.hostname}:8012`);
-    } catch {
-      // ignore
-    }
-  }
-
-  out.push("http://127.0.0.1:8012");
+  if (origin) out.push(origin);
   return dedupeStrings(out.map((item) => item.replace(/\/+$/, "")));
 }
 
@@ -532,7 +524,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -553,9 +545,10 @@ function actionBtn(
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -573,9 +566,10 @@ function actionBtn(
       color: disabled ? "#94A3B8" : "#24415C",
       fontWeight: 800,
       fontSize: 13,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -592,9 +586,10 @@ function actionBtn(
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -612,8 +607,9 @@ function collapseToggle(): React.CSSProperties {
     color: "#24415C",
     fontWeight: 800,
     fontSize: 13,
+    textAlign: "center",
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -1222,6 +1218,14 @@ export default function TrustScorePage() {
         />
       </div>
 
+      <ExplainToggle
+        label="What this screen does"
+        what="Trust Passport is the fuller trust reading for your account. It explains the current score, band, recent trust events, and the evidence behind them."
+        why="It helps you understand not just the current trust position, but why it changed and what that position means for the next move."
+        next="Start with the current trust posture, then open the evidence and institutional context sections if you need the deeper explanation."
+        tone="blue"
+      />
+
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
@@ -1359,6 +1363,15 @@ export default function TrustScorePage() {
           >
             <div style={sectionLabel()}>Current trust posture</div>
 
+            <ExplainToggle
+              label="What this posture means"
+              what="This is the main trust reading for the current moment: your band, score, and the immediate trust meaning."
+              why="It turns the passport into one clear trust posture before you read the deeper document details."
+              next="Read the posture first, then check the document reference, issue window, and evidence sections if you need more support for the reading."
+              tone="light"
+              style={{ marginTop: 12 }}
+            />
+
             <div
               style={{
                 marginTop: 10,
@@ -1482,16 +1495,24 @@ export default function TrustScorePage() {
         </div>
 
         {!collapsed.overview ? (
-          <div
-            style={{
-              marginTop: 14,
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr 1fr"
-                : "repeat(6, minmax(0, 1fr))",
-              gap: 12,
-            }}
-          >
+          <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+            <ExplainToggle
+              label="What this does"
+              what="This summary gathers the core trust metrics that describe your current trust state in one place."
+              why="It helps you read the main trust picture before moving into the event explanation or evidence sections."
+              next="Start with the band, score, CCI, graph score, trust limit, and event count here, then open the deeper sections if you need to understand why the reading looks this way."
+              tone="light"
+            />
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr 1fr"
+                  : "repeat(6, minmax(0, 1fr))",
+                gap: 12,
+              }}
+            >
             <div style={statTile()}>
               <div style={sectionLabel()}>Current band</div>
               <div
@@ -1661,6 +1682,7 @@ export default function TrustScorePage() {
               >
                 {safeStr(trustSlipSummary?.active_clan_count ?? "0")}
               </div>
+            </div>
             </div>
           </div>
         ) : null}

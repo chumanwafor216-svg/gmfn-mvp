@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import {
   getVaultShopAccessView,
@@ -73,7 +74,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -240,6 +241,15 @@ export default function ShopAccessPage() {
             <div style={{ marginTop: 12, lineHeight: 1.75 }}>
               {errorText || "This private access link is not available anymore."}
             </div>
+            <div style={{ marginTop: 14 }}>
+              <ExplainToggle
+                label="What this does"
+                what="This result shows that the private vault link cannot be used right now."
+                why="It helps you tell the difference between a restricted link and a normal open shop page."
+                next="Check the status and expiry details here, then return to the sender or request a fresh access link if you still need entry."
+                tone="light"
+              />
+            </div>
             <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(false)}>Status: {status || "invalid"}</span>
               <span style={badge(false)}>
@@ -287,6 +297,14 @@ export default function ShopAccessPage() {
       }}
     >
       <div style={{ maxWidth: 1040, margin: "0 auto", display: "grid", gap: 18 }}>
+        <ExplainToggle
+          label="What this screen does"
+          what="This screen handles private vault access to a shared shop view and explains why you can see this protected part of the shop."
+          why="It makes the access rules visible so private shop access does not feel random or permanent."
+          next="Check the vault status and access explanation first, then continue only while the shared access remains active."
+          tone="light"
+        />
+
         <section
           style={pageCard(
             "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
@@ -322,6 +340,15 @@ export default function ShopAccessPage() {
             You are viewing a private part of this shop. Access was shared by the owner and it can
             end when the time, view limit, or access rules are reached.
           </div>
+
+          <ExplainToggle
+            label="What this does"
+            what="This access explanation makes the private access rules clear, including why access exists and why it may end."
+            why="It helps visitors understand that vault access is permission-based rather than a permanent open shop state."
+            next="Read the access explanation first, then decide whether to continue browsing, contact the owner, or return later."
+            tone="light"
+            style={{ marginTop: 14 }}
+          />
 
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             <div

@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
+import SystemPictureFrame from "../components/SystemPictureFrame";
 import { navigateWithOrigin } from "../lib/nav";
 import { useLocation, useNavigate } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
@@ -435,19 +437,7 @@ function getMediaOrigins(): string[] {
 
   if (webOrigin) {
     out.push(webOrigin);
-
-    try {
-      const u = new URL(webOrigin);
-      if (u.hostname) {
-        out.push(`${u.protocol}//${u.hostname}:8012`);
-      }
-    } catch {
-      // ignore
-    }
   }
-
-  out.push("http://127.0.0.1:8012");
-  out.push("http://localhost:8012");
 
   return dedupeStrings(out);
 }
@@ -972,7 +962,7 @@ function badgeStyle(primary = false): React.CSSProperties {
     color: primary ? "#1D4ED8" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -998,9 +988,10 @@ function actionBtn(
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -1018,9 +1009,10 @@ function actionBtn(
       color: disabled ? "#94A3B8" : "#24415C",
       fontWeight: 800,
       fontSize: 13,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -1037,9 +1029,10 @@ function actionBtn(
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -2319,6 +2312,14 @@ export default function MarketplacePage() {
         </div>
       </section>
 
+      <ExplainToggle
+        label="What this screen does"
+        what="Marketplace is where you read the current community identity, check money readiness, browse community-visible shop activity, and continue into the next trade or support route."
+        why="It keeps community commerce grounded in the right context so users can see who is visible, what is ready, and when a money or support route should take over."
+        next="Read the community identity first, then move into the money, tools, members, or support sections depending on what you need to do."
+        tone="dark"
+      />
+
       <section style={pageCard("#FFFFFF")}>
         <div
           style={{
@@ -2345,6 +2346,15 @@ export default function MarketplacePage() {
           </button>
         </div>
 
+        <ExplainToggle
+          label="What this profile does"
+          what="This profile anchors the marketplace in the current community by showing the identity, visible image, trust position, and shared pool context first."
+          why="People need to understand who they are trading inside before opening member activity, money routes, or support work."
+          next="Read the community identity first, then use the details below to confirm trust, membership size, and pool position before moving deeper into commerce or support."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
+
         {sectionsOpen.profile ? (
           <div
             style={{
@@ -2358,35 +2368,19 @@ export default function MarketplacePage() {
             }}
           >
             <div>
-              <div
-                style={{
-                  width: "100%",
+              <SystemPictureFrame
+                outerStyle={{
                   minHeight: 230,
                   borderRadius: 28,
-                  border: "1px solid rgba(212,175,55,0.18)",
-                  background:
-                    "linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  overflow: "hidden",
                   padding: 10,
-                  boxShadow:
-                    "0 22px 48px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.04)",
+                }}
+                innerStyle={{
+                  minHeight: 210,
                 }}
               >
-                <div
-                  style={{
-                    width: "100%",
-                    minHeight: 210,
-                    borderRadius: 22,
-                    overflow: "hidden",
-                    border: "1px solid rgba(212,175,55,0.14)",
-                    background:
-                      "linear-gradient(180deg, #163552 0%, #2A5B84 100%)",
-                    position: "relative",
-                  }}
-                >
                   <div
                     style={{
                       position: "absolute",
@@ -2489,8 +2483,7 @@ export default function MarketplacePage() {
                       </div>
                     }
                   />
-                </div>
-              </div>
+              </SystemPictureFrame>
             </div>
 
             <div>
@@ -2685,6 +2678,15 @@ export default function MarketplacePage() {
           </button>
         </div>
 
+        <ExplainToggle
+          label="What these routes do"
+          what="These routes tell you whether money can come in, move out, or continue into the fuller finance view for this community."
+          why="Marketplace activity feels safer when users can confirm the community account, personal payout path, and live money status before acting."
+          next="Check which route is ready first, then open Money In, Money Out, or Finance depending on whether you are funding, withdrawing, or reviewing the deeper money record."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
+
         {sectionsOpen.money ? (
           <div
             style={{
@@ -2698,6 +2700,15 @@ export default function MarketplacePage() {
           >
             <div style={innerCard("#FCFEFF")}>
               <div style={sectionLabel()}>Visible pool position</div>
+
+              <ExplainToggle
+                label="What this pool reading does"
+                what="This shows the pool amount currently visible in the community so users can read the shared money position at a glance."
+                why="It helps people separate the community pool from personal payout and from the fixed settlement destination used for Money In."
+                next="Use this as a quick shared-money reading, then open Money In, Money Out, or Finance when you need to act on the underlying routes."
+                tone="light"
+                style={{ marginTop: 12 }}
+              />
 
               <div
                 style={{
@@ -2718,6 +2729,15 @@ export default function MarketplacePage() {
 
             <div style={innerCard("#FFFFFF")}>
               <div style={sectionLabel()}>Community account</div>
+
+              <ExplainToggle
+                label="What this account does"
+                what="This is the fixed community settlement destination that Money In depends on for this marketplace."
+                why="It keeps community funding separate from personal payout so users can tell which money lane belongs to the whole community."
+                next="Check whether this account is ready before opening Money In, then use personal payout separately only for approved Money Out activity."
+                tone="light"
+                style={{ marginTop: 12 }}
+              />
 
               <div
                 style={{
@@ -2745,6 +2765,15 @@ export default function MarketplacePage() {
             <div style={innerCard("#FFFFFF")}>
               <div style={sectionLabel()}>Personal payout</div>
 
+              <ExplainToggle
+                label="What this payout does"
+                what="This is the personal payout destination that approved Money Out should use for the current member."
+                why="It keeps member withdrawals separate from the shared community settlement route so users can see which money lane belongs to them personally."
+                next="Check whether this payout path is ready before opening Money Out, and use the community account separately when the action is funding the wider community."
+                tone="light"
+                style={{ marginTop: 12 }}
+              />
+
               <div
                 style={{
                   marginTop: 8,
@@ -2770,6 +2799,15 @@ export default function MarketplacePage() {
 
             <div style={innerCard("#FFFFFF")}>
               <div style={sectionLabel()}>Money In</div>
+
+              <ExplainToggle
+                label="What this pay-in route does"
+                what="This opens the guided route for paying money into the community pool through the community settlement path."
+                why="It gives users one clear funding lane instead of making pay-in feel interchangeable with payout or support activity."
+                next="Use this when the goal is to fund the community, then follow the guided pay-in flow through reference, confirmation, and reconciliation."
+                tone="light"
+                style={{ marginTop: 12 }}
+              />
 
               <div
                 style={{
@@ -2798,6 +2836,15 @@ export default function MarketplacePage() {
 
             <div style={innerCard("#FFFFFF")}>
               <div style={sectionLabel()}>Money Out</div>
+
+              <ExplainToggle
+                label="What this withdrawal route does"
+                what="This opens the guided route for taking money out through the member-side withdrawal path for the current community."
+                why="It keeps withdrawal separate from community funding and makes it clear that the route will decide whether direct payout or support-backed continuation applies."
+                next="Use this when the goal is withdrawal, then let the guided route determine whether it can complete directly or needs to continue into support."
+                tone="light"
+                style={{ marginTop: 12 }}
+              />
 
               <div
                 style={{
@@ -2829,6 +2876,15 @@ export default function MarketplacePage() {
 
             <div style={innerCard("#F8FBFF")}>
               <div style={sectionLabel()}>Finance</div>
+
+              <ExplainToggle
+                label="What this finance view does"
+                what="This opens the fuller money record for the current community, including pool activity, support movement, locks, releases, and visible financial history."
+                why="It gives users a deeper reading when the summary money cards are no longer enough to understand what is happening."
+                next="Use this after reading the lighter marketplace money cards when you need the full financial story behind funding, withdrawal, or support activity."
+                tone="light"
+                style={{ marginTop: 12 }}
+              />
 
               <div
                 style={{
@@ -2882,6 +2938,15 @@ export default function MarketplacePage() {
             {sectionsOpen.tools ? "Collapse" : "Open"}
           </button>
         </div>
+
+        <ExplainToggle
+          label="What these tools do"
+          what="These are the stable community actions you reach for often when you need to manage visibility, identity, invites, and the main community routes."
+          why="Keeping them together here saves people from hunting across the app for the tools that support everyday marketplace and community work."
+          next="Use this area when you need to update the picture, create or open an invite, copy the community ID, or jump into the next operating page."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
 
         {sectionsOpen.tools ? (
           <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
@@ -3019,6 +3084,15 @@ export default function MarketplacePage() {
             {sectionsOpen.members ? "Collapse" : "Open"}
           </button>
         </div>
+
+        <ExplainToggle
+          label="What these member rows do"
+          what="These rows show who is visible in the current community, which shop galleries can be opened, and which people may already fit the current support request."
+          why="This keeps marketplace browsing and support decisions grounded in the same community view instead of forcing users to guess who is visible or relevant."
+          next="Browse the rows first, open a shop gallery when you want to inspect a member's commercial presence, and only use someone as a guarantor when the fit signal appears."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
 
         {sectionsOpen.members ? (
           <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
@@ -3170,6 +3244,15 @@ export default function MarketplacePage() {
           </div>
         </div>
 
+        <ExplainToggle
+          label="What this support area does"
+          what="This is where marketplace users begin a support request, read whether guarantors are needed, and continue into the borrowing flow when the draft becomes active."
+          why="Support should feel connected to the current community and visible member context, not like a separate disconnected system."
+          next="Start the request here, check the draft and fit signals below, then move into readiness, suggestions, or workbench only when the guided flow tells you to continue."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
+
         {sectionsOpen.support ? (
           <div
             style={{
@@ -3184,6 +3267,15 @@ export default function MarketplacePage() {
           >
             <div style={innerCard("#FCFEFF")}>
               <div style={sectionLabel()}>Start a support request</div>
+
+              <ExplainToggle
+                label="What this request form does"
+                what="This form starts a borrowing request inside the current community by collecting the amount, timing, and purpose before the guided support flow opens further."
+                why="It gives people one clear starting point instead of making readiness, suggestions, and workbench feel like separate disconnected pages."
+                next="Enter the request details first, start the draft, then use the guided pages below only after the draft and fit signals tell you what to do next."
+                tone="light"
+                style={{ marginTop: 12 }}
+              />
 
               <div style={{ marginTop: 10, ...helperText(), maxWidth: 760 }}>
                 Enter amount and duration first. If the draft needs guarantors,
@@ -3303,6 +3395,15 @@ export default function MarketplacePage() {
                   <div style={softCard("#FFFFFF")}>
                     <div style={sectionLabel()}>Draft status</div>
 
+                    <ExplainToggle
+                      label="What this draft status does"
+                      what="This status strip shows how far the current support draft has moved, including whether guarantors are required, how many fit suggestions exist, and how many people have responded."
+                      why="It turns the draft into something readable so users can tell whether they should stay here, send requests, or continue into the next borrowing step."
+                      next="Read the status first, then review the fit suggestions below or move into the deeper loan pages only when the draft shows you what is still missing."
+                      tone="light"
+                      style={{ marginTop: 12 }}
+                    />
+
                     <div
                       style={{
                         marginTop: 10,
@@ -3335,6 +3436,15 @@ export default function MarketplacePage() {
                   {requiredGuarantorCount > 0 ? (
                     <div style={softCard("#F8FBFF")}>
                       <div style={sectionLabel()}>Fit suggestions</div>
+
+                      <ExplainToggle
+                        label="What these fit suggestions do"
+                        what="These suggestions show which visible community members may fit the current support request based on the draft amount and the support signals already available."
+                        why="They help the user choose who to ask next without treating guarantor selection like a blind guess or a random contact list."
+                        next="Read the reason and suggested pledge first, choose only the people that make sense for this request, then continue once the chosen guarantors reflect the draft."
+                        tone="light"
+                        style={{ marginTop: 12 }}
+                      />
 
                       {suggestedSupporters.length === 0 ? (
                         <div style={{ marginTop: 10, ...helperText() }}>
@@ -3412,6 +3522,15 @@ export default function MarketplacePage() {
                         <div style={{ marginTop: 14 }}>
                           <div style={sectionLabel()}>Chosen guarantors</div>
 
+                          <ExplainToggle
+                            label="What these chosen guarantors do"
+                            what="These are the people you have selected for this draft so far. They are still candidates until the guarantor requests are actually sent."
+                            why="This keeps selection separate from approval so users do not mistake a chosen name for a completed support commitment."
+                            next="Review the selected names here, remove anyone who no longer fits, then send the guarantor requests only when the final set looks right."
+                            tone="light"
+                            style={{ marginTop: 12 }}
+                          />
+
                           <div
                             style={{
                               marginTop: 10,
@@ -3433,6 +3552,15 @@ export default function MarketplacePage() {
                           </div>
                         </div>
                       ) : null}
+
+                      <ExplainToggle
+                        label="What this request step does"
+                        what="This step sends the guarantor requests to the selected people so the draft can move from chosen candidates into real outreach."
+                        why="It separates selection from action, which helps users understand that support is not approved just because names have been picked."
+                        next="Check that the selected count is enough, send the requests when the final set is ready, then watch the draft status for replies and approvals."
+                        tone="light"
+                        style={{ marginTop: 14 }}
+                      />
 
                       <div
                         style={{
@@ -3478,6 +3606,15 @@ export default function MarketplacePage() {
 
             <div style={innerCard("#FFFFFF")}>
               <div style={sectionLabel()}>Visible support items</div>
+
+              <ExplainToggle
+                label="What these support items do"
+                what="This list shows the support items already visible in the current community, including the amount, status, and role attached to each item."
+                why="It keeps people from confusing a live community support record with the draft they are still building on the left."
+                next="Read this list to see what is already active here, then stay in the draft lane only if you still need to create or continue a separate request."
+                tone="light"
+                style={{ marginTop: 12 }}
+              />
 
               <div
                 style={{

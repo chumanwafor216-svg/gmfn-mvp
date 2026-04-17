@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 
@@ -38,10 +39,11 @@ function actionBtn(primary = false): React.CSSProperties {
     background: primary ? "#1D4ED8" : "#FFFFFF",
     color: primary ? "#FFFFFF" : "#0B1F33",
     fontWeight: 900,
+    textAlign: "center",
     textDecoration: "none",
     cursor: "pointer",
     minHeight: 42,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -77,7 +79,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#1D4ED8" : "#475569",
     fontWeight: 900,
     fontSize: 12,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -205,6 +207,15 @@ export default function JoinRequestPendingPage() {
         subtitle="Your request has been received and is now waiting for community review."
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="This screen confirms that your join request was received and is now waiting for community review."
+        why="It helps you understand that entry is not automatic and that the community still needs to decide on your request."
+        next="Read the current pending state, then wait for the decision or return later to check the outcome."
+        tone="light"
+        style={{ marginTop: 18 }}
+      />
+
       <div
         style={{
           ...pageCard(
@@ -254,6 +265,15 @@ export default function JoinRequestPendingPage() {
           <span style={badge(false)}>Community: {communityName}</span>
           {requestId ? <span style={badge(false)}>Request ID: {requestId}</span> : null}
         </div>
+
+        <ExplainToggle
+          label="What this does"
+          what="This request-submitted block confirms that your join request is now in the community review lane."
+          why="It makes the waiting state explicit so you do not mistake silence for a failed request."
+          next="Use this as confirmation, then return later or wait for the next message about the decision."
+          tone="dark"
+          style={{ marginTop: 14 }}
+        />
       </div>
 
       <div
@@ -326,6 +346,15 @@ export default function JoinRequestPendingPage() {
         <div style={{ display: "grid", gap: 18 }}>
           <div style={pageCard()}>
             <div style={sectionLabel()}>Track this request</div>
+
+            <ExplainToggle
+              label="What this does"
+              what="This tracking block keeps the request ID and the approval-status link together so you can come back to the right decision record."
+              why="It gives you a stable reference while the community is still reviewing the request."
+              next="Keep the request ID visible and use the approval-status check when you want to see whether the decision has changed."
+              tone="light"
+              style={{ marginTop: 12 }}
+            />
 
             {requestId ? (
               <>

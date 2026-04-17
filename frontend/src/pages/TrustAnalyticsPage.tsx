@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
@@ -226,7 +227,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -249,7 +250,8 @@ function actionBtn(
       fontSize: 14,
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
+      textAlign: "center",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -269,7 +271,8 @@ function actionBtn(
       fontSize: 13,
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
+      textAlign: "center",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -288,7 +291,8 @@ function actionBtn(
     fontSize: 14,
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    textAlign: "center",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -307,7 +311,8 @@ function collapseToggle(): React.CSSProperties {
     fontWeight: 800,
     fontSize: 13,
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    textAlign: "center",
   };
 }
 
@@ -611,6 +616,14 @@ export default function TrustAnalyticsPage() {
         utilityLinks={[{ label: "Trust Graph", to: "/app/command-center/trust-graph" }]}
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="This screen reads the visible trust pattern, signal mix, and recent trust trend before you move into deeper intervention pages."
+        why="It helps you understand whether trust looks stable, improving, or weakening before you make a heavier admin move."
+        next="Start with the current reading, then move through the signal overview, signal mix, and recent timeline to understand the pattern."
+        tone="light"
+      />
+
       <section
         style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
@@ -677,6 +690,15 @@ export default function TrustAnalyticsPage() {
             </div>
           </div>
         </div>
+
+        <ExplainToggle
+          label="What this does"
+          what="This current reading compresses the trust pattern into one practical interpretation so you can quickly see whether the visible trust picture looks stronger, weaker, or mixed."
+          why="It helps you avoid jumping into intervention pages before you understand the overall direction of the trust signals."
+          next="Read this summary first, then use the sections below to confirm why the pattern looks the way it does."
+          tone="light"
+          style={{ marginTop: 14 }}
+        />
       </section>
 
       <section style={pageCard("#FFFFFF")}>

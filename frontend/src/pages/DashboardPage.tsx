@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
+import SystemPictureFrame from "../components/SystemPictureFrame";
 import { useLocation, useNavigate } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
 import { navigateWithOrigin } from "../lib/nav";
@@ -42,6 +44,7 @@ type SpotlightItem = {
   price?: string | number | null;
   currency?: string | null;
   created_at?: string | null;
+  expires_at?: string | null;
 };
 
 type JoinRequestItem = {
@@ -478,7 +481,8 @@ function primaryBtn(disabled = false): React.CSSProperties {
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.85 : 1,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    textAlign: "center",
   };
 }
 
@@ -497,7 +501,8 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     fontSize: 14,
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    textAlign: "center",
   };
 }
 
@@ -515,7 +520,8 @@ function subtleBtn(disabled = false): React.CSSProperties {
     fontWeight: 800,
     fontSize: 13,
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    textAlign: "center",
   };
 }
 
@@ -541,7 +547,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -660,11 +666,15 @@ function apiOrigin(): string {
       const u = new URL(base);
       return `${u.protocol}//${u.host}`;
     } catch {
-      return "http://127.0.0.1:8012";
+      return typeof window !== "undefined"
+        ? String(window.location.origin || "").trim().replace(/\/+$/, "")
+        : "";
     }
   }
 
-  return "http://127.0.0.1:8012";
+  return typeof window !== "undefined"
+    ? String(window.location.origin || "").trim().replace(/\/+$/, "")
+    : "";
 }
 
 function getSpotlightOrigins(): string[] {
@@ -687,19 +697,7 @@ function getSpotlightOrigins(): string[] {
 
   if (webOrigin) {
     out.push(webOrigin);
-
-    try {
-      const u = new URL(webOrigin);
-      if (u.hostname) {
-        out.push(`${u.protocol}//${u.hostname}:8012`);
-      }
-    } catch {
-      // ignore
-    }
   }
-
-  out.push("http://127.0.0.1:8012");
-  out.push("http://localhost:8012");
 
   return [...new Set(out.filter(Boolean))];
 }
@@ -812,6 +810,47 @@ function safeDateTime(x: unknown): string {
   return d.toLocaleString();
 }
 
+function describeSpotlightExpiry(item: SpotlightItem | null): {
+  chip: string;
+  detail: string;
+  urgent: boolean;
+} {
+  const expiresAt = toDateSafe(item?.expires_at);
+  if (!expiresAt) {
+    return {
+      chip: "Live now",
+      detail: "No end time is visible for this spotlight yet.",
+      urgent: false,
+    };
+  }
+
+  const now = new Date();
+  const diffMs = expiresAt.getTime() - now.getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+
+  if (diffMs <= 0) {
+    return {
+      chip: "Run ended",
+      detail: `This spotlight reached its end time at ${safeDateTime(expiresAt)}.`,
+      urgent: true,
+    };
+  }
+
+  if (diffHours <= 24) {
+    return {
+      chip: "Ends soon",
+      detail: `This spotlight is scheduled to end at ${safeDateTime(expiresAt)}.`,
+      urgent: true,
+    };
+  }
+
+  return {
+    chip: "Live now",
+    detail: `This spotlight is scheduled to end at ${safeDateTime(expiresAt)}.`,
+    urgent: false,
+  };
+}
+
 function toDateSafe(value: unknown): Date | null {
   const raw = safeStr(value);
   if (!raw) return null;
@@ -840,7 +879,7 @@ function daysUntil(value: unknown): number | null {
 
 function formatDateLabel(value: unknown): string {
   const d = toDateSafe(value);
-  if (!d) return "—";
+  if (!d) return "â€”";
   return d.toLocaleDateString();
 }
 
@@ -905,7 +944,7 @@ function formatFocusProgress(
 
   const target =
     targetValue === null || Number.isNaN(Number(targetValue))
-      ? "—"
+      ? "â€”"
       : String(targetValue);
 
   if (unit === "?") {
@@ -1053,7 +1092,7 @@ function getCciState(me: any): ReadingState {
         classText,
         scoreText:
           scoreNum === null || Number.isNaN(scoreNum)
-            ? "—"
+            ? "â€”"
             : String(Math.round(scoreNum)),
         tone: "green",
         statusText: "Healthy across visible communities",
@@ -1066,7 +1105,7 @@ function getCciState(me: any): ReadingState {
         classText,
         scoreText:
           scoreNum === null || Number.isNaN(scoreNum)
-            ? "—"
+            ? "â€”"
             : String(Math.round(scoreNum)),
         tone: "green",
         statusText: "Stable and growing",
@@ -1081,7 +1120,7 @@ function getCciState(me: any): ReadingState {
         classText,
         scoreText:
           scoreNum === null || Number.isNaN(scoreNum)
-            ? "—"
+            ? "â€”"
             : String(Math.round(scoreNum)),
         tone: "yellow",
         statusText: "Needs attention",
@@ -1095,7 +1134,7 @@ function getCciState(me: any): ReadingState {
       classText,
       scoreText:
         scoreNum === null || Number.isNaN(scoreNum)
-          ? "—"
+          ? "â€”"
           : String(Math.round(scoreNum)),
       tone: "red",
       statusText: "At risk",
@@ -1149,7 +1188,7 @@ function getCciState(me: any): ReadingState {
 
   return {
     classText: "Pending",
-    scoreText: "—",
+    scoreText: "â€”",
     tone: "neutral",
     statusText: "CCI is being prepared",
     whyText: "A fuller cross-community reading will appear when available.",
@@ -1208,7 +1247,7 @@ function getOpenTrustState(
         classText: rawClass,
         scoreText:
           rawScore === null || Number.isNaN(rawScore)
-            ? "—"
+            ? "â€”"
             : String(Math.round(rawScore)),
         tone: "green",
         statusText: "Strong in your current community",
@@ -1221,7 +1260,7 @@ function getOpenTrustState(
         classText: rawClass,
         scoreText:
           rawScore === null || Number.isNaN(rawScore)
-            ? "—"
+            ? "â€”"
             : String(Math.round(rawScore)),
         tone: "green",
         statusText: "Stable in your current community",
@@ -1235,7 +1274,7 @@ function getOpenTrustState(
         classText: rawClass,
         scoreText:
           rawScore === null || Number.isNaN(rawScore)
-            ? "—"
+            ? "â€”"
             : String(Math.round(rawScore)),
         tone: "yellow",
         statusText: "Needs attention in your current community",
@@ -1249,7 +1288,7 @@ function getOpenTrustState(
       classText: rawClass,
       scoreText:
         rawScore === null || Number.isNaN(rawScore)
-          ? "—"
+          ? "â€”"
           : String(Math.round(rawScore)),
       tone: "red",
       statusText: "At risk in your current community",
@@ -1307,7 +1346,7 @@ function getOpenTrustState(
   if (!hasSelectedCommunity) {
     return {
       classText: "Pending",
-      scoreText: "—",
+      scoreText: "â€”",
       tone: "neutral",
       statusText: "Select a community to view Open Trust",
       whyText:
@@ -1317,7 +1356,7 @@ function getOpenTrustState(
 
   return {
     classText: "Pending",
-    scoreText: "—",
+    scoreText: "â€”",
     tone: "neutral",
     statusText: "Open Trust is being prepared",
     whyText:
@@ -1993,7 +2032,7 @@ function buildPriorityRoutes(params: {
     return {
       title: "Repair trust before expanding",
       detail:
-        "Your current trust position is under pressure. Protect tomorrow’s options before chasing more visibility or movement.",
+        "Your current trust position is under pressure. Protect tomorrowâ€™s options before chasing more visibility or movement.",
       primaryRoute: trustPrimary
         ? {
             key: "trust",
@@ -2631,13 +2670,19 @@ export default function DashboardPage() {
   }, [selectedClanId]);
 
   useEffect(() => {
-    (async () => {
+    let alive = true;
+
+    async function refreshSpotlights() {
+      if (!alive) return;
       setSpotlightLoading(true);
+
       try {
         const res = await getMarketplaceBroadcasts({
           active_only: true,
           limit: 20,
-        }).catch(() => ({ items: [] }));
+        });
+
+        if (!alive) return;
 
         const items: SpotlightItem[] = Array.isArray(res)
           ? res
@@ -2646,11 +2691,45 @@ export default function DashboardPage() {
           : [];
 
         setSpotlights(items);
+      } catch {
+        // Keep the current spotlight state if the refresh fails temporarily.
       } finally {
-        setSpotlightLoading(false);
+        if (alive) {
+          setSpotlightLoading(false);
+        }
       }
-    })();
-  }, []);
+    }
+
+    void refreshSpotlights();
+
+    function handleVisibilityRefresh() {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
+
+      void refreshSpotlights();
+    }
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("focus", handleVisibilityRefresh);
+    }
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityRefresh);
+    }
+
+    return () => {
+      alive = false;
+
+      if (typeof window !== "undefined") {
+        window.removeEventListener("focus", handleVisibilityRefresh);
+      }
+
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityRefresh);
+      }
+    };
+  }, [selectedClanId]);
 
   useEffect(() => {
     (async () => {
@@ -2828,6 +2907,10 @@ export default function DashboardPage() {
   const spotlightImageCandidates = useMemo(
     () => buildResolvedSpotlightCandidates(spotlightImageSrc),
     [spotlightImageSrc]
+  );
+  const spotlightExpiryStatus = useMemo(
+    () => describeSpotlightExpiry(activeSpotlight),
+    [activeSpotlight]
   );
 
   const myShopLink = safeStr(me?.gmfn_id)
@@ -4383,6 +4466,15 @@ export default function DashboardPage() {
                         Use this verification dock to open trust explanation, read integrity status, and share your verification record when someone needs confirmation.
                       </div>
 
+                      <ExplainToggle
+                        label="What Verification Dock does"
+                        what="This dock keeps your verification record, QR, trust explanation, and verification actions together."
+                        why="When someone needs proof, you should not have to search across different pages for the right identity and trust tools."
+                        next="Use it to check your current verification state first, then open Trust, TrustSlip, or the QR when you need to explain or share proof."
+                        tone="blue"
+                        style={{ marginTop: 14 }}
+                      />
+
                       <div
                         style={{
                           marginTop: 14,
@@ -4422,6 +4514,14 @@ export default function DashboardPage() {
           </div>
         </div>
       </section>
+
+      <ExplainToggle
+        label="What this screen does"
+        what="Dashboard brings identity, trust, visibility, live requests, and next actions into one working view."
+        why="It helps you decide what deserves attention first before you move into marketplace, finance, support, trust, or community work."
+        next="Open the sections below when you want to verify your record, review featured visibility, read active demand, or act on the strongest current signal."
+        tone="blue"
+      />
 
       <section
         style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%)")}
@@ -4496,6 +4596,15 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        <ExplainToggle
+          label="What Spotlight does"
+          what="Spotlight is the featured visibility stage for the strongest live seller or shop signal available to you right now."
+          why="It helps you connect trust, visibility, demand, and seller identity before you decide whether to open the shop or keep moving."
+          next="Open the full spotlight when you want the premium view, move into the shop for more detail, or step through other live spotlight items when more than one is active."
+          tone="blue"
+          style={{ marginTop: 16 }}
+        />
+
         {!showSpotlight ? (
           <div
             style={{
@@ -4555,11 +4664,21 @@ export default function DashboardPage() {
                       activeSpotlight?.author_name ||
                       "Community seller"
                   )}{" "}
-                  •{" "}
+                  â€¢{" "}
                   {safeStr(
                     activeSpotlight?.source_clan_name ||
                       currentCommunityName(currentClan, selectedClanId)
                   )}
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: spotlightExpiryStatus.urgent ? "#9A3412" : "#1D4ED8",
+                  }}
+                >
+                  {spotlightExpiryStatus.detail}
                 </div>
               </div>
 
@@ -4600,13 +4719,10 @@ export default function DashboardPage() {
           </div>
         ) : activeSpotlight ? (
           <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
-            <div
-              style={{
-                position: "relative",
-                width: "100%",
+            <SystemPictureFrame
+              outerStyle={{
                 minHeight: isCompact ? 320 : 450,
                 borderRadius: 36,
-                overflow: "hidden",
                 border: "1px solid rgba(184,137,45,0.32)",
                 outline: "1px solid rgba(255,255,255,0.14)",
                 outlineOffset: "-8px",
@@ -4614,6 +4730,13 @@ export default function DashboardPage() {
                   "linear-gradient(180deg, #081625 0%, #0D2742 42%, #0F3B74 74%, #0B63D1 100%)",
                 boxShadow:
                   "0 34px 70px rgba(2,12,27,0.30), 0 14px 34px rgba(15,59,116,0.20), inset 0 0 0 1px rgba(255,255,255,0.10), inset 0 1px 0 rgba(255,255,255,0.16)",
+              }}
+              innerStyle={{
+                minHeight: isCompact ? 320 : 450,
+                borderRadius: 36,
+                border: "none",
+                background:
+                  "linear-gradient(180deg, #081625 0%, #0D2742 42%, #0F3B74 74%, #0B63D1 100%)",
               }}
             >
               {spotlightImageCandidates.length > 0 ? (
@@ -4720,12 +4843,25 @@ export default function DashboardPage() {
                   <span
                     style={{
                       ...badge(false),
+                      background: spotlightExpiryStatus.urgent
+                        ? "rgba(251,146,60,0.22)"
+                        : "rgba(255,255,255,0.12)",
+                      color: "#FFFFFF",
+                      backdropFilter: "blur(10px)",
+                    }}
+                  >
+                    {spotlightExpiryStatus.chip}
+                  </span>
+
+                  <span
+                    style={{
+                      ...badge(false),
                       background: "rgba(255,255,255,0.12)",
                       color: "#FFFFFF",
                       backdropFilter: "blur(10px)",
                     }}
                   >
-                    {safeDateTime(activeSpotlight.created_at) || "—"}
+                    {safeDateTime(activeSpotlight.created_at) || "â€”"}
                   </span>
                 </div>
               </div>
@@ -4788,7 +4924,7 @@ export default function DashboardPage() {
                   )}
                 </div>
               </div>
-            </div>
+            </SystemPictureFrame>
 
             <div
               style={{
@@ -4959,7 +5095,7 @@ export default function DashboardPage() {
                             lineHeight: 1.32,
                           }}
                         >
-                          {safeDateTime(activeSpotlight.created_at) || "—"}
+                          {safeDateTime(activeSpotlight.created_at) || "â€”"}
                         </div>
                       </div>
 
@@ -5146,6 +5282,15 @@ export default function DashboardPage() {
             </span>
           </div>
         </div>
+
+        <ExplainToggle
+          label="What Demand Control does"
+          what="Demand Control surfaces the live request pressure inside your current community instead of making you search for it elsewhere."
+          why="Open demand can affect trade, trust, and follow-through, so the current request, urgency, and next action need to stay visible."
+          next="Read the current request first, then open Demand Box if you want the wider queue, the details behind it, or the place to create a new demand."
+          tone="blue"
+          style={{ marginTop: 16 }}
+        />
         <div
           style={{
             marginTop: 16,
@@ -5322,6 +5467,15 @@ export default function DashboardPage() {
             </OriginLink>
           </div>
         </div>
+
+        <ExplainToggle
+          label="What What Matters Now does"
+          what="This area organises the strongest current dashboard signals into one action inbox."
+          why="It helps you separate what is urgent, what is nearing drift, what is already moving, and what is simply unread."
+          next="Open notifications for the fuller queue, or start with the strongest bucket if you only have time for the next important move."
+          tone="blue"
+          style={{ marginTop: 16 }}
+        />
 
         <div
           style={{
@@ -5724,6 +5878,15 @@ export default function DashboardPage() {
             Today
           </span>
         </div>
+
+        <ExplainToggle
+          label="What Market Wisdom does"
+          what="Market Wisdom gives you one clear signal to read before you move into trade, support, or another commitment."
+          why="It is meant to steady judgment, not overload you, so the main signal should be easy to read before the supporting insight."
+          next="Read the main signal quickly, then use the supporting insight only if it helps the next move you are about to make."
+          tone="dark"
+          style={{ marginTop: 14 }}
+        />
 
         <div
           style={{
@@ -6935,7 +7098,7 @@ export default function DashboardPage() {
                               lineHeight: 1.32,
                             }}
                           >
-                            {daysUntil(item.dueDate) ?? "—"}
+                            {daysUntil(item.dueDate) ?? "â€”"}
                           </div>
                         </div>
 

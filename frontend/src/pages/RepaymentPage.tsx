@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
@@ -158,7 +159,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -191,9 +192,10 @@ function actionBtn(
     color: disabled ? "#FFFFFF" : primary ? "#FFFFFF" : "#0B1F33",
     fontWeight: 900,
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -223,8 +225,9 @@ function collapseToggle(): React.CSSProperties {
     color: "#24415C",
     fontWeight: 800,
     fontSize: 13,
+    textAlign: "center",
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -676,6 +679,14 @@ export default function RepaymentPage() {
         }
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="This screen handles one loan repayment from exact amount and reference through payment instruction, result, and reconciliation."
+        why="It keeps repayment tied to the correct support item so you do not lose the amount, reference, or status that the finance and support flow depend on."
+        next="Start with the repayment overview, follow the instruction exactly, then confirm the result and reconciliation state before moving away."
+        tone="blue"
+      />
+
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}>
@@ -760,6 +771,15 @@ export default function RepaymentPage() {
             {collapsed.overview ? "Open" : "Collapse"}
           </button>
         </div>
+
+        <ExplainToggle
+          label="What this does"
+          what="This overview keeps the core repayment facts visible: loan status, outstanding amount, paid total, and due timing."
+          why="You need these facts together before you act, otherwise it is easy to pay the wrong amount or lose the repayment context."
+          next="Open this overview first, confirm the facts, and then continue into the repayment instruction below."
+          tone="light"
+          style={{ marginTop: 14 }}
+        />
 
         {!collapsed.overview ? (
           <div

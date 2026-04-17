@@ -25,8 +25,53 @@ from app.db.bank_models import BankEvent
 from app.services.reconciliation_service import reconcile_batch
 
 
+def _truthy(value: str | None) -> bool:
+    if value is None:
+        return False
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _dev_mode() -> bool:
-    return str(os.getenv("GMFN_DEV_MODE", "") or "").strip() == "1"
+    return _truthy(os.getenv("GMFN_DEV_MODE"))
+
+
+def _auto_create_schema() -> bool:
+    raw = os.getenv("GMFN_AUTO_CREATE_SCHEMA")
+    if raw is not None and str(raw).strip() != "":
+        return _truthy(raw)
+    return _dev_mode()
+
+
+def _reconciliation_loop_enabled() -> bool:
+    raw = os.getenv("GMFN_ENABLE_RECONCILIATION_LOOP")
+    if raw is not None and str(raw).strip() != "":
+        return _truthy(raw)
+    return True
+
+
+def _cors_settings() -> tuple[list[str], Optional[str]]:
+    raw = str(os.getenv("GMFN_CORS_ORIGINS", "") or "").strip()
+    if raw:
+        origins = [item.strip() for item in raw.split(",") if item.strip()]
+        return origins, None
+
+    if _dev_mode():
+        return (
+            [
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+                "http://localhost:5174",
+                "http://127.0.0.1:5174",
+            ],
+            r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})(:\d+)?$",
+        )
+
+    return [], None
+
+
+def _uploads_dir() -> Path:
+    raw = str(os.getenv("GMFN_UPLOADS_DIR", "uploads") or "").strip()
+    return Path(raw or "uploads").expanduser()
 
 
 def _reconcile_all_clans_once() -> None:
@@ -79,13 +124,17 @@ async def _reconciliation_loop() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # ---- Startup ----
-    Base.metadata.create_all(bind=engine)
+    if _auto_create_schema():
+        Base.metadata.create_all(bind=engine)
 
     reconciliation_task: Optional[asyncio.Task] = None
-    try:
-        reconciliation_task = asyncio.create_task(_reconciliation_loop())
-        app.state.reconciliation_task = reconciliation_task
-    except Exception:
+    if _reconciliation_loop_enabled():
+        try:
+            reconciliation_task = asyncio.create_task(_reconciliation_loop())
+            app.state.reconciliation_task = reconciliation_task
+        except Exception:
+            app.state.reconciliation_task = None
+    else:
         app.state.reconciliation_task = None
 
     yield
@@ -109,17 +158,21 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+cors_origins, cors_origin_regex = _cors_settings()
+uploads_dir = _uploads_dir()
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
+    allow_origin_regex=cors_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Media uploads/static serving
-Path("uploads").mkdir(parents=True, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+uploads_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
 
 # ✅ DEV-ONLY: return traceback JSON for unhandled exceptions
 if _dev_mode():

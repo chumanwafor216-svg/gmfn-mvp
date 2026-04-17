@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
@@ -205,9 +206,10 @@ function primaryBtn(disabled = false): React.CSSProperties {
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -225,9 +227,10 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -244,8 +247,9 @@ function collapseToggle(): React.CSSProperties {
     color: "#24415C",
     fontWeight: 800,
     fontSize: 13,
+    textAlign: "center",
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -270,7 +274,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#475569",
     fontSize: 12,
     fontWeight: 1000,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -641,6 +645,15 @@ export default function GuarantorEarningsPage() {
         ]}
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="This screen shows what you have earned through guarantor support work, how those earnings are distributed, and which recent items are feeding that record."
+        why="It helps you understand the value of your guarantor contribution without having to search through separate support or finance screens."
+        next="Read the fixed context first, then open the earnings overview and recent earnings sections to see the current picture."
+        tone="light"
+        style={{ marginTop: 18 }}
+      />
+
       {err ? (
         <div style={{ ...softCard("#FEF2E2"), marginTop: 18, color: "#991B1B", fontWeight: 900 }}>
           {err}
@@ -882,6 +895,15 @@ export default function GuarantorEarningsPage() {
                 {collapsed.overview ? "Open" : "Collapse"}
               </button>
             </div>
+
+            <ExplainToggle
+              label="What this does"
+              what="This overview gathers the headline earnings totals for your current community so you can see the size and weight of your guarantor contribution."
+              why="It gives you one stable summary before you move into the detailed earnings record."
+              next="Open this summary first, then use the recent earnings section to trace where the numbers are coming from."
+              tone="light"
+              style={{ marginTop: 14 }}
+            />
 
             {!collapsed.overview ? (
               <div

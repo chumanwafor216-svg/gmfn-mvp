@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
@@ -179,11 +180,20 @@ function apiOrigin(): string {
       const u = new URL(base);
       return `${u.protocol}//${u.host}`;
     } catch {
-      return "http://127.0.0.1:8012";
+      return browserOrigin();
     }
   }
 
-  return "http://127.0.0.1:8012";
+  return browserOrigin();
+}
+
+function browserOrigin(): string {
+  try {
+    if (typeof window === "undefined") return "";
+    return String(window.location.origin || "").trim().replace(/\/+$/, "");
+  } catch {
+    return "";
+  }
 }
 
 function joinUrl(root: string, path: string): string {
@@ -330,7 +340,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -351,9 +361,10 @@ function actionBtn(
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -371,9 +382,10 @@ function actionBtn(
       color: disabled ? "#94A3B8" : "#24415C",
       fontWeight: 800,
       fontSize: 13,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -390,9 +402,10 @@ function actionBtn(
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -410,8 +423,9 @@ function collapseToggle(): React.CSSProperties {
     color: "#24415C",
     fontWeight: 800,
     fontSize: 13,
+    textAlign: "center",
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -1014,6 +1028,14 @@ export default function TrustSlipPage() {
         />
       </div>
 
+      <ExplainToggle
+        label="What this screen does"
+        what="TrustSlip is the portable public trust summary for your current trust state."
+        why="It keeps the public-facing trust summary, code, expiry window, and verification route together in one shareable place."
+        next="Start with the main TrustSlip summary, then use TrustSlip Verify when you need to confirm the current public reading."
+        tone="blue"
+      />
+
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
@@ -1164,6 +1186,15 @@ export default function TrustSlipPage() {
             }}
           >
             <div style={sectionLabel()}>Current portable reading</div>
+
+            <ExplainToggle
+              label="What this does"
+              what="This portable reading summarizes the trust state that other people can verify from your current TrustSlip."
+              why="It keeps the main public trust signals, document codes, and issue window visible in one place before you share or verify anything."
+              next="Read the band, trust limit, CCI, and issue window here first, then use the TrustSlip code or verify route when needed."
+              tone="light"
+              style={{ marginTop: 12 }}
+            />
 
             <div
               style={{

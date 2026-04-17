@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
@@ -203,7 +204,8 @@ function primaryBtn(disabled = false): React.CSSProperties {
     fontSize: 14,
     textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    textAlign: "center",
   };
 }
 
@@ -223,7 +225,8 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     fontSize: 14,
     textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    textAlign: "center",
   };
 }
 
@@ -241,7 +244,8 @@ function collapseToggle(): React.CSSProperties {
     fontWeight: 800,
     fontSize: 13,
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    textAlign: "center",
   };
 }
 
@@ -282,7 +286,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -562,6 +566,14 @@ export default function RevenueAllocationPage() {
         ]}
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="This screen explains how one support item distributes service fee, platform revenue, guarantor pool, pool use, and net disbursement."
+        why="It helps you read the financial split clearly instead of treating the allocation as a raw finance dump."
+        next="Start with the allocation summary, then move into meaning and detailed fields if you need a deeper finance-support reading."
+        tone="light"
+      />
+
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
@@ -761,6 +773,15 @@ export default function RevenueAllocationPage() {
             {collapsed.summary ? "Open" : "Collapse"}
           </button>
         </div>
+
+        <ExplainToggle
+          label="What this does"
+          what="This allocation summary gathers the main financial breakdown for the selected support item so you can see the split before reading field-by-field detail."
+          why="It helps you understand the broad allocation picture first, which makes the deeper finance fields easier to interpret."
+          next="Open this summary first, then move into meaning or detailed fields only if you need a closer explanation."
+          tone="light"
+          style={{ marginTop: 14 }}
+        />
 
         {!collapsed.summary ? (
           allocation ? (

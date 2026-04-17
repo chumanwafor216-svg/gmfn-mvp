@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
@@ -413,7 +414,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -434,9 +435,10 @@ function actionBtn(
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -454,9 +456,10 @@ function actionBtn(
       color: disabled ? "#94A3B8" : "#24415C",
       fontWeight: 800,
       fontSize: 13,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -473,9 +476,10 @@ function actionBtn(
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -493,8 +497,9 @@ function collapseToggle(): React.CSSProperties {
     color: "#24415C",
     fontWeight: 800,
     fontSize: 13,
+    textAlign: "center",
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -1040,6 +1045,14 @@ export default function LoanSuggestionsPage() {
         }
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="This page reads the current support item and shows whether the visible fit signals are strong enough to continue into the deeper workbench."
+        why="It gives you a recommendation layer before you commit time to supporter selection and detailed workbench actions."
+        next="Read the suggestion summary first, then use the fit reading and suggested supporters below to decide whether to continue."
+        tone="blue"
+      />
+
       <section
         style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
@@ -1390,6 +1403,15 @@ export default function LoanSuggestionsPage() {
           </button>
         </div>
 
+        <ExplainToggle
+          label="What this reading does"
+          what="This section explains the current fit message and shows whether this is the right moment to move into the deeper workbench."
+          why="It helps you interpret the suggestion instead of treating it like a vague status line."
+          next="Read the fit message first, then check the supporters list below if you are ready to move toward guarantor selection."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
+
         {!collapsed.reading ? (
           <div
             style={{
@@ -1493,6 +1515,15 @@ export default function LoanSuggestionsPage() {
             {collapsed.supporters ? "Open" : "Collapse"}
           </button>
         </div>
+
+        <ExplainToggle
+          label="Why these supporters appear"
+          what="This section lists the strongest visible supporter matches for the current support item."
+          why="It helps you start from the best current fit instead of guessing who to approach first."
+          next="Review the reason and suggested pledge for each supporter, then continue into the workbench when you are ready to act."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
 
         {!collapsed.supporters ? (
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>

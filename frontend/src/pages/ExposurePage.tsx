@@ -125,7 +125,7 @@ export default function ExposurePage() {
 
   function userTimelineLink(userId?: number) {
     if (!userId) return "#";
-    return `/trust-analytics?clan_id=${clanId}&user_id=${userId}`;
+    return `/app/command-center/trust-analytics?clan_id=${clanId}&user_id=${userId}`;
   }
 
   function loanTimelineLink(loanId?: number) {
@@ -350,7 +350,7 @@ export default function ExposurePage() {
             {cciLoading ? "Loading CCI..." : "Load CCI scores"}
           </button>
 
-          <Link to="/trust-analytics" style={{ marginLeft: 6 }}>
+          <Link to="/app/command-center/trust-analytics" style={{ marginLeft: 6 }}>
             Trust Analytics →
           </Link>
         </div>

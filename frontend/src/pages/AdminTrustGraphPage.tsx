@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
@@ -172,7 +173,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -190,7 +191,8 @@ function collapseToggle(): React.CSSProperties {
     fontWeight: 800,
     fontSize: 13,
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    textAlign: "center",
   };
 }
 
@@ -709,6 +711,14 @@ export default function AdminTrustGraphPage() {
         utilityLinks={[{ label: "Exposure", to: "/app/command-center/exposure" }]}
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="This screen reads the shape of the trust network: connectedness, clusters, centrality, flagged signals, and structural concentration."
+        why="It helps you understand relationship structure before you treat a trust issue as only an event or only an exposure problem."
+        next="Start with the current graph reading, then use the overview, structure reading, and graph signals sections to understand the network shape."
+        tone="light"
+      />
+
       <section
         style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
@@ -775,6 +785,15 @@ export default function AdminTrustGraphPage() {
             </div>
           </div>
         </div>
+
+        <ExplainToggle
+          label="What this does"
+          what="This current graph reading turns the network snapshot into one short structural interpretation so you can see whether the trust graph looks balanced, concentrated, or risky."
+          why="It gives you a practical reading before you dig into nodes, edges, clusters, and signal lists."
+          next="Read this summary first, then use the graph overview and structure sections to confirm the reasons behind it."
+          tone="light"
+          style={{ marginTop: 14 }}
+        />
       </section>
 
       <section style={pageCard("#FFFFFF")}>

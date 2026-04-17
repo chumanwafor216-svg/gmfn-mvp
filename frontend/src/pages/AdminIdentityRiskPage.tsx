@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { getAdminIdentityRisk } from "../lib/api";
 
@@ -113,6 +114,15 @@ export default function AdminIdentityRiskPage() {
         sectionLabel="Identity Risk"
         title="Identity Risk"
         subtitle="Monitor suspicious device overlap, identity clusters, and signals that may suggest multi-account misuse."
+      />
+
+      <ExplainToggle
+        label="What this screen does"
+        what="This screen shows identity-risk signals such as suspicious overlap, unusual clusters, and patterns that may suggest account misuse."
+        why="It helps you see when identity behaviour still looks normal and when a stronger manual review may be justified."
+        next="Read the guide to the risk colours first, then scan the grouped users and open the detailed signals only when you need deeper evidence."
+        tone="light"
+        style={{ marginTop: 18 }}
       />
 
       {err ? (

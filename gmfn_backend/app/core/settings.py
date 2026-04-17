@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Settings(BaseSettings):
     SECRET_KEY: str = "dev-change-me"
@@ -11,8 +14,5 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+
 settings = Settings()
-op.add_column("clans", sa.Column("invite_max_uses", sa.Integer(), nullable=True))
-op.add_column("clans", sa.Column("invite_uses", sa.Integer(), nullable=False, server_default="0"))
-op.drop_column("clans", "invite_uses")
-op.drop_column("clans", "invite_max_uses")

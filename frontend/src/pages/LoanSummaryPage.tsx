@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
@@ -245,9 +246,10 @@ function primaryBtn(disabled = false): React.CSSProperties {
     color: "#FFFFFF",
     fontWeight: 900,
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -265,9 +267,10 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -285,8 +288,9 @@ function collapseToggle(): React.CSSProperties {
     color: "#24415C",
     fontWeight: 800,
     fontSize: 13,
+    textAlign: "center",
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -311,7 +315,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -551,7 +555,8 @@ function statusBadge(status: string) {
     border: "1px solid #e5e7eb",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    textAlign: "center",
   };
 
   if (s === "approved" || s === "disbursed") {
@@ -631,7 +636,8 @@ function guarantorBadge(status: string) {
     border: "1px solid #e5e7eb",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    textAlign: "center",
   };
 
   if (s === "approved") {
@@ -1191,6 +1197,14 @@ export default function LoanSummaryPage() {
         }
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="This page gathers the full reading for one support item: its amount, progress, guarantor state, repayment state, evidence, and finance detail."
+        why="It gives you one calmer place to review the item before you take another step in workbench, finance, or repayment."
+        next="Start with the summary facts, then move into guarantor decisions or repayment areas depending on what the loan needs now."
+        tone="blue"
+      />
+
       {feedback ? <div style={feedbackCard(feedback.tone)}>{feedback.text}</div> : null}
 
       <section
@@ -1373,6 +1387,15 @@ export default function LoanSummaryPage() {
             {collapsed.overview ? "Open" : "Collapse"}
           </button>
         </div>
+
+        <ExplainToggle
+          label="What these facts show"
+          what="This section gives the core numbers and counts for the current support item."
+          why="It helps you understand the loan at a glance before you move into evidence, guarantor decisions, or repayment detail."
+          next="Read the amount, remaining position, and guarantor counts first, then open the deeper sections only where action is still needed."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
 
         {!collapsed.overview ? (
           <div
@@ -1595,6 +1618,15 @@ export default function LoanSummaryPage() {
               {collapsed.guarantors ? "Open" : "Collapse"}
             </button>
           </div>
+
+          <ExplainToggle
+            label="How to use these decisions"
+            what="This section is where you review guarantor rows one by one and decide whether a pending guarantor should move forward."
+            why="It keeps each guarantor decision explicit instead of hiding it inside bulk actions or loose queue behavior."
+            next="Check the status of each guarantor row, then approve or decline only the ones that are genuinely ready for a decision."
+            tone="light"
+            style={{ marginTop: 12 }}
+          />
 
           {!collapsed.guarantors ? (
             <div style={{ marginTop: 14, display: "grid", gap: 10 }}>

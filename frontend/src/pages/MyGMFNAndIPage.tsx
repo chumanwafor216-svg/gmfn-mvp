@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import { getCurrentClan, getMe, getMySettings } from "../lib/api";
@@ -157,7 +158,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#1D4ED8" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -178,9 +179,10 @@ function actionBtn(
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -198,9 +200,10 @@ function actionBtn(
       color: disabled ? "#94A3B8" : "#24415C",
       fontWeight: 800,
       fontSize: 13,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -217,9 +220,10 @@ function actionBtn(
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -570,6 +574,14 @@ export default function MyGMFNAndIPage() {
         ]}
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="This page explains what GSN means for you as a member and keeps the core capabilities and personal settings close at hand."
+        why="It turns the product from a collection of routes into a clearer member guide that explains what the network can actually do for you."
+        next="Use the Guide tab to understand the capabilities first, then open Settings when you want to tune how the workspace behaves."
+        tone="blue"
+      />
+
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
@@ -688,6 +700,15 @@ export default function MyGMFNAndIPage() {
             <div style={{ marginTop: 10, ...helperText(), maxWidth: 920 }}>
               These are the 22 core capabilities that explain what GSN can do for you.
             </div>
+
+            <ExplainToggle
+              label="How to use this guide"
+              what="This section lists the core capabilities so you can understand what the network can do for you across identity, trust, finance, trade, and disciplined follow-through."
+              why="It gives you a member-level explanation of the product instead of leaving those capabilities spread across many separate pages."
+              next="Read the capability that matches what you need now, then open the related route from the page navigation when you want to act on it."
+              tone="light"
+              style={{ marginTop: 12 }}
+            />
 
             <div
               style={{

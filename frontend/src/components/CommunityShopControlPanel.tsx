@@ -79,11 +79,15 @@ function apiOrigin(): string {
       const url = new URL(base);
       return `${url.protocol}//${url.host}`;
     } catch {
-      return "http://127.0.0.1:8012";
+      return typeof window !== "undefined"
+        ? String(window.location.origin || "").trim().replace(/\/+$/, "")
+        : "";
     }
   }
 
-  return "http://127.0.0.1:8012";
+  return typeof window !== "undefined"
+    ? String(window.location.origin || "").trim().replace(/\/+$/, "")
+    : "";
 }
 
 function resolveImageSrc(raw: any): string {
@@ -262,7 +266,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -283,9 +287,10 @@ function actionBtn(
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -302,9 +307,10 @@ function actionBtn(
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -322,8 +328,9 @@ function collapseToggle(): React.CSSProperties {
     color: "#24415C",
     fontWeight: 800,
     fontSize: 13,
+    textAlign: "center",
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 

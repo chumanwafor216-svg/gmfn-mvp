@@ -1,26 +1,29 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
+  getAdminIdentityRisk,
+  getAdminIncompleteLoans,
   getCurrentClan,
   getMe,
-  getMyNotifications,
   getSelectedClanId,
+  getSystemDiagnostics,
+  listAdminPoolPending,
+  listExpectedPayments,
+  listRecentBankEvents,
+  listUnmatchedBankEvents,
 } from "../lib/api";
-import {
-  buildGuidanceSnapshot,
-  type GuidanceSnapshot,
-} from "../lib/guidance";
 
 type RawSystemRow = {
   id: string;
   kind: string;
   title: string;
   detail: string;
-  unread: boolean;
   createdAt: string;
   ctaTo: string;
   ctaLabel: string;
+  level: "high" | "medium" | "low";
 };
 
 type CollapseState = {
@@ -139,7 +142,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -162,7 +165,8 @@ function actionBtn(
       fontSize: 14,
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
+      textAlign: "center",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -182,7 +186,8 @@ function actionBtn(
       fontSize: 13,
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
+      textAlign: "center",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -201,7 +206,8 @@ function actionBtn(
     fontSize: 14,
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    textAlign: "center",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -220,7 +226,8 @@ function collapseToggle(): React.CSSProperties {
     fontWeight: 800,
     fontSize: 13,
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    textAlign: "center",
   };
 }
 
@@ -272,67 +279,9 @@ function normalizeCollapseState(raw: any): CollapseState {
   };
 }
 
-function normalizeSystemRow(raw: any): RawSystemRow {
-  const text = [
-    safeStr(raw?.kind),
-    safeStr(raw?.title),
-    safeStr(raw?.message),
-    safeStr(raw?.detail),
-  ]
-    .join(" ")
-    .toLowerCase();
-
-  let ctaTo = "/app/notifications";
-  let ctaLabel = "Open Action Inbox";
-
-  if (
-    text.includes("trust") ||
-    text.includes("integrity") ||
-    text.includes("identity")
-  ) {
-    ctaTo = "/app/trust";
-    ctaLabel = "Open Trust";
-  } else if (
-    text.includes("loan") ||
-    text.includes("guarantor") ||
-    text.includes("payment") ||
-    text.includes("withdrawal")
-  ) {
-    ctaTo = "/app/loans";
-    ctaLabel = "Open Loans";
-  } else if (text.includes("demand")) {
-    ctaTo = "/app/demand-box";
-    ctaLabel = "Open Demand Box";
-  } else if (
-    text.includes("market") ||
-    text.includes("shop") ||
-    text.includes("spotlight")
-  ) {
-    ctaTo = "/app/marketplace";
-    ctaLabel = "Open Marketplace";
-  } else if (
-    text.includes("join") ||
-    text.includes("approval") ||
-    text.includes("community")
-  ) {
-    ctaTo = "/app/community";
-    ctaLabel = "Open Community";
-  }
-
-  return {
-    id: firstTruthy(raw?.id, raw?.notification_id, raw?.title, raw?.message),
-    kind: firstTruthy(raw?.kind, raw?.title, "update"),
-    title: firstTruthy(raw?.title, raw?.kind, "Update"),
-    detail: firstTruthy(
-      raw?.message,
-      raw?.detail,
-      "Review this update and continue from the right page."
-    ),
-    unread: !raw?.is_read,
-    createdAt: firstTruthy(raw?.created_at),
-    ctaTo,
-    ctaLabel,
-  };
+function toNum(value: any): number {
+  const n = Number(value || 0);
+  return Number.isFinite(n) ? n : 0;
 }
 
 function signalTone(row: RawSystemRow): {
@@ -340,18 +289,7 @@ function signalTone(row: RawSystemRow): {
   text: string;
   label: string;
 } {
-  const text = [safeStr(row.kind), safeStr(row.title), safeStr(row.detail)]
-    .join(" ")
-    .toLowerCase();
-
-  if (
-    text.includes("failed") ||
-    text.includes("error") ||
-    text.includes("urgent") ||
-    text.includes("default") ||
-    text.includes("overdue") ||
-    text.includes("declined")
-  ) {
+  if (row.level === "high") {
     return {
       bg: "#FFF5F5",
       text: "#991B1B",
@@ -359,13 +297,7 @@ function signalTone(row: RawSystemRow): {
     };
   }
 
-  if (
-    text.includes("pending") ||
-    text.includes("warning") ||
-    text.includes("reminder") ||
-    text.includes("late") ||
-    text.includes("due")
-  ) {
+  if (row.level === "medium") {
     return {
       bg: "#FFFBEF",
       text: "#92400E",
@@ -377,6 +309,26 @@ function signalTone(row: RawSystemRow): {
     bg: "#F8FBFF",
     text: "#0B63D1",
     label: "Informational",
+  };
+}
+
+function identitySignalLevel(row: any): "high" | "medium" | "low" {
+  const severity = toNum(row?.severity);
+  if (severity >= 6) return "high";
+  if (severity >= 4) return "medium";
+  return "low";
+}
+
+function makeSystemRow(input: Partial<RawSystemRow> & { id: string; title: string }): RawSystemRow {
+  return {
+    id: input.id,
+    kind: safeStr(input.kind || "admin"),
+    title: safeStr(input.title || "Admin signal"),
+    detail: safeStr(input.detail || "Review this admin signal and move into the right admin page."),
+    createdAt: safeStr(input.createdAt),
+    ctaTo: safeStr(input.ctaTo || "/app/command-center"),
+    ctaLabel: safeStr(input.ctaLabel || "Open Command Center"),
+    level: input.level || "low",
   };
 }
 
@@ -397,8 +349,13 @@ export default function SystemOperationsPage() {
   const [loading, setLoading] = useState(true);
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
-  const [guidance, setGuidance] = useState<GuidanceSnapshot | null>(null);
-  const [rawSignals, setRawSignals] = useState<RawSystemRow[]>([]);
+  const [diagnostics, setDiagnostics] = useState<any>(null);
+  const [identityRisk, setIdentityRisk] = useState<any[]>([]);
+  const [incompleteLoans, setIncompleteLoans] = useState<any[]>([]);
+  const [pendingPool, setPendingPool] = useState<any[]>([]);
+  const [bankRecent, setBankRecent] = useState<any[]>([]);
+  const [bankUnmatched, setBankUnmatched] = useState<any[]>([]);
+  const [expectedPayments, setExpectedPayments] = useState<any[]>([]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -424,21 +381,47 @@ export default function SystemOperationsPage() {
       setLoading(true);
 
       try {
-        const [meRes, clanRes, guidanceRes, rawRes] = await Promise.all([
+        const [meRes, clanRes, diagnosticsRes, identityRiskRes, clanOpsRes] = await Promise.all([
           getMe().catch(() => null),
           getCurrentClan().catch(() => null),
-          buildGuidanceSnapshot().catch(() => null),
-          getMyNotifications(40, false).catch(() => ({ items: [] })),
+          getSystemDiagnostics().catch(() => null),
+          getAdminIdentityRisk(100).catch(() => ({ items: [] })),
+          selectedClanId > 0
+            ? Promise.all([
+                getAdminIncompleteLoans(selectedClanId, 100).catch(() => ({ items: [] })),
+                listAdminPoolPending(selectedClanId, 50).catch(() => ({ items: [] })),
+                listRecentBankEvents(selectedClanId).catch(() => ({ items: [] })),
+                listUnmatchedBankEvents(selectedClanId).catch(() => ({ items: [] })),
+                listExpectedPayments({ clan_id: selectedClanId, limit: 100 }).catch(() => ({ items: [] })),
+              ])
+            : Promise.resolve([
+                { items: [] },
+                { items: [] },
+                { items: [] },
+                { items: [] },
+                { items: [] },
+              ]),
         ]);
 
         if (!alive) return;
 
-        const rows = rowsOf<any>(rawRes).map((row) => normalizeSystemRow(row));
+        const [
+          incompleteLoansRes,
+          pendingPoolRes,
+          bankRecentRes,
+          bankUnmatchedRes,
+          expectedPaymentsRes,
+        ] = clanOpsRes;
 
         setMe(meRes || null);
         setCurrentClan(clanRes || null);
-        setGuidance(guidanceRes || null);
-        setRawSignals(rows);
+        setDiagnostics(diagnosticsRes || null);
+        setIdentityRisk(rowsOf<any>(identityRiskRes));
+        setIncompleteLoans(rowsOf<any>(incompleteLoansRes));
+        setPendingPool(rowsOf<any>(pendingPoolRes));
+        setBankRecent(rowsOf<any>(bankRecentRes));
+        setBankUnmatched(rowsOf<any>(bankUnmatchedRes));
+        setExpectedPayments(rowsOf<any>(expectedPaymentsRes));
       } finally {
         if (alive) setLoading(false);
       }
@@ -479,56 +462,251 @@ export default function SystemOperationsPage() {
   }, [me]);
 
   const summary = useMemo(() => {
-    const actNow = guidance?.actionInboxSummary?.actNow?.length || 0;
-    const dueSoon = guidance?.actionInboxSummary?.dueSoon?.length || 0;
-    const watchAndWait = guidance?.actionInboxSummary?.watchAndWait?.length || 0;
-    const unread = guidance?.actionInboxSummary?.unreadCount || 0;
-
-    const immediateSignals = rawSignals.filter((row) => {
-      const tone = signalTone(row);
-      return tone.label === "Immediate attention";
-    }).length;
-
-    const followUpSignals = rawSignals.filter((row) => {
-      const tone = signalTone(row);
-      return tone.label === "Needs follow-up";
-    }).length;
-
     return {
-      actNow,
-      dueSoon,
-      watchAndWait,
-      unread,
-      immediateSignals,
-      followUpSignals,
+      pendingPool: pendingPool.length,
+      unmatchedBank: bankUnmatched.length,
+      recentBank: bankRecent.length,
+      expectedPayments: expectedPayments.length,
+      incompleteLoans: incompleteLoans.length,
+      identityInterventions: identityRisk.filter(
+        (row) => identitySignalLevel(row) === "high"
+      ).length,
     };
-  }, [guidance, rawSignals]);
+  }, [bankRecent, bankUnmatched, expectedPayments, identityRisk, incompleteLoans, pendingPool]);
 
   const operationalFocus = useMemo(() => {
-    if (guidance?.actionInboxSummary?.actNow?.length) {
-      return guidance.actionInboxSummary.actNow[0];
+    if (!selectedClanId) {
+      return {
+        detail:
+          "Choose the current community first so the admin queues can load the bank, pool, and incomplete-loan signals for the right place.",
+      };
     }
 
-    if (guidance?.actionInboxSummary?.dueSoon?.length) {
-      return guidance.actionInboxSummary.dueSoon[0];
+    if (bankUnmatched.length > 0) {
+      return {
+        detail:
+          bankUnmatched.length === 1
+            ? "One bank event is still unmatched. Reconcile it before treating the finance reading as settled."
+            : `${bankUnmatched.length} bank events are still unmatched. Reconcile them before treating the finance reading as settled.`,
+      };
     }
 
-    if (rawSignals.length > 0) {
-      return rawSignals[0];
+    const urgentIncomplete = incompleteLoans.filter((row) => {
+      const remaining = toNum(row?.auto_cancel_remaining_seconds);
+      return remaining > 0 && remaining <= 60;
+    }).length;
+
+    if (urgentIncomplete > 0) {
+      return {
+        detail:
+          urgentIncomplete === 1
+            ? "One incomplete loan is close to auto-cancel. Review approval progress and coverage now."
+            : `${urgentIncomplete} incomplete loans are close to auto-cancel. Review approval progress and coverage now.`,
+      };
+    }
+
+    if (pendingPool.length > 0) {
+      return {
+        detail:
+          pendingPool.length === 1
+            ? "One pool event is waiting for confirmation. Confirm it before the money queue drifts."
+            : `${pendingPool.length} pool events are waiting for confirmation. Confirm them before the money queue drifts.`,
+      };
+    }
+
+    const highIdentity = identityRisk.filter(
+      (row) => identitySignalLevel(row) === "high"
+    ).length;
+
+    if (highIdentity > 0) {
+      return {
+        detail:
+          highIdentity === 1
+            ? "One identity-risk case needs intervention before it becomes a trust or access problem."
+            : `${highIdentity} identity-risk cases need intervention before they become trust or access problems.`,
+      };
+    }
+
+    if (expectedPayments.length > 0) {
+      return {
+        detail:
+          "Expected payment items are still open. Keep the money path readable until those expectations settle.",
+      };
+    }
+
+    if (diagnostics?.ok === false) {
+      return {
+        detail:
+          "System diagnostics are not healthy yet. Confirm runtime and database state before trusting the calmer queues.",
+      };
+    }
+
+    if (bankRecent.length > 0) {
+      return {
+        detail:
+          "The live admin queues look calm right now. Use the route cards below only if you need deeper investigation.",
+      };
     }
 
     return null;
-  }, [guidance, rawSignals]);
+  }, [
+    bankRecent.length,
+    bankUnmatched.length,
+    diagnostics?.ok,
+    expectedPayments.length,
+    identityRisk,
+    incompleteLoans,
+    pendingPool.length,
+    selectedClanId,
+  ]);
 
   const recentSignals = useMemo(() => {
-    return [...rawSignals]
+    const rows: RawSystemRow[] = [];
+
+    bankUnmatched.slice(0, 4).forEach((row, index) => {
+      rows.push(
+        makeSystemRow({
+          id: `bank-unmatched-${row?.id || index}`,
+          kind: "bank.unmatched",
+          title: "Unmatched bank event",
+          detail: [
+            firstTruthy(row?.reference, row?.reference_raw, "No reference"),
+            firstTruthy(
+              row?.amount && row?.currency
+                ? `${row.amount} ${row.currency}`
+                : "",
+              row?.status_reason,
+              row?.status
+            ),
+          ]
+            .filter(Boolean)
+            .join(" | "),
+          createdAt: firstTruthy(row?.posted_at, row?.ingested_at),
+          ctaTo: "/app/command-center/bank-console",
+          ctaLabel: "Open Bank Console",
+          level: "high",
+        })
+      );
+    });
+
+    incompleteLoans.slice(0, 4).forEach((row, index) => {
+      const remaining = toNum(row?.auto_cancel_remaining_seconds);
+      rows.push(
+        makeSystemRow({
+          id: `incomplete-loan-${row?.loan_id || index}`,
+          kind: "loan.incomplete",
+          title: "Incomplete loan queue item",
+          detail: [
+            `Approved ${toNum(row?.approved_guarantors)}/${toNum(
+              row?.guarantors_required
+            )}`,
+            row?.required_gap != null ? `Gap ${row.required_gap}` : "",
+            remaining > 0 ? `${remaining}s remaining` : "Waiting for decisions",
+          ]
+            .filter(Boolean)
+            .join(" | "),
+          createdAt: safeStr(row?.decision_at),
+          ctaTo: "/app/command-center/incomplete-loans",
+          ctaLabel: "Open Incomplete Loans",
+          level: remaining > 0 && remaining <= 60 ? "high" : "medium",
+        })
+      );
+    });
+
+    pendingPool.slice(0, 4).forEach((row, index) => {
+      rows.push(
+        makeSystemRow({
+          id: `pool-pending-${row?.id || index}`,
+          kind: "pool.pending",
+          title: "Pool confirmation pending",
+          detail: [
+            firstTruthy(row?.event_type, "Pool event"),
+            row?.amount && row?.currency ? `${row.amount} ${row.currency}` : "",
+            firstTruthy(row?.reference, row?.note),
+          ]
+            .filter(Boolean)
+            .join(" | "),
+          createdAt: safeStr(row?.created_at),
+          ctaTo: "/app/command-center/bank-console",
+          ctaLabel: "Open Bank Console",
+          level: "medium",
+        })
+      );
+    });
+
+    identityRisk.slice(0, 4).forEach((row, index) => {
+      rows.push(
+        makeSystemRow({
+          id: `identity-risk-${row?.id || index}`,
+          kind: "identity.risk",
+          title: "Identity-risk signal",
+          detail: [
+            row?.user_id ? `User ${row.user_id}` : "",
+            firstTruthy(row?.signal_type, row?.description),
+            toNum(row?.severity) > 0 ? `Severity ${toNum(row?.severity)}` : "",
+          ]
+            .filter(Boolean)
+            .join(" | "),
+          createdAt: safeStr(row?.created_at),
+          ctaTo: "/app/command-center/identity-risk",
+          ctaLabel: "Open Identity Risk",
+          level: identitySignalLevel(row),
+        })
+      );
+    });
+
+    expectedPayments.slice(0, 4).forEach((row, index) => {
+      rows.push(
+        makeSystemRow({
+          id: `expected-payment-${row?.id || index}`,
+          kind: "bank.expected",
+          title: "Expected payment still open",
+          detail: [
+            firstTruthy(row?.expected_type, "Expected payment"),
+            row?.remaining_amount && row?.currency
+              ? `${row.remaining_amount} ${row.currency} remaining`
+              : "",
+            firstTruthy(row?.status, row?.reference_display),
+          ]
+            .filter(Boolean)
+            .join(" | "),
+          createdAt: firstTruthy(row?.due_at, row?.created_at),
+          ctaTo: "/app/command-center/bank-console",
+          ctaLabel: "Open Bank Console",
+          level: "medium",
+        })
+      );
+    });
+
+    bankRecent.slice(0, 4).forEach((row, index) => {
+      rows.push(
+        makeSystemRow({
+          id: `bank-recent-${row?.id || index}`,
+          kind: "bank.recent",
+          title: "Recent bank event",
+          detail: [
+            firstTruthy(row?.status, row?.direction),
+            firstTruthy(row?.reference, row?.reference_raw),
+            row?.amount && row?.currency ? `${row.amount} ${row.currency}` : "",
+          ]
+            .filter(Boolean)
+            .join(" | "),
+          createdAt: firstTruthy(row?.posted_at, row?.ingested_at),
+          ctaTo: "/app/command-center/bank-console",
+          ctaLabel: "Open Bank Console",
+          level: "low",
+        })
+      );
+    });
+
+    return rows
       .sort((a, b) => {
         const aTime = new Date(a.createdAt || 0).getTime();
         const bTime = new Date(b.createdAt || 0).getTime();
         return bTime - aTime;
       })
       .slice(0, 10);
-  }, [rawSignals]);
+  }, [bankRecent, bankUnmatched, expectedPayments, identityRisk, incompleteLoans, pendingPool]);
 
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
@@ -597,6 +775,14 @@ export default function SystemOperationsPage() {
         utilityLinks={[{ label: "Trust Graph", to: "/app/command-center/trust-graph" }]}
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="This screen gathers the live operational reading, immediate signals, and queue pressure so you can decide which admin or member page needs attention next."
+        why="It helps you see operational focus clearly instead of scanning multiple tools with no shared priority view."
+        next="Read what matters now first, then move into the operational overview, live signals, or operational queues depending on the pressure you see."
+        tone="light"
+      />
+
       <section
         style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
@@ -660,11 +846,20 @@ export default function SystemOperationsPage() {
 
             <div style={{ marginTop: 10, ...helperText() }}>
               {operationalFocus
-                ? safeStr((operationalFocus as any).detail || "Review the top signal and move into the right page.")
-                : "No immediate or due-soon signal is currently dominating the visible operational feed."}
+                ? safeStr((operationalFocus as any).detail || "Review the top signal and move into the right admin page.")
+                : "No immediate admin queue is currently dominating the visible operational feed."}
             </div>
           </div>
         </div>
+
+        <ExplainToggle
+          label="What this does"
+          what="This block surfaces the strongest operational focus right now so you can see whether the system is calm or whether one signal should take priority."
+          why="It keeps you from treating every queue or alert as equally urgent when the product already has a clearer dominant signal."
+          next="Read this first, then use the operational sections below to confirm the queues and routes behind that focus."
+          tone="light"
+          style={{ marginTop: 14 }}
+        />
       </section>
 
       <section style={pageCard("#FFFFFF")}>
@@ -705,7 +900,7 @@ export default function SystemOperationsPage() {
             }}
           >
             <div style={statTile()}>
-              <div style={sectionLabel()}>Unread</div>
+              <div style={sectionLabel()}>Pending pool</div>
               <div
                 style={{
                   marginTop: 8,
@@ -714,12 +909,12 @@ export default function SystemOperationsPage() {
                   fontWeight: 900,
                 }}
               >
-                {summary.unread}
+                {summary.pendingPool}
               </div>
             </div>
 
             <div style={statTile("#FFF5F5")}>
-              <div style={sectionLabel()}>Act now</div>
+              <div style={sectionLabel()}>Unmatched bank</div>
               <div
                 style={{
                   marginTop: 8,
@@ -728,12 +923,12 @@ export default function SystemOperationsPage() {
                   fontWeight: 900,
                 }}
               >
-                {summary.actNow}
+                {summary.unmatchedBank}
               </div>
             </div>
 
             <div style={statTile("#FFFBEF")}>
-              <div style={sectionLabel()}>Due soon</div>
+              <div style={sectionLabel()}>Expected payments</div>
               <div
                 style={{
                   marginTop: 8,
@@ -742,12 +937,12 @@ export default function SystemOperationsPage() {
                   fontWeight: 900,
                 }}
               >
-                {summary.dueSoon}
+                {summary.expectedPayments}
               </div>
             </div>
 
             <div style={statTile("#F8FBFF")}>
-              <div style={sectionLabel()}>Watch</div>
+              <div style={sectionLabel()}>Recent bank</div>
               <div
                 style={{
                   marginTop: 8,
@@ -756,12 +951,12 @@ export default function SystemOperationsPage() {
                   fontWeight: 900,
                 }}
               >
-                {summary.watchAndWait}
+                {summary.recentBank}
               </div>
             </div>
 
             <div style={statTile("#FFF5F5")}>
-              <div style={sectionLabel()}>Immediate signals</div>
+              <div style={sectionLabel()}>Incomplete loans</div>
               <div
                 style={{
                   marginTop: 8,
@@ -770,12 +965,12 @@ export default function SystemOperationsPage() {
                   fontWeight: 900,
                 }}
               >
-                {summary.immediateSignals}
+                {summary.incompleteLoans}
               </div>
             </div>
 
             <div style={statTile("#FFFBEF")}>
-              <div style={sectionLabel()}>Follow-up signals</div>
+              <div style={sectionLabel()}>Identity cases</div>
               <div
                 style={{
                   marginTop: 8,
@@ -784,7 +979,7 @@ export default function SystemOperationsPage() {
                   fontWeight: 900,
                 }}
               >
-                {summary.followUpSignals}
+                {summary.identityInterventions}
               </div>
             </div>
           </div>
@@ -850,7 +1045,6 @@ export default function SystemOperationsPage() {
 
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                         <span style={badge(true)}>{tone.label}</span>
-                        {row.unread ? <span style={badge(false)}>Unread</span> : null}
                       </div>
                     </div>
 
@@ -934,7 +1128,7 @@ export default function SystemOperationsPage() {
                 Immediate queue
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                This queue is for signals that should not wait long: act-now items, failures, urgent follow-ups, and visible disruptions.
+                This queue is for signals that should not wait long: unmatched bank events, incomplete loans nearing auto-cancel, and identity or pool items that need intervention now.
               </div>
 
               <div
@@ -945,10 +1139,9 @@ export default function SystemOperationsPage() {
                   flexWrap: "wrap",
                 }}
               >
-                <span style={badge(true)}>Act now: {summary.actNow}</span>
-                <span style={badge(false)}>
-                  Immediate signals: {summary.immediateSignals}
-                </span>
+                <span style={badge(true)}>Pending pool: {summary.pendingPool}</span>
+                <span style={badge(false)}>Unmatched bank: {summary.unmatchedBank}</span>
+                <span style={badge(false)}>Incomplete loans: {summary.incompleteLoans}</span>
               </div>
             </div>
 
@@ -963,7 +1156,7 @@ export default function SystemOperationsPage() {
                 Follow-up queue
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                This queue is for items that are not yet urgent but should be handled before drift, delay, or explanation cost gets heavier.
+                This queue is for items that are not yet critical but should be handled before the money path or admin reading drifts further.
               </div>
 
               <div
@@ -974,10 +1167,9 @@ export default function SystemOperationsPage() {
                   flexWrap: "wrap",
                 }}
               >
-                <span style={badge(true)}>Due soon: {summary.dueSoon}</span>
-                <span style={badge(false)}>
-                  Follow-up signals: {summary.followUpSignals}
-                </span>
+                <span style={badge(true)}>Expected payments: {summary.expectedPayments}</span>
+                <span style={badge(false)}>Pending pool: {summary.pendingPool}</span>
+                <span style={badge(false)}>Identity cases: {summary.identityInterventions}</span>
               </div>
             </div>
           </div>
@@ -1021,7 +1213,7 @@ export default function SystemOperationsPage() {
               gap: 12,
             }}
           >
-            <OriginLink to="/app/notifications" style={routeTile(true)}>
+            <OriginLink to="/app/command-center/bank-console" style={routeTile(true)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1030,10 +1222,42 @@ export default function SystemOperationsPage() {
                   lineHeight: 1.3,
                 }}
               >
-                Action Inbox
+                Bank Console
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Open this when the work is immediate response or queue handling on the member side.
+                Open this when the work is about reconciliation, unmatched bank events, pending pool confirmation, or expected payments.
+              </div>
+            </OriginLink>
+
+            <OriginLink to="/app/command-center/incomplete-loans" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 18,
+                  lineHeight: 1.3,
+                }}
+              >
+                Incomplete Loans
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Open this when approval progress, locked coverage, or auto-cancel timing is driving the work.
+              </div>
+            </OriginLink>
+
+            <OriginLink to="/app/command-center/identity-risk" style={routeTile(false)}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 18,
+                  lineHeight: 1.3,
+                }}
+              >
+                Identity Risk
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                Open this when the work is about risky identity overlap, repeated device matches, or account integrity intervention.
               </div>
             </OriginLink>
 
@@ -1049,39 +1273,7 @@ export default function SystemOperationsPage() {
                 Trust Analytics
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Open this when the work is trend reading rather than live handling.
-              </div>
-            </OriginLink>
-
-            <OriginLink to="/app/command-center/exposure" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 18,
-                  lineHeight: 1.3,
-                }}
-              >
-                Exposure
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Open this when the work is about concentration, pressure, or imbalance.
-              </div>
-            </OriginLink>
-
-            <OriginLink to="/app/command-center/trust-graph" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 18,
-                  lineHeight: 1.3,
-                }}
-              >
-                Trust Graph
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Open this when the work is about structure, connectedness, or relationship trust shape.
+                Open this when the work is about trend reading after the urgent admin queues are under control.
               </div>
             </OriginLink>
           </div>

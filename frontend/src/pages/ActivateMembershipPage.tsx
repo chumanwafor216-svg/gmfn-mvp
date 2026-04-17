@@ -183,7 +183,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#1D4ED8" : "#475569",
     fontWeight: 900,
     fontSize: 12,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 

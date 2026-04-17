@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import OriginLink from "../components/OriginLink";
 import * as api from "../lib/api";
@@ -185,7 +186,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#1D4ED8" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -206,9 +207,10 @@ function actionBtn(
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -226,9 +228,10 @@ function actionBtn(
       color: disabled ? "#94A3B8" : "#24415C",
       fontWeight: 800,
       fontSize: 13,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -245,9 +248,10 @@ function actionBtn(
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -266,7 +270,8 @@ function collapseToggle(): React.CSSProperties {
     fontWeight: 800,
     fontSize: 13,
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    textAlign: "center",
+    whiteSpace: "normal",
   };
 }
 
@@ -1038,6 +1043,14 @@ export default function PaymentInstructionsPage() {
         ]}
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="Money In guides one pay-in route from context, amount, and reference generation through payment confirmation and reconciliation."
+        why="Pay-in only works cleanly when the exact amount, exact reference, and matching rule stay visible in one guided place."
+        next="Confirm the route context first, generate the instruction, pay with the exact amount and reference, then wait for reconciliation to complete."
+        tone="light"
+      />
+
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
@@ -1183,6 +1196,15 @@ export default function PaymentInstructionsPage() {
             {collapsed.overview ? "Open" : "Collapse"}
           </button>
         </div>
+
+        <ExplainToggle
+          label="What this overview shows"
+          what="This overview keeps the core pay-in facts together: amount, route status, reference, and reconciliation state."
+          why="It gives you one quick reading before you move deeper into instruction details or reconciliation."
+          next="Confirm the route is ready, then generate or check the instruction below before making payment."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
 
         {!collapsed.overview ? (
           <div
@@ -1437,6 +1459,15 @@ export default function PaymentInstructionsPage() {
           </button>
         </div>
 
+        <ExplainToggle
+          label="How to use this instruction"
+          what="This section gives you the exact amount, reference, and settlement details for the current Money In task."
+          why="The payment only matches cleanly when the exact instruction is used, especially the reference."
+          next="Copy the reference or full instruction, make the payment through the shown rail, then confirm payment here so reconciliation can continue."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
+
         {!collapsed.instruction ? (
           !instruction ? (
             <div style={{ marginTop: 14, color: "#64748B", lineHeight: 1.8 }}>
@@ -1572,6 +1603,15 @@ export default function PaymentInstructionsPage() {
             {collapsed.result ? "Open" : "Collapse"}
           </button>
         </div>
+
+        <ExplainToggle
+          label="What happens here"
+          what="This section shows whether the payment has been seen, matched, or is still waiting for reconciliation."
+          why="It stops a successful payment from feeling lost by showing the result state in the same route where the instruction was created."
+          next="Refresh the status if needed, then move on only when the payment is clearly matched or the page tells you it is still awaiting confirmation."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
 
         {!collapsed.result ? (
           <div

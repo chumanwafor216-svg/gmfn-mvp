@@ -124,7 +124,7 @@ function pill(kind: "blue" | "green" | "red" | "gray"): React.CSSProperties {
     fontWeight: 1000,
     border: "1px solid #e5e7eb",
     background: "#fff",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 
   if (kind === "blue") {
@@ -179,7 +179,8 @@ function actionBtn(primary = false, disabled = false): React.CSSProperties {
     textDecoration: "none",
     opacity: disabled ? 0.8 : 1,
     minHeight: 46,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    textAlign: "center",
   };
 }
 

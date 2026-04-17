@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import { getJoinApprovalStatus } from "../lib/api";
@@ -51,11 +52,12 @@ function actionBtn(primary = false, disabled = false): React.CSSProperties {
     background: disabled ? "#CBD5E1" : primary ? "#1D4ED8" : "#FFFFFF",
     color: primary ? "#FFFFFF" : "#0B1F33",
     fontWeight: 900,
+    textAlign: "center",
     cursor: disabled ? "not-allowed" : "pointer",
     textDecoration: "none",
     opacity: disabled ? 0.75 : 1,
     minHeight: 42,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -91,7 +93,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#1D4ED8" : "#475569",
     fontWeight: 900,
     fontSize: 12,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -317,6 +319,15 @@ export default function JoinApprovalPage() {
         subtitle="Review the outcome of your community join request and continue to the correct next step."
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="This screen shows the outcome of your community join request and helps you move into the right next public step."
+        why="It keeps approval, rejection, and next-step guidance in one place so you do not have to guess what to do after review."
+        next="Check the approval status first, then follow the next action shown here."
+        tone="light"
+        style={{ marginTop: 18 }}
+      />
+
       <div
         style={{
           ...pageCard("linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)"),
@@ -355,6 +366,15 @@ export default function JoinApprovalPage() {
             Back
           </button>
         </div>
+
+        <ExplainToggle
+          label="What this does"
+          what="This approval status block keeps the outcome of your join request visible before you move into the next public step."
+          why="It helps you understand whether entry was approved, rejected, or still unresolved without guessing from the route alone."
+          next="Read the status here first, then use the next action the page gives you."
+          tone="dark"
+          style={{ marginTop: 14 }}
+        />
       </div>
 
       {loading ? (

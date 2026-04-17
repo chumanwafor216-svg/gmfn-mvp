@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import secrets
 from datetime import datetime, timezone
 from pathlib import Path
@@ -10,10 +11,6 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/marketplace/media", tags=["marketplace-media"])
-
-BASE_UPLOAD_DIR = Path("uploads") / "marketplace"
-IMAGE_UPLOAD_DIR = BASE_UPLOAD_DIR / "images"
-VIDEO_UPLOAD_DIR = BASE_UPLOAD_DIR / "videos"
 
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
 MAX_VIDEO_BYTES = 8 * 1024 * 1024
@@ -38,9 +35,26 @@ def _now_utc() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _uploads_root() -> Path:
+    raw = str(os.getenv("GMFN_UPLOADS_DIR", "uploads") or "").strip()
+    return Path(raw or "uploads").expanduser()
+
+
+def _base_upload_dir() -> Path:
+    return _uploads_root() / "marketplace"
+
+
+def _image_upload_dir() -> Path:
+    return _base_upload_dir() / "images"
+
+
+def _video_upload_dir() -> Path:
+    return _base_upload_dir() / "videos"
+
+
 def _ensure_dirs() -> None:
-    IMAGE_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    VIDEO_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    _image_upload_dir().mkdir(parents=True, exist_ok=True)
+    _video_upload_dir().mkdir(parents=True, exist_ok=True)
 
 
 def _safe_ext(filename: Optional[str]) -> str:
@@ -61,9 +75,9 @@ def _public_url_for(kind: str, filename: str) -> str:
 
 def _upload_path_for(kind: str, filename: str) -> Path:
     if kind == "images":
-        return IMAGE_UPLOAD_DIR / filename
+        return _image_upload_dir() / filename
     if kind == "videos":
-        return VIDEO_UPLOAD_DIR / filename
+        return _video_upload_dir() / filename
     raise HTTPException(status_code=400, detail="Invalid media kind")
 
 

@@ -1,11 +1,108 @@
 import React, { useEffect, useState } from "react";
-import { Navigate, useLocation } from "react-router-dom";
-import { getAccessToken, getMe, observeIdentityRisk } from "../lib/api";
+import { Link, Navigate, useLocation } from "react-router-dom";
+import {
+  getAccessToken,
+  getCurrentClan,
+  getMe,
+  observeIdentityRisk,
+} from "../lib/api";
 
 type Props = {
   children: React.ReactNode;
-  requireRole?: "admin";
+  requireRole?: "admin" | "adminOrClanAdmin";
 };
+
+function resolveRole(me: any): string {
+  return String(
+    me?.role ||
+      me?.account_role ||
+      me?.user_role ||
+      (Array.isArray(me?.permissions) &&
+      me.permissions.includes("admin")
+        ? "admin"
+        : "")
+  )
+    .trim()
+    .toLowerCase();
+}
+
+function hasAdminAccess(me: any): boolean {
+  const role = resolveRole(me);
+  return role === "admin";
+}
+
+function resolveClanRole(currentClan: any): string {
+  return String(
+    currentClan?.role ||
+      currentClan?.member_role ||
+      currentClan?.membership_role ||
+      currentClan?.participant_role ||
+      ""
+  )
+    .trim()
+    .toLowerCase();
+}
+
+function hasClanAdminAccess(currentClan: any): boolean {
+  return resolveClanRole(currentClan) === "admin";
+}
+
+function pageShell(): React.CSSProperties {
+  return {
+    minHeight: "100vh",
+    display: "grid",
+    placeItems: "center",
+    padding: 24,
+    background: "#F4F7FB",
+  };
+}
+
+function denyCard(): React.CSSProperties {
+  return {
+    width: "min(100%, 720px)",
+    borderRadius: 28,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: "#FFFFFF",
+    boxShadow: "0 18px 50px rgba(15,23,42,0.08)",
+    padding: 28,
+  };
+}
+
+function actionBtn(
+  kind: "primary" | "secondary" = "secondary"
+): React.CSSProperties {
+  if (kind === "primary") {
+    return {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 42,
+      padding: "10px 14px",
+      borderRadius: 14,
+      border: "none",
+      background: "#0B63D1",
+      color: "#FFFFFF",
+      fontWeight: 900,
+      fontSize: 14,
+      textDecoration: "none",
+    };
+  }
+
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 42,
+    padding: "10px 14px",
+    borderRadius: 14,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#FFFFFF",
+    color: "#0B1F33",
+    fontWeight: 800,
+    fontSize: 14,
+    textDecoration: "none",
+  };
+}
 
 function computeClientFingerprint(): string {
   try {
@@ -49,16 +146,26 @@ export default function RequireAuth({ children, requireRole }: Props) {
           return;
         }
 
-        const me = await getMe().catch(() => null);
+        const [me, currentClan] = await Promise.all([
+          getMe().catch(() => null),
+          getCurrentClan().catch(() => null),
+        ]);
 
         if (!me) {
           finish(false);
           return;
         }
 
-        const role = String(me?.role || "").toLowerCase();
+        if (requireRole === "admin" && !hasAdminAccess(me)) {
+          finish(false, true);
+          return;
+        }
 
-        if (requireRole === "admin" && role !== "admin") {
+        if (
+          requireRole === "adminOrClanAdmin" &&
+          !hasAdminAccess(me) &&
+          !hasClanAdminAccess(currentClan)
+        ) {
           finish(false, true);
           return;
         }
@@ -87,15 +194,8 @@ export default function RequireAuth({ children, requireRole }: Props) {
 
   if (loading) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "grid",
-          placeItems: "center",
-          fontWeight: 700,
-        }}
-      >
-        Loading workspace...
+      <div style={pageShell()}>
+        <div style={{ fontWeight: 700, color: "#0B1F33" }}>Loading workspace...</div>
       </div>
     );
   }
@@ -106,7 +206,86 @@ export default function RequireAuth({ children, requireRole }: Props) {
     }
 
     if (deniedForRole) {
-      return <Navigate to="/app/dashboard" replace />;
+      return (
+        <div style={pageShell()}>
+          <div style={denyCard()}>
+            <div
+              style={{
+                fontSize: 12,
+                color: "#5D7389",
+                fontWeight: 900,
+                letterSpacing: 0.35,
+                textTransform: "uppercase",
+              }}
+            >
+              {requireRole === "admin"
+                ? "Platform admin access required"
+                : "Admin access required"}
+            </div>
+
+            <div
+              style={{
+                marginTop: 10,
+                color: "#0B1F33",
+                fontWeight: 1000,
+                fontSize: 30,
+                lineHeight: 1.12,
+              }}
+            >
+              {requireRole === "admin"
+                ? "This route needs platform admin access."
+                : "This workspace is not open to ordinary users."}
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                color: "#5F7287",
+                fontSize: 15,
+                lineHeight: 1.8,
+              }}
+            >
+              {requireRole === "admin"
+                ? "This part of the command centre is reserved for platform-admin work such as trust-event oversight, identity-risk review, system diagnostics, and other cross-community controls."
+                : "The command centre is reserved for admin-led work such as trust oversight, exposure review, reconciliation, and other community operating tasks."}
+            </div>
+
+            <div
+              style={{
+                marginTop: 16,
+                borderRadius: 16,
+                border: "1px solid rgba(11,31,51,0.08)",
+                background: "#F8FBFF",
+                padding: 16,
+                color: "#24415C",
+                lineHeight: 1.7,
+              }}
+            >
+              Requested route: <b>{location.pathname}</b>
+              <div style={{ marginTop: 6 }}>
+                If you expected admin access here, sign in with an admin account
+                or switch to the correct community-admin identity first.
+              </div>
+            </div>
+
+            <div
+              style={{
+                marginTop: 18,
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+              }}
+            >
+              <Link to="/app/dashboard" style={actionBtn("primary")}>
+                Return to Dashboard
+              </Link>
+              <Link to="/app/community" style={actionBtn("secondary")}>
+                Open Community Home
+              </Link>
+            </div>
+          </div>
+        </div>
+      );
     }
 
     return <Navigate to="/cover" replace />;

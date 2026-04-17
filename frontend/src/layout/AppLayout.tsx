@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { getMe, logout } from "../lib/api";
+import { getCurrentClan, getMe, logout } from "../lib/api";
 import WorkspaceSettingsBridge from "../components/WorkspaceSettingsBridge";
 import WorkspaceCompanionBridge from "../components/WorkspaceCompanionBridge";
 
@@ -154,7 +154,7 @@ function makeAdminItem(): NavLinkItem {
 
 function buildPrimaryItems(
   myShopGalleryTo: string,
-  isAdmin: boolean
+  canUseAdminTools: boolean
 ): NavLinkItem[] {
   const items: NavLinkItem[] = [
     makeDashboardItem(),
@@ -164,7 +164,7 @@ function buildPrimaryItems(
     makeSettingsItem(),
   ];
 
-  if (isAdmin) {
+  if (canUseAdminTools) {
     items.push(makeAdminItem());
   }
 
@@ -294,7 +294,7 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
 function getSpecialRouteMeta(
   pathname: string,
   search: string,
-  isAdmin: boolean
+  canUseAdminTools: boolean
 ): RouteMeta | null {
   if (pathname.startsWith("/app/shop/")) {
     return {
@@ -352,7 +352,7 @@ function getSpecialRouteMeta(
     };
   }
 
-  if (isAdmin && pathname.startsWith("/app/command-center")) {
+  if (canUseAdminTools && pathname.startsWith("/app/command-center")) {
     if (pathname.startsWith("/app/command-center/trust-analytics")) {
       return {
         section: "Main movement",
@@ -411,7 +411,7 @@ function findCurrentRouteMeta(
   pathname: string,
   search: string,
   groups: NavGroup[],
-  isAdmin: boolean,
+  canUseAdminTools: boolean,
   taskMode: TaskModeMeta | null
 ): RouteMeta {
   if (taskMode) {
@@ -421,7 +421,7 @@ function findCurrentRouteMeta(
     };
   }
 
-  const special = getSpecialRouteMeta(pathname, search, isAdmin);
+  const special = getSpecialRouteMeta(pathname, search, canUseAdminTools);
   if (special) return special;
 
   for (const group of groups) {
@@ -444,7 +444,8 @@ function findCurrentRouteMeta(
 function getPageActions(
   pathname: string,
   search: string,
-  myShopGalleryTo: string
+  myShopGalleryTo: string,
+  isPlatformAdmin: boolean
 ): NavLinkItem[] {
   if (pathname === "/app/dashboard") {
     return uniqueNavItems([
@@ -566,6 +567,15 @@ function getPageActions(
   }
 
   if (pathname.startsWith("/app/command-center")) {
+    if (!isPlatformAdmin) {
+      return uniqueNavItems([
+        makeDashboardItem(),
+        makeCommunityItem(),
+        { label: "Exposure", to: "/app/command-center/exposure" },
+        { label: "Bank Console", to: "/app/command-center/bank-console" },
+      ]);
+    }
+
     return uniqueNavItems([
       makeDashboardItem(),
       makeCommunityItem(),
@@ -1000,17 +1010,31 @@ export default function AppLayout() {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [myGmfnId, setMyGmfnId] = useState<string>("");
   const [myRole, setMyRole] = useState<string>(() => readRole());
+  const [myClanRole, setMyClanRole] = useState<string>("");
 
   const isAdmin = useMemo(() => {
     const role = String(myRole || "").trim().toLowerCase();
-    return role === "admin" || role === "superadmin";
+    return role === "admin";
   }, [myRole]);
+
+  const isClanAdmin = useMemo(() => {
+    const role = String(myClanRole || "").trim().toLowerCase();
+    return role === "admin";
+  }, [myClanRole]);
+
+  const canUseAdminTools = useMemo(
+    () => isAdmin || isClanAdmin,
+    [isAdmin, isClanAdmin]
+  );
 
   useEffect(() => {
     let alive = true;
 
     (async () => {
-      const me = await getMe().catch(() => null);
+      const [me, currentClan] = await Promise.all([
+        getMe().catch(() => null),
+        getCurrentClan().catch(() => null),
+      ]);
       if (!alive) return;
 
       const gmfnId = String(me?.gmfn_id || "").trim();
@@ -1024,9 +1048,19 @@ export default function AppLayout() {
       )
         .trim()
         .toLowerCase();
+      const clanRole = String(
+        currentClan?.role ||
+          currentClan?.member_role ||
+          currentClan?.membership_role ||
+          currentClan?.participant_role ||
+          ""
+      )
+        .trim()
+        .toLowerCase();
 
       setMyGmfnId(gmfnId);
       setMyRole(role);
+      setMyClanRole(clanRole);
       writeRole(role);
     })();
 
@@ -1066,8 +1100,8 @@ export default function AppLayout() {
   );
 
   const primaryItems = useMemo(
-    () => buildPrimaryItems(myShopGalleryTo, isAdmin),
-    [myShopGalleryTo, isAdmin]
+    () => buildPrimaryItems(myShopGalleryTo, canUseAdminTools),
+    [myShopGalleryTo, canUseAdminTools]
   );
 
   const trustPassportItems = useMemo(() => buildTrustPassportItems(), []);
@@ -1209,7 +1243,7 @@ export default function AppLayout() {
     location.pathname,
     location.search,
     groups,
-    isAdmin,
+    canUseAdminTools,
     taskMode
   );
 
@@ -1217,8 +1251,8 @@ export default function AppLayout() {
     () =>
       taskMode
         ? taskMode.actions
-        : getPageActions(location.pathname, location.search, myShopGalleryTo),
-    [taskMode, location.pathname, location.search, myShopGalleryTo]
+        : getPageActions(location.pathname, location.search, myShopGalleryTo, isAdmin),
+    [taskMode, location.pathname, location.search, myShopGalleryTo, isAdmin]
   );
 
   const mobileBottomItems = useMemo<NavLinkItem[]>(() => {
@@ -1236,7 +1270,7 @@ export default function AppLayout() {
       makeSettingsItem(),
     ];
 
-    if (isAdmin) {
+    if (canUseAdminTools) {
       const adminItem = makeAdminItem();
       items.push({
         label: "Admin",
@@ -1247,7 +1281,7 @@ export default function AppLayout() {
     }
 
     return items;
-  }, [myShopGalleryTo, isAdmin]);
+  }, [canUseAdminTools, myShopGalleryTo]);
 
   const mobileDrawerGroups = useMemo<
     { title: string; items: NavLinkItem[] }[]
@@ -1323,7 +1357,7 @@ export default function AppLayout() {
                   >
                     <span>{group.label}</span>
                     <span style={{ fontSize: 16, lineHeight: 1 }}>
-                      {expanded ? "âˆ’" : "+"}
+                      {expanded ? "-" : "+"}
                     </span>
                   </button>
 
@@ -1419,7 +1453,7 @@ export default function AppLayout() {
                 aria-label="Close navigation"
                 style={overlayCloseButton(true)}
               >
-                ×
+                x
               </button>
             </div>
 
@@ -1507,7 +1541,7 @@ export default function AppLayout() {
                 aria-label="Close page actions"
                 style={overlayCloseButton(false)}
               >
-                ×
+                x
               </button>
             </div>
 
@@ -1574,5 +1608,6 @@ export default function AppLayout() {
     </div>
   );
 }
+
 
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import { navigateWithOrigin } from "../lib/nav";
 import PageTopNav from "../components/PageTopNav";
@@ -272,7 +273,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#1D4ED8" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -293,9 +294,10 @@ function actionBtn(
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -313,9 +315,10 @@ function actionBtn(
       color: disabled ? "#94A3B8" : "#24415C",
       fontWeight: 800,
       fontSize: 13,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -332,9 +335,10 @@ function actionBtn(
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -352,8 +356,9 @@ function collapseToggle(): React.CSSProperties {
     color: "#24415C",
     fontWeight: 800,
     fontSize: 13,
+    textAlign: "center",
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -987,6 +992,14 @@ export default function NotificationsPage() {
         ]}
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="Action Inbox organizes your updates by urgency and next move instead of showing a raw notification stream."
+        why="It helps you tell the difference between something that needs action now, something that is due soon, and something you can simply watch."
+        next="Start with the action inbox summary, then open the review panel or linked page for the item that needs your response first."
+        tone="blue"
+      />
+
       <section
         style={pageCard("linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)")}
       >
@@ -1015,6 +1028,15 @@ export default function NotificationsPage() {
         >
           This view is calmer than a raw notification stream. It groups updates by urgency and next action so the dashboard, companion reminders, and inbox all speak the same language.
         </div>
+
+        <ExplainToggle
+          label="What this does"
+          what="This summary turns the inbox into a quick decision view by separating what needs action now, what is due soon, and what can wait."
+          why="It helps you decide where to start before opening the review panel or jumping into another page."
+          next="Read the counts first, then begin with the act-now bucket or the strongest current focus shown below."
+          tone="dark"
+          style={{ marginTop: 14 }}
+        />
 
         <div
           style={{

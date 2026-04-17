@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import {
   clearPublicEntryState,
@@ -266,6 +267,14 @@ export default function CreateEntryPage() {
   return (
     <div style={pageShell()}>
       <div style={{ maxWidth: 960, margin: "0 auto", display: "grid", gap: 18 }}>
+        <ExplainToggle
+          label="What this screen does"
+          what="This screen starts a new community by gathering the first community details and handing you into founder creation."
+          why="It separates new-community creation from the join-existing-community path."
+          next="Enter the community basics carefully, then continue into founder setup and the next guided creation steps."
+          tone="light"
+        />
+
         <div
           style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
         >
@@ -321,6 +330,15 @@ export default function CreateEntryPage() {
               Already have access?
             </OriginLink>
           </div>
+
+          <ExplainToggle
+            label="What this does"
+            what="This create-entry block starts the new community route and hands your details into founder creation."
+            why="It keeps community creation separate from the join-existing flow right from the start."
+            next="Complete the basic community details here first, then continue into founder setup."
+            tone="dark"
+            style={{ marginTop: 14 }}
+          />
         </div>
 
         {error ? <div style={feedbackCard(false)}>{error}</div> : null}
@@ -335,6 +353,14 @@ export default function CreateEntryPage() {
           }}
         >
           <div style={pageCard()}>
+            <ExplainToggle
+              label="What this does"
+              what="This form collects the first community details needed to start the founder route."
+              why="It keeps new-community creation clear and separate from joining an existing community."
+              next="Enter the community name, add the short description and your email, then continue into founder creation."
+              tone="light"
+              style={{ marginBottom: 18 }}
+            />
             <form onSubmit={onSubmit} style={{ display: "grid", gap: 14 }}>
               <div>
                 <div style={fieldLabel()}>Community name</div>

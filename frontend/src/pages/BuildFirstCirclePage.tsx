@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { getCurrentClan, getMe, getSelectedClanId, safeCopy } from "../lib/api";
 import * as firstCircle from "../lib/firstCircle";
@@ -137,7 +138,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -158,9 +159,10 @@ function actionBtn(
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -178,9 +180,10 @@ function actionBtn(
       color: disabled ? "#94A3B8" : "#24415C",
       fontWeight: 800,
       fontSize: 13,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -197,9 +200,10 @@ function actionBtn(
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -217,8 +221,9 @@ function collapseToggle(): React.CSSProperties {
     color: "#24415C",
     fontWeight: 800,
     fontSize: 13,
+    textAlign: "center",
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -918,6 +923,14 @@ export default function BuildFirstCirclePage() {
         ]}
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="This screen helps you build the first trusted circle around your account using real people you already know and can stand behind."
+        why="Your first circle shapes the trust, support, and community relationships that the rest of the system will rely on later."
+        next="Start by understanding why the circle matters, check your progress, choose the right role, and then add only serious real contacts."
+        tone="blue"
+      />
+
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
@@ -1016,6 +1029,15 @@ export default function BuildFirstCirclePage() {
             {collapsed.progress ? "Open" : "Collapse"}
           </button>
         </div>
+
+        <ExplainToggle
+          label="What this does"
+          what="This progress area shows how far your first circle has moved and which practical step should come next."
+          why="It helps you avoid guessing whether you should add contacts, refine roles, or move toward the invite bundle."
+          next="Open the progress section first, then follow the next-step signal before you spend time elsewhere on the page."
+          tone="light"
+          style={{ marginTop: 14 }}
+        />
 
         {!collapsed.progress ? (
           <div
@@ -1496,6 +1518,15 @@ export default function BuildFirstCirclePage() {
             {collapsed.invite ? "Open" : "Collapse"}
           </button>
         </div>
+
+        <ExplainToggle
+          label="What this does"
+          what="This invite bundle gathers the trusted people you selected into one ready-to-copy invitation package."
+          why="It helps you move from choosing people to actually inviting the right first-circle contacts in a deliberate way."
+          next="Check that the selected contacts are real trusted people with usable contact details, then copy the bundle when it shows as ready."
+          tone="light"
+          style={{ marginTop: 14 }}
+        />
 
         {!collapsed.invite ? (
           <div

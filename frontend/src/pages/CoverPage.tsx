@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 
+import ExplainToggle from "../components/ExplainToggle";
 import { useLocation, useNavigate } from "react-router-dom";
 
 
@@ -466,7 +467,7 @@ function buttonStyle(disabled = false): React.CSSProperties {
 
     boxShadow: disabled ? "none" : "0 14px 30px rgba(0,0,0,0.18)",
 
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
 
   };
 
@@ -1041,6 +1042,15 @@ export default function CoverPage() {
 
       <div style={frameStyle()}>
 
+        <ExplainToggle
+          label="What this screen does"
+          what="This cover screen is the front door into GSN and moves you into the next guided entry step."
+          why="It gives every user one clear starting point before they choose a lane like create, join, approved entry, or sign in."
+          next="Use Continue to move into the next guided entry step that matches your current state."
+          tone="dark"
+          style={{ marginBottom: 18 }}
+        />
+
         <div style={artworkShell()}>
 
           <GSNSplashArtwork />
@@ -1054,6 +1064,15 @@ export default function CoverPage() {
           Trust-first entry into the Global Support Network.
 
         </div>
+
+        <ExplainToggle
+          label="What this does"
+          what="This cover step is a short handoff into the guided entry flow."
+          why="It gives every user one calm starting moment before the product asks them to choose a lane."
+          next="Use Continue when you are ready to enter the next guided step."
+          tone="dark"
+          style={{ marginTop: 12 }}
+        />
 
 
 
@@ -1080,5 +1099,6 @@ export default function CoverPage() {
   );
 
 }
+
 
 

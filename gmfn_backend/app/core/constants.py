@@ -7,6 +7,7 @@ Rules:
 - Security flags + dev fallbacks centralized
 """
 
+import os
 from decimal import Decimal
 
 # ============================================================
@@ -87,7 +88,12 @@ MERCHANT_RELEASE_RATE_LIMIT_WINDOW_SECONDS = 60
 MERCHANT_RELEASE_RATE_LIMIT_MAX_REQUESTS = 20
 
 # Dev fallback behavior (MVP/local)
-ALLOW_DEV_SECRET_FALLBACK = True
+ALLOW_DEV_SECRET_FALLBACK = str(os.getenv("GMFN_DEV_MODE", "") or "").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
 DEV_FALLBACK_SECRET = "gmfn-dev-secret-please-change-later"
 
 # ============================================================

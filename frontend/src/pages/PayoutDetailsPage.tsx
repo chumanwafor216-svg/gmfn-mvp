@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import { getCurrentClan, getMe, getSelectedClanId, safeCopy } from "../lib/api";
@@ -62,9 +63,10 @@ function primaryBtn(disabled = false): React.CSSProperties {
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -82,9 +84,10 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -122,7 +125,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#475569",
     fontSize: 12,
     fontWeight: 1000,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -395,6 +398,15 @@ export default function PayoutDetailsPage() {
         ]}
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="This screen records the bank or wallet destination that should receive your approved withdrawals after they leave the community settlement account."
+        why="It reduces payout confusion by making the destination clear before money moves and before you continue deeper into Money Out."
+        next="Confirm the destination fields first, review today's handoff, and then return to Withdrawal Instructions or Loans and Support if more action is needed."
+        tone="light"
+        style={{ marginTop: 18 }}
+      />
+
       {err ? <div style={{ ...feedbackCard(false), marginTop: 18 }}>{err}</div> : null}
       {msg ? <div style={{ ...feedbackCard(true), marginTop: 18 }}>{msg}</div> : null}
 
@@ -519,6 +531,15 @@ export default function PayoutDetailsPage() {
         <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
           Payout Account Details
         </div>
+
+        <ExplainToggle
+          label="What this does"
+          what="This form records the bank or wallet destination that should receive your approved payout after funds leave the community settlement account."
+          why="It keeps the destination clear before you rely on the withdrawal path."
+          next="Enter the payout account carefully, save the details, and use the summary here to confirm that the destination is correct."
+          tone="light"
+          style={{ marginTop: 14 }}
+        />
 
         <div
           style={{

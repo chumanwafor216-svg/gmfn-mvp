@@ -28,8 +28,10 @@ export default function ShareButtons({ target, variant = "row", small = false }:
       cursor: "pointer",
       display: "inline-flex",
       alignItems: "center",
+      justifyContent: "center",
       gap: 8,
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
+      textAlign: "center",
     };
   }
 

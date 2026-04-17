@@ -1,5 +1,6 @@
 // frontend/src/pages/TrustPage.tsx
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 
 import {
   getMe,
@@ -110,7 +111,7 @@ function pill(kind: "green" | "blue" | "gray" | "red") {
     fontWeight: 700,
     border: "1px solid #e5e7eb",
     background: "#fff",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
   if (kind === "green") return { ...base, color: "#065f46", background: "#ecfdf5", borderColor: "#a7f3d0" };
   if (kind === "blue") return { ...base, color: "#1e40af", background: "#eff6ff", borderColor: "#bfdbfe" };
@@ -265,6 +266,16 @@ export default function TrustPage() {
             Export CSV
           </button>
         </div>
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        <ExplainToggle
+          label="What this screen does"
+          what="Trust shows your current trust score, trust band, supporting explanation, and the event trail behind it."
+          why="It helps you understand why your current trust position looks the way it does before you share it, challenge it, or rely on it."
+          next="Refresh when you need the latest reading, then review the score, explanation, and event history together instead of treating the score as a standalone number."
+          tone="light"
+        />
       </div>
 
       {err && (

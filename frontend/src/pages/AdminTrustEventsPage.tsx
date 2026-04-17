@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { adminRecentTrustEvents } from "../lib/api";
 
@@ -55,6 +56,15 @@ export default function AdminTrustEventsPage() {
         homeLabel="Dashboard"
         backTo="/app/command-center"
         backLabel="Command Center"
+      />
+
+      <ExplainToggle
+        label="What this screen does"
+        what="This screen shows recent trust-event records for oversight, evidence checks, and explainability review."
+        why="It helps you inspect the raw event trail behind trust activity before you step into deeper analytics or intervention pages."
+        next="Start with the recent event list, then open the raw event details only when you need to inspect the exact evidence."
+        tone="light"
+        style={{ marginTop: 18 }}
       />
 
       <div

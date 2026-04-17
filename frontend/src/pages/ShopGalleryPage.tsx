@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import {
   getCurrentClan,
@@ -138,11 +139,15 @@ function apiOrigin(): string {
       const url = new URL(base);
       return `${url.protocol}//${url.host}`;
     } catch {
-      return "http://127.0.0.1:8012";
+      return typeof window !== "undefined"
+        ? String(window.location.origin || "").trim().replace(/\/+$/, "")
+        : "";
     }
   }
 
-  return "http://127.0.0.1:8012";
+  return typeof window !== "undefined"
+    ? String(window.location.origin || "").trim().replace(/\/+$/, "")
+    : "";
 }
 
 function resolveImageSrc(raw: any): string {
@@ -385,7 +390,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#1D4ED8" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -404,7 +409,7 @@ function primaryBtn(disabled = false): React.CSSProperties {
     fontSize: 14,
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.86 : 1,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -423,7 +428,7 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     fontSize: 14,
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.86 : 1,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -488,7 +493,7 @@ function executiveFrameLabelStyle(): React.CSSProperties {
     letterSpacing: 0.24,
     textTransform: "uppercase",
     backdropFilter: "blur(8px)",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -980,6 +985,14 @@ export default function ShopGalleryPage() {
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
       {error ? <div style={noticeCard("error")}>{error}</div> : null}
 
+      <ExplainToggle
+        label="What this screen does"
+        what="This screen is the public shop gallery, showing the shop identity, live spotlight, products, and private-access options when available."
+        why="It helps visitors understand what this shop offers and how to move into the right next action without needing the full owner workspace."
+        next="Start with the shop identity and live spotlight, then browse products or request Vault access if private offers are relevant."
+        tone="light"
+      />
+
       <section
         style={pageCard(
           heroImage
@@ -1181,6 +1194,15 @@ export default function ShopGalleryPage() {
               }}
             >
               <div style={sectionLabel()}>Shop signpost</div>
+
+              <ExplainToggle
+                label="What this does"
+                what="This signpost block gives visitors the main identity of the shop before they browse products or ask for private access."
+                why="It helps the shop feel grounded in a real owner and community context rather than as an isolated product wall."
+                next="Read the shop signpost first, then continue into products, spotlight, or vault access depending on what you need."
+                tone="light"
+                style={{ marginTop: 12, marginBottom: 12 }}
+              />
 
               <div
                 style={{
@@ -1806,5 +1828,6 @@ export default function ShopGalleryPage() {
     </div>
   );
 }
+
 
 

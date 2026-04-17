@@ -48,6 +48,15 @@ def webhook_secret_is_configured() -> bool:
     return bool(webhook_secret())
 
 
+def _dev_mode() -> bool:
+    return _safe_str(os.getenv("GMFN_DEV_MODE")).lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
 def verify_webhook_signature(*, raw_body: bytes, provided_signature: Optional[str]) -> bool:
     """
     MVP-safe HMAC verification.
@@ -55,12 +64,11 @@ def verify_webhook_signature(*, raw_body: bytes, provided_signature: Optional[st
     Header expected:
       X-GMFN-Signature: sha256=<hex>
 
-    If GMFN_WEBHOOK_SECRET is not configured, returns True
-    to allow pilot/dev mode.
+    If GMFN_WEBHOOK_SECRET is not configured, returns True only in dev mode.
     """
     secret = webhook_secret()
     if not secret:
-        return True
+        return _dev_mode()
 
     sig = _safe_str(provided_signature)
     if not sig:

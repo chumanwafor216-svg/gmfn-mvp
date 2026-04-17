@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
@@ -331,7 +332,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#1D4ED8" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -352,9 +353,10 @@ function actionBtn(
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -372,9 +374,10 @@ function actionBtn(
       color: disabled ? "#94A3B8" : "#1E4063",
       fontWeight: 800,
       fontSize: 13,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -391,9 +394,10 @@ function actionBtn(
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -411,8 +415,9 @@ function collapseToggle(): React.CSSProperties {
     color: "#1E4063",
     fontWeight: 800,
     fontSize: 13,
+    textAlign: "center",
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -1060,6 +1065,14 @@ export default function LoanReadinessPage() {
         }
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="This page checks whether the next support move is ready to continue or whether another pressure should be settled first."
+        why="It stops you from pushing forward blindly when borrower load, guarantor decisions, or money-out handoff pressure are still active."
+        next="Read the current readiness message first, then use the summary and readiness reading below to decide whether to continue or pause."
+        tone="blue"
+      />
+
       <section
         style={pageCard("linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)")}
       >
@@ -1160,6 +1173,15 @@ export default function LoanReadinessPage() {
           >
             <div style={sectionLabel()}>Current reading</div>
 
+            <ExplainToggle
+              label="What this reading means"
+              what="This is the main readiness reading for the current moment. It names the support condition that matters most right now."
+              why="It reduces the page to one clear decision before you read the supporting detail."
+              next="Read the title first, then use the summary and readiness reading sections below to understand what is helping or blocking progress."
+              tone="light"
+              style={{ marginTop: 12 }}
+            />
+
             <div
               style={{
                 marginTop: 10,
@@ -1204,6 +1226,15 @@ export default function LoanReadinessPage() {
             {collapsed.overview ? "Open" : "Collapse"}
           </button>
         </div>
+
+        <ExplainToggle
+          label="What this summary shows"
+          what="This section gathers the visible readiness pressures into one compact view: borrower load, guarantor load, waiting decisions, pool position, and handoff context."
+          why="It gives you one place to judge whether the support flow feels calm enough to continue."
+          next="Scan the strongest pressure first, then open the readiness reading below if you need the deeper explanation."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
 
         {!collapsed.overview ? (
           <div
@@ -1394,6 +1425,15 @@ export default function LoanReadinessPage() {
             {collapsed.reading ? "Open" : "Collapse"}
           </button>
         </div>
+
+        <ExplainToggle
+          label="How to use this reading"
+          what="This section separates what is helping readiness from what is reducing it."
+          why="It turns the readiness result into something actionable instead of leaving you with a single pass-or-fail feeling."
+          next="Use the blockers list to decide what to clear first, then move on only when the page reads as ready enough to continue."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
 
         {!collapsed.reading ? (
           <div

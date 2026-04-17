@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
@@ -38,11 +39,20 @@ function apiOrigin(): string {
       const u = new URL(base);
       return `${u.protocol}//${u.host}`;
     } catch {
-      return "http://127.0.0.1:8012";
+      return browserOrigin();
     }
   }
 
-  return "http://127.0.0.1:8012";
+  return browserOrigin();
+}
+
+function browserOrigin(): string {
+  try {
+    if (typeof window === "undefined") return "";
+    return String(window.location.origin || "").trim().replace(/\/+$/, "");
+  } catch {
+    return "";
+  }
 }
 
 function resolveImageSrc(src?: string | null): string {
@@ -111,7 +121,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#475569",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -541,6 +551,15 @@ export default function MarketplaceWorkspacePage() {
     <div style={{ maxWidth: 1100, margin: "0 auto", paddingBottom: 36 }}>
       <PageTopNav sectionLabel="Community Workspace" title={communityName} subtitle="Community workspace." />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="This screen keeps one community's working picture together, including member visibility, invites, demand, spotlight, and shop mapping."
+        why="It gives you a focused community workspace instead of pushing you straight into the wider marketplace."
+        next="Start with the community profile, then move into the specific community action or route you need from here."
+        tone="light"
+        style={{ marginTop: 18 }}
+      />
+
       {err ? (
         <div
           style={{
@@ -571,6 +590,15 @@ export default function MarketplaceWorkspacePage() {
 
       <div style={{ ...pageCard(), marginTop: 18 }}>
         <div style={sectionLabel()}>Community profile</div>
+
+        <ExplainToggle
+          label="What this does"
+          what="This community profile block shows the core identity of the current community before you move into invites, demand, shops, or member work."
+          why="It helps you stay grounded in the right community context instead of treating the workspace like a generic marketplace page."
+          next="Read the community profile first, then choose the specific community route you need."
+          tone="light"
+          style={{ marginTop: 14 }}
+        />
 
         <div
           style={{
@@ -620,6 +648,15 @@ export default function MarketplaceWorkspacePage() {
             <div style={{ fontSize: 13, color: "#64748B", fontWeight: 900 }}>
               Community identity
             </div>
+
+            <ExplainToggle
+              label="What this does"
+              what="This identity block keeps the community name, counts, and description visible while you work inside this one community."
+              why="It helps you stay anchored in the right community before you move into invites, alerts, demand, or shop routes."
+              next="Read this identity block first if you need to confirm where you are working."
+              tone="light"
+              style={{ marginTop: 12, marginBottom: 12 }}
+            />
 
             <div
               style={{

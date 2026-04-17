@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
@@ -486,7 +487,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#1D4ED8" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -507,9 +508,10 @@ function actionBtn(
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -527,9 +529,10 @@ function actionBtn(
       color: disabled ? "#94A3B8" : "#1E4063",
       fontWeight: 800,
       fontSize: 13,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -546,9 +549,10 @@ function actionBtn(
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -567,7 +571,8 @@ function collapseToggle(): React.CSSProperties {
     fontWeight: 800,
     fontSize: 13,
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    textAlign: "center",
+    whiteSpace: "normal",
   };
 }
 
@@ -1113,6 +1118,14 @@ export default function FinancePage() {
         ]}
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="Finance brings your pool position, borrower obligations, locked guarantor exposure, expected payments, and recent money events into one record."
+        why="You need one place to understand what is available, what is locked, what is due, and which money route should come next."
+        next="Read the current finance summary first, then move into Money In, Money Out, payment reconciliation, or the relevant borrower and guarantor sections."
+        tone="light"
+      />
+
       <section
         style={pageCard(
           "linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)"
@@ -1317,6 +1330,15 @@ export default function FinancePage() {
             }}
           >
             <div style={sectionLabel()}>Current reading</div>
+
+            <ExplainToggle
+              label="What this reading does"
+              what="This is the main finance reading for the current moment. It tells you which money situation needs your attention first."
+              why="It keeps the page from feeling like a wall of totals by naming the live financial condition that matters most right now."
+              next="Read the title first, then use the sections below to confirm balances, pending payments, and the route you should open next."
+              tone="light"
+              style={{ marginTop: 12 }}
+            />
 
             <div
               style={{
@@ -1579,6 +1601,15 @@ export default function FinancePage() {
             {collapsed.reconciliation ? "Open" : "Collapse"}
           </button>
         </div>
+
+        <ExplainToggle
+          label="What this section does"
+          what="This section tracks money that is expected to arrive, confirms what has already matched, and highlights anything still waiting."
+          why="It helps you separate a real payment delay from a payment that simply has not been reconciled yet."
+          next="Check which entries are still waiting, then use the payment routes or finance actions below if something needs follow-up."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
 
         {!collapsed.reconciliation ? (
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
@@ -2181,6 +2212,15 @@ export default function FinancePage() {
             {collapsed.routes ? "Open" : "Collapse"}
           </button>
         </div>
+
+        <ExplainToggle
+          label="Why these routes matter"
+          what="These links take you straight to the next money pages connected to what you are seeing here."
+          why="Finance is easier to use when you can move directly into payment, withdrawal, payout, or support work without hunting for the route."
+          next="Open the page that matches the task in front of you, then come back here when you need the wider finance reading again."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
 
         {!collapsed.routes ? (
           <div

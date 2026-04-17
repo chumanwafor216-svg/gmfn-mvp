@@ -66,7 +66,7 @@ export default function AppearancePage() {
         </div>
 
         <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <Link to="/payout-details" style={linkBtn(true)}>
+          <Link to="/app/payout-details" style={linkBtn(true)}>
             Bank / Wallet Details
           </Link>
           <Link to="/notifications" style={linkBtn(false)}>

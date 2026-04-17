@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
@@ -6,10 +7,46 @@ from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# DEV SECRET (move to env var later)
-SECRET_KEY = "CHANGE_ME_TO_A_LONG_RANDOM_STRING"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+DEFAULT_DEV_SECRET = "CHANGE_ME_TO_A_LONG_RANDOM_STRING"
+
+
+def _truthy(value: str | None) -> bool:
+    if value is None:
+        return False
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _dev_mode() -> bool:
+    return _truthy(os.getenv("GMFN_DEV_MODE"))
+
+
+def _secret_key() -> str:
+    secret = (
+        os.getenv("GMFN_SECRET_KEY")
+        or os.getenv("SECRET_KEY")
+        or ""
+    ).strip()
+    if secret:
+        return secret
+    if _dev_mode():
+        return DEFAULT_DEV_SECRET
+    raise RuntimeError(
+        "Missing GMFN_SECRET_KEY/SECRET_KEY for JWT signing."
+    )
+
+
+def _access_token_expiry_minutes() -> int:
+    raw = (
+        os.getenv("GMFN_ACCESS_TOKEN_EXPIRE_MINUTES")
+        or os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
+        or "60"
+    ).strip()
+    try:
+        value = int(raw)
+    except Exception:
+        value = 60
+    return max(value, 1)
 
 
 # ----------------------------
@@ -37,11 +74,11 @@ def create_access_token(
 ) -> str:
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + (
-        expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expires_delta or timedelta(minutes=_access_token_expiry_minutes())
     )
     to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, _secret_key(), algorithm=ALGORITHM)
 
 
 def decode_token(token: str) -> dict[str, Any]:
-    return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]) 
+    return jwt.decode(token, _secret_key(), algorithms=[ALGORITHM])

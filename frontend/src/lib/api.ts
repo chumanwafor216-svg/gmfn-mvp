@@ -1626,8 +1626,18 @@ export async function getAdminTrustGraph(
   );
 }
 
-export async function getExposureAdmin(): Promise<any> {
-  return httpJson("/exposure/admin", "GET");
+export async function getExposureAdmin(clanId?: number): Promise<any> {
+  return httpJson(`/exposure/admin${buildQuery({ clan_id: clanId })}`, "GET");
+}
+
+export async function getAdminIncompleteLoans(
+  clanId?: number,
+  limit: number = 50
+): Promise<any> {
+  return httpJson(
+    `/admin/loans/incomplete${buildQuery({ clan_id: clanId, limit })}`,
+    "GET"
+  );
 }
 
 export async function getCciScore(
@@ -1690,6 +1700,30 @@ export async function getProtocolStatus(): Promise<any> {
 
 export async function getPilotReadiness(): Promise<any> {
   return httpJson("/pilot-readiness", "GET");
+}
+
+export async function getSystemDiagnostics(): Promise<any> {
+  return httpJson("/system/diagnostics", "GET");
+}
+
+export async function listAdminPoolPending(
+  clanId?: number | null,
+  limit: number = 50
+): Promise<any> {
+  const effectiveClanId =
+    clanId === undefined ? getSelectedClanId() : clanId;
+
+  const options =
+    clanId !== undefined
+      ? { header_clan_id: clanId ?? null }
+      : undefined;
+
+  return httpJson(
+    `/admin/pool/pending${buildQuery({ limit })}`,
+    "GET",
+    undefined,
+    options ?? (effectiveClanId ? { header_clan_id: effectiveClanId } : undefined)
+  );
 }
 
 /* =========================

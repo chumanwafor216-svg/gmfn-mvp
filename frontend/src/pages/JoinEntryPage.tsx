@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import { submitJoinRequest } from "../lib/api";
 
@@ -130,7 +131,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#1D4ED8" : "#475569",
     fontWeight: 900,
     fontSize: 12,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -404,6 +405,15 @@ export default function JoinEntryPage() {
       }}
     >
       <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+        <ExplainToggle
+          label="What this screen does"
+          what="This screen is the guided join route for people entering an existing GSN community through an invite or join request."
+          why="It keeps the join process trust-based and tied to the right community instead of treating entry as automatic."
+          next="Review the community context first, then complete the guided join details carefully before you submit the request."
+          tone="light"
+          style={{ marginBottom: 18 }}
+        />
+
         <div
           style={{
             ...pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
@@ -486,6 +496,15 @@ export default function JoinEntryPage() {
               You are not creating a normal public account here. You are
               submitting a request to be considered for admission into an
               existing community.
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <ExplainToggle
+                label="What this does"
+                what="This invitation package shows the community details tied to the link you opened, including who invited you and which route you are entering."
+                why="It helps you confirm that you are joining the right community before you submit anything."
+                next="Check the summary, the invite code, and any message that came with the invitation before moving into the form."
+                tone="blue"
+              />
             </div>
 
             <div style={{ marginTop: 18, ...softCard() }}>
@@ -705,6 +724,15 @@ export default function JoinEntryPage() {
             <div style={{ marginTop: 10, ...helperText() }}>
               Provide the details the community needs in order to review your
               admission request.
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <ExplainToggle
+                label="What this does"
+                what="This form collects the details the community needs before deciding whether to admit you."
+                why="Joining is reviewed by the community, so this step needs clear and accurate information rather than a rushed submission."
+                next="Fill in the required fields, confirm the invite code is present, and then submit the request for review."
+                tone="blue"
+              />
             </div>
 
             {!inviteCode ? (

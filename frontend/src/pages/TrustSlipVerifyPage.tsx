@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
@@ -135,7 +136,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -156,9 +157,10 @@ function actionBtn(
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -176,9 +178,10 @@ function actionBtn(
       color: disabled ? "#94A3B8" : "#24415C",
       fontWeight: 800,
       fontSize: 13,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -195,9 +198,10 @@ function actionBtn(
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -334,11 +338,20 @@ function apiOrigin(): string {
       const u = new URL(base);
       return `${u.protocol}//${u.host}`;
     } catch {
-      return "http://127.0.0.1:8012";
+      return browserOrigin();
     }
   }
 
-  return "http://127.0.0.1:8012";
+  return browserOrigin();
+}
+
+function browserOrigin(): string {
+  try {
+    if (typeof window === "undefined") return "";
+    return String(window.location.origin || "").trim().replace(/\/+$/, "");
+  } catch {
+    return "";
+  }
 }
 
 function normalizeTrustSlipVerification(raw: any, fallbackCode: string): TrustSlipVerifyRecord | null {
@@ -870,6 +883,14 @@ export default function TrustSlipVerifyPage() {
         </section>
       )}
 
+      <ExplainToggle
+        label="What this screen does"
+        what="TrustSlip Verify confirms whether the supplied TrustSlip code belongs to a valid current record and what public reading is visible for it."
+        why="It gives a clean verification layer without forcing people into the fuller trust explanation pages first."
+        next="Read the verification result first, then use the detailed record below if you need the holder, status, and validity window."
+        tone="blue"
+      />
+
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
@@ -879,6 +900,15 @@ export default function TrustSlipVerifyPage() {
         }}
       >
         <div style={sectionLabel()}>Verification result</div>
+
+        <ExplainToggle
+          label="What this result means"
+          what="This banner is the first verification answer for the supplied code."
+          why="It tells you quickly whether the record is valid now and whether it is safe to trust the public reading shown below."
+          next="Use the status and code here as the first check, then read the detailed verification record if you need the fuller context."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
 
         <div
           style={{

@@ -97,7 +97,7 @@ function pill(kind: "blue" | "gray" | "green" | "red"): React.CSSProperties {
     fontWeight: 1000,
     border: "1px solid #e5e7eb",
     background: "#fff",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 
   if (kind === "blue") {
@@ -152,7 +152,8 @@ function btn(primary = false, disabled = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    textAlign: "center",
   };
 }
 

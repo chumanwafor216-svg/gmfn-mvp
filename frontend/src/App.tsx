@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import {
   Routes,
   Route,
@@ -8,56 +8,106 @@ import {
   useParams,
 } from "react-router-dom";
 
-import CoverPage from "./pages/CoverPage";
-import CreateEntryPage from "./pages/CreateEntryPage";
-import WelcomePage from "./pages/WelcomePage";
-import LoginPage from "./pages/LoginPage";
-import JoinEntryPage from "./pages/JoinEntryPage";
-import DashboardPage from "./pages/DashboardPage";
-import MarketplaceWorkspacePage from "./pages/MarketplaceWorkspacePage";
-import ClansPage from "./pages/ClansPage";
-import CommunityHomePage from "./pages/CommunityHomePage";
-import LoansPage from "./pages/LoansPage";
-import MarketplacePage from "./pages/MarketplacePage";
-import ShopGalleryPage from "./pages/ShopGalleryPage";
-import TrustScorePage from "./pages/TrustScorePage";
-import TrustSlipPage from "./pages/TrustSlipPage";
-import TrustSlipVerifyPage from "./pages/TrustSlipVerifyPage";
-import PaymentInstructionsPage from "./pages/PaymentInstructionsPage";
-import RepaymentPage from "./pages/RepaymentPage";
-import WithdrawalInstructionsPage from "./pages/WithdrawalInstructionsPage";
-import PaymentRailsPage from "./pages/PaymentRailsPage";
-import PayoutDetailsPage from "./pages/PayoutDetailsPage";
-import LoanReadinessPage from "./pages/LoanReadinessPage";
-import LoanSuggestionsPage from "./pages/LoanSuggestionsPage";
-import LoanWorkbenchPage from "./pages/LoanWorkbenchPage";
-import GuarantorEarningsPage from "./pages/GuarantorEarningsPage";
-import IdentityIntegrityPage from "./pages/IdentityIntegrityPage";
-import NotificationsPage from "./pages/NotificationsPage";
-import SystemOperationsPage from "./pages/SystemOperationsPage";
-import ExposureAdminPage from "./pages/ExposureAdminPage";
-import AdminTrustGraphPage from "./pages/AdminTrustGraphPage";
-import MyGMFNAndIPage from "./pages/MyGMFNAndIPage";
-import TrustAnalyticsPage from "./pages/TrustAnalyticsPage";
-import TrustCommandCentrePage from "./pages/TrustCommandCentrePage";
-import AdminTrustEventsPage from "./pages/AdminTrustEventsPage";
-import AdminIdentityRiskPage from "./pages/AdminIdentityRiskPage";
-import AdminIncompleteLoansPage from "./pages/AdminIncompleteLoansPage";
-import BankConsolePage from "./pages/BankConsolePage";
-import RevenueAllocationPage from "./pages/RevenueAllocationPage";
-import ShopControlPage from "./pages/ShopControlPage";
-import ShopAssetsPage from "./pages/ShopAssetsPage";
-import ShopAccessPage from "./pages/ShopAccessPage";
-import BuildFirstCirclePage from "./pages/BuildFirstCirclePage";
-import FinancePage from "./pages/FinancePage";
-import LoanSummaryPage from "./pages/LoanSummaryPage";
 import AppLayout from "./layout/AppLayout";
 import RequireAuth from "./components/RequireAuth";
-import CommunityJoinRequestsPage from "./pages/CommunityJoinRequestsPage";
-import JoinApprovalPage from "./pages/JoinApprovalPage";
-import MemberActivationPage from "./pages/MemberActivationPage";
-import DemandBoxPage from "./pages/DemandBoxPage";
-import JoinRequestPendingPage from "./pages/JoinRequestPendingPage";
+
+const CoverPage = React.lazy(() => import("./pages/CoverPage"));
+const CreateEntryPage = React.lazy(() => import("./pages/CreateEntryPage"));
+const WelcomePage = React.lazy(() => import("./pages/WelcomePage"));
+const LoginPage = React.lazy(() => import("./pages/LoginPage"));
+const JoinEntryPage = React.lazy(() => import("./pages/JoinEntryPage"));
+const DashboardPage = React.lazy(() => import("./pages/DashboardPage"));
+const MarketplaceWorkspacePage = React.lazy(
+  () => import("./pages/MarketplaceWorkspacePage")
+);
+const ClansPage = React.lazy(() => import("./pages/ClansPage"));
+const CommunityHomePage = React.lazy(() => import("./pages/CommunityHomePage"));
+const LoansPage = React.lazy(() => import("./pages/LoansPage"));
+const MarketplacePage = React.lazy(() => import("./pages/MarketplacePage"));
+const ShopGalleryPage = React.lazy(() => import("./pages/ShopGalleryPage"));
+const TrustScorePage = React.lazy(() => import("./pages/TrustScorePage"));
+const TrustSlipPage = React.lazy(() => import("./pages/TrustSlipPage"));
+const TrustSlipVerifyPage = React.lazy(
+  () => import("./pages/TrustSlipVerifyPage")
+);
+const PaymentInstructionsPage = React.lazy(
+  () => import("./pages/PaymentInstructionsPage")
+);
+const RepaymentPage = React.lazy(() => import("./pages/RepaymentPage"));
+const WithdrawalInstructionsPage = React.lazy(
+  () => import("./pages/WithdrawalInstructionsPage")
+);
+const PaymentRailsPage = React.lazy(() => import("./pages/PaymentRailsPage"));
+const PayoutDetailsPage = React.lazy(() => import("./pages/PayoutDetailsPage"));
+const LoanReadinessPage = React.lazy(
+  () => import("./pages/LoanReadinessPage")
+);
+const LoanSuggestionsPage = React.lazy(
+  () => import("./pages/LoanSuggestionsPage")
+);
+const LoanWorkbenchPage = React.lazy(
+  () => import("./pages/LoanWorkbenchPage")
+);
+const GuarantorEarningsPage = React.lazy(
+  () => import("./pages/GuarantorEarningsPage")
+);
+const GuarantorInboxPage = React.lazy(
+  () => import("./pages/GuarantorInboxPage")
+);
+const IdentityIntegrityPage = React.lazy(
+  () => import("./pages/IdentityIntegrityPage")
+);
+const NotificationsPage = React.lazy(
+  () => import("./pages/NotificationsPage")
+);
+const SystemOperationsPage = React.lazy(
+  () => import("./pages/SystemOperationsPage")
+);
+const ExposureAdminPage = React.lazy(
+  () => import("./pages/ExposureAdminPage")
+);
+const AdminTrustGraphPage = React.lazy(
+  () => import("./pages/AdminTrustGraphPage")
+);
+const MyGMFNAndIPage = React.lazy(() => import("./pages/MyGMFNAndIPage"));
+const TrustAnalyticsPage = React.lazy(
+  () => import("./pages/TrustAnalyticsPage")
+);
+const TrustCommandCentrePage = React.lazy(
+  () => import("./pages/TrustCommandCentrePage")
+);
+const AdminTrustEventsPage = React.lazy(
+  () => import("./pages/AdminTrustEventsPage")
+);
+const AdminIdentityRiskPage = React.lazy(
+  () => import("./pages/AdminIdentityRiskPage")
+);
+const AdminIncompleteLoansPage = React.lazy(
+  () => import("./pages/AdminIncompleteLoansPage")
+);
+const BankConsolePage = React.lazy(() => import("./pages/BankConsolePage"));
+const RevenueAllocationPage = React.lazy(
+  () => import("./pages/RevenueAllocationPage")
+);
+const ShopControlPage = React.lazy(() => import("./pages/ShopControlPage"));
+const ShopAssetsPage = React.lazy(() => import("./pages/ShopAssetsPage"));
+const ShopAccessPage = React.lazy(() => import("./pages/ShopAccessPage"));
+const BuildFirstCirclePage = React.lazy(
+  () => import("./pages/BuildFirstCirclePage")
+);
+const FinancePage = React.lazy(() => import("./pages/FinancePage"));
+const LoanSummaryPage = React.lazy(() => import("./pages/LoanSummaryPage"));
+const CommunityJoinRequestsPage = React.lazy(
+  () => import("./pages/CommunityJoinRequestsPage")
+);
+const JoinApprovalPage = React.lazy(() => import("./pages/JoinApprovalPage"));
+const MemberActivationPage = React.lazy(
+  () => import("./pages/MemberActivationPage")
+);
+const DemandBoxPage = React.lazy(() => import("./pages/DemandBoxPage"));
+const JoinRequestPendingPage = React.lazy(
+  () => import("./pages/JoinRequestPendingPage")
+);
 
 type EntryMode = "general" | "create" | "invite" | "approved" | "existing";
 
@@ -82,6 +132,26 @@ const APP_ROUTES = {
   SHOP_ME: "/app/shop-control",
   SHOP_ASSETS: "/app/shop-assets",
 } as const;
+
+function RouteFallback() {
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px",
+        background: "#F4F7FB",
+        color: "#0B1F33",
+        fontSize: "15px",
+        fontWeight: 700,
+      }}
+    >
+      Loading page...
+    </div>
+  );
+}
 
 function splitTarget(raw: string): {
   pathname: string;
@@ -219,8 +289,9 @@ function RedirectVaultAlias() {
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/cover" replace />} />
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>
+        <Route path="/" element={<Navigate to="/cover" replace />} />
 
       <Route path="/cover" element={<CoverPage />} />
       <Route path="/welcome" element={<WelcomePage />} />
@@ -464,6 +535,7 @@ export default function App() {
           element={<PreserveRedirect to={APP_ROUTES.LOAN_WORKBENCH} />}
         />
         <Route path="guarantor-earnings" element={<GuarantorEarningsPage />} />
+        <Route path="guarantor-inbox" element={<GuarantorInboxPage />} />
         <Route path="earnings" element={<PreserveRedirect to="/app/guarantor-earnings" />} />
 
         <Route path="marketplace" element={<MarketplacePage />} />
@@ -551,21 +623,29 @@ export default function App() {
         <Route
           path="command-center"
           element={
-            <RequireAuth requireRole="admin">
+            <RequireAuth requireRole="adminOrClanAdmin">
               <Outlet />
             </RequireAuth>
           }
         >
           <Route index element={<TrustCommandCentrePage />} />
-          <Route path="trust-analytics" element={<TrustAnalyticsPage />} />
-          <Route path="trust-events" element={<AdminTrustEventsPage />} />
-          <Route path="identity-risk" element={<AdminIdentityRiskPage />} />
-          <Route path="incomplete-loans" element={<AdminIncompleteLoansPage />} />
           <Route path="bank-console" element={<BankConsolePage />} />
           <Route path="revenue-allocation" element={<RevenueAllocationPage />} />
-          <Route path="system-operations" element={<SystemOperationsPage />} />
           <Route path="exposure" element={<ExposureAdminPage />} />
-          <Route path="trust-graph" element={<AdminTrustGraphPage />} />
+          <Route
+            element={
+              <RequireAuth requireRole="admin">
+                <Outlet />
+              </RequireAuth>
+            }
+          >
+            <Route path="trust-analytics" element={<TrustAnalyticsPage />} />
+            <Route path="trust-events" element={<AdminTrustEventsPage />} />
+            <Route path="identity-risk" element={<AdminIdentityRiskPage />} />
+            <Route path="incomplete-loans" element={<AdminIncompleteLoansPage />} />
+            <Route path="system-operations" element={<SystemOperationsPage />} />
+            <Route path="trust-graph" element={<AdminTrustGraphPage />} />
+          </Route>
         </Route>
 
         <Route
@@ -634,7 +714,8 @@ export default function App() {
         />
       </Route>
 
-      <Route path="*" element={<Navigate to="/cover" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/cover" replace />} />
+      </Routes>
+    </Suspense>
   );
 }

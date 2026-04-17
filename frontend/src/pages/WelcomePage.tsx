@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import {
   detectEntryMode,
@@ -69,12 +70,13 @@ function primaryBtn(): React.CSSProperties {
     border: "none",
     fontSize: 15,
     fontWeight: 900,
+    textAlign: "center",
     background: "#F3D06A",
     color: "#10253B",
     cursor: "pointer",
     textDecoration: "none",
     boxShadow: "0 10px 24px rgba(0,0,0,0.18)",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -92,7 +94,8 @@ function secondaryBtn(): React.CSSProperties {
     textDecoration: "none",
     fontWeight: 800,
     fontSize: 14,
-    whiteSpace: "nowrap",
+    textAlign: "center",
+    whiteSpace: "normal",
     cursor: "pointer",
   };
 }
@@ -238,6 +241,14 @@ export default function WelcomePage() {
     <div style={pageShell()}>
       <div style={heroCard()}>
         <div style={{ display: "grid", gap: 18 }}>
+          <ExplainToggle
+            label="What this screen does"
+            what="This welcome screen helps you choose the right starting lane, whether you are creating something new or entering an existing community."
+            why="It reduces entry confusion by steering you into the right route before you start the next step."
+            next="Choose the lane that matches your situation, then follow the guided route that opens from here."
+            tone="dark"
+          />
+
           <div>
             <div style={labelText()}>GSN Welcome</div>
 
@@ -276,6 +287,15 @@ export default function WelcomePage() {
                 Set up your community and continue from there.
               </div>
 
+              <ExplainToggle
+                label="What this does"
+                what="This lane sends you into the new-community route."
+                why="It keeps community creation separate from joining an existing community."
+                next="Choose Continue here only if you are starting a new community."
+                tone="dark"
+                style={{ marginTop: 12, marginBottom: 12 }}
+              />
+
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <button type="button" onClick={openCreate} style={primaryBtn()}>
                   Continue
@@ -296,6 +316,15 @@ export default function WelcomePage() {
               <div style={supportText()}>
                 Continue your join request through the guided invitation path.
               </div>
+
+              <ExplainToggle
+                label="What this does"
+                what="This lane sends you into the guided join route for an existing community."
+                why="It keeps invited entry and join review separate from new-community creation."
+                next="Choose Continue here only if you are entering a community that already exists."
+                tone="dark"
+                style={{ marginTop: 12, marginBottom: 12 }}
+              />
 
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <button type="button" onClick={openJoin} style={primaryBtn()}>
@@ -318,6 +347,15 @@ export default function WelcomePage() {
                 Create your password and complete your entry into the system.
               </div>
 
+              <ExplainToggle
+                label="What this does"
+                what="This lane sends you into the final activation step after approval."
+                why="It keeps approved entry separate from both sign-in and the earlier join route."
+                next="Choose Continue here only if your entry has already been approved and you now need to finish activation."
+                tone="dark"
+                style={{ marginTop: 12, marginBottom: 12 }}
+              />
+
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <button type="button" onClick={openActivation} style={primaryBtn()}>
                   Continue
@@ -338,6 +376,15 @@ export default function WelcomePage() {
               <div style={supportText()}>
                 Enter your email and password on the next page.
               </div>
+
+              <ExplainToggle
+                label="What this does"
+                what="This lane sends returning users to sign in with an existing account."
+                why="It keeps returning-user access separate from new entry, join review, and activation."
+                next="Choose Continue to Login here only if you already have active access and just need to sign back in."
+                tone="dark"
+                style={{ marginTop: 12, marginBottom: 12 }}
+              />
 
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <button type="button" onClick={openExisting} style={primaryBtn()}>
@@ -363,9 +410,18 @@ export default function WelcomePage() {
                 <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1.1 }}>
                   I am new here
                 </div>
-                <div style={supportText()}>
+              <div style={supportText()}>
                   Choose this if you are entering for the first time.
                 </div>
+
+                <ExplainToggle
+                  label="What this does"
+                  what="This choice sends first-time users into the new-entry lane."
+                  why="It separates first entry from returning-user sign-in before the flow gets deeper."
+                  next="Choose this only if you are entering GSN for the first time."
+                  tone="dark"
+                  style={{ marginTop: 12, marginBottom: 12 }}
+                />
 
                 <div>
                   <button
@@ -386,6 +442,15 @@ export default function WelcomePage() {
                 <div style={supportText()}>
                   Choose this if you already have an active account and want to sign in.
                 </div>
+
+                <ExplainToggle
+                  label="What this does"
+                  what="This choice sends returning users into the existing-account lane."
+                  why="It keeps returning access separate from new-member entry before the route asks for sign-in."
+                  next="Choose this only if you already have an account and want to return to it."
+                  tone="dark"
+                  style={{ marginTop: 12, marginBottom: 12 }}
+                />
 
                 <div>
                   <button
@@ -416,6 +481,13 @@ export default function WelcomePage() {
                 <div style={supportText()}>
                   Start as a founder and set up your new community.
                 </div>
+                <ExplainToggle
+                  label="What this does"
+                  what="This route starts a brand-new community from your side as the founder."
+                  why="Choose it when you are not entering someone else's existing community."
+                  next="Open Create to begin naming the community and setting up the first entry details."
+                  tone="dark"
+                />
 
                 <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                   <button type="button" onClick={openCreate} style={primaryBtn()}>
@@ -439,6 +511,13 @@ export default function WelcomePage() {
                 <div style={supportText()}>
                   Continue as a new member joining a community that already exists.
                 </div>
+                <ExplainToggle
+                  label="What this does"
+                  what="This route helps you enter a community that already exists and is ready to accept members."
+                  why="Choose it when you were invited, approved, or told to join an existing community instead of creating one."
+                  next="Open Join to continue into the community-entry steps from here."
+                  tone="dark"
+                />
 
                 <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                   <button type="button" onClick={openJoin} style={primaryBtn()}>

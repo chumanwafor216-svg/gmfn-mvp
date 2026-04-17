@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
@@ -175,9 +176,10 @@ function primaryBtn(disabled = false): React.CSSProperties {
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -195,9 +197,10 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -211,7 +214,8 @@ function filterBtn(active: boolean): React.CSSProperties {
     fontWeight: 1000,
     cursor: "pointer",
     fontSize: 14,
-    whiteSpace: "nowrap",
+    textAlign: "center",
+    whiteSpace: "normal",
   };
 }
 
@@ -228,8 +232,9 @@ function collapseToggle(): React.CSSProperties {
     color: "#24415C",
     fontWeight: 800,
     fontSize: 13,
+    textAlign: "center",
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -254,7 +259,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#475569",
     fontSize: 12,
     fontWeight: 1000,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -394,7 +399,8 @@ function statusPill(status: string): React.CSSProperties {
       color: "#065F46",
       fontWeight: 1000,
       fontSize: 12,
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
+      textAlign: "center",
     };
   }
 
@@ -407,7 +413,8 @@ function statusPill(status: string): React.CSSProperties {
       color: "#991B1B",
       fontWeight: 1000,
       fontSize: 12,
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
+      textAlign: "center",
     };
   }
 
@@ -419,7 +426,8 @@ function statusPill(status: string): React.CSSProperties {
     color: "#92400E",
     fontWeight: 1000,
     fontSize: 12,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    textAlign: "center",
   };
 }
 
@@ -652,6 +660,15 @@ export default function GuarantorInboxPage() {
           { label: "Money Out", to: "/app/withdrawal-instructions" },
           { label: "Notifications", to: "/app/notifications" },
         ]}
+      />
+
+      <ExplainToggle
+        label="What this screen does"
+        what="This page is the incoming queue for guarantor requests that need your response."
+        why="It helps you see what is waiting in your community before you move into the deeper support workbench."
+        next="Read the queue context first, then open the request or route that needs your next guarantor decision."
+        tone="blue"
+        style={{ marginTop: 18 }}
       />
 
       <section

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
@@ -366,7 +367,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -387,9 +388,10 @@ function actionBtn(
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -407,9 +409,10 @@ function actionBtn(
       color: disabled ? "#94A3B8" : "#24415C",
       fontWeight: 800,
       fontSize: 13,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -426,9 +429,10 @@ function actionBtn(
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -446,8 +450,9 @@ function collapseToggle(): React.CSSProperties {
     color: "#24415C",
     fontWeight: 800,
     fontSize: 13,
+    textAlign: "center",
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -1159,6 +1164,14 @@ export default function LoanWorkbenchPage() {
         }
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="This page is the detailed support workbench for the current loan item."
+        why="It brings the selected loan, its gap, and the supporter work into one place so you can continue with precision."
+        next="Confirm the current work item first, then use loan selection or the workbench summary below to continue with the right item."
+        tone="blue"
+      />
+
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
@@ -1331,6 +1344,15 @@ export default function LoanWorkbenchPage() {
           </button>
         </div>
 
+        <ExplainToggle
+          label="How selection works"
+          what="This section decides which loan item the workbench is focused on."
+          why="It prevents the detailed workbench from drifting onto the wrong support item when more than one loan is visible."
+          next="Select the item you want to work on, then use the summary and supporter sections below for the deeper action."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
+
         {!collapsed.selection ? (
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             {loans.length === 0 ? (
@@ -1440,6 +1462,15 @@ export default function LoanWorkbenchPage() {
             {collapsed.summary ? "Open" : "Collapse"}
           </button>
         </div>
+
+        <ExplainToggle
+          label="What this summary shows"
+          what="This section gathers the main workbench facts for the selected loan: amount, guarantee gap, required guarantors, and status."
+          why="It keeps the core support numbers visible before you move into the more detailed supporter work."
+          next="Use these figures as the main reference point, then continue into the supporter and request sections when you act."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
 
         {!collapsed.summary ? (
           <div

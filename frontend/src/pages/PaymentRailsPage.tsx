@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import { getPaymentRails } from "../lib/api";
@@ -64,9 +65,10 @@ function primaryBtn(disabled = false): React.CSSProperties {
     textDecoration: "none",
     fontWeight: 1000,
     fontSize: 14,
+    textAlign: "center",
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.72 : 1,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -84,9 +86,10 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     textDecoration: "none",
     fontWeight: 1000,
     fontSize: 14,
+    textAlign: "center",
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.72 : 1,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -104,9 +107,10 @@ function softBtn(disabled = false): React.CSSProperties {
     textDecoration: "none",
     fontWeight: 900,
     fontSize: 13,
+    textAlign: "center",
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.72 : 1,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -148,7 +152,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#475569",
     fontSize: 12,
     fontWeight: 1000,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -675,6 +679,15 @@ export default function PaymentRailsPage() {
         ]}
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="This screen gives you a read-only picture of which inbound and outbound rails look active, how they are labelled, and which providers and currencies are visible."
+        why="It helps you understand the current payment environment without asking you to act directly inside this page."
+        next="Read the current rail picture here, then return to the guided Money In or Money Out route that matches the direction you need."
+        tone="light"
+        style={{ marginTop: 18 }}
+      />
+
       {err ? (
         <div style={{ ...feedbackCard(false), marginTop: 18 }}>{err}</div>
       ) : null}
@@ -785,6 +798,15 @@ export default function PaymentRailsPage() {
             </div>
           </div>
         </div>
+
+        <ExplainToggle
+          label="What this does"
+          what="This current reading turns the raw rail statuses into one practical interpretation so you can judge whether the rail picture looks strong, partial, or uncertain."
+          why="Without that interpretation, it is easy to overreact to one status label or miss the safer next route."
+          next="Read this summary before you decide whether to continue with Money In, Money Out, or a deeper rail check."
+          tone="light"
+          style={{ marginTop: 14 }}
+        />
       </section>
 
       <section
@@ -918,6 +940,15 @@ export default function PaymentRailsPage() {
           </div>
         </div>
 
+        <ExplainToggle
+          label="What this does"
+          what="This structured rail listing groups the visible inbound, outbound, and general rails into a clearer operational view."
+          why="It helps you see which directions look active or limited before you return to the guided money route."
+          next="Use the grouped statuses here to judge whether Money In or Money Out looks clearer, then continue on the matching guided page."
+          tone="light"
+          style={{ marginTop: 16 }}
+        />
+
         {loading ? (
           <div style={{ marginTop: 16, color: "#64748B" }}>
             Loading rail visibility...
@@ -1006,7 +1037,8 @@ export default function PaymentRailsPage() {
                               color: tone.text,
                               fontSize: 12,
                               fontWeight: 1000,
-                              whiteSpace: "nowrap",
+                              whiteSpace: "normal",
+                              textAlign: "center",
                             }}
                           >
                             {safeStr(rail.status || "unknown").toUpperCase()}

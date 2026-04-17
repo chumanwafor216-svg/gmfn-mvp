@@ -67,9 +67,10 @@ function actionBtn(
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -87,9 +88,10 @@ function actionBtn(
       color: disabled ? "#64748B" : "#D8E2EF",
       fontWeight: 800,
       fontSize: 13,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -106,9 +108,10 @@ function actionBtn(
     color: disabled ? "#64748B" : "#E5EEF8",
     fontWeight: 800,
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -174,7 +177,16 @@ export default function PageTopNav(props: PageTopNavProps) {
   const topLinks: NavItem[] = [
     homeTo && homeLabel ? { label: homeLabel, to: homeTo } : null,
     resolvedBackTo && backLabel ? { label: backLabel, to: resolvedBackTo } : null,
-  ].filter(Boolean) as NavItem[];
+  ]
+    .filter(Boolean)
+    .filter((item, index, items) => {
+      const candidate = item as NavItem;
+      return (
+        items.findIndex(
+          (entry) => (entry as NavItem).to === candidate.to
+        ) === index
+      );
+    }) as NavItem[];
 
   return (
     <section

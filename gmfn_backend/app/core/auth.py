@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import Optional
 
 from fastapi import Depends, HTTPException, status
@@ -12,6 +13,15 @@ from app.db.database import get_db
 from app.db.models import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+
+
+def _dev_mode() -> bool:
+    return str(os.getenv("GMFN_DEV_MODE", "") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
 
 def _get_or_create_test_user(db: Session) -> User:
@@ -34,8 +44,9 @@ def get_current_user(
     db: Session = Depends(get_db),
     token: Optional[str] = Depends(oauth2_scheme),
 ) -> User:
-    # TEST MODE:
-    # If token is missing or invalid, fall back to a dev user instead of blocking.
+    # Public-safe behavior:
+    # - In dev mode only, missing/invalid auth may fall back to a seeded local admin.
+    # - In non-dev mode, missing/invalid auth must fail closed.
 
     if token:
         try:
@@ -52,7 +63,19 @@ def get_current_user(
                     return user
         except JWTError:
             pass
+        except RuntimeError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(exc),
+            ) from exc
         except Exception:
             pass
 
-    return _get_or_create_test_user(db)
+    if _dev_mode():
+        return _get_or_create_test_user(db)
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Not authenticated",
+        headers={"WWW-Authenticate": "Bearer"},
+    )

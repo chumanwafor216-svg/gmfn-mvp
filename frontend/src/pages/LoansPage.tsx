@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
@@ -277,7 +278,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#1D4ED8" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -298,9 +299,10 @@ function actionBtn(
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -318,9 +320,10 @@ function actionBtn(
       color: disabled ? "#94A3B8" : "#1E4063",
       fontWeight: 800,
       fontSize: 13,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -337,9 +340,10 @@ function actionBtn(
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -357,8 +361,9 @@ function collapseToggle(): React.CSSProperties {
     color: "#1E4063",
     fontWeight: 800,
     fontSize: 13,
+    textAlign: "center",
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -722,6 +727,14 @@ export default function LoansPage() {
         }
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="This page keeps the borrowing and support flow together: borrower-side items, guarantor requests, and the next routes around them."
+        why="It helps you see the full support load before you jump into readiness, guarantor work, or money routes."
+        next="Start with the support overview and summary, then open the next page that matches the task you need to handle now."
+        tone="blue"
+      />
+
       <section
         style={pageCard("linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)")}
       >
@@ -817,6 +830,15 @@ export default function LoansPage() {
             {collapsed.overview ? "Open" : "Collapse"}
           </button>
         </div>
+
+        <ExplainToggle
+          label="What this summary shows"
+          what="This section gives a quick reading of borrower-side load, guarantor-side load, and the wider support pressure around you."
+          why="It helps you decide whether to continue deeper into support, check a waiting guarantor request, or move into a money route."
+          next="Read the counts first, then open the borrower or guarantor sections below if one side needs attention."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
 
         {!collapsed.overview ? (
           <div

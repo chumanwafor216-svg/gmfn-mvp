@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import { getMe, getSelectedClanId } from "../lib/api";
@@ -183,7 +184,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -204,9 +205,10 @@ function actionBtn(
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -224,9 +226,10 @@ function actionBtn(
       color: disabled ? "#94A3B8" : "#24415C",
       fontWeight: 800,
       fontSize: 13,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -243,9 +246,10 @@ function actionBtn(
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -1058,6 +1062,14 @@ export default function ShopControlPage() {
         ]}
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="Shop Control is where you manage the shop identity, picture, gallery shortcuts, visibility tools, and spotlight controls for the current shop."
+        why="It keeps commercial visibility deliberate, so the shop can stay readable, trusted, and properly prepared before you push it outward."
+        next="Check the shop summary first, then use the picture, spotlight, unlock, and detail sections depending on what you need to update."
+        tone="light"
+      />
+
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
@@ -1171,6 +1183,15 @@ export default function ShopControlPage() {
           >
             <div style={sectionLabel()}>Compact spotlight panel</div>
 
+            <ExplainToggle
+              label="What this panel does"
+              what="This keeps the live spotlight available without letting it dominate the whole control page."
+              why="You can quickly check whether a spotlight is live, then open it only when you need to inspect or use it."
+              next="Open the spotlight when you want to review the current featured item, then close it again to keep the rest of the shop controls in view."
+              tone="light"
+              style={{ marginTop: 12 }}
+            />
+
             <div
               style={{
                 marginTop: 10,
@@ -1209,6 +1230,15 @@ export default function ShopControlPage() {
           These controls show the full path clearly: start the payment request, use the exact
           reference, wait for payment confirmation, then use the feature.
         </div>
+
+        <ExplainToggle
+          label="How these unlocks work"
+          what="These cards show which paid shop capabilities are available and what each one unlocks."
+          why="They make the payment-first rule explicit so you can see the commercial path before trying to use a locked feature."
+          next="Choose the feature you want, follow its payment or verification step, then return here to confirm the unlock has taken effect."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
 
         <div
           style={{

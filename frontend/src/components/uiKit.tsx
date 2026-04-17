@@ -67,7 +67,8 @@ export function Pill(props: { kind: "blue" | "green" | "gray" | "red" | "gold"; 
     border: "1px solid #e5e7eb",
     background: "#f9fafb",
     color: "#374151",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    textAlign: "center",
   };
   const style =
     props.kind === "green"

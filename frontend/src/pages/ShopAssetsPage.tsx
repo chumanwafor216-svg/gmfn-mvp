@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import { getMe, getSelectedClanId } from "../lib/api";
@@ -134,7 +135,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -157,7 +158,7 @@ function actionBtn(
       fontSize: 14,
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -177,7 +178,7 @@ function actionBtn(
       fontSize: 13,
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -196,7 +197,7 @@ function actionBtn(
     fontSize: 14,
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -266,7 +267,7 @@ function collapseToggle(): React.CSSProperties {
     fontWeight: 800,
     fontSize: 13,
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -859,6 +860,14 @@ export default function ShopAssetsPage() {
         ]}
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="This page manages the visual assets for your shop: the main signboard and the separate product picture blocks."
+        why="It keeps the public shop identity and the product gallery clear so the shop does not become visually confusing."
+        next="Start with the signboard first, then move into the product blocks after the main identity frame looks right."
+        tone="blue"
+      />
+
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
@@ -974,7 +983,7 @@ export default function ShopAssetsPage() {
               style={{
                 marginTop: 12,
                 display: "grid",
-                gridTemplateColumns: "1fr 1fr",
+                gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
                 gap: 10,
               }}
             >
@@ -1102,6 +1111,15 @@ export default function ShopAssetsPage() {
             {collapsed.signboard ? "Open" : "Collapse"}
           </button>
         </div>
+
+        <ExplainToggle
+          label="What this signboard is for"
+          what="This section controls the main public identity image for the shop."
+          why="It is the first visual anchor people see before they decide whether to trust or open the rest of the gallery."
+          next="Make the signboard credible and clear first, then move to the product lanes once the shop identity is stable."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
 
         {!collapsed.signboard ? (
         <div

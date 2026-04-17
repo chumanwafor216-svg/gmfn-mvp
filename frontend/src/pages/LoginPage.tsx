@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import { getAccessToken, getMe, loginAndStore } from "../lib/api";
 
@@ -62,6 +63,7 @@ function primaryBtn(disabled = false): React.CSSProperties {
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 15,
     opacity: disabled ? 0.82 : 1,
+    textAlign: "center",
   };
 }
 
@@ -76,6 +78,7 @@ function secondaryBtn(): React.CSSProperties {
     border: "1px solid rgba(11,31,51,0.10)",
     cursor: "pointer",
     fontSize: 15,
+    textAlign: "center",
   };
 }
 
@@ -92,6 +95,7 @@ function secondaryLink(): React.CSSProperties {
     fontWeight: 900,
     border: "1px solid rgba(11,31,51,0.10)",
     fontSize: 14,
+    textAlign: "center",
   };
 }
 
@@ -169,7 +173,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#475569",
     fontWeight: 900,
     fontSize: 12,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -305,6 +309,14 @@ export default function LoginPage() {
   return (
     <div style={pageShell()}>
       <div style={{ width: "100%", maxWidth: 820, display: "grid", gap: 18 }}>
+        <ExplainToggle
+          label="What this screen does"
+          what="This screen signs you back into your workspace using your email and password."
+          why="It is the entry point for returning users who already have active access."
+          next="Enter your sign-in details, then continue into your dashboard or the page you were trying to reach."
+          tone="light"
+        />
+
         <div
           style={{
             ...pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
@@ -354,6 +366,15 @@ export default function LoginPage() {
               <span style={badge(false)}>Email: {founderEmail}</span>
             ) : null}
           </div>
+
+          <ExplainToggle
+            label="What this does"
+            what="This sign-in block lets returning users reopen their workspace with existing account details."
+            why="It keeps sign-in distinct from activation, join approval, and public entry routes."
+            next="Use this form only if you already have active access and are ready to reopen your workspace."
+            tone="dark"
+            style={{ marginTop: 14 }}
+          />
         </div>
 
         {founderEmail || founderCommunityName ? (
@@ -393,6 +414,15 @@ export default function LoginPage() {
                 </div>
               ) : null}
             </div>
+
+            <ExplainToggle
+              label="What this does"
+              what="This saved-details block shows the account information carried forward into sign-in."
+              why="It helps you confirm that you are about to sign into the right community and email context."
+              next="Check these details first if you are unsure which account or community you are about to reopen."
+              tone="light"
+              style={{ marginTop: 14 }}
+            />
           </div>
         ) : null}
 

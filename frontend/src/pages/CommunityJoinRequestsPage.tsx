@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
@@ -100,9 +101,11 @@ function actionBtn(primary = false, disabled = false): React.CSSProperties {
     background: disabled ? "#CBD5E1" : primary ? "#0B63D1" : "#FFFFFF",
     color: primary ? "#FFFFFF" : "#0B1F33",
     fontWeight: 900,
+    textAlign: "center",
     cursor: disabled ? "not-allowed" : "pointer",
     textDecoration: "none",
     opacity: disabled ? 0.78 : 1,
+    whiteSpace: "normal",
   };
 }
 
@@ -277,6 +280,15 @@ export default function CommunityJoinRequestsPage() {
         subtitle="Review incoming requests for your current community and decide whether to approve or reject them."
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="This screen gathers incoming join requests for one community so you can review each applicant and decide whether to approve or reject the request."
+        why="It keeps community entry decisions clear and tied to the right community instead of mixing them into the wider community workspace."
+        next="Confirm the community first, read the request counts, and then review each applicant card before voting."
+        tone="light"
+        style={{ marginTop: 18 }}
+      />
+
       <div
         style={{
           ...pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
@@ -328,7 +340,7 @@ export default function CommunityJoinRequestsPage() {
               color: "#475569",
               fontWeight: 900,
               fontSize: 12,
-              whiteSpace: "nowrap",
+              whiteSpace: "normal",
             }}
           >
             Current step: Community review

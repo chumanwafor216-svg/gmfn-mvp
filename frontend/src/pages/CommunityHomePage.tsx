@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CommunityShopControlPanel from "../components/CommunityShopControlPanel";
+import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import OriginLink from "../components/OriginLink";
 import { navigateWithOrigin } from "../lib/nav";
@@ -243,7 +244,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#1D4ED8" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -264,9 +265,10 @@ function actionBtn(
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -284,9 +286,10 @@ function actionBtn(
       color: disabled ? "#94A3B8" : "#1E4063",
       fontWeight: 800,
       fontSize: 13,
+      textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -303,9 +306,10 @@ function actionBtn(
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -324,7 +328,8 @@ function collapseToggle(): React.CSSProperties {
     fontWeight: 800,
     fontSize: 13,
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    textAlign: "center",
+    whiteSpace: "normal",
   };
 }
 
@@ -1479,6 +1484,14 @@ export default function CommunityHomePage() {
         ]}
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="Community Home is where you confirm the community you are working in, open its live tools, and keep the right community context before you go elsewhere."
+        why="Many actions depend on the correct community being active first, so this screen anchors trust, demand, money, invites, and spotlight work in the right place."
+        next="Confirm the selected community first, then open the tools, circle, spotlight, or other community sections you need next."
+        tone="light"
+      />
+
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
@@ -1832,6 +1845,15 @@ export default function CommunityHomePage() {
           </div>
         </div>
 
+        <ExplainToggle
+          label="What this finance record does"
+          what="This keeps the current community money reading in one place so users can see pool position, pending movement, expected payments, and the next finance action before opening deeper records."
+          why="Finance is easier to trust when the community can read the live money state here first instead of jumping straight into a larger ledger view."
+          next="Read the next action and live finance record first, then open Finance, Money In, Money Out, Payment Rails, or Payout Details only when you need the fuller route."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
+
         <div
           style={{
             marginTop: 16,
@@ -1845,6 +1867,14 @@ export default function CommunityHomePage() {
         >
           <div style={softCard("#F8FBFF")}>
             <div style={sectionLabel()}>Current next action</div>
+            <ExplainToggle
+              label="What this finance next action does"
+              what="This card highlights the next clean finance step for the current community after reading the money record below."
+              why="It helps users avoid guessing whether they should review Finance, pay in, pay out, or reconcile something first."
+              next="Read this action first, then open the linked finance route that matches the move you need to make next."
+              tone="light"
+              style={{ marginTop: 12 }}
+            />
             <div
               style={{
                 marginTop: 10,
@@ -1887,6 +1917,15 @@ export default function CommunityHomePage() {
 
           <div style={softCard("#FFFFFF")}>
             <div style={sectionLabel()}>Live finance record</div>
+
+            <ExplainToggle
+              label="What this live finance record does"
+              what="This card gathers the current community money reading into one place, including pool position, movement, record status, money routes, and expected payments."
+              why="It helps users understand the live finance picture here first instead of jumping across several money routes to work out what state the community is in."
+              next="Read this summary first, then open Finance, Payment Rails, Money In, Money Out, or Payout Details only when you need the deeper route."
+              tone="light"
+              style={{ marginTop: 12 }}
+            />
 
             {financeLoading ? (
               <div style={{ marginTop: 10, color: "#5F7287", fontSize: 14, lineHeight: 1.75 }}>
@@ -2100,6 +2139,15 @@ export default function CommunityHomePage() {
           </div>
         </div>
 
+        <ExplainToggle
+          label="What this demand box does"
+          what="This keeps the current community's live need signals in one place so users can raise a new demand, review what is already open, and decide the next follow-up."
+          why="Demand works best when it feels like a real community signal desk rather than a static note or a hidden side route."
+          next="Read the next action first, then create a new demand or open Demand Box when you need the fuller workflow and follow-up view."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
+
         <div
           style={{
             marginTop: 16,
@@ -2149,6 +2197,15 @@ export default function CommunityHomePage() {
 
           <div style={softCard("#FFFFFF")}>
             <div style={sectionLabel()}>Live demand summary</div>
+
+            <ExplainToggle
+              label="What this live demand summary does"
+              what="This card shows the open demand items that are currently visible for your community, including urgency, area, and the latest signal details."
+              why="It helps users read the live need picture here first instead of guessing whether the community has active demand before opening the full Demand Box."
+              next="Check what is already live here, then open Demand Box only when you need to create, update, or manage the underlying demand items."
+              tone="light"
+              style={{ marginTop: 12 }}
+            />
 
             {demandLoading ? (
               <div style={{ marginTop: 10, color: "#5F7287", fontSize: 14, lineHeight: 1.75 }}>
@@ -2250,6 +2307,15 @@ export default function CommunityHomePage() {
             {collapsed.circle ? "Open" : "Collapse"}
           </button>
         </div>
+
+        <ExplainToggle
+          label="What this trusted circle does"
+          what="This is where the community owner builds the first layer of trusted real-life people who strengthen identity, support, and early growth."
+          why="The trusted circle should feel deliberate, not random, because these relationships shape how the community becomes credible and useful."
+          next="Review the progress first, then open First Circle to add or prepare the right people before copying the invite bundle."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
 
         {!collapsed.circle ? (
           <div
@@ -2447,6 +2513,15 @@ export default function CommunityHomePage() {
           </button>
         </div>
 
+        <ExplainToggle
+          label="What this spotlight management does"
+          what="This is where the current community prepares, previews, publishes, and checks the live spotlight that feeds the dashboard featured stage."
+          why="Spotlight works better when users can see the publishing flow as one managed visibility lane instead of guessing between draft fields and live status."
+          next="Prepare the spotlight details first, preview the result, then publish it and check the live state panel to confirm what the dashboard should now show."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
+
         {!collapsed.spotlight ? (
           <div
             style={{
@@ -2461,6 +2536,15 @@ export default function CommunityHomePage() {
           >
             <div style={innerCard("#FCFEFF")}>
               <div style={sectionLabel()}>Prepare spotlight</div>
+
+              <ExplainToggle
+                label="What this spotlight draft does"
+                what="This draft card is where the current community sets the spotlight message, tag, expiry, and image before anything goes live."
+                why="It keeps the publish step cleaner by separating preparation from the live state and preview checks."
+                next="Fill in the draft first, review the preview beside it, then publish only when the spotlight details look complete."
+                tone="light"
+                style={{ marginTop: 12 }}
+              />
 
               <div style={{ marginTop: 14 }}>
                 <div style={sectionLabel()}>Product description</div>
@@ -2548,6 +2632,14 @@ export default function CommunityHomePage() {
                 }}
               >
                 <div style={sectionLabel()}>Live spotlight state</div>
+                <ExplainToggle
+                  label="What this live state does"
+                  what="This confirms what spotlight is actually live for the current community right now, including the image, message, and expiry state that the dashboard should be showing."
+                  why="It separates the published result from the draft fields so users can tell whether the community's live visibility state really updated."
+                  next="Check this panel after publishing or refreshing, then return to the dashboard only when the live state here matches what you expect to see featured."
+                  tone="light"
+                  style={{ marginTop: 12 }}
+                />
                 {activeCommunitySpotlightLoading ? (
                   <div style={{ marginTop: 10, color: "#5F7287", fontSize: 14, lineHeight: 1.75 }}>
                     Refreshing live spotlight state...
@@ -2650,6 +2742,14 @@ export default function CommunityHomePage() {
                   }}
                 >
                   <div style={sectionLabel()}>Current next action</div>
+                  <ExplainToggle
+                    label="What this next action does"
+                    what="This card names the next clean spotlight step for your current community after checking the live state above."
+                    why="It helps you avoid guessing whether to publish, refresh, or replace the current run."
+                    next="Follow this step first, then return to the dashboard once the live spotlight state matches what you expect."
+                    tone="light"
+                    style={{ marginTop: 12 }}
+                  />
                   <div
                     style={{
                       marginTop: 10,
@@ -2683,6 +2783,15 @@ export default function CommunityHomePage() {
               }}
             >
               <div style={sectionLabel()}>Preview before publish</div>
+
+              <ExplainToggle
+                label="What this preview does"
+                what="This preview shows how the current spotlight draft should look before it is published to the live featured surface."
+                why="It helps users catch missing image, message, or tag details before they turn a draft into the community's live spotlight."
+                next="Review this preview first, then publish only when it matches the spotlight you want the dashboard to feature."
+                tone="light"
+                style={{ marginTop: 12 }}
+              />
 
               <div style={{ marginTop: 14 }}>
                 <div style={previewMediaBox()}>

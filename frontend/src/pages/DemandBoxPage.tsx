@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
@@ -133,9 +134,10 @@ function primaryBtn(disabled = false): React.CSSProperties {
     color: "#FFFFFF",
     fontWeight: 900,
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -153,9 +155,10 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -173,8 +176,9 @@ function subtleBtn(disabled = false): React.CSSProperties {
     color: disabled ? "#94A3B8" : "#24415C",
     fontWeight: 800,
     fontSize: 13,
+    textAlign: "center",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -225,7 +229,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -659,6 +663,14 @@ export default function DemandBoxPage() {
         ]}
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="Demand Box is where identity-based needs are created, tracked, updated, and closed inside your current community."
+        why="It keeps demand tied to the real person and community behind the request instead of turning it into a loose anonymous post."
+        next="Start with the current demand context, then post a clear demand or review the visible needs that already need follow-up."
+        tone="blue"
+      />
+
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
@@ -727,6 +739,15 @@ export default function DemandBoxPage() {
           >
             <div style={sectionLabel()}>Step order</div>
 
+            <ExplainToggle
+              label="How demand should flow"
+              what="This step order shows the clean path for a demand: state the need, keep it current, then close it when the need changes or is met."
+              why="It keeps Demand Box focused on real follow-up instead of leaving old requests hanging without a clear outcome."
+              next="Use the posting form with this step order in mind, then return to update or close the request when the situation changes."
+              tone="light"
+              style={{ marginTop: 12 }}
+            />
+
             <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
               <div style={statTile()}>
                 <div style={sectionLabel()}>1</div>
@@ -786,6 +807,15 @@ export default function DemandBoxPage() {
         >
           Start with the simple fields first. Add more detail only when needed.
         </div>
+
+        <ExplainToggle
+          label="What this does"
+          what="This form posts a real current need into your community so other people can understand it and respond."
+          why="It keeps demand clear and specific instead of turning it into a vague or anonymous note."
+          next="Write the need in simple direct language, add only the detail people need to respond, and then post it into the community."
+          tone="light"
+          style={{ marginTop: 14 }}
+        />
 
         <div
           style={{

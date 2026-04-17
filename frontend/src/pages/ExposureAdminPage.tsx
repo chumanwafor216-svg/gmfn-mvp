@@ -1,13 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
+  getAdminIncompleteLoans,
   getCurrentClan,
+  getExposureAdmin,
   getMe,
-  getMyNotifications,
   getSelectedClanId,
+  listAdminPoolPending,
   listMarketplaceRequests,
-  listMyLoans,
+  listUnmatchedBankEvents,
 } from "../lib/api";
 
 type CollapseState = {
@@ -17,24 +20,13 @@ type CollapseState = {
   routes: boolean;
 };
 
-type RawNotificationRow = {
-  id: string;
-  title: string;
-  detail: string;
-  kind: string;
-  unread: boolean;
-  createdAt: string;
-};
-
-type LoanRow = {
-  id?: number;
-  status?: string | null;
-  title?: string | null;
+type ExposureRow = {
+  user_id?: number;
+  email?: string | null;
   role?: string | null;
-  borrowerName?: string | null;
-  amount?: string | number | null;
-  currency?: string | null;
-  createdAt?: string | null;
+  pool?: string | number | null;
+  exposure?: string | number | null;
+  available?: string | number | null;
 };
 
 type DemandRow = {
@@ -48,15 +40,6 @@ type DemandRow = {
 };
 
 const EXPOSURE_ADMIN_UI_STORAGE_KEY = "gmfn.exposureAdmin.sections.v1";
-
-const FINAL_LOAN_STATUSES = new Set([
-  "approved",
-  "repaid",
-  "closed",
-  "completed",
-  "cancelled",
-  "defaulted",
-]);
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -73,6 +56,11 @@ function firstTruthy(...values: any[]): string {
 function positiveNumber(value: any): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function toNum(value: any): number {
+  const n = Number(value || 0);
+  return Number.isFinite(n) ? n : 0;
 }
 
 function rowsOf<T = any>(input: any): T[] {
@@ -98,40 +86,6 @@ function daysSince(value: any): number {
   const d = new Date(raw);
   if (!Number.isFinite(d.getTime())) return 9999;
   return Math.floor((Date.now() - d.getTime()) / 86400000);
-}
-
-function normalizeLoanRow(raw: any): LoanRow | null {
-  if (!raw) return null;
-
-  const src = raw?.item || raw?.loan || raw;
-
-  return {
-    id: positiveNumber(src?.id || src?.loan_id) || undefined,
-    status: firstTruthy(src?.status, src?.loan_status, src?.state, "open"),
-    title: firstTruthy(
-      src?.title,
-      src?.purpose,
-      src?.name,
-      src?.loan_title,
-      src?.description,
-      "Loan support item"
-    ),
-    role: firstTruthy(
-      src?.role,
-      src?.my_role,
-      src?.participant_role,
-      src?.is_guarantor ? "Guarantor" : "",
-      src?.is_borrower ? "Borrower" : ""
-    ),
-    borrowerName: firstTruthy(
-      src?.borrower_name,
-      src?.member_name,
-      src?.requester_name
-    ),
-    amount: src?.amount ?? src?.principal_amount ?? src?.requested_amount,
-    currency: firstTruthy(src?.currency, src?.currency_code, "NGN"),
-    createdAt: firstTruthy(src?.created_at, src?.requested_at),
-  };
 }
 
 function normalizeDemandRow(raw: any): DemandRow | null {
@@ -161,36 +115,6 @@ function normalizeDemandRow(raw: any): DemandRow | null {
   };
 }
 
-function normalizeNotificationRow(raw: any): RawNotificationRow {
-  return {
-    id: firstTruthy(raw?.id, raw?.notification_id, raw?.title, raw?.message),
-    kind: firstTruthy(raw?.kind, raw?.title, "update"),
-    title: firstTruthy(raw?.title, raw?.kind, "Update"),
-    detail: firstTruthy(
-      raw?.message,
-      raw?.detail,
-      "Review this signal and continue from the right page."
-    ),
-    unread: !raw?.is_read,
-    createdAt: firstTruthy(raw?.created_at),
-  };
-}
-
-function isActiveLoan(row: LoanRow): boolean {
-  const status = safeStr(row?.status).toLowerCase();
-  return !FINAL_LOAN_STATUSES.has(status);
-}
-
-function isBorrowerLoan(row: LoanRow): boolean {
-  const role = safeStr(row?.role).toLowerCase();
-  return role === "borrower" || role.includes("borrow");
-}
-
-function isGuarantorLoan(row: LoanRow): boolean {
-  const role = safeStr(row?.role).toLowerCase();
-  return role === "guarantor" || role.includes("guarant");
-}
-
 function pressureTone(value: "low" | "medium" | "high") {
   if (value === "high") {
     return {
@@ -213,37 +137,6 @@ function pressureTone(value: "low" | "medium" | "high") {
     border: "1px solid rgba(34,197,94,0.16)",
     text: "#166534",
   };
-}
-
-function eventPressureLabel(row: RawNotificationRow): "high" | "medium" | "low" {
-  const text = [safeStr(row.kind), safeStr(row.title), safeStr(row.detail)]
-    .join(" ")
-    .toLowerCase();
-
-  if (
-    text.includes("failed") ||
-    text.includes("error") ||
-    text.includes("urgent") ||
-    text.includes("default") ||
-    text.includes("overdue") ||
-    text.includes("declined") ||
-    text.includes("immediate")
-  ) {
-    return "high";
-  }
-
-  if (
-    text.includes("pending") ||
-    text.includes("warning") ||
-    text.includes("reminder") ||
-    text.includes("late") ||
-    text.includes("due") ||
-    text.includes("follow up")
-  ) {
-    return "medium";
-  }
-
-  return "low";
 }
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
@@ -324,7 +217,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -347,7 +240,8 @@ function actionBtn(
       fontSize: 14,
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
+      textAlign: "center",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -367,7 +261,8 @@ function actionBtn(
       fontSize: 13,
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
+      textAlign: "center",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -386,7 +281,8 @@ function actionBtn(
     fontSize: 14,
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+      whiteSpace: "normal",
+      textAlign: "center",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -405,7 +301,8 @@ function collapseToggle(): React.CSSProperties {
     fontWeight: 800,
     fontSize: 13,
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    textAlign: "center",
   };
 }
 
@@ -474,8 +371,12 @@ export default function ExposureAdminPage() {
   const [loading, setLoading] = useState(true);
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
-  const [notifications, setNotifications] = useState<RawNotificationRow[]>([]);
-  const [loans, setLoans] = useState<LoanRow[]>([]);
+  const [exposureRows, setExposureRows] = useState<ExposureRow[]>([]);
+  const [exposureTotals, setExposureTotals] = useState<any>(null);
+  const [exposureError, setExposureError] = useState<string>("");
+  const [incompleteLoans, setIncompleteLoans] = useState<any[]>([]);
+  const [pendingPool, setPendingPool] = useState<any[]>([]);
+  const [bankUnmatched, setBankUnmatched] = useState<any[]>([]);
   const [demands, setDemands] = useState<DemandRow[]>([]);
 
   useEffect(() => {
@@ -502,12 +403,26 @@ export default function ExposureAdminPage() {
       setLoading(true);
 
       try {
-        const [meRes, clanRes, notificationsRes, loansRes, demandsRes] =
+        const [meRes, clanRes, exposureRes, incompleteLoansRes, pendingPoolRes, bankUnmatchedRes, demandsRes] =
           await Promise.all([
             getMe().catch(() => null),
             getCurrentClan().catch(() => null),
-            getMyNotifications(60, false).catch(() => ({ items: [] })),
-            listMyLoans().catch(() => []),
+            selectedClanId > 0
+              ? getExposureAdmin(selectedClanId).catch((error: any) => ({
+                  __error: safeStr(
+                    error?.message || error || "Exposure summary unavailable."
+                  ),
+                }))
+              : Promise.resolve(null),
+            selectedClanId > 0
+              ? getAdminIncompleteLoans(selectedClanId, 100).catch(() => ({ items: [] }))
+              : Promise.resolve({ items: [] }),
+            selectedClanId > 0
+              ? listAdminPoolPending(selectedClanId, 50).catch(() => ({ items: [] }))
+              : Promise.resolve({ items: [] }),
+            selectedClanId > 0
+              ? listUnmatchedBankEvents(selectedClanId).catch(() => ({ items: [] }))
+              : Promise.resolve({ items: [] }),
             listMarketplaceRequests({
               clan_id: selectedClanId || undefined,
               status: "open",
@@ -519,12 +434,24 @@ export default function ExposureAdminPage() {
 
         setMe(meRes || null);
         setCurrentClan(clanRes || null);
-        setNotifications(rowsOf<any>(notificationsRes).map((row) => normalizeNotificationRow(row)));
-        setLoans(
-          rowsOf<any>(loansRes)
-            .map((row) => normalizeLoanRow(row))
-            .filter(Boolean) as LoanRow[]
+        setExposureRows(
+          exposureRes && typeof exposureRes === "object" && !exposureRes.__error
+            ? (rowsOf<any>(exposureRes) as ExposureRow[])
+            : []
         );
+        setExposureTotals(
+          exposureRes && typeof exposureRes === "object" && !exposureRes.__error
+            ? exposureRes?.totals || null
+            : null
+        );
+        setExposureError(
+          exposureRes && typeof exposureRes === "object" && exposureRes.__error
+            ? safeStr(exposureRes.__error)
+            : ""
+        );
+        setIncompleteLoans(rowsOf<any>(incompleteLoansRes));
+        setPendingPool(rowsOf<any>(pendingPoolRes));
+        setBankUnmatched(rowsOf<any>(bankUnmatchedRes));
         setDemands(
           rowsOf<any>(demandsRes)
             .map((row) => normalizeDemandRow(row))
@@ -569,114 +496,176 @@ export default function ExposureAdminPage() {
     );
   }, [me]);
 
-  const activeLoans = useMemo(() => loans.filter(isActiveLoan), [loans]);
-  const borrowerLoans = useMemo(
-    () => activeLoans.filter(isBorrowerLoan),
-    [activeLoans]
+  const exposedMembers = useMemo(
+    () => exposureRows.filter((row) => toNum(row?.exposure) > 0),
+    [exposureRows]
   );
-  const guarantorLoans = useMemo(
-    () => activeLoans.filter(isGuarantorLoan),
-    [activeLoans]
+  const exposedMembersAtRisk = useMemo(
+    () =>
+      exposedMembers.filter((row) => {
+        const pool = toNum(row?.pool);
+        const exposure = toNum(row?.exposure);
+        if (exposure <= 0) return false;
+        if (pool <= 0) return true;
+        return exposure / pool >= 0.75 || toNum(row?.available) <= 0;
+      }),
+    [exposedMembers]
   );
-
   const staleDemands = useMemo(
     () => demands.filter((row) => daysSince(row.createdAt) >= 5),
     [demands]
   );
-
-  const urgentSignals = useMemo(
-    () => notifications.filter((row) => eventPressureLabel(row) === "high"),
-    [notifications]
-  );
-
-  const followUpSignals = useMemo(
-    () => notifications.filter((row) => eventPressureLabel(row) === "medium"),
-    [notifications]
+  const urgentIncompleteCount = useMemo(
+    () =>
+      incompleteLoans.filter((row) => {
+        const remaining = toNum(row?.auto_cancel_remaining_seconds);
+        return remaining > 0 && remaining <= 60;
+      }).length,
+    [incompleteLoans]
   );
 
   const pressureReading = useMemo(() => {
+    if (!selectedClanId) {
+      return {
+        level: "medium" as const,
+        title: "Choose the community first.",
+        detail:
+          "Exposure is community-specific. Select the current community so the admin concentration and queue signals can load in the right place.",
+      };
+    }
+
+    if (exposureError) {
+      return {
+        level: "medium" as const,
+        title: "Exposure summary is not available here yet.",
+        detail:
+          "The current community did not return the clan-admin exposure summary. Confirm the selected community and clan-admin access before treating this page as the full concentration view.",
+      };
+    }
+
     const pressureScore =
-      borrowerLoans.length * 2 +
+      exposedMembersAtRisk.length * 3 +
+      bankUnmatched.length * 2 +
+      urgentIncompleteCount * 2 +
+      pendingPool.length +
       staleDemands.length * 2 +
-      urgentSignals.length * 2 +
-      guarantorLoans.length +
-      followUpSignals.length;
+      incompleteLoans.length;
 
     if (pressureScore >= 8) {
       return {
         level: "high" as const,
-        title: "Visible exposure pressure is high.",
+        title: "Exposure pressure is high.",
         detail:
-          "Borrower-side support pressure, stale demand, and urgent operational signals are stacking together in the visible view.",
+          "Locked guarantee concentration, stale demand, and unresolved admin queues are stacking together in the current community.",
       };
     }
 
     if (pressureScore >= 4) {
       return {
         level: "medium" as const,
-        title: "Visible exposure pressure is moderate.",
+        title: "Exposure pressure is moderate.",
         detail:
-          "There is no major overload yet, but the visible pressure areas need follow-up before they grow heavier.",
+          "There is no major overload yet, but the concentration and admin queue signals still need follow-up before they grow heavier.",
       };
     }
 
     return {
       level: "low" as const,
-      title: "Visible exposure pressure is currently light.",
+      title: "Exposure pressure is currently light.",
       detail:
-        "The visible support and demand pressure do not suggest a heavy concentration problem right now.",
+        "The exposure summary and current admin queues do not suggest a heavy concentration problem right now.",
     };
   }, [
-    borrowerLoans.length,
+    bankUnmatched.length,
+    exposureError,
+    exposedMembersAtRisk.length,
+    incompleteLoans.length,
+    pendingPool.length,
+    selectedClanId,
     staleDemands.length,
-    urgentSignals.length,
-    guarantorLoans.length,
-    followUpSignals.length,
+    urgentIncompleteCount,
   ]);
 
   const pressureStyle = pressureTone(pressureReading.level);
 
   const recentQueues = useMemo(() => {
-    const loanQueue = activeLoans.slice(0, 4).map((row) => ({
-      key: `loan-${row.id}`,
-      title: firstTruthy(row.title, "Loan support item"),
+    const exposureQueue = exposedMembersAtRisk.slice(0, 4).map((row) => ({
+      key: `member-${firstTruthy(row.user_id, row.email, Math.random())}`,
+      title: firstTruthy(
+        row.email,
+        row.user_id ? `User ${row.user_id}` : "",
+        "Exposed member"
+      ),
       detail: [
-        firstTruthy(row.role, "Support"),
-        firstTruthy(row.status, "Open"),
-        firstTruthy(
-          row.borrowerName ? `Borrower: ${row.borrowerName}` : "",
-          row.createdAt ? `Started: ${safeDateTime(row.createdAt)}` : ""
-        ),
+        row.role ? `Role: ${row.role}` : "",
+        `Exposure: ${toNum(row.exposure)}`,
+        `Available: ${toNum(row.available)}`,
       ]
         .filter(Boolean)
-        .join(" • "),
-      route: "/app/loans",
-      routeLabel: "Open Loans",
+        .join(" | "),
+      route: "/app/command-center/trust-graph",
+      routeLabel: "Open Trust Graph",
+    }));
+
+    const incompleteQueue = incompleteLoans.slice(0, 4).map((row) => ({
+      key: `incomplete-${firstTruthy(row.id, row.loan_id, Math.random())}`,
+      title: `Incomplete loan ${firstTruthy(row.loan_id, row.id, "")}`.trim(),
+      detail: [
+        `Approved ${toNum(row.approved_count)} / ${toNum(row.required_count)}`,
+        row.required_gap != null ? `Gap ${toNum(row.required_gap)}` : "",
+        toNum(row.auto_cancel_remaining_seconds) > 0
+          ? `${toNum(row.auto_cancel_remaining_seconds)}s remaining`
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" | "),
+      route: "/app/command-center/incomplete-loans",
+      routeLabel: "Open Incomplete Loans",
+    }));
+
+    const bankQueue = bankUnmatched.slice(0, 4).map((row) => ({
+      key: `bank-${firstTruthy(row.id, row.reference, Math.random())}`,
+      title: "Unmatched bank event",
+      detail: [
+        firstTruthy(row.reference, row.reference_raw, "No reference"),
+        row.amount && row.currency ? `${row.amount} ${row.currency}` : "",
+        firstTruthy(row.status, row.status_reason),
+      ]
+        .filter(Boolean)
+        .join(" | "),
+      route: "/app/command-center/bank-console",
+      routeLabel: "Open Bank Console",
     }));
 
     const demandQueue = staleDemands.slice(0, 4).map((row) => ({
-      key: `demand-${row.id}`,
+      key: `demand-${firstTruthy(row.id, row.title, Math.random())}`,
       title: firstTruthy(row.title, "Demand"),
       detail: [
         row.requesterName ? `Requester: ${row.requesterName}` : "",
         row.createdAt ? `Opened: ${safeDateTime(row.createdAt)}` : "",
       ]
         .filter(Boolean)
-        .join(" • "),
+        .join(" | "),
       route: "/app/demand-box",
       routeLabel: "Open Demand Box",
     }));
 
-    const signalQueue = urgentSignals.slice(0, 4).map((row) => ({
-      key: `signal-${row.id}`,
-      title: row.title,
-      detail: firstTruthy(row.detail, safeDateTime(row.createdAt)),
-      route: "/app/notifications",
-      routeLabel: "Open Action Inbox",
+    const poolQueue = pendingPool.slice(0, 4).map((row) => ({
+      key: `pool-${firstTruthy(row.id, row.reference, Math.random())}`,
+      title: "Pending pool confirmation",
+      detail: [
+        firstTruthy(row.event_type, "Pool event"),
+        row.amount && row.currency ? `${row.amount} ${row.currency}` : "",
+        firstTruthy(row.reference, row.note),
+      ]
+        .filter(Boolean)
+        .join(" | "),
+      route: "/app/command-center/bank-console",
+      routeLabel: "Open Bank Console",
     }));
 
-    return [...signalQueue, ...loanQueue, ...demandQueue].slice(0, 8);
-  }, [activeLoans, staleDemands, urgentSignals]);
+    return [...bankQueue, ...incompleteQueue, ...exposureQueue, ...poolQueue, ...demandQueue].slice(0, 8);
+  }, [bankUnmatched, exposedMembersAtRisk, incompleteLoans, pendingPool, staleDemands]);
 
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
@@ -745,6 +734,14 @@ export default function ExposureAdminPage() {
         utilityLinks={[{ label: "Trust Graph", to: "/app/command-center/trust-graph" }]}
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="This screen reads concentration, queue pressure, stale demand, and urgent operational signals together."
+        why="It helps you understand exposure as a wider operational pressure picture, not only a money concentration number."
+        next="Start with the current pressure reading, then move through the exposure summary and visible queues to see where the pressure is coming from."
+        tone="light"
+      />
+
       <section
         style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
@@ -772,7 +769,7 @@ export default function ExposureAdminPage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
-              Exposure is not only about money concentration. It also includes queue pressure, stale demand, borrower-side load, guarantor-side load, and urgent operational signals.
+              Exposure is not only about locked money concentration. It also includes stale demand, incomplete admin queues, pending pool work, and unmatched bank pressure.
             </div>
 
             <div
@@ -814,6 +811,15 @@ export default function ExposureAdminPage() {
             </div>
           </div>
         </div>
+
+        <ExplainToggle
+          label="What this does"
+          what="This current pressure block turns the exposure signals into one practical reading so you can see whether the system looks calm, stretched, or at risk."
+          why="It gives you a clearer priority signal before you dig into summaries, queues, or intervention routes."
+          next="Read this first, then use the sections below to confirm which queues or loads are creating the pressure."
+          tone="light"
+          style={{ marginTop: 14 }}
+        />
       </section>
 
       <section style={pageCard("#FFFFFF")}>
@@ -854,7 +860,7 @@ export default function ExposureAdminPage() {
             }}
           >
             <div style={statTile()}>
-              <div style={sectionLabel()}>Active loans</div>
+              <div style={sectionLabel()}>Exposed members</div>
               <div
                 style={{
                   marginTop: 8,
@@ -863,12 +869,12 @@ export default function ExposureAdminPage() {
                   fontWeight: 900,
                 }}
               >
-                {activeLoans.length}
+                {exposedMembers.length}
               </div>
             </div>
 
             <div style={statTile("#FFFBEF")}>
-              <div style={sectionLabel()}>Borrower load</div>
+              <div style={sectionLabel()}>At-risk members</div>
               <div
                 style={{
                   marginTop: 8,
@@ -877,12 +883,12 @@ export default function ExposureAdminPage() {
                   fontWeight: 900,
                 }}
               >
-                {borrowerLoans.length}
+                {exposedMembersAtRisk.length}
               </div>
             </div>
 
             <div style={statTile("#F8FBFF")}>
-              <div style={sectionLabel()}>Guarantor load</div>
+              <div style={sectionLabel()}>Total exposure</div>
               <div
                 style={{
                   marginTop: 8,
@@ -891,12 +897,12 @@ export default function ExposureAdminPage() {
                   fontWeight: 900,
                 }}
               >
-                {guarantorLoans.length}
+                {toNum(exposureTotals?.exposure)}
               </div>
             </div>
 
             <div style={statTile("#FFF5F5")}>
-              <div style={sectionLabel()}>Stale demand</div>
+              <div style={sectionLabel()}>Incomplete loans</div>
               <div
                 style={{
                   marginTop: 8,
@@ -905,12 +911,12 @@ export default function ExposureAdminPage() {
                   fontWeight: 900,
                 }}
               >
-                {staleDemands.length}
+                {incompleteLoans.length}
               </div>
             </div>
 
             <div style={statTile("#FFF5F5")}>
-              <div style={sectionLabel()}>Urgent signals</div>
+              <div style={sectionLabel()}>Unmatched bank</div>
               <div
                 style={{
                   marginTop: 8,
@@ -919,12 +925,12 @@ export default function ExposureAdminPage() {
                   fontWeight: 900,
                 }}
               >
-                {urgentSignals.length}
+                {bankUnmatched.length}
               </div>
             </div>
 
             <div style={statTile("#FFFBEF")}>
-              <div style={sectionLabel()}>Follow-up signals</div>
+              <div style={sectionLabel()}>Pending pool</div>
               <div
                 style={{
                   marginTop: 8,
@@ -933,7 +939,7 @@ export default function ExposureAdminPage() {
                   fontWeight: 900,
                 }}
               >
-                {followUpSignals.length}
+                {pendingPool.length}
               </div>
             </div>
           </div>
@@ -983,10 +989,10 @@ export default function ExposureAdminPage() {
                   fontSize: 15,
                 }}
               >
-                Support-side pressure
+                Concentration pressure
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Borrower-side active load and guarantor-side active load together indicate how much support pressure is currently visible in this view.
+                This reading shows how much of the current community pool is already locked into exposure and how many members are close to the edge.
               </div>
 
               <div
@@ -998,10 +1004,13 @@ export default function ExposureAdminPage() {
                 }}
               >
                 <span style={badge(true)}>
-                  Borrower load: {borrowerLoans.length}
+                  Exposed members: {exposedMembers.length}
                 </span>
                 <span style={badge(false)}>
-                  Guarantor load: {guarantorLoans.length}
+                  At-risk members: {exposedMembersAtRisk.length}
+                </span>
+                <span style={badge(false)}>
+                  Available buffer: {toNum(exposureTotals?.available)}
                 </span>
               </div>
             </div>
@@ -1014,10 +1023,10 @@ export default function ExposureAdminPage() {
                   fontSize: 15,
                 }}
               >
-                Demand-side pressure
+                Queue pressure
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Open demand becomes an exposure concern when it stays stale, drifts without closure, or begins stacking alongside other urgent signals.
+                Exposure pressure also rises when stale demand, unmatched bank events, pending pool items, or incomplete loans begin stacking together.
               </div>
 
               <div
@@ -1031,6 +1040,12 @@ export default function ExposureAdminPage() {
                 <span style={badge(true)}>Open demand: {demands.length}</span>
                 <span style={badge(false)}>
                   Stale demand: {staleDemands.length}
+                </span>
+                <span style={badge(false)}>
+                  Unmatched bank: {bankUnmatched.length}
+                </span>
+                <span style={badge(false)}>
+                  Pending pool: {pendingPool.length}
                 </span>
               </div>
             </div>
@@ -1190,7 +1205,7 @@ export default function ExposureAdminPage() {
               </div>
             </OriginLink>
 
-            <OriginLink to="/app/notifications" style={routeTile(false)}>
+            <OriginLink to="/app/command-center/bank-console" style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -1199,10 +1214,10 @@ export default function ExposureAdminPage() {
                   lineHeight: 1.3,
                 }}
               >
-                Action Inbox
+                Bank Console
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Open this when the work needs direct queue handling from the member side.
+                Open this when the work is about unmatched bank events, pending pool confirmation, or expected money-path cleanup.
               </div>
             </OriginLink>
           </div>

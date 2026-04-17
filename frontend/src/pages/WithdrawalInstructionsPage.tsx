@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import { navigateWithOrigin } from "../lib/nav";
@@ -285,7 +286,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#1D4ED8" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -308,7 +309,7 @@ function actionBtn(
       fontSize: 14,
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -328,7 +329,7 @@ function actionBtn(
       fontSize: 13,
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -347,7 +348,7 @@ function actionBtn(
     fontSize: 14,
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -366,7 +367,7 @@ function collapseToggle(): React.CSSProperties {
     fontWeight: 800,
     fontSize: 13,
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -1294,6 +1295,14 @@ export default function WithdrawalInstructionsPage() {
         }
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="Money Out guides one withdrawal route from request through destination, rail review, decision logic, and final execution."
+        why="Withdrawal can switch into support when the amount exceeds the effective available position, so the user needs one route that keeps the logic visible."
+        next="Check the current route state first, confirm the amount and payout destination, then follow the route guidance until it ends in direct withdrawal or support."
+        tone="light"
+      />
+
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
@@ -1441,6 +1450,15 @@ export default function WithdrawalInstructionsPage() {
             {collapsed.overview ? "Open" : "Collapse"}
           </button>
         </div>
+
+        <ExplainToggle
+          label="What this overview shows"
+          what="This overview gives the main withdrawal reading first: requested amount, available position, support gap, and current path."
+          why="It helps you understand quickly whether the request can stay direct or needs support-backed continuation."
+          next="Check the path and support gap first, then use the decision lane below to continue with the right route."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
 
         {!collapsed.overview ? (
           <div
@@ -1644,6 +1662,15 @@ export default function WithdrawalInstructionsPage() {
           </button>
         </div>
 
+        <ExplainToggle
+          label="How this decision works"
+          what="This section compares the amount you want against your effective available pool and decides whether the route stays direct or moves into support."
+          why="It makes the branch visible before you act, so you know whether you are completing a withdrawal or handing off into the support flow."
+          next="Enter the amount, read the decision and intelligence panels, then continue with either direct withdrawal or loan-readiness handoff."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
+
         {!collapsed.request ? (
           <div
             style={{
@@ -1747,7 +1774,7 @@ export default function WithdrawalInstructionsPage() {
                         : "",
                     ]
                       .filter(Boolean)
-                      .join(" • ") || "Open the support pages if you need more background before continuing."}
+                      .join(" ï¿½ ") || "Open the support pages if you need more background before continuing."}
                   </div>
                 </div>
               </div>
@@ -2088,6 +2115,15 @@ export default function WithdrawalInstructionsPage() {
           </button>
         </div>
 
+        <ExplainToggle
+          label="What this rail is for"
+          what="This is the community-side withdrawal rail that must be visible before money-out can complete cleanly."
+          why="It stays separate from your personal payout account so the community route and your destination do not get mixed together."
+          next="Refresh or review the rail details, copy them if needed, and make sure they are ready before you continue with execution."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
+
         {!collapsed.rail ? (
           <div
             style={{
@@ -2198,6 +2234,15 @@ export default function WithdrawalInstructionsPage() {
             </button>
           </div>
         </div>
+
+        <ExplainToggle
+          label="What happens next"
+          what="This final section shows the outcome of the current withdrawal task and whether it completed here or moved into support continuation."
+          why="It keeps the result visible in one place so you can tell the difference between a completed direct withdrawal and a support-backed handoff."
+          next="Refresh the status when needed, then either confirm the direct result or follow the support continuation the page presents."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
 
         {!collapsed.result ? (
           <div

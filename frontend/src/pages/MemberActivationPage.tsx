@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import { activateApprovedMember } from "../lib/api";
@@ -43,9 +44,11 @@ function actionBtn(primary = false, disabled = false): React.CSSProperties {
     background: disabled ? "#CBD5E1" : primary ? "#0B63D1" : "#FFFFFF",
     color: primary ? "#FFFFFF" : "#0B1F33",
     fontWeight: 900,
+    textAlign: "center",
     cursor: disabled ? "not-allowed" : "pointer",
     textDecoration: "none",
     opacity: disabled ? 0.75 : 1,
+    whiteSpace: "normal",
   };
 }
 
@@ -151,6 +154,15 @@ export default function MemberActivationPage() {
         subtitle="Finish your approved entry by confirming your identity reference and creating your password."
       />
 
+      <ExplainToggle
+        label="What this screen does"
+        what="This screen completes your approved entry by linking your approved identity reference to a password and active account access."
+        why="It is the final handoff from approval into your personal workspace."
+        next="Confirm your approved identity reference carefully, then finish activation and continue into your pages."
+        tone="light"
+        style={{ marginTop: 18 }}
+      />
+
       <div
         style={{
           ...pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
@@ -229,6 +241,14 @@ export default function MemberActivationPage() {
       ) : null}
 
       <div style={{ ...pageCard(), marginTop: 18 }}>
+        <ExplainToggle
+          label="What this does"
+          what="This activation form confirms the approved identity reference tied to your membership and lets you create the password for your account."
+          why="It keeps activation tied to the approved record instead of creating a separate or duplicate entry."
+          next="Enter the approved GMFN ID or request ID you were given, create your password, and finish activation to enter your workspace."
+          tone="light"
+          style={{ marginBottom: 18 }}
+        />
         <form onSubmit={handleSubmit}>
           <div style={{ display: "grid", gap: 14 }}>
             <div>

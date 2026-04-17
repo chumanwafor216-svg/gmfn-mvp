@@ -1,16 +1,110 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
-import { getCurrentClan, getMe, getSelectedClanId } from "../lib/api";
+import {
+  adminRecentTrustEvents,
+  getAdminIdentityRisk,
+  getAdminIncompleteLoans,
+  getCurrentClan,
+  getExposureAdmin,
+  getMe,
+  getPilotReadiness,
+  getProtocolStatus,
+  getSelectedClanId,
+  getSystemHealth,
+  listExpectedPayments,
+  listRecentBankEvents,
+  listUnmatchedBankEvents,
+} from "../lib/api";
+import { getClanLiquiditySummary } from "../lib/communityMoney";
 
 type CollapseState = {
+  executive: boolean;
   overview: boolean;
   routes: boolean;
   workflows: boolean;
+  pilot: boolean;
   notes: boolean;
 };
 
+type ExecutiveReading = {
+  systemHealth: any | null;
+  protocolStatus: any | null;
+  pilotReadiness: any | null;
+  liquidity: any | null;
+  exposure: any | null;
+  trustEvents: any[];
+  identityRisk: any[];
+  incompleteLoans: any[];
+  bankRecent: any[];
+  bankUnmatched: any[];
+  expectedPayments: any[];
+  exposureError: string;
+  incompleteError: string;
+  bankError: string;
+};
+
 const COMMAND_CENTER_UI_STORAGE_KEY = "gmfn.commandCenter.sections.v1";
+const COMMAND_CENTER_PILOT_WORKSHEET_STORAGE_KEY =
+  "gmfn.commandCenter.pilotWorksheet.v1";
+
+type PilotWorksheet = {
+  pilotName: string;
+  launchWindow: string;
+  countries: string;
+  targetRoles: string;
+  devices: string;
+  keyEvents: string;
+  successSignals: string;
+  openAssumptions: string;
+  notes: string;
+  deploymentReady: boolean;
+  analyticsReady: boolean;
+  supportChannelReady: boolean;
+  dailyReviewReady: boolean;
+};
+
+const PILOT_ASSUMPTION_CARDS = [
+  {
+    title: "Entry conversion",
+    detail:
+      "Track who reaches cover, welcome, join, activation, and login, then measure how many complete the correct route without support.",
+  },
+  {
+    title: "Community understanding",
+    detail:
+      "Check whether users understand community context, trust, marketplace, support, and money routes without guessing or leaving the flow.",
+  },
+  {
+    title: "Operational friction",
+    detail:
+      "Watch for slow loads, API failures, access confusion, wrong-community mistakes, and mobile layout friction across regions and devices.",
+  },
+  {
+    title: "Trust and finance behavior",
+    detail:
+      "Verify whether users and admins understand trust readings, verification, support suggestions, exposure, and money decisions well enough to act correctly.",
+  },
+];
+
+const PILOT_DATA_CARDS = [
+  {
+    title: "Coverage to capture",
+    detail:
+      "Country, timezone, device type, browser, screen size, role, and current community should all be visible when interpreting pilot results.",
+  },
+  {
+    title: "Events to capture",
+    detail:
+      "Route visited, action taken, success or failure, time to next step, and the exact error state should be logged for every key pilot journey.",
+  },
+  {
+    title: "Pilot structure",
+    detail:
+      "Use a small multi-country pilot first with ordinary users, clan admins, and platform admins before opening the wider test group.",
+  },
+];
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -22,6 +116,108 @@ function firstTruthy(...values: any[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function rowsOf<T = any>(input: any): T[] {
+  if (Array.isArray(input)) return input as T[];
+  if (Array.isArray(input?.items)) return input.items as T[];
+  if (Array.isArray(input?.data?.items)) return input.data.items as T[];
+  if (Array.isArray(input?.results)) return input.results as T[];
+  if (Array.isArray(input?.rows)) return input.rows as T[];
+  return [];
+}
+
+function toNum(x: any): number {
+  const n = Number(x);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function safeDateTime(x: any): string {
+  const raw = safeStr(x);
+  if (!raw) return "—";
+  const d = new Date(raw);
+  if (!Number.isFinite(d.getTime())) return raw;
+  return d.toLocaleString();
+}
+
+function formatNumber(x: any): string {
+  const n = Number(x);
+  if (!Number.isFinite(n)) return safeStr(x) || "0";
+  return new Intl.NumberFormat(undefined, {
+    maximumFractionDigits: 2,
+  }).format(n);
+}
+
+type TrustEventCategory = "built" | "protected" | "weakened" | "repair";
+
+function classifyTrustEvent(row: any): TrustEventCategory {
+  const text = [
+    safeStr(row?.event_type),
+    safeStr(row?.kind),
+    safeStr(row?.type),
+    safeStr(row?.title),
+    safeStr(row?.message),
+    safeStr(row?.detail),
+    safeStr(row?.description),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  if (
+    text.includes("paid") ||
+    text.includes("repaid") ||
+    text.includes("verified") ||
+    text.includes("completed") ||
+    text.includes("approved") ||
+    text.includes("contributed") ||
+    text.includes("delivered") ||
+    text.includes("fulfilled") ||
+    text.includes("successful")
+  ) {
+    return "built";
+  }
+
+  if (
+    text.includes("late") ||
+    text.includes("overdue") ||
+    text.includes("default") ||
+    text.includes("missed") ||
+    text.includes("declined") ||
+    text.includes("cancelled") ||
+    text.includes("unpaid") ||
+    text.includes("negative")
+  ) {
+    return "weakened";
+  }
+
+  if (
+    text.includes("risk") ||
+    text.includes("warning") ||
+    text.includes("repair") ||
+    text.includes("flag") ||
+    text.includes("dispute") ||
+    text.includes("attention")
+  ) {
+    return "repair";
+  }
+
+  return "protected";
+}
+
+function classifyIdentitySignal(row: any): {
+  level: "green" | "yellow" | "red";
+  score: number;
+} {
+  const severity = toNum(row?.severity || 0);
+  let score = severity * 10;
+
+  const type = safeStr(row?.signal_type).toLowerCase();
+  if (type.includes("cluster")) score += 30;
+  if (type.includes("device")) score += 15;
+
+  if (score >= 60) return { level: "red", score };
+  if (score >= 25) return { level: "yellow", score };
+  return { level: "green", score };
 }
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
@@ -102,7 +298,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -125,7 +321,8 @@ function actionBtn(
       fontSize: 14,
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
+      textAlign: "center",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -145,7 +342,8 @@ function actionBtn(
       fontSize: 13,
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
+      textAlign: "center",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -164,7 +362,8 @@ function actionBtn(
     fontSize: 14,
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    textAlign: "center",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -183,7 +382,8 @@ function collapseToggle(): React.CSSProperties {
     fontWeight: 800,
     fontSize: 13,
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    textAlign: "center",
   };
 }
 
@@ -192,6 +392,23 @@ function helperText(): React.CSSProperties {
     color: "#5F7287",
     fontSize: 14,
     lineHeight: 1.75,
+  };
+}
+
+function inputField(multiline = false): React.CSSProperties {
+  return {
+    width: "100%",
+    minHeight: multiline ? 110 : 44,
+    borderRadius: 14,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background: "#FFFFFF",
+    padding: multiline ? "12px 14px" : "10px 14px",
+    color: "#0B1F33",
+    fontSize: 14,
+    lineHeight: 1.6,
+    resize: multiline ? "vertical" : "none",
+    outline: "none",
+    fontFamily: "inherit",
   };
 }
 
@@ -215,11 +432,53 @@ function writeLocalJSON(key: string, value: any) {
   }
 }
 
+function defaultPilotWorksheet(): PilotWorksheet {
+  return {
+    pilotName: "",
+    launchWindow: "",
+    countries: "",
+    targetRoles: "",
+    devices: "",
+    keyEvents: "",
+    successSignals: "",
+    openAssumptions: "",
+    notes: "",
+    deploymentReady: false,
+    analyticsReady: false,
+    supportChannelReady: false,
+    dailyReviewReady: false,
+  };
+}
+
+function normalizePilotWorksheet(raw: any): PilotWorksheet {
+  const base = defaultPilotWorksheet();
+
+  return {
+    pilotName: safeStr(raw?.pilotName ?? base.pilotName),
+    launchWindow: safeStr(raw?.launchWindow ?? base.launchWindow),
+    countries: safeStr(raw?.countries ?? base.countries),
+    targetRoles: safeStr(raw?.targetRoles ?? base.targetRoles),
+    devices: safeStr(raw?.devices ?? base.devices),
+    keyEvents: safeStr(raw?.keyEvents ?? base.keyEvents),
+    successSignals: safeStr(raw?.successSignals ?? base.successSignals),
+    openAssumptions: safeStr(raw?.openAssumptions ?? base.openAssumptions),
+    notes: safeStr(raw?.notes ?? base.notes),
+    deploymentReady: Boolean(raw?.deploymentReady ?? base.deploymentReady),
+    analyticsReady: Boolean(raw?.analyticsReady ?? base.analyticsReady),
+    supportChannelReady: Boolean(
+      raw?.supportChannelReady ?? base.supportChannelReady
+    ),
+    dailyReviewReady: Boolean(raw?.dailyReviewReady ?? base.dailyReviewReady),
+  };
+}
+
 function defaultCollapseState(): CollapseState {
   return {
+    executive: false,
     overview: false,
     routes: false,
     workflows: true,
+    pilot: false,
     notes: true,
   };
 }
@@ -228,9 +487,11 @@ function normalizeCollapseState(raw: any): CollapseState {
   const base = defaultCollapseState();
 
   return {
+    executive: Boolean(raw?.executive ?? base.executive),
     overview: Boolean(raw?.overview ?? base.overview),
     routes: Boolean(raw?.routes ?? base.routes),
     workflows: Boolean(raw?.workflows ?? base.workflows),
+    pilot: Boolean(raw?.pilot ?? base.pilot),
     notes: Boolean(raw?.notes ?? base.notes),
   };
 }
@@ -248,10 +509,35 @@ export default function TrustCommandCentrePage() {
       readLocalJSON(COMMAND_CENTER_UI_STORAGE_KEY, defaultCollapseState())
     )
   );
+  const [pilotWorksheet, setPilotWorksheet] = useState<PilotWorksheet>(() =>
+    normalizePilotWorksheet(
+      readLocalJSON(
+        COMMAND_CENTER_PILOT_WORKSHEET_STORAGE_KEY,
+        defaultPilotWorksheet()
+      )
+    )
+  );
 
   const [loading, setLoading] = useState(true);
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
+  const [executiveLoading, setExecutiveLoading] = useState(true);
+  const [executiveReading, setExecutiveReading] = useState<ExecutiveReading>({
+    systemHealth: null,
+    protocolStatus: null,
+    pilotReadiness: null,
+    liquidity: null,
+    exposure: null,
+    trustEvents: [],
+    identityRisk: [],
+    incompleteLoans: [],
+    bankRecent: [],
+    bankUnmatched: [],
+    expectedPayments: [],
+    exposureError: "",
+    incompleteError: "",
+    bankError: "",
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -269,6 +555,10 @@ export default function TrustCommandCentrePage() {
   useEffect(() => {
     writeLocalJSON(COMMAND_CENTER_UI_STORAGE_KEY, collapsed);
   }, [collapsed]);
+
+  useEffect(() => {
+    writeLocalJSON(COMMAND_CENTER_PILOT_WORKSHEET_STORAGE_KEY, pilotWorksheet);
+  }, [pilotWorksheet]);
 
   useEffect(() => {
     let alive = true;
@@ -296,6 +586,130 @@ export default function TrustCommandCentrePage() {
     };
   }, []);
 
+  useEffect(() => {
+    let alive = true;
+
+    async function run() {
+      setExecutiveLoading(true);
+
+      const systemHealthPromise = getSystemHealth().catch(() => null);
+      const protocolStatusPromise = getProtocolStatus().catch(() => null);
+      const pilotReadinessPromise = getPilotReadiness().catch(() => null);
+      const trustEventsPromise = adminRecentTrustEvents(100).catch(() => ({
+        items: [],
+      }));
+      const identityRiskPromise = getAdminIdentityRisk(100).catch(() => ({
+        items: [],
+      }));
+      const liquidityPromise =
+        selectedClanId > 0
+          ? getClanLiquiditySummary(selectedClanId).catch(() => null)
+          : Promise.resolve(null);
+      const exposurePromise =
+        selectedClanId > 0
+          ? getExposureAdmin(selectedClanId).catch((error: any) => ({
+              __error: safeStr(error?.message || error || "Exposure summary unavailable."),
+            }))
+          : Promise.resolve(null);
+      const incompleteLoansPromise =
+        selectedClanId > 0
+          ? getAdminIncompleteLoans(selectedClanId, 100).catch((error: any) => ({
+              __error: safeStr(
+                error?.message || error || "Incomplete loan summary unavailable."
+              ),
+            }))
+          : Promise.resolve(null);
+      const bankSummaryPromise =
+        selectedClanId > 0
+          ? Promise.all([
+              listRecentBankEvents(selectedClanId),
+              listUnmatchedBankEvents(selectedClanId),
+              listExpectedPayments({ clan_id: selectedClanId, limit: 100 }),
+            ]).catch((error: any) => ({
+              __error: safeStr(
+                error?.message || error || "Bank summary unavailable."
+              ),
+            }))
+          : Promise.resolve(null);
+
+      const [
+        systemHealthRes,
+        protocolStatusRes,
+        pilotReadinessRes,
+        trustEventsRes,
+        identityRiskRes,
+        liquidityRes,
+        exposureRes,
+        incompleteLoansRes,
+        bankSummaryRes,
+      ] = await Promise.all([
+        systemHealthPromise,
+        protocolStatusPromise,
+        pilotReadinessPromise,
+        trustEventsPromise,
+        identityRiskPromise,
+        liquidityPromise,
+        exposurePromise,
+        incompleteLoansPromise,
+        bankSummaryPromise,
+      ]);
+
+      if (!alive) return;
+
+      const exposureError =
+        exposureRes && typeof exposureRes === "object" && safeStr(exposureRes.__error)
+          ? safeStr(exposureRes.__error)
+          : "";
+      const incompleteError =
+        incompleteLoansRes &&
+        typeof incompleteLoansRes === "object" &&
+        safeStr(incompleteLoansRes.__error)
+          ? safeStr(incompleteLoansRes.__error)
+          : "";
+      const bankError =
+        bankSummaryRes &&
+        typeof bankSummaryRes === "object" &&
+        !Array.isArray(bankSummaryRes) &&
+        safeStr(bankSummaryRes.__error)
+          ? safeStr(bankSummaryRes.__error)
+          : "";
+      const [bankRecentRes, bankUnmatchedRes, expectedPaymentsRes] =
+        Array.isArray(bankSummaryRes) ? bankSummaryRes : [null, null, null];
+
+      setExecutiveReading({
+        systemHealth: systemHealthRes,
+        protocolStatus: protocolStatusRes,
+        pilotReadiness: pilotReadinessRes,
+        liquidity: liquidityRes,
+        exposure:
+          exposureRes && typeof exposureRes === "object" && exposureRes.__error
+            ? null
+            : exposureRes,
+        trustEvents: rowsOf(trustEventsRes),
+        identityRisk: rowsOf(identityRiskRes),
+        incompleteLoans:
+          incompleteLoansRes &&
+          typeof incompleteLoansRes === "object" &&
+          incompleteLoansRes.__error
+            ? []
+            : rowsOf(incompleteLoansRes),
+        bankRecent: rowsOf(bankRecentRes),
+        bankUnmatched: rowsOf(bankUnmatchedRes),
+        expectedPayments: rowsOf(expectedPaymentsRes),
+        exposureError,
+        incompleteError,
+        bankError,
+      });
+      setExecutiveLoading(false);
+    }
+
+    void run();
+
+    return () => {
+      alive = false;
+    };
+  }, [selectedClanId]);
+
   const operatorName = useMemo(() => {
     return (
       firstTruthy(
@@ -320,15 +734,418 @@ export default function TrustCommandCentrePage() {
   }, [currentClan, selectedClanId]);
 
   const roleLabel = useMemo(() => {
-    return (
-      firstTruthy(
-        me?.role,
-        me?.account_role,
-        me?.user_role,
-        me?.permissions?.includes?.("admin") ? "admin" : ""
-      ) || "admin"
+    const platformRole = firstTruthy(
+      me?.role,
+      me?.account_role,
+      me?.user_role,
+      me?.permissions?.includes?.("admin") ? "admin" : ""
     );
-  }, [me]);
+    const clanRole = firstTruthy(
+      currentClan?.role,
+      currentClan?.member_role,
+      currentClan?.membership_role,
+      currentClan?.participant_role
+    );
+
+    if (safeStr(platformRole).toLowerCase() === "admin") {
+      return "platform admin";
+    }
+
+    if (safeStr(clanRole).toLowerCase() === "admin") {
+      return "clan admin";
+    }
+
+    return firstTruthy(platformRole, clanRole, "admin-led");
+  }, [currentClan, me]);
+
+  const isPlatformAdmin = roleLabel === "platform admin";
+  const isClanAdmin = roleLabel === "clan admin";
+
+  const systemOk = Boolean(executiveReading.systemHealth?.ok);
+  const protocolStage = firstTruthy(executiveReading.protocolStatus?.stage, "unknown");
+  const protocolNextPriorities = Array.isArray(executiveReading.protocolStatus?.next_priority)
+    ? executiveReading.protocolStatus.next_priority
+    : [];
+  const pilotOverall = firstTruthy(executiveReading.pilotReadiness?.overall_status, "unknown");
+  const exposureTotals = executiveReading.exposure?.totals || null;
+  const liquidity = executiveReading.liquidity || null;
+  const trustEventRows = executiveReading.trustEvents;
+  const identityRiskRows = executiveReading.identityRisk;
+  const incompleteLoanRows = executiveReading.incompleteLoans;
+  const bankRecentRows = executiveReading.bankRecent;
+  const bankUnmatchedRows = executiveReading.bankUnmatched;
+  const expectedPaymentRows = executiveReading.expectedPayments;
+
+  const trustEventMix = useMemo(() => {
+    const summary = {
+      built: 0,
+      protected: 0,
+      weakened: 0,
+      repair: 0,
+    };
+
+    trustEventRows.forEach((row) => {
+      summary[classifyTrustEvent(row)] += 1;
+    });
+
+    return summary;
+  }, [trustEventRows]);
+
+  const latestTrustEvent = trustEventRows[0] || null;
+
+  const identityRiskGroups = useMemo(() => {
+    const grouped = new Map<
+      number,
+      { userId: number; count: number; highest: "green" | "yellow" | "red"; score: number }
+    >();
+
+    identityRiskRows.forEach((row) => {
+      const userId = toNum(row?.user_id || 0);
+      if (!userId) return;
+      const signal = classifyIdentitySignal(row);
+      const current = grouped.get(userId);
+
+      if (!current || signal.score > current.score) {
+        grouped.set(userId, {
+          userId,
+          count: (current?.count || 0) + 1,
+          highest: signal.level,
+          score: signal.score,
+        });
+        return;
+      }
+
+      grouped.set(userId, {
+        ...current,
+        count: current.count + 1,
+      });
+    });
+
+    return Array.from(grouped.values());
+  }, [identityRiskRows]);
+
+  const identityInterventionCount = identityRiskGroups.filter(
+    (row) => row.highest === "red"
+  ).length;
+  const urgentIncompleteCount = incompleteLoanRows.filter((loan) => {
+    const remaining = toNum(loan?.auto_cancel_remaining_seconds);
+    return remaining > 0 && remaining <= 60;
+  }).length;
+  const routeWarnings = [
+    !isPlatformAdmin
+      ? "Some command routes on this page are platform-admin only. Use Exposure, Bank Console, and Revenue Allocation for community-admin work."
+      : "",
+    executiveReading.exposureError,
+    executiveReading.bankError,
+    executiveReading.incompleteError,
+  ].filter(Boolean);
+
+  const pageNextLinks = useMemo(() => {
+    if (isPlatformAdmin) {
+      return [
+        { label: "Trust Analytics", to: "/app/command-center/trust-analytics" },
+        { label: "Trust Events", to: "/app/command-center/trust-events" },
+        { label: "System Operations", to: "/app/command-center/system-operations" },
+      ];
+    }
+
+    return [
+      { label: "Exposure", to: "/app/command-center/exposure" },
+      { label: "Bank Console", to: "/app/command-center/bank-console" },
+      { label: "Revenue Allocation", to: "/app/command-center/revenue-allocation" },
+    ];
+  }, [isPlatformAdmin]);
+
+  const pageUtilityLinks = useMemo(() => {
+    if (isPlatformAdmin) {
+      return [
+        { label: "Exposure", to: "/app/command-center/exposure" },
+        { label: "Identity Risk", to: "/app/command-center/identity-risk" },
+        { label: "Trust Graph", to: "/app/command-center/trust-graph" },
+      ];
+    }
+
+    return [
+      { label: "Exposure", to: "/app/command-center/exposure" },
+      { label: "Bank Console", to: "/app/command-center/bank-console" },
+      { label: "Revenue Allocation", to: "/app/command-center/revenue-allocation" },
+    ];
+  }, [isPlatformAdmin]);
+
+  const routeCards = useMemo(() => {
+    const cards: Array<{
+      label: string;
+      to: string;
+      detail: string;
+      primary?: boolean;
+    }> = [];
+
+    if (isPlatformAdmin) {
+      cards.push(
+        {
+          label: "Trust Analytics",
+          to: "/app/command-center/trust-analytics",
+          detail: "Read trend, movement, and higher-level trust patterns.",
+          primary: true,
+        },
+        {
+          label: "Trust Events",
+          to: "/app/command-center/trust-events",
+          detail:
+            "Review recent trust-event records for evidence, oversight, and explainability.",
+        },
+        {
+          label: "System Operations",
+          to: "/app/command-center/system-operations",
+          detail: "Review live system activity and operational health.",
+        },
+        {
+          label: "Trust Graph",
+          to: "/app/command-center/trust-graph",
+          detail: "Read network structure and relationship-based trust shape.",
+        },
+        {
+          label: "Identity Risk",
+          to: "/app/command-center/identity-risk",
+          detail:
+            "Review device overlap, account clusters, and identity pressure signals.",
+        },
+        {
+          label: "Incomplete Loans",
+          to: "/app/command-center/incomplete-loans",
+          detail:
+            "Inspect the unresolved loan queue and active items still in motion.",
+        }
+      );
+    }
+
+    cards.push(
+      {
+        label: "Exposure",
+        to: "/app/command-center/exposure",
+        detail: "Review concentration, balance, and exposure pressure.",
+        primary: !isPlatformAdmin,
+      },
+      {
+        label: "Bank Console",
+        to: "/app/command-center/bank-console",
+        detail:
+          "Ingest bank events, run reconciliation, and review matched or unmatched movement.",
+      },
+      {
+        label: "Revenue Allocation",
+        to: "/app/command-center/revenue-allocation",
+        detail:
+          "Review service fee, platform revenue, guarantor pool, and net disbursed reading.",
+      }
+    );
+
+    return cards;
+  }, [isPlatformAdmin]);
+
+  const whereNextActions = useMemo(() => {
+    if (isPlatformAdmin) {
+      return [
+        { label: "Trust Analytics", to: "/app/command-center/trust-analytics", kind: "primary" as const },
+        { label: "Trust Events", to: "/app/command-center/trust-events", kind: "secondary" as const },
+        { label: "Identity Risk", to: "/app/command-center/identity-risk", kind: "secondary" as const },
+        { label: "Incomplete Loans", to: "/app/command-center/incomplete-loans", kind: "secondary" as const },
+        { label: "Bank Console", to: "/app/command-center/bank-console", kind: "secondary" as const },
+        { label: "Revenue Allocation", to: "/app/command-center/revenue-allocation", kind: "secondary" as const },
+        { label: "System Operations", to: "/app/command-center/system-operations", kind: "secondary" as const },
+        { label: "Exposure", to: "/app/command-center/exposure", kind: "secondary" as const },
+        { label: "Trust Graph", to: "/app/command-center/trust-graph", kind: "secondary" as const },
+      ];
+    }
+
+    return [
+      { label: "Exposure", to: "/app/command-center/exposure", kind: "primary" as const },
+      { label: "Bank Console", to: "/app/command-center/bank-console", kind: "secondary" as const },
+      { label: "Revenue Allocation", to: "/app/command-center/revenue-allocation", kind: "secondary" as const },
+    ];
+  }, [isPlatformAdmin]);
+
+  const pilotChecks = useMemo(
+    () => rowsOf<any>(executiveReading.pilotReadiness?.checks),
+    [executiveReading.pilotReadiness]
+  );
+
+  const pilotPriorityChecks = useMemo(() => {
+    const flagged = pilotChecks.filter((row) => {
+      const status = safeStr(row?.status).toLowerCase();
+      return status === "partial" || status === "blocked";
+    });
+
+    return flagged.length > 0 ? flagged : pilotChecks;
+  }, [pilotChecks]);
+
+  const workflowCards = useMemo(() => {
+    const cards: Array<{ title: string; detail: string; accent?: boolean }> = [];
+
+    if (isPlatformAdmin) {
+      cards.push(
+        {
+          title: "If you need pattern reading",
+          detail:
+            "Start in Trust Analytics. Use it when the task is to understand trend, movement, or distribution rather than immediate live intervention.",
+          accent: true,
+        },
+        {
+          title: "If you need recent event evidence",
+          detail:
+            "Start in Trust Events. Use it when the task is to inspect recent trust-event records, evidence trails, or explainability inputs before moving into deeper analysis.",
+        },
+        {
+          title: "If you need live handling",
+          detail:
+            "Start in System Operations. Use it when the task is about live conditions, active processes, or admin monitoring.",
+        },
+        {
+          title: "If you need structure or relationship reading",
+          detail:
+            "Start in Trust Graph. Use it when the task is about connectedness, relationship patterns, or network trust structure.",
+        },
+        {
+          title: "If you need identity misuse monitoring",
+          detail:
+            "Start in Identity Risk. Use it when the task is about suspicious overlap, clustered activity, or device-linked pressure.",
+        },
+        {
+          title: "If you need unresolved loan oversight",
+          detail:
+            "Start in Incomplete Loans. Use it when the task is to review loans that have not yet reached a visible conclusion.",
+        }
+      );
+    }
+
+    cards.push(
+      {
+        title: "If you need concentration or risk reading",
+        detail:
+          "Start in Exposure. Use it when the task is about imbalance, concentration, or system pressure.",
+        accent: !isPlatformAdmin,
+      },
+      {
+        title: "If you need reconciliation operations",
+        detail:
+          "Start in Bank Console. Use it when the task is about bank events, matching, unmatched items, or reconciliation execution.",
+      },
+      {
+        title: "If you need fee and distribution reading",
+        detail:
+          "Start in Revenue Allocation. Use it when the task is about fee treatment, pool use, guarantee gap, or net distribution reading.",
+      }
+    );
+
+    return cards;
+  }, [isPlatformAdmin]);
+
+  const executiveNextAction = useMemo(() => {
+    if (!systemOk) {
+      return {
+        title: "Check system health first",
+        detail: "The backend health check is not clean yet. Confirm database and service health before reading deeper admin views.",
+        to: "/app/command-center/system-operations",
+        cta: "Open System Operations",
+      };
+    }
+
+    if (pilotOverall && pilotOverall !== "pilot_near_ready") {
+      return {
+        title: "Review pilot readiness gaps",
+        detail: "Pilot readiness is not yet in the near-ready state. Check the readiness breakdown before relying on downstream admin pages.",
+        to: "/app/command-center/system-operations",
+        cta: "Review readiness",
+      };
+    }
+
+    if (selectedClanId > 0 && executiveReading.exposureError) {
+      return {
+        title: "Confirm clan-admin exposure access",
+        detail: "Exposure summary could not be loaded for the current community. Verify the active community context and admin access before relying on exposure pressure.",
+        to: "/app/command-center/exposure",
+        cta: "Open Exposure",
+      };
+    }
+
+    if (identityInterventionCount > 0) {
+      return {
+        title:
+          identityInterventionCount === 1
+            ? "One identity-risk case needs intervention"
+            : `${identityInterventionCount} identity-risk cases need intervention`,
+        detail:
+          "Severe identity overlap is visible right now. Review the grouped high-risk users before moving into softer trend reading.",
+        to: "/app/command-center/identity-risk",
+        cta: "Open Identity Risk",
+      };
+    }
+
+    if (bankUnmatchedRows.length > 0) {
+      return {
+        title:
+          bankUnmatchedRows.length === 1
+            ? "One bank event is still unmatched"
+            : `${bankUnmatchedRows.length} bank events are still unmatched`,
+        detail:
+          "The money path needs reconciliation attention before you trust downstream finance or support readings.",
+        to: "/app/command-center/bank-console",
+        cta: "Open Bank Console",
+      };
+    }
+
+    if (urgentIncompleteCount > 0) {
+      return {
+        title:
+          urgentIncompleteCount === 1
+            ? "One incomplete loan is nearing auto-cancel"
+            : `${urgentIncompleteCount} incomplete loans are nearing auto-cancel`,
+        detail:
+          "The unresolved loan queue now has items running short on time. Review approval progress and coverage before they fall out of the active path.",
+        to: "/app/command-center/incomplete-loans",
+        cta: "Open Incomplete Loans",
+      };
+    }
+
+    if (trustEventMix.weakened + trustEventMix.repair > 0) {
+      return {
+        title: "Review recent trust-event pressure",
+        detail:
+          "Recent trust events already show weakened or repair-needed signals. Read the event trail before assuming the current environment is calm.",
+        to: "/app/command-center/trust-events",
+        cta: "Open Trust Events",
+      };
+    }
+
+    if (!isPlatformAdmin) {
+      return {
+        title: "Use the community-admin route that matches the current risk",
+        detail:
+          "Start from the executive reading below, then move into Exposure, Bank Console, or Revenue Allocation when the summary shows the area that needs attention.",
+        to: "/app/command-center/exposure",
+        cta: "Open Exposure",
+      };
+    }
+
+    return {
+      title: "Use the route that matches the current risk",
+      detail:
+        "Start from the executive reading below, then move into Trust Analytics, System Operations, Exposure, or Trust Events only when the summary shows the area that needs attention.",
+      to: "/app/command-center/trust-analytics",
+      cta: "Open Trust Analytics",
+    };
+  }, [
+    bankUnmatchedRows.length,
+    executiveReading.exposureError,
+    identityInterventionCount,
+    isPlatformAdmin,
+    pilotOverall,
+    selectedClanId,
+    systemOk,
+    trustEventMix.repair,
+    trustEventMix.weakened,
+    urgentIncompleteCount,
+  ]);
 
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
@@ -336,6 +1153,47 @@ export default function TrustCommandCentrePage() {
       [key]: !prev[key],
     }));
   }
+
+  function updatePilotField<K extends keyof PilotWorksheet>(
+    key: K,
+    value: PilotWorksheet[K]
+  ) {
+    setPilotWorksheet((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  }
+
+  const pilotReadinessChecks = useMemo(() => {
+    const checks = [
+      {
+        key: "deploymentReady",
+        label: "Public deployment ready",
+        detail:
+          "Frontend, backend, and database are reachable for testers outside your local network.",
+      },
+      {
+        key: "analyticsReady",
+        label: "Analytics and error logging ready",
+        detail:
+          "Key pilot routes and failures can be measured instead of relying only on chat feedback.",
+      },
+      {
+        key: "supportChannelReady",
+        label: "Pilot support channel ready",
+        detail:
+          "Testers know where to report friction, screenshots, and failed assumptions.",
+      },
+      {
+        key: "dailyReviewReady",
+        label: "Daily pilot review ready",
+        detail:
+          "The team is prepared to review pilot data frequently instead of waiting until the end.",
+      },
+    ] as const;
+
+    return checks;
+  }, []);
 
   if (loading) {
     return (
@@ -389,20 +1247,20 @@ export default function TrustCommandCentrePage() {
       <PageTopNav
         sectionLabel="Command Center"
         title="Trust Command Centre"
-        subtitle="Review platform trust operations here and move into the admin page required for the current task."
+        subtitle="Review trust and community operations here, then move into the admin page required for the current task."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
-        nextLinks={[
-          { label: "Trust Analytics", to: "/app/command-center/trust-analytics" },
-          { label: "Trust Events", to: "/app/command-center/trust-events" },
-          { label: "System Operations", to: "/app/command-center/system-operations" },
-        ]}
-        utilityLinks={[
-          { label: "Exposure", to: "/app/command-center/exposure" },
-          { label: "Identity Risk", to: "/app/command-center/identity-risk" },
-          { label: "Trust Graph", to: "/app/command-center/trust-graph" },
-        ]}
+        nextLinks={pageNextLinks}
+        utilityLinks={pageUtilityLinks}
+      />
+
+      <ExplainToggle
+        label="What this screen does"
+        what="This screen is the calmer entry point into the trust admin tools, keeping the major operational routes visible together before you move into one specific admin task."
+        why="It prevents trust work from feeling like one raw admin wall and helps you pick the right page for the current job."
+        next="Read the overview first, then use the command summary and command routes to move into the one admin page that fits the task in front of you."
+        tone="light"
       />
 
       <section
@@ -432,7 +1290,7 @@ export default function TrustCommandCentrePage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
-              Start here for a calmer view than a raw admin console, then move into the page required for the current job.
+              Start here for a calmer view than a raw admin console, then move into the page required for the current job and your current admin scope.
             </div>
 
             <div
@@ -445,7 +1303,9 @@ export default function TrustCommandCentrePage() {
             >
               <span style={badge(true)}>Role: {roleLabel}</span>
               <span style={badge(false)}>Community context: {communityLabel}</span>
-              <span style={badge(false)}>Admin page</span>
+              <span style={badge(false)}>
+                {isPlatformAdmin ? "Platform admin page" : isClanAdmin ? "Clan-admin page" : "Admin-led page"}
+              </span>
             </div>
           </div>
 
@@ -478,9 +1338,535 @@ export default function TrustCommandCentrePage() {
           }}
         >
           <div>
+            <div style={sectionLabel()}>Executive reading</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Existing backend truth is surfaced here first before you open the deeper admin route.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => toggleSection("executive")}
+            style={collapseToggle()}
+          >
+            {collapsed.executive ? "Open" : "Collapse"}
+          </button>
+        </div>
+
+        <ExplainToggle
+          label="What this executive reading does"
+          what="This section gathers system health, protocol stage, pilot readiness, liquidity, and exposure pressure into one calmer admin reading."
+          why="It exposes backend truth that already exists so you do not have to open several admin routes just to work out the current operating state."
+          next="Read the cards first, then follow the next-action lane into the one admin route that matches the strongest current issue."
+          tone="light"
+          style={{ marginTop: 14 }}
+        />
+
+        {!collapsed.executive ? (
+          <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
+            <div style={softCard("#F8FBFF")}>
+              <div style={sectionLabel()}>Current next action</div>
+              <div
+                style={{
+                  marginTop: 10,
+                  color: "#0B1F33",
+                  fontSize: 20,
+                  fontWeight: 900,
+                  lineHeight: 1.28,
+                }}
+              >
+                {executiveNextAction.title}
+              </div>
+              <div style={{ marginTop: 10, ...helperText() }}>{executiveNextAction.detail}</div>
+
+              <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <OriginLink to={executiveNextAction.to} style={actionBtn("primary")}>
+                  {executiveNextAction.cta}
+                </OriginLink>
+                {isPlatformAdmin ? (
+                  <OriginLink to="/app/command-center/system-operations" style={actionBtn("secondary")}>
+                    System Operations
+                  </OriginLink>
+                ) : (
+                  <OriginLink to="/app/command-center/bank-console" style={actionBtn("secondary")}>
+                    Bank Console
+                  </OriginLink>
+                )}
+                <OriginLink to="/app/command-center/exposure" style={actionBtn("soft")}>
+                  Exposure
+                </OriginLink>
+              </div>
+            </div>
+
+            {routeWarnings.length > 0 ? (
+              <div style={{ ...innerCard("#FFF7ED"), border: "1px solid rgba(234,88,12,0.18)" }}>
+                <div style={sectionLabel()}>Admin access note</div>
+                <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                  {routeWarnings.map((warning, index) => (
+                    <div
+                      key={`${warning}-${index}`}
+                      style={{
+                        color: "#9A3412",
+                        fontWeight: 800,
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {warning}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {executiveLoading ? (
+              <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+                Loading executive reading...
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr 1fr" : "repeat(5, minmax(0, 1fr))",
+                  gap: 12,
+                }}
+              >
+                <div style={statTile()}>
+                  <div style={sectionLabel()}>System health</div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      fontSize: 18,
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    {systemOk ? "Healthy" : "Needs review"}
+                  </div>
+                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                    Database: {firstTruthy(executiveReading.systemHealth?.database, "unknown")}
+                  </div>
+                </div>
+
+                <div style={statTile()}>
+                  <div style={sectionLabel()}>Protocol stage</div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      fontSize: 18,
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    {protocolStage.replace(/_/g, " ")}
+                  </div>
+                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                    Next priority: {firstTruthy(protocolNextPriorities[0], "Not specified")}
+                  </div>
+                </div>
+
+                <div style={statTile()}>
+                  <div style={sectionLabel()}>Pilot readiness</div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      fontSize: 18,
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    {pilotOverall.replace(/_/g, " ")}
+                  </div>
+                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                    Ready: {Number(executiveReading.pilotReadiness?.ready_count || 0)} • Partial: {Number(executiveReading.pilotReadiness?.partial_count || 0)}
+                  </div>
+                </div>
+
+                <div style={statTile()}>
+                  <div style={sectionLabel()}>Clan liquidity</div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      fontSize: 18,
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    {formatNumber(liquidity?.lockedTotal || 0)} locked
+                  </div>
+                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                    Active loans: {Number(liquidity?.activeLoansCount || 0)} • Pledged: {safeStr(liquidity?.pledgedTotal || "0")}
+                  </div>
+                </div>
+
+                <div style={statTile()}>
+                  <div style={sectionLabel()}>Exposure pressure</div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      fontSize: 18,
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    {exposureTotals ? `${formatNumber(exposureTotals.exposure)} exposed` : "Unavailable"}
+                  </div>
+                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                    {exposureTotals
+                      ? `Available: ${formatNumber(exposureTotals.available)} • Pool: ${formatNumber(exposureTotals.pool)}`
+                      : selectedClanId > 0
+                      ? "Exposure totals could not be confirmed."
+                      : "Select a current community first."}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : null}
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Pilot validation</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Keep the worldwide pilot assumptions and the data you need visible from the admin landing page.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => toggleSection("pilot")}
+            style={collapseToggle()}
+          >
+            {collapsed.pilot ? "Open" : "Collapse"}
+          </button>
+        </div>
+
+        <ExplainToggle
+          label="What this pilot section does"
+          what="This section turns pilot readiness into an admin operating view by combining the backend readiness checks with the assumptions and data that matter during a worldwide pilot."
+          why="It keeps the pilot from becoming only anecdotal feedback and helps admins review whether the product is being tested with enough structure to learn from it."
+          next="Read the current readiness first, then use the assumption cards and data checklist to guide what should be measured during the pilot."
+          tone="light"
+          style={{ marginTop: 14 }}
+        />
+
+        {!collapsed.pilot ? (
+          <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.2fr) minmax(0, 0.8fr)",
+                gap: 12,
+              }}
+            >
+              <div style={innerCard("#FFFFFF")}>
+                <div style={sectionLabel()}>Pilot worksheet</div>
+                <div style={{ marginTop: 10, ...helperText() }}>
+                  Fill this in as your working pilot brief. It stays saved in this browser so you can keep updating it as the pilot evolves.
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 14,
+                    display: "grid",
+                    gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                    gap: 12,
+                  }}
+                >
+                  <div>
+                    <div style={sectionLabel()}>Pilot name</div>
+                    <input
+                      value={pilotWorksheet.pilotName}
+                      onChange={(e) => updatePilotField("pilotName", e.target.value)}
+                      placeholder="Example: April global pilot"
+                      style={{ marginTop: 8, ...inputField(false) }}
+                    />
+                  </div>
+
+                  <div>
+                    <div style={sectionLabel()}>Launch window</div>
+                    <input
+                      value={pilotWorksheet.launchWindow}
+                      onChange={(e) => updatePilotField("launchWindow", e.target.value)}
+                      placeholder="Example: 22 Apr - 06 May"
+                      style={{ marginTop: 8, ...inputField(false) }}
+                    />
+                  </div>
+
+                  <div>
+                    <div style={sectionLabel()}>Countries or regions</div>
+                    <textarea
+                      value={pilotWorksheet.countries}
+                      onChange={(e) => updatePilotField("countries", e.target.value)}
+                      placeholder="Example: Nigeria, UK, Kenya, India, Canada"
+                      style={{ marginTop: 8, ...inputField(true) }}
+                    />
+                  </div>
+
+                  <div>
+                    <div style={sectionLabel()}>Target roles</div>
+                    <textarea
+                      value={pilotWorksheet.targetRoles}
+                      onChange={(e) => updatePilotField("targetRoles", e.target.value)}
+                      placeholder="Example: ordinary member, clan admin, platform admin"
+                      style={{ marginTop: 8, ...inputField(true) }}
+                    />
+                  </div>
+
+                  <div>
+                    <div style={sectionLabel()}>Devices and browsers</div>
+                    <textarea
+                      value={pilotWorksheet.devices}
+                      onChange={(e) => updatePilotField("devices", e.target.value)}
+                      placeholder="Example: Android Chrome, iPhone Safari, desktop Chrome, desktop Edge"
+                      style={{ marginTop: 8, ...inputField(true) }}
+                    />
+                  </div>
+
+                  <div>
+                    <div style={sectionLabel()}>Key events to capture</div>
+                    <textarea
+                      value={pilotWorksheet.keyEvents}
+                      onChange={(e) => updatePilotField("keyEvents", e.target.value)}
+                      placeholder="Example: cover_open, join_started, community_selected, support_request_sent"
+                      style={{ marginTop: 8, ...inputField(true) }}
+                    />
+                  </div>
+
+                  <div>
+                    <div style={sectionLabel()}>Success signals</div>
+                    <textarea
+                      value={pilotWorksheet.successSignals}
+                      onChange={(e) => updatePilotField("successSignals", e.target.value)}
+                      placeholder="What will tell you the pilot assumptions are holding up?"
+                      style={{ marginTop: 8, ...inputField(true) }}
+                    />
+                  </div>
+
+                  <div>
+                    <div style={sectionLabel()}>Open assumptions</div>
+                    <textarea
+                      value={pilotWorksheet.openAssumptions}
+                      onChange={(e) => updatePilotField("openAssumptions", e.target.value)}
+                      placeholder="Which assumptions are you testing across regions, roles, and devices?"
+                      style={{ marginTop: 8, ...inputField(true) }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 12 }}>
+                  <div style={sectionLabel()}>Pilot notes</div>
+                  <textarea
+                    value={pilotWorksheet.notes}
+                    onChange={(e) => updatePilotField("notes", e.target.value)}
+                    placeholder="Use this for recruiting notes, rollout decisions, and daily pilot observations."
+                    style={{ marginTop: 8, ...inputField(true), minHeight: 150 }}
+                  />
+                </div>
+              </div>
+
+              <div style={innerCard("#F8FBFF")}>
+                <div style={sectionLabel()}>Quick readiness checks</div>
+                <div style={{ marginTop: 10, display: "grid", gap: 12 }}>
+                  {pilotReadinessChecks.map((check) => {
+                    const checked = Boolean(pilotWorksheet[check.key]);
+                    return (
+                      <label
+                        key={check.key}
+                        style={{
+                          display: "grid",
+                          gap: 6,
+                          borderRadius: 14,
+                          border: "1px solid rgba(11,31,51,0.08)",
+                          background: "#FFFFFF",
+                          padding: 12,
+                          cursor: "pointer",
+                        }}
+                      >
+                        <span
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            color: "#0B1F33",
+                            fontWeight: 900,
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) =>
+                              updatePilotField(check.key, e.target.checked)
+                            }
+                          />
+                          {check.label}
+                        </span>
+                        <span style={helperText()}>{check.detail}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
+                gap: 12,
+              }}
+            >
+              <div style={softCard("#F8FBFF")}>
+                <div style={sectionLabel()}>Current readiness</div>
+                <div
+                  style={{
+                    marginTop: 10,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 20,
+                    lineHeight: 1.28,
+                  }}
+                >
+                  {pilotOverall.replace(/_/g, " ")}
+                </div>
+                <div style={{ marginTop: 10, ...helperText() }}>
+                  Ready {Number(executiveReading.pilotReadiness?.ready_count || 0)} • Partial{" "}
+                  {Number(executiveReading.pilotReadiness?.partial_count || 0)} • Blocked{" "}
+                  {Number(executiveReading.pilotReadiness?.blocked_count || 0)}
+                </div>
+              </div>
+
+              <div style={innerCard("#FFFFFF")}>
+                <div style={sectionLabel()}>Pilot question</div>
+                <div
+                  style={{
+                    marginTop: 10,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 18,
+                    lineHeight: 1.28,
+                  }}
+                >
+                  Are people in different places understanding the right route and finishing the right action without help?
+                </div>
+                <div style={{ marginTop: 10, ...helperText() }}>
+                  Treat the pilot as assumption validation, not only bug hunting. The strongest signal is whether users and admins understand what to do next from each route.
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                gap: 12,
+              }}
+            >
+              {PILOT_ASSUMPTION_CARDS.map((card) => (
+                <div key={card.title} style={innerCard("#FCFEFF")}>
+                  <div
+                    style={{
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      fontSize: 15,
+                    }}
+                  >
+                    {card.title}
+                  </div>
+                  <div style={{ marginTop: 8, ...helperText() }}>{card.detail}</div>
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
+                gap: 12,
+              }}
+            >
+              <div style={innerCard("#FFFFFF")}>
+                <div style={sectionLabel()}>Pilot data checklist</div>
+                <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                  {PILOT_DATA_CARDS.map((card) => (
+                    <div key={card.title}>
+                      <div
+                        style={{
+                          color: "#0B1F33",
+                          fontWeight: 900,
+                          fontSize: 15,
+                        }}
+                      >
+                        {card.title}
+                      </div>
+                      <div style={{ marginTop: 6, ...helperText() }}>{card.detail}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={innerCard("#F8FBFF")}>
+                <div style={sectionLabel()}>Readiness checks from backend</div>
+                <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                  {pilotPriorityChecks.slice(0, 6).map((check) => {
+                    const status = safeStr(check?.status).toLowerCase();
+                    return (
+                      <div
+                        key={firstTruthy(check?.key, check?.label, Math.random())}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: 10,
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <div style={{ color: "#0B1F33", fontWeight: 800 }}>
+                          {firstTruthy(check?.label, check?.key, "Readiness check")}
+                        </div>
+                        <span
+                          style={badge(status === "ready")}
+                        >
+                          {status || "unknown"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
             <div style={sectionLabel()}>Command summary</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              The main admin areas stay visible together here.
+              Live route signals stay visible together here before you drill into one operational page.
             </div>
           </div>
 
@@ -492,6 +1878,15 @@ export default function TrustCommandCentrePage() {
             {collapsed.overview ? "Open" : "Collapse"}
           </button>
         </div>
+
+        <ExplainToggle
+          label="What this does"
+          what="This command summary shows live readings for the main admin routes so you can see which lane already has visible pressure before opening it."
+          why="It keeps the command centre from being just a route list and turns it into an executive overview of the live admin workload."
+          next="Read the strongest signals first, then move into the matching admin route only when its summary shows the current issue."
+          tone="light"
+          style={{ marginTop: 14 }}
+        />
 
         {!collapsed.overview ? (
           <div
@@ -515,7 +1910,12 @@ export default function TrustCommandCentrePage() {
                   lineHeight: 1.25,
                 }}
               >
-                Reading and trend view
+                {trustEventMix.weakened + trustEventMix.repair > 0
+                  ? `${trustEventMix.weakened + trustEventMix.repair} pressure signals visible`
+                  : "Reading and trend view"}
+              </div>
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                Built {trustEventMix.built} • Protected {trustEventMix.protected}
               </div>
             </div>
 
@@ -530,7 +1930,20 @@ export default function TrustCommandCentrePage() {
                   lineHeight: 1.25,
                 }}
               >
-                Recent event oversight
+                {trustEventRows.length > 0
+                  ? `${trustEventRows.length} recent events`
+                  : "Recent event oversight"}
+              </div>
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                Latest:{" "}
+                {latestTrustEvent
+                  ? `${firstTruthy(
+                      latestTrustEvent?.event_type,
+                      latestTrustEvent?.kind,
+                      latestTrustEvent?.type,
+                      "trust.event"
+                    )} • ${safeDateTime(latestTrustEvent?.created_at)}`
+                  : "No recent event loaded"}
               </div>
             </div>
 
@@ -545,7 +1958,11 @@ export default function TrustCommandCentrePage() {
                   lineHeight: 1.25,
                 }}
               >
-                Operational monitoring
+                {systemOk ? "Healthy operations view" : "Operational review needed"}
+              </div>
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                Protocol: {protocolStage.replace(/_/g, " ")} • Pilot:{" "}
+                {pilotOverall.replace(/_/g, " ")}
               </div>
             </div>
 
@@ -560,7 +1977,16 @@ export default function TrustCommandCentrePage() {
                   lineHeight: 1.25,
                 }}
               >
-                Risk and concentration view
+                {selectedClanId > 0 && exposureTotals
+                  ? `${formatNumber(exposureTotals.exposure)} exposed`
+                  : "Risk and concentration view"}
+              </div>
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                {selectedClanId > 0 && exposureTotals
+                  ? `Pool ${formatNumber(exposureTotals.pool)} • Available ${formatNumber(
+                      exposureTotals.available
+                    )}`
+                  : "Choose a community to load clan-specific exposure totals."}
               </div>
             </div>
 
@@ -590,7 +2016,13 @@ export default function TrustCommandCentrePage() {
                   lineHeight: 1.25,
                 }}
               >
-                Device and cluster review
+                {identityRiskGroups.length > 0
+                  ? `${identityRiskGroups.length} users flagged`
+                  : "Device and cluster review"}
+              </div>
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                Intervention: {identityInterventionCount} • Signals:{" "}
+                {identityRiskRows.length}
               </div>
             </div>
 
@@ -605,7 +2037,14 @@ export default function TrustCommandCentrePage() {
                   lineHeight: 1.25,
                 }}
               >
-                Active unresolved queue
+                {selectedClanId > 0
+                  ? `${incompleteLoanRows.length} unresolved items`
+                  : "Active unresolved queue"}
+              </div>
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                {selectedClanId > 0
+                  ? `Ending soon: ${urgentIncompleteCount} • Community: ${communityLabel}`
+                  : "Choose a community to load the admin incomplete-loan queue."}
               </div>
             </div>
 
@@ -620,7 +2059,14 @@ export default function TrustCommandCentrePage() {
                   lineHeight: 1.25,
                 }}
               >
-                Reconciliation operations
+                {selectedClanId > 0
+                  ? `${bankUnmatchedRows.length} unmatched items`
+                  : "Reconciliation operations"}
+              </div>
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                {selectedClanId > 0
+                  ? `Recent ${bankRecentRows.length} • Expected ${expectedPaymentRows.length}`
+                  : "Choose a community to load bank and reconciliation pressure."}
               </div>
             </div>
 
@@ -679,149 +2125,23 @@ export default function TrustCommandCentrePage() {
               gap: 12,
             }}
           >
-            <OriginLink to="/app/command-center/trust-analytics" style={routeTile(true)}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 18,
-                  lineHeight: 1.3,
-                }}
-              >
-                Trust Analytics
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Read trend, movement, and higher-level trust patterns.
-              </div>
-            </OriginLink>
-
-            <OriginLink to="/app/command-center/trust-events" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 18,
-                  lineHeight: 1.3,
-                }}
-              >
-                Trust Events
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Review recent trust-event records for evidence, oversight, and explainability.
-              </div>
-            </OriginLink>
-
-            <OriginLink to="/app/command-center/system-operations" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 18,
-                  lineHeight: 1.3,
-                }}
-              >
-                System Operations
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Review live system activity and operational health.
-              </div>
-            </OriginLink>
-
-            <OriginLink to="/app/command-center/exposure" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 18,
-                  lineHeight: 1.3,
-                }}
-              >
-                Exposure
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Review concentration, balance, and exposure pressure.
-              </div>
-            </OriginLink>
-
-            <OriginLink to="/app/command-center/trust-graph" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 18,
-                  lineHeight: 1.3,
-                }}
-              >
-                Trust Graph
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Read network structure and relationship-based trust shape.
-              </div>
-            </OriginLink>
-
-            <OriginLink to="/app/command-center/identity-risk" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 18,
-                  lineHeight: 1.3,
-                }}
-              >
-                Identity Risk
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Review device overlap, account clusters, and identity pressure signals.
-              </div>
-            </OriginLink>
-
-            <OriginLink to="/app/command-center/incomplete-loans" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 18,
-                  lineHeight: 1.3,
-                }}
-              >
-                Incomplete Loans
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Inspect the unresolved loan queue and active items still in motion.
-              </div>
-            </OriginLink>
-
-            <OriginLink to="/app/command-center/bank-console" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 18,
-                  lineHeight: 1.3,
-                }}
-              >
-                Bank Console
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Ingest bank events, run reconciliation, and review matched or unmatched movement.
-              </div>
-            </OriginLink>
-
-            <OriginLink to="/app/command-center/revenue-allocation" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 18,
-                  lineHeight: 1.3,
-                }}
-              >
-                Revenue Allocation
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Review service fee, platform revenue, guarantor pool, and net disbursed reading.
-              </div>
-            </OriginLink>
+            {routeCards.map((card) => (
+              <OriginLink key={card.to} to={card.to} style={routeTile(Boolean(card.primary))}>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 18,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {card.label}
+                </div>
+                <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                  {card.detail}
+                </div>
+              </OriginLink>
+            ))}
           </div>
         ) : null}
       </section>
@@ -861,141 +2181,23 @@ export default function TrustCommandCentrePage() {
               gap: 12,
             }}
           >
-            <div style={innerCard("#F8FBFF")}>
+            {workflowCards.map((card, index) => (
               <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
+                key={`${card.title}-${index}`}
+                style={innerCard(card.accent ? "#F8FBFF" : "#FFFFFF")}
               >
-                If you need pattern reading
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 15,
+                  }}
+                >
+                  {card.title}
+                </div>
+                <div style={{ marginTop: 8, ...helperText() }}>{card.detail}</div>
               </div>
-              <div style={{ marginTop: 8, ...helperText() }}>
-                Start in Trust Analytics. Use it when the task is to understand trend, movement, or distribution rather than immediate live intervention.
-              </div>
-            </div>
-
-            <div style={innerCard("#FFFFFF")}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
-                If you need recent event evidence
-              </div>
-              <div style={{ marginTop: 8, ...helperText() }}>
-                Start in Trust Events. Use it when the task is to inspect recent trust-event records,
-                evidence trails, or explainability inputs before moving into deeper analysis.
-              </div>
-            </div>
-
-            <div style={innerCard("#FFFFFF")}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
-                If you need live handling
-              </div>
-              <div style={{ marginTop: 8, ...helperText() }}>
-                Start in System Operations. Use it when the task is about live conditions, active processes, or admin monitoring.
-              </div>
-            </div>
-
-            <div style={innerCard("#F8FBFF")}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
-                If you need concentration or risk reading
-              </div>
-              <div style={{ marginTop: 8, ...helperText() }}>
-                Start in Exposure. Use it when the task is about imbalance, concentration, or system pressure.
-              </div>
-            </div>
-
-            <div style={innerCard("#FFFFFF")}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
-                If you need structure or relationship reading
-              </div>
-              <div style={{ marginTop: 8, ...helperText() }}>
-                Start in Trust Graph. Use it when the task is about connectedness, relationship patterns, or network trust structure.
-              </div>
-            </div>
-
-            <div style={innerCard("#F8FBFF")}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
-                If you need identity misuse monitoring
-              </div>
-              <div style={{ marginTop: 8, ...helperText() }}>
-                Start in Identity Risk. Use it when the task is about suspicious overlap, clustered activity, or device-linked pressure.
-              </div>
-            </div>
-
-            <div style={innerCard("#FFFFFF")}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
-                If you need unresolved loan oversight
-              </div>
-              <div style={{ marginTop: 8, ...helperText() }}>
-                Start in Incomplete Loans. Use it when the task is to review loans that have not yet reached a visible conclusion.
-              </div>
-            </div>
-
-            <div style={innerCard("#F8FBFF")}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
-                If you need reconciliation operations
-              </div>
-              <div style={{ marginTop: 8, ...helperText() }}>
-                Start in Bank Console. Use it when the task is about bank events, matching, unmatched items, or reconciliation execution.
-              </div>
-            </div>
-
-            <div style={innerCard("#FFFFFF")}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
-                If you need fee and distribution reading
-              </div>
-              <div style={{ marginTop: 8, ...helperText() }}>
-                Start in Revenue Allocation. Use it when the task is about fee treatment, pool use, guarantee gap, or net distribution reading.
-              </div>
-            </div>
+            ))}
           </div>
         ) : null}
       </section>
@@ -1079,33 +2281,11 @@ export default function TrustCommandCentrePage() {
             flexWrap: "wrap",
           }}
         >
-          <OriginLink to="/app/command-center/trust-analytics" style={actionBtn("primary")}>
-            Trust Analytics
-          </OriginLink>
-          <OriginLink to="/app/command-center/trust-events" style={actionBtn("secondary")}>
-            Trust Events
-          </OriginLink>
-          <OriginLink to="/app/command-center/identity-risk" style={actionBtn("secondary")}>
-            Identity Risk
-          </OriginLink>
-          <OriginLink to="/app/command-center/incomplete-loans" style={actionBtn("secondary")}>
-            Incomplete Loans
-          </OriginLink>
-          <OriginLink to="/app/command-center/bank-console" style={actionBtn("secondary")}>
-            Bank Console
-          </OriginLink>
-          <OriginLink to="/app/command-center/revenue-allocation" style={actionBtn("secondary")}>
-            Revenue Allocation
-          </OriginLink>
-          <OriginLink to="/app/command-center/system-operations" style={actionBtn("secondary")}>
-            System Operations
-          </OriginLink>
-          <OriginLink to="/app/command-center/exposure" style={actionBtn("secondary")}>
-            Exposure
-          </OriginLink>
-          <OriginLink to="/app/command-center/trust-graph" style={actionBtn("secondary")}>
-            Trust Graph
-          </OriginLink>
+          {whereNextActions.map((item) => (
+            <OriginLink key={item.to} to={item.to} style={actionBtn(item.kind)}>
+              {item.label}
+            </OriginLink>
+          ))}
         </div>
       </section>
     </div>

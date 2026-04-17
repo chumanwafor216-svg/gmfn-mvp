@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
@@ -181,7 +182,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -204,7 +205,7 @@ function actionBtn(
       fontSize: 14,
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -224,7 +225,7 @@ function actionBtn(
       fontSize: 13,
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -243,7 +244,7 @@ function actionBtn(
     fontSize: 14,
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -262,7 +263,7 @@ function collapseToggle(): React.CSSProperties {
     fontWeight: 800,
     fontSize: 13,
     cursor: "pointer",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -518,7 +519,7 @@ function getCciState(me: any): ReadingState {
 
   return {
     classText: "Pending",
-    scoreText: "—",
+    scoreText: "â€”",
     tone: "neutral",
     statusText: "CCI is being prepared",
     whyText: "A fuller cross-community reading will appear when available.",
@@ -673,7 +674,7 @@ function getOpenTrustState(
   if (!hasSelectedCommunity) {
     return {
       classText: "Pending",
-      scoreText: "—",
+      scoreText: "â€”",
       tone: "neutral",
       statusText: "Select a community to view Open Trust",
       whyText:
@@ -683,7 +684,7 @@ function getOpenTrustState(
 
   return {
     classText: "Pending",
-    scoreText: "—",
+    scoreText: "â€”",
     tone: "neutral",
     statusText: "Open Trust is being prepared",
     whyText:
@@ -1207,6 +1208,14 @@ export default function IdentityIntegrityPage() {
           { label: "Marketplace", to: "/app/marketplace" },
           { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
         ]}
+      />
+
+      <ExplainToggle
+        label="What this screen does"
+        what="This screen brings together your stable identity, cross-community integrity reading, trust changes, and the next clean continuity or repair step."
+        why="It helps you understand identity and trust as one continuing record instead of scattered signals across several pages."
+        next="Start with the identity summary, then read the identity readings and the timeline before you act on the next clean step."
+        tone="light"
       />
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
@@ -1771,6 +1780,7 @@ export default function IdentityIntegrityPage() {
     </div>
   );
 }
+
 
 
 

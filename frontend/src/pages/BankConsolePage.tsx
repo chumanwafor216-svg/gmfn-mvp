@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
@@ -105,9 +106,10 @@ function primaryBtn(disabled = false): React.CSSProperties {
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -125,9 +127,10 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
+    textAlign: "center",
     textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -165,7 +168,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#475569",
     fontSize: 12,
     fontWeight: 1000,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -593,7 +596,8 @@ export default function BankConsolePage() {
                       color: tone.text,
                       fontSize: 12,
                       fontWeight: 1000,
-                      whiteSpace: "nowrap",
+                      whiteSpace: "normal",
+                      textAlign: "center",
                     }}
                   >
                     {safeStr(row.status || "—")}
@@ -703,6 +707,15 @@ export default function BankConsolePage() {
           { label: "Marketplace", to: "/app/marketplace" },
           { label: "Trust", to: "/app/trust" },
         ]}
+      />
+
+      <ExplainToggle
+        label="What this screen does"
+        what="This screen brings together recent bank events, unmatched items, expected payments, and reconciliation actions in one banking review desk."
+        why="It helps you understand what has arrived, what has already matched, and which money events still need careful review."
+        next="Read the top summary first, then move into recent events, expected items, or manual ingest depending on what needs to be matched next."
+        tone="light"
+        style={{ marginTop: 18 }}
       />
 
       {err ? (
@@ -825,6 +838,16 @@ export default function BankConsolePage() {
           gap: 14,
         }}
       >
+        <div style={{ gridColumn: "1 / -1" }}>
+          <ExplainToggle
+            label="What this does"
+            what="This summary shows the current bank-console reading across recent events, unmatched items, credits, and expected payments."
+            why="It helps you see where the money path is calm and where review is still needed before you act."
+            next="Use the unmatched and expected counts to decide whether to reconcile, investigate, or continue into the detailed event lists below."
+            tone="light"
+          />
+        </div>
+
         <div style={softCard("#FFFFFF")}>
           <div style={sectionLabel()}>Recent events</div>
           <div
@@ -891,6 +914,15 @@ export default function BankConsolePage() {
           Enter a real bank event only when it should enter the reconciliation
           path.
         </div>
+
+        <ExplainToggle
+          label="How to use this"
+          what="Manual ingest is the place for entering a real bank event when it needs to enter the reconciliation path and does not already appear in the recent feed."
+          why="It prevents the reconciliation desk from becoming noisy with duplicate or speculative entries."
+          next="Use this only for a real event that should be tracked now, then refresh and confirm whether it matched or stayed unmatched."
+          tone="light"
+          style={{ marginTop: 14 }}
+        />
 
         <div
           style={{
@@ -1088,7 +1120,8 @@ export default function BankConsolePage() {
                           color: tone.text,
                           fontSize: 12,
                           fontWeight: 1000,
-                          whiteSpace: "nowrap",
+                          whiteSpace: "normal",
+                          textAlign: "center",
                         }}
                       >
                         {safeStr(row.status || "—")}

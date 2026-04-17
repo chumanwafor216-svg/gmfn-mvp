@@ -1,15 +1,62 @@
-import sqlite3
+from __future__ import annotations
 
-db_path = r"C:\Users\chukwuma pc\gmfn_mvp\gmfn_backend\gmfn.db"
-email = "admin1@example.com"
+import argparse
+import sys
 
-conn = sqlite3.connect(db_path)
-cur = conn.cursor()
 
-cur.execute("UPDATE users SET role='admin' WHERE email=?", (email,))
-conn.commit()
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Promote an existing GMFN user to admin."
+    )
+    parser.add_argument(
+        "--email",
+        required=True,
+        help="Email address of the existing user to promote.",
+    )
+    parser.add_argument(
+        "--role",
+        default="admin",
+        choices=["admin", "user"],
+        help="Role to assign. Defaults to admin.",
+    )
+    return parser.parse_args()
 
-cur.execute("SELECT id, email, role FROM users")
-print(cur.fetchall())
 
-conn.close()
+def main() -> int:
+    args = parse_args()
+    email = str(args.email or "").strip().lower()
+    role = str(args.role or "admin").strip().lower()
+
+    from app.db.database import SessionLocal
+    from app.db.models import User
+
+    session = SessionLocal()
+    try:
+        user = session.query(User).filter(User.email == email).first()
+        if not user:
+            print(
+                f"User not found for email: {email}",
+                file=sys.stderr,
+            )
+            return 1
+
+        user.role = role
+        session.add(user)
+        session.commit()
+        session.refresh(user)
+
+        print(
+            {
+                "ok": True,
+                "user_id": int(user.id),
+                "email": user.email,
+                "role": user.role,
+            }
+        )
+        return 0
+    finally:
+        session.close()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

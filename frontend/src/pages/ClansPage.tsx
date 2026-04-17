@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import { navigateWithOrigin } from "../lib/nav";
 import {
@@ -103,7 +104,7 @@ function badge(primary = false): React.CSSProperties {
     color: primary ? "#0B63D1" : "#475569",
     fontSize: 12,
     fontWeight: 900,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   };
 }
 
@@ -386,6 +387,14 @@ export default function ClansPage() {
         gap: 18,
       }}
     >
+      <ExplainToggle
+        label="What this screen does"
+        what="This screen helps you create a new community or return to a community you already belong to."
+        why="It keeps community creation and community selection in one guided place instead of scattering them across the app."
+        next="If you are starting something new, create the community first. If you already belong somewhere, choose the community you want to enter."
+        tone="light"
+      />
+
       <div
         style={{
           ...pageCard(
@@ -461,6 +470,15 @@ export default function ClansPage() {
             </div>
           </div>
         </div>
+
+        <ExplainToggle
+          label="What this does"
+          what="This create-community block starts a new community and reminds you that the next steps continue into activation, invite, and community work."
+          why="It helps you treat community creation as the first guided move, not the whole workflow."
+          next="Create the community here first, then select it and move into the route you need next."
+          tone="dark"
+          style={{ marginTop: 14 }}
+        />
       </div>
 
       <div
