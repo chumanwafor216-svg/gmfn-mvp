@@ -1400,11 +1400,43 @@ export async function logTrustSlipRelease(
 export async function observeIdentityRisk(
   clientFingerprint?: string
 ): Promise<any> {
-  return {
-    ok: true,
-    detail: "Identity observation is disabled in temporary test mode.",
-    client_fingerprint: clientFingerprint || null,
+  const headers: Record<string, string> = {
+    Accept: "application/json",
   };
+
+  const tok = getAccessToken();
+  if (tok) headers["Authorization"] = `Bearer ${tok}`;
+
+  const provided = String(clientFingerprint || "").trim();
+  const fallbackFingerprint = (() => {
+    try {
+      if (typeof navigator === "undefined") return "";
+      const language = String((navigator as any)?.language || "").trim();
+      const platform = String((navigator as any)?.platform || "").trim();
+      const userAgent = String((navigator as any)?.userAgent || "").trim();
+      const timezone = detectBrowserTimezone() || "";
+      return [language, platform, timezone, userAgent].filter(Boolean).join(" | ");
+    } catch {
+      return "";
+    }
+  })();
+
+  const effectiveFingerprint = provided || fallbackFingerprint;
+  if (effectiveFingerprint) {
+    headers["X-Client-Fingerprint"] = effectiveFingerprint;
+  }
+
+  const res = await fetch(buildUrl("/identity-risk/observe"), {
+    method: "POST",
+    headers,
+  });
+
+  if (!res.ok) {
+    throw new HttpStatusError(res.status, await parseError(res));
+  }
+
+  if (res.status === 204) return null;
+  return readJsonOrTextSafe(res);
 }
 
 export async function getMyIdentityRisk(): Promise<any> {

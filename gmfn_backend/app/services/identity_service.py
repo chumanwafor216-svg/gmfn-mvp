@@ -99,6 +99,47 @@ def _create_risk_signal(
     return row
 
 
+def _continuity_from_counts(
+    *,
+    device_count: int,
+    signal_count: int,
+    cluster_count: int,
+    latest_signal_type: str | None = None,
+) -> Dict[str, Any]:
+    latest = str(latest_signal_type or "").strip().lower()
+
+    if cluster_count >= 2 or (cluster_count >= 1 and signal_count >= 3):
+        return {
+            "status": "protected_lock",
+            "score": 20,
+            "reason": "Multiple identity-overlap signals suggest this account may no longer be under stable owner control.",
+            "action": "Sensitive actions should be paused until the owner re-verifies identity continuity.",
+        }
+
+    if cluster_count >= 1 or signal_count >= 2 or device_count >= 4:
+        return {
+            "status": "reverify_required",
+            "score": 45,
+            "reason": "Identity continuity has shifted enough that the app should ask the owner to confirm it is still them.",
+            "action": "Require step-up verification before high-trust actions continue.",
+        }
+
+    if device_count >= 2 or latest in {"device_pattern_changed", "device_pattern_unstable"}:
+        return {
+            "status": "watch",
+            "score": 70,
+            "reason": "A new device pattern has appeared, but there is not yet enough evidence to block the account.",
+            "action": "Keep monitoring identity continuity and be ready to ask for re-verification if changes continue.",
+        }
+
+    return {
+        "status": "trusted",
+        "score": 100,
+        "reason": "Identity continuity currently looks stable from observed device use.",
+        "action": "Normal account use can continue.",
+    }
+
+
 def _ensure_identity_cluster(
     db: Session,
     *,
@@ -198,6 +239,17 @@ def register_identity_observation(
     ip_address: str | None,
     client_hint: str | None = None,
 ) -> Dict[str, Any]:
+    already_seen = (
+        db.query(DeviceFingerprint)
+        .filter(DeviceFingerprint.user_id == int(user_id))
+        .filter(DeviceFingerprint.fingerprint_hash == compute_device_fingerprint(
+            user_agent=user_agent,
+            ip_address=ip_address,
+            client_hint=client_hint,
+        ))
+        .first()
+    )
+
     fingerprint_hash = compute_device_fingerprint(
         user_agent=user_agent,
         ip_address=ip_address,
@@ -218,12 +270,58 @@ def register_identity_observation(
         fingerprint_hash=fingerprint_hash,
     )
 
+    device_count = (
+        db.query(DeviceFingerprint)
+        .filter(DeviceFingerprint.user_id == int(user_id))
+        .count()
+    )
+
+    if not already_seen and device_count >= 2:
+        _create_risk_signal(
+            db,
+            user_id=int(user_id),
+            signal_type="device_pattern_changed",
+            severity=3 if device_count == 2 else 5,
+            description=(
+                "A new device pattern started using this account. The owner may need to confirm identity continuity if changes continue."
+            ),
+            meta={
+                "fingerprint_hash": fingerprint_hash,
+                "device_count": device_count,
+            },
+        )
+
+    signal_rows = (
+        db.query(IdentityRiskSignal)
+        .filter(IdentityRiskSignal.user_id == int(user_id))
+        .order_by(IdentityRiskSignal.id.desc())
+        .all()
+    )
+    cluster_rows = (
+        db.query(IdentityCluster)
+        .filter(
+            (IdentityCluster.root_user_id == int(user_id))
+            | (IdentityCluster.linked_user_id == int(user_id))
+        )
+        .order_by(IdentityCluster.id.desc())
+        .all()
+    )
+
+    latest_signal_type = signal_rows[0].signal_type if signal_rows else None
+    continuity = _continuity_from_counts(
+        device_count=device_count,
+        signal_count=len(signal_rows),
+        cluster_count=len(cluster_rows),
+        latest_signal_type=latest_signal_type,
+    )
+
     return {
         "ok": True,
         "user_id": int(user_id),
         "fingerprint_hash": fingerprint_hash,
         "device_record_id": int(record.id),
         "overlap": overlap,
+        "continuity": continuity,
     }
 
 
@@ -256,11 +354,20 @@ def get_identity_risk_summary(
         .all()
     )
 
+    latest_signal_type = signal_rows[0].signal_type if signal_rows else None
+    continuity = _continuity_from_counts(
+        device_count=len(device_rows),
+        signal_count=len(signal_rows),
+        cluster_count=len(cluster_rows),
+        latest_signal_type=latest_signal_type,
+    )
+
     return {
         "user_id": int(user_id),
         "device_count": len(device_rows),
         "signal_count": len(signal_rows),
         "cluster_count": len(cluster_rows),
+        "continuity": continuity,
         "devices": [
             {
                 "id": int(r.id),

@@ -4,6 +4,7 @@ import {
   getAccessToken,
   getCurrentClan,
   getMe,
+  getMyIdentityRisk,
   observeIdentityRisk,
 } from "../lib/api";
 
@@ -11,6 +12,31 @@ type Props = {
   children: React.ReactNode;
   requireRole?: "admin" | "adminOrClanAdmin";
 };
+
+type ContinuityBlock = {
+  status: "reverify_required" | "protected_lock";
+  score: string;
+  reason: string;
+  action: string;
+};
+
+const CONTINUITY_PROTECTED_PREFIXES = [
+  "/app/finance",
+  "/app/finances",
+  "/app/financials",
+  "/app/payment",
+  "/app/payment-rails",
+  "/app/payout-details",
+  "/app/withdrawal-instructions",
+  "/app/withdrawal",
+  "/app/money-in",
+  "/app/money-out",
+  "/app/loan-workbench",
+  "/app/loan-summary",
+  "/app/shop-control",
+  "/app/shop-assets",
+  "/app/command-center",
+];
 
 function resolveRole(me: any): string {
   return String(
@@ -45,6 +71,37 @@ function resolveClanRole(currentClan: any): string {
 
 function hasClanAdminAccess(currentClan: any): boolean {
   return resolveClanRole(currentClan) === "admin";
+}
+
+function isContinuityProtectedRoute(pathname: string): boolean {
+  const current = String(pathname || "").trim().toLowerCase();
+  return CONTINUITY_PROTECTED_PREFIXES.some(
+    (prefix) => current === prefix || current.startsWith(`${prefix}/`)
+  );
+}
+
+function extractContinuityBlock(summary: any): ContinuityBlock | null {
+  const continuity = summary?.continuity;
+  const status = String(continuity?.status || "")
+    .trim()
+    .toLowerCase();
+
+  if (status !== "reverify_required" && status !== "protected_lock") {
+    return null;
+  }
+
+  const rawScore = Number(continuity?.score);
+
+  return {
+    status,
+    score: Number.isFinite(rawScore) ? String(Math.round(rawScore)) : "Pending",
+    reason:
+      String(continuity?.reason || "").trim() ||
+      "Identity continuity changed enough that the app needs to protect the account before sensitive actions continue.",
+    action:
+      String(continuity?.action || "").trim() ||
+      "Open Identity and Integrity to review what changed, then continue from the protected next step shown there.",
+  };
 }
 
 function pageShell(): React.CSSProperties {
@@ -126,6 +183,9 @@ export default function RequireAuth({ children, requireRole }: Props) {
   const [loading, setLoading] = useState(true);
   const [allowed, setAllowed] = useState(false);
   const [deniedForRole, setDeniedForRole] = useState(false);
+  const [continuityBlock, setContinuityBlock] = useState<ContinuityBlock | null>(
+    null
+  );
 
   useEffect(() => {
     let active = true;
@@ -134,6 +194,9 @@ export default function RequireAuth({ children, requireRole }: Props) {
       if (!active) return;
       setAllowed(nextAllowed);
       setDeniedForRole(roleDenied);
+      if (!nextAllowed) {
+        setContinuityBlock(null);
+      }
       setLoading(false);
     };
 
@@ -156,6 +219,9 @@ export default function RequireAuth({ children, requireRole }: Props) {
           return;
         }
 
+        const riskSummary = await getMyIdentityRisk().catch(() => null);
+        const blockingContinuity = extractContinuityBlock(riskSummary);
+
         if (requireRole === "admin" && !hasAdminAccess(me)) {
           finish(false, true);
           return;
@@ -168,6 +234,15 @@ export default function RequireAuth({ children, requireRole }: Props) {
         ) {
           finish(false, true);
           return;
+        }
+
+        if (
+          blockingContinuity &&
+          isContinuityProtectedRoute(location.pathname)
+        ) {
+          setContinuityBlock(blockingContinuity);
+        } else {
+          setContinuityBlock(null);
         }
 
         finish(true);
@@ -190,7 +265,7 @@ export default function RequireAuth({ children, requireRole }: Props) {
     return () => {
       active = false;
     };
-  }, [requireRole]);
+  }, [location.pathname, requireRole]);
 
   if (loading) {
     return (
@@ -289,6 +364,103 @@ export default function RequireAuth({ children, requireRole }: Props) {
     }
 
     return <Navigate to="/cover" replace />;
+  }
+
+  if (continuityBlock) {
+    const isProtectedLock = continuityBlock.status === "protected_lock";
+
+    return (
+      <div style={pageShell()}>
+        <div style={denyCard()}>
+          <div
+            style={{
+              fontSize: 12,
+              color: isProtectedLock ? "#991B1B" : "#9A3412",
+              fontWeight: 900,
+              letterSpacing: 0.35,
+              textTransform: "uppercase",
+            }}
+          >
+            {isProtectedLock
+              ? "Sensitive actions paused"
+              : "Reverification needed"}
+          </div>
+
+          <div
+            style={{
+              marginTop: 10,
+              color: "#0B1F33",
+              fontWeight: 1000,
+              fontSize: 30,
+              lineHeight: 1.12,
+            }}
+          >
+            {isProtectedLock
+              ? "This route is protected until identity continuity is restored."
+              : "This route needs an identity review before it can continue."}
+          </div>
+
+          <div
+            style={{
+              marginTop: 14,
+              color: "#5F7287",
+              fontSize: 15,
+              lineHeight: 1.8,
+            }}
+          >
+            The app noticed a major enough change in device-use continuity that
+            it should protect sensitive trust, finance, commerce, or management
+            actions for now. This protects the owner and keeps trust events from
+            being credited to the wrong person.
+          </div>
+
+          <div
+            style={{
+              marginTop: 16,
+              borderRadius: 16,
+              border: isProtectedLock
+                ? "1px solid rgba(239,68,68,0.14)"
+                : "1px solid rgba(245,158,11,0.14)",
+              background: isProtectedLock ? "#FEF2F2" : "#FFF7ED",
+              padding: 16,
+              color: "#24415C",
+              lineHeight: 1.7,
+            }}
+          >
+            <div>
+              Requested route: <b>{location.pathname}</b>
+            </div>
+            <div style={{ marginTop: 6 }}>
+              Continuity score: <b>{continuityBlock.score}</b>
+            </div>
+            <div style={{ marginTop: 6 }}>{continuityBlock.reason}</div>
+            <div style={{ marginTop: 6 }}>{continuityBlock.action}</div>
+          </div>
+
+          <div
+            style={{
+              marginTop: 18,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <Link to="/app/identity" style={actionBtn("primary")}>
+              Review Identity
+            </Link>
+            <Link to="/app/notifications" style={actionBtn("secondary")}>
+              Open Notifications
+            </Link>
+            <Link to="/app/trust" style={actionBtn("secondary")}>
+              Review Trust
+            </Link>
+            <Link to="/app/dashboard" style={actionBtn("secondary")}>
+              Return to Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;

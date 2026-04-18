@@ -116,6 +116,27 @@ def test_entry_phone_verification_then_create_and_phone_login(client):
     assert payout_body["verification_status"] == "phone_verified_bank_recorded_region_matched"
     assert payout_body["region_consistency_status"] == "matched"
 
+    observe_res = client.post(
+        "/identity-risk/observe",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "User-Agent": "pytest-browser",
+            "X-Client-Fingerprint": "trusted-device-one",
+        },
+    )
+    assert observe_res.status_code == 200, observe_res.text
+    observe_body = observe_res.json()
+    assert observe_body["continuity"]["status"] == "trusted"
+
+    risk_res = client.get(
+        "/identity-risk/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert risk_res.status_code == 200, risk_res.text
+    risk_body = risk_res.json()
+    assert risk_body["continuity"]["status"] == "trusted"
+    assert risk_body["device_count"] >= 1
+
     trust_res = client.get(
         "/trust-events/me",
         headers={"Authorization": f"Bearer {token}"},
@@ -384,3 +405,101 @@ def test_entry_cross_region_mismatch_can_be_recorded_with_explanation(client):
     trust_body = trust_res.json()
     event_types = [item["event_type"] for item in trust_body["items"]]
     assert "identity.region_mismatch_explained" in event_types
+
+
+def test_identity_risk_observation_moves_to_watch_on_new_device(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    os.environ["GMFN_DEV_MODE"] = "1"
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Trust Watch",
+            "phone_e164": "+2348091234567",
+        },
+    )
+    assert start_res.status_code == 201, start_res.text
+    start_body = start_res.json()
+
+    confirm_res = client.post(
+        "/entry/phone/confirm",
+        json={
+            "verification_id": start_body["verification_id"],
+            "code": start_body["otp_preview"],
+        },
+    )
+    assert confirm_res.status_code == 200, confirm_res.text
+
+    bank_res = client.post(
+        "/entry/bank-details",
+        json={
+            "verification_id": start_body["verification_id"],
+            "destination_name": "Trust Watch",
+            "bank_name": "Pilot Community Bank",
+            "account_number": "0123456789",
+            "country": "NG",
+        },
+    )
+    assert bank_res.status_code == 200, bank_res.text
+
+    create_res = client.post(
+        "/entry/create",
+        json={
+            "verification_id": start_body["verification_id"],
+            "clan_name": "Trust Watch Circle",
+        },
+    )
+    assert create_res.status_code == 201, create_res.text
+    create_body = create_res.json()
+
+    activate_res = client.post(
+        "/auth/activate-membership",
+        json={
+            "gmfn_id": create_body["gmfn_id"],
+            "password": "secret123",
+            "confirm_password": "secret123",
+        },
+    )
+    assert activate_res.status_code == 200, activate_res.text
+
+    login_res = client.post(
+        "/auth/login",
+        data={
+            "username": "+2348091234567",
+            "password": "secret123",
+        },
+    )
+    assert login_res.status_code == 200, login_res.text
+    token = login_res.json()["access_token"]
+
+    first_observe = client.post(
+        "/identity-risk/observe",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "User-Agent": "pytest-browser",
+            "X-Client-Fingerprint": "trusted-device-one",
+        },
+    )
+    assert first_observe.status_code == 200, first_observe.text
+    assert first_observe.json()["continuity"]["status"] == "trusted"
+
+    second_observe = client.post(
+        "/identity-risk/observe",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "User-Agent": "pytest-browser",
+            "X-Client-Fingerprint": "trusted-device-two",
+        },
+    )
+    assert second_observe.status_code == 200, second_observe.text
+    assert second_observe.json()["continuity"]["status"] == "watch"
+
+    risk_res = client.get(
+        "/identity-risk/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert risk_res.status_code == 200, risk_res.text
+    risk_body = risk_res.json()
+    assert risk_body["continuity"]["status"] == "watch"
+    assert risk_body["device_count"] >= 2
+    assert risk_body["signal_count"] >= 1

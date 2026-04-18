@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
-import { activateApprovedMember } from "../lib/api";
+import { activateApprovedMember, observeIdentityRisk } from "../lib/api";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -130,9 +130,11 @@ export default function MemberActivationPage() {
         confirm_password: requestReady.confirm_password,
       });
 
+      await observeIdentityRisk().catch(() => null);
+
       setActivated(true);
       setSuccess(
-        "Membership activated successfully. Your starter trust and onboarding proofs are now available for review."
+        "Membership activated successfully. Your starter trust, onboarding proofs, and identity observation are now available for review."
       );
     } catch (err: any) {
       setError(err?.message || "Activation failed.");

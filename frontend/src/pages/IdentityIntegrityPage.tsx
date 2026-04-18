@@ -5,6 +5,7 @@ import PageTopNav from "../components/PageTopNav";
 import {
   getCurrentClan,
   getMe,
+  getMyIdentityRisk,
   getMyTrustSlip,
   getSelectedClanId,
   getTrustWhyMe,
@@ -68,6 +69,18 @@ type IdentityExplainers = {
   helps: string[];
   weakens: string[];
   next: string[];
+};
+
+type IdentityRiskSummary = {
+  device_count?: number;
+  signal_count?: number;
+  cluster_count?: number;
+  continuity?: {
+    status?: string;
+    score?: number;
+    reason?: string;
+    action?: string;
+  };
 };
 
 const IDENTITY_PAGE_UI_STORAGE_KEY = "gmfn.identityPage.sections.v1";
@@ -850,6 +863,9 @@ export default function IdentityIntegrityPage() {
   const [guidance, setGuidance] = useState<GuidanceSnapshot | null>(null);
   const [trustWhyRaw, setTrustWhyRaw] = useState<any>(null);
   const [events, setEvents] = useState<TrustEventRow[]>([]);
+  const [identityRisk, setIdentityRisk] = useState<IdentityRiskSummary | null>(
+    null
+  );
   const [avatarSrc, setAvatarSrc] = useState("");
 
   useEffect(() => {
@@ -890,7 +906,7 @@ export default function IdentityIntegrityPage() {
       setLoading(true);
 
       try {
-        const [meRes, clanRes, trustSlipRes, guidanceRes, whyRes, eventsRes] =
+        const [meRes, clanRes, trustSlipRes, guidanceRes, whyRes, eventsRes, identityRiskRes] =
           await Promise.all([
             getMe().catch(() => null),
             getCurrentClan().catch(() => null),
@@ -901,6 +917,7 @@ export default function IdentityIntegrityPage() {
               clan_id: selectedClanId || undefined,
               limit: 60,
             }).catch(() => ({ items: [] })),
+            getMyIdentityRisk().catch(() => null),
           ]);
 
         if (!alive) return;
@@ -911,6 +928,7 @@ export default function IdentityIntegrityPage() {
         setGuidance(guidanceRes || null);
         setTrustWhyRaw(whyRes || null);
         setEvents(rowsOf<TrustEventRow>(eventsRes));
+        setIdentityRisk(identityRiskRes || null);
       } finally {
         if (alive) setLoading(false);
       }
@@ -1018,6 +1036,31 @@ export default function IdentityIntegrityPage() {
       text: "#334155",
     };
   }, [openTrust.tone]);
+
+  const continuity = useMemo(() => {
+    const summary = identityRisk?.continuity || {};
+    const status = safeStr(summary?.status).toLowerCase() || "trusted";
+    const tone = continuityTone(status);
+
+    return {
+      status,
+      label: tone.label,
+      scoreText:
+        summary?.score === null || summary?.score === undefined
+          ? "—"
+          : String(summary.score),
+      reason:
+        safeStr(summary?.reason) ||
+        "Identity continuity has not raised a visible concern yet.",
+      action:
+        safeStr(summary?.action) ||
+        "Normal account use can continue.",
+      tone,
+      deviceCount: Number(identityRisk?.device_count || 0),
+      signalCount: Number(identityRisk?.signal_count || 0),
+      clusterCount: Number(identityRisk?.cluster_count || 0),
+    };
+  }, [identityRisk]);
 
   const explainers = useMemo<IdentityExplainers>(() => {
     const helps =
@@ -1475,6 +1518,98 @@ export default function IdentityIntegrityPage() {
           }}
         >
           <div>
+            <div style={sectionLabel()}>Identity continuity</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              This protects the owner by watching for major changes in device-use patterns.
+            </div>
+          </div>
+
+          <span
+            style={{
+              ...badge(true),
+              background: continuity.tone.bg,
+              color: continuity.tone.text,
+            }}
+          >
+            {continuity.label}
+          </span>
+        </div>
+
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "repeat(4, minmax(0, 1fr))",
+            gap: 12,
+          }}
+        >
+          <div style={statTile(continuity.tone.bg, continuity.tone.border)}>
+            <div style={sectionLabel()}>Continuity score</div>
+            <div
+              style={{
+                marginTop: 8,
+                color: continuity.tone.text,
+                fontWeight: 900,
+                fontSize: 26,
+              }}
+            >
+              {continuity.scoreText}
+            </div>
+          </div>
+
+          <div style={statTile()}>
+            <div style={sectionLabel()}>Devices seen</div>
+            <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900, fontSize: 26 }}>
+              {continuity.deviceCount}
+            </div>
+          </div>
+
+          <div style={statTile()}>
+            <div style={sectionLabel()}>Risk signals</div>
+            <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900, fontSize: 26 }}>
+              {continuity.signalCount}
+            </div>
+          </div>
+
+          <div style={statTile()}>
+            <div style={sectionLabel()}>Linked clusters</div>
+            <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900, fontSize: 26 }}>
+              {continuity.clusterCount}
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+            gap: 12,
+          }}
+        >
+          <div style={innerCard("#F8FBFF")}>
+            <div style={sectionLabel()}>Why the app is reading it this way</div>
+            <div style={{ marginTop: 8, ...helperText() }}>{continuity.reason}</div>
+          </div>
+
+          <div style={innerCard("#FCFEFF")}>
+            <div style={sectionLabel()}>What the app will do next</div>
+            <div style={{ marginTop: 8, ...helperText() }}>{continuity.action}</div>
+          </div>
+        </div>
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
             <div style={sectionLabel()}>Why identity and trust changed</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               What helped, what weakened, and what repairs or improves next.
@@ -1779,6 +1914,42 @@ export default function IdentityIntegrityPage() {
       </section>
     </div>
   );
+}
+
+function continuityTone(
+  status: string
+): { bg: string; border: string; text: string; label: string } {
+  const value = safeStr(status).toLowerCase();
+  if (value === "protected_lock") {
+    return {
+      bg: "#FEF2F2",
+      border: "1px solid rgba(239,68,68,0.16)",
+      text: "#991B1B",
+      label: "Protected lock",
+    };
+  }
+  if (value === "reverify_required") {
+    return {
+      bg: "#FFF7ED",
+      border: "1px solid rgba(245,158,11,0.16)",
+      text: "#9A3412",
+      label: "Reverification required",
+    };
+  }
+  if (value === "watch") {
+    return {
+      bg: "#F8FBFF",
+      border: "1px solid rgba(11,99,209,0.12)",
+      text: "#0B63D1",
+      label: "Watch",
+    };
+  }
+  return {
+    bg: "#F0FDF4",
+    border: "1px solid rgba(34,197,94,0.16)",
+    text: "#166534",
+    label: "Trusted",
+  };
 }
 
 

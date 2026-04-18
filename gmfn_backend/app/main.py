@@ -19,6 +19,7 @@ from app.db.database import Base, SessionLocal, engine
 
 # IMPORTANT: ensure models are imported so SQLAlchemy sees them
 import app.db.bank_models  # noqa: F401
+import app.db.identity_models  # noqa: F401
 import app.db.models  # noqa: F401
 import app.db.notification_models  # noqa: F401
 
