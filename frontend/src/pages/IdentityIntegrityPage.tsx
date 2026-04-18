@@ -5,12 +5,15 @@ import PageTopNav from "../components/PageTopNav";
 import {
   getCurrentClan,
   getMe,
+  getMyIdentityRecovery,
   getMyIdentityRisk,
   getMyTrustSlip,
   getSelectedClanId,
   getTrustWhyMe,
   listTrustEvents,
   safeCopy,
+  setupIdentityRecovery,
+  verifyIdentityRecovery,
 } from "../lib/api";
 import {
   buildGuidanceSnapshot,
@@ -81,6 +84,15 @@ type IdentityRiskSummary = {
     reason?: string;
     action?: string;
   };
+};
+
+type IdentityRecoverySummary = {
+  configured?: boolean;
+  prompts?: string[];
+  last_verified_at?: string | null;
+  failed_attempts?: number;
+  locked_until?: string | null;
+  locked?: boolean;
 };
 
 const IDENTITY_PAGE_UI_STORAGE_KEY = "gmfn.identityPage.sections.v1";
@@ -866,6 +878,17 @@ export default function IdentityIntegrityPage() {
   const [identityRisk, setIdentityRisk] = useState<IdentityRiskSummary | null>(
     null
   );
+  const [identityRecovery, setIdentityRecovery] =
+    useState<IdentityRecoverySummary | null>(null);
+  const [recoveryPrompts, setRecoveryPrompts] = useState([
+    { prompt: "", answer: "" },
+    { prompt: "", answer: "" },
+    { prompt: "", answer: "" },
+  ]);
+  const [recoveryAnswers, setRecoveryAnswers] = useState(["", "", ""]);
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
+  const [recoveryError, setRecoveryError] = useState("");
+  const [recoverySuccess, setRecoverySuccess] = useState("");
   const [avatarSrc, setAvatarSrc] = useState("");
 
   useEffect(() => {
@@ -906,7 +929,7 @@ export default function IdentityIntegrityPage() {
       setLoading(true);
 
       try {
-        const [meRes, clanRes, trustSlipRes, guidanceRes, whyRes, eventsRes, identityRiskRes] =
+        const [meRes, clanRes, trustSlipRes, guidanceRes, whyRes, eventsRes, identityRiskRes, identityRecoveryRes] =
           await Promise.all([
             getMe().catch(() => null),
             getCurrentClan().catch(() => null),
@@ -918,6 +941,7 @@ export default function IdentityIntegrityPage() {
               limit: 60,
             }).catch(() => ({ items: [] })),
             getMyIdentityRisk().catch(() => null),
+            getMyIdentityRecovery().catch(() => null),
           ]);
 
         if (!alive) return;
@@ -929,6 +953,7 @@ export default function IdentityIntegrityPage() {
         setTrustWhyRaw(whyRes || null);
         setEvents(rowsOf<TrustEventRow>(eventsRes));
         setIdentityRisk(identityRiskRes || null);
+        setIdentityRecovery(identityRecoveryRes || null);
       } finally {
         if (alive) setLoading(false);
       }
@@ -1061,6 +1086,96 @@ export default function IdentityIntegrityPage() {
       clusterCount: Number(identityRisk?.cluster_count || 0),
     };
   }, [identityRisk]);
+
+  const recovery = useMemo(() => {
+    const prompts = Array.isArray(identityRecovery?.prompts)
+      ? identityRecovery?.prompts.filter(Boolean)
+      : [];
+    const lockedUntil = safeStr(identityRecovery?.locked_until);
+    const lastVerifiedAt = safeStr(identityRecovery?.last_verified_at);
+
+    return {
+      configured: Boolean(identityRecovery?.configured),
+      prompts,
+      failedAttempts: Number(identityRecovery?.failed_attempts || 0),
+      locked: Boolean(identityRecovery?.locked),
+      lockedUntil,
+      lastVerifiedAt,
+      shouldVerify:
+        Boolean(identityRecovery?.configured) &&
+        (continuity.status === "reverify_required" ||
+          continuity.status === "protected_lock"),
+    };
+  }, [continuity.status, identityRecovery]);
+
+  async function handleRecoverySetup(e: React.FormEvent) {
+    e.preventDefault();
+    if (recoveryBusy) return;
+
+    setRecoveryBusy(true);
+    setRecoveryError("");
+    setRecoverySuccess("");
+
+    try {
+      const payload = {
+        questions: recoveryPrompts.map((item) => ({
+          prompt: safeStr(item.prompt),
+          answer: safeStr(item.answer),
+        })),
+      };
+
+      const out = await setupIdentityRecovery(payload);
+      setIdentityRecovery(out || null);
+      setRecoveryPrompts([
+        { prompt: "", answer: "" },
+        { prompt: "", answer: "" },
+        { prompt: "", answer: "" },
+      ]);
+      setRecoverySuccess(
+        "Private recovery challenge saved. The app can now use it if identity continuity becomes doubtful."
+      );
+    } catch (err: any) {
+      setRecoveryError(err?.message || "Recovery challenge could not be saved.");
+    } finally {
+      setRecoveryBusy(false);
+    }
+  }
+
+  async function handleRecoveryVerify(e: React.FormEvent) {
+    e.preventDefault();
+    if (recoveryBusy) return;
+
+    setRecoveryBusy(true);
+    setRecoveryError("");
+    setRecoverySuccess("");
+
+    try {
+      const out = await verifyIdentityRecovery({
+        answers: recoveryAnswers.map((item) => safeStr(item)),
+      });
+      setIdentityRisk(out?.summary || null);
+      setIdentityRecovery(out?.recovery || null);
+      if (out?.verified) {
+        setRecoveryAnswers(["", "", ""]);
+        setRecoverySuccess(
+          "Recovery challenge passed. Identity continuity has been updated for this account."
+        );
+        return;
+      }
+
+      setRecoveryError(
+        "Recovery answers did not match. The app recorded the failed attempt and kept the account in its protected state."
+      );
+    } catch (err: any) {
+      const detail =
+        typeof err?.message === "string"
+          ? err.message
+          : "Recovery answers did not match.";
+      setRecoveryError(detail);
+    } finally {
+      setRecoveryBusy(false);
+    }
+  }
 
   const explainers = useMemo<IdentityExplainers>(() => {
     const helps =
@@ -1597,6 +1712,177 @@ export default function IdentityIntegrityPage() {
             <div style={{ marginTop: 8, ...helperText() }}>{continuity.action}</div>
           </div>
         </div>
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Private recovery challenge</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              This is the owner-protection layer for extreme continuity events. The
+              app stores only protected answer hashes, not the raw answers.
+            </div>
+          </div>
+
+          <span style={badge(Boolean(recovery.configured))}>
+            {recovery.configured ? "Configured" : "Not configured"}
+          </span>
+        </div>
+
+        {recoveryError ? (
+          <div style={{ ...noticeCard("error"), marginTop: 14 }}>{recoveryError}</div>
+        ) : null}
+
+        {recoverySuccess ? (
+          <div style={{ ...noticeCard("success"), marginTop: 14 }}>
+            {recoverySuccess}
+          </div>
+        ) : null}
+
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+            gap: 12,
+          }}
+        >
+          <div style={innerCard("#F8FBFF")}>
+            <div style={sectionLabel()}>Recovery state</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              {recovery.configured
+                ? "Private recovery prompts are ready for serious continuity shifts."
+                : "Set three private prompts now so the app can protect you if your device pattern changes too far."}
+            </div>
+            <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+              <div style={helperText()}>
+                Failed attempts: <b>{recovery.failedAttempts}</b>
+              </div>
+              <div style={helperText()}>
+                Last verified:{" "}
+                <b>{recovery.lastVerifiedAt ? safeDateTime(recovery.lastVerifiedAt) : "Not yet"}</b>
+              </div>
+              <div style={helperText()}>
+                Locked until:{" "}
+                <b>{recovery.lockedUntil ? safeDateTime(recovery.lockedUntil) : "Not locked"}</b>
+              </div>
+            </div>
+          </div>
+
+          <div style={innerCard("#FCFEFF")}>
+            <div style={sectionLabel()}>When it will be used</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              OTP is only one layer. If a stolen phone or unstable device pattern puts
+              the owner at risk, this private challenge can help prove it is still the
+              same person using the account.
+            </div>
+          </div>
+        </div>
+
+        {!recovery.configured ? (
+          <form onSubmit={handleRecoverySetup} style={{ marginTop: 14, display: "grid", gap: 12 }}>
+            {recoveryPrompts.map((item, index) => (
+              <div key={`recovery-setup-${index}`} style={innerCard("#FFFFFF")}>
+                <div style={sectionLabel()}>Prompt {index + 1}</div>
+                <input
+                  value={item.prompt}
+                  onChange={(e) =>
+                    setRecoveryPrompts((current) =>
+                      current.map((row, rowIndex) =>
+                        rowIndex === index ? { ...row, prompt: e.target.value } : row
+                      )
+                    )
+                  }
+                  placeholder="Write a private prompt only you can answer"
+                  style={{
+                    width: "100%",
+                    marginTop: 10,
+                    padding: "12px 14px",
+                    borderRadius: 14,
+                    border: "1px solid rgba(11,31,51,0.12)",
+                    boxSizing: "border-box",
+                  }}
+                />
+                <input
+                  value={item.answer}
+                  onChange={(e) =>
+                    setRecoveryPrompts((current) =>
+                      current.map((row, rowIndex) =>
+                        rowIndex === index ? { ...row, answer: e.target.value } : row
+                      )
+                    )
+                  }
+                  placeholder="Write the answer exactly the way you want to remember it"
+                  style={{
+                    width: "100%",
+                    marginTop: 10,
+                    padding: "12px 14px",
+                    borderRadius: 14,
+                    border: "1px solid rgba(11,31,51,0.12)",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+            ))}
+
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button type="submit" style={actionBtn("primary", recoveryBusy)} disabled={recoveryBusy}>
+                {recoveryBusy ? "Saving..." : "Save private recovery challenge"}
+              </button>
+            </div>
+          </form>
+        ) : null}
+
+        {recovery.shouldVerify ? (
+          <form onSubmit={handleRecoveryVerify} style={{ marginTop: 14, display: "grid", gap: 12 }}>
+            <div style={softCard("#FFF7ED")}>
+              <div style={sectionLabel()}>Recovery check needed now</div>
+              <div style={{ marginTop: 8, ...helperText() }}>
+                Identity continuity is currently asking for a stronger owner check. Answer the
+                private prompts exactly as you configured them.
+              </div>
+            </div>
+
+            {recovery.prompts.map((prompt, index) => (
+              <div key={`recovery-verify-${index}`} style={innerCard("#FFFFFF")}>
+                <div style={sectionLabel()}>{prompt}</div>
+                <input
+                  value={recoveryAnswers[index] || ""}
+                  onChange={(e) =>
+                    setRecoveryAnswers((current) =>
+                      current.map((item, itemIndex) =>
+                        itemIndex === index ? e.target.value : item
+                      )
+                    )
+                  }
+                  placeholder="Enter your private answer"
+                  style={{
+                    width: "100%",
+                    marginTop: 10,
+                    padding: "12px 14px",
+                    borderRadius: 14,
+                    border: "1px solid rgba(11,31,51,0.12)",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+            ))}
+
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button type="submit" style={actionBtn("primary", recoveryBusy)} disabled={recoveryBusy || recovery.locked}>
+                {recoveryBusy ? "Checking..." : "Verify private recovery challenge"}
+              </button>
+            </div>
+          </form>
+        ) : null}
       </section>
 
       <section style={pageCard("#FFFFFF")}>

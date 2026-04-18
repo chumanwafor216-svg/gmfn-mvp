@@ -1443,6 +1443,22 @@ export async function getMyIdentityRisk(): Promise<any> {
   return httpJson("/identity-risk/me", "GET");
 }
 
+export async function getMyIdentityRecovery(): Promise<any> {
+  return httpJson("/identity-risk/recovery/me", "GET");
+}
+
+export async function setupIdentityRecovery(payload: {
+  questions: Array<{ prompt: string; answer: string }>;
+}): Promise<any> {
+  return httpJson("/identity-risk/recovery/setup", "POST", payload);
+}
+
+export async function verifyIdentityRecovery(payload: {
+  answers: string[];
+}): Promise<any> {
+  return httpJson("/identity-risk/recovery/verify", "POST", payload);
+}
+
 export async function getAdminIdentityRisk(limit: number = 100): Promise<any> {
   return httpJson(`/identity-risk/admin${buildQuery({ limit })}`, "GET");
 }

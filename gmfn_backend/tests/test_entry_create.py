@@ -503,3 +503,118 @@ def test_identity_risk_observation_moves_to_watch_on_new_device(client):
     assert risk_body["continuity"]["status"] == "watch"
     assert risk_body["device_count"] >= 2
     assert risk_body["signal_count"] >= 1
+
+
+def test_identity_recovery_challenge_can_restore_continuity_review(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    os.environ["GMFN_DEV_MODE"] = "1"
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Recovery Keeper",
+            "phone_e164": "+2348091234500",
+        },
+    )
+    assert start_res.status_code == 201, start_res.text
+    start_body = start_res.json()
+
+    confirm_res = client.post(
+        "/entry/phone/confirm",
+        json={
+            "verification_id": start_body["verification_id"],
+            "code": start_body["otp_preview"],
+        },
+    )
+    assert confirm_res.status_code == 200, confirm_res.text
+
+    bank_res = client.post(
+        "/entry/bank-details",
+        json={
+            "verification_id": start_body["verification_id"],
+            "destination_name": "Recovery Keeper",
+            "bank_name": "Pilot Community Bank",
+            "account_number": "0123456799",
+            "country": "NG",
+        },
+    )
+    assert bank_res.status_code == 200, bank_res.text
+
+    create_res = client.post(
+        "/entry/create",
+        json={
+            "verification_id": start_body["verification_id"],
+            "clan_name": "Recovery Keeper Circle",
+        },
+    )
+    assert create_res.status_code == 201, create_res.text
+    create_body = create_res.json()
+
+    activate_res = client.post(
+        "/auth/activate-membership",
+        json={
+            "gmfn_id": create_body["gmfn_id"],
+            "password": "secret123",
+            "confirm_password": "secret123",
+        },
+    )
+    assert activate_res.status_code == 200, activate_res.text
+
+    login_res = client.post(
+        "/auth/login",
+        data={
+            "username": "+2348091234500",
+            "password": "secret123",
+        },
+    )
+    assert login_res.status_code == 200, login_res.text
+    token = login_res.json()["access_token"]
+
+    setup_res = client.post(
+        "/identity-risk/recovery/setup",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "questions": [
+                {"prompt": "What private word did you keep for GSN?", "answer": "Harbor"},
+                {"prompt": "What was your first community seed?", "answer": "Lantern"},
+                {"prompt": "What answer do you keep for trust recovery?", "answer": "Bridge"},
+            ]
+        },
+    )
+    assert setup_res.status_code == 200, setup_res.text
+    assert setup_res.json()["configured"] is True
+
+    first_observe = client.post(
+        "/identity-risk/observe",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "User-Agent": "pytest-browser",
+            "X-Client-Fingerprint": "recovery-device-one",
+        },
+    )
+    assert first_observe.status_code == 200, first_observe.text
+    assert first_observe.json()["continuity"]["status"] == "trusted"
+
+    second_observe = client.post(
+        "/identity-risk/observe",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "User-Agent": "pytest-browser",
+            "X-Client-Fingerprint": "recovery-device-two",
+        },
+    )
+    assert second_observe.status_code == 200, second_observe.text
+    assert second_observe.json()["continuity"]["status"] in {"watch", "reverify_required"}
+
+    verify_res = client.post(
+        "/identity-risk/recovery/verify",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "answers": ["Harbor", "Lantern", "Bridge"],
+        },
+    )
+    assert verify_res.status_code == 200, verify_res.text
+    verify_body = verify_res.json()
+    assert verify_body["verified"] is True
+    assert verify_body["summary"]["continuity"]["status"] in {"trusted", "watch"}
+    assert verify_body["recovery"]["last_verified_at"] is not None

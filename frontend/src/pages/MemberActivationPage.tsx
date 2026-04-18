@@ -134,7 +134,7 @@ export default function MemberActivationPage() {
 
       setActivated(true);
       setSuccess(
-        "Membership activated successfully. Your starter trust, onboarding proofs, and identity observation are now available for review."
+        "Membership activated successfully. Your starter trust, onboarding proofs, and identity observation are now available for review. You can also set a private recovery challenge in Identity and Integrity for stronger owner protection."
       );
     } catch (err: any) {
       setError(err?.message || "Activation failed.");

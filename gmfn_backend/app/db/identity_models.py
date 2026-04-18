@@ -63,3 +63,24 @@ class IdentityCluster(Base):
     __table_args__ = (
         Index("ix_identity_cluster_root_linked_v1", "root_user_id", "linked_user_id"),
     )
+
+
+class IdentityRecoveryProfile(Base):
+    __tablename__ = "identity_recovery_profiles"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True, index=True)
+
+    prompt_one: Mapped[str] = mapped_column(String(180), nullable=False)
+    answer_hash_one: Mapped[str] = mapped_column(String(128), nullable=False)
+    prompt_two: Mapped[str] = mapped_column(String(180), nullable=False)
+    answer_hash_two: Mapped[str] = mapped_column(String(128), nullable=False)
+    prompt_three: Mapped[str] = mapped_column(String(180), nullable=False)
+    answer_hash_three: Mapped[str] = mapped_column(String(128), nullable=False)
+
+    configured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now_utc)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now_utc)
+    last_verified_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    failed_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    locked_until: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
