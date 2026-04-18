@@ -20,6 +20,9 @@ PROTOCOL_VERSION = "trust_constitution_v1"
 # ============================================================
 BORROWER_FULL_REPAY_GAIN = Decimal("0.10")
 GUARANTOR_SUCCESS_GAIN = Decimal("0.03")
+IDENTITY_PHONE_VERIFIED_GAIN = Decimal("0.50")
+IDENTITY_BANK_RECORDED_GAIN = Decimal("0.80")
+IDENTITY_DRIVERS_LICENCE_GAIN = Decimal("0.40")
 
 # Backward compatibility
 BORROWER_FULL_REPAY = BORROWER_FULL_REPAY_GAIN

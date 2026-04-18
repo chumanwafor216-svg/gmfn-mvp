@@ -27,6 +27,11 @@ RULES: dict[str, TrustDeltaRule] = {
     "guarantor.repayment.confirmed": TrustDeltaRule("guarantor.repayment.confirmed", Decimal("0.03"), "Guarantor supported a successful repayment", "positive"),
     "guarantor.support.confirmed": TrustDeltaRule("guarantor.support.confirmed", Decimal("0.03"), "Guarantor supported a successful repayment", "positive"),
 
+    # Onboarding identity proofs
+    "identity.phone_verified": TrustDeltaRule("identity.phone_verified", Decimal("0.50"), "Verified phone attached to identity", "positive"),
+    "identity.bank_destination_recorded": TrustDeltaRule("identity.bank_destination_recorded", Decimal("0.80"), "Verified-phone holder recorded a bank destination", "positive"),
+    "identity.drivers_licence_recorded": TrustDeltaRule("identity.drivers_licence_recorded", Decimal("0.40"), "Driver's licence proof recorded", "positive"),
+
     # Negative events (admin-controlled in pilot)
     "repayment.missed": TrustDeltaRule("repayment.missed", Decimal("-0.10"), "Borrower missed repayment (pilot/admin)", "negative"),
     "repayment.late": TrustDeltaRule("repayment.late", Decimal("-0.05"), "Borrower repaid late (pilot/admin)", "negative"),

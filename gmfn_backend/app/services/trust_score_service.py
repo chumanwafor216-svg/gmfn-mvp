@@ -13,6 +13,9 @@ from app.core.constants import (
     DEFAULT_WINDOW_DAYS,
     FRAUD_PENALTY,
     GUARANTOR_SUCCESS_GAIN,
+    IDENTITY_BANK_RECORDED_GAIN,
+    IDENTITY_DRIVERS_LICENCE_GAIN,
+    IDENTITY_PHONE_VERIFIED_GAIN,
     INACTIVITY_DECAY_FLOOR,
     INACTIVITY_DECAY_PENALTY,
     INACTIVITY_DECAY_START_DAYS,
@@ -28,6 +31,9 @@ EV_GUARANTOR_SUCCESS = "guarantor_success"
 EV_MISSED_PAYMENT = "missed_payment"
 EV_DEFAULT = "default"
 EV_FRAUD_FLAG = "fraud_flag"
+EV_IDENTITY_PHONE_VERIFIED = "identity.phone_verified"
+EV_IDENTITY_BANK_RECORDED = "identity.bank_destination_recorded"
+EV_IDENTITY_DRIVERS_LICENCE = "identity.drivers_licence_recorded"
 
 # Reversal event types (append-only corrections)
 EV_BORROWER_FULL_REPAID_REV = "loan_fully_repaid_reversed"
@@ -65,6 +71,15 @@ _EVENT_ALIASES = {
         "fraud",
         "abuse_flag",
         "ban",
+    },
+    EV_IDENTITY_PHONE_VERIFIED: {
+        "identity.phone_verified",
+    },
+    EV_IDENTITY_BANK_RECORDED: {
+        "identity.bank_destination_recorded",
+    },
+    EV_IDENTITY_DRIVERS_LICENCE: {
+        "identity.drivers_licence_recorded",
     },
     EV_BORROWER_FULL_REPAID_REV: {
         "loan_fully_repaid_reversed",
@@ -186,6 +201,9 @@ def recompute_trust_for_user(
         EV_MISSED_PAYMENT: 0,
         EV_DEFAULT: 0,
         EV_FRAUD_FLAG: 0,
+        EV_IDENTITY_PHONE_VERIFIED: 0,
+        EV_IDENTITY_BANK_RECORDED: 0,
+        EV_IDENTITY_DRIVERS_LICENCE: 0,
         EV_BORROWER_FULL_REPAID_REV: 0,
         EV_GUARANTOR_SUCCESS_REV: 0,
     }
@@ -220,11 +238,17 @@ def recompute_trust_for_user(
     missed_payments = counts[EV_MISSED_PAYMENT]
     defaults = counts[EV_DEFAULT]
     fraud_flags = counts[EV_FRAUD_FLAG]
+    identity_phone_verified = counts[EV_IDENTITY_PHONE_VERIFIED]
+    identity_bank_recorded = counts[EV_IDENTITY_BANK_RECORDED]
+    identity_drivers_licence = counts[EV_IDENTITY_DRIVERS_LICENCE]
     full_repayments_rev = counts[EV_BORROWER_FULL_REPAID_REV]
     guarantor_success_rev = counts[EV_GUARANTOR_SUCCESS_REV]
 
     gain_borrower = BORROWER_FULL_REPAY_GAIN * _d(full_repayments)
     gain_guarantor = GUARANTOR_SUCCESS_GAIN * _d(guarantor_success)
+    gain_identity_phone = IDENTITY_PHONE_VERIFIED_GAIN * _d(identity_phone_verified)
+    gain_identity_bank = IDENTITY_BANK_RECORDED_GAIN * _d(identity_bank_recorded)
+    gain_identity_licence = IDENTITY_DRIVERS_LICENCE_GAIN * _d(identity_drivers_licence)
     rev_borrower = BORROWER_FULL_REPAY_GAIN * _d(full_repayments_rev)
     rev_guarantor = GUARANTOR_SUCCESS_GAIN * _d(guarantor_success_rev)
 
@@ -232,7 +256,13 @@ def recompute_trust_for_user(
     penalty_default = DEFAULT_PENALTY * _d(defaults)
     penalty_fraud = FRAUD_PENALTY * _d(fraud_flags)
 
-    total_gains = (gain_borrower + gain_guarantor) - (rev_borrower + rev_guarantor)
+    total_gains = (
+        gain_borrower
+        + gain_guarantor
+        + gain_identity_phone
+        + gain_identity_bank
+        + gain_identity_licence
+    ) - (rev_borrower + rev_guarantor)
     total_penalties = penalty_missed + penalty_default + penalty_fraud
     lifetime = total_gains - total_penalties
 
@@ -268,6 +298,12 @@ def recompute_trust_for_user(
     elif missed_payments > 0:
         latest_reason = "Missed payment reduced trust standing"
         latest_source = EV_MISSED_PAYMENT
+    elif identity_bank_recorded > 0:
+        latest_reason = "Verified onboarding proofs established your starter trust standing"
+        latest_source = EV_IDENTITY_BANK_RECORDED
+    elif identity_phone_verified > 0:
+        latest_reason = "Verified phone established a starter trust standing"
+        latest_source = EV_IDENTITY_PHONE_VERIFIED
     elif guarantor_success > 0 and full_repayments == 0:
         latest_reason = "Successful guarantor support strengthened trust standing"
         latest_source = EV_GUARANTOR_SUCCESS
@@ -304,12 +340,18 @@ def recompute_trust_for_user(
             "missed_payments": missed_payments,
             "defaults": defaults,
             "fraud_flags": fraud_flags,
+            "identity_phone_verified": identity_phone_verified,
+            "identity_bank_recorded": identity_bank_recorded,
+            "identity_drivers_licence": identity_drivers_licence,
             "full_repayments_reversed": full_repayments_rev,
             "guarantor_success_reversed": guarantor_success_rev,
         },
         "gains": {
             "borrower": str(_q(gain_borrower)),
             "guarantor": str(_q(gain_guarantor)),
+            "identity_phone": str(_q(gain_identity_phone)),
+            "identity_bank": str(_q(gain_identity_bank)),
+            "identity_drivers_licence": str(_q(gain_identity_licence)),
             "reversals": str(_q(rev_borrower + rev_guarantor)),
             "total": str(_q(total_gains)),
         },
@@ -321,6 +363,11 @@ def recompute_trust_for_user(
         },
         "policy": loan_policy_for_band(band),
         "score_int": score_int,
+        "starter_proof_summary": {
+            "phone_verified": identity_phone_verified > 0,
+            "bank_recorded": identity_bank_recorded > 0,
+            "drivers_licence_recorded": identity_drivers_licence > 0,
+        },
     }
 
     return breakdown
@@ -347,6 +394,7 @@ def compute_trust_score_explained(db: Session, user_id: int) -> Dict[str, Any]:
     out = recompute_trust_for_user(db, user_id=int(user_id))
     out["explanation"] = (
         "Your trust standing grows slowly when you fully repay loans. "
+        "Starter identity proofs can establish an initial base. "
         "If a repayment is corrected later, a reversal event is logged and the "
         "score is recomputed from the trust ledger."
     )

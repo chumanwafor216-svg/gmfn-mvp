@@ -88,6 +88,7 @@ export default function MemberActivationPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [activated, setActivated] = useState(false);
 
   const requestReady = useMemo(() => {
     return {
@@ -129,8 +130,10 @@ export default function MemberActivationPage() {
         confirm_password: requestReady.confirm_password,
       });
 
-      setSuccess("Membership activated successfully.");
-      navigate("/app/build-first-circle", { replace: true });
+      setActivated(true);
+      setSuccess(
+        "Membership activated successfully. Your starter trust and onboarding proofs are now available for review."
+      );
     } catch (err: any) {
       setError(err?.message || "Activation failed.");
     } finally {
@@ -203,7 +206,7 @@ export default function MemberActivationPage() {
           }}
         >
           <button type="button" onClick={goBack} style={actionBtn(false)}>
-            ? Back
+            Back
           </button>
 
           <OriginLink to="/welcome" style={actionBtn(false)}>
@@ -237,6 +240,57 @@ export default function MemberActivationPage() {
           }}
         >
           {success}
+        </div>
+      ) : null}
+
+      {activated ? (
+        <div style={{ ...pageCard("#F8FBFF"), marginTop: 18 }}>
+          <div style={sectionLabel()}>What happens next</div>
+          <div
+            style={{
+              marginTop: 10,
+              color: "#0B1F33",
+              fontSize: 22,
+              fontWeight: 1000,
+              lineHeight: 1.2,
+            }}
+          >
+            Your account is active and your starter trust is ready to review
+          </div>
+
+          <div
+            style={{
+              marginTop: 10,
+              color: "#475569",
+              lineHeight: 1.8,
+            }}
+          >
+            The system has already recorded the onboarding proofs behind your starter
+            trust. Open Notifications first if you want the immediate explanation,
+            or open Trust directly to review the proof events and current score before
+            you continue deeper into the app.
+          </div>
+
+          <div
+            style={{
+              marginTop: 16,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <OriginLink to="/app/notifications" style={actionBtn(true)}>
+              Review Notifications
+            </OriginLink>
+
+            <OriginLink to="/app/trust" style={actionBtn(false)}>
+              Review Trust
+            </OriginLink>
+
+            <OriginLink to="/app/build-first-circle" style={actionBtn(false)}>
+              Continue to Build First Circle
+            </OriginLink>
+          </div>
         </div>
       ) : null}
 
@@ -342,7 +396,7 @@ export default function MemberActivationPage() {
             >
               <button
                 type="submit"
-                disabled={busy}
+                disabled={busy || activated}
                 style={actionBtn(true, busy)}
               >
                 {busy ? "Activating..." : "Activate Membership"}

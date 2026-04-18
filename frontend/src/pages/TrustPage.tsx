@@ -23,6 +23,8 @@ type TrustScoreExplained = {
   trust_score?: number | string;
   trust_band?: string | null;
   band?: string | null;
+  explanation?: string | null;
+  latest_reason?: string | null;
 
   // optional breakdown counters
   approved?: number;
@@ -31,6 +33,11 @@ type TrustScoreExplained = {
 
   // some versions return breakdown dict
   breakdown?: any;
+  starter_proof_summary?: {
+    phone_verified?: boolean;
+    bank_recorded?: boolean;
+    drivers_licence_recorded?: boolean;
+  };
 };
 
 type TrustWhy = {
@@ -135,6 +142,15 @@ function csvEscape(value: any) {
   const s = value === null || value === undefined ? "" : String(value);
   if (/[,"\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
+}
+
+function proofTile(enabled: boolean): React.CSSProperties {
+  return {
+    padding: 12,
+    borderRadius: 12,
+    border: enabled ? "1px solid #bfdbfe" : "1px solid #e5e7eb",
+    background: enabled ? "#eff6ff" : "#f8fafc",
+  };
 }
 
 export default function TrustPage() {
@@ -253,6 +269,37 @@ export default function TrustPage() {
   const scoreValue =
     (score?.trust_score ?? score?.score ?? "") !== "" ? String(score?.trust_score ?? score?.score) : "—";
   const band = score?.trust_band ?? score?.band ?? (score?.breakdown?.trust_band ?? null);
+  const starterSummary =
+    score?.starter_proof_summary ?? score?.breakdown?.starter_proof_summary ?? {};
+  const starterProofs = [
+    {
+      key: "phone",
+      label: "Verified phone",
+      enabled: Boolean(starterSummary?.phone_verified),
+      detail: "A verified phone number gives the system a real identity contact path.",
+    },
+    {
+      key: "bank",
+      label: "Recorded bank destination",
+      enabled: Boolean(starterSummary?.bank_recorded),
+      detail: "A recorded bank destination strengthens the seriousness of your economic identity.",
+    },
+    {
+      key: "licence",
+      label: "Driver's licence proof",
+      enabled: Boolean(starterSummary?.drivers_licence_recorded),
+      detail: "Optional licence proof adds another visible identity layer when it is supplied.",
+    },
+  ];
+  const hasStarterProof = starterProofs.some((item) => item.enabled);
+  const latestReason =
+    score?.latest_reason ??
+    score?.breakdown?.latest_reason ??
+    "Your trust position reflects the proofs and trust events already recorded on your account.";
+  const trustExplanation =
+    score?.explanation ??
+    score?.breakdown?.explanation ??
+    "The score is explainable. Verified onboarding proofs can establish a starter base before later transactions deepen or weaken it.";
 
   return (
     <div style={{ maxWidth: 980, margin: "0 auto", padding: 16 }}>
@@ -295,12 +342,12 @@ export default function TrustPage() {
 
       <div style={{ marginTop: 14, padding: 14, border: "1px solid #ddd", borderRadius: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <div>
-            <div style={{ fontSize: 13, color: "#666" }}>Trust score (repayment-only policy)</div>
-            <div style={{ marginTop: 6, fontSize: 22, fontWeight: 800 }}>
-              {scoreValue} {band ? <span style={{ ...pill("blue") }}>{String(band)}</span> : null}
+            <div>
+              <div style={{ fontSize: 13, color: "#666" }}>Trust score</div>
+              <div style={{ marginTop: 6, fontSize: 22, fontWeight: 800 }}>
+                {scoreValue} {band ? <span style={{ ...pill("blue") }}>{String(band)}</span> : null}
+              </div>
             </div>
-          </div>
 
           <button onClick={() => setShowExplain((v) => !v)}>
             {showExplain ? "Hide explainability" : "Show explainability"}
@@ -309,6 +356,52 @@ export default function TrustPage() {
 
         {showExplain && (
           <div style={{ marginTop: 12, padding: 12, borderRadius: 10, background: "#f7f7f7" }}>
+            {hasStarterProof ? (
+              <div
+                style={{
+                  marginBottom: 12,
+                  padding: 12,
+                  borderRadius: 12,
+                  background: "#fff",
+                  border: "1px solid #e2e8f0",
+                }}
+              >
+                <div style={{ fontWeight: 800, marginBottom: 8 }}>
+                  Starter trust now has a visible base
+                </div>
+                <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.7 }}>
+                  {latestReason}
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 10,
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                    gap: 10,
+                  }}
+                >
+                  {starterProofs.map((item) => (
+                    <div key={item.key} style={proofTile(item.enabled)}>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                        <span style={pill(item.enabled ? "blue" : "gray")}>
+                          {item.enabled ? "Recorded" : "Not yet"}
+                        </span>
+                        <span style={{ fontWeight: 800 }}>{item.label}</span>
+                      </div>
+                      <div style={{ marginTop: 8, fontSize: 13, color: "#475569", lineHeight: 1.6 }}>
+                        {item.detail}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ marginTop: 10, fontSize: 13, color: "#475569", lineHeight: 1.7 }}>
+                  {trustExplanation}
+                </div>
+              </div>
+            ) : null}
+
             <div style={{ fontWeight: 800, marginBottom: 8 }}>Why did my trust change?</div>
             <div style={{ fontSize: 13, color: "#666" }}>
               This uses the deterministic TrustEvent ledger. For low-bandwidth users, we only show the latest few.

@@ -4,6 +4,7 @@
 # Core
 # =========================
 from app.api.routes.auth import router as auth_router
+from app.api.routes.entry import router as entry_router
 from app.api.routes.clans import router as clans_router
 from app.api.routes.invites import router as invites_router
 from app.api.routes.loans import router as loans_router
@@ -74,6 +75,7 @@ from app.api.routes.admin_behaviour_metrics import router as admin_behaviour_met
 # =========================
 from app.api.routes.payment_instructions import router as payment_router
 from app.api.routes.payment_rails import router as payment_rails_router
+from app.api.routes.withdrawal_destinations import router as withdrawal_destinations_router
 from app.api.routes.withdrawal_instructions import router as withdrawal_instructions_router
 from app.api.routes.settlement_config import router as settlement_config_router
 from app.api.routes.notifications import router as notifications_router
@@ -101,6 +103,7 @@ api_router = APIRouter()
 
 # CORE
 api_router.include_router(auth_router)
+api_router.include_router(entry_router)
 api_router.include_router(clans_router)
 api_router.include_router(invites_router)
 api_router.include_router(loans_router)
@@ -159,6 +162,7 @@ api_router.include_router(admin_behaviour_metrics_router)
 # PAYMENTS / RAILS / NOTIFICATIONS / IDENTITY
 api_router.include_router(payment_router)
 api_router.include_router(payment_rails_router)
+api_router.include_router(withdrawal_destinations_router)
 api_router.include_router(withdrawal_instructions_router)
 api_router.include_router(settlement_config_router)
 api_router.include_router(notifications_router)

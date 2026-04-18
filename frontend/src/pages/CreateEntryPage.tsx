@@ -3,10 +3,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
 import {
   clearPublicEntryState,
+  confirmEntryPhoneVerification,
   createEntry,
   getCreateCode,
   getMe,
   isAuthenticated,
+  saveEntryBankDetails,
+  startEntryPhoneVerification,
 } from "../lib/api";
 
 function pageShell(): React.CSSProperties {
@@ -156,6 +159,10 @@ export default function CreateEntryPage() {
       create_entry?: {
         clan_name?: string;
         clan_description?: string;
+        display_name?: string;
+        nickname?: string;
+        phone_e164?: string;
+        phone?: string;
         email?: string;
         create_code?: string;
       };
@@ -178,6 +185,20 @@ export default function CreateEntryPage() {
   const initialEmail = safeStr(
     stateCreateEntry?.email || search.get("email") || ""
   );
+  const initialDisplayName = safeStr(
+    stateCreateEntry?.display_name ||
+      stateCreateEntry?.nickname ||
+      search.get("display_name") ||
+      search.get("nickname") ||
+      ""
+  );
+  const initialPhone = safeStr(
+    stateCreateEntry?.phone_e164 ||
+      stateCreateEntry?.phone ||
+      search.get("phone_e164") ||
+      search.get("phone") ||
+      ""
+  );
 
   const createCode = safeStr(
     stateCreateEntry?.create_code ||
@@ -188,16 +209,124 @@ export default function CreateEntryPage() {
 
   const [communityName, setCommunityName] = useState(initialCommunityName);
   const [description, setDescription] = useState(initialDescription);
+  const [displayName, setDisplayName] = useState(initialDisplayName);
+  const [phone, setPhone] = useState(initialPhone);
   const [email, setEmail] = useState(initialEmail);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [step, setStep] = useState<"details" | "verify" | "bank" | "community">(
+    initialCommunityName || initialDescription ? "community" : "details"
+  );
+  const [verificationId, setVerificationId] = useState<number>(0);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpPreview, setOtpPreview] = useState("");
+  const [bankAccountName, setBankAccountName] = useState(initialDisplayName);
+  const [bankName, setBankName] = useState("");
+  const [bankAccountNumber, setBankAccountNumber] = useState("");
+  const [bankCountry, setBankCountry] = useState("");
+  const [bankCurrency, setBankCurrency] = useState("NGN");
+  const [bankNote, setBankNote] = useState("");
+  const [driverLicenceNumber, setDriverLicenceNumber] = useState("");
+  const [driverLicenceCountry, setDriverLicenceCountry] = useState("");
+  const [driverLicenceNote, setDriverLicenceNote] = useState("");
 
-  const canContinue = !!safeStr(communityName) && !!safeStr(email);
+  const canContinue = !!safeStr(communityName) && !!safeStr(displayName) && !!safeStr(phone);
+  const canContinueDetails = !!safeStr(displayName) && !!safeStr(phone);
+  const canConfirmOtp = Number(verificationId) > 0 && safeStr(otpCode).length >= 4;
+  const canContinueBank =
+    Number(verificationId) > 0 &&
+    !!safeStr(bankAccountName) &&
+    !!safeStr(bankName) &&
+    !!safeStr(bankAccountNumber);
+
+  async function handleStartVerification() {
+    if (!canContinueDetails || busy) return;
+
+    setError("");
+    setSuccess("");
+    setBusy(true);
+
+    try {
+      const out = await startEntryPhoneVerification({
+        display_name: safeStr(displayName),
+        phone_e164: safeStr(phone),
+        email: safeStr(email) || undefined,
+      });
+
+      setVerificationId(Number(out?.verification_id || 0));
+      setOtpPreview(safeStr(out?.otp_preview));
+      setStep("verify");
+      setSuccess(
+        safeStr(out?.message) ||
+          "Phone verification started. Enter the code to continue."
+      );
+    } catch (err: any) {
+      setError(err?.message || "Phone verification could not be started.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleConfirmVerification() {
+    if (!canConfirmOtp || busy) return;
+
+    setError("");
+    setSuccess("");
+    setBusy(true);
+
+    try {
+      await confirmEntryPhoneVerification({
+        verification_id: verificationId,
+        code: otpCode,
+      });
+
+      setStep("bank");
+      setSuccess("Phone verified. Add your bank details before community details continue.");
+    } catch (err: any) {
+      setError(err?.message || "Phone verification could not be completed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleSaveBankDetails() {
+    if (!canContinueBank || busy) return;
+
+    setError("");
+    setSuccess("");
+    setBusy(true);
+
+    try {
+      const out = await saveEntryBankDetails({
+        verification_id: verificationId,
+        destination_name: safeStr(bankAccountName),
+        bank_name: safeStr(bankName),
+        account_number: safeStr(bankAccountNumber),
+        phone_number: safeStr(phone) || undefined,
+        country: safeStr(bankCountry) || undefined,
+        currency: safeStr(bankCurrency) || "NGN",
+        note: safeStr(bankNote) || undefined,
+        driver_licence_number: safeStr(driverLicenceNumber) || undefined,
+        driver_licence_country: safeStr(driverLicenceCountry) || undefined,
+        driver_licence_note: safeStr(driverLicenceNote) || undefined,
+      });
+
+      setStep("community");
+      setSuccess(
+        safeStr(out?.verification_note) ||
+          "Bank details recorded. You can now continue with community details."
+      );
+    } catch (err: any) {
+      setError(err?.message || "Bank details could not be recorded.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!canContinue || busy) return;
+    if (!canContinue || busy || !verificationId) return;
 
     setError("");
     setSuccess("");
@@ -205,10 +334,14 @@ export default function CreateEntryPage() {
 
     try {
       const payload: Record<string, any> = {
+        verification_id: verificationId,
         clan_name: safeStr(communityName),
         clan_description: safeStr(description) || undefined,
-        email: safeStr(email),
       };
+
+      if (safeStr(email)) {
+        payload.email = safeStr(email);
+      }
 
       if (createCode) {
         payload.create_code = createCode;
@@ -291,9 +424,9 @@ export default function CreateEntryPage() {
               maxWidth: 760,
             }}
           >
-            Start with a community name, add a short description, and continue
-            into founder creation. If GSN access is issued here, the next guided
-            step will be Build Your First Circle.
+            Start with your details first. Then add the community details and
+            continue into founder creation. Start with the street name people
+            know you by and your phone number. Email can stay optional here.
           </div>
 
           <div
@@ -322,47 +455,308 @@ export default function CreateEntryPage() {
           }}
         >
           <div style={pageCard()}>
-            <form onSubmit={onSubmit} style={{ display: "grid", gap: 14 }}>
-              <div>
-                <div style={fieldLabel()}>Community name</div>
-                <input
-                  value={communityName}
-                  onChange={(e) => setCommunityName(e.target.value)}
-                  placeholder="Enter community name"
-                  style={input()}
-                />
+            <div style={{ display: "grid", gap: 14 }}>
+              <div style={sectionLabel()}>
+                Current step:{" "}
+                {step === "details"
+                  ? "Your details"
+                  : step === "verify"
+                    ? "Phone verification"
+                    : step === "bank"
+                      ? "Bank details"
+                      : "Community details"}
               </div>
 
-              <div>
-                <div style={fieldLabel()}>Short description</div>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Describe what this community represents"
-                  style={textArea()}
-                />
-              </div>
+              {step === "details" ? (
+                <div style={{ display: "grid", gap: 14 }}>
+                  <div>
+                    <div style={fieldLabel()}>Street name or nickname</div>
+                    <input
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      placeholder="What people know you by"
+                      style={input()}
+                    />
+                  </div>
 
-              <div>
-                <div style={fieldLabel()}>Your email</div>
-                <input
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  style={input()}
-                />
-              </div>
+                  <div>
+                    <div style={fieldLabel()}>Phone number</div>
+                    <input
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+234..."
+                      style={input()}
+                    />
+                  </div>
 
-              <div style={{ marginTop: 4 }}>
-                <button
-                  type="submit"
-                  style={primaryBtn(!canContinue || busy)}
-                  disabled={!canContinue || busy}
-                >
-                  {busy ? "Continuing..." : "Continue to founder creation"}
-                </button>
-              </div>
-            </form>
+                  <div>
+                    <div style={fieldLabel()}>Email (optional)</div>
+                    <input
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Enter your email if you use one"
+                      style={input()}
+                    />
+                  </div>
+
+                  <div style={{ marginTop: 4 }}>
+                    <button
+                      type="button"
+                      onClick={handleStartVerification}
+                      style={primaryBtn(!canContinueDetails || busy)}
+                      disabled={!canContinueDetails || busy}
+                    >
+                      {busy ? "Sending..." : "Send verification code"}
+                    </button>
+                  </div>
+                </div>
+              ) : step === "verify" ? (
+                <div style={{ display: "grid", gap: 14 }}>
+                  <div>
+                    <div style={fieldLabel()}>Verification code</div>
+                    <input
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value)}
+                      placeholder="Enter the code sent to your phone"
+                      style={input()}
+                    />
+                  </div>
+
+                  {otpPreview ? (
+                    <div style={softCard("#FFFBEB")}>
+                      <div style={sectionLabel()}>Pilot code preview</div>
+                      <div
+                        style={{
+                          marginTop: 10,
+                          color: "#92400E",
+                          fontWeight: 900,
+                          fontSize: 18,
+                          letterSpacing: 1.2,
+                        }}
+                      >
+                        {otpPreview}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 10,
+                      flexWrap: "wrap",
+                      marginTop: 4,
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setStep("details")}
+                      style={secondaryBtn()}
+                    >
+                      Back to your details
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmVerification}
+                      style={{
+                        ...primaryBtn(!canConfirmOtp || busy),
+                        width: "auto",
+                        minWidth: 220,
+                      }}
+                      disabled={!canConfirmOtp || busy}
+                    >
+                      {busy ? "Verifying..." : "Verify phone"}
+                    </button>
+                  </div>
+                </div>
+              ) : step === "bank" ? (
+                <div style={{ display: "grid", gap: 14 }}>
+                  <div>
+                    <div style={fieldLabel()}>Account name</div>
+                    <input
+                      value={bankAccountName}
+                      onChange={(e) => setBankAccountName(e.target.value)}
+                      placeholder="Name on the bank or wallet account"
+                      style={input()}
+                    />
+                  </div>
+
+                  <div>
+                    <div style={fieldLabel()}>Bank or wallet provider</div>
+                    <input
+                      value={bankName}
+                      onChange={(e) => setBankName(e.target.value)}
+                      placeholder="Enter the bank or wallet provider"
+                      style={input()}
+                    />
+                  </div>
+
+                  <div>
+                    <div style={fieldLabel()}>Account number or wallet number</div>
+                    <input
+                      value={bankAccountNumber}
+                      onChange={(e) => setBankAccountNumber(e.target.value)}
+                      placeholder="Enter the destination number"
+                      style={input()}
+                    />
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 160px", gap: 12 }}>
+                    <div>
+                      <div style={fieldLabel()}>Country (optional)</div>
+                      <input
+                        value={bankCountry}
+                        onChange={(e) => setBankCountry(e.target.value)}
+                        placeholder="Country"
+                        style={input()}
+                      />
+                    </div>
+
+                    <div>
+                      <div style={fieldLabel()}>Currency</div>
+                      <select
+                        value={bankCurrency}
+                        onChange={(e) => setBankCurrency(e.target.value)}
+                        style={input()}
+                      >
+                        <option value="NGN">NGN</option>
+                        <option value="GBP">GBP</option>
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="KES">KES</option>
+                        <option value="GHS">GHS</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={fieldLabel()}>Note (optional)</div>
+                    <textarea
+                      value={bankNote}
+                      onChange={(e) => setBankNote(e.target.value)}
+                      placeholder="Anything that helps explain this destination"
+                      style={textArea()}
+                    />
+                  </div>
+
+                  <div style={softCard("#F8FBFF")}>
+                    <div style={sectionLabel()}>Optional licence proof</div>
+                    <div
+                      style={{
+                        marginTop: 10,
+                        color: "#475569",
+                        lineHeight: 1.8,
+                        fontSize: 14,
+                      }}
+                    >
+                      If you have a driver's licence or similar strong identity document,
+                      you can record it here as an extra trust signal. It is optional.
+                    </div>
+
+                    <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
+                      <input
+                        value={driverLicenceNumber}
+                        onChange={(e) => setDriverLicenceNumber(e.target.value)}
+                        placeholder="Driver's licence number (optional)"
+                        style={input()}
+                      />
+
+                      <input
+                        value={driverLicenceCountry}
+                        onChange={(e) => setDriverLicenceCountry(e.target.value)}
+                        placeholder="Issuing country (optional)"
+                        style={input()}
+                      />
+
+                      <textarea
+                        value={driverLicenceNote}
+                        onChange={(e) => setDriverLicenceNote(e.target.value)}
+                        placeholder="Optional note about the licence or document"
+                        style={textArea()}
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 10,
+                      flexWrap: "wrap",
+                      marginTop: 4,
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setStep("verify")}
+                      style={secondaryBtn()}
+                    >
+                      Back to phone verification
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveBankDetails}
+                      style={{
+                        ...primaryBtn(!canContinueBank || busy),
+                        width: "auto",
+                        minWidth: 220,
+                      }}
+                      disabled={!canContinueBank || busy}
+                    >
+                      {busy ? "Saving..." : "Save bank details"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={onSubmit} style={{ display: "grid", gap: 14 }}>
+                  <div>
+                    <div style={fieldLabel()}>Community name</div>
+                    <input
+                      value={communityName}
+                      onChange={(e) => setCommunityName(e.target.value)}
+                      placeholder="Enter community name"
+                      style={input()}
+                    />
+                  </div>
+
+                  <div>
+                    <div style={fieldLabel()}>Short description</div>
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Describe what this community represents"
+                      style={textArea()}
+                    />
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 10,
+                      flexWrap: "wrap",
+                      marginTop: 4,
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setStep("bank")}
+                      style={secondaryBtn()}
+                    >
+                      Back to bank details
+                    </button>
+                    <button
+                      type="submit"
+                      style={{
+                        ...primaryBtn(!canContinue || busy),
+                        width: "auto",
+                        minWidth: 220,
+                      }}
+                      disabled={!canContinue || busy}
+                    >
+                      {busy ? "Continuing..." : "Continue to founder creation"}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
           </div>
 
           <div style={{ display: "grid", gap: 14 }}>
@@ -371,18 +765,22 @@ export default function CreateEntryPage() {
               <div
                 style={{
                   marginTop: 10,
-                  color: "#475569",
-                  lineHeight: 1.8,
-                  fontSize: 14,
-                }}
-              >
-                1. Start with the community details.
+                color: "#475569",
+                lineHeight: 1.8,
+                fontSize: 14,
+              }}
+            >
+                1. Start with the name people know you by.
                 <br />
-                2. Complete founder creation.
+                2. Verify your phone before the community step opens.
                 <br />
-                3. If GSN access is issued, move into Build Your First Circle.
+                3. Record your bank details after phone verification.
                 <br />
-                4. Then continue into your wider member pages.
+                4. Add an optional driver's licence reference if you want extra identity proof.
+                <br />
+                5. Add the community details.
+                <br />
+                6. Activate the issued identity, then move into Build Your First Circle.
               </div>
             </div>
 
@@ -396,8 +794,10 @@ export default function CreateEntryPage() {
                   fontSize: 14,
                 }}
               >
-                Start public create entry here. Community management happens
-                later in the guided member workspace.
+                This keeps founder onboarding guided and one step at a time.
+                Your identity and verified phone come first. Bank destination comes
+                next. Optional licence proof can also be recorded here. Community
+                setup follows after that.
               </div>
             </div>
 
@@ -411,9 +811,9 @@ export default function CreateEntryPage() {
                   fontSize: 14,
                 }}
               >
-                The guided founder path stays focused: start, validate,
-                issue GSN access, build the first circle, then reopen wider
-                movement.
+                This page now opens the community step only after the phone has
+                been verified and the founder bank destination has been recorded
+                server-side. Wider community management opens later in the guided flow.
               </div>
             </div>
           </div>

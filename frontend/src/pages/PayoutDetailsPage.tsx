@@ -2,7 +2,15 @@ import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
-import { getCurrentClan, getMe, getSelectedClanId, safeCopy } from "../lib/api";
+import {
+  getCurrentClan,
+  getMe,
+  getMyWithdrawalDestination,
+  getSelectedClanId,
+  safeCopy,
+  saveWithdrawalDestination,
+  updateWithdrawalDestination,
+} from "../lib/api";
 
 type CommunityLite = {
   id?: number;
@@ -218,6 +226,7 @@ export default function PayoutDetailsPage() {
   const [me, setMe] = useState<any>(null);
   const [community, setCommunity] = useState<CommunityLite | null>(null);
   const [loadedFromLocal, setLoadedFromLocal] = useState(false);
+  const [loadedFromServer, setLoadedFromServer] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
 
@@ -251,21 +260,43 @@ export default function PayoutDetailsPage() {
         getCurrentClan().catch(() => null),
       ]);
 
+      const server = await getMyWithdrawalDestination({
+        clan_id: selectedClanId || undefined,
+        gmfn_id: safeStr(meRes?.gmfn_id || "") || undefined,
+      }).catch(() => null);
       const local = readLocalPayout();
 
       setMe(meRes || null);
       setCommunity(clanRes || null);
       setLoadedFromLocal(Boolean(local));
+      setLoadedFromServer(Boolean(server));
 
       setForm({
-        account_name: safeStr(local?.account_name || meRes?.account_name || ""),
-        account_number: safeStr(local?.account_number || meRes?.account_number || ""),
-        bank_name: safeStr(local?.bank_name || meRes?.bank_name || ""),
-        country: safeStr(local?.country || meRes?.country || ""),
-        currency: safeStr(local?.currency || detectCurrency(meRes) || "NGN") || "NGN",
+        account_name: safeStr(
+          server?.account_name ||
+            server?.destination_name ||
+            local?.account_name ||
+            meRes?.account_name ||
+            ""
+        ),
+        account_number: safeStr(
+          server?.account_number ||
+            server?.bank_account_number ||
+            local?.account_number ||
+            meRes?.account_number ||
+            ""
+        ),
+        bank_name: safeStr(
+          server?.bank_name || server?.bank || local?.bank_name || meRes?.bank_name || ""
+        ),
+        country: safeStr(server?.country || local?.country || meRes?.country || ""),
+        currency:
+          safeStr(
+            server?.currency || local?.currency || detectCurrency(meRes) || "NGN"
+          ) || "NGN",
       });
     })();
-  }, []);
+  }, [selectedClanId]);
 
   useEffect(() => {
     if (!msg && !err) return;
@@ -340,14 +371,36 @@ export default function PayoutDetailsPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  function saveLocal() {
+  async function savePayout() {
     try {
+      const payload = {
+        clan_id: selectedClanId || undefined,
+        gmfn_id: safeStr(me?.gmfn_id || "") || undefined,
+        destination_name: safeStr(form.account_name),
+        bank_name: safeStr(form.bank_name),
+        account_number: safeStr(form.account_number),
+        phone_number: safeStr(me?.phone_e164 || "") || undefined,
+        note: [
+          safeStr(form.country) ? `Country: ${safeStr(form.country)}` : "",
+          safeStr(form.currency) ? `Currency: ${safeStr(form.currency)}` : "",
+        ]
+          .filter(Boolean)
+          .join(" | "),
+      };
+
+      if (loadedFromServer) {
+        await updateWithdrawalDestination(payload);
+      } else {
+        await saveWithdrawalDestination(payload);
+      }
+
       writeLocalPayout(form);
       setLoadedFromLocal(true);
+      setLoadedFromServer(true);
       setErr("");
-      setMsg("Payout details saved locally for this pilot build.");
+      setMsg("Payout details saved on the system and kept locally for continuity.");
     } catch {
-      setErr("Payout details could not be saved locally on this device.");
+      setErr("Payout details could not be saved on the system.");
     }
   }
 
@@ -461,7 +514,7 @@ export default function PayoutDetailsPage() {
                 Readiness: {completionCount}/5 fields complete
               </span>
               <span style={badge(false)}>
-                Source: {loadedFromLocal ? "Local pilot continuity" : "Profile defaults"}
+                Source: {loadedFromServer ? "System record" : loadedFromLocal ? "Local fallback" : "Profile defaults"}
               </span>
             </div>
 
@@ -598,9 +651,9 @@ export default function PayoutDetailsPage() {
             lineHeight: 1.8,
           }}
         >
-          In this pilot build, these details are saved locally on your device for
-          workflow continuity. In the full onboarding flow, these fields should be
-          stored and verified as part of registration.
+          These details are now stored on the system and can also stay locally on
+          this device for continuity. External bank-account verification is still a
+          separate connection, but this destination is now part of the real payout record.
         </div>
 
         <div
@@ -611,7 +664,12 @@ export default function PayoutDetailsPage() {
             flexWrap: "wrap",
           }}
         >
-          <button onClick={saveLocal} style={primaryBtn(false)}>
+          <button
+            onClick={() => {
+              void savePayout();
+            }}
+            style={primaryBtn(false)}
+          >
             Save Payout Details
           </button>
 

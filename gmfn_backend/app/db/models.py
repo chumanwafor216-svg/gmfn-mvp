@@ -33,6 +33,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     email: Mapped[str] = mapped_column(String, unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String)
+    display_name: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
 
     role: Mapped[str] = mapped_column(
         String(20),
@@ -464,6 +465,96 @@ class ClanJoinVote(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
+        nullable=False,
+    )
+
+
+class EntryPhoneVerification(Base):
+    __tablename__ = "entry_phone_verifications"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    display_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    phone_e164: Mapped[str] = mapped_column(String(32), index=True, nullable=False)
+    email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    code: Mapped[str] = mapped_column(String(12), nullable=False)
+    bank_account_name: Mapped[Optional[str]] = mapped_column(String(160), nullable=True)
+    bank_name: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    bank_account_number: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    bank_country: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    bank_currency: Mapped[Optional[str]] = mapped_column(String(8), nullable=True)
+    bank_phone_number: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    bank_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    driver_licence_number: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    driver_licence_country: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    driver_licence_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
+    verified_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    bank_details_recorded_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    driver_licence_recorded_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    consumed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+
+class UserPayoutDestination(Base):
+    __tablename__ = "user_payout_destinations"
+
+    __table_args__ = (
+        UniqueConstraint("user_id", name="uq_user_payout_destination_user_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    destination_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    bank_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    account_number: Mapped[str] = mapped_column(String(64), nullable=False)
+    phone_number: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    country: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    currency: Mapped[Optional[str]] = mapped_column(String(8), nullable=True)
+    note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    verification_status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="recorded",
+        server_default="recorded",
+    )
+    verification_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    verified_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
         nullable=False,
     )
 

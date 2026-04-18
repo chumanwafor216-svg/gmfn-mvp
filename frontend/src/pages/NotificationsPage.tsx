@@ -606,6 +606,31 @@ function normalizeRawNotificationRow(raw: any): RawNotificationRow {
   };
 }
 
+function isTrustOnboardingRow(row: RawNotificationRow | null | undefined): boolean {
+  const kind = safeStr(row?.kind).toLowerCase();
+  const title = safeStr(row?.title).toLowerCase();
+  const detail = safeStr(row?.detail).toLowerCase();
+
+  return (
+    kind === "trust.onboarding" ||
+    title.includes("starter trust") ||
+    detail.includes("starter trust")
+  );
+}
+
+function onboardingProofBadges(detail: string): string[] {
+  const text = safeStr(detail).toLowerCase();
+  const badges: string[] = [];
+
+  if (text.includes("phone")) badges.push("Verified phone");
+  if (text.includes("bank")) badges.push("Recorded bank destination");
+  if (text.includes("licence") || text.includes("license")) {
+    badges.push("Driver's licence");
+  }
+
+  return badges;
+}
+
 function normalizeGuidanceNotice(item: GuidanceNotice): GuidanceNotice {
   return {
     ...item,
@@ -907,7 +932,30 @@ export default function NotificationsPage() {
     [rawNotifications, settings.unreadFirst]
   );
 
+  const onboardingTrustNotice = useMemo(() => {
+    const preferred = rawNotifications.find(
+      (row) => isTrustOnboardingRow(row) && row.unread
+    );
+    if (preferred) return preferred;
+
+    return rawNotifications.find((row) => isTrustOnboardingRow(row)) || null;
+  }, [rawNotifications]);
+
   const operationalFocus = useMemo(() => {
+    if (onboardingTrustNotice) {
+      return normalizeGuidanceNotice({
+        id: safeStr(onboardingTrustNotice.id) || "trust-onboarding-focus",
+        kind: safeStr(onboardingTrustNotice.kind) || "trust.onboarding",
+        title: safeStr(onboardingTrustNotice.title) || "Starter trust has been established",
+        detail:
+          safeStr(onboardingTrustNotice.detail) ||
+          "Your onboarding proofs were recorded and your starter trust has been updated.",
+        ctaLabel: safeStr(onboardingTrustNotice.ctaLabel) || "Review Trust",
+        ctaTo: safeStr(onboardingTrustNotice.ctaTo) || NOTIFICATION_TARGETS.TRUST,
+        bucket: "actNow" as GuidanceInboxBucketKey,
+        unread: Boolean(onboardingTrustNotice.unread),
+      });
+    }
     if (bucketRows.actNow.length > 0) return bucketRows.actNow[0];
     if (bucketRows.dueSoon.length > 0) return bucketRows.dueSoon[0];
     if (guidanceSnapshot?.recoveryPath) {
@@ -923,7 +971,7 @@ export default function NotificationsPage() {
       });
     }
     return null;
-  }, [bucketRows, guidanceSnapshot]);
+  }, [bucketRows, guidanceSnapshot, onboardingTrustNotice]);
 
   async function markAsRead(id: string) {
     if (!/^\d+$/.test(id)) return;
@@ -1147,6 +1195,89 @@ export default function NotificationsPage() {
           </button>
         </div>
       </section>
+
+      {onboardingTrustNotice ? (
+        <section style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <div>
+              <div style={sectionLabel()}>Starter trust update</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: isCompact ? 22 : 28,
+                  fontWeight: 900,
+                  lineHeight: 1.15,
+                }}
+              >
+                {onboardingTrustNotice.title}
+              </div>
+              <div style={{ marginTop: 10, ...helperText() }}>
+                {onboardingTrustNotice.detail}
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {onboardingTrustNotice.unread ? (
+                <span style={badge(true)}>Unread</span>
+              ) : (
+                <span style={badge(false)}>Reviewed</span>
+              )}
+              <span style={badge(false)}>Onboarding proof</span>
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: 14,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            {onboardingProofBadges(onboardingTrustNotice.detail).map((label) => (
+              <span key={label} style={badge(false)}>
+                {label}
+              </span>
+            ))}
+          </div>
+
+          <div
+            style={{
+              marginTop: 16,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <OriginLink to="/app/trust" style={actionBtn("primary")}>
+              Review Trust
+            </OriginLink>
+
+            <OriginLink to="/app/notifications" style={actionBtn("secondary")}>
+              Stay in Notifications
+            </OriginLink>
+
+            {onboardingTrustNotice.unread && /^\d+$/.test(safeStr(onboardingTrustNotice.id)) ? (
+              <button
+                type="button"
+                onClick={() => void markAsRead(safeStr(onboardingTrustNotice.id))}
+                style={actionBtn("soft")}
+              >
+                Mark as read
+              </button>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
 
       <section style={pageCard("#FFFFFF")}>
         <div

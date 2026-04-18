@@ -548,6 +548,59 @@ export async function createEntry(payload: Record<string, any>): Promise<any> {
   return out;
 }
 
+export async function startEntryPhoneVerification(payload: {
+  display_name: string;
+  phone_e164: string;
+  email?: string | null;
+}): Promise<any> {
+  return httpJson("/entry/phone/start", "POST", {
+    display_name: String(payload?.display_name || "").trim(),
+    phone_e164: String(payload?.phone_e164 || "").trim(),
+    email: String(payload?.email || "").trim() || undefined,
+  });
+}
+
+export async function confirmEntryPhoneVerification(payload: {
+  verification_id: number | string;
+  code: string;
+}): Promise<any> {
+  return httpJson("/entry/phone/confirm", "POST", {
+    verification_id: Number(payload?.verification_id || 0),
+    code: String(payload?.code || "").trim(),
+  });
+}
+
+export async function saveEntryBankDetails(payload: {
+  verification_id: number | string;
+  destination_name: string;
+  bank_name: string;
+  account_number: string;
+  phone_number?: string | null;
+  country?: string | null;
+  currency?: string | null;
+  note?: string | null;
+  driver_licence_number?: string | null;
+  driver_licence_country?: string | null;
+  driver_licence_note?: string | null;
+}): Promise<any> {
+  return httpJson("/entry/bank-details", "POST", {
+    verification_id: Number(payload?.verification_id || 0),
+    destination_name: String(payload?.destination_name || "").trim(),
+    bank_name: String(payload?.bank_name || "").trim(),
+    account_number: String(payload?.account_number || "").trim(),
+    phone_number: String(payload?.phone_number || "").trim() || undefined,
+    country: String(payload?.country || "").trim() || undefined,
+    currency: String(payload?.currency || "").trim() || undefined,
+    note: String(payload?.note || "").trim() || undefined,
+    driver_licence_number:
+      String(payload?.driver_licence_number || "").trim() || undefined,
+    driver_licence_country:
+      String(payload?.driver_licence_country || "").trim() || undefined,
+    driver_licence_note:
+      String(payload?.driver_licence_note || "").trim() || undefined,
+  });
+}
+
 export async function submitJoinEntry(payload: Record<string, any>): Promise<any> {
   return httpJsonPaths(
     ["/entry/join", "/clans/join-requests"],

@@ -31,6 +31,8 @@ class UserOut(BaseModel):
     role: str
     gmfn_id: Optional[str] = None
     phone_e164: Optional[str] = None
+    display_name: Optional[str] = None
+    nickname: Optional[str] = None
 
     cci_score: Optional[float] = None
     cci_class: Optional[str] = None
@@ -126,6 +128,8 @@ def authenticate_user_by_identity(db: Session, identity: str, password: str) -> 
     user = db.query(User).filter(User.email == raw).first()
     if not user:
         user = db.query(User).filter(User.gmfn_id == raw).first()
+    if not user:
+        user = db.query(User).filter(User.phone_e164 == raw).first()
     if not user:
         return None
 
@@ -369,12 +373,15 @@ def _extract_user_cci_payload(db: Session, user_id: int) -> dict[str, Any]:
 
 def _build_me_payload(db: Session, user: User) -> dict[str, Any]:
     cci_payload = _extract_user_cci_payload(db, int(user.id))
+    display_name = getattr(user, "display_name", None)
     return {
         "id": int(user.id),
         "email": user.email,
         "role": str(getattr(user, "role", "user") or "user"),
         "gmfn_id": getattr(user, "gmfn_id", None),
         "phone_e164": getattr(user, "phone_e164", None),
+        "display_name": display_name,
+        "nickname": display_name,
         "cci_score": cci_payload.get("cci_score"),
         "cci_class": cci_payload.get("cci_class"),
         "cci_reason": cci_payload.get("cci_reason"),
