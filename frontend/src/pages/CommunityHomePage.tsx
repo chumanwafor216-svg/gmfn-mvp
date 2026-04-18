@@ -9,6 +9,7 @@ import {
   createMarketplaceBroadcast,
   getClanInviteLink,
   getMarketplaceBroadcasts,
+  getMarketplaceShopByGmfnId,
   getMe,
   getPoolMe,
   getSelectedClanId,
@@ -110,6 +111,41 @@ const SPOTLIGHT_DRAFT_PREFIX = "gmfn.communityHome.spotlightDraft.";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
+}
+
+function toBackendAssetUrl(path: string): string {
+  const raw = safeStr(path);
+  if (!raw) return "";
+  if (
+    raw.startsWith("http://") ||
+    raw.startsWith("https://") ||
+    raw.startsWith("blob:") ||
+    raw.startsWith("data:")
+  ) {
+    return raw;
+  }
+
+  const configured =
+    (typeof import.meta !== "undefined" &&
+      (import.meta as any)?.env?.VITE_API_BASE_URL) ||
+    "/api";
+  const trimmed = String(configured || "").trim().replace(/\/+$/, "");
+
+  let origin = "";
+  if (typeof window !== "undefined" && window.location) {
+    if (/^https?:\/\//i.test(trimmed)) {
+      try {
+        origin = new URL(trimmed).origin;
+      } catch {
+        origin = window.location.origin;
+      }
+    } else {
+      origin = window.location.origin.replace(/:\d+$/, ":8012");
+    }
+  }
+
+  if (!origin) return raw;
+  return `${origin}${raw.startsWith("/") ? raw : `/${raw}`}`;
 }
 
 function firstTruthy(...values: any[]): string {
@@ -1082,7 +1118,7 @@ export default function CommunityHomePage() {
           ? {
               id: Number(firstActive?.id || 0) || undefined,
               message: safeStr(firstActive?.message || ""),
-              imageUrl: safeStr(firstActive?.image_url || ""),
+              imageUrl: toBackendAssetUrl(safeStr(firstActive?.image_url || "")),
               expiresAt: safeStr(firstActive?.expires_at || ""),
               createdAt: safeStr(firstActive?.created_at || ""),
             }
@@ -1289,6 +1325,7 @@ export default function CommunityHomePage() {
     const description = safeStr(spotlightDescription);
     const tagNumber = safeStr(spotlightTagNumber);
     const expiry = safeStr(spotlightExpiry);
+    const myGmfnId = safeStr(me?.gmfn_id || "");
 
     const combinedMessage = [description, tagNumber ? `Tag: ${tagNumber}` : ""]
       .filter(Boolean)
@@ -1303,6 +1340,7 @@ export default function CommunityHomePage() {
       setPublishingSpotlight(true);
 
       let imageUrl = "";
+      let spotlightShopId = 0;
 
       if (spotlightImageFile) {
         const uploadRes = await uploadMarketplaceImageFile(
@@ -1326,11 +1364,27 @@ export default function CommunityHomePage() {
         }
       }
 
+      if (myGmfnId) {
+        const shopRes = await getMarketplaceShopByGmfnId(myGmfnId, {
+          clan_id: selectedClanId,
+          header_clan_id: selectedClanId,
+        }).catch(() => null);
+
+        spotlightShopId = Number(
+          shopRes?.item?.id || shopRes?.item?.shop_id || shopRes?.shop_id || 0
+        );
+      }
+
+      const resolvedExpiry = expiry
+        ? new Date(expiry).toISOString()
+        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
       await createMarketplaceBroadcast({
         clan_id: selectedClanId,
+        shop_id: spotlightShopId > 0 ? spotlightShopId : undefined,
         message: combinedMessage || "Spotlight update",
         image_url: imageUrl || undefined,
-        expires_at: expiry || undefined,
+        expires_at: resolvedExpiry,
       });
 
       await refreshActiveCommunitySpotlight(selectedClanId);
@@ -2513,15 +2567,6 @@ export default function CommunityHomePage() {
           </button>
         </div>
 
-        <ExplainToggle
-          label="What this spotlight management does"
-          what="This is where the current community prepares, previews, publishes, and checks the live spotlight that feeds the dashboard featured stage."
-          why="Spotlight works better when users can see the publishing flow as one managed visibility lane instead of guessing between draft fields and live status."
-          next="Prepare the spotlight details first, preview the result, then publish it and check the live state panel to confirm what the dashboard should now show."
-          tone="light"
-          style={{ marginTop: 12 }}
-        />
-
         {!collapsed.spotlight ? (
           <div
             style={{
@@ -2536,15 +2581,6 @@ export default function CommunityHomePage() {
           >
             <div style={innerCard("#FCFEFF")}>
               <div style={sectionLabel()}>Prepare spotlight</div>
-
-              <ExplainToggle
-                label="What this spotlight draft does"
-                what="This draft card is where the current community sets the spotlight message, tag, expiry, and image before anything goes live."
-                why="It keeps the publish step cleaner by separating preparation from the live state and preview checks."
-                next="Fill in the draft first, review the preview beside it, then publish only when the spotlight details look complete."
-                tone="light"
-                style={{ marginTop: 12 }}
-              />
 
               <div style={{ marginTop: 14 }}>
                 <div style={sectionLabel()}>Product description</div>
@@ -2632,14 +2668,6 @@ export default function CommunityHomePage() {
                 }}
               >
                 <div style={sectionLabel()}>Live spotlight state</div>
-                <ExplainToggle
-                  label="What this live state does"
-                  what="This confirms what spotlight is actually live for the current community right now, including the image, message, and expiry state that the dashboard should be showing."
-                  why="It separates the published result from the draft fields so users can tell whether the community's live visibility state really updated."
-                  next="Check this panel after publishing or refreshing, then return to the dashboard only when the live state here matches what you expect to see featured."
-                  tone="light"
-                  style={{ marginTop: 12 }}
-                />
                 {activeCommunitySpotlightLoading ? (
                   <div style={{ marginTop: 10, color: "#5F7287", fontSize: 14, lineHeight: 1.75 }}>
                     Refreshing live spotlight state...
@@ -2742,14 +2770,6 @@ export default function CommunityHomePage() {
                   }}
                 >
                   <div style={sectionLabel()}>Current next action</div>
-                  <ExplainToggle
-                    label="What this next action does"
-                    what="This card names the next clean spotlight step for your current community after checking the live state above."
-                    why="It helps you avoid guessing whether to publish, refresh, or replace the current run."
-                    next="Follow this step first, then return to the dashboard once the live spotlight state matches what you expect."
-                    tone="light"
-                    style={{ marginTop: 12 }}
-                  />
                   <div
                     style={{
                       marginTop: 10,
@@ -2783,15 +2803,6 @@ export default function CommunityHomePage() {
               }}
             >
               <div style={sectionLabel()}>Preview before publish</div>
-
-              <ExplainToggle
-                label="What this preview does"
-                what="This preview shows how the current spotlight draft should look before it is published to the live featured surface."
-                why="It helps users catch missing image, message, or tag details before they turn a draft into the community's live spotlight."
-                next="Review this preview first, then publish only when it matches the spotlight you want the dashboard to feature."
-                tone="light"
-                style={{ marginTop: 12 }}
-              />
 
               <div style={{ marginTop: 14 }}>
                 <div style={previewMediaBox()}>

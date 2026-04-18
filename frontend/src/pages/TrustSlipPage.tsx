@@ -531,7 +531,7 @@ function writeLocalJSON(key: string, value: any) {
 function defaultCollapseState(): CollapseState {
   return {
     summary: false,
-    merchantVerify: false,
+    merchantVerify: true,
     merchantView: false,
     evidence: true,
     notes: false,
@@ -959,9 +959,8 @@ export default function TrustSlipPage() {
           homeLabel="Dashboard"
           backTo="/app/dashboard"
           nextLinks={[
-            { label: "Trust Passport", to: "/app/trust" },
+            { label: "TrustSlip Verify", to: "/app/trust-slip/verify" },
             { label: "Notifications", to: "/app/notifications" },
-            { label: "Marketplace", to: "/app/marketplace" },
           ]}
           utilityLinks={[{ label: "My GSN and I", to: "/app/my-gmfn-and-i" }]}
         />
@@ -1020,9 +1019,8 @@ export default function TrustSlipPage() {
           homeLabel="Dashboard"
           backTo="/app/dashboard"
           nextLinks={[
-            { label: "Trust Passport", to: "/app/trust" },
+            { label: "TrustSlip Verify", to: "/app/trust-slip/verify" },
             { label: "Notifications", to: "/app/notifications" },
-            { label: "Marketplace", to: "/app/marketplace" },
           ]}
           utilityLinks={[{ label: "My GSN and I", to: "/app/my-gmfn-and-i" }]}
         />
@@ -1334,9 +1332,9 @@ export default function TrustSlipPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Merchant Verify Portal</div>
+            <div style={sectionLabel()}>Merchant verification</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              This block shows whether outside merchants can use your verification page.
+              Keep this separate from TrustSlip Verify. It controls whether outside merchants can use the public verification page.
             </div>
           </div>
 
@@ -1495,20 +1493,9 @@ export default function TrustSlipPage() {
                   flexWrap: "wrap",
                 }}
               >
-                {verifyUrl ? (
-                  <a
-                    href={verifyUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={actionBtn("primary")}
-                  >
-                    Open TrustSlip Verify
-                  </a>
-                ) : (
-                  <button type="button" style={actionBtn("primary", true)} disabled>
-                    Open TrustSlip Verify
-                  </button>
-                )}
+                <OriginLink to="/app/trust-slip/verify" style={actionBtn("primary")}>
+                  Open TrustSlip Verify
+                </OriginLink>
 
                 <button
                   type="button"
@@ -1524,6 +1511,17 @@ export default function TrustSlipPage() {
                 >
                   Copy Verify Link
                 </button>
+
+                {verifyUrl ? (
+                  <a
+                    href={verifyUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={actionBtn("soft")}
+                  >
+                    Open Merchant Verify
+                  </a>
+                ) : null}
               </div>
             </div>
           </div>

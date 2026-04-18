@@ -30,6 +30,8 @@ const TrustSlipPage = React.lazy(() => import("./pages/TrustSlipPage"));
 const TrustSlipVerifyPage = React.lazy(
   () => import("./pages/TrustSlipVerifyPage")
 );
+const OpenTrustPage = React.lazy(() => import("./pages/OpenTrustPage"));
+const CCIReadingPage = React.lazy(() => import("./pages/CCIReadingPage"));
 const PaymentInstructionsPage = React.lazy(
   () => import("./pages/PaymentInstructionsPage")
 );
@@ -576,6 +578,7 @@ export default function App() {
         <Route path="shop-gallery/:gmfnId" element={<RedirectPublicShopAlias />} />
 
         <Route path="trust" element={<TrustScorePage />} />
+        <Route path="open-trust-reading" element={<OpenTrustPage />} />
         <Route path="trust-passport" element={<Navigate to={APP_ROUTES.TRUST} replace />} />
         <Route path="open-trust" element={<PreserveRedirect to={APP_ROUTES.TRUST} />} />
         <Route path="trust-slip" element={<TrustSlipPage />} />
@@ -586,6 +589,7 @@ export default function App() {
         <Route path="trust-slip/verify" element={<TrustSlipVerifyPage />} />
 
         <Route path="identity" element={<IdentityIntegrityPage />} />
+        <Route path="cci-reading" element={<CCIReadingPage />} />
         <Route path="identity-integrity" element={<PreserveRedirect to={APP_ROUTES.CCI} />} />
         <Route path="cci" element={<PreserveRedirect to={APP_ROUTES.CCI} />} />
 

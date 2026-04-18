@@ -2095,6 +2095,7 @@ export async function getMarketplaceProducts(params?: {
 
 export async function createMarketplaceBroadcast(payload: {
   clan_id?: number | null;
+  shop_id?: number | null;
   message: string;
   image_url?: string | null;
   expires_at?: string | null;
@@ -2103,6 +2104,7 @@ export async function createMarketplaceBroadcast(payload: {
     payload?.clan_id === undefined ? getSelectedClanId() : payload?.clan_id;
 
   const clanId = Number(effectiveClanId || 0);
+  const shopId = Number(payload?.shop_id || 0);
   const message = String(payload?.message || "").trim();
   const imageUrl = String(payload?.image_url || "").trim();
   const expiresAt = normalizeApiDateTime(payload?.expires_at);
@@ -2121,6 +2123,10 @@ export async function createMarketplaceBroadcast(payload: {
 
   if (expiresAt) {
     baseBody.expires_at = expiresAt;
+  }
+
+  if (shopId > 0) {
+    baseBody.shop_id = shopId;
   }
 
   const options =

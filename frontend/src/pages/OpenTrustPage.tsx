@@ -1,0 +1,461 @@
+import React, { useEffect, useMemo, useState } from "react";
+import OriginLink from "../components/OriginLink";
+import PageTopNav from "../components/PageTopNav";
+import {
+  getCurrentClan,
+  getMe,
+  getMyTrustSlip,
+  getSelectedClanId,
+} from "../lib/api";
+
+type TrustSlipRecord = {
+  code?: string | null;
+  status?: string | null;
+  trust_band?: string | null;
+  trust_class?: string | null;
+  trust_score?: string | number | null;
+  open_trust_band?: string | null;
+  open_trust_class?: string | null;
+  open_trust_score?: string | number | null;
+  community_trust_band?: string | null;
+  community_trust_class?: string | null;
+  community_trust_score?: string | number | null;
+};
+
+type ReadingState = {
+  classText: string;
+  scoreText: string;
+  tone: "green" | "yellow" | "red" | "neutral";
+  statusText: string;
+  whyText: string;
+};
+
+function safeStr(x: any): string {
+  return String(x ?? "").trim();
+}
+
+function firstTruthy(...values: any[]): string {
+  for (const value of values) {
+    const text = safeStr(value);
+    if (text) return text;
+  }
+  return "";
+}
+
+function firstNumberLike(...values: any[]): number | null {
+  for (const value of values) {
+    if (value === null || value === undefined || String(value).trim() === "") {
+      continue;
+    }
+    const n = Number(value);
+    if (!Number.isNaN(n)) return n;
+  }
+  return null;
+}
+
+function positiveNumber(value: any): number {
+  const n = Number(value || 0);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function pageCard(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    borderRadius: 24,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 20,
+    boxShadow:
+      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
+    overflow: "hidden",
+  };
+}
+
+function innerCard(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: bg,
+    padding: 14,
+  };
+}
+
+function sectionLabel(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#5D7389",
+    fontWeight: 900,
+    letterSpacing: 0.35,
+    textTransform: "uppercase",
+  };
+}
+
+function helperText(): React.CSSProperties {
+  return {
+    color: "#5F7287",
+    fontSize: 14,
+    lineHeight: 1.75,
+  };
+}
+
+function badge(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    minHeight: 30,
+    borderRadius: 999,
+    padding: "6px 10px",
+    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
+    color: primary ? "#0B63D1" : "#51657A",
+    fontSize: 12,
+    fontWeight: 900,
+    whiteSpace: "normal",
+  };
+}
+
+function actionBtn(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 40,
+    padding: "10px 14px",
+    borderRadius: 14,
+    border: primary ? "none" : "1px solid rgba(11,31,51,0.10)",
+    background: primary ? "#0B63D1" : "#FFFFFF",
+    color: primary ? "#FFFFFF" : "#0B1F33",
+    fontWeight: 800,
+    fontSize: 14,
+    textDecoration: "none",
+    whiteSpace: "normal",
+  };
+}
+
+function normalizeTrustSlipRecord(raw: any): TrustSlipRecord | null {
+  if (!raw) return null;
+  const src = raw?.item || raw?.trust_slip || raw;
+  return {
+    code: firstTruthy(src?.code, src?.trust_slip_code),
+    status: firstTruthy(src?.status, src?.state, src?.verification_status),
+    trust_band: firstTruthy(src?.trust_band, src?.trust_class),
+    trust_class: firstTruthy(src?.trust_class, src?.trust_band),
+    trust_score: firstNumberLike(src?.trust_score),
+    open_trust_band: firstTruthy(
+      src?.open_trust_band,
+      src?.community_trust_band,
+      src?.open_trust_class
+    ),
+    open_trust_class: firstTruthy(
+      src?.open_trust_class,
+      src?.community_trust_class,
+      src?.open_trust_band
+    ),
+    open_trust_score: firstNumberLike(
+      src?.open_trust_score,
+      src?.community_trust_score
+    ),
+    community_trust_band: firstTruthy(
+      src?.community_trust_band,
+      src?.open_trust_band
+    ),
+    community_trust_class: firstTruthy(
+      src?.community_trust_class,
+      src?.open_trust_class
+    ),
+    community_trust_score: firstNumberLike(
+      src?.community_trust_score,
+      src?.open_trust_score
+    ),
+  };
+}
+
+function getOpenTrustState(
+  me: any,
+  trustSlip: TrustSlipRecord | null,
+  hasSelectedCommunity: boolean
+): ReadingState {
+  const rawClass = firstTruthy(
+    me?.open_trust_class,
+    me?.open_trust_band,
+    me?.current_community_trust_class,
+    me?.current_community_trust_band,
+    me?.community_trust_class,
+    me?.community_trust_band,
+    me?.selected_clan_trust_class,
+    me?.selected_clan_trust_band,
+    trustSlip?.open_trust_class,
+    trustSlip?.open_trust_band,
+    trustSlip?.community_trust_class,
+    trustSlip?.community_trust_band,
+    me?.trust_class,
+    me?.trust_band,
+    trustSlip?.trust_class,
+    trustSlip?.trust_band
+  ).toUpperCase();
+
+  const rawScore = firstNumberLike(
+    me?.open_trust_score,
+    me?.current_community_trust_score,
+    me?.community_trust_score,
+    me?.selected_clan_trust_score,
+    trustSlip?.open_trust_score,
+    trustSlip?.community_trust_score,
+    me?.trust_score,
+    trustSlip?.trust_score
+  );
+
+  const rawWhy = firstTruthy(
+    me?.open_trust_reason,
+    me?.current_community_trust_reason,
+    me?.community_trust_reason,
+    me?.selected_clan_trust_reason,
+    me?.trust_reason
+  );
+
+  if (rawClass) {
+    if (rawClass === "A" || rawClass === "A+") {
+      return {
+        classText: rawClass,
+        scoreText:
+          rawScore === null || Number.isNaN(rawScore) ? "—" : String(Math.round(rawScore)),
+        tone: "green",
+        statusText: "Strong in your current community",
+        whyText: rawWhy || "Your present community reading is strong.",
+      };
+    }
+    if (rawClass === "B") {
+      return {
+        classText: rawClass,
+        scoreText:
+          rawScore === null || Number.isNaN(rawScore) ? "—" : String(Math.round(rawScore)),
+        tone: "green",
+        statusText: "Stable in your current community",
+        whyText: rawWhy || "Your current community reading looks steady right now.",
+      };
+    }
+    if (rawClass === "C") {
+      return {
+        classText: rawClass,
+        scoreText:
+          rawScore === null || Number.isNaN(rawScore) ? "—" : String(Math.round(rawScore)),
+        tone: "yellow",
+        statusText: "Needs attention in your current community",
+        whyText:
+          rawWhy || "Your current community reading suggests some areas need attention.",
+      };
+    }
+    return {
+      classText: rawClass,
+      scoreText:
+        rawScore === null || Number.isNaN(rawScore) ? "—" : String(Math.round(rawScore)),
+      tone: "red",
+      statusText: "At risk in your current community",
+      whyText:
+        rawWhy || "Your current community reading shows pressure that needs attention.",
+    };
+  }
+
+  if (rawScore !== null && !Number.isNaN(rawScore)) {
+    if (rawScore >= 75) {
+      return {
+        classText: "A",
+        scoreText: String(Math.round(rawScore)),
+        tone: "green",
+        statusText: "Strong in your current community",
+        whyText: rawWhy || "Your current community reading is strong.",
+      };
+    }
+    if (rawScore >= 55) {
+      return {
+        classText: "B",
+        scoreText: String(Math.round(rawScore)),
+        tone: "green",
+        statusText: "Stable in your current community",
+        whyText: rawWhy || "Your current community reading looks steady right now.",
+      };
+    }
+    if (rawScore >= 35) {
+      return {
+        classText: "C",
+        scoreText: String(Math.round(rawScore)),
+        tone: "yellow",
+        statusText: "Needs attention in your current community",
+        whyText:
+          rawWhy || "Your current community reading suggests some areas need attention.",
+      };
+    }
+    return {
+      classText: "D",
+      scoreText: String(Math.round(rawScore)),
+      tone: "red",
+      statusText: "At risk in your current community",
+      whyText:
+        rawWhy || "Your current community reading shows pressure that needs attention.",
+    };
+  }
+
+  if (!hasSelectedCommunity) {
+    return {
+      classText: "Pending",
+      scoreText: "—",
+      tone: "neutral",
+      statusText: "Select a community to view Open Trust",
+      whyText:
+        "Open Trust belongs to your immediate community reading, not to your cross-community integrity reading.",
+    };
+  }
+
+  return {
+    classText: "Pending",
+    scoreText: "—",
+    tone: "neutral",
+    statusText: "Open Trust is being prepared",
+    whyText:
+      "Open Trust reflects your standing in your current community and will appear here when available.",
+  };
+}
+
+function toneMeta(tone: ReadingState["tone"]) {
+  if (tone === "green") {
+    return { bg: "#F3FBF5", border: "1px solid rgba(34,197,94,0.16)", text: "#166534" };
+  }
+  if (tone === "yellow") {
+    return { bg: "#FFFBEF", border: "1px solid rgba(245,158,11,0.16)", text: "#92400E" };
+  }
+  if (tone === "red") {
+    return { bg: "#FFF5F5", border: "1px solid rgba(239,68,68,0.16)", text: "#991B1B" };
+  }
+  return { bg: "#F8FAFC", border: "1px solid rgba(148,163,184,0.16)", text: "#334155" };
+}
+
+export default function OpenTrustPage() {
+  const selectedClanId = Number(getSelectedClanId() || 0);
+  const [isCompact, setIsCompact] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 980;
+  });
+  const [loading, setLoading] = useState(true);
+  const [me, setMe] = useState<any>(null);
+  const [currentClan, setCurrentClan] = useState<any>(null);
+  const [trustSlip, setTrustSlip] = useState<TrustSlipRecord | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    function handleResize() {
+      setIsCompact(window.innerWidth <= 980);
+    }
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      setLoading(true);
+      try {
+        const [meRes, clanRes, trustSlipRes] = await Promise.all([
+          getMe().catch(() => null),
+          getCurrentClan().catch(() => null),
+          getMyTrustSlip().catch(() => null),
+        ]);
+        if (!alive) return;
+        setMe(meRes || null);
+        setCurrentClan(clanRes || null);
+        setTrustSlip(normalizeTrustSlipRecord(trustSlipRes));
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const openTrust = useMemo(
+    () => getOpenTrustState(me, trustSlip, Boolean(selectedClanId)),
+    [me, trustSlip, selectedClanId]
+  );
+  const tone = useMemo(() => toneMeta(openTrust.tone), [openTrust.tone]);
+  const communityLabel = useMemo(
+    () =>
+      firstTruthy(
+        currentClan?.marketplace_name,
+        currentClan?.name,
+        currentClan?.display_name,
+        currentClan?.title
+      ) || (selectedClanId ? `Community ${selectedClanId}` : "No current community"),
+    [currentClan, selectedClanId]
+  );
+
+  return (
+    <div style={{ maxWidth: 980, margin: "0 auto", display: "grid", gap: 18 }}>
+      <PageTopNav
+        sectionLabel="Open Trust"
+        title="Open Trust"
+        subtitle="Your immediate community trust reading without the wider Trust Passport bundle."
+        homeTo="/app/dashboard"
+        homeLabel="Dashboard"
+        backTo="/app/dashboard"
+        backLabel="Dashboard"
+        nextLinks={[
+          { label: "Trust Passport", to: "/app/trust" },
+          { label: "TrustSlip", to: "/app/trust-slip" },
+        ]}
+        utilityLinks={[{ label: "Community", to: "/app/community" }]}
+      />
+
+      <section style={pageCard("#FFFFFF")}>
+        <div style={sectionLabel()}>Open Trust</div>
+        <div style={{ marginTop: 10, color: "#0B1F33", fontSize: isCompact ? 28 : 34, fontWeight: 900, lineHeight: 1.1 }}>
+          Current community reading
+        </div>
+        <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
+          Use this page when you want the immediate community trust reading only.
+        </div>
+        <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <span style={badge(true)}>{communityLabel}</span>
+          <span style={badge(false)}>Class {openTrust.classText}</span>
+        </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(280px, 0.9fr) minmax(0, 1.1fr)",
+            gap: 14,
+            alignItems: "start",
+          }}
+        >
+          <div style={{ ...innerCard(tone.bg), border: tone.border }}>
+            <div style={sectionLabel()}>Reading</div>
+            <div style={{ marginTop: 12, color: tone.text, fontWeight: 900, fontSize: 34, lineHeight: 1 }}>
+              Class {openTrust.classText}
+            </div>
+            <div style={{ marginTop: 10, color: "#475569", fontSize: 14, fontWeight: 800 }}>
+              Score {openTrust.scoreText}
+            </div>
+            <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 14, fontWeight: 800, lineHeight: 1.45 }}>
+              {openTrust.statusText}
+            </div>
+          </div>
+
+          <div style={innerCard("#F8FBFF")}>
+            <div style={sectionLabel()}>Why this reading</div>
+            <div style={{ marginTop: 10, ...helperText() }}>
+              {loading ? "Loading the current community trust reading..." : openTrust.whyText}
+            </div>
+            <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <OriginLink to="/app/trust" style={actionBtn(false)}>
+                Open Trust Passport
+              </OriginLink>
+              <OriginLink to="/app/community" style={actionBtn(false)}>
+                Open Community
+              </OriginLink>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}

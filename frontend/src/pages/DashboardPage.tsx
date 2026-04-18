@@ -3,6 +3,7 @@ import ExplainToggle from "../components/ExplainToggle";
 import SystemPictureFrame from "../components/SystemPictureFrame";
 import { useLocation, useNavigate } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
+import { EntryBackLink } from "../components/EntryControls";
 import { navigateWithOrigin } from "../lib/nav";
 import {
   getCommunityJoinRequests,
@@ -246,7 +247,7 @@ type TrustJourneyModel = {
   commitmentLine: string;
 };
 
-const DASHBOARD_UI_STORAGE_KEY = "gmfn.dashboard.ui.v2";
+const DASHBOARD_UI_STORAGE_KEY = "gmfn.dashboard.ui.v3";
 const DASHBOARD_AVATAR_STORAGE_KEY = "gmfn.member.avatar";
 const DASHBOARD_APP_USAGE_STORAGE_KEY = "gmfn.dashboard.app-usage.v1";
 const DASHBOARD_FOCUS_COMMITMENTS_STORAGE_KEY =
@@ -408,12 +409,12 @@ const EXACT_TARGET_ALIASES: Record<string, string> = {
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 24,
-    border: "1px solid rgba(15,59,116,0.18)",
+    borderRadius: 26,
+    border: "1px solid rgba(15,59,116,0.16)",
     background: bg,
     padding: 20,
     boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
+      "0 20px 42px rgba(7,16,28,0.10), inset 0 1px 0 rgba(255,255,255,0.46)",
     overflow: "hidden",
   };
 }
@@ -421,18 +422,22 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.07)",
+    border: "1px solid rgba(15,59,116,0.10)",
     background: bg,
     padding: 16,
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.82), 0 10px 22px rgba(10,24,49,0.05)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 18,
-    border: "1px solid rgba(15,59,116,0.18)",
+    border: "1px solid rgba(15,59,116,0.12)",
     background: bg,
     padding: 16,
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.82), 0 12px 26px rgba(10,24,49,0.05)",
   };
 }
 
@@ -445,6 +450,8 @@ function statTile(
     border,
     background: bg,
     padding: 14,
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.72), 0 8px 18px rgba(10,24,49,0.04)",
   };
 }
 
@@ -457,11 +464,15 @@ function routeTile(primary = false): React.CSSProperties {
     borderRadius: 16,
     border: primary
       ? "1px solid rgba(11,99,209,0.18)"
-      : "1px solid rgba(11,31,51,0.08)",
-    background: primary ? "#F7FAFF" : "#FFFFFF",
+      : "1px solid rgba(15,59,116,0.10)",
+    background: primary
+      ? "linear-gradient(180deg, #F7FBFF 0%, #EDF5FF 100%)"
+      : "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)",
     padding: 14,
     textDecoration: "none",
-    boxShadow: primary ? "0 8px 20px rgba(11,99,209,0.05)" : "none",
+    boxShadow: primary
+      ? "0 12px 24px rgba(11,99,209,0.07), inset 0 1px 0 rgba(255,255,255,0.72)"
+      : "0 10px 22px rgba(10,24,49,0.04), inset 0 1px 0 rgba(255,255,255,0.78)",
   };
 }
 
@@ -473,9 +484,11 @@ function primaryBtn(disabled = false): React.CSSProperties {
     minHeight: 42,
     padding: "10px 14px",
     borderRadius: 14,
-    border: "none",
-    background: disabled ? "#CBD5E1" : "#0B63D1",
-    color: "#FFFFFF",
+    border: "1px solid rgba(145,103,19,0.22)",
+    background: disabled
+      ? "linear-gradient(180deg, #E2E8F0 0%, #CBD5E1 100%)"
+      : "linear-gradient(180deg, #F8DE8D 0%, #F3D06A 52%, #D9A941 100%)",
+    color: disabled ? "#64748B" : "#10253B",
     fontWeight: 900,
     fontSize: 14,
     textDecoration: "none",
@@ -483,6 +496,9 @@ function primaryBtn(disabled = false): React.CSSProperties {
     opacity: disabled ? 0.85 : 1,
     whiteSpace: "normal",
     textAlign: "center",
+    boxShadow: disabled
+      ? "none"
+      : "0 14px 28px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.58), inset 0 -8px 14px rgba(125,85,10,0.10)",
   };
 }
 
@@ -494,15 +510,20 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     minHeight: 42,
     padding: "10px 14px",
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
-    color: disabled ? "#94A3B8" : "#0B1F33",
+    border: "1px solid rgba(145,103,19,0.18)",
+    background: disabled
+      ? "linear-gradient(180deg, #F8FAFC 0%, #E2E8F0 100%)"
+      : "linear-gradient(180deg, #FFF6D8 0%, #F7E4A8 54%, #E9C870 100%)",
+    color: disabled ? "#94A3B8" : "#5A3900",
     fontWeight: 800,
     fontSize: 14,
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     textAlign: "center",
+    boxShadow: disabled
+      ? "none"
+      : "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.78)",
   };
 }
 
@@ -514,21 +535,26 @@ function subtleBtn(disabled = false): React.CSSProperties {
     minHeight: 38,
     padding: "8px 12px",
     borderRadius: 12,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#F8FBFF",
-    color: disabled ? "#94A3B8" : "#24415C",
+    border: "1px solid rgba(145,103,19,0.16)",
+    background: disabled
+      ? "linear-gradient(180deg, #F8FAFC 0%, #E2E8F0 100%)"
+      : "linear-gradient(180deg, #FFF8E4 0%, #F5E2A8 100%)",
+    color: disabled ? "#94A3B8" : "#6B4300",
     fontWeight: 800,
     fontSize: 13,
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     textAlign: "center",
+    boxShadow: disabled
+      ? "none"
+      : "0 8px 16px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.76)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#5D7389",
+    color: "#355A86",
     fontWeight: 900,
     letterSpacing: 0.35,
     textTransform: "uppercase",
@@ -543,17 +569,22 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
+    background: primary
+      ? "linear-gradient(180deg, rgba(248,222,141,0.72) 0%, rgba(243,208,106,0.52) 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.84) 0%, rgba(235,244,255,0.84) 100%)",
+    color: primary ? "#7A5200" : "#355A86",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
+    border: primary
+      ? "1px solid rgba(145,103,19,0.18)"
+      : "1px solid rgba(15,59,116,0.10)",
   };
 }
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#5F7287",
+    color: "#476581",
     fontSize: 14,
     lineHeight: 1.75,
   };
@@ -564,12 +595,15 @@ function fieldInputStyle(): React.CSSProperties {
     width: "100%",
     minHeight: 42,
     borderRadius: 12,
-    border: "1px solid rgba(11,31,51,0.12)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(15,59,116,0.14)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.98) 100%)",
     padding: "10px 12px",
     fontSize: 14,
     color: "#0B1F33",
     outline: "none",
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.86), 0 6px 14px rgba(10,24,49,0.04)",
   };
 }
 
@@ -1659,7 +1693,7 @@ function spotlightMarketplaceTo(item: SpotlightItem | null): string {
 
 function defaultDashboardUIState(): DashboardUIState {
   return {
-    spotlightMinimized: false,
+    spotlightMinimized: true,
     routesExpanded:
       typeof window !== "undefined" ? window.innerWidth > 1100 : true,
     appsExpanded:
@@ -2567,6 +2601,8 @@ export default function DashboardPage() {
   const [activeWisdom, setActiveWisdom] = useState<MarketWisdomPair | null>(
     null
   );
+  const [qrReady, setQrReady] = useState<boolean>(false);
+  const [qrFailed, setQrFailed] = useState<boolean>(false);
   const [sellerIdentityDockOpen, setSellerIdentityDockOpen] =
     useState<boolean>(true);
 
@@ -2623,6 +2659,11 @@ export default function DashboardPage() {
   useEffect(() => {
     setAvatarSrc(readStoredImage(DASHBOARD_AVATAR_STORAGE_KEY));
   }, []);
+
+  useEffect(() => {
+    setQrReady(false);
+    setQrFailed(false);
+  }, [trustSlip?.code]);
 
   useEffect(() => {
     (async () => {
@@ -2858,6 +2899,41 @@ export default function DashboardPage() {
   const gmfnId = safeStr(me?.gmfn_id || "Pending");
   const trustSlipCode = safeStr(trustSlip?.code || "");
 
+  function trustGoldBtn(minHeight = 34, fontSize = 13): React.CSSProperties {
+    return {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight,
+      padding: "6px 10px",
+      borderRadius: 11,
+      border: "1px solid rgba(122,75,0,0.24)",
+      background:
+        "linear-gradient(180deg, #F6D77A 0%, #E1B948 48%, #C9971F 100%)",
+      color: "#533300",
+      fontWeight: 900,
+      fontSize,
+      textDecoration: "none",
+      cursor: "pointer",
+      whiteSpace: "normal",
+      textAlign: "center",
+      boxShadow:
+        "inset 0 1px 0 rgba(255,248,220,0.9), inset 0 -2px 0 rgba(122,75,0,0.16), 0 7px 12px rgba(15,23,42,0.12)",
+      letterSpacing: 0.08,
+    };
+  }
+
+  function trustGoldMiniBtn(): React.CSSProperties {
+    return {
+      ...trustGoldBtn(24, 10),
+      padding: "2px 7px",
+      borderRadius: 8,
+      minWidth: 84,
+      boxShadow:
+        "inset 0 1px 0 rgba(255,248,220,0.92), inset 0 -1px 0 rgba(122,75,0,0.14), 0 5px 10px rgba(15,23,42,0.10)",
+    };
+  }
+
   const verificationStatus =
     safeStr(
       trustSlip?.status ||
@@ -2885,6 +2961,16 @@ export default function DashboardPage() {
         )}/page`
       : "";
   }, [trustSlip, trustSlipCode]);
+
+  const trustQrSrc = useMemo(
+    () =>
+      trustSlipCode
+        ? `${apiOrigin()}/trust-slips/verify/${encodeURIComponent(
+            trustSlipCode
+          )}/qr.png`
+        : "",
+    [trustSlipCode]
+  );
 
   const storedCommunitySpotlightImage = useMemo(() => {
     const spotlightClanId = positiveNumber(
@@ -3593,6 +3679,26 @@ export default function DashboardPage() {
     navigateWithOrigin(navigate, app.to, location);
   }
 
+  function openMerchantVerifyPage() {
+    const href = safeStr(merchantVerifyHref);
+    if (!href || typeof window === "undefined") return;
+    window.open(href, "_blank", "noopener,noreferrer");
+  }
+
+  function openTrustSlipPage() {
+    const query = trustSlipCode
+      ? `?code=${encodeURIComponent(trustSlipCode)}`
+      : "";
+    navigateWithOrigin(navigate, `/app/trust-slip${query}`, location);
+  }
+
+  function openTrustSlipVerifyInApp() {
+    const query = trustSlipCode
+      ? `?code=${encodeURIComponent(trustSlipCode)}`
+      : "";
+    navigateWithOrigin(navigate, `/app/trust-slip/verify${query}`, location);
+  }
+
   function openAvatarPicker() {
     fileInputRef.current?.click();
   }
@@ -3885,126 +3991,127 @@ export default function DashboardPage() {
   return (
     <div
       style={{
-        maxWidth: 1180,
-        margin: "0 auto",
-        paddingBottom: 40,
-        display: "grid",
-        gap: 18,
+        minHeight: "100%",
+        margin: "0 -16px",
+        padding: "18px 16px 40px",
+        background:
+          "radial-gradient(circle at top, rgba(47,103,196,0.16) 0%, rgba(16,37,59,0.00) 32%), linear-gradient(180deg, #10243A 0%, #173654 62%, #26527C 100%)",
       }}
     >
-      <section style={pageCard("#FFFFFF")}>
+      <div
+        style={{
+          maxWidth: 1180,
+          margin: "0 auto",
+          display: "grid",
+          gap: 18,
+        }}
+      >
+      <section
+        style={pageCard(
+          "radial-gradient(circle at top, rgba(47,103,196,0.16) 0%, rgba(16,37,59,0.00) 32%), linear-gradient(180deg, #10243A 0%, #173654 62%, #26527C 100%)"
+        )}
+      >
         <div
           style={{
-            ...innerCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
-            border: "1px solid rgba(212,175,55,0.24)",
-            boxShadow: "0 18px 38px rgba(2,12,27,0.18)",
+            ...innerCard(
+              "linear-gradient(180deg, #0D243B 0%, #13314D 54%, #1E4A70 100%)"
+            ),
+            border: "1px solid rgba(212,175,55,0.20)",
+            boxShadow: "0 18px 38px rgba(7,16,28,0.16)",
             padding: isCompact ? 16 : 18,
           }}
         >
           <div
             style={{
-              ...softCard("linear-gradient(180deg, #0F3B74 0%, #0B63D1 100%)"),
-              border: "1px solid rgba(11,99,209,0.12)",
+              ...softCard(
+                "linear-gradient(180deg, #1B4B78 0%, #2B6599 56%, #3B78AE 100%)"
+              ),
+              border: "1px solid rgba(255,255,255,0.14)",
               color: "#FFFFFF",
-              padding: isCompact ? 16 : 18,
+              padding: isCompact ? 12 : 14,
             }}
           >
             <div
               style={{
-                fontSize: 12,
-                fontWeight: 900,
-                letterSpacing: 0.45,
-                textTransform: "uppercase",
-                opacity: 0.88,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 8,
+                marginBottom: 8,
               }}
             >
-              GSN
+              <EntryBackLink to="/app/community" />
+
+              <div
+                style={{
+                  flex: 1,
+                  textAlign: "center",
+                  fontSize: isCompact ? 24 : 31,
+                  fontWeight: 900,
+                  lineHeight: 1.04,
+                  padding: "0 8px",
+                }}
+              >
+                Trust is the first currency.
+              </div>
+
+              <span
+                style={{
+                  ...badge(true),
+                  minHeight: 28,
+                  padding: "4px 10px",
+                  background: "rgba(255,255,255,0.14)",
+                  color: "#FFFFFF",
+                  border: "1px solid rgba(255,255,255,0.16)",
+                  boxShadow: "0 10px 20px rgba(2,12,27,0.12)",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Navigator
+              </span>
             </div>
 
             <div
               style={{
-                marginTop: 10,
                 display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr"
-                  : "minmax(0, 1.2fr) minmax(280px, 0.8fr)",
-                gap: 14,
+                gap: 10,
                 alignItems: "start",
               }}
             >
-              <div>
-                <div
-                  style={{
-                    fontSize: isCompact ? 28 : 36,
-                    fontWeight: 900,
-                    lineHeight: 1.08,
-                    maxWidth: 820,
-                  }}
-                >
-                  Trust is the first currency.
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 10,
-                    fontSize: 15,
-                    lineHeight: 1.75,
-                    color: "rgba(255,255,255,0.92)",
-                    maxWidth: 860,
-                  }}
-                >
-                  GSN makes it visible, portable, and usable before trade,
-                  support, or decision.
-                </div>
+              <div
+                style={{
+                  fontSize: 14.5,
+                  lineHeight: 1.68,
+                  color: "rgba(255,255,255,0.92)",
+                  maxWidth: 760,
+                }}
+              >
+                GSN makes it visible, portable, and usable before trade,
+                support, or decision.
               </div>
 
               <div
                 style={{
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                  justifyContent: isCompact ? "flex-start" : "flex-end",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  justifySelf: "start",
+                  minHeight: isCompact ? 44 : 48,
+                  padding: isCompact ? "0 18px" : "0 22px",
+                  borderRadius: 999,
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.10) 42%, rgba(255,255,255,0.05) 100%)",
+                  border: "1px solid rgba(255,255,255,0.18)",
+                  boxShadow:
+                    "0 16px 28px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -6px 12px rgba(6,18,35,0.12)",
+                  color: "#F3D06A",
+                  fontSize: isCompact ? 18 : 20,
+                  fontWeight: 1000,
+                  letterSpacing: 4.2,
+                  textTransform: "uppercase",
                 }}
               >
-                <span
-                  style={{
-                    ...badge(true),
-                    background: "rgba(255,255,255,0.14)",
-                    color: "#FFFFFF",
-                  }}
-                >
-                  Portable Trust Identity
-                </span>
-
-                <span
-                  style={{
-                    ...badge(false),
-                    background: "rgba(255,255,255,0.12)",
-                    color: "#FFFFFF",
-                  }}
-                >
-                  Merchant Verify
-                </span>
-
-                <span
-                  style={{
-                    ...badge(false),
-                    background: "rgba(255,255,255,0.12)",
-                    color: "#FFFFFF",
-                  }}
-                >
-                  Current page: Dashboard
-                </span>
-
-                <span
-                  style={{
-                    ...badge(false),
-                    background: "rgba(255,255,255,0.12)",
-                    color: "#FFFFFF",
-                  }}
-                >
-                  Current step: Review what matters now
-                </span>
+                GSN
               </div>
             </div>
           </div>
@@ -4023,7 +4130,8 @@ export default function DashboardPage() {
             <div>
               <div
                 style={{
-                  width: "100%",
+                  width: isCompact ? "84%" : "80%",
+                  margin: "0 auto",
                   borderRadius: 34,
                   padding: 10,
                   border: "1px solid rgba(212,175,55,0.22)",
@@ -4082,6 +4190,34 @@ export default function DashboardPage() {
                       {profileInitials}
                     </div>
                   )}
+
+                  <button
+                    type="button"
+                    onClick={() => setPictureOptionsOpen((prev) => !prev)}
+                    style={{
+                      ...secondaryBtn(false),
+                      position: "absolute",
+                      right: 14,
+                      bottom: 14,
+                      width: "auto",
+                      minWidth: 42,
+                      minHeight: 24,
+                      padding: "3px 6px",
+                      justifyContent: "space-between",
+                      gap: 3,
+                      background:
+                        "linear-gradient(180deg, rgba(247,217,120,0.96) 0%, rgba(212,175,55,0.98) 52%, rgba(184,137,45,1) 100%)",
+                      color: "#4A3200",
+                      border: "1px solid rgba(122,75,0,0.24)",
+                      boxShadow:
+                        "0 16px 28px rgba(2,12,27,0.28), inset 0 1px 0 rgba(255,255,255,0.42)",
+                      backdropFilter: "blur(8px)",
+                      fontSize: 9,
+                    }}
+                  >
+                    <span>Picture frame</span>
+                    <span>{pictureOptionsOpen ? "-" : "+"}</span>
+                  </button>
                 </div>
               </div>
 
@@ -4093,25 +4229,10 @@ export default function DashboardPage() {
                 style={{ display: "none" }}
               />
 
-              <div style={{ marginTop: 12 }}>
-                <button
-                  type="button"
-                  onClick={() => setPictureOptionsOpen((prev) => !prev)}
-                  style={{
-                    ...secondaryBtn(false),
-                    width: "100%",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <span>Picture options</span>
-                  <span>{pictureOptionsOpen ? "-" : "+"}</span>
-                </button>
-              </div>
-
               {pictureOptionsOpen ? (
                 <div
                   style={{
-                    marginTop: 10,
+                    marginTop: 12,
                     display: "flex",
                     gap: 8,
                     flexWrap: "wrap",
@@ -4146,280 +4267,655 @@ export default function DashboardPage() {
             </div>
 
             <div>
-              <div style={sectionLabel()}>Identity Passport</div>
-
               <div
                 style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: isCompact ? 28 : 34,
-                  lineHeight: 1.1,
-                }}
-              >
-                {profileName}
-              </div>
-
-              {profileSecondary ? (
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#64748B",
-                    fontSize: 14,
-                    lineHeight: 1.65,
-                  }}
-                >
-                  {profileSecondary}
-                </div>
-              ) : null}
-
-              <div
-                style={{
-                  marginTop: 10,
-                  ...helperText(),
-                  maxWidth: 860,
-                }}
-              >
-                One view of identity, trust, and verification before trade,
-                support, or decision.
-              </div>
-
-              <div
-                style={{
-                  marginTop: 14,
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                }}
-              >
-                <span style={badge(true)}>GMFN ID: {gmfnId}</span>
-              </div>
-
-              <div
-                style={{
-                  marginTop: 16,
                   display: "grid",
                   gap: 12,
                 }}
               >
                 <div
                   style={{
-                    ...innerCard("linear-gradient(180deg, #12304D 0%, #0B1F33 100%)"),
+                    ...innerCard(
+                      "linear-gradient(180deg, #12304D 0%, #0B1F33 100%)"
+                    ),
                     border: "1px solid rgba(184,137,45,0.24)",
                     boxShadow: "0 16px 32px rgba(15,23,42,0.14)",
+                    padding: isCompact ? 12 : 14,
                   }}
                 >
                   <div
                     style={{
-                      ...sectionLabel(),
-                      color: "rgba(226,232,240,0.82)",
-                    }}
-                  >
-                    Trust & Verification
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 12,
-                      display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-                      gap: 10,
-                    }}
-                  >
-                    <div style={statTile(openTrustTone.bg, openTrustTone.border)}>
-                      <div style={sectionLabel()}>Open Trust</div>
-                      <div
-                        style={{
-                          marginTop: 8,
-                          color: openTrustTone.text,
-                          fontSize: 30,
-                          fontWeight: 900,
-                          lineHeight: 1,
-                        }}
-                      >
-                        {openTrust.classText}
-                      </div>
-                      <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                        Score: {openTrust.scoreText}
-                      </div>
-                      <div
-                        style={{
-                          marginTop: 6,
-                          color: "#0B1F33",
-                          fontSize: 13,
-                          fontWeight: 700,
-                          lineHeight: 1.45,
-                        }}
-                      >
-                        {openTrust.statusText}
-                      </div>
-                    </div>
-
-                    <div style={statTile(cciTone.bg, cciTone.border)}>
-                      <div style={sectionLabel()}>CCI</div>
-                      <div
-                        style={{
-                          marginTop: 8,
-                          color: cciTone.text,
-                          fontSize: 30,
-                          fontWeight: 900,
-                          lineHeight: 1,
-                        }}
-                      >
-                        {cci.classText}
-                      </div>
-                      <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                        Score: {cci.scoreText}
-                      </div>
-                      <div
-                        style={{
-                          marginTop: 6,
-                          color: "#0B1F33",
-                          fontSize: 13,
-                          fontWeight: 700,
-                          lineHeight: 1.45,
-                        }}
-                      >
-                        {cci.statusText}
-                      </div>
-                    </div>
-
-                    <div
-                      style={statTile(
-                        "#F8FBFF",
-                        "1px solid rgba(11,99,209,0.10)"
-                      )}
-                    >
-                      <div style={sectionLabel()}>TrustSlip</div>
-                      <div
-                        style={{
-                          marginTop: 8,
-                          color: "#0B1F33",
-                          fontSize: 24,
-                          fontWeight: 900,
-                          lineHeight: 1.1,
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        {trustSlipCode || "Pending"}
-                      </div>
-                      <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                        {verificationStatus}
-                      </div>
-                      <div
-                        style={{
-                          marginTop: 6,
-                          color: "#0F3B74",
-                          fontSize: 13,
-                          fontWeight: 800,
-                          lineHeight: 1.45,
-                        }}
-                      >
-                        Portable verification record
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    position: "relative",
-                    ...innerCard(
-                      "linear-gradient(135deg, #F4F8FD 0%, #E7F0FB 40%, #FDFEFF 100%)"
-                    ),
-                    border: "1px solid rgba(15,59,116,0.18)",
-                    boxShadow:
-                      "0 20px 42px rgba(15,59,116,0.10), inset 0 1px 0 rgba(255,255,255,0.92)",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      height: 4,
-                      background:
-                        "linear-gradient(90deg, #0F3B74 0%, #0B63D1 52%, #60A5FA 100%)",
-                    }}
-                  />
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: isCompact
-                        ? "96px minmax(0, 1fr)"
-                        : "112px minmax(0, 1fr)",
-                      gap: 16,
+                      display: "flex",
+                      justifyContent: "space-between",
                       alignItems: "center",
+                      flexWrap: "wrap",
+                      gap: 6,
                     }}
                   >
                     <div
                       style={{
-                        ...innerCard(
-                          "linear-gradient(180deg, #0A1625 0%, #11263B 100%)"
-                        ),
-                        border: "1px solid rgba(212,175,55,0.26)",
-                        boxShadow: "0 20px 38px rgba(2,12,27,0.30)",
-                        padding: 12,
-                        display: "flex",
-                        flexDirection: "column",
+                        display: "inline-flex",
                         alignItems: "center",
-                        gap: 8,
+                        gap: 6,
+                        minWidth: 0,
                       }}
                     >
-                      {trustSlipCode ? (
-                        <img
-                          src={`${apiOrigin()}/trust-slips/verify/${encodeURIComponent(
-                            trustSlipCode
-                          )}/qr.png`}
-                          alt="Trust QR"
-                          style={{
-                            width: 88,
-                            height: 88,
-                            borderRadius: 12,
-                            border: "1px solid rgba(212,175,55,0.16)",
-                            background: "#FFFFFF",
-                            padding: 4,
-                          }}
-                        />
-                      ) : (
+                      <div
+                        style={{
+                          ...sectionLabel(),
+                          color: "rgba(226,232,240,0.82)",
+                          textAlign: "left",
+                        }}
+                      >
+                        Trust and verification
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateUiState({ trustExpanded: !uiState.trustExpanded })
+                        }
+                        style={{
+                          ...trustGoldBtn(22, 9),
+                          minWidth: 52,
+                          padding: "1px 6px",
+                          borderRadius: 8,
+                          boxShadow:
+                            "inset 0 1px 0 rgba(255,248,220,0.94), inset 0 -1px 0 rgba(122,75,0,0.16), 0 6px 10px rgba(15,23,42,0.10)",
+                        }}
+                      >
+                        {uiState.trustExpanded ? "Collapse" : "Open"}
+                      </button>
+                    </div>
+
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "flex-start",
+                        width: "fit-content",
+                        gap: 3,
+                        minHeight: 26,
+                        padding: "2px 5px",
+                        borderRadius: 9,
+                        background:
+                          "linear-gradient(180deg, rgba(255,248,220,0.98) 0%, rgba(243,220,152,0.96) 48%, rgba(229,196,102,0.94) 100%)",
+                        color: "#6B4300",
+                        border: "1px solid rgba(145,103,19,0.26)",
+                        boxShadow:
+                          "inset 0 1px 0 rgba(255,255,255,0.94), inset 0 -2px 0 rgba(145,103,19,0.12), 0 10px 20px rgba(15,23,42,0.16)",
+                        fontWeight: 900,
+                        fontSize: 10,
+                        letterSpacing: 0.04,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      <span style={{ opacity: 0.88 }}>GSN ID</span>
+                      <span
+                        style={{
+                          color: "#4F2F00",
+                          fontSize: 13,
+                          lineHeight: 1,
+                        }}
+                      >
+                        {gmfnId}
+                      </span>
+                    </span>
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 6,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 8,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        minHeight: 28,
+                        padding: "4px 10px",
+                        borderRadius: 999,
+                        background:
+                          "linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.08) 100%)",
+                        border: "1px solid rgba(255,255,255,0.16)",
+                        color: "#F8FBFF",
+                        boxShadow:
+                          "0 8px 16px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.12)",
+                        fontWeight: 900,
+                        fontSize: 11,
+                        letterSpacing: 0.04,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      <span style={{ opacity: 0.8 }}>Name</span>
+                      <span
+                        style={{
+                          fontSize: 13,
+                          color: "#FFFFFF",
+                        }}
+                      >
+                        {greetingName}
+                      </span>
+                    </span>
+
+                    <span
+                      style={{
+                        color: "rgba(226,232,240,0.74)",
+                        fontSize: 11.5,
+                        fontWeight: 800,
+                      }}
+                    >
+                      Verification holder
+                    </span>
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 4,
+                      color: "rgba(226,232,240,0.86)",
+                      fontSize: 12,
+                      lineHeight: 1.45,
+                      maxWidth: 560,
+                    }}
+                  >
+                    Keep your verification record visible, readable, and ready
+                    to share.
+                  </div>
+
+                  {uiState.trustExpanded ? (
+                    <>
+                      <div
+                        style={{
+                          marginTop: 8,
+                          ...innerCard(
+                            "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%)"
+                          ),
+                          border: "1px solid rgba(212,175,55,0.18)",
+                          boxShadow:
+                            "inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 18px rgba(2,12,27,0.08)",
+                          padding: 8,
+                        }}
+                      >
                         <div
                           style={{
-                            width: 88,
-                            height: 88,
-                            borderRadius: 12,
-                            border: "1px solid rgba(212,175,55,0.24)",
-                            background:
-                              "linear-gradient(180deg, #11263B 0%, #193A58 100%)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            color: "#F8FBFF",
-                            fontSize: 12,
-                            textAlign: "center",
-                            padding: 8,
+                            display: "grid",
+                            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                            gap: 6,
                           }}
                         >
-                          QR loading
+                          <OriginLink
+                            to="/app/trust"
+                            style={{
+                              ...trustGoldBtn(30, 11),
+                              width: "100%",
+                              padding: "6px 10px",
+                            }}
+                          >
+                            Open Trust Passport
+                          </OriginLink>
+
+                          <OriginLink
+                            to="/app/identity"
+                            style={{
+                              ...trustGoldBtn(30, 11),
+                              width: "100%",
+                              padding: "6px 10px",
+                            }}
+                          >
+                            Open Identity & Integrity
+                          </OriginLink>
+
+                          {merchantVerifyHref ? (
+                            <button
+                              type="button"
+                              onClick={openMerchantVerifyPage}
+                              style={{
+                                ...trustGoldBtn(30, 11),
+                                width: "100%",
+                                padding: "6px 10px",
+                              }}
+                            >
+                              Merchant Verify
+                            </button>
+                          ) : null}
                         </div>
-                      )}
+                      </div>
 
                       <div
                         style={{
-                          fontSize: 12,
-                          color: "#F8FBFF",
-                          fontWeight: 900,
-                          textAlign: "center",
-                          letterSpacing: 0.15,
+                          marginTop: 10,
+                          ...innerCard(
+                            "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%)"
+                          ),
+                          border: "1px solid rgba(212,175,55,0.20)",
+                          boxShadow:
+                            "inset 0 1px 0 rgba(255,255,255,0.06), 0 12px 24px rgba(2,12,27,0.10)",
+                          padding: 10,
                         }}
                       >
-                        Scan to verify
-                      </div>
-                    </div>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(118px, 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          <div
+                            style={{
+                              ...statTile(openTrustTone.bg, openTrustTone.border),
+                              padding: 8,
+                              minHeight: 102,
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              textAlign: "center",
+                            }}
+                          >
+                            <div
+                              style={{
+                                ...sectionLabel(),
+                                textAlign: "center",
+                                width: "100%",
+                              }}
+                            >
+                              Open Trust
+                            </div>
+                            <div
+                              style={{
+                                marginTop: 4,
+                                color: openTrustTone.text,
+                                fontSize: 20,
+                                fontWeight: 900,
+                                lineHeight: 1,
+                                width: "50%",
+                                minWidth: 72,
+                              }}
+                            >
+                              Class {openTrust.classText}
+                            </div>
+                            <div
+                              style={{
+                                marginTop: 4,
+                                ...helperText(),
+                                fontSize: 11,
+                                width: "50%",
+                                minWidth: 72,
+                                textAlign: "center",
+                              }}
+                            >
+                              Score {openTrust.scoreText}
+                            </div>
+                            <div
+                              style={{
+                                marginTop: 2,
+                                color: "#0B1F33",
+                                fontSize: 11,
+                                fontWeight: 700,
+                                lineHeight: 1.25,
+                                width: "50%",
+                                minWidth: 72,
+                                textAlign: "center",
+                              }}
+                            >
+                              {openTrust.statusText}
+                            </div>
+                            <div
+                              style={{
+                                marginTop: "auto",
+                                width: "100%",
+                                display: "flex",
+                                justifyContent: "center",
+                                paddingTop: 6,
+                              }}
+                            >
+                              <OriginLink
+                                to="/app/open-trust-reading"
+                                style={{
+                                  ...trustGoldBtn(26, 10),
+                                  minWidth: 88,
+                                  padding: "4px 10px",
+                                }}
+                              >
+                                Open Trust
+                              </OriginLink>
+                            </div>
+                          </div>
 
-                    <div>
+                          <div
+                            style={{
+                              ...statTile(cciTone.bg, cciTone.border),
+                              padding: 8,
+                              minHeight: 102,
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              textAlign: "center",
+                            }}
+                          >
+                            <div
+                              style={{
+                                ...sectionLabel(),
+                                textAlign: "center",
+                                width: "100%",
+                              }}
+                            >
+                              CCI
+                            </div>
+                            <div
+                              style={{
+                                marginTop: 4,
+                                color: cciTone.text,
+                                fontSize: 20,
+                                fontWeight: 900,
+                                lineHeight: 1,
+                                width: "50%",
+                                minWidth: 72,
+                              }}
+                            >
+                              Class {cci.classText}
+                            </div>
+                            <div
+                              style={{
+                                marginTop: 4,
+                                ...helperText(),
+                                fontSize: 11,
+                                width: "50%",
+                                minWidth: 72,
+                                textAlign: "center",
+                              }}
+                            >
+                              Score {cci.scoreText}
+                            </div>
+                            <div
+                              style={{
+                                marginTop: 2,
+                                color: "#0B1F33",
+                                fontSize: 11,
+                                fontWeight: 700,
+                                lineHeight: 1.25,
+                                width: "50%",
+                                minWidth: 72,
+                                textAlign: "center",
+                              }}
+                            >
+                              {cci.statusText}
+                            </div>
+                            <div
+                              style={{
+                                marginTop: "auto",
+                                width: "100%",
+                                display: "flex",
+                                justifyContent: "center",
+                                paddingTop: 6,
+                              }}
+                            >
+                              <OriginLink
+                                to="/app/cci-reading"
+                                style={{
+                                  ...trustGoldBtn(26, 10),
+                                  minWidth: 84,
+                                  padding: "4px 10px",
+                                }}
+                              >
+                                Open CCI
+                              </OriginLink>
+                            </div>
+                          </div>
+
+                          <div
+                            style={{
+                              ...statTile(
+                                "#F8FBFF",
+                                "1px solid rgba(11,99,209,0.10)"
+                              ),
+                              padding: 8,
+                              minHeight: 102,
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              textAlign: "center",
+                            }}
+                          >
+                            <div
+                              style={{
+                                ...sectionLabel(),
+                                width: "100%",
+                                textAlign: "center",
+                              }}
+                            >
+                              TrustSlip
+                            </div>
+                            <div
+                              style={{
+                                marginTop: 4,
+                                color: "#0B1F33",
+                                fontSize: 18,
+                                fontWeight: 900,
+                                lineHeight: 1.1,
+                                wordBreak: "break-word",
+                                minHeight: 40,
+                                width: "100%",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                textAlign: "center",
+                              }}
+                            >
+                              {trustSlipCode || "Pending"}
+                            </div>
+                            <div
+                              style={{
+                                marginTop: "auto",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 4,
+                                alignItems: "center",
+                                justifyContent: "center",
+                                width: "100%",
+                                paddingTop: 6,
+                              }}
+                            >
+                              <button
+                                type="button"
+                                onClick={openTrustSlipPage}
+                                style={{
+                                  color: "#14324C",
+                                  fontSize: 10,
+                                  fontWeight: 800,
+                                  padding: 0,
+                                  minHeight: "auto",
+                                  background: "transparent",
+                                  border: "none",
+                                  boxShadow: "none",
+                                  marginTop: 2,
+                                  width: "100%",
+                                  textAlign: "center",
+                                }}
+                              >
+                                Check status
+                              </button>
+                              <button
+                                type="button"
+                                onClick={openTrustSlipPage}
+                                style={{ ...trustGoldMiniBtn(), marginTop: 2 }}
+                              >
+                                Open TrustSlip
+                              </button>
+                            </div>
+                          </div>
+
+                          <div
+                            style={{
+                              ...statTile(
+                                "#F8FBFF",
+                                "1px solid rgba(11,99,209,0.10)"
+                              ),
+                              padding: 8,
+                              minHeight: 102,
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              textAlign: "center",
+                            }}
+                          >
+                            <div
+                              style={{
+                                ...sectionLabel(),
+                                width: "100%",
+                                textAlign: "center",
+                              }}
+                            >
+                              Verify QR
+                            </div>
+                            <div
+                              style={{
+                                marginTop: 6,
+                                width: "80%",
+                                aspectRatio: "1 / 1",
+                                minWidth: 64,
+                                maxWidth: 82,
+                                borderRadius: 10,
+                                border: "1px solid rgba(15,59,116,0.14)",
+                                background: "#FFFFFF",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                overflow: "hidden",
+                                position: "relative",
+                                marginLeft: "auto",
+                                marginRight: "auto",
+                              }}
+                            >
+                              {trustQrSrc ? (
+                                <>
+                                  <img
+                                    src={trustQrSrc}
+                                    alt="Trust QR"
+                                    onLoad={() => {
+                                      setQrReady(true);
+                                      setQrFailed(false);
+                                    }}
+                                    onError={() => {
+                                      setQrReady(false);
+                                      setQrFailed(true);
+                                    }}
+                                    style={{
+                                      width: "100%",
+                                      height: "100%",
+                                      display: qrFailed ? "none" : "block",
+                                    }}
+                                  />
+                                  {!qrReady && !qrFailed ? (
+                                    <div
+                                      style={{
+                                        position: "absolute",
+                                        inset: 0,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        color: "#14324C",
+                                        fontSize: 8,
+                                        fontWeight: 800,
+                                        textAlign: "center",
+                                        padding: 4,
+                                        background:
+                                          "rgba(255,255,255,0.92)",
+                                      }}
+                                    >
+                                      Loading
+                                    </div>
+                                  ) : null}
+                                  {qrFailed ? (
+                                    <div
+                                      style={{
+                                        position: "absolute",
+                                        inset: 0,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        color: "#7A1F1F",
+                                        fontSize: 8,
+                                        fontWeight: 800,
+                                        textAlign: "center",
+                                        padding: 4,
+                                        background:
+                                          "rgba(255,245,245,0.96)",
+                                      }}
+                                    >
+                                      Unavailable
+                                    </div>
+                                  ) : null}
+                                </>
+                              ) : (
+                                <div
+                                  style={{
+                                    color: "#14324C",
+                                    fontSize: 8,
+                                    fontWeight: 800,
+                                    textAlign: "center",
+                                    padding: 4,
+                                  }}
+                                >
+                                  Pending
+                                </div>
+                              )}
+                            </div>
+                            <div
+                              style={{
+                                marginTop: 4,
+                                color: "#0B1F33",
+                                fontSize: 12,
+                                fontWeight: 900,
+                                lineHeight: 1.1,
+                                textAlign: "center",
+                              }}
+                            >
+                              {qrFailed
+                                ? "Unavailable"
+                                : trustQrSrc
+                                ? "Ready"
+                                : "Pending"}
+                            </div>
+                            <div
+                              style={{
+                                marginTop: 6,
+                                width: "100%",
+                                display: "flex",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <button
+                                type="button"
+                                onClick={openTrustSlipVerifyInApp}
+                                style={{ ...trustGoldMiniBtn(), marginTop: 2 }}
+                              >
+                                Verify QR
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        ...innerCard(
+                          "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%)"
+                        ),
+                        border: "1px solid rgba(212,175,55,0.16)",
+                        boxShadow:
+                          "inset 0 1px 0 rgba(255,255,255,0.05), 0 10px 20px rgba(2,12,27,0.08)",
+                        padding: 12,
+                      }}
+                    >
                       <div
                         style={{
                           display: "flex",
@@ -4428,100 +4924,31 @@ export default function DashboardPage() {
                           alignItems: "center",
                         }}
                       >
-                        <span style={{ ...badge(true), background: "rgba(226,240,255,0.96)", color: "#16324F", border: "1px solid rgba(22,50,79,0.10)", boxShadow: "0 8px 18px rgba(15,23,42,0.08)" }}>Verification Dock</span>
-                        <span
-                          style={{
-                            ...badge(false),
-                            background: "rgba(255,244,214,0.96)",
-                            color: "#7A4B00",
-                            border: "1px solid rgba(184,137,45,0.24)",
-                            boxShadow: "0 8px 18px rgba(15,23,42,0.08)",
-                          }}
-                        >
-                          {verificationStatus}
+                        <span style={badge(true)}>
+                          Open Trust {openTrust.classText}
+                        </span>
+                        <span style={badge(false)}>CCI {cci.classText}</span>
+                        <span style={badge(false)}>
+                          TrustSlip {trustSlipCode || "Pending"}
+                        </span>
+                        <span style={badge(false)}>
+                          QR{" "}
+                          {qrFailed
+                            ? "Unavailable"
+                            : trustQrSrc
+                            ? "Ready"
+                            : "Pending"}
                         </span>
                       </div>
-
-                      <div
-                        style={{
-                          marginTop: 10,
-                          color: "#102A43",
-                          fontSize: 21,
-                          fontWeight: 900,
-                          lineHeight: 1.22,
-                        }}
-                      >
-                        Keep your verification record visible, readable, and ready to share.
-                      </div>
-
-                      <div
-                        style={{
-                          marginTop: 8,
-                          color: "#28445E",
-                          fontSize: 14,
-                          lineHeight: 1.78,
-                          maxWidth: 760,
-                        }}
-                      >
-                        Use this verification dock to open trust explanation, read integrity status, and share your verification record when someone needs confirmation.
-                      </div>
-
-                      <ExplainToggle
-                        label="What Verification Dock does"
-                        what="This dock keeps your verification record, QR, trust explanation, and verification actions together."
-                        why="When someone needs proof, you should not have to search across different pages for the right identity and trust tools."
-                        next="Use it to check your current verification state first, then open Trust, TrustSlip, or the QR when you need to explain or share proof."
-                        tone="blue"
-                        style={{ marginTop: 14 }}
-                      />
-
-                      <div
-                        style={{
-                          marginTop: 14,
-                          display: "flex",
-                          gap: 10,
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <OriginLink to="/app/trust" style={primaryBtn(false)}>
-                          Open Trust Passport
-                        </OriginLink>
-
-                        <OriginLink to="/app/identity" style={{ ...secondaryBtn(false), background: "#FFFFFF", color: "#14324C", border: "1px solid rgba(15,59,116,0.18)", boxShadow: "0 10px 20px rgba(15,23,42,0.08)" }}>
-                          Open CCI
-                        </OriginLink>
-
-                        <OriginLink to="/app/trust-slip" style={{ ...secondaryBtn(false), background: "#FFFFFF", color: "#14324C", border: "1px solid rgba(15,59,116,0.18)", boxShadow: "0 10px 20px rgba(15,23,42,0.08)" }}>
-                          Open TrustSlip
-                        </OriginLink>
-
-                        {merchantVerifyHref ? (
-                          <a
-                            href={merchantVerifyHref}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{ ...secondaryBtn(false), background: "#FFFFFF", color: "#14324C", border: "1px solid rgba(15,59,116,0.18)", boxShadow: "0 10px 20px rgba(15,23,42,0.08)" }}
-                          >
-                            Merchant Verify
-                          </a>
-                        ) : null}
-                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
+
               </div>
             </div>
           </div>
         </div>
       </section>
-
-      <ExplainToggle
-        label="What this screen does"
-        what="Dashboard brings identity, trust, visibility, live requests, and next actions into one working view."
-        why="It helps you decide what deserves attention first before you move into marketplace, finance, support, trust, or community work."
-        next="Open the sections below when you want to verify your record, review featured visibility, read active demand, or act on the strongest current signal."
-        tone="blue"
-      />
 
       <section
         style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%)")}
@@ -4595,15 +5022,6 @@ export default function DashboardPage() {
             </button>
           </div>
         </div>
-
-        <ExplainToggle
-          label="What Spotlight does"
-          what="Spotlight is the featured visibility stage for the strongest live seller or shop signal available to you right now."
-          why="It helps you connect trust, visibility, demand, and seller identity before you decide whether to open the shop or keep moving."
-          next="Open the full spotlight when you want the premium view, move into the shop for more detail, or step through other live spotlight items when more than one is active."
-          tone="blue"
-          style={{ marginTop: 16 }}
-        />
 
         {!showSpotlight ? (
           <div
@@ -5834,7 +6252,9 @@ export default function DashboardPage() {
       </section>
 
       <section
-        style={pageCard("linear-gradient(180deg, #12304D 0%, #0B1F33 100%)")}
+        style={pageCard(
+          "radial-gradient(circle at top, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0) 26%), linear-gradient(180deg, #F7FBFF 0%, #EAF3FF 52%, #DCEAFB 100%)"
+        )}
       >
         <div
           style={{
@@ -5849,7 +6269,7 @@ export default function DashboardPage() {
             <div
               style={{
                 ...sectionLabel(),
-                color: "rgba(226,232,240,0.82)",
+                color: "#0F3B74",
               }}
             >
               Market Wisdom
@@ -5857,7 +6277,7 @@ export default function DashboardPage() {
             <div
               style={{
                 marginTop: 8,
-                color: "rgba(226,232,240,0.76)",
+                color: "#4A6580",
                 fontSize: 14,
                 lineHeight: 1.75,
                 maxWidth: 760,
@@ -5870,9 +6290,10 @@ export default function DashboardPage() {
           <span
             style={{
               ...badge(true),
-              background: "rgba(255,255,255,0.12)",
-              color: "#F4D58D",
-              border: "1px solid rgba(184,137,45,0.28)",
+              background:
+                "linear-gradient(180deg, rgba(248,222,141,0.82) 0%, rgba(243,208,106,0.64) 100%)",
+              color: "#7A5200",
+              border: "1px solid rgba(184,137,45,0.22)",
             }}
           >
             Today
@@ -5884,7 +6305,7 @@ export default function DashboardPage() {
           what="Market Wisdom gives you one clear signal to read before you move into trade, support, or another commitment."
           why="It is meant to steady judgment, not overload you, so the main signal should be easy to read before the supporting insight."
           next="Read the main signal quickly, then use the supporting insight only if it helps the next move you are about to make."
-          tone="dark"
+          tone="blue"
           style={{ marginTop: 14 }}
         />
 
@@ -5892,18 +6313,18 @@ export default function DashboardPage() {
           style={{
             marginTop: 12,
             ...innerCard(
-              "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)"
+              "linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)"
             ),
-            border: "1px solid rgba(184,137,45,0.22)",
+            border: "1px solid rgba(15,59,116,0.12)",
             padding: 16,
             boxShadow:
-              "inset 0 1px 0 rgba(255,255,255,0.06), 0 12px 24px rgba(2,12,27,0.10)",
+              "inset 0 1px 0 rgba(255,255,255,0.78), 0 12px 24px rgba(2,12,27,0.08)",
           }}
         >
           {activeWisdomTitle ? (
             <div
               style={{
-                color: "#FFFFFF",
+                color: "#0B1F33",
                 fontSize: 20,
                 fontWeight: 900,
                 lineHeight: 1.28,
@@ -5916,7 +6337,7 @@ export default function DashboardPage() {
           <div
             style={{
               marginTop: activeWisdomTitle ? 8 : 0,
-              color: "#F8FBFF",
+              color: "#35516B",
               fontSize: 15,
               fontWeight: 800,
               lineHeight: 1.72,
@@ -7576,6 +7997,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </section>
+      </div>
     </div>
   );
 } 
