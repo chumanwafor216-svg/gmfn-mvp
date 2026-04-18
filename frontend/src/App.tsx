@@ -108,6 +108,9 @@ const DemandBoxPage = React.lazy(() => import("./pages/DemandBoxPage"));
 const JoinRequestPendingPage = React.lazy(
   () => import("./pages/JoinRequestPendingPage")
 );
+const InviteComposerPreviewPage = React.lazy(
+  () => import("./pages/InviteComposerPreviewPage")
+);
 
 type EntryMode = "general" | "create" | "invite" | "approved" | "existing";
 
@@ -381,6 +384,7 @@ export default function App() {
 
       <Route path="/join" element={<JoinEntryPage />} />
       <Route path="/join/community/:clanId" element={<JoinEntryPage />} />
+      <Route path="/invite-composer-preview" element={<InviteComposerPreviewPage />} />
       <Route
         path="/invite/:code"
         element={
