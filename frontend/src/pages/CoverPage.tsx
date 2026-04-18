@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-import ExplainToggle from "../components/ExplainToggle";
 import { useLocation, useNavigate } from "react-router-dom";
 
 
@@ -367,7 +366,7 @@ function pageShell(): React.CSSProperties {
 
   return {
 
-    minHeight: "100vh",
+    minHeight: "100dvh",
 
     width: "100%",
 
@@ -379,13 +378,13 @@ function pageShell(): React.CSSProperties {
 
     background:
 
-      "radial-gradient(circle at top, rgba(47,103,196,0.18) 0%, rgba(16,37,59,0.00) 32%), linear-gradient(180deg, #0C1F33 0%, #143454 62%, #183F66 100%)",
+      "radial-gradient(circle at top, rgba(63,114,206,0.14) 0%, rgba(9,23,44,0.00) 30%), linear-gradient(180deg, #07172B 0%, #0D2A48 58%, #12365A 100%)",
 
     color: "#FFFFFF",
 
     fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
 
-    padding: "22px",
+    padding: "10px 16px",
 
     boxSizing: "border-box",
 
@@ -399,13 +398,19 @@ function frameStyle(): React.CSSProperties {
 
   return {
 
-    width: "min(92vw, 560px)",
+    width: "min(92vw, 470px)",
 
-    display: "grid",
+    minHeight: "calc(100dvh - 20px)",
 
-    gap: 18,
+    display: "flex",
 
-    justifyItems: "center",
+    flexDirection: "column",
+
+    gap: 10,
+
+    alignItems: "center",
+
+    justifyContent: "space-between",
 
   };
 
@@ -419,7 +424,9 @@ function artworkShell(): React.CSSProperties {
 
     width: "100%",
 
-    borderRadius: 34,
+    position: "relative",
+
+    borderRadius: 28,
 
     overflow: "hidden",
 
@@ -453,11 +460,13 @@ function buttonStyle(disabled = false): React.CSSProperties {
 
     borderRadius: 16,
 
-    border: "none",
+    border: disabled ? "1px solid rgba(177,196,220,0.55)" : "1px solid rgba(255,255,255,0.92)",
 
-    background: disabled ? "#8AA7D0" : "#FFFFFF",
+    background: disabled
+      ? "linear-gradient(180deg, #9DB5D5 0%, #88A5C8 100%)"
+      : "linear-gradient(180deg, #FFFFFF 0%, #F1F6FD 52%, #DCE9F7 100%)",
 
-    color: "#0B2E59",
+    color: "#08254A",
 
     fontWeight: 900,
 
@@ -465,29 +474,11 @@ function buttonStyle(disabled = false): React.CSSProperties {
 
     cursor: disabled ? "not-allowed" : "pointer",
 
-    boxShadow: disabled ? "none" : "0 14px 30px rgba(0,0,0,0.18)",
+    boxShadow: disabled
+      ? "none"
+      : "0 18px 34px rgba(1,13,32,0.30), inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -2px 0 rgba(124,149,182,0.35)",
 
     whiteSpace: "normal",
-
-  };
-
-}
-
-
-
-function helperText(): React.CSSProperties {
-
-  return {
-
-    color: "rgba(255,255,255,0.84)",
-
-    fontSize: 13,
-
-    lineHeight: 1.7,
-
-    textAlign: "center",
-
-    maxWidth: 420,
 
   };
 
@@ -505,7 +496,7 @@ function GSNSplashArtwork() {
 
         width: "100%",
 
-        aspectRatio: "9 / 16",
+        aspectRatio: "9 / 12.8",
 
         position: "relative",
 
@@ -513,7 +504,7 @@ function GSNSplashArtwork() {
 
         background:
 
-          "radial-gradient(circle at 50% 18%, rgba(92,157,255,0.20), transparent 26%), linear-gradient(180deg, #0A2A88 0%, #0D47D6 42%, #19AEEF 100%)",
+          "radial-gradient(circle at 50% 18%, rgba(123,181,255,0.16), transparent 24%), linear-gradient(180deg, #081E63 0%, #0B349B 38%, #0F5FC4 72%, #1282D2 100%)",
 
       }}
 
@@ -567,6 +558,62 @@ function GSNSplashArtwork() {
 
           </linearGradient>
 
+          <linearGradient id="gsnCastFill" x1="0" y1="0" x2="0" y2="1">
+
+            <stop offset="0%" stopColor="#FFFFFF" />
+
+            <stop offset="36%" stopColor="#F2F7FD" />
+
+            <stop offset="68%" stopColor="#D6E4F3" />
+
+            <stop offset="100%" stopColor="#ACC2DB" />
+
+          </linearGradient>
+
+          <linearGradient id="diamondLiftFill" x1="0" y1="0" x2="0" y2="1">
+
+            <stop offset="0%" stopColor="#FFFFFF" />
+
+            <stop offset="44%" stopColor="#F7FBFF" />
+
+            <stop offset="100%" stopColor="#DDEBFA" />
+
+          </linearGradient>
+
+          <linearGradient id="starReliefFill" x1="0" y1="0" x2="0" y2="1">
+
+            <stop offset="0%" stopColor="#FFF4C8" />
+
+            <stop offset="48%" stopColor="#F2CB67" />
+
+            <stop offset="100%" stopColor="#D99630" />
+
+          </linearGradient>
+
+          <radialGradient id="starPulseGlow" cx="50%" cy="45%" r="62%">
+
+            <stop offset="0%" stopColor="rgba(255,244,184,0.96)" />
+
+            <stop offset="38%" stopColor="rgba(246,208,104,0.54)" />
+
+            <stop offset="100%" stopColor="rgba(246,208,104,0)" />
+
+          </radialGradient>
+
+          <linearGradient id="shieldSweep" x1="0" y1="0" x2="1" y2="1">
+
+            <stop offset="0%" stopColor="rgba(255,255,255,0)" />
+
+            <stop offset="38%" stopColor="rgba(255,255,255,0.04)" />
+
+            <stop offset="52%" stopColor="rgba(255,255,255,0.20)" />
+
+            <stop offset="66%" stopColor="rgba(255,255,255,0.04)" />
+
+            <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+
+          </linearGradient>
+
 
 
           <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
@@ -588,6 +635,89 @@ function GSNSplashArtwork() {
           <filter id="starGlow" x="-200%" y="-200%" width="400%" height="400%">
 
             <feGaussianBlur stdDeviation="5" result="blur" />
+
+            <feMerge>
+
+              <feMergeNode in="blur" />
+
+              <feMergeNode in="SourceGraphic" />
+
+            </feMerge>
+
+          </filter>
+
+          <filter id="gsnCastShadow" x="-120%" y="-120%" width="340%" height="340%">
+
+            <feOffset dx="0" dy="8" result="offset" />
+
+            <feGaussianBlur in="offset" stdDeviation="8" result="blur" />
+
+            <feColorMatrix
+              in="blur"
+              type="matrix"
+              values="0 0 0 0 0.02 0 0 0 0 0.07 0 0 0 0 0.18 0 0 0 0.75 0"
+              result="shadow"
+            />
+
+            <feMerge>
+
+              <feMergeNode in="shadow" />
+
+              <feMergeNode in="SourceGraphic" />
+
+            </feMerge>
+
+          </filter>
+
+          <filter id="diamondLiftShadow" x="-180%" y="-180%" width="420%" height="420%">
+
+            <feOffset dx="0" dy="4" result="offset" />
+
+            <feGaussianBlur in="offset" stdDeviation="4" result="blur" />
+
+            <feColorMatrix
+              in="blur"
+              type="matrix"
+              values="0 0 0 0 0.05 0 0 0 0 0.10 0 0 0 0 0.19 0 0 0 0.45 0"
+              result="shadow"
+            />
+
+            <feMerge>
+
+              <feMergeNode in="shadow" />
+
+              <feMergeNode in="SourceGraphic" />
+
+            </feMerge>
+
+          </filter>
+
+          <filter id="starReliefShadow" x="-180%" y="-180%" width="420%" height="420%">
+
+            <feOffset dx="0" dy="5" result="offset" />
+
+            <feGaussianBlur in="offset" stdDeviation="4.5" result="blur" />
+
+            <feColorMatrix
+              in="blur"
+              type="matrix"
+              values="0 0 0 0 0.14 0 0 0 0 0.08 0 0 0 0 0.02 0 0 0 0.40 0"
+              result="shadow"
+            />
+
+            <feMerge>
+
+              <feMergeNode in="shadow" />
+
+              <feMergeNode in="SourceGraphic" />
+
+            </feMerge>
+
+          </filter>
+
+          <filter id="starInnerSpark" x="-180%" y="-180%" width="420%" height="420%">
+
+            <feGaussianBlur stdDeviation="2.2" result="blur" />
 
             <feMerge>
 
@@ -747,6 +877,96 @@ function GSNSplashArtwork() {
 
           />
 
+          <path
+
+            d="
+
+              M450 222
+
+              L566 283
+
+              L566 602
+
+              C566 747 525 857 450 952
+
+              C375 857 334 747 334 602
+
+              L334 283
+
+              Z
+
+            "
+
+            fill="none"
+
+            stroke="rgba(228,240,255,0.20)"
+
+            strokeWidth="2.5"
+
+          />
+
+          <path
+
+            d="
+
+              M450 242
+
+              L548 294
+
+              L548 590
+
+              C548 724 511 827 450 907
+
+              C389 827 352 724 352 590
+
+              L352 294
+
+              Z
+
+            "
+
+            fill="none"
+
+            stroke="rgba(255,255,255,0.10)"
+
+            strokeWidth="1.6"
+
+          />
+
+          <path
+
+            d="
+
+              M450 198
+
+              L586 270
+
+              L586 613
+
+              C586 775 538 898 450 1008
+
+              C362 898 314 775 314 613
+
+              L314 270
+
+              Z
+
+            "
+
+            fill="url(#shieldSweep)"
+
+            opacity="0.72"
+
+          >
+            <animateTransform
+              attributeName="transform"
+              type="translate"
+              values="-38 0;38 0;-38 0"
+              dur="5.2s"
+              repeatCount="indefinite"
+            />
+          </path>
+
 
 
           <path
@@ -799,37 +1019,127 @@ function GSNSplashArtwork() {
 
           <g>
 
-            <polygon
+            <text
+              x="452"
+              y="336"
+              textAnchor="middle"
+              fill="rgba(6,22,56,0.72)"
+              fontSize="48"
+              fontWeight="900"
+              letterSpacing="6"
+              fontFamily="Arial, Helvetica, sans-serif"
+            >
+              GSN
+            </text>
 
-              points="
+            <text
+              x="450"
+              y="328"
+              textAnchor="middle"
+              fill="url(#gsnCastFill)"
+              stroke="rgba(255,255,255,0.50)"
+              strokeWidth="1.1"
+              filter="url(#gsnCastShadow)"
+              fontSize="48"
+              fontWeight="900"
+              letterSpacing="6"
+              fontFamily="Arial, Helvetica, sans-serif"
+            >
+              GSN
+            </text>
 
-                450,362
+            <g>
 
-                464,404
+              <ellipse
+                cx="450"
+                cy="418"
+                rx="56"
+                ry="56"
+                fill="url(#starPulseGlow)"
+                opacity="0.72"
+              >
+                <animate
+                  attributeName="opacity"
+                  values="0.42;0.82;0.42"
+                  dur="2.8s"
+                  repeatCount="indefinite"
+                />
+              </ellipse>
 
-                508,404
+              <polygon
 
-                472,430
+                points="
 
-                486,472
+                  450,362
 
-                450,446
+                  464,404
 
-                414,472
+                  508,404
 
-                428,430
+                  472,430
 
-                392,404
+                  486,472
 
-                436,404
+                  450,446
 
-              "
+                  414,472
 
-              fill="#F5CF68"
+                  428,430
 
-              filter="url(#starGlow)"
+                  392,404
 
-            />
+                  436,404
+
+                "
+
+                fill="url(#starReliefFill)"
+                stroke="rgba(255,247,217,0.76)"
+                strokeWidth="1.2"
+                filter="url(#starReliefShadow)"
+              >
+                <animateTransform
+                  attributeName="transform"
+                  type="scale"
+                  values="1 1;1.03 1.03;1 1"
+                  dur="2.8s"
+                  repeatCount="indefinite"
+                  additive="sum"
+                  origin="450 418"
+                />
+              </polygon>
+
+              <polygon
+
+                points="
+
+                  450,372
+
+                  461,402
+
+                  493,403
+
+                  467,421
+
+                  476,452
+
+                  450,434
+
+                  424,452
+
+                  433,421
+
+                  407,403
+
+                  439,402
+
+                "
+
+                fill="rgba(255,252,232,0.70)"
+                opacity="0.82"
+                filter="url(#starInnerSpark)"
+              />
+
+            </g>
 
             <circle cx="565" cy="565" r="15" fill="#F4F7FA" />
 
@@ -845,97 +1155,130 @@ function GSNSplashArtwork() {
 
 
 
-        <text
+        <g transform="translate(120,1048)">
+          <path
+            d="
+              M214 18
+              L252 -8
+              H408
+              L446 18
+              Z
+            "
+            fill="rgba(255,255,255,0.04)"
+            stroke="rgba(228,240,255,0.10)"
+            strokeWidth="1.2"
+          />
 
-          x="450"
+          <rect
+            x="0"
+            y="0"
+            width="660"
+            height="246"
+            rx="32"
+            fill="rgba(5,19,45,0.54)"
+            stroke="rgba(255,255,255,0.12)"
+            strokeWidth="2"
+          />
 
-          y="1140"
+          <rect
+            x="24"
+            y="22"
+            width="612"
+            height="202"
+            rx="24"
+            fill="rgba(255,255,255,0.03)"
+            stroke="rgba(244,199,90,0.18)"
+            strokeWidth="1.5"
+          />
 
-          textAnchor="middle"
+          <rect
+            x="40"
+            y="36"
+            width="580"
+            height="174"
+            rx="18"
+            fill="none"
+            stroke="rgba(255,255,255,0.06)"
+            strokeWidth="1"
+            strokeDasharray="2 8"
+          />
 
-          fill="#FFFFFF"
+          <rect
+            x="52"
+            y="40"
+            width="556"
+            height="3"
+            rx="1.5"
+            fill="url(#shieldBorderGlow)"
+          />
 
-          fontSize="98"
+          <text
+            x="330"
+            y="82"
+            textAnchor="middle"
+            fill="#F3D06A"
+            fontSize="22"
+            fontWeight="800"
+            letterSpacing="5.2"
+            fontFamily="Arial, Helvetica, sans-serif"
+          >
+            TRUST INFRASTRUCTURE PROTOCOL
+          </text>
 
-          fontWeight="900"
+          <text
+            x="330"
+            y="136"
+            textAnchor="middle"
+            fill="#F6F8FC"
+            fontSize="36"
+            fontWeight="700"
+            letterSpacing="1.6"
+            fontFamily="Arial, Helvetica, sans-serif"
+          >
+            Global Support Network
+          </text>
 
-          fontFamily="Arial, Helvetica, sans-serif"
+          <text
+            x="330"
+            y="180"
+            textAnchor="middle"
+            fill="#DCEBFF"
+            fontSize="24"
+            fontWeight="500"
+            letterSpacing="0.4"
+            fontFamily="Arial, Helvetica, sans-serif"
+          >
+            Trust made visible for stronger communities.
+          </text>
 
-        >
+          <text
+            x="330"
+            y="206"
+            textAnchor="middle"
+            fill="rgba(233,241,252,0.56)"
+            fontSize="14"
+            fontWeight="700"
+            letterSpacing="3.6"
+            fontFamily="Arial, Helvetica, sans-serif"
+          >
+            TRUSTED COMMUNITY ENTRY
+          </text>
 
-          GSN
-        </text>
+          <path
+            d="
+              M286 -6
+              L330 -52
+              L374 -6
+              L330 38
+              Z
+            "
+            fill="url(#diamondLiftFill)"
+            stroke="rgba(236,245,255,0.98)"
+            strokeWidth="1.8"
+            filter="url(#diamondLiftShadow)"
+          />
 
-
-
-        <text
-
-          x="450"
-
-          y="1256"
-
-          textAnchor="middle"
-
-          fill="#F3D06A"
-
-          fontSize="54"
-
-          fontWeight="700"
-
-          fontFamily="Arial, Helvetica, sans-serif"
-
-        >
-
-          Global Mutual Finance Network
-        </text>
-
-
-
-        <text
-
-          x="450"
-
-          y="1334"
-
-          textAnchor="middle"
-
-          fill="#FFFFFF"
-
-          fontSize="42"
-
-          fontWeight="500"
-
-          fontFamily="Arial, Helvetica, sans-serif"
-
-        >
-
-          Trust Infrastructure Protocol
-
-        </text>
-
-
-
-        <text
-
-          x="450"
-
-          y="1484"
-
-          textAnchor="middle"
-
-          fill="#FFFFFF"
-
-          fontSize="38"
-
-          fontWeight="500"
-
-          fontFamily="Arial, Helvetica, sans-serif"
-
-        >
-
-          Trusted cooperation for communities.
-
-        </text>
+        </g>
 
 
 
@@ -1042,55 +1385,37 @@ export default function CoverPage() {
 
       <div style={frameStyle()}>
 
-        <ExplainToggle
-          label="What this screen does"
-          what="This cover screen is the front door into GSN and moves you into the next guided entry step."
-          why="It gives every user one clear starting point before they choose a lane like create, join, approved entry, or sign in."
-          next="Use Continue to move into the next guided entry step that matches your current state."
-          tone="dark"
-          style={{ marginBottom: 18 }}
-        />
-
         <div style={artworkShell()}>
 
           <GSNSplashArtwork />
 
+          <div
+            style={{
+              position: "absolute",
+              left: "50%",
+              bottom: 18,
+              transform: "translateX(-50%)",
+              zIndex: 3,
+            }}
+          >
+            <button
+
+              type="button"
+
+              onClick={goNext}
+
+              disabled={busy}
+
+              style={buttonStyle(busy)}
+
+            >
+
+              {busy ? "Opening..." : "Continue"}
+
+            </button>
+          </div>
+
         </div>
-
-
-
-        <div style={helperText()}>
-
-          Trust-first entry into the Global Support Network.
-
-        </div>
-
-        <ExplainToggle
-          label="What this does"
-          what="This cover step is a short handoff into the guided entry flow."
-          why="It gives every user one calm starting moment before the product asks them to choose a lane."
-          next="Use Continue when you are ready to enter the next guided step."
-          tone="dark"
-          style={{ marginTop: 12 }}
-        />
-
-
-
-        <button
-
-          type="button"
-
-          onClick={goNext}
-
-          disabled={busy}
-
-          style={buttonStyle(busy)}
-
-        >
-
-          {busy ? "Opening..." : "Continue"}
-
-        </button>
 
       </div>
 
