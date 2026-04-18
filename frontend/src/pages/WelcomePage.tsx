@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import ExplainToggle from "../components/ExplainToggle";
+import GSNBrandMonument from "../components/GSNBrandMonument";
 import OriginLink from "../components/OriginLink";
 import {
   detectEntryMode,
@@ -17,8 +17,30 @@ import {
   type WelcomeStep,
 } from "../lib/entryFlow";
 
-const GUIDE_TO = "/guide";
-const COMMITMENT_TO = "/app/dashboard#focus-commitments";
+const GUIDE_SUMMARY_ITEMS = [
+  "Release Before Payment",
+  "Trusted Buying and Selling",
+  "Cross-Community Trade",
+  "Fraud Reduction Before Action",
+  "Spotlight Visibility",
+  "Reputation-Based Visibility",
+  "Marketplace Presence Across Communities",
+  "People-Backed Loans",
+  "Supporting Others",
+  "Emergency Support",
+  "Diaspora Trust Bridge",
+  "Trust Savings (ROSCA Support)",
+  "Contribution Tracking",
+  "Continuity Across Distance",
+  "Portable Trust Identity",
+  "Reputation Mobility",
+  "One Global Shop",
+  "Service Economy Participation",
+  "Trust-Based Hiring",
+  "Demand Box",
+  "Community Economic Power",
+  "Commitment Builder",
+] as const;
 
 function pageShell(): React.CSSProperties {
   return {
@@ -52,9 +74,9 @@ function heroCard(): React.CSSProperties {
 function labelText(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "rgba(255,255,255,0.72)",
+    color: "#F3D06A",
     fontWeight: 900,
-    letterSpacing: 0.45,
+    letterSpacing: 3.6,
     textTransform: "uppercase",
   };
 }
@@ -102,12 +124,14 @@ function secondaryBtn(): React.CSSProperties {
 
 function routeCard(): React.CSSProperties {
   return {
-    borderRadius: 24,
+    width: "min(100%, 300px)",
+    justifySelf: "center",
+    borderRadius: 20,
     background: "rgba(255,255,255,0.08)",
     border: "1px solid rgba(255,255,255,0.12)",
-    padding: 22,
+    padding: 16,
     display: "grid",
-    gap: 12,
+    gap: 10,
   };
 }
 
@@ -151,6 +175,7 @@ export default function WelcomePage() {
   );
 
   const [step, setStep] = useState<WelcomeStep>(initialWelcomeStep(entryMode));
+  const [guideOpen, setGuideOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -221,8 +246,8 @@ export default function WelcomePage() {
       : entryMode === "existing"
       ? "Sign in to continue."
       : step === "choose_new_lane"
-      ? "How would you like to begin?"
-      : "Choose how you want to continue.";
+      ? "Choose your path."
+      : "Welcome";
 
   const subtext =
     entryMode === "invite"
@@ -234,27 +259,168 @@ export default function WelcomePage() {
       : entryMode === "existing"
       ? "Choose this only if you already have an active account."
       : step === "choose_new_lane"
-      ? "Choose whether you are creating a new community or joining an existing one."
-      : "Start with the option that matches you best. The app will guide you one step at a time.";
+      ? "Choose how you want to continue."
+      : "Choose how you want to continue.";
 
   return (
     <div style={pageShell()}>
       <div style={heroCard()}>
-        <div style={{ display: "grid", gap: 18 }}>
-          <ExplainToggle
-            label="What this screen does"
-            what="This welcome screen helps you choose the right starting lane, whether you are creating something new or entering an existing community."
-            why="It reduces entry confusion by steering you into the right route before you start the next step."
-            next="Choose the lane that matches your situation, then follow the guided route that opens from here."
-            tone="dark"
-          />
-
-          <div>
-            <div style={labelText()}>GSN Welcome</div>
+        {guideOpen ? (
+          <div style={{ display: "grid", gap: 18 }}>
+            <div
+              style={{
+                display: "grid",
+                gap: 8,
+                justifyItems: "center",
+                textAlign: "center",
+              }}
+            >
+              <div style={labelText()}>GSN summary</div>
+              <div
+                style={{
+                  fontSize: isCompact ? 28 : 36,
+                  fontWeight: 900,
+                  lineHeight: 1.08,
+                  maxWidth: 760,
+                  color: "#FFFFFF",
+                }}
+              >
+                My GSN and I
+              </div>
+            </div>
 
             <div
               style={{
-                marginTop: 10,
+                ...infoCard(),
+                background:
+                  "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(230,239,252,0.96) 58%, rgba(212,226,246,0.92) 100%)",
+                border: "1px solid rgba(255,255,255,0.34)",
+                boxShadow: "0 22px 56px rgba(5,16,38,0.26)",
+                padding: 22,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  marginBottom: 12,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setGuideOpen(false)}
+                  style={{
+                    ...secondaryBtn(),
+                    minHeight: 42,
+                    padding: "10px 16px",
+                    borderRadius: 14,
+                    border: "1px solid rgba(16,37,59,0.12)",
+                    background:
+                      "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(229,237,249,0.96) 100%)",
+                    color: "#123055",
+                    boxShadow: "0 10px 24px rgba(10, 24, 49, 0.14)",
+                    fontWeight: 900,
+                  }}
+                >
+                  Collapse
+                </button>
+              </div>
+
+              <div style={{ display: "grid", gap: 18 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    paddingTop: 4,
+                    paddingBottom: 6,
+                  }}
+                >
+                  <GSNBrandMonument
+                    width={isCompact ? 147 : 182}
+                    height={isCompact ? 241 : 301}
+                  />
+                </div>
+
+                <div style={{ display: "grid", gap: 12 }}>
+                <div
+                  style={{
+                    fontSize: isCompact ? 24 : 30,
+                    fontWeight: 900,
+                    lineHeight: 1.12,
+                    color: "#10253B",
+                    maxWidth: 720,
+                  }}
+                >
+                  Trust made visible, portable, and usable.
+                </div>
+
+                <div
+                  style={{
+                    ...supportText(),
+                    color: "rgba(16,37,59,0.88)",
+                    maxWidth: 760,
+                  }}
+                >
+                  What GSN can do across trust, trade, finance, identity, and work.
+                </div>
+              </div>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 18,
+                  display: "grid",
+                  gap: 10,
+                  gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+                }}
+              >
+                {GUIDE_SUMMARY_ITEMS.map((item, index) => (
+                  <div
+                    key={item}
+                    style={{
+                      borderRadius: 14,
+                      border: "1px solid rgba(16,37,59,0.10)",
+                      background:
+                        index < 2
+                          ? "rgba(243,208,106,0.16)"
+                          : "rgba(116,136,160,0.14)",
+                      backdropFilter: "blur(3px)",
+                      padding: "12px 14px",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: "#10253B",
+                    }}
+                  >
+                    <span style={{ color: "#8A651E", marginRight: 8 }}>
+                      {index + 1}.
+                    </span>
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+        <div style={{ display: "grid", gap: 18 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr minmax(0, 760px) 1fr",
+              alignItems: "start",
+              gap: 12,
+            }}
+          >
+          <div style={{ display: "flex", justifyContent: "flex-start" }}>
+            <OriginLink to="/cover" style={{ ...secondaryBtn(), fontSize: 0 }}>
+              <span style={{ fontSize: 14 }}>{"<-"}</span>
+              
+            </OriginLink>
+          </div>
+
+          <div style={{ textAlign: "center", display: "grid", gap: 10, justifyItems: "center" }}>
+            <div style={labelText()}>GSN</div>
+            <div
+              style={{
                 fontSize: isCompact ? 30 : 40,
                 fontWeight: 900,
                 lineHeight: 1.08,
@@ -266,7 +432,6 @@ export default function WelcomePage() {
 
             <div
               style={{
-                marginTop: 14,
                 fontSize: 16,
                 lineHeight: 1.82,
                 color: "rgba(255,255,255,0.90)",
@@ -275,6 +440,17 @@ export default function WelcomePage() {
             >
               {subtext}
             </div>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button
+              type="button"
+              onClick={() => setGuideOpen(true)}
+              style={secondaryBtn()}
+            >
+              My GSN and I
+            </button>
+          </div>
           </div>
 
           {entryMode === "create" && isKnownSingleLane(entryMode) ? (
@@ -287,22 +463,10 @@ export default function WelcomePage() {
                 Set up your community and continue from there.
               </div>
 
-              <ExplainToggle
-                label="What this does"
-                what="This lane sends you into the new-community route."
-                why="It keeps community creation separate from joining an existing community."
-                next="Choose Continue here only if you are starting a new community."
-                tone="dark"
-                style={{ marginTop: 12, marginBottom: 12 }}
-              />
-
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <button type="button" onClick={openCreate} style={primaryBtn()}>
                   Continue
                 </button>
-                <OriginLink to={GUIDE_TO} style={secondaryBtn()}>
-                  Open My GSN and I
-                </OriginLink>
               </div>
             </div>
           ) : null}
@@ -317,22 +481,10 @@ export default function WelcomePage() {
                 Continue your join request through the guided invitation path.
               </div>
 
-              <ExplainToggle
-                label="What this does"
-                what="This lane sends you into the guided join route for an existing community."
-                why="It keeps invited entry and join review separate from new-community creation."
-                next="Choose Continue here only if you are entering a community that already exists."
-                tone="dark"
-                style={{ marginTop: 12, marginBottom: 12 }}
-              />
-
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <button type="button" onClick={openJoin} style={primaryBtn()}>
                   Continue
                 </button>
-                <OriginLink to={GUIDE_TO} style={secondaryBtn()}>
-                  Open My GSN and I
-                </OriginLink>
               </div>
             </div>
           ) : null}
@@ -347,22 +499,10 @@ export default function WelcomePage() {
                 Create your password and complete your entry into the system.
               </div>
 
-              <ExplainToggle
-                label="What this does"
-                what="This lane sends you into the final activation step after approval."
-                why="It keeps approved entry separate from both sign-in and the earlier join route."
-                next="Choose Continue here only if your entry has already been approved and you now need to finish activation."
-                tone="dark"
-                style={{ marginTop: 12, marginBottom: 12 }}
-              />
-
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <button type="button" onClick={openActivation} style={primaryBtn()}>
                   Continue
                 </button>
-                <OriginLink to={GUIDE_TO} style={secondaryBtn()}>
-                  Open My GSN and I
-                </OriginLink>
               </div>
             </div>
           ) : null}
@@ -377,22 +517,10 @@ export default function WelcomePage() {
                 Enter your email and password on the next page.
               </div>
 
-              <ExplainToggle
-                label="What this does"
-                what="This lane sends returning users to sign in with an existing account."
-                why="It keeps returning-user access separate from new entry, join review, and activation."
-                next="Choose Continue to Login here only if you already have active access and just need to sign back in."
-                tone="dark"
-                style={{ marginTop: 12, marginBottom: 12 }}
-              />
-
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <button type="button" onClick={openExisting} style={primaryBtn()}>
                   Continue to Login
                 </button>
-                <OriginLink to={GUIDE_TO} style={secondaryBtn()}>
-                  Open My GSN and I
-                </OriginLink>
               </div>
             </div>
           ) : null}
@@ -401,27 +529,16 @@ export default function WelcomePage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
-                gap: 14,
+                gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 360px))",
+                gap: 20,
+                justifyContent: "center",
               }}
             >
               <div style={routeCard()}>
                 <div style={labelText()}>New member</div>
-                <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1.1 }}>
-                  I am new here
-                </div>
-              <div style={supportText()}>
+                <div style={supportText()}>
                   Choose this if you are entering for the first time.
                 </div>
-
-                <ExplainToggle
-                  label="What this does"
-                  what="This choice sends first-time users into the new-entry lane."
-                  why="It separates first entry from returning-user sign-in before the flow gets deeper."
-                  next="Choose this only if you are entering GSN for the first time."
-                  tone="dark"
-                  style={{ marginTop: 12, marginBottom: 12 }}
-                />
 
                 <div>
                   <button
@@ -429,28 +546,13 @@ export default function WelcomePage() {
                     onClick={() => setStep("choose_new_lane")}
                     style={primaryBtn()}
                   >
-                    I am a new member
+                    Continue
                   </button>
                 </div>
               </div>
 
               <div style={routeCard()}>
                 <div style={labelText()}>Existing member</div>
-                <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1.1 }}>
-                  I already have access
-                </div>
-                <div style={supportText()}>
-                  Choose this if you already have an active account and want to sign in.
-                </div>
-
-                <ExplainToggle
-                  label="What this does"
-                  what="This choice sends returning users into the existing-account lane."
-                  why="It keeps returning access separate from new-member entry before the route asks for sign-in."
-                  next="Choose this only if you already have an account and want to return to it."
-                  tone="dark"
-                  style={{ marginTop: 12, marginBottom: 12 }}
-                />
 
                 <div>
                   <button
@@ -458,7 +560,7 @@ export default function WelcomePage() {
                     onClick={openExisting}
                     style={secondaryBtn()}
                   >
-                    Go to Login
+                    Login
                   </button>
                 </div>
               </div>
@@ -469,8 +571,9 @@ export default function WelcomePage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
-                gap: 14,
+                gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 360px))",
+                gap: 20,
+                justifyContent: "center",
               }}
             >
               <div style={routeCard()}>
@@ -481,13 +584,6 @@ export default function WelcomePage() {
                 <div style={supportText()}>
                   Start as a founder and set up your new community.
                 </div>
-                <ExplainToggle
-                  label="What this does"
-                  what="This route starts a brand-new community from your side as the founder."
-                  why="Choose it when you are not entering someone else's existing community."
-                  next="Open Create to begin naming the community and setting up the first entry details."
-                  tone="dark"
-                />
 
                 <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                   <button type="button" onClick={openCreate} style={primaryBtn()}>
@@ -511,13 +607,6 @@ export default function WelcomePage() {
                 <div style={supportText()}>
                   Continue as a new member joining a community that already exists.
                 </div>
-                <ExplainToggle
-                  label="What this does"
-                  what="This route helps you enter a community that already exists and is ready to accept members."
-                  why="Choose it when you were invited, approved, or told to join an existing community instead of creating one."
-                  next="Open Join to continue into the community-entry steps from here."
-                  tone="dark"
-                />
 
                 <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                   <button type="button" onClick={openJoin} style={primaryBtn()}>
@@ -535,29 +624,10 @@ export default function WelcomePage() {
             </div>
           ) : null}
 
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <OriginLink to={GUIDE_TO} style={secondaryBtn()}>
-              Open My GSN and I
-            </OriginLink>
-
-            <OriginLink to={COMMITMENT_TO} style={secondaryBtn()}>
-              Open Commitment Builder
-            </OriginLink>
-          </div>
-
-          <div style={infoCard()}>
-            <div style={labelText()}>How this works</div>
-            <div style={{ marginTop: 10, ...supportText() }}>
-              You will see one step at a time. Choose your path, continue, and the next page will guide you.
-            </div>
-
-            <div style={{ marginTop: 10, ...supportText() }}>
-              Inside this guided flow, GSN can also help turn intentions into
-              steadier follow-through through Commitment Builder.
-            </div>
-          </div>
         </div>
+        )}
       </div>
     </div>
   );
 }
+
