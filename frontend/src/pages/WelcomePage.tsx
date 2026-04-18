@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   EntryActionButton,
   EntryBackLink,
+  EntryGuideLauncher,
 } from "../components/EntryControls";
 import GSNBrandMonument from "../components/GSNBrandMonument";
 import {
@@ -443,7 +444,13 @@ export default function WelcomePage() {
             </div>
           </div>
 
-          <div />
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <EntryGuideLauncher
+              label="About"
+              text="GSN and I"
+              onClick={() => setGuideOpen(true)}
+            />
+          </div>
           </div>
 
           {entryMode === "create" && isKnownSingleLane(entryMode) ? (

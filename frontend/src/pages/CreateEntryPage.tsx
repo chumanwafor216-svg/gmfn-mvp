@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { EntryBackLink, EntryGuideLauncher } from "../components/EntryControls";
 import OriginLink from "../components/OriginLink";
 import {
   clearPublicEntryState,
@@ -15,8 +16,11 @@ import {
 function pageShell(): React.CSSProperties {
   return {
     minHeight: "100vh",
-    background: "#F5FAFE",
+    width: "100%",
+    background:
+      "radial-gradient(circle at top, rgba(47,103,196,0.16) 0%, rgba(16,37,59,0.00) 32%), linear-gradient(180deg, #10243A 0%, #173654 62%, #26527C 100%)",
     padding: "34px 22px",
+    boxSizing: "border-box",
   };
 }
 
@@ -119,6 +123,69 @@ function feedbackCard(success = false): React.CSSProperties {
     background: success ? "#ECFDF5" : "#FEF2F2",
     color: success ? "#065F46" : "#991B1B",
     fontWeight: 900,
+  };
+}
+
+function stageShell(active = false, complete = false): React.CSSProperties {
+  if (active) {
+    return {
+      borderRadius: 20,
+      padding: 18,
+      border: "1px solid rgba(11,99,209,0.18)",
+      background:
+        "linear-gradient(180deg, rgba(11,99,209,0.10) 0%, rgba(248,251,255,0.92) 100%)",
+      boxShadow: "0 12px 28px rgba(11,99,209,0.10)",
+    };
+  }
+
+  if (complete) {
+    return {
+      borderRadius: 20,
+      padding: 18,
+      border: "1px solid rgba(34,197,94,0.18)",
+      background:
+        "linear-gradient(180deg, rgba(34,197,94,0.08) 0%, rgba(255,255,255,0.98) 100%)",
+    };
+  }
+
+  return {
+    borderRadius: 20,
+    padding: 18,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: "#FFFFFF",
+  };
+}
+
+function stageBadge(
+  active = false,
+  complete = false
+): React.CSSProperties {
+  return {
+    width: 34,
+    height: 34,
+    borderRadius: 999,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: 1000,
+    fontSize: 14,
+    background: active
+      ? "#0B63D1"
+      : complete
+        ? "#166534"
+        : "rgba(11,31,51,0.08)",
+    color: active || complete ? "#FFFFFF" : "#24415C",
+  };
+}
+
+function panelCard(): React.CSSProperties {
+  return {
+    borderRadius: 24,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,253,0.96) 100%)",
+    boxShadow: "0 18px 40px rgba(15,23,42,0.06)",
+    padding: 22,
   };
 }
 
@@ -230,6 +297,10 @@ export default function CreateEntryPage() {
   const [driverLicenceNumber, setDriverLicenceNumber] = useState("");
   const [driverLicenceCountry, setDriverLicenceCountry] = useState("");
   const [driverLicenceNote, setDriverLicenceNote] = useState("");
+  const [procedureOpen, setProcedureOpen] = useState(false);
+  const [openPanel, setOpenPanel] = useState<"details" | "verification" | "community">(
+    initialCommunityName || initialDescription ? "community" : "details"
+  );
 
   const canContinue = !!safeStr(communityName) && !!safeStr(displayName) && !!safeStr(phone);
   const canContinueDetails = !!safeStr(displayName) && !!safeStr(phone);
@@ -239,6 +310,26 @@ export default function CreateEntryPage() {
     !!safeStr(bankAccountName) &&
     !!safeStr(bankName) &&
     !!safeStr(bankAccountNumber);
+  const stepProgress = useMemo(
+    () => ({
+      details: step === "details",
+      verification: step === "verify" || step === "bank",
+      community: step === "community",
+      detailsDone:
+        step === "verify" || step === "bank" || step === "community",
+      verificationDone: step === "community",
+    }),
+    [step]
+  );
+
+  const canOpenVerification = step !== "details";
+  const canOpenCommunity = step === "community";
+
+  function handleOpenPanel(next: "details" | "verification" | "community") {
+    if (next === "verification" && !canOpenVerification) return;
+    if (next === "community" && !canOpenCommunity) return;
+    setOpenPanel(next);
+  }
 
   async function handleStartVerification() {
     if (!canContinueDetails || busy) return;
@@ -257,6 +348,7 @@ export default function CreateEntryPage() {
       setVerificationId(Number(out?.verification_id || 0));
       setOtpPreview(safeStr(out?.otp_preview));
       setStep("verify");
+      setOpenPanel("verification");
       setSuccess(
         safeStr(out?.message) ||
           "Phone verification started. Enter the code to continue."
@@ -282,6 +374,7 @@ export default function CreateEntryPage() {
       });
 
       setStep("bank");
+      setOpenPanel("verification");
       setSuccess("Phone verified. Add your bank details before community details continue.");
     } catch (err: any) {
       setError(err?.message || "Phone verification could not be completed.");
@@ -313,6 +406,7 @@ export default function CreateEntryPage() {
       });
 
       setStep("community");
+      setOpenPanel("community");
       setSuccess(
         safeStr(out?.verification_note) ||
           "Bank details recorded. You can now continue with community details."
@@ -400,6 +494,51 @@ export default function CreateEntryPage() {
     <div style={pageShell()}>
       <div style={{ maxWidth: 960, margin: "0 auto", display: "grid", gap: 18 }}>
         <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "56px 1fr auto",
+            alignItems: "center",
+            gap: 12,
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "flex-start" }}>
+            <EntryBackLink to="/welcome" />
+          </div>
+
+          <div style={{ textAlign: "center", display: "grid", gap: 6 }}>
+            <div
+              style={{
+                fontSize: 12,
+                color: "#F3D06A",
+                fontWeight: 900,
+                letterSpacing: 3.4,
+                textTransform: "uppercase",
+              }}
+            >
+              GSN
+            </div>
+            <div
+              style={{
+                color: "#F8FBFF",
+                fontSize: 15,
+                lineHeight: 1.6,
+                opacity: 0.92,
+              }}
+            >
+              Founder entry and verification
+            </div>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <EntryGuideLauncher
+              label="About"
+              text="Create Guide"
+              onClick={() => setProcedureOpen((current) => !current)}
+            />
+          </div>
+        </div>
+
+        <div
           style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
         >
           <div style={sectionLabel()}>Create entry</div>
@@ -416,17 +555,33 @@ export default function CreateEntryPage() {
             Start a new community
           </div>
 
-          <div
-            style={{
-              marginTop: 10,
-              color: "#D7E3F1",
-              lineHeight: 1.8,
-              maxWidth: 760,
-            }}
-          >
-            Start with your details first. Then add the community details and
-            continue into founder creation. Start with the street name people
-            know you by and your phone number. Email can stay optional here.
+          <div style={{ marginTop: 14, display: "grid", gap: 10, justifyItems: "start" }}>
+            {procedureOpen ? (
+              <div
+                style={{
+                  width: "min(100%, 760px)",
+                  borderRadius: 18,
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.06) 100%)",
+                  padding: 16,
+                  color: "#D7E3F1",
+                  lineHeight: 1.8,
+                }}
+              >
+                1. Open Block 1 and fill your founder details.
+                <br />
+                2. Submit Block 1 and it closes back into place.
+                <br />
+                3. Block 2 opens for phone verification and bank rails.
+                <br />
+                4. Submit Block 2 and it closes back into place.
+                <br />
+                5. Block 3 opens for community setup.
+                <br />
+                6. Finish Block 3 and continue into founder activation from this same page.
+              </div>
+            ) : null}
           </div>
 
           <div
@@ -446,29 +601,70 @@ export default function CreateEntryPage() {
         {error ? <div style={feedbackCard(false)}>{error}</div> : null}
         {success ? <div style={feedbackCard(true)}>{success}</div> : null}
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1.05fr 0.95fr",
-            gap: 18,
-            alignItems: "start",
-          }}
-        >
-          <div style={pageCard()}>
-            <div style={{ display: "grid", gap: 14 }}>
-              <div style={sectionLabel()}>
-                Current step:{" "}
-                {step === "details"
-                  ? "Your details"
-                  : step === "verify"
-                    ? "Phone verification"
-                    : step === "bank"
-                      ? "Bank details"
-                      : "Community details"}
+        <div style={pageCard()}>
+          <div style={{ display: "grid", gap: 14 }}>
+            <div
+              style={stageShell(stepProgress.details, stepProgress.detailsDone)}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span
+                    style={stageBadge(
+                      stepProgress.details,
+                      stepProgress.detailsDone
+                    )}
+                  >
+                    1
+                  </span>
+                  <div style={{ display: "grid", gap: 6 }}>
+                    <div style={sectionLabel()}>First block</div>
+                    <div
+                      style={{
+                        color: "#0B1F33",
+                        fontSize: 22,
+                        fontWeight: 1000,
+                        lineHeight: 1.15,
+                      }}
+                    >
+                      Your details
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    openPanel === "details"
+                      ? setOpenPanel("verification")
+                      : handleOpenPanel("details")
+                  }
+                  style={secondaryBtn()}
+                >
+                  {openPanel === "details" ? "Collapse" : "Open Block 1"}
+                </button>
               </div>
 
-              {step === "details" ? (
-                <div style={{ display: "grid", gap: 14 }}>
+              <div
+                style={{
+                  marginTop: 10,
+                  color: "#5F7287",
+                  lineHeight: 1.7,
+                  fontSize: 14,
+                }}
+              >
+                Street name, phone number, and optional email start the founder identity.
+              </div>
+
+              {openPanel === "details" ? (
+                <div style={{ display: "grid", gap: 14, marginTop: 16 }}>
                   <div>
                     <div style={fieldLabel()}>Street name or nickname</div>
                     <input
@@ -506,207 +702,304 @@ export default function CreateEntryPage() {
                       style={primaryBtn(!canContinueDetails || busy)}
                       disabled={!canContinueDetails || busy}
                     >
-                      {busy ? "Sending..." : "Send verification code"}
+                      {busy ? "Sending..." : "Submit Block 1"}
                     </button>
                   </div>
                 </div>
-              ) : step === "verify" ? (
-                <div style={{ display: "grid", gap: 14 }}>
-                  <div>
-                    <div style={fieldLabel()}>Verification code</div>
-                    <input
-                      value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value)}
-                      placeholder="Enter the code sent to your phone"
-                      style={input()}
-                    />
-                  </div>
+              ) : null}
+            </div>
 
-                  {otpPreview ? (
-                    <div style={softCard("#FFFBEB")}>
-                      <div style={sectionLabel()}>Pilot code preview</div>
-                      <div
-                        style={{
-                          marginTop: 10,
-                          color: "#92400E",
-                          fontWeight: 900,
-                          fontSize: 18,
-                          letterSpacing: 1.2,
-                        }}
-                      >
-                        {otpPreview}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 10,
-                      flexWrap: "wrap",
-                      marginTop: 4,
-                    }}
+            <div
+              style={stageShell(
+                stepProgress.verification,
+                stepProgress.verificationDone
+              )}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span
+                    style={stageBadge(
+                      stepProgress.verification,
+                      stepProgress.verificationDone
+                    )}
                   >
-                    <button
-                      type="button"
-                      onClick={() => setStep("details")}
-                      style={secondaryBtn()}
-                    >
-                      Back to your details
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleConfirmVerification}
-                      style={{
-                        ...primaryBtn(!canConfirmOtp || busy),
-                        width: "auto",
-                        minWidth: 220,
-                      }}
-                      disabled={!canConfirmOtp || busy}
-                    >
-                      {busy ? "Verifying..." : "Verify phone"}
-                    </button>
-                  </div>
-                </div>
-              ) : step === "bank" ? (
-                <div style={{ display: "grid", gap: 14 }}>
-                  <div>
-                    <div style={fieldLabel()}>Account name</div>
-                    <input
-                      value={bankAccountName}
-                      onChange={(e) => setBankAccountName(e.target.value)}
-                      placeholder="Name on the bank or wallet account"
-                      style={input()}
-                    />
-                  </div>
-
-                  <div>
-                    <div style={fieldLabel()}>Bank or wallet provider</div>
-                    <input
-                      value={bankName}
-                      onChange={(e) => setBankName(e.target.value)}
-                      placeholder="Enter the bank or wallet provider"
-                      style={input()}
-                    />
-                  </div>
-
-                  <div>
-                    <div style={fieldLabel()}>Account number or wallet number</div>
-                    <input
-                      value={bankAccountNumber}
-                      onChange={(e) => setBankAccountNumber(e.target.value)}
-                      placeholder="Enter the destination number"
-                      style={input()}
-                    />
-                  </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 160px", gap: 12 }}>
-                    <div>
-                      <div style={fieldLabel()}>Country (optional)</div>
-                      <input
-                        value={bankCountry}
-                        onChange={(e) => setBankCountry(e.target.value)}
-                        placeholder="Country"
-                        style={input()}
-                      />
-                    </div>
-
-                    <div>
-                      <div style={fieldLabel()}>Currency</div>
-                      <select
-                        value={bankCurrency}
-                        onChange={(e) => setBankCurrency(e.target.value)}
-                        style={input()}
-                      >
-                        <option value="NGN">NGN</option>
-                        <option value="GBP">GBP</option>
-                        <option value="USD">USD</option>
-                        <option value="EUR">EUR</option>
-                        <option value="KES">KES</option>
-                        <option value="GHS">GHS</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div style={fieldLabel()}>Note or cross-region explanation</div>
-                    <textarea
-                      value={bankNote}
-                      onChange={(e) => setBankNote(e.target.value)}
-                      placeholder="If your phone country and bank country do not match, explain briefly here"
-                      style={textArea()}
-                    />
-                  </div>
-
-                  <div style={softCard("#F8FBFF")}>
-                    <div style={sectionLabel()}>Optional licence proof</div>
+                    2
+                  </span>
+                  <div style={{ display: "grid", gap: 6 }}>
+                    <div style={sectionLabel()}>Second block</div>
                     <div
                       style={{
-                        marginTop: 10,
-                        color: "#475569",
-                        lineHeight: 1.8,
-                        fontSize: 14,
+                        color: "#0B1F33",
+                        fontSize: 22,
+                        fontWeight: 1000,
+                        lineHeight: 1.15,
                       }}
                     >
-                      If you have a driver's licence or similar strong identity document,
-                      you can record it here as an extra trust signal. It is optional.
+                      Verification and bank rails
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    openPanel === "verification"
+                      ? setOpenPanel("details")
+                      : handleOpenPanel("verification")
+                  }
+                  style={secondaryBtn()}
+                  disabled={!canOpenVerification}
+                >
+                  {openPanel === "verification" ? "Collapse" : "Open Block 2"}
+                </button>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 10,
+                  color: "#5F7287",
+                  lineHeight: 1.7,
+                  fontSize: 14,
+                }}
+              >
+                Phone verification, bank destination, region explanation, and optional licence proof sit here.
+              </div>
+
+              {openPanel === "verification" ? (
+                step === "verify" ? (
+                  <div style={{ display: "grid", gap: 14, marginTop: 16 }}>
+                    <div>
+                      <div style={fieldLabel()}>Verification code</div>
+                      <input
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value)}
+                        placeholder="Enter the code sent to your phone"
+                        style={input()}
+                      />
                     </div>
 
-                    <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
+                    {otpPreview ? (
+                      <div style={softCard("#FFFBEB")}>
+                        <div style={sectionLabel()}>Pilot code preview</div>
+                        <div
+                          style={{
+                            marginTop: 10,
+                            color: "#92400E",
+                            fontWeight: 900,
+                            fontSize: 18,
+                            letterSpacing: 1.2,
+                          }}
+                        >
+                          {otpPreview}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div style={{ marginTop: 4 }}>
+                      <button
+                        type="button"
+                        onClick={handleConfirmVerification}
+                        style={primaryBtn(!canConfirmOtp || busy)}
+                        disabled={!canConfirmOtp || busy}
+                      >
+                        {busy ? "Verifying..." : "Submit Block 2"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gap: 14, marginTop: 16 }}>
+                    <div>
+                      <div style={fieldLabel()}>Account name</div>
                       <input
-                        value={driverLicenceNumber}
-                        onChange={(e) => setDriverLicenceNumber(e.target.value)}
-                        placeholder="Driver's licence number (optional)"
+                        value={bankAccountName}
+                        onChange={(e) => setBankAccountName(e.target.value)}
+                        placeholder="Name on the bank or wallet account"
                         style={input()}
                       />
+                    </div>
 
+                    <div>
+                      <div style={fieldLabel()}>Bank or wallet provider</div>
                       <input
-                        value={driverLicenceCountry}
-                        onChange={(e) => setDriverLicenceCountry(e.target.value)}
-                        placeholder="Issuing country (optional)"
+                        value={bankName}
+                        onChange={(e) => setBankName(e.target.value)}
+                        placeholder="Enter the bank or wallet provider"
                         style={input()}
                       />
+                    </div>
 
+                    <div>
+                      <div style={fieldLabel()}>Account number or wallet number</div>
+                      <input
+                        value={bankAccountNumber}
+                        onChange={(e) => setBankAccountNumber(e.target.value)}
+                        placeholder="Enter the destination number"
+                        style={input()}
+                      />
+                    </div>
+
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 160px",
+                        gap: 12,
+                      }}
+                    >
+                      <div>
+                        <div style={fieldLabel()}>Country (optional)</div>
+                        <input
+                          value={bankCountry}
+                          onChange={(e) => setBankCountry(e.target.value)}
+                          placeholder="Country"
+                          style={input()}
+                        />
+                      </div>
+
+                      <div>
+                        <div style={fieldLabel()}>Currency</div>
+                        <select
+                          value={bankCurrency}
+                          onChange={(e) => setBankCurrency(e.target.value)}
+                          style={input()}
+                        >
+                          <option value="NGN">NGN</option>
+                          <option value="GBP">GBP</option>
+                          <option value="USD">USD</option>
+                          <option value="EUR">EUR</option>
+                          <option value="KES">KES</option>
+                          <option value="GHS">GHS</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div style={fieldLabel()}>Note or cross-region explanation</div>
                       <textarea
-                        value={driverLicenceNote}
-                        onChange={(e) => setDriverLicenceNote(e.target.value)}
-                        placeholder="Optional note about the licence or document"
+                        value={bankNote}
+                        onChange={(e) => setBankNote(e.target.value)}
+                        placeholder="If your phone country and bank country do not match, explain briefly here"
                         style={textArea()}
                       />
                     </div>
-                  </div>
 
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 10,
-                      flexWrap: "wrap",
-                      marginTop: 4,
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setStep("verify")}
-                      style={secondaryBtn()}
-                    >
-                      Back to phone verification
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSaveBankDetails}
+                    <div style={softCard("#F8FBFF")}>
+                      <div style={sectionLabel()}>Optional licence proof</div>
+                      <div
+                        style={{
+                          marginTop: 10,
+                          color: "#475569",
+                          lineHeight: 1.8,
+                          fontSize: 14,
+                        }}
+                      >
+                        If you have a driver's licence or similar strong identity document,
+                        you can record it here as an extra trust signal. It is optional.
+                      </div>
+
+                      <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
+                        <input
+                          value={driverLicenceNumber}
+                          onChange={(e) => setDriverLicenceNumber(e.target.value)}
+                          placeholder="Driver's licence number (optional)"
+                          style={input()}
+                        />
+
+                        <input
+                          value={driverLicenceCountry}
+                          onChange={(e) => setDriverLicenceCountry(e.target.value)}
+                          placeholder="Issuing country (optional)"
+                          style={input()}
+                        />
+
+                        <textarea
+                          value={driverLicenceNote}
+                          onChange={(e) => setDriverLicenceNote(e.target.value)}
+                          placeholder="Optional note about the licence or document"
+                          style={textArea()}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: 4 }}>
+                      <button
+                        type="button"
+                        onClick={handleSaveBankDetails}
+                        style={primaryBtn(!canContinueBank || busy)}
+                        disabled={!canContinueBank || busy}
+                      >
+                        {busy ? "Saving..." : "Submit Block 2"}
+                      </button>
+                    </div>
+                  </div>
+                )
+              ) : null}
+            </div>
+
+            <div style={stageShell(stepProgress.community, false)}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={stageBadge(stepProgress.community, false)}>3</span>
+                  <div style={{ display: "grid", gap: 6 }}>
+                    <div style={sectionLabel()}>Third block</div>
+                    <div
                       style={{
-                        ...primaryBtn(!canContinueBank || busy),
-                        width: "auto",
-                        minWidth: 220,
+                        color: "#0B1F33",
+                        fontSize: 22,
+                        fontWeight: 1000,
+                        lineHeight: 1.15,
                       }}
-                      disabled={!canContinueBank || busy}
                     >
-                      {busy ? "Saving..." : "Save bank details"}
-                    </button>
+                      Community setup
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <form onSubmit={onSubmit} style={{ display: "grid", gap: 14 }}>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    openPanel === "community"
+                      ? setOpenPanel("verification")
+                      : handleOpenPanel("community")
+                  }
+                  style={secondaryBtn()}
+                  disabled={!canOpenCommunity}
+                >
+                  {openPanel === "community" ? "Collapse" : "Open Block 3"}
+                </button>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 10,
+                  color: "#5F7287",
+                  lineHeight: 1.7,
+                  fontSize: 14,
+                }}
+              >
+                Community name and short story only appear after the identity and rails checks are in place.
+              </div>
+
+              {openPanel === "community" ? (
+                <form
+                  onSubmit={onSubmit}
+                  style={{ display: "grid", gap: 14, marginTop: 16 }}
+                >
                   <div>
                     <div style={fieldLabel()}>Community name</div>
                     <input
@@ -727,97 +1020,17 @@ export default function CreateEntryPage() {
                     />
                   </div>
 
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 10,
-                      flexWrap: "wrap",
-                      marginTop: 4,
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setStep("bank")}
-                      style={secondaryBtn()}
-                    >
-                      Back to bank details
-                    </button>
+                  <div style={{ marginTop: 4 }}>
                     <button
                       type="submit"
-                      style={{
-                        ...primaryBtn(!canContinue || busy),
-                        width: "auto",
-                        minWidth: 220,
-                      }}
+                      style={primaryBtn(!canContinue || busy)}
                       disabled={!canContinue || busy}
                     >
                       {busy ? "Continuing..." : "Continue to founder creation"}
                     </button>
                   </div>
                 </form>
-              )}
-            </div>
-          </div>
-
-          <div style={{ display: "grid", gap: 14 }}>
-            <div style={softCard()}>
-              <div style={sectionLabel()}>What happens next</div>
-              <div
-                style={{
-                  marginTop: 10,
-                color: "#475569",
-                lineHeight: 1.8,
-                fontSize: 14,
-              }}
-            >
-                1. Start with the name people know you by.
-                <br />
-                2. Verify your phone before the community step opens.
-                <br />
-                3. Record your bank details after phone verification.
-                <br />
-                4. If your phone and bank regions do not match, explain it briefly so the trust record stays clear.
-                <br />
-                5. Add an optional driver's licence reference if you want extra identity proof.
-                <br />
-                6. Add the community details.
-                <br />
-                7. Activate the issued identity, then move into Build Your First Circle.
-              </div>
-            </div>
-
-            <div style={softCard()}>
-              <div style={sectionLabel()}>Why this page exists</div>
-              <div
-                style={{
-                  marginTop: 10,
-                  color: "#475569",
-                  lineHeight: 1.8,
-                  fontSize: 14,
-                }}
-              >
-                This keeps founder onboarding guided and one step at a time.
-                Your identity and verified phone come first. Bank destination comes
-                next. Region consistency between phone and bank is also checked here.
-                Optional licence proof can also be recorded here. Community
-                setup follows after that.
-              </div>
-            </div>
-
-            <div style={softCard()}>
-              <div style={sectionLabel()}>Guide note</div>
-              <div
-                style={{
-                  marginTop: 10,
-                  color: "#475569",
-                  lineHeight: 1.8,
-                  fontSize: 14,
-                }}
-              >
-                This page now opens the community step only after the phone has
-                been verified and the founder bank destination has been recorded
-                server-side. Wider community management opens later in the guided flow.
-              </div>
+              ) : null}
             </div>
           </div>
         </div>

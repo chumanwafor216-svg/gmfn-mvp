@@ -110,36 +110,52 @@ export function EntryGuideLauncher({
     <div
       style={{
         display: "grid",
-        justifyItems: "end",
-        gap: 6,
+        justifyItems: "center",
+        gap: 8,
       }}
     >
-      <div
+      <button
+        type="button"
+        onClick={onClick}
         style={{
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
           minHeight: 24,
-          padding: "4px 10px",
+          minWidth: 84,
+          padding: "4px 12px",
           borderRadius: 999,
           border: "1px solid rgba(255,255,255,0.12)",
-          background: "rgba(255,255,255,0.06)",
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.07) 100%)",
+          boxShadow:
+            "0 8px 20px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.14)",
           fontSize: 10.5,
           lineHeight: 1,
           letterSpacing: 0.8,
           color: "rgba(255,255,255,0.78)",
           textAlign: "center",
           textTransform: "uppercase",
+          cursor: "pointer",
         }}
       >
         {label}
-      </div>
+      </button>
       <EntryActionButton
         type="button"
         onClick={onClick}
         variant="secondary"
-        style={{ borderRadius: 999, padding: "11px 18px" }}
+        style={{
+          minHeight: 46,
+          borderRadius: 999,
+          padding: "12px 20px",
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.08) 45%, rgba(255,255,255,0.04) 100%)",
+          border: "1px solid rgba(255,255,255,0.18)",
+          boxShadow:
+            "0 16px 28px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -6px 12px rgba(6,18,35,0.12)",
+          transform: "translateY(0)",
+        }}
       >
         {text}
       </EntryActionButton>
