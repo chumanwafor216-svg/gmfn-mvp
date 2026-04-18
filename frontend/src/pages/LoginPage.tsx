@@ -1,17 +1,20 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
+import { EntryBackLink, EntryGuideLauncher } from "../components/EntryControls";
 import { getAccessToken, getMe, loginAndStore } from "../lib/api";
 
 function pageShell(): React.CSSProperties {
   return {
     minHeight: "100vh",
-    display: "grid",
-    placeItems: "center",
+    width: "100%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
     background:
-      "radial-gradient(circle at top, rgba(47,103,196,0.16) 0%, rgba(16,37,59,0.00) 32%), linear-gradient(180deg, #0C1F33 0%, #143454 62%, #183F66 100%)",
-    padding: "24px 18px",
+      "radial-gradient(circle at top, rgba(47,103,196,0.16) 0%, rgba(16,37,59,0.00) 32%), linear-gradient(180deg, #10243A 0%, #173654 62%, #26527C 100%)",
+    color: "#FFFFFF",
+    fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
+    padding: "22px",
     boxSizing: "border-box",
   };
 }
@@ -19,21 +22,47 @@ function pageShell(): React.CSSProperties {
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     width: "100%",
-    maxWidth: 820,
-    padding: 30,
+    maxWidth: 760,
+    padding: 26,
     borderRadius: 24,
-    background: bg,
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(242,247,252,0.98) 62%, rgba(229,237,247,0.96) 100%)"
+        : bg,
     border: "1px solid rgba(11,31,51,0.08)",
-    boxShadow: "0 18px 50px rgba(15,23,42,0.10)",
+    boxShadow:
+      "0 18px 50px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.78)",
+  };
+}
+
+function heroCard(): React.CSSProperties {
+  return {
+    width: "100%",
+    maxWidth: 760,
+    borderRadius: 36,
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.06) 100%)",
+    border: "1px solid rgba(255,255,255,0.16)",
+    boxShadow:
+      "0 28px 72px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.10)",
+    padding: 22,
+    backdropFilter: "blur(10px)",
+    position: "relative",
+    overflow: "hidden",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     borderRadius: 18,
-    background: bg,
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,252,0.96) 100%)"
+        : bg,
     border: "1px solid rgba(11,31,51,0.08)",
     padding: 18,
+    boxShadow:
+      "0 12px 28px rgba(15,23,42,0.05), inset 0 1px 0 rgba(255,255,255,0.72)",
   };
 }
 
@@ -42,28 +71,37 @@ function inputStyle(): React.CSSProperties {
     width: "100%",
     padding: "13px 14px",
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.12)",
+    border: "1px solid rgba(28,76,126,0.18)",
     outline: "none",
     fontSize: 14,
     color: "#0B1F33",
-    background: "#FFFFFF",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.98) 100%)",
     boxSizing: "border-box",
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.86), 0 6px 14px rgba(10,24,49,0.04)",
   };
 }
 
 function primaryBtn(disabled = false): React.CSSProperties {
   return {
-    width: "100%",
+    width: "min(100%, 60%)",
     padding: "14px 18px",
     borderRadius: 16,
     border: "none",
-    background: disabled ? "#93B7E3" : "#0B63D1",
-    color: "#FFFFFF",
+    background: disabled
+      ? "linear-gradient(180deg, #D7DEE8 0%, #C8D2DF 100%)"
+      : "linear-gradient(180deg, #F6D77D 0%, #F3D06A 52%, #D9A941 100%)",
+    color: disabled ? "#6B7B8D" : "#10253B",
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 15,
     opacity: disabled ? 0.82 : 1,
     textAlign: "center",
+    boxShadow: disabled
+      ? "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.52)"
+      : "0 16px 30px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.56)",
+    textShadow: disabled ? "none" : "0 1px 0 rgba(255,255,255,0.36)",
   };
 }
 
@@ -78,23 +116,6 @@ function secondaryBtn(): React.CSSProperties {
     border: "1px solid rgba(11,31,51,0.10)",
     cursor: "pointer",
     fontSize: 15,
-    textAlign: "center",
-  };
-}
-
-function secondaryLink(): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "10px 12px",
-    borderRadius: 12,
-    background: "#FFFFFF",
-    color: "#0B1F33",
-    textDecoration: "none",
-    fontWeight: 900,
-    border: "1px solid rgba(11,31,51,0.10)",
-    fontSize: 14,
     textAlign: "center",
   };
 }
@@ -185,6 +206,14 @@ function helperText(): React.CSSProperties {
   };
 }
 
+function supportText(): React.CSSProperties {
+  return {
+    color: "rgba(16,37,59,0.88)",
+    fontSize: 14,
+    lineHeight: 1.75,
+  };
+}
+
 function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
@@ -193,10 +222,6 @@ export default function LoginPage() {
   const nav = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const isDevBuild =
-    typeof import.meta !== "undefined" &&
-    Boolean((import.meta as any)?.env?.DEV);
-
   const routeState =
     (location.state as {
       from?: { pathname?: string; search?: string };
@@ -224,11 +249,13 @@ export default function LoginPage() {
     return window.innerWidth <= 920;
   });
 
-  const [email, setEmail] = useState(founderEmail || (isDevBuild ? "admin@test.com" : ""));
-  const [password, setPassword] = useState(isDevBuild ? "pass1234" : "");
+  const [email, setEmail] = useState(founderEmail || "");
+  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const innerRailWidth = "min(100%, 760px)";
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -306,91 +333,281 @@ export default function LoginPage() {
     }
   }
 
-  function clearBrowserSession() {
-    try {
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("gmfn_selected_clan_id");
-      setMsg("Old session cleared from this browser.");
-      setErr(null);
-    } catch {
-      setMsg("Browser session cleared.");
-      setErr(null);
-    }
-  }
-
   return (
     <div style={pageShell()}>
-      <div style={{ width: "100%", maxWidth: 820, display: "grid", gap: 18 }}>
-        <ExplainToggle
-          label="What this screen does"
-          what="This screen signs you back into your workspace using your email and password."
-          why="It is the entry point for returning users who already have active access."
-          next="Enter your sign-in details, then continue into your dashboard or the page you were trying to reach."
-          tone="light"
-        />
-
+      <div
+        style={{
+          ...heroCard(),
+          display: "grid",
+          gap: 18,
+        }}
+      >
         <div
           style={{
-            ...pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
-            maxWidth: "100%",
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            background:
+              "radial-gradient(circle at top, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0) 28%), radial-gradient(circle at bottom, rgba(123,181,255,0.10) 0%, rgba(123,181,255,0) 30%)",
+          }}
+        />
+        <div
+          style={{
+            position: "relative",
+            zIndex: 1,
           }}
         >
-          <div style={labelText()}>Sign in</div>
+          <div
+            style={{
+              width: innerRailWidth,
+              margin: "0 auto",
+              display: "grid",
+              gridTemplateColumns: "56px 1fr auto",
+              alignItems: "center",
+              gap: 12,
+              position: "relative",
+              zIndex: 1,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "flex-start" }}>
+              <EntryBackLink to="/welcome" />
+            </div>
+
+            <div style={{ textAlign: "center", display: "grid", gap: 6 }}>
+              <div
+                style={{
+                  fontSize: 14,
+                  color: "#F3D06A",
+                  fontWeight: 900,
+                  letterSpacing: 3.8,
+                  textTransform: "uppercase",
+                }}
+              >
+                GSN
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <EntryGuideLauncher
+                label="About"
+                text="Sign In Guide"
+                onClick={() => setGuideOpen((current) => !current)}
+              />
+            </div>
+          </div>
 
           <div
             style={{
-              marginTop: 10,
-              fontSize: isCompact ? 30 : 36,
+              width: innerRailWidth,
+              margin: "18px auto 0",
+              fontSize: isCompact ? 20 : 24,
               fontWeight: 1000,
               color: "#F8FBFF",
-              lineHeight: 1.08,
-              maxWidth: 760,
+              lineHeight: 1.2,
+              textAlign: "center",
             }}
           >
-            Sign in to continue
+            Existing member sign in to continue
           </div>
 
-          <div
-            style={{
-              marginTop: 12,
-              color: "#D7E3F1",
-              lineHeight: 1.8,
-              fontSize: 15,
-              maxWidth: 820,
-            }}
-          >
-            Enter your email and password to open your workspace.
-          </div>
+          {guideOpen ? (
+            <div
+              style={{
+                marginTop: 16,
+                width: innerRailWidth,
+                marginLeft: "auto",
+                marginRight: "auto",
+                borderRadius: 22,
+                border: "1px solid rgba(255,255,255,0.42)",
+                background:
+                  "linear-gradient(180deg, rgba(251,253,255,0.99) 0%, rgba(235,242,251,0.98) 34%, rgba(220,232,247,0.95) 68%, rgba(206,221,240,0.92) 100%)",
+                boxShadow:
+                  "0 24px 60px rgba(5,16,38,0.28), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -18px 30px rgba(122,147,180,0.08)",
+                padding: 24,
+                color: "#17324D",
+                lineHeight: 1.8,
+                position: "relative",
+                overflow: "hidden",
+                zIndex: 1,
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  pointerEvents: "none",
+                  background:
+                    "radial-gradient(circle at top, rgba(243,208,106,0.16) 0%, rgba(243,208,106,0) 26%), radial-gradient(circle at bottom right, rgba(52,101,164,0.14) 0%, rgba(52,101,164,0) 30%)",
+                }}
+              />
+              <div
+                style={{
+                  display: "grid",
+                  gap: 6,
+                  justifyItems: "center",
+                  textAlign: "center",
+                  marginBottom: 14,
+                  position: "relative",
+                  zIndex: 1,
+                }}
+              >
+                <div
+                  style={{
+                    ...labelText(),
+                    color: "#B88721",
+                    letterSpacing: 3.4,
+                    textShadow: "0 1px 0 rgba(255,255,255,0.76)",
+                  }}
+                >
+                  Sign in guide
+                </div>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontSize: 30,
+                    fontWeight: 1000,
+                    lineHeight: 1.06,
+                    letterSpacing: 0.2,
+                    textShadow:
+                      "0 1px 0 rgba(255,255,255,0.92), 0 10px 24px rgba(10,24,49,0.12)",
+                  }}
+                >
+                  Existing member path
+                </div>
+              </div>
 
-          <div
-            style={{
-              marginTop: 16,
-              display: "flex",
-              gap: 8,
-              flexWrap: "wrap",
-            }}
-          >
-            <span style={badge(true)}>Existing member</span>
-            {founderCommunityName ? (
-              <span style={badge(false)}>Community: {founderCommunityName}</span>
-            ) : null}
-            {founderEmail ? (
-              <span style={badge(false)}>Email: {founderEmail}</span>
-            ) : null}
-          </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  marginBottom: 10,
+                  position: "relative",
+                  zIndex: 1,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setGuideOpen(false)}
+                  style={{
+                    ...secondaryBtn(),
+                    width: "auto",
+                    borderRadius: 14,
+                    border: "1px solid rgba(16,37,59,0.12)",
+                    background:
+                      "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(229,237,249,0.96) 100%)",
+                    color: "#123055",
+                    boxShadow: "0 10px 24px rgba(10,24,49,0.14)",
+                  }}
+                >
+                  Collapse
+                </button>
+              </div>
 
-          <ExplainToggle
-            label="What this does"
-            what="This sign-in block lets returning users reopen their workspace with existing account details."
-            why="It keeps sign-in distinct from activation, join approval, and public entry routes."
-            next="Use this form only if you already have active access and are ready to reopen your workspace."
-            tone="dark"
-            style={{ marginTop: 14 }}
-          />
+              <div style={{ display: "grid", gap: 18 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    paddingTop: 4,
+                    paddingBottom: 6,
+                    position: "relative",
+                    zIndex: 1,
+                  }}
+                >
+                  <div
+                    style={{
+                      borderRadius: 30,
+                      padding: "12px 18px",
+                      background:
+                        "linear-gradient(180deg, rgba(255,255,255,0.62) 0%, rgba(236,242,250,0.24) 100%)",
+                      border: "1px solid rgba(255,255,255,0.56)",
+                      boxShadow:
+                        "0 18px 36px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.82), inset 0 -10px 18px rgba(123,149,181,0.08)",
+                      minWidth: 184,
+                      minHeight: 42,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#24415C",
+                      fontWeight: 900,
+                      fontSize: 12,
+                      letterSpacing: 2.2,
+                      textTransform: "uppercase",
+                      textShadow: "0 1px 0 rgba(255,255,255,0.8)",
+                    }}
+                  >
+                    Existing member
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 12,
+                    position: "relative",
+                    zIndex: 1,
+                  }}
+                >
+                  <div
+                    style={{
+                      borderRadius: 16,
+                      border: "1px solid rgba(16,37,59,0.10)",
+                      background:
+                        "linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(245,249,253,0.68) 100%)",
+                      boxShadow:
+                        "inset 0 1px 0 rgba(255,255,255,0.82), 0 8px 20px rgba(10,24,49,0.06)",
+                      padding: "13px 14px",
+                    }}
+                  >
+                    <strong style={{ color: "#10253B" }}>1. Reopen your workspace.</strong>{" "}
+                    Use this path only if your account already exists and has already completed activation.
+                  </div>
+                  <div
+                    style={{
+                      borderRadius: 16,
+                      border: "1px solid rgba(16,37,59,0.10)",
+                      background:
+                        "linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(245,249,253,0.68) 100%)",
+                      boxShadow:
+                        "inset 0 1px 0 rgba(255,255,255,0.82), 0 8px 20px rgba(10,24,49,0.06)",
+                      padding: "13px 14px",
+                    }}
+                  >
+                    <strong style={{ color: "#10253B" }}>2. Confirm your details.</strong>{" "}
+                    Sign in with the right email and password so the app can reopen the correct member record and community context.
+                  </div>
+                  <div
+                    style={{
+                      borderRadius: 16,
+                      border: "1px solid rgba(16,37,59,0.10)",
+                      background:
+                        "linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(245,249,253,0.68) 100%)",
+                      boxShadow:
+                        "inset 0 1px 0 rgba(255,255,255,0.82), 0 8px 20px rgba(10,24,49,0.06)",
+                      padding: "13px 14px",
+                    }}
+                  >
+                    <strong style={{ color: "#10253B" }}>3. Continue safely.</strong>{" "}
+                    If your account is not yet active, use Activate Membership first instead of forcing sign-in through the wrong route.
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {founderEmail || founderCommunityName ? (
-          <div style={{ ...softCard("#FFFFFF"), maxWidth: "100%" }}>
+          <div
+            style={{
+              ...softCard("#FFFFFF"),
+              maxWidth: "100%",
+              position: "relative",
+              zIndex: 1,
+              borderRadius: 22,
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(242,247,252,0.98) 62%, rgba(229,237,247,0.96) 100%)",
+            }}
+          >
             <div style={labelText()}>Saved details</div>
 
             <div
@@ -426,63 +643,23 @@ export default function LoginPage() {
                 </div>
               ) : null}
             </div>
-
-            <ExplainToggle
-              label="What this does"
-              what="This saved-details block shows the account information carried forward into sign-in."
-              why="It helps you confirm that you are about to sign into the right community and email context."
-              next="Check these details first if you are unsure which account or community you are about to reopen."
-              tone="light"
-              style={{ marginTop: 14 }}
-            />
           </div>
         ) : null}
 
-        {forceLogin && getAccessToken() ? (
-          <div style={{ ...noticeStyle("warning"), maxWidth: "100%" }}>
-            <div style={{ fontWeight: 1000, marginBottom: 8 }}>
-              You already have a saved session on this device
-            </div>
-            <div>
-              Sign in below to continue, or clear the old session first.
-            </div>
-          </div>
-        ) : null}
-
-        <div style={{ ...pageCard(), maxWidth: "100%" }}>
-          <div style={{ ...noticeStyle("warning"), marginBottom: 16 }}>
-            <div style={{ fontWeight: 1000, marginBottom: 8 }}>
-              Already approved but not yet activated?
-            </div>
-            <div>
-              Use <strong>Activate Membership</strong> first.
-            </div>
-          </div>
-
-          {isDevBuild ? (
-            <div style={{ ...noticeStyle("info"), marginBottom: 16 }}>
-              <div style={{ fontWeight: 1000, marginBottom: 8 }}>
-                Test details for this environment
-              </div>
-              <div>
-                Email: <strong>admin@test.com</strong>
-              </div>
-              <div>
-                Password: <strong>pass1234</strong>
-              </div>
-            </div>
-          ) : (
-            <div style={{ ...noticeStyle("info"), marginBottom: 16 }}>
-              <div style={{ fontWeight: 1000, marginBottom: 8 }}>
-                Live system sign-in
-              </div>
-              <div>
-                Sign in only works for accounts that already exist and have
-                completed activation.
-              </div>
-            </div>
-          )}
-
+        <div
+          style={{
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gap: 18,
+              width: innerRailWidth,
+              margin: "0 auto",
+            }}
+          >
           {err ? (
             <div style={{ marginBottom: 16, ...noticeStyle("error") }}>{err}</div>
           ) : null}
@@ -492,6 +669,18 @@ export default function LoginPage() {
           ) : null}
 
           <form onSubmit={onSubmit}>
+            <div
+              style={{
+                borderRadius: 24,
+                border: "1px solid rgba(255,255,255,0.30)",
+                background:
+                  "linear-gradient(180deg, rgba(252,254,255,0.99) 0%, rgba(242,247,252,0.98) 58%, rgba(230,238,248,0.96) 100%)",
+                boxShadow:
+                  "0 18px 36px rgba(4,14,32,0.18), inset 0 1px 0 rgba(255,255,255,0.86)",
+                padding: 22,
+                overflow: "hidden",
+              }}
+            >
             <div
               style={{
                 display: "grid",
@@ -523,36 +712,19 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
+            <div
+              style={{
+                marginTop: 18,
+                display: "flex",
+                justifyContent: "center",
+              }}
+            >
               <button type="submit" disabled={busy} style={primaryBtn(busy)}>
                 {busy ? "Signing in..." : "Sign in"}
               </button>
-
-              <button
-                type="button"
-                onClick={clearBrowserSession}
-                style={secondaryBtn()}
-              >
-                Clear Old Session
-              </button>
+            </div>
             </div>
           </form>
-
-          <div
-            style={{
-              marginTop: 18,
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            <OriginLink to="/activate-membership" style={secondaryLink()}>
-              Activate Membership
-            </OriginLink>
-
-            <OriginLink to="/welcome" style={secondaryLink()}>
-              Welcome
-            </OriginLink>
           </div>
         </div>
       </div>
