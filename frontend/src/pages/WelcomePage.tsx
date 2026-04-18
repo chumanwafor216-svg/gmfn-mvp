@@ -1,7 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import {
+  EntryActionButton,
+  EntryBackLink,
+  EntryGuideLauncher,
+} from "../components/EntryControls";
 import GSNBrandMonument from "../components/GSNBrandMonument";
-import OriginLink from "../components/OriginLink";
 import {
   detectEntryMode,
   initialWelcomeStep,
@@ -62,12 +66,16 @@ function heroCard(): React.CSSProperties {
   return {
     maxWidth: 980,
     width: "100%",
-    borderRadius: 32,
-    background: "rgba(255,255,255,0.08)",
-    border: "1px solid rgba(255,255,255,0.14)",
-    boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
-    padding: 28,
+    borderRadius: 36,
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.06) 100%)",
+    border: "1px solid rgba(255,255,255,0.16)",
+    boxShadow:
+      "0 28px 72px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.10)",
+    padding: 22,
     backdropFilter: "blur(10px)",
+    position: "relative",
+    overflow: "hidden",
   };
 }
 
@@ -81,57 +89,20 @@ function labelText(): React.CSSProperties {
   };
 }
 
-function primaryBtn(): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 50,
-    padding: "14px 22px",
-    borderRadius: 16,
-    border: "none",
-    fontSize: 15,
-    fontWeight: 900,
-    textAlign: "center",
-    background: "#F3D06A",
-    color: "#10253B",
-    cursor: "pointer",
-    textDecoration: "none",
-    boxShadow: "0 10px 24px rgba(0,0,0,0.18)",
-    whiteSpace: "normal",
-  };
-}
-
-function secondaryBtn(): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 44,
-    padding: "11px 16px",
-    borderRadius: 14,
-    border: "1px solid rgba(255,255,255,0.18)",
-    background: "rgba(255,255,255,0.08)",
-    color: "#FFFFFF",
-    textDecoration: "none",
-    fontWeight: 800,
-    fontSize: 14,
-    textAlign: "center",
-    whiteSpace: "normal",
-    cursor: "pointer",
-  };
-}
-
 function routeCard(): React.CSSProperties {
   return {
-    width: "min(100%, 300px)",
+    width: "min(100%, 188px)",
     justifySelf: "center",
-    borderRadius: 20,
-    background: "rgba(255,255,255,0.08)",
-    border: "1px solid rgba(255,255,255,0.12)",
-    padding: 16,
+    borderRadius: 24,
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.06) 100%)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    boxShadow: "0 18px 34px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.10)",
+    padding: 10,
     display: "grid",
-    gap: 10,
+    gap: 6,
+    minHeight: 82,
+    alignContent: "start",
   };
 }
 
@@ -265,24 +236,42 @@ export default function WelcomePage() {
   return (
     <div style={pageShell()}>
       <div style={heroCard()}>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            background:
+              "radial-gradient(circle at top, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0) 28%), radial-gradient(circle at bottom, rgba(123,181,255,0.10) 0%, rgba(123,181,255,0) 30%)",
+          }}
+        />
         {guideOpen ? (
-          <div style={{ display: "grid", gap: 18 }}>
+          <div style={{ display: "grid", gap: 18, position: "relative", zIndex: 1 }}>
             <div
               style={{
                 display: "grid",
-                gap: 8,
+                gap: 6,
                 justifyItems: "center",
                 textAlign: "center",
               }}
             >
-              <div style={labelText()}>GSN summary</div>
+              <div
+                style={{
+                  ...labelText(),
+                  textShadow: "0 8px 22px rgba(0,0,0,0.18)",
+                }}
+              >
+                GSN summary
+              </div>
               <div
                 style={{
                   fontSize: isCompact ? 28 : 36,
                   fontWeight: 900,
-                  lineHeight: 1.08,
+                  lineHeight: 1.04,
+                  letterSpacing: 0.2,
                   maxWidth: 760,
                   color: "#FFFFFF",
+                  textShadow: "0 10px 28px rgba(0,0,0,0.22)",
                 }}
               >
                 My GSN and I
@@ -310,7 +299,9 @@ export default function WelcomePage() {
                   type="button"
                   onClick={() => setGuideOpen(false)}
                   style={{
-                    ...secondaryBtn(),
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                     minHeight: 42,
                     padding: "10px 16px",
                     borderRadius: 14,
@@ -332,13 +323,25 @@ export default function WelcomePage() {
                     display: "flex",
                     justifyContent: "center",
                     paddingTop: 4,
-                    paddingBottom: 6,
+                    paddingBottom: 8,
                   }}
                 >
-                  <GSNBrandMonument
-                    width={isCompact ? 147 : 182}
-                    height={isCompact ? 241 : 301}
-                  />
+                  <div
+                    style={{
+                      borderRadius: 28,
+                      padding: isCompact ? "10px 12px" : "12px 16px",
+                      background:
+                        "linear-gradient(180deg, rgba(255,255,255,0.50) 0%, rgba(233,240,250,0.18) 100%)",
+                      border: "1px solid rgba(255,255,255,0.42)",
+                      boxShadow:
+                        "0 18px 36px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.78)",
+                    }}
+                  >
+                    <GSNBrandMonument
+                      width={isCompact ? 147 : 182}
+                      height={isCompact ? 241 : 301}
+                    />
+                  </div>
                 </div>
 
                 <div style={{ display: "grid", gap: 12 }}>
@@ -401,30 +404,29 @@ export default function WelcomePage() {
             </div>
           </div>
         ) : (
-        <div style={{ display: "grid", gap: 18 }}>
+        <div style={{ display: "grid", gap: 14, position: "relative", zIndex: 1 }}>
           <div
             style={{
               display: "grid",
               gridTemplateColumns: "1fr minmax(0, 760px) 1fr",
               alignItems: "start",
-              gap: 12,
+              gap: 10,
             }}
           >
           <div style={{ display: "flex", justifyContent: "flex-start" }}>
-            <OriginLink to="/cover" style={{ ...secondaryBtn(), fontSize: 0 }}>
-              <span style={{ fontSize: 14 }}>{"<-"}</span>
-              
-            </OriginLink>
+            <EntryBackLink to="/cover" />
           </div>
 
-          <div style={{ textAlign: "center", display: "grid", gap: 10, justifyItems: "center" }}>
+          <div style={{ textAlign: "center", display: "grid", gap: 8, justifyItems: "center" }}>
             <div style={labelText()}>GSN</div>
             <div
               style={{
                 fontSize: isCompact ? 30 : 40,
                 fontWeight: 900,
-                lineHeight: 1.08,
+                lineHeight: 1.03,
+                letterSpacing: 0.2,
                 maxWidth: 760,
+                textShadow: "0 12px 30px rgba(0,0,0,0.22)",
               }}
             >
               {headline}
@@ -432,8 +434,8 @@ export default function WelcomePage() {
 
             <div
               style={{
-                fontSize: 16,
-                lineHeight: 1.82,
+                fontSize: 15,
+                lineHeight: 1.65,
                 color: "rgba(255,255,255,0.90)",
                 maxWidth: 760,
               }}
@@ -442,15 +444,7 @@ export default function WelcomePage() {
             </div>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button
-              type="button"
-              onClick={() => setGuideOpen(true)}
-              style={secondaryBtn()}
-            >
-              My GSN and I
-            </button>
-          </div>
+          <EntryGuideLauncher onClick={() => setGuideOpen(true)} />
           </div>
 
           {entryMode === "create" && isKnownSingleLane(entryMode) ? (
@@ -464,9 +458,9 @@ export default function WelcomePage() {
               </div>
 
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                <button type="button" onClick={openCreate} style={primaryBtn()}>
+                <EntryActionButton type="button" onClick={openCreate}>
                   Continue
-                </button>
+                </EntryActionButton>
               </div>
             </div>
           ) : null}
@@ -482,9 +476,9 @@ export default function WelcomePage() {
               </div>
 
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                <button type="button" onClick={openJoin} style={primaryBtn()}>
+                <EntryActionButton type="button" onClick={openJoin}>
                   Continue
-                </button>
+                </EntryActionButton>
               </div>
             </div>
           ) : null}
@@ -500,9 +494,9 @@ export default function WelcomePage() {
               </div>
 
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                <button type="button" onClick={openActivation} style={primaryBtn()}>
+                <EntryActionButton type="button" onClick={openActivation}>
                   Continue
-                </button>
+                </EntryActionButton>
               </div>
             </div>
           ) : null}
@@ -518,9 +512,9 @@ export default function WelcomePage() {
               </div>
 
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                <button type="button" onClick={openExisting} style={primaryBtn()}>
+                <EntryActionButton type="button" onClick={openExisting}>
                   Continue to Login
-                </button>
+                </EntryActionButton>
               </div>
             </div>
           ) : null}
@@ -529,39 +523,37 @@ export default function WelcomePage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 360px))",
-                gap: 20,
+                gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 188px))",
+                gap: isCompact ? 20 : 68,
                 justifyContent: "center",
               }}
             >
               <div style={routeCard()}>
-                <div style={labelText()}>New member</div>
-                <div style={supportText()}>
-                  Choose this if you are entering for the first time.
+                <div style={{ ...labelText(), textAlign: "center", width: "100%" }}>
+                  New member
                 </div>
 
-                <div>
-                  <button
+                <div style={{ display: "flex", justifyContent: "center" }}>
+                  <EntryActionButton
                     type="button"
                     onClick={() => setStep("choose_new_lane")}
-                    style={primaryBtn()}
                   >
                     Continue
-                  </button>
+                  </EntryActionButton>
                 </div>
               </div>
 
               <div style={routeCard()}>
                 <div style={labelText()}>Existing member</div>
 
-                <div>
-                  <button
+                <div style={{ display: "flex", justifyContent: "center" }}>
+                  <EntryActionButton
                     type="button"
                     onClick={openExisting}
-                    style={secondaryBtn()}
+                    variant="secondary"
                   >
                     Login
-                  </button>
+                  </EntryActionButton>
                 </div>
               </div>
             </div>
@@ -572,7 +564,7 @@ export default function WelcomePage() {
               style={{
                 display: "grid",
                 gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 360px))",
-                gap: 20,
+                gap: 16,
                 justifyContent: "center",
               }}
             >
@@ -586,16 +578,16 @@ export default function WelcomePage() {
                 </div>
 
                 <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                  <button type="button" onClick={openCreate} style={primaryBtn()}>
+                  <EntryActionButton type="button" onClick={openCreate}>
                     Create
-                  </button>
-                  <button
+                  </EntryActionButton>
+                  <EntryActionButton
                     type="button"
                     onClick={() => setStep("choose_identity")}
-                    style={secondaryBtn()}
+                    variant="secondary"
                   >
                     Back
-                  </button>
+                  </EntryActionButton>
                 </div>
               </div>
 
@@ -609,17 +601,66 @@ export default function WelcomePage() {
                 </div>
 
                 <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                  <button type="button" onClick={openJoin} style={primaryBtn()}>
+                  <EntryActionButton type="button" onClick={openJoin}>
                     Join
-                  </button>
-                  <button
+                  </EntryActionButton>
+                  <EntryActionButton
                     type="button"
                     onClick={() => setStep("choose_identity")}
-                    style={secondaryBtn()}
+                    variant="secondary"
                   >
                     Back
-                  </button>
+                  </EntryActionButton>
                 </div>
+              </div>
+            </div>
+          ) : null}
+
+          {!guideOpen ? (
+              <div
+                style={{
+                  marginTop: 4,
+                borderRadius: 20,
+                border: "1px solid rgba(255,255,255,0.10)",
+                background:
+                  "linear-gradient(180deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.04) 100%)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
+                padding: isCompact ? "10px 14px" : "12px 18px",
+                display: "grid",
+                gap: 6,
+                justifyItems: "center",
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  width: "min(100%, 340px)",
+                  height: 2,
+                  borderRadius: 999,
+                  background:
+                    "linear-gradient(90deg, rgba(243,208,106,0) 0%, rgba(243,208,106,0.9) 50%, rgba(243,208,106,0) 100%)",
+                }}
+              />
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 800,
+                  letterSpacing: 2.4,
+                  textTransform: "uppercase",
+                  color: "rgba(243,208,106,0.92)",
+                }}
+              >
+                One Clear Next Step
+              </div>
+              <div
+                style={{
+                  fontSize: 13,
+                  lineHeight: 1.55,
+                  color: "rgba(255,255,255,0.80)",
+                  maxWidth: 620,
+                }}
+              >
+                Choose the path that matches you now, then continue.
               </div>
             </div>
           ) : null}
