@@ -224,7 +224,7 @@ export default function WelcomePage() {
     entryMode === "invite"
       ? "Your invitation has already been recognised. Continue below."
       : entryMode === "create"
-      ? "You are already on the community-creation path. Continue below."
+      ? ""
       : entryMode === "approved"
       ? "Your approval has already been confirmed. Finish activation below."
       : entryMode === "existing"
@@ -459,10 +459,6 @@ export default function WelcomePage() {
               <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1.1 }}>
                 Create a new community
               </div>
-              <div style={supportText()}>
-                Set up your community and continue from there.
-              </div>
-
               <div
                 style={{
                   display: "flex",
@@ -536,7 +532,7 @@ export default function WelcomePage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 188px))",
+                gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 188px))",
                 gap: isCompact ? 20 : 68,
                 justifyContent: "center",
               }}
@@ -552,6 +548,22 @@ export default function WelcomePage() {
                     onClick={() => setStep("choose_new_lane")}
                   >
                     Continue
+                  </EntryActionButton>
+                </div>
+              </div>
+
+              <div style={routeCard()}>
+                <div style={{ ...labelText(), textAlign: "center", width: "100%" }}>
+                  Approved member
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "center" }}>
+                  <EntryActionButton
+                    type="button"
+                    onClick={openActivation}
+                    variant="secondary"
+                  >
+                    Activate
                   </EntryActionButton>
                 </div>
               </div>
