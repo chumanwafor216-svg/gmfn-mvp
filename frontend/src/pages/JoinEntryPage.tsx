@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import ExplainToggle from "../components/ExplainToggle";
+import { EntryBackLink } from "../components/EntryControls";
 import OriginLink from "../components/OriginLink";
 import { submitJoinRequest } from "../lib/api";
 
@@ -9,7 +9,8 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
     borderRadius: 24,
     background: bg,
     border: "1px solid rgba(11,31,51,0.08)",
-    boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
+    boxShadow:
+      "0 20px 44px rgba(5,16,38,0.10), inset 0 1px 0 rgba(255,255,255,0.62)",
     padding: 24,
   };
 }
@@ -17,8 +18,13 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     borderRadius: 18,
-    background: bg,
+    background:
+      bg === "#F8FBFF"
+        ? "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(242,247,252,0.90) 100%)"
+        : bg,
     border: "1px solid rgba(11,31,51,0.08)",
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.84), 0 8px 18px rgba(10,24,49,0.05)",
     padding: 18,
   };
 }
@@ -28,12 +34,15 @@ function inputStyle(): React.CSSProperties {
     width: "100%",
     padding: "13px 14px",
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.12)",
+    border: "1px solid rgba(28,76,126,0.16)",
     outline: "none",
     fontSize: 14,
     color: "#0B1F33",
-    background: "#FFFFFF",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.98) 100%)",
     boxSizing: "border-box",
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.86), 0 6px 14px rgba(10,24,49,0.04)",
   };
 }
 
@@ -52,35 +61,24 @@ function primaryBtn(disabled = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    width: "100%",
+    width: "min(100%, 68%)",
     padding: "14px 18px",
     borderRadius: 16,
-    background: disabled ? "#A9C4EE" : "#1D4ED8",
-    color: "#FFFFFF",
+    background: disabled
+      ? "linear-gradient(180deg, #D7DEE8 0%, #C8D2DF 100%)"
+      : "linear-gradient(180deg, #F6D77D 0%, #F3D06A 52%, #D9A941 100%)",
+    color: disabled ? "#6B7B8D" : "#10253B",
     textDecoration: "none",
     fontWeight: 1000,
     border: "none",
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 15,
     opacity: disabled ? 0.82 : 1,
-  };
-}
-
-function secondaryBtn(): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-    padding: "14px 18px",
-    borderRadius: 16,
-    background: "#FFFFFF",
-    color: "#0B1F33",
-    textDecoration: "none",
-    fontWeight: 1000,
-    border: "1px solid rgba(11,31,51,0.10)",
-    cursor: "pointer",
-    fontSize: 15,
+    textAlign: "center",
+    boxShadow: disabled
+      ? "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.52)"
+      : "0 18px 32px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.58), inset 0 -8px 14px rgba(125,85,10,0.12)",
+    textShadow: disabled ? "none" : "0 1px 0 rgba(255,255,255,0.36)",
   };
 }
 
@@ -89,14 +87,19 @@ function secondaryLink(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "10px 12px",
-    borderRadius: 12,
-    background: "#FFFFFF",
-    color: "#0B1F33",
+    padding: "12px 16px",
+    borderRadius: 999,
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(229,237,249,0.96) 100%)",
+    color: "#123055",
     textDecoration: "none",
     fontWeight: 900,
-    border: "1px solid rgba(11,31,51,0.10)",
+    border: "1px solid rgba(16,37,59,0.12)",
     fontSize: 14,
+    boxShadow:
+      "0 14px 24px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.82), inset 0 -6px 10px rgba(120,142,170,0.10)",
+    textShadow: "0 1px 0 rgba(255,255,255,0.52)",
+    cursor: "pointer",
   };
 }
 
@@ -112,7 +115,7 @@ function labelText(): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#6B7A88",
+    color: "#5F768D",
     lineHeight: 1.75,
     fontSize: 14,
   };
@@ -217,6 +220,51 @@ function safeDateTime(value: any): string {
   return d.toLocaleString();
 }
 
+function buildInviteLetter(args: {
+  receiver: string;
+  communityName: string;
+  inviter: string;
+  marketplaceName: string;
+  expiresAt: string;
+  customMessage: string;
+}): string[] {
+  const receiver = cleanText(args.receiver);
+  const communityName = cleanText(args.communityName) || "this GSN community";
+  const inviter = cleanText(args.inviter) || "a known GSN member";
+  const marketplaceName = cleanText(args.marketplaceName);
+  const expiresAt = cleanText(args.expiresAt);
+  const customMessage = cleanText(args.customMessage);
+
+  const lines: string[] = [];
+
+  lines.push(receiver ? `Hello ${receiver},` : "Hello,");
+  lines.push(
+    `${inviter} is inviting you to begin the join request process for ${communityName}.`
+  );
+
+  if (marketplaceName) {
+    lines.push(`Community / Market: ${marketplaceName}.`);
+  }
+
+  lines.push(
+    "GSN is a community trust system built for support, credibility, and meaningful participation."
+  );
+
+  if (customMessage) {
+    lines.push(`Message: ${customMessage}`);
+  }
+
+  if (expiresAt) {
+    lines.push(`This invitation remains open until ${safeDateTime(expiresAt)}.`);
+  }
+
+  lines.push(
+    "If you wish to continue, complete the form below and your request will return to the community for review."
+  );
+
+  return lines;
+}
+
 export default function JoinEntryPage() {
   const { clanId } = useParams();
   const [searchParams] = useSearchParams();
@@ -316,12 +364,34 @@ export default function JoinEntryPage() {
     return cleanText(searchParams.get("community_route") || "");
   }, [clanId, searchParams]);
 
+  const inviteLetter = useMemo(() => {
+    return buildInviteLetter({
+      receiver: intendedReceiver,
+      communityName,
+      inviter: inviterLabel,
+      marketplaceName,
+      expiresAt: inviteExpiry,
+      customMessage: inviteMessage,
+    });
+  }, [
+    intendedReceiver,
+    communityName,
+    inviterLabel,
+    marketplaceName,
+    inviteExpiry,
+    inviteMessage,
+  ]);
+
   const [firstName, setFirstName] = useState("");
   const [surname, setSurname] = useState("");
   const [phone, setPhone] = useState("");
   const [country, setCountry] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [note, setNote] = useState("");
+  const [formOpen, setFormOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return window.innerWidth > 980;
+  });
 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -388,6 +458,7 @@ export default function JoinEntryPage() {
       setCountry("");
       setBusinessName("");
       setNote("");
+      setFormOpen(false);
     } catch (e: any) {
       setErr(String(e?.message || "Unable to submit your join request."));
     } finally {
@@ -399,115 +470,122 @@ export default function JoinEntryPage() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#F5FAFE",
-        padding: "34px 22px",
+        background:
+          "radial-gradient(circle at top, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0) 24%), radial-gradient(circle at top right, rgba(74,132,214,0.18) 0%, rgba(74,132,214,0) 28%), radial-gradient(circle at bottom left, rgba(39,91,156,0.20) 0%, rgba(39,91,156,0) 30%), linear-gradient(180deg, #07101C 0%, #0B1F33 36%, #173654 70%, #26527C 100%)",
+        padding: "22px",
         boxSizing: "border-box",
       }}
     >
       <div style={{ maxWidth: 1120, margin: "0 auto" }}>
-        <ExplainToggle
-          label="What this screen does"
-          what="This screen is the guided join route for people entering an existing GSN community through an invite or join request."
-          why="It keeps the join process trust-based and tied to the right community instead of treating entry as automatic."
-          next="Review the community context first, then complete the guided join details carefully before you submit the request."
-          tone="light"
-          style={{ marginBottom: 18 }}
-        />
-
         <div
           style={{
-            ...pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
-            padding: 30,
+            borderRadius: 26,
+            border: "1px solid rgba(255,255,255,0.30)",
+            background:
+              "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(230,239,252,0.96) 58%, rgba(212,226,246,0.92) 100%)",
+            boxShadow:
+              "0 22px 56px rgba(5,16,38,0.26), inset 0 1px 0 rgba(255,255,255,0.82)",
+            padding: 20,
+            overflow: "hidden",
           }}
         >
-          <div style={labelText()}>Invited join route</div>
-
           <div
             style={{
-              marginTop: 10,
-              fontSize: 42,
-              lineHeight: 1.08,
-              fontWeight: 1000,
-              color: "#0B1F33",
-              maxWidth: 860,
+              borderRadius: 22,
+              background:
+                "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)",
+              border: "1px solid rgba(16,37,59,0.16)",
+              boxShadow:
+                "0 18px 34px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
+              padding: 18,
+              position: "relative",
+              overflow: "hidden",
+              marginBottom: 16,
             }}
           >
-            Continue your join request carefully.
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                pointerEvents: "none",
+                background:
+                  "radial-gradient(circle at top, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0) 28%), radial-gradient(circle at bottom, rgba(123,181,255,0.10) 0%, rgba(123,181,255,0) 30%)",
+              }}
+            />
+            <div
+              style={{
+                position: "relative",
+                zIndex: 1,
+                display: "grid",
+                gridTemplateColumns: "56px 1fr",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <EntryBackLink to="/welcome" />
+              <div style={{ textAlign: "center" }}>
+                <div
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 1000,
+                    letterSpacing: 4.2,
+                    color: "#F3D06A",
+                    textTransform: "uppercase",
+                    textShadow: "0 1px 0 rgba(255,255,255,0.14)",
+                  }}
+                >
+                  GSN
+                </div>
+                <div
+                  style={{
+                    marginTop: 6,
+                    color: "#E9F2FF",
+                    fontSize: 17,
+                    fontWeight: 900,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  Community invitation
+                </div>
+              </div>
+            </div>
           </div>
-
-          <div
-            style={{
-              marginTop: 14,
-              fontSize: 18,
-              lineHeight: 1.8,
-              color: "#35516B",
-              maxWidth: 980,
-            }}
-          >
-            This path is only for people invited into an existing GSN community.
-            It is guided, trust-based, and not automatic.
-          </div>
-
-          <div
-            style={{
-              marginTop: 16,
-              display: "flex",
-              gap: 8,
-              flexWrap: "wrap",
-            }}
-          >
-            <span style={badge(true)}>Join route</span>
-            <span style={badge(false)}>
-              Community ID: {communityCode || "Awaiting issue"}
-            </span>
-            <span style={badge(false)}>
-              Community: {communityName || "Community not stated yet"}
-            </span>
-            <span style={badge(false)}>
-              Invited by: {inviterLabel}
-            </span>
-            <span style={badge(false)}>Current step: Join request entry</span>
-          </div>
-        </div>
 
         <div
           style={{
-            marginTop: 18,
             display: "grid",
             gridTemplateColumns: isCompact ? "1fr" : "0.95fr 1.05fr",
             gap: 18,
           }}
         >
           <div style={pageCard()}>
-            <div style={labelText()}>Invitation package</div>
-
             <div
               style={{
-                marginTop: 12,
                 fontSize: 22,
                 fontWeight: 1000,
                 color: "#0B1F33",
               }}
             >
-              Community join details
-            </div>
-
-            <div style={{ marginTop: 12, ...helperText() }}>
-              You are not creating a normal public account here. You are
-              submitting a request to be considered for admission into an
-              existing community.
-            </div>
-            <div style={{ marginTop: 12 }}>
-              <ExplainToggle
-                label="What this does"
-                what="This invitation package shows the community details tied to the link you opened, including who invited you and which route you are entering."
-                why="It helps you confirm that you are joining the right community before you submit anything."
-                next="Check the summary, the invite code, and any message that came with the invitation before moving into the form."
-                tone="blue"
-              />
+              Invitation message
             </div>
 
             <div style={{ marginTop: 18, ...softCard() }}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                  marginBottom: 14,
+                }}
+              >
+                <span style={badge(true)}>Invited by {inviterLabel}</span>
+                <span style={badge(false)}>
+                  {communityName || "This GSN community"}
+                </span>
+                {inviteExpiry ? (
+                  <span style={badge(false)}>Expires {safeDateTime(inviteExpiry)}</span>
+                ) : null}
+              </div>
               <div
                 style={{
                   fontWeight: 1000,
@@ -515,195 +593,23 @@ export default function JoinEntryPage() {
                   fontSize: 15,
                 }}
               >
-                Invitation summary
+                Invitation letter
               </div>
 
               <div
                 style={{
                   marginTop: 10,
                   color: "#35516B",
-                  lineHeight: 1.85,
-                  fontSize: 14,
+                  lineHeight: 1.82,
+                  fontSize: 15,
                   display: "grid",
-                  gap: 6,
+                  gap: 10,
                 }}
               >
-                <div>
-                  <strong style={{ color: "#0B1F33" }}>Community:</strong>{" "}
-                  {communityName || "This GSN community"}
-                </div>
-
-                {marketplaceName ? (
-                  <div>
-                    <strong style={{ color: "#0B1F33" }}>Community market:</strong>{" "}
-                    {marketplaceName}
-                  </div>
-                ) : null}
-
-                <div>
-                  <strong style={{ color: "#0B1F33" }}>Invited by:</strong>{" "}
-                  {inviterLabel}
-                </div>
-
-                {intendedReceiver ? (
-                  <div>
-                    <strong style={{ color: "#0B1F33" }}>Intended receiver:</strong>{" "}
-                    {intendedReceiver}
-                  </div>
-                ) : null}
-
-                {routeLabel ? (
-                  <div>
-                    <strong style={{ color: "#0B1F33" }}>Community route:</strong>{" "}
-                    {routeLabel}
-                  </div>
-                ) : null}
-
-                {inviteExpiry ? (
-                  <div>
-                    <strong style={{ color: "#0B1F33" }}>Expiry:</strong>{" "}
-                    {safeDateTime(inviteExpiry)}
-                  </div>
-                ) : null}
-
-                <div>
-                  <strong style={{ color: "#0B1F33" }}>Invite code:</strong>{" "}
-                  {inviteCode || "Not available yet"}
-                </div>
+                {inviteLetter.map((line, index) => (
+                  <div key={`${line}-${index}`}>{line}</div>
+                ))}
               </div>
-
-              {inviteMessage ? (
-                <div
-                  style={{
-                    marginTop: 12,
-                    padding: 12,
-                    borderRadius: 12,
-                    background: "#FFFFFF",
-                    border: "1px solid rgba(11,31,51,0.08)",
-                    color: "#475569",
-                    lineHeight: 1.75,
-                    fontSize: 14,
-                  }}
-                >
-                  <strong style={{ color: "#0B1F33" }}>Invite message:</strong>{" "}
-                  {inviteMessage}
-                </div>
-              ) : null}
-            </div>
-
-            <div style={{ marginTop: 18, ...softCard() }}>
-              <div
-                style={{
-                  fontWeight: 1000,
-                  color: "#0B1F33",
-                  fontSize: 15,
-                }}
-              >
-                Important admission rule
-              </div>
-
-              <div style={{ marginTop: 8, ...helperText() }}>
-                Receiving an invitation or submitting this request does not
-                guarantee admission. Members of the community must still approve
-                your request according to the decision rule already in place.
-              </div>
-            </div>
-
-            <div style={{ marginTop: 18, ...softCard() }}>
-              <div
-                style={{
-                  fontWeight: 1000,
-                  color: "#0B1F33",
-                  fontSize: 15,
-                }}
-              >
-                What happens next
-              </div>
-
-              <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                <div style={noticeStyle("info")}>
-                  <strong>Step 1:</strong> Submit your join request with the
-                  details required by the community.
-                </div>
-                <div style={noticeStyle("info")}>
-                  <strong>Step 2:</strong> The community reviews and votes on
-                  the request according to its internal rule.
-                </div>
-                <div style={noticeStyle("info")}>
-                  <strong>Step 3:</strong> If approved, you move into activation
-                  and the next authenticated member steps.
-                </div>
-              </div>
-            </div>
-
-            <div style={{ marginTop: 18, ...softCard() }}>
-              <div
-                style={{
-                  fontWeight: 1000,
-                  color: "#0B1F33",
-                  fontSize: 15,
-                }}
-              >
-                Guide
-              </div>
-
-              <div style={{ marginTop: 8, ...helperText() }}>
-                Before joining, read My GSN and I and understand how trust-based
-                participation works.
-              </div>
-
-              <div style={{ marginTop: 8, ...helperText() }}>
-                GSN also helps members build steadier follow-through after entry,
-                so savings discipline, repayment behavior, and business targets do
-                not stay as loose intentions.
-              </div>
-
-              <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <OriginLink to="/guide" style={secondaryLink()}>
-                  Open My GSN and I
-                </OriginLink>
-
-                <OriginLink to="/app/dashboard#focus-commitments" style={secondaryLink()}>
-                  Open Commitment Builder
-                </OriginLink>
-              </div>
-            </div>
-
-            <div style={{ marginTop: 18, ...softCard() }}>
-              <div
-                style={{
-                  fontWeight: 1000,
-                  color: "#0B1F33",
-                  fontSize: 15,
-                }}
-              >
-                Invite code
-              </div>
-
-              <div
-                style={{
-                  marginTop: 8,
-                  color: inviteCode ? "#0B1F33" : "#991B1B",
-                  lineHeight: 1.7,
-                  fontSize: 14,
-                  wordBreak: "break-word",
-                  fontWeight: 900,
-                }}
-              >
-                {inviteCode || "No invite code was detected in this link."}
-              </div>
-
-              {communityCode ? (
-                <div
-                  style={{
-                    marginTop: 10,
-                    fontSize: 12,
-                    color: "#94A3B8",
-                  }}
-                >
-                  Community reference recorded securely.
-                </div>
-              ) : null}
             </div>
           </div>
 
@@ -725,14 +631,35 @@ export default function JoinEntryPage() {
               Provide the details the community needs in order to review your
               admission request.
             </div>
-            <div style={{ marginTop: 12 }}>
-              <ExplainToggle
-                label="What this does"
-                what="This form collects the details the community needs before deciding whether to admit you."
-                why="Joining is reviewed by the community, so this step needs clear and accurate information rather than a rushed submission."
-                next="Fill in the required fields, confirm the invite code is present, and then submit the request for review."
-                tone="blue"
-              />
+
+            <div
+              style={{
+                marginTop: 14,
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 12,
+                alignItems: "center",
+                flexWrap: "wrap",
+                borderRadius: 16,
+                border: "1px solid rgba(11,31,51,0.08)",
+                background: "rgba(255,255,255,0.74)",
+                padding: 14,
+              }}
+            >
+              <div>
+                <div style={{ ...labelText(), marginBottom: 4 }}>Request form</div>
+                <div style={{ color: "#35516B", fontSize: 14, lineHeight: 1.6 }}>
+                  Open this when you are ready to return your request to the community.
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setFormOpen((prev) => !prev)}
+                style={secondaryLink()}
+              >
+                {formOpen ? "Collapse" : "Open"}
+              </button>
             </div>
 
             {!inviteCode ? (
@@ -792,6 +719,7 @@ export default function JoinEntryPage() {
               </div>
             ) : null}
 
+            {formOpen ? (
             <form onSubmit={onSubmit}>
               <div
                 style={{
@@ -876,6 +804,7 @@ export default function JoinEntryPage() {
                   marginTop: 18,
                   display: "grid",
                   gap: 12,
+                  justifyItems: isCompact ? "stretch" : "center",
                 }}
               >
                 <button type="submit" disabled={!canSubmit} style={primaryBtn(!canSubmit)}>
@@ -883,6 +812,7 @@ export default function JoinEntryPage() {
                 </button>
               </div>
             </form>
+            ) : null}
           </div>
         </div>
 
@@ -897,6 +827,7 @@ export default function JoinEntryPage() {
           <OriginLink to="/welcome" style={secondaryLink()}>
             Back to Welcome
           </OriginLink>
+        </div>
         </div>
       </div>
     </div>
