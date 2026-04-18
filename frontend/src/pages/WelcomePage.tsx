@@ -463,7 +463,14 @@ export default function WelcomePage() {
                 Set up your community and continue from there.
               </div>
 
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
                 <EntryActionButton type="button" onClick={openCreate}>
                   Continue
                 </EntryActionButton>
