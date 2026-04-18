@@ -81,13 +81,19 @@ function primaryBtn(disabled = false): React.CSSProperties {
     width: "100%",
     padding: "14px 18px",
     borderRadius: 16,
-    background: disabled ? "#CBD5E1" : "#0B63D1",
-    color: "#FFFFFF",
+    background: disabled
+      ? "linear-gradient(180deg, #D7DEE8 0%, #C8D2DF 100%)"
+      : "linear-gradient(180deg, #F6D77D 0%, #F3D06A 52%, #D9A941 100%)",
+    color: disabled ? "#6B7B8D" : "#10253B",
     fontWeight: 1000,
     border: "none",
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 15,
     opacity: disabled ? 0.8 : 1,
+    boxShadow: disabled
+      ? "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.52)"
+      : "0 16px 30px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.56)",
+    textShadow: disabled ? "none" : "0 1px 0 rgba(255,255,255,0.36)",
   };
 }
 
@@ -97,14 +103,35 @@ function secondaryBtn(): React.CSSProperties {
     alignItems: "center",
     justifyContent: "center",
     padding: "11px 14px",
-    borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
-    color: "#0B1F33",
+    borderRadius: 999,
+    border: "1px solid rgba(16,37,59,0.12)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(229,237,249,0.96) 100%)",
+    color: "#123055",
     textDecoration: "none",
     fontWeight: 1000,
     fontSize: 14,
+    boxShadow:
+      "0 10px 24px rgba(10,24,49,0.14), inset 0 1px 0 rgba(255,255,255,0.78)",
+    whiteSpace: "nowrap",
+    textShadow: "0 1px 0 rgba(255,255,255,0.52)",
   };
+}
+
+function stageToggleBtn(active = false): React.CSSProperties {
+  return active
+    ? secondaryBtn()
+    : {
+        ...secondaryBtn(),
+        borderRadius: 16,
+        border: "none",
+        background:
+          "linear-gradient(180deg, #F6D77D 0%, #F3D06A 52%, #D9A941 100%)",
+        color: "#10253B",
+        boxShadow:
+          "0 16px 30px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.56)",
+        textShadow: "0 1px 0 rgba(255,255,255,0.36)",
+      };
 }
 
 function sectionLabel(): React.CSSProperties {
@@ -186,10 +213,11 @@ function stageShell(active = false, complete = false): React.CSSProperties {
     return {
       borderRadius: 20,
       padding: 18,
-      border: "1px solid rgba(28,76,126,0.18)",
+      border: "1px solid rgba(28,76,126,0.24)",
       background:
         "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(230,239,252,0.96) 58%, rgba(212,226,246,0.92) 100%)",
-      boxShadow: "0 12px 28px rgba(16,37,59,0.08)",
+      boxShadow:
+        "0 16px 34px rgba(16,37,59,0.10), inset 0 1px 0 rgba(255,255,255,0.72)",
     };
   }
 
@@ -197,18 +225,22 @@ function stageShell(active = false, complete = false): React.CSSProperties {
     return {
       borderRadius: 20,
       padding: 18,
-      border: "1px solid rgba(243,208,106,0.24)",
+      border: "1px solid rgba(217,169,65,0.30)",
       background:
         "linear-gradient(180deg, rgba(255,251,238,0.98) 0%, rgba(252,245,225,0.94) 100%)",
+      boxShadow:
+        "0 12px 24px rgba(16,37,59,0.07), inset 0 1px 0 rgba(255,255,255,0.72)",
     };
   }
 
   return {
     borderRadius: 20,
     padding: 18,
-    border: "1px solid rgba(28,76,126,0.12)",
+    border: "1px solid rgba(28,76,126,0.18)",
     background:
-      "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(238,245,252,0.96) 100%)",
+      "linear-gradient(180deg, rgba(248,251,255,0.99) 0%, rgba(238,245,252,0.97) 100%)",
+    boxShadow:
+      "0 10px 22px rgba(16,37,59,0.06), inset 0 1px 0 rgba(255,255,255,0.68)",
   };
 }
 
@@ -231,6 +263,15 @@ function stageBadge(
         ? "#B88721"
         : "rgba(28,76,126,0.10)",
     color: active || complete ? "#FFFFFF" : "#24415C",
+    boxShadow: active || complete
+      ? "0 10px 18px rgba(10,24,49,0.18), inset 0 1px 0 rgba(255,255,255,0.22)"
+      : "0 8px 16px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.74)",
+    border:
+      active || complete
+        ? "1px solid rgba(255,255,255,0.12)"
+        : "1px solid rgba(28,76,126,0.12)",
+    textShadow:
+      active || complete ? "0 1px 0 rgba(0,0,0,0.12)" : "0 1px 0 rgba(255,255,255,0.68)",
   };
 }
 
@@ -260,10 +301,6 @@ function resolveActivationRequestId(out: any): string {
 export default function CreateEntryPage() {
   const nav = useNavigate();
   const location = useLocation();
-  const isDevPreview =
-    typeof window !== "undefined" &&
-    (window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1");
 
   const search = useMemo(
     () => new URLSearchParams(location.search),
@@ -435,24 +472,6 @@ export default function CreateEntryPage() {
     setDescription("");
     setError("");
     setSuccess("");
-  }
-
-  function openVerificationPreview() {
-    setError("");
-    setSuccess("Preview mode: Block 2 opened for layout review only.");
-    setStep("bank");
-    setVerificationId((current) => current || -1);
-    setOpenPanel("verification");
-    focusPanel("verification");
-  }
-
-  function openCommunityPreview() {
-    setError("");
-    setSuccess("Preview mode: Block 3 opened for layout review only.");
-    setStep("community");
-    setVerificationId((current) => current || -1);
-    setOpenPanel("community");
-    focusPanel("community");
   }
 
   async function handleStartVerification() {
@@ -748,20 +767,70 @@ export default function CreateEntryPage() {
               <div
                 style={{
                   width: "min(100%, 760px)",
-                  borderRadius: 18,
-                  border: "1px solid rgba(255,255,255,0.14)",
+                  borderRadius: 22,
+                  border: "1px solid rgba(255,255,255,0.42)",
                   background:
-                    "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.06) 100%)",
-                  padding: 16,
-                  color: "#D7E3F1",
+                    "linear-gradient(180deg, rgba(251,253,255,0.99) 0%, rgba(235,242,251,0.98) 34%, rgba(220,232,247,0.95) 68%, rgba(206,221,240,0.92) 100%)",
+                  boxShadow:
+                    "0 24px 60px rgba(5,16,38,0.28), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -18px 30px rgba(122,147,180,0.08)",
+                  padding: 24,
+                  color: "#17324D",
                   lineHeight: 1.8,
+                  position: "relative",
+                  overflow: "hidden",
                 }}
               >
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    pointerEvents: "none",
+                    background:
+                      "radial-gradient(circle at top, rgba(243,208,106,0.16) 0%, rgba(243,208,106,0) 26%), radial-gradient(circle at bottom right, rgba(52,101,164,0.14) 0%, rgba(52,101,164,0) 30%)",
+                  }}
+                />
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 6,
+                    justifyItems: "center",
+                    textAlign: "center",
+                    marginBottom: 14,
+                    position: "relative",
+                    zIndex: 1,
+                  }}
+                >
+                  <div
+                    style={{
+                      ...sectionLabel(),
+                      color: "#B88721",
+                      letterSpacing: 3.4,
+                      textShadow: "0 1px 0 rgba(255,255,255,0.76)",
+                    }}
+                  >
+                    Create guide
+                  </div>
+                  <div
+                    style={{
+                      color: "#0B1F33",
+                      fontSize: 30,
+                      fontWeight: 1000,
+                      lineHeight: 1.06,
+                      letterSpacing: 0.2,
+                      textShadow:
+                        "0 1px 0 rgba(255,255,255,0.92), 0 10px 24px rgba(10,24,49,0.12)",
+                    }}
+                  >
+                    About this path
+                  </div>
+                </div>
                 <div
                   style={{
                     display: "flex",
                     justifyContent: "flex-end",
                     marginBottom: 10,
+                    position: "relative",
+                    zIndex: 1,
                   }}
                 >
                   <button
@@ -769,62 +838,114 @@ export default function CreateEntryPage() {
                     onClick={() => setProcedureOpen(false)}
                     style={{
                       ...secondaryBtn(),
-                      border: "1px solid rgba(255,255,255,0.14)",
+                      border: "1px solid rgba(16,37,59,0.12)",
                       background:
-                        "linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.07) 100%)",
-                      color: "#F8FBFF",
+                        "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(229,237,249,0.96) 100%)",
+                      color: "#123055",
+                      boxShadow: "0 10px 24px rgba(10,24,49,0.14)",
                     }}
                   >
                     Collapse
                   </button>
                 </div>
-                <div style={{ display: "grid", gap: 12 }}>
-                  <div>
-                    <strong>1. Your details.</strong> We ask for your street name or nickname and
+                <div style={{ display: "grid", gap: 18 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      paddingTop: 4,
+                      paddingBottom: 6,
+                      position: "relative",
+                      zIndex: 1,
+                    }}
+                  >
+                    <div
+                      style={{
+                        borderRadius: 30,
+                        padding: "12px 18px",
+                        background:
+                          "linear-gradient(180deg, rgba(255,255,255,0.62) 0%, rgba(236,242,250,0.24) 100%)",
+                        border: "1px solid rgba(255,255,255,0.56)",
+                        boxShadow:
+                          "0 18px 36px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.82), inset 0 -10px 18px rgba(123,149,181,0.08)",
+                        minWidth: 184,
+                        minHeight: 42,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#24415C",
+                        fontWeight: 900,
+                        fontSize: 12,
+                        letterSpacing: 2.2,
+                        textTransform: "uppercase",
+                        textShadow: "0 1px 0 rgba(255,255,255,0.8)",
+                      }}
+                    >
+                      Founder route
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gap: 12,
+                      position: "relative",
+                      zIndex: 1,
+                    }}
+                  >
+                  <div
+                    style={{
+                      borderRadius: 16,
+                      border: "1px solid rgba(16,37,59,0.10)",
+                      background:
+                        "linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(245,249,253,0.68) 100%)",
+                      boxShadow:
+                        "inset 0 1px 0 rgba(255,255,255,0.82), 0 8px 20px rgba(10,24,49,0.06)",
+                      padding: "13px 14px",
+                    }}
+                  >
+                    <strong style={{ color: "#10253B" }}>1. Your details.</strong> We ask for your street name or nickname and
                     your phone number first so the system can know who is starting this community
                     and verify that it is really you. This helps protect your entry from being used
                     by the wrong person.
                   </div>
-                  <div>
-                    <strong>2. Verification and bank rails.</strong> Your phone is verified so the
+                  <div
+                    style={{
+                      borderRadius: 16,
+                      border: "1px solid rgba(16,37,59,0.10)",
+                      background:
+                        "linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(245,249,253,0.68) 100%)",
+                      boxShadow:
+                        "inset 0 1px 0 rgba(255,255,255,0.82), 0 8px 20px rgba(10,24,49,0.06)",
+                      padding: "13px 14px",
+                    }}
+                  >
+                    <strong style={{ color: "#10253B" }}>2. Verification and bank rails.</strong> Your phone is verified so the
                     system can confirm identity continuity. Your bank details are recorded now so
                     they can be checked, locked to your onboarding, and ready when you later need
                     support, help, or trusted financial action without repeating this step again.
                   </div>
-                  <div>
-                    <strong>3. Community setup.</strong> Only after your identity and rails are in
+                  <div
+                    style={{
+                      borderRadius: 16,
+                      border: "1px solid rgba(16,37,59,0.10)",
+                      background:
+                        "linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(245,249,253,0.68) 100%)",
+                      boxShadow:
+                        "inset 0 1px 0 rgba(255,255,255,0.82), 0 8px 20px rgba(10,24,49,0.06)",
+                      padding: "13px 14px",
+                    }}
+                  >
+                    <strong style={{ color: "#10253B" }}>3. Community setup.</strong> Only after your identity and rails are in
                     place do we ask for your community name and short story. This keeps the
                     community tied to a real, explainable founder record and helps the app detect
                     abnormal changes if someone else tries to take over your flow.
+                  </div>
                   </div>
                 </div>
               </div>
             ) : null}
 
-            {isDevPreview ? (
-              <div
-                style={{
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={openVerificationPreview}
-                  style={secondaryBtn()}
-                >
-                  Preview Block 2
-                </button>
-                <button
-                  type="button"
-                  onClick={openCommunityPreview}
-                  style={secondaryBtn()}
-                >
-                  Preview Block 3
-                </button>
-              </div>
-            ) : null}
           </div>
 
         </div>
@@ -878,9 +999,9 @@ export default function CreateEntryPage() {
                       ? setOpenPanel(null)
                       : handleOpenPanel("details")
                   }
-                  style={secondaryBtn()}
+                  style={stageToggleBtn(openPanel === "details")}
                 >
-                  {openPanel === "details" ? "Collapse" : "Open Block 1"}
+                  {openPanel === "details" ? "Collapse" : "Open"}
                 </button>
               </div>
 
@@ -1016,14 +1137,12 @@ export default function CreateEntryPage() {
                   onClick={() =>
                     openPanel === "verification"
                       ? setOpenPanel(null)
-                      : isDevPreview
-                        ? openVerificationPreview()
-                        : handleOpenPanel("verification")
+                      : handleOpenPanel("verification")
                   }
-                  style={secondaryBtn()}
-                  disabled={!canOpenVerification && !isDevPreview}
+                  style={stageToggleBtn(openPanel === "verification")}
+                  disabled={!canOpenVerification}
                 >
-                  {openPanel === "verification" ? "Collapse" : "Open Block 2"}
+                  {openPanel === "verification" ? "Collapse" : "Open"}
                 </button>
               </div>
 
@@ -1351,14 +1470,12 @@ export default function CreateEntryPage() {
                   onClick={() =>
                     openPanel === "community"
                       ? setOpenPanel(null)
-                      : isDevPreview
-                        ? openCommunityPreview()
-                        : handleOpenPanel("community")
+                      : handleOpenPanel("community")
                   }
-                  style={secondaryBtn()}
-                  disabled={!canOpenCommunity && !isDevPreview}
+                  style={stageToggleBtn(openPanel === "community")}
+                  disabled={!canOpenCommunity}
                 >
-                  {openPanel === "community" ? "Collapse" : "Open Block 3"}
+                  {openPanel === "community" ? "Collapse" : "Open"}
                 </button>
               </div>
 
