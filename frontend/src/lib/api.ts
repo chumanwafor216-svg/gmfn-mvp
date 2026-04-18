@@ -548,17 +548,40 @@ export async function createEntry(payload: Record<string, any>): Promise<any> {
   return out;
 }
 
+function detectBrowserLocale(): string | undefined {
+  try {
+    if (typeof navigator === "undefined") return undefined;
+    const candidate =
+      String((navigator as any)?.languages?.[0] || "") ||
+      String((navigator as any)?.language || "");
+    return candidate.trim() || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function detectBrowserTimezone(): string | undefined {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return String(tz || "").trim() || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function startEntryPhoneVerification(payload: {
   display_name: string;
   phone_e164: string;
   email?: string | null;
 }): Promise<any> {
-  return httpJson("/entry/phone/start", "POST", {
-    display_name: String(payload?.display_name || "").trim(),
-    phone_e164: String(payload?.phone_e164 || "").trim(),
-    email: String(payload?.email || "").trim() || undefined,
-  });
-}
+    return httpJson("/entry/phone/start", "POST", {
+      display_name: String(payload?.display_name || "").trim(),
+      phone_e164: String(payload?.phone_e164 || "").trim(),
+      email: String(payload?.email || "").trim() || undefined,
+      browser_locale: detectBrowserLocale(),
+      browser_timezone: detectBrowserTimezone(),
+    });
+  }
 
 export async function confirmEntryPhoneVerification(payload: {
   verification_id: number | string;

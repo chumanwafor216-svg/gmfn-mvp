@@ -28,6 +28,8 @@ class EntryPhoneStartIn(BaseModel):
     display_name: str = Field(..., min_length=2, max_length=120)
     phone_e164: str = Field(..., min_length=8, max_length=32)
     email: Optional[EmailStr] = None
+    browser_locale: Optional[str] = Field(default=None, max_length=32)
+    browser_timezone: Optional[str] = Field(default=None, max_length=64)
 
 
 class EntryPhoneStartOut(BaseModel):
@@ -73,6 +75,9 @@ class EntryBankDetailsOut(BaseModel):
     bank_details_recorded: bool
     verification_status: str
     verification_note: str
+    region_consistency_status: Optional[str] = None
+    phone_country_hint: Optional[str] = None
+    locale_country_hint: Optional[str] = None
 
 
 class CreateEntryIn(BaseModel):
@@ -147,12 +152,141 @@ def _generate_code() -> str:
     return f"{secrets.randbelow(900000) + 100000}"
 
 
+PHONE_COUNTRY_HINTS: list[tuple[str, str]] = [
+    ("+234", "NG"),
+    ("+233", "GH"),
+    ("+254", "KE"),
+    ("+256", "UG"),
+    ("+255", "TZ"),
+    ("+27", "ZA"),
+    ("+44", "GB"),
+    ("+353", "IE"),
+    ("+1", "NANP"),
+    ("+49", "DE"),
+    ("+33", "FR"),
+    ("+39", "IT"),
+    ("+31", "NL"),
+    ("+351", "PT"),
+    ("+34", "ES"),
+    ("+61", "AU"),
+    ("+91", "IN"),
+]
+
+
+COUNTRY_ALIASES = {
+    "UK": "GB",
+    "UNITED KINGDOM": "GB",
+    "GREAT BRITAIN": "GB",
+    "BRITAIN": "GB",
+    "ENGLAND": "GB",
+    "NIGERIA": "NG",
+    "GHANA": "GH",
+    "KENYA": "KE",
+    "UGANDA": "UG",
+    "TANZANIA": "TZ",
+    "SOUTH AFRICA": "ZA",
+    "UNITED STATES": "US",
+    "USA": "US",
+    "AMERICA": "US",
+    "CANADA": "CA",
+    "GERMANY": "DE",
+    "FRANCE": "FR",
+    "ITALY": "IT",
+    "NETHERLANDS": "NL",
+    "PORTUGAL": "PT",
+    "SPAIN": "ES",
+    "AUSTRALIA": "AU",
+    "INDIA": "IN",
+    "IRELAND": "IE",
+}
+
+
 def _utc_aware(dt: Optional[datetime]) -> Optional[datetime]:
     if dt is None:
         return None
     if dt.tzinfo is None:
         return dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
+
+
+def _normalize_country_hint(value: object) -> Optional[str]:
+    raw = _clean_text(value, upper=True)
+    if not raw:
+        return None
+
+    compact = raw.replace("-", " ").replace("_", " ")
+    if compact in COUNTRY_ALIASES:
+        return COUNTRY_ALIASES[compact]
+
+    if len(raw) == 2 and raw.isalpha():
+        return raw
+
+    return None
+
+
+def _infer_phone_country(phone_e164: str) -> Optional[str]:
+    phone = _clean_text(phone_e164)
+    for prefix, country in sorted(PHONE_COUNTRY_HINTS, key=lambda item: len(item[0]), reverse=True):
+        if phone.startswith(prefix):
+            return country
+    return None
+
+
+def _infer_locale_country(locale: object) -> Optional[str]:
+    raw = _clean_text(locale)
+    if not raw:
+        return None
+
+    normalized = raw.replace("_", "-")
+    parts = [part for part in normalized.split("-") if part]
+    if len(parts) >= 2:
+        return _normalize_country_hint(parts[-1])
+
+    return _normalize_country_hint(normalized)
+
+
+def _evaluate_region_consistency(
+    *,
+    phone_country: Optional[str],
+    bank_country: Optional[str],
+    locale_country: Optional[str],
+    driver_country: Optional[str],
+    explanation_note: Optional[str],
+) -> tuple[str, str]:
+    note = _clean_text(explanation_note)
+    if phone_country and bank_country:
+        if phone_country == bank_country:
+            base = f"Phone region ({phone_country}) and bank region ({bank_country}) align."
+            if locale_country and locale_country not in {phone_country, bank_country}:
+                base += f" Browser locale suggests {locale_country}, so that signal was recorded without blocking you."
+            if driver_country and driver_country not in {phone_country, bank_country}:
+                base += f" Driver's licence country {driver_country} was also recorded."
+            return ("matched", base)
+
+        if note:
+            return (
+                "explained_mismatch",
+                f"Phone region ({phone_country}) and bank region ({bank_country}) differ. Your explanation was recorded for trust review.",
+            )
+
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Phone region ({phone_country}) and bank region ({bank_country}) do not match yet. "
+                "Add a short explanation in the note field before continuing."
+            ),
+        )
+
+    if bank_country or phone_country or locale_country or driver_country:
+        return (
+            "partial",
+            "Some region evidence was recorded, but the system could not confirm a full phone-to-bank region match yet.",
+        )
+
+    return (
+        "unknown",
+        "No usable region evidence was supplied beyond the core onboarding records.",
+    )
 
 
 def _verification_expired(row: EntryPhoneVerification) -> bool:
@@ -179,7 +313,25 @@ def _normalize_account_number(value: object) -> str:
     return raw
 
 
-def _bank_status_note() -> tuple[str, str]:
+def _bank_status_note(region_status: Optional[str]) -> tuple[str, str]:
+    if region_status == "matched":
+        return (
+            "phone_verified_bank_recorded_region_matched",
+            "Bank destination is now recorded server-side, tied to a verified phone, and its declared region aligns with the phone region. External bank-rail verification is not yet connected in this repo.",
+        )
+
+    if region_status == "explained_mismatch":
+        return (
+            "phone_verified_bank_recorded_region_explained",
+            "Bank destination is now recorded server-side and tied to a verified phone. The phone and bank regions differ, and your explanation was recorded for trust review. External bank-rail verification is not yet connected in this repo.",
+        )
+
+    if region_status == "partial":
+        return (
+            "phone_verified_bank_recorded_region_partial",
+            "Bank destination is now recorded server-side and tied to a verified phone, but region evidence is still partial. External bank-rail verification is not yet connected in this repo.",
+        )
+
     return (
         "phone_verified_bank_recorded",
         "Bank destination is now recorded server-side and tied to a verified phone. External bank-rail verification is not yet connected in this repo.",
@@ -194,6 +346,10 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
 
     phone_e164 = _normalize_phone(payload.phone_e164)
     email = _clean_text(payload.email).lower() or None
+    browser_locale = _clean_text(payload.browser_locale) or None
+    browser_timezone = _clean_text(payload.browser_timezone) or None
+    phone_country_hint = _infer_phone_country(phone_e164)
+    locale_country_hint = _infer_locale_country(browser_locale)
 
     phone_clash = db.query(User).filter(User.phone_e164 == phone_e164).first()
     if phone_clash:
@@ -203,6 +359,10 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
         display_name=display_name,
         phone_e164=phone_e164,
         email=email,
+        browser_locale=browser_locale,
+        browser_timezone=browser_timezone,
+        phone_country_hint=phone_country_hint,
+        locale_country_hint=locale_country_hint,
         code=_generate_code(),
         expires_at=_now() + timedelta(minutes=10),
         verified_at=None,
@@ -281,24 +441,42 @@ def save_entry_bank_details(
     if row.verified_at is None:
         raise HTTPException(status_code=400, detail="Phone verification must be completed first")
 
+    bank_country = _normalize_country_hint(payload.country)
+    driver_country = _normalize_country_hint(payload.driver_licence_country)
+    locale_country = _normalize_country_hint(row.locale_country_hint)
+    phone_country = _normalize_country_hint(row.phone_country_hint) or _infer_phone_country(
+        row.phone_e164
+    )
+    region_consistency_status, region_consistency_note = _evaluate_region_consistency(
+        phone_country=phone_country,
+        bank_country=bank_country,
+        locale_country=locale_country,
+        driver_country=driver_country,
+        explanation_note=payload.note,
+    )
+
     row.bank_account_name = _clean_text(payload.destination_name)
     row.bank_name = _clean_text(payload.bank_name)
     row.bank_account_number = _normalize_account_number(payload.account_number)
     row.bank_phone_number = _normalize_phone(payload.phone_number or row.phone_e164)
-    row.bank_country = _clean_text(payload.country) or None
+    row.bank_country = bank_country
     row.bank_currency = _clean_text(payload.currency, upper=True) or "NGN"
     row.bank_note = _clean_text(payload.note) or None
     row.bank_details_recorded_at = _now()
     row.driver_licence_number = _clean_text(payload.driver_licence_number) or None
-    row.driver_licence_country = _clean_text(payload.driver_licence_country) or None
+    row.driver_licence_country = driver_country
     row.driver_licence_note = _clean_text(payload.driver_licence_note) or None
     row.driver_licence_recorded_at = _now() if row.driver_licence_number else None
+    row.region_consistency_status = region_consistency_status
+    row.region_consistency_note = region_consistency_note
+    row.phone_country_hint = phone_country
+    row.locale_country_hint = locale_country
 
     db.add(row)
     db.commit()
     db.refresh(row)
 
-    verification_status, verification_note = _bank_status_note()
+    verification_status, verification_note = _bank_status_note(region_consistency_status)
 
     return {
         "ok": True,
@@ -306,6 +484,9 @@ def save_entry_bank_details(
         "bank_details_recorded": True,
         "verification_status": verification_status,
         "verification_note": verification_note,
+        "region_consistency_status": region_consistency_status,
+        "phone_country_hint": phone_country,
+        "locale_country_hint": locale_country,
     }
 
 
@@ -381,7 +562,7 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
             invite.is_active = False
         db.add(invite)
 
-    payout_status, payout_note = _bank_status_note()
+    payout_status, payout_note = _bank_status_note(verification.region_consistency_status)
     payout = UserPayoutDestination(
         user_id=int(user.id),
         destination_name=_clean_text(verification.bank_account_name) or display_name,
@@ -393,6 +574,10 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
         note=_clean_text(verification.bank_note) or None,
         verification_status=payout_status,
         verification_note=payout_note,
+        phone_country_hint=_clean_text(verification.phone_country_hint, upper=True) or None,
+        locale_country_hint=_clean_text(verification.locale_country_hint, upper=True) or None,
+        region_consistency_status=_clean_text(verification.region_consistency_status) or None,
+        region_consistency_note=_clean_text(verification.region_consistency_note) or None,
         verified_at=None,
     )
     db.add(payout)
@@ -440,6 +625,53 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
         refresh=False,
     )
 
+    if _clean_text(verification.region_consistency_status) == "matched":
+        region_event_meta = build_trust_meta(
+            reason="region_consistency_confirmed_at_registration",
+            note=_clean_text(verification.region_consistency_note) or "Phone and bank region evidence aligned at onboarding.",
+            system=True,
+            extra={
+                "phone_country_hint": _clean_text(verification.phone_country_hint, upper=True) or None,
+                "bank_country": _clean_text(verification.bank_country, upper=True) or None,
+                "locale_country_hint": _clean_text(verification.locale_country_hint, upper=True) or None,
+                "browser_timezone": _clean_text(verification.browser_timezone) or None,
+            },
+        )
+        log_trust_event(
+            db,
+            event_type="identity.region_consistent",
+            clan_id=int(clan.id),
+            actor_user_id=int(user.id),
+            subject_user_id=int(user.id),
+            meta=region_event_meta,
+            dedupe_key=f"entry:{int(verification.id)}:user:{int(user.id)}:region-matched",
+            commit=False,
+            refresh=False,
+        )
+    elif _clean_text(verification.region_consistency_status) == "explained_mismatch":
+        region_event_meta = build_trust_meta(
+            reason="cross_region_onboarding_explained",
+            note=_clean_text(verification.region_consistency_note) or "Cross-region onboarding explanation was recorded.",
+            system=True,
+            extra={
+                "phone_country_hint": _clean_text(verification.phone_country_hint, upper=True) or None,
+                "bank_country": _clean_text(verification.bank_country, upper=True) or None,
+                "locale_country_hint": _clean_text(verification.locale_country_hint, upper=True) or None,
+                "browser_timezone": _clean_text(verification.browser_timezone) or None,
+            },
+        )
+        log_trust_event(
+            db,
+            event_type="identity.region_mismatch_explained",
+            clan_id=int(clan.id),
+            actor_user_id=int(user.id),
+            subject_user_id=int(user.id),
+            meta=region_event_meta,
+            dedupe_key=f"entry:{int(verification.id)}:user:{int(user.id)}:region-explained",
+            commit=False,
+            refresh=False,
+        )
+
     if _clean_text(verification.driver_licence_number):
         licence_event_meta = build_trust_meta(
             reason="drivers_licence_recorded_at_registration",
@@ -474,6 +706,8 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
         proof_bits.append("bank destination")
     if starter_summary.get("drivers_licence_recorded"):
         proof_bits.append("driver's licence")
+    if starter_summary.get("region_consistent"):
+        proof_bits.append("matched region signals")
 
     proof_text = ", ".join(proof_bits) if proof_bits else "starter identity proofs"
     score_text = _clean_text(
@@ -495,6 +729,20 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
         action_url="/app/trust",
         action_label="Review Trust",
     )
+
+    if _clean_text(verification.region_consistency_status) == "explained_mismatch":
+        create_notification(
+            db,
+            user_id=int(user.id),
+            kind="trust.region-review",
+            title="Cross-region onboarding was recorded for review",
+            message=(
+                "Your phone and bank regions do not match, so your explanation was attached to your trust record. "
+                "Open Trust to review how this was recorded and what further proof may strengthen it."
+            ),
+            action_url="/app/trust",
+            action_label="Review Trust",
+        )
 
     return {
         "ok": True,

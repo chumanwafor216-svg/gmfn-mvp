@@ -627,6 +627,7 @@ function onboardingProofBadges(detail: string): string[] {
   if (text.includes("licence") || text.includes("license")) {
     badges.push("Driver's licence");
   }
+  if (text.includes("region")) badges.push("Region consistency");
 
   return badges;
 }

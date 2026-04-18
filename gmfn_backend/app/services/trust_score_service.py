@@ -16,6 +16,7 @@ from app.core.constants import (
     IDENTITY_BANK_RECORDED_GAIN,
     IDENTITY_DRIVERS_LICENCE_GAIN,
     IDENTITY_PHONE_VERIFIED_GAIN,
+    IDENTITY_REGION_CONSISTENT_GAIN,
     INACTIVITY_DECAY_FLOOR,
     INACTIVITY_DECAY_PENALTY,
     INACTIVITY_DECAY_START_DAYS,
@@ -34,6 +35,8 @@ EV_FRAUD_FLAG = "fraud_flag"
 EV_IDENTITY_PHONE_VERIFIED = "identity.phone_verified"
 EV_IDENTITY_BANK_RECORDED = "identity.bank_destination_recorded"
 EV_IDENTITY_DRIVERS_LICENCE = "identity.drivers_licence_recorded"
+EV_IDENTITY_REGION_CONSISTENT = "identity.region_consistent"
+EV_IDENTITY_REGION_MISMATCH_EXPLAINED = "identity.region_mismatch_explained"
 
 # Reversal event types (append-only corrections)
 EV_BORROWER_FULL_REPAID_REV = "loan_fully_repaid_reversed"
@@ -80,6 +83,12 @@ _EVENT_ALIASES = {
     },
     EV_IDENTITY_DRIVERS_LICENCE: {
         "identity.drivers_licence_recorded",
+    },
+    EV_IDENTITY_REGION_CONSISTENT: {
+        "identity.region_consistent",
+    },
+    EV_IDENTITY_REGION_MISMATCH_EXPLAINED: {
+        "identity.region_mismatch_explained",
     },
     EV_BORROWER_FULL_REPAID_REV: {
         "loan_fully_repaid_reversed",
@@ -204,6 +213,8 @@ def recompute_trust_for_user(
         EV_IDENTITY_PHONE_VERIFIED: 0,
         EV_IDENTITY_BANK_RECORDED: 0,
         EV_IDENTITY_DRIVERS_LICENCE: 0,
+        EV_IDENTITY_REGION_CONSISTENT: 0,
+        EV_IDENTITY_REGION_MISMATCH_EXPLAINED: 0,
         EV_BORROWER_FULL_REPAID_REV: 0,
         EV_GUARANTOR_SUCCESS_REV: 0,
     }
@@ -241,6 +252,8 @@ def recompute_trust_for_user(
     identity_phone_verified = counts[EV_IDENTITY_PHONE_VERIFIED]
     identity_bank_recorded = counts[EV_IDENTITY_BANK_RECORDED]
     identity_drivers_licence = counts[EV_IDENTITY_DRIVERS_LICENCE]
+    identity_region_consistent = counts[EV_IDENTITY_REGION_CONSISTENT]
+    identity_region_mismatch_explained = counts[EV_IDENTITY_REGION_MISMATCH_EXPLAINED]
     full_repayments_rev = counts[EV_BORROWER_FULL_REPAID_REV]
     guarantor_success_rev = counts[EV_GUARANTOR_SUCCESS_REV]
 
@@ -249,6 +262,7 @@ def recompute_trust_for_user(
     gain_identity_phone = IDENTITY_PHONE_VERIFIED_GAIN * _d(identity_phone_verified)
     gain_identity_bank = IDENTITY_BANK_RECORDED_GAIN * _d(identity_bank_recorded)
     gain_identity_licence = IDENTITY_DRIVERS_LICENCE_GAIN * _d(identity_drivers_licence)
+    gain_identity_region = IDENTITY_REGION_CONSISTENT_GAIN * _d(identity_region_consistent)
     rev_borrower = BORROWER_FULL_REPAY_GAIN * _d(full_repayments_rev)
     rev_guarantor = GUARANTOR_SUCCESS_GAIN * _d(guarantor_success_rev)
 
@@ -262,6 +276,7 @@ def recompute_trust_for_user(
         + gain_identity_phone
         + gain_identity_bank
         + gain_identity_licence
+        + gain_identity_region
     ) - (rev_borrower + rev_guarantor)
     total_penalties = penalty_missed + penalty_default + penalty_fraud
     lifetime = total_gains - total_penalties
@@ -301,6 +316,12 @@ def recompute_trust_for_user(
     elif identity_bank_recorded > 0:
         latest_reason = "Verified onboarding proofs established your starter trust standing"
         latest_source = EV_IDENTITY_BANK_RECORDED
+    elif identity_region_consistent > 0:
+        latest_reason = "Region consistency between onboarding proofs strengthened your starter trust standing"
+        latest_source = EV_IDENTITY_REGION_CONSISTENT
+    elif identity_region_mismatch_explained > 0:
+        latest_reason = "A cross-region onboarding explanation was recorded for trust review"
+        latest_source = EV_IDENTITY_REGION_MISMATCH_EXPLAINED
     elif identity_phone_verified > 0:
         latest_reason = "Verified phone established a starter trust standing"
         latest_source = EV_IDENTITY_PHONE_VERIFIED
@@ -343,6 +364,8 @@ def recompute_trust_for_user(
             "identity_phone_verified": identity_phone_verified,
             "identity_bank_recorded": identity_bank_recorded,
             "identity_drivers_licence": identity_drivers_licence,
+            "identity_region_consistent": identity_region_consistent,
+            "identity_region_mismatch_explained": identity_region_mismatch_explained,
             "full_repayments_reversed": full_repayments_rev,
             "guarantor_success_reversed": guarantor_success_rev,
         },
@@ -352,6 +375,7 @@ def recompute_trust_for_user(
             "identity_phone": str(_q(gain_identity_phone)),
             "identity_bank": str(_q(gain_identity_bank)),
             "identity_drivers_licence": str(_q(gain_identity_licence)),
+            "identity_region": str(_q(gain_identity_region)),
             "reversals": str(_q(rev_borrower + rev_guarantor)),
             "total": str(_q(total_gains)),
         },
@@ -367,6 +391,8 @@ def recompute_trust_for_user(
             "phone_verified": identity_phone_verified > 0,
             "bank_recorded": identity_bank_recorded > 0,
             "drivers_licence_recorded": identity_drivers_licence > 0,
+            "region_consistent": identity_region_consistent > 0,
+            "region_mismatch_explained": identity_region_mismatch_explained > 0,
         },
     }
 

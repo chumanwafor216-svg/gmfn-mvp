@@ -484,6 +484,12 @@ class EntryPhoneVerification(Base):
     bank_currency: Mapped[Optional[str]] = mapped_column(String(8), nullable=True)
     bank_phone_number: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
     bank_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    browser_locale: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    browser_timezone: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    phone_country_hint: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    locale_country_hint: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    region_consistency_status: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    region_consistency_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     driver_licence_number: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
     driver_licence_country: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     driver_licence_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -542,6 +548,10 @@ class UserPayoutDestination(Base):
         server_default="recorded",
     )
     verification_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    phone_country_hint: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    locale_country_hint: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    region_consistency_status: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    region_consistency_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     verified_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True),
         nullable=True,

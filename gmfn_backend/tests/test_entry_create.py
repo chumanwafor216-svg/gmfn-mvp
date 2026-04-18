@@ -10,6 +10,8 @@ def test_entry_phone_verification_then_create_and_phone_login(client):
         json={
             "display_name": "Mama Chuks",
             "phone_e164": "+2348012345678",
+            "browser_locale": "en-NG",
+            "browser_timezone": "Africa/Lagos",
         },
     )
     assert start_res.status_code == 201, start_res.text
@@ -111,7 +113,8 @@ def test_entry_phone_verification_then_create_and_phone_login(client):
 
     assert payout_body["destination_name"] == "Mama Chuks"
     assert payout_body["bank_name"] == "Pilot Community Bank"
-    assert payout_body["verification_status"] == "phone_verified_bank_recorded"
+    assert payout_body["verification_status"] == "phone_verified_bank_recorded_region_matched"
+    assert payout_body["region_consistency_status"] == "matched"
 
     trust_res = client.get(
         "/trust-events/me",
@@ -124,6 +127,7 @@ def test_entry_phone_verification_then_create_and_phone_login(client):
     assert "identity.phone_verified" in event_types
     assert "identity.bank_destination_recorded" in event_types
     assert "identity.drivers_licence_recorded" in event_types
+    assert "identity.region_consistent" in event_types
 
     explained_res = client.get(
         "/trust/score/explained",
@@ -134,7 +138,8 @@ def test_entry_phone_verification_then_create_and_phone_login(client):
     assert explained_body["starter_proof_summary"]["phone_verified"] is True
     assert explained_body["starter_proof_summary"]["bank_recorded"] is True
     assert explained_body["starter_proof_summary"]["drivers_licence_recorded"] is True
-    assert float(explained_body["standing_score"]) >= 0.85
+    assert explained_body["starter_proof_summary"]["region_consistent"] is True
+    assert float(explained_body["standing_score"]) >= 0.95
 
     notifications_res = client.get(
         "/notifications/me",
@@ -251,3 +256,131 @@ def test_entry_bank_details_require_verified_phone_first(client):
     )
     assert bank_res.status_code == 400, bank_res.text
     assert "Phone verification must be completed first" in bank_res.text
+
+
+def test_entry_bank_details_require_explanation_for_cross_region_mismatch(client):
+    os.environ["GMFN_DEV_MODE"] = "1"
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Trader UK",
+            "phone_e164": "+447700900123",
+            "browser_locale": "en-GB",
+        },
+    )
+    assert start_res.status_code == 201, start_res.text
+    start_body = start_res.json()
+
+    confirm_res = client.post(
+        "/entry/phone/confirm",
+        json={
+            "verification_id": start_body["verification_id"],
+            "code": start_body["otp_preview"],
+        },
+    )
+    assert confirm_res.status_code == 200, confirm_res.text
+
+    bank_res = client.post(
+        "/entry/bank-details",
+        json={
+            "verification_id": start_body["verification_id"],
+            "destination_name": "Trader UK",
+            "bank_name": "Pilot Community Bank",
+            "account_number": "1234567890",
+            "country": "NG",
+        },
+    )
+    assert bank_res.status_code == 400, bank_res.text
+    assert "do not match yet" in bank_res.text
+
+
+def test_entry_cross_region_mismatch_can_be_recorded_with_explanation(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    os.environ["GMFN_DEV_MODE"] = "1"
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Mama Diaspora",
+            "phone_e164": "+447700900123",
+            "browser_locale": "en-GB",
+            "browser_timezone": "Europe/London",
+        },
+    )
+    assert start_res.status_code == 201, start_res.text
+    start_body = start_res.json()
+
+    confirm_res = client.post(
+        "/entry/phone/confirm",
+        json={
+            "verification_id": start_body["verification_id"],
+            "code": start_body["otp_preview"],
+        },
+    )
+    assert confirm_res.status_code == 200, confirm_res.text
+
+    bank_res = client.post(
+        "/entry/bank-details",
+        json={
+            "verification_id": start_body["verification_id"],
+            "destination_name": "Mama Diaspora",
+            "bank_name": "Pilot Community Bank",
+            "account_number": "0123456789",
+            "country": "NG",
+            "currency": "NGN",
+            "note": "I live in the UK but I still use my Nigerian community account.",
+        },
+    )
+    assert bank_res.status_code == 200, bank_res.text
+    bank_body = bank_res.json()
+    assert bank_body["region_consistency_status"] == "explained_mismatch"
+
+    create_res = client.post(
+        "/entry/create",
+        json={
+            "verification_id": start_body["verification_id"],
+            "clan_name": "Diaspora Market Circle",
+            "clan_description": "Cross-border trade support circle",
+        },
+    )
+    assert create_res.status_code == 201, create_res.text
+    create_body = create_res.json()
+
+    activate_res = client.post(
+        "/auth/activate-membership",
+        json={
+            "gmfn_id": create_body["gmfn_id"],
+            "password": "secret123",
+            "confirm_password": "secret123",
+        },
+    )
+    assert activate_res.status_code == 200, activate_res.text
+
+    login_res = client.post(
+        "/auth/login",
+        data={
+            "username": "+447700900123",
+            "password": "secret123",
+        },
+    )
+    assert login_res.status_code == 200, login_res.text
+    token = login_res.json()["access_token"]
+
+    payout_res = client.get(
+        "/withdrawal-destinations/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert payout_res.status_code == 200, payout_res.text
+    payout_body = payout_res.json()
+    assert payout_body["verification_status"] == "phone_verified_bank_recorded_region_explained"
+    assert payout_body["region_consistency_status"] == "explained_mismatch"
+
+    trust_res = client.get(
+        "/trust-events/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert trust_res.status_code == 200, trust_res.text
+    trust_body = trust_res.json()
+    event_types = [item["event_type"] for item in trust_body["items"]]
+    assert "identity.region_mismatch_explained" in event_types

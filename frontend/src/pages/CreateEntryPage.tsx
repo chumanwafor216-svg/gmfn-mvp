@@ -629,11 +629,11 @@ export default function CreateEntryPage() {
                   </div>
 
                   <div>
-                    <div style={fieldLabel()}>Note (optional)</div>
+                    <div style={fieldLabel()}>Note or cross-region explanation</div>
                     <textarea
                       value={bankNote}
                       onChange={(e) => setBankNote(e.target.value)}
-                      placeholder="Anything that helps explain this destination"
+                      placeholder="If your phone country and bank country do not match, explain briefly here"
                       style={textArea()}
                     />
                   </div>
@@ -776,11 +776,13 @@ export default function CreateEntryPage() {
                 <br />
                 3. Record your bank details after phone verification.
                 <br />
-                4. Add an optional driver's licence reference if you want extra identity proof.
+                4. If your phone and bank regions do not match, explain it briefly so the trust record stays clear.
                 <br />
-                5. Add the community details.
+                5. Add an optional driver's licence reference if you want extra identity proof.
                 <br />
-                6. Activate the issued identity, then move into Build Your First Circle.
+                6. Add the community details.
+                <br />
+                7. Activate the issued identity, then move into Build Your First Circle.
               </div>
             </div>
 
@@ -796,7 +798,8 @@ export default function CreateEntryPage() {
               >
                 This keeps founder onboarding guided and one step at a time.
                 Your identity and verified phone come first. Bank destination comes
-                next. Optional licence proof can also be recorded here. Community
+                next. Region consistency between phone and bank is also checked here.
+                Optional licence proof can also be recorded here. Community
                 setup follows after that.
               </div>
             </div>

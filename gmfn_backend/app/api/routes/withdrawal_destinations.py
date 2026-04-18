@@ -85,6 +85,10 @@ def _payload(row: UserPayoutDestination) -> dict:
         "note": row.note,
         "verification_status": row.verification_status,
         "verification_note": row.verification_note,
+        "phone_country_hint": row.phone_country_hint,
+        "locale_country_hint": row.locale_country_hint,
+        "region_consistency_status": row.region_consistency_status,
+        "region_consistency_note": row.region_consistency_note,
         "verified_at": row.verified_at.isoformat() if row.verified_at else None,
         "updated_at": row.updated_at.isoformat() if row.updated_at else None,
     }

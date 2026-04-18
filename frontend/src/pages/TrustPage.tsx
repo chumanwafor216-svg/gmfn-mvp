@@ -37,6 +37,8 @@ type TrustScoreExplained = {
     phone_verified?: boolean;
     bank_recorded?: boolean;
     drivers_licence_recorded?: boolean;
+    region_consistent?: boolean;
+    region_mismatch_explained?: boolean;
   };
 };
 
@@ -289,6 +291,12 @@ export default function TrustPage() {
       label: "Driver's licence proof",
       enabled: Boolean(starterSummary?.drivers_licence_recorded),
       detail: "Optional licence proof adds another visible identity layer when it is supplied.",
+    },
+    {
+      key: "region",
+      label: "Region consistency",
+      enabled: Boolean(starterSummary?.region_consistent),
+      detail: "Matching phone and bank region signals strengthen starter trust because the identity evidence aligns.",
     },
   ];
   const hasStarterProof = starterProofs.some((item) => item.enabled);
