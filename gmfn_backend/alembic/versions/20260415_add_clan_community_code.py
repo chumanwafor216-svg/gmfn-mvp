@@ -15,19 +15,37 @@ branch_labels = None
 depends_on = None
 
 
+def _has_column(bind, table_name: str, column_name: str) -> bool:
+    inspector = sa.inspect(bind)
+    return any(col["name"] == column_name for col in inspector.get_columns(table_name))
+
+
+def _has_index(bind, table_name: str, index_name: str) -> bool:
+    inspector = sa.inspect(bind)
+    return any(idx["name"] == index_name for idx in inspector.get_indexes(table_name))
+
+
 def upgrade() -> None:
-    op.add_column(
-        "clans",
-        sa.Column("community_code", sa.String(length=32), nullable=True),
-    )
-    op.create_index(
-        "ix_clans_community_code",
-        "clans",
-        ["community_code"],
-        unique=False,
-    )
+    bind = op.get_bind()
+
+    if not _has_column(bind, "clans", "community_code"):
+        op.add_column(
+            "clans",
+            sa.Column("community_code", sa.String(length=32), nullable=True),
+        )
+    if not _has_index(bind, "clans", "ix_clans_community_code"):
+        op.create_index(
+            "ix_clans_community_code",
+            "clans",
+            ["community_code"],
+            unique=False,
+        )
 
 
 def downgrade() -> None:
-    op.drop_index("ix_clans_community_code", table_name="clans")
-    op.drop_column("clans", "community_code")
+    bind = op.get_bind()
+
+    if _has_index(bind, "clans", "ix_clans_community_code"):
+        op.drop_index("ix_clans_community_code", table_name="clans")
+    if _has_column(bind, "clans", "community_code"):
+        op.drop_column("clans", "community_code")

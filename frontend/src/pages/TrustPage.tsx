@@ -98,6 +98,32 @@ function safeJson(meta: any) {
   }
 }
 
+function safeStr(x: any): string {
+  return String(x ?? "").trim();
+}
+
+function humanizeEventType(eventType?: string | null): string {
+  const raw = safeStr(eventType);
+  if (!raw) return "Event";
+
+  const known: Record<string, string> = {
+    "identity.phone_verified": "Verified phone recorded",
+    "identity.bank_destination_recorded": "Bank destination recorded",
+    "identity.drivers_licence_recorded": "Driver's licence recorded",
+    "identity.region_consistent": "Region consistency confirmed",
+    "identity.region_mismatch_explained": "Cross-region explanation recorded",
+    "identity.bank_verification_checked": "Bank verification checked",
+    "identity.drivers_licence_verification_checked":
+      "Driver's licence verification checked",
+  };
+
+  if (known[raw]) return known[raw];
+
+  return raw
+    .replace(/[._]+/g, " ")
+    .replace(/\b\w/g, (char: string) => char.toUpperCase());
+}
+
 function eventTone(eventType: string) {
   const t = (eventType || "").toUpperCase();
   if (t.includes("REPAY")) return "green";
@@ -420,7 +446,9 @@ export default function TrustPage() {
                 {why.events.slice(0, 8).map((e: any) => (
                   <div key={String(e.id ?? Math.random())} style={{ padding: 10, borderRadius: 10, background: "#fff", border: "1px solid #eee" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-                      <div style={{ fontWeight: 800 }}>{e.event_type || "event"}</div>
+                      <div style={{ fontWeight: 800 }}>
+                        {humanizeEventType(e.event_type)}
+                      </div>
                       <div style={{ fontSize: 12, color: "#666" }}>{timeAgo(e.created_at)} • {e.created_at || ""}</div>
                     </div>
                     <div style={{ marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
@@ -485,7 +513,7 @@ export default function TrustPage() {
           </div>
           {latest?.event_type ? (
             <span style={pill(eventTone(latest.event_type) as any)}>
-              Latest: {latest.event_type} • {timeAgo(latest.created_at)}
+              Latest: {humanizeEventType(latest.event_type)} • {timeAgo(latest.created_at)}
             </span>
           ) : null}
         </div>
@@ -494,7 +522,9 @@ export default function TrustPage() {
           {filtered.slice(0, 200).map((ev) => (
             <div key={String(ev.id ?? Math.random())} style={{ padding: 12, border: "1px solid #eee", borderRadius: 12, background: "#fff" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-                <div style={{ fontWeight: 800 }}>{ev.event_type || "event"}</div>
+                <div style={{ fontWeight: 800 }}>
+                  {humanizeEventType(ev.event_type)}
+                </div>
                 <div style={{ fontSize: 12, color: "#666" }}>{ev.created_at || ""} {timeAgo(ev.created_at)}</div>
               </div>
               <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>

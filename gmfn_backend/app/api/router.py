@@ -5,6 +5,7 @@
 # =========================
 from app.api.routes.auth import router as auth_router
 from app.api.routes.entry import router as entry_router
+from app.api.routes.entry_verification import router as entry_verification_router
 from app.api.routes.clans import router as clans_router
 from app.api.routes.invites import router as invites_router
 from app.api.routes.loans import router as loans_router
@@ -104,6 +105,7 @@ api_router = APIRouter()
 # CORE
 api_router.include_router(auth_router)
 api_router.include_router(entry_router)
+api_router.include_router(entry_verification_router)
 api_router.include_router(clans_router)
 api_router.include_router(invites_router)
 api_router.include_router(loans_router)

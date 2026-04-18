@@ -624,6 +624,57 @@ export async function saveEntryBankDetails(payload: {
   });
 }
 
+export async function verifyEntryBankDetails(payload: {
+  verification_id: number | string;
+  destination_name: string;
+  bank_name: string;
+  account_number: string;
+  sort_code?: string | null;
+  iban?: string | null;
+  phone_number?: string | null;
+  country?: string | null;
+  currency?: string | null;
+  note?: string | null;
+}): Promise<any> {
+  return httpJson("/entry/bank/verify", "POST", {
+    verification_id: Number(payload?.verification_id || 0),
+    destination_name: String(payload?.destination_name || "").trim(),
+    bank_name: String(payload?.bank_name || "").trim(),
+    account_number: String(payload?.account_number || "").trim(),
+    sort_code: String(payload?.sort_code || "").trim() || undefined,
+    iban: String(payload?.iban || "").trim() || undefined,
+    phone_number: String(payload?.phone_number || "").trim() || undefined,
+    country: String(payload?.country || "").trim() || undefined,
+    currency: String(payload?.currency || "").trim() || undefined,
+    note: String(payload?.note || "").trim() || undefined,
+  });
+}
+
+export async function verifyEntryDriversLicence(payload: {
+  verification_id: number | string;
+  licence_number: string;
+  country: string;
+  note?: string | null;
+}): Promise<any> {
+  return httpJson("/entry/licence/verify", "POST", {
+    verification_id: Number(payload?.verification_id || 0),
+    licence_number: String(payload?.licence_number || "").trim(),
+    country: String(payload?.country || "").trim(),
+    note: String(payload?.note || "").trim() || undefined,
+  });
+}
+
+export async function getEntryVerificationCheck(
+  verificationCheckId: number | string
+): Promise<any> {
+  return httpJson(
+    `/entry/verification/${encodeURIComponent(
+      String(Number(verificationCheckId || 0))
+    )}`,
+    "GET"
+  );
+}
+
 export async function submitJoinEntry(payload: Record<string, any>): Promise<any> {
   return httpJsonPaths(
     ["/entry/join", "/clans/join-requests"],

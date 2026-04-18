@@ -17,6 +17,7 @@ from app.api.routes.auth import (
 )
 from app.db.database import get_db
 from app.db.models import Clan, EntryPhoneVerification, User, UserPayoutDestination
+from app.db.verification_models import IdentityVerificationCheck
 from app.services.notification_service import create_notification
 from app.services.trust_events_services import build_trust_meta, log_trust_event
 from app.services.trust_score_service import apply_trust_score
@@ -338,6 +339,31 @@ def _bank_status_note(region_status: Optional[str]) -> tuple[str, str]:
     )
 
 
+def _verification_status_label(status: object) -> str:
+    text = _clean_text(status).lower()
+    if not text:
+        return "recorded"
+    return text.replace("_", " ")
+
+
+def _verification_event_type(verification_type: object) -> str:
+    vt = _clean_text(verification_type).lower()
+    if vt == "bank":
+        return "identity.bank_verification_checked"
+    if vt == "drivers_licence":
+        return "identity.drivers_licence_verification_checked"
+    return "identity.verification_checked"
+
+
+def _verification_summary_line(check: IdentityVerificationCheck) -> str:
+    subject = "Bank details" if _clean_text(check.verification_type).lower() == "bank" else "Driver's licence"
+    explanation = _clean_text(check.explanation)
+    base = f"{subject}: {_verification_status_label(check.status)}."
+    if explanation:
+        return f"{base} {explanation}"
+    return base
+
+
 @router.post("/phone/start", response_model=EntryPhoneStartOut, status_code=status.HTTP_201_CREATED)
 def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Depends(get_db)):
     display_name = _clean_text(payload.display_name)
@@ -582,6 +608,44 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
     )
     db.add(payout)
 
+    verification_checks = (
+        db.query(IdentityVerificationCheck)
+        .filter(IdentityVerificationCheck.entry_phone_verification_id == int(verification.id))
+        .order_by(IdentityVerificationCheck.created_at.asc(), IdentityVerificationCheck.id.asc())
+        .all()
+    )
+
+    verification_summary_lines: list[str] = []
+    for check in verification_checks:
+        check.user_id = int(user.id)
+        db.add(check)
+        verification_summary_lines.append(_verification_summary_line(check))
+
+        verification_meta = build_trust_meta(
+            reason="identity_verification_check_recorded_at_registration",
+            note=_clean_text(check.explanation) or "A verification result was recorded during onboarding.",
+            system=True,
+            extra={
+                "verification_check_id": int(check.id),
+                "verification_type": _clean_text(check.verification_type),
+                "verification_status": _clean_text(check.status),
+                "provider_key": _clean_text(check.provider_key) or None,
+                "region_code": _clean_text(check.region_code, upper=True) or None,
+                "confidence_score": check.confidence_score,
+            },
+        )
+        log_trust_event(
+            db,
+            event_type=_verification_event_type(check.verification_type),
+            clan_id=int(clan.id),
+            actor_user_id=int(user.id),
+            subject_user_id=int(user.id),
+            meta=verification_meta,
+            dedupe_key=f"entry:verification-check:{int(check.id)}",
+            commit=False,
+            refresh=False,
+        )
+
     phone_event_meta = build_trust_meta(
         reason="verified_phone_attached_at_registration",
         note="Founder phone verification completed before community creation.",
@@ -729,6 +793,21 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
         action_url="/app/trust",
         action_label="Review Trust",
     )
+
+    if verification_summary_lines:
+        create_notification(
+            db,
+            user_id=int(user.id),
+            kind="trust.verification-results",
+            title="Your onboarding checks were recorded",
+            message=(
+                "The app has recorded your verification checks so your trust record starts with explainable evidence. "
+                + " ".join(verification_summary_lines)
+                + " Open Trust to review how these checks were attached to your record."
+            ),
+            action_url="/app/trust",
+            action_label="Review Trust",
+        )
 
     if _clean_text(verification.region_consistency_status) == "explained_mismatch":
         create_notification(

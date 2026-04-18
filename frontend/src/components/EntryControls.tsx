@@ -121,16 +121,17 @@ export function EntryGuideLauncher({
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
-          minHeight: 24,
-          minWidth: 84,
-          padding: "4px 12px",
+          minHeight: 36,
+          minWidth: 36,
+          padding: "0 14px",
           borderRadius: 999,
           border: "1px solid rgba(255,255,255,0.12)",
           background:
-            "linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.07) 100%)",
+          "linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.07) 100%)",
           boxShadow:
             "0 8px 20px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.14)",
           fontSize: 10.5,
+          fontWeight: 900,
           lineHeight: 1,
           letterSpacing: 0.8,
           color: "rgba(255,255,255,0.78)",
@@ -155,6 +156,7 @@ export function EntryGuideLauncher({
           boxShadow:
             "0 16px 28px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -6px 12px rgba(6,18,35,0.12)",
           transform: "translateY(0)",
+          whiteSpace: "nowrap",
         }}
       >
         {text}

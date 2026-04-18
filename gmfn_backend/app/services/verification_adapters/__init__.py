@@ -1,0 +1,1 @@
+"""Verification adapter package."""

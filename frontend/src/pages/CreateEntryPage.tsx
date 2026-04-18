@@ -1,16 +1,18 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { EntryBackLink, EntryGuideLauncher } from "../components/EntryControls";
-import OriginLink from "../components/OriginLink";
 import {
   clearPublicEntryState,
   confirmEntryPhoneVerification,
   createEntry,
   getCreateCode,
+  getEntryVerificationCheck,
   getMe,
   isAuthenticated,
   saveEntryBankDetails,
   startEntryPhoneVerification,
+  verifyEntryBankDetails,
+  verifyEntryDriversLicence,
 } from "../lib/api";
 
 function pageShell(): React.CSSProperties {
@@ -126,15 +128,68 @@ function feedbackCard(success = false): React.CSSProperties {
   };
 }
 
+type EntryVerificationResult = {
+  verification_check_id?: number;
+  verification_type?: string;
+  status?: string;
+  provider_key?: string;
+  region_code?: string | null;
+  confidence_score?: number | null;
+  explanation?: string;
+  verified_at?: string | null;
+} | null;
+
+function verificationCard(status?: string | null): React.CSSProperties {
+  const normalized = safeStr(status).toLowerCase();
+
+  if (normalized === "matched") {
+    return {
+      borderRadius: 16,
+      padding: 14,
+      border: "1px solid #A7F3D0",
+      background: "#ECFDF5",
+      color: "#065F46",
+    };
+  }
+
+  if (normalized === "partial_match" || normalized === "manual_review_required") {
+    return {
+      borderRadius: 16,
+      padding: 14,
+      border: "1px solid #FDE68A",
+      background: "#FFFBEB",
+      color: "#92400E",
+    };
+  }
+
+  if (normalized === "unavailable") {
+    return {
+      borderRadius: 16,
+      padding: 14,
+      border: "1px solid #BFDBFE",
+      background: "#EFF6FF",
+      color: "#1D4ED8",
+    };
+  }
+
+  return {
+    borderRadius: 16,
+    padding: 14,
+    border: "1px solid #FECACA",
+    background: "#FEF2F2",
+    color: "#991B1B",
+  };
+}
+
 function stageShell(active = false, complete = false): React.CSSProperties {
   if (active) {
     return {
       borderRadius: 20,
       padding: 18,
-      border: "1px solid rgba(11,99,209,0.18)",
+      border: "1px solid rgba(28,76,126,0.18)",
       background:
-        "linear-gradient(180deg, rgba(11,99,209,0.10) 0%, rgba(248,251,255,0.92) 100%)",
-      boxShadow: "0 12px 28px rgba(11,99,209,0.10)",
+        "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(230,239,252,0.96) 58%, rgba(212,226,246,0.92) 100%)",
+      boxShadow: "0 12px 28px rgba(16,37,59,0.08)",
     };
   }
 
@@ -142,17 +197,18 @@ function stageShell(active = false, complete = false): React.CSSProperties {
     return {
       borderRadius: 20,
       padding: 18,
-      border: "1px solid rgba(34,197,94,0.18)",
+      border: "1px solid rgba(243,208,106,0.24)",
       background:
-        "linear-gradient(180deg, rgba(34,197,94,0.08) 0%, rgba(255,255,255,0.98) 100%)",
+        "linear-gradient(180deg, rgba(255,251,238,0.98) 0%, rgba(252,245,225,0.94) 100%)",
     };
   }
 
   return {
     borderRadius: 20,
     padding: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(28,76,126,0.12)",
+    background:
+      "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(238,245,252,0.96) 100%)",
   };
 }
 
@@ -170,22 +226,11 @@ function stageBadge(
     fontWeight: 1000,
     fontSize: 14,
     background: active
-      ? "#0B63D1"
+      ? "#1F548C"
       : complete
-        ? "#166534"
-        : "rgba(11,31,51,0.08)",
+        ? "#B88721"
+        : "rgba(28,76,126,0.10)",
     color: active || complete ? "#FFFFFF" : "#24415C",
-  };
-}
-
-function panelCard(): React.CSSProperties {
-  return {
-    borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,253,0.96) 100%)",
-    boxShadow: "0 18px 40px rgba(15,23,42,0.06)",
-    padding: 22,
   };
 }
 
@@ -215,6 +260,10 @@ function resolveActivationRequestId(out: any): string {
 export default function CreateEntryPage() {
   const nav = useNavigate();
   const location = useLocation();
+  const isDevPreview =
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1");
 
   const search = useMemo(
     () => new URLSearchParams(location.search),
@@ -291,16 +340,25 @@ export default function CreateEntryPage() {
   const [bankAccountName, setBankAccountName] = useState(initialDisplayName);
   const [bankName, setBankName] = useState("");
   const [bankAccountNumber, setBankAccountNumber] = useState("");
+  const [bankSortCode, setBankSortCode] = useState("");
+  const [bankIban, setBankIban] = useState("");
   const [bankCountry, setBankCountry] = useState("");
   const [bankCurrency, setBankCurrency] = useState("NGN");
   const [bankNote, setBankNote] = useState("");
   const [driverLicenceNumber, setDriverLicenceNumber] = useState("");
   const [driverLicenceCountry, setDriverLicenceCountry] = useState("");
   const [driverLicenceNote, setDriverLicenceNote] = useState("");
+  const [bankVerificationResult, setBankVerificationResult] =
+    useState<EntryVerificationResult>(null);
+  const [licenceVerificationResult, setLicenceVerificationResult] =
+    useState<EntryVerificationResult>(null);
   const [procedureOpen, setProcedureOpen] = useState(false);
-  const [openPanel, setOpenPanel] = useState<"details" | "verification" | "community">(
+  const [openPanel, setOpenPanel] = useState<"details" | "verification" | "community" | null>(
     initialCommunityName || initialDescription ? "community" : "details"
   );
+  const detailsRef = useRef<HTMLDivElement | null>(null);
+  const verificationRef = useRef<HTMLDivElement | null>(null);
+  const communityRef = useRef<HTMLDivElement | null>(null);
 
   const canContinue = !!safeStr(communityName) && !!safeStr(displayName) && !!safeStr(phone);
   const canContinueDetails = !!safeStr(displayName) && !!safeStr(phone);
@@ -325,10 +383,76 @@ export default function CreateEntryPage() {
   const canOpenVerification = step !== "details";
   const canOpenCommunity = step === "community";
 
+  function focusPanel(next: "details" | "verification" | "community") {
+    const map = {
+      details: detailsRef,
+      verification: verificationRef,
+      community: communityRef,
+    } as const;
+    if (typeof window !== "undefined") {
+      window.setTimeout(() => {
+        map[next].current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+    }
+  }
+
   function handleOpenPanel(next: "details" | "verification" | "community") {
     if (next === "verification" && !canOpenVerification) return;
     if (next === "community" && !canOpenCommunity) return;
     setOpenPanel(next);
+    focusPanel(next);
+  }
+
+  function clearDetailsBlock() {
+    setDisplayName("");
+    setPhone("");
+    setEmail("");
+    setError("");
+    setSuccess("");
+  }
+
+  function clearVerificationBlock() {
+    setOtpCode("");
+    setBankAccountName(initialDisplayName);
+    setBankName("");
+    setBankAccountNumber("");
+    setBankSortCode("");
+    setBankIban("");
+    setBankCountry("");
+    setBankCurrency("NGN");
+    setBankNote("");
+    setDriverLicenceNumber("");
+    setDriverLicenceCountry("");
+    setDriverLicenceNote("");
+    setBankVerificationResult(null);
+    setLicenceVerificationResult(null);
+    setError("");
+    setSuccess("");
+  }
+
+  function clearCommunityBlock() {
+    setCommunityName("");
+    setDescription("");
+    setError("");
+    setSuccess("");
+  }
+
+  function openVerificationPreview() {
+    setError("");
+    setSuccess("Preview mode: Block 2 opened for layout review only.");
+    setStep("bank");
+    setVerificationId((current) => current || -1);
+    setOpenPanel("verification");
+    focusPanel("verification");
+  }
+
+  function openCommunityPreview() {
+    setError("");
+    setSuccess("Preview mode: Block 3 opened for layout review only.");
+    setStep("community");
+    setVerificationId((current) => current || -1);
+    setOpenPanel("community");
+    focusPanel("community");
   }
 
   async function handleStartVerification() {
@@ -349,6 +473,7 @@ export default function CreateEntryPage() {
       setOtpPreview(safeStr(out?.otp_preview));
       setStep("verify");
       setOpenPanel("verification");
+      focusPanel("verification");
       setSuccess(
         safeStr(out?.message) ||
           "Phone verification started. Enter the code to continue."
@@ -375,6 +500,7 @@ export default function CreateEntryPage() {
 
       setStep("bank");
       setOpenPanel("verification");
+      focusPanel("verification");
       setSuccess("Phone verified. Add your bank details before community details continue.");
     } catch (err: any) {
       setError(err?.message || "Phone verification could not be completed.");
@@ -405,10 +531,72 @@ export default function CreateEntryPage() {
         driver_licence_note: safeStr(driverLicenceNote) || undefined,
       });
 
+      let nextBankVerification: EntryVerificationResult = null;
+      let nextLicenceVerification: EntryVerificationResult = null;
+
+      try {
+        const bankVerification = await verifyEntryBankDetails({
+          verification_id: verificationId,
+          destination_name: safeStr(bankAccountName),
+          bank_name: safeStr(bankName),
+          account_number: safeStr(bankAccountNumber),
+          sort_code: safeStr(bankSortCode) || undefined,
+          iban: safeStr(bankIban) || undefined,
+          phone_number: safeStr(phone) || undefined,
+          country: safeStr(bankCountry) || undefined,
+          currency: safeStr(bankCurrency) || "NGN",
+          note: safeStr(bankNote) || undefined,
+        });
+        nextBankVerification = bankVerification;
+
+        if (Number(bankVerification?.verification_check_id || 0) > 0) {
+          nextBankVerification = await getEntryVerificationCheck(
+            bankVerification.verification_check_id
+          ).catch(() => bankVerification);
+        }
+      } catch (verificationErr: any) {
+        nextBankVerification = {
+          status: "failed",
+          explanation:
+            verificationErr?.message ||
+            "Bank verification could not be checked right now.",
+        };
+      }
+
+      if (safeStr(driverLicenceNumber) && safeStr(driverLicenceCountry)) {
+        try {
+          const licenceVerification = await verifyEntryDriversLicence({
+            verification_id: verificationId,
+            licence_number: safeStr(driverLicenceNumber),
+            country: safeStr(driverLicenceCountry),
+            note: safeStr(driverLicenceNote) || undefined,
+          });
+          nextLicenceVerification = licenceVerification;
+
+          if (Number(licenceVerification?.verification_check_id || 0) > 0) {
+            nextLicenceVerification = await getEntryVerificationCheck(
+              licenceVerification.verification_check_id
+            ).catch(() => licenceVerification);
+          }
+        } catch (verificationErr: any) {
+          nextLicenceVerification = {
+            status: "failed",
+            explanation:
+              verificationErr?.message ||
+              "Driver's licence verification could not be checked right now.",
+          };
+        }
+      }
+
+      setBankVerificationResult(nextBankVerification);
+      setLicenceVerificationResult(nextLicenceVerification);
+
       setStep("community");
       setOpenPanel("community");
+      focusPanel("community");
       setSuccess(
-        safeStr(out?.verification_note) ||
+        safeStr(nextBankVerification?.explanation) ||
+          safeStr(out?.verification_note) ||
           "Bank details recorded. You can now continue with community details."
       );
     } catch (err: any) {
@@ -569,33 +757,76 @@ export default function CreateEntryPage() {
                   lineHeight: 1.8,
                 }}
               >
-                1. Open Block 1 and fill your founder details.
-                <br />
-                2. Submit Block 1 and it closes back into place.
-                <br />
-                3. Block 2 opens for phone verification and bank rails.
-                <br />
-                4. Submit Block 2 and it closes back into place.
-                <br />
-                5. Block 3 opens for community setup.
-                <br />
-                6. Finish Block 3 and continue into founder activation from this same page.
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    marginBottom: 10,
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setProcedureOpen(false)}
+                    style={{
+                      ...secondaryBtn(),
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      background:
+                        "linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.07) 100%)",
+                      color: "#F8FBFF",
+                    }}
+                  >
+                    Collapse
+                  </button>
+                </div>
+                <div style={{ display: "grid", gap: 12 }}>
+                  <div>
+                    <strong>1. Your details.</strong> We ask for your street name or nickname and
+                    your phone number first so the system can know who is starting this community
+                    and verify that it is really you. This helps protect your entry from being used
+                    by the wrong person.
+                  </div>
+                  <div>
+                    <strong>2. Verification and bank rails.</strong> Your phone is verified so the
+                    system can confirm identity continuity. Your bank details are recorded now so
+                    they can be checked, locked to your onboarding, and ready when you later need
+                    support, help, or trusted financial action without repeating this step again.
+                  </div>
+                  <div>
+                    <strong>3. Community setup.</strong> Only after your identity and rails are in
+                    place do we ask for your community name and short story. This keeps the
+                    community tied to a real, explainable founder record and helps the app detect
+                    abnormal changes if someone else tries to take over your flow.
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {isDevPreview ? (
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  flexWrap: "wrap",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={openVerificationPreview}
+                  style={secondaryBtn()}
+                >
+                  Preview Block 2
+                </button>
+                <button
+                  type="button"
+                  onClick={openCommunityPreview}
+                  style={secondaryBtn()}
+                >
+                  Preview Block 3
+                </button>
               </div>
             ) : null}
           </div>
 
-          <div
-            style={{
-              marginTop: 16,
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            <OriginLink to="/login" style={secondaryBtn()}>
-              Already have access?
-            </OriginLink>
-          </div>
         </div>
 
         {error ? <div style={feedbackCard(false)}>{error}</div> : null}
@@ -604,6 +835,7 @@ export default function CreateEntryPage() {
         <div style={pageCard()}>
           <div style={{ display: "grid", gap: 14 }}>
             <div
+              ref={detailsRef}
               style={stageShell(stepProgress.details, stepProgress.detailsDone)}
             >
               <div
@@ -643,7 +875,7 @@ export default function CreateEntryPage() {
                   type="button"
                   onClick={() =>
                     openPanel === "details"
-                      ? setOpenPanel("verification")
+                      ? setOpenPanel(null)
                       : handleOpenPanel("details")
                   }
                   style={secondaryBtn()}
@@ -680,9 +912,20 @@ export default function CreateEntryPage() {
                     <input
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+234..."
+                      placeholder="+44 7..., +234..., +1..."
                       style={input()}
                     />
+                    <div
+                      style={{
+                        marginTop: 6,
+                        fontSize: 12,
+                        lineHeight: 1.6,
+                        color: "#5F7287",
+                        fontWeight: 700,
+                      }}
+                    >
+                      Start with your international country code so the app can recognise your region correctly.
+                    </div>
                   </div>
 
                   <div>
@@ -695,11 +938,30 @@ export default function CreateEntryPage() {
                     />
                   </div>
 
-                  <div style={{ marginTop: 4 }}>
+                  <div
+                    style={{
+                      marginTop: 4,
+                      display: "flex",
+                      gap: 10,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={clearDetailsBlock}
+                      style={{ ...secondaryBtn(), minWidth: 116 }}
+                    >
+                      Clear
+                    </button>
                     <button
                       type="button"
                       onClick={handleStartVerification}
-                      style={primaryBtn(!canContinueDetails || busy)}
+                      style={{
+                        ...primaryBtn(!canContinueDetails || busy),
+                        width: "auto",
+                        minWidth: 180,
+                        flex: "1 1 220px",
+                      }}
                       disabled={!canContinueDetails || busy}
                     >
                       {busy ? "Sending..." : "Submit Block 1"}
@@ -710,6 +972,7 @@ export default function CreateEntryPage() {
             </div>
 
             <div
+              ref={verificationRef}
               style={stageShell(
                 stepProgress.verification,
                 stepProgress.verificationDone
@@ -752,11 +1015,13 @@ export default function CreateEntryPage() {
                   type="button"
                   onClick={() =>
                     openPanel === "verification"
-                      ? setOpenPanel("details")
-                      : handleOpenPanel("verification")
+                      ? setOpenPanel(null)
+                      : isDevPreview
+                        ? openVerificationPreview()
+                        : handleOpenPanel("verification")
                   }
                   style={secondaryBtn()}
-                  disabled={!canOpenVerification}
+                  disabled={!canOpenVerification && !isDevPreview}
                 >
                   {openPanel === "verification" ? "Collapse" : "Open Block 2"}
                 </button>
@@ -772,6 +1037,51 @@ export default function CreateEntryPage() {
               >
                 Phone verification, bank destination, region explanation, and optional licence proof sit here.
               </div>
+
+              {bankVerificationResult ? (
+                <div style={{ ...verificationCard(bankVerificationResult.status), marginTop: 14 }}>
+                  <div style={sectionLabel()}>Bank verification status</div>
+                  <div style={{ marginTop: 8, fontWeight: 1000, fontSize: 16 }}>
+                    {safeStr(bankVerificationResult.status || "recorded")
+                      .replace(/_/g, " ")
+                      .replace(/\b\w/g, (char) => char.toUpperCase())}
+                  </div>
+                  <div style={{ marginTop: 8, lineHeight: 1.7 }}>
+                    {safeStr(bankVerificationResult.explanation) ||
+                      "The bank verification result is now attached to this onboarding session."}
+                  </div>
+                  {safeStr(bankVerificationResult.provider_key) ? (
+                    <div style={{ marginTop: 8, fontSize: 12, fontWeight: 900, opacity: 0.84 }}>
+                      Provider: {safeStr(bankVerificationResult.provider_key)}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {licenceVerificationResult ? (
+                <div
+                  style={{
+                    ...verificationCard(licenceVerificationResult.status),
+                    marginTop: 12,
+                  }}
+                >
+                  <div style={sectionLabel()}>Licence verification status</div>
+                  <div style={{ marginTop: 8, fontWeight: 1000, fontSize: 16 }}>
+                    {safeStr(licenceVerificationResult.status || "recorded")
+                      .replace(/_/g, " ")
+                      .replace(/\b\w/g, (char) => char.toUpperCase())}
+                  </div>
+                  <div style={{ marginTop: 8, lineHeight: 1.7 }}>
+                    {safeStr(licenceVerificationResult.explanation) ||
+                      "The driver's licence check is now attached to this onboarding session."}
+                  </div>
+                  {safeStr(licenceVerificationResult.provider_key) ? (
+                    <div style={{ marginTop: 8, fontSize: 12, fontWeight: 900, opacity: 0.84 }}>
+                      Provider: {safeStr(licenceVerificationResult.provider_key)}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
 
               {openPanel === "verification" ? (
                 step === "verify" ? (
@@ -803,11 +1113,30 @@ export default function CreateEntryPage() {
                       </div>
                     ) : null}
 
-                    <div style={{ marginTop: 4 }}>
+                    <div
+                      style={{
+                        marginTop: 4,
+                        display: "flex",
+                        gap: 10,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={clearVerificationBlock}
+                        style={{ ...secondaryBtn(), minWidth: 116 }}
+                      >
+                        Clear
+                      </button>
                       <button
                         type="button"
                         onClick={handleConfirmVerification}
-                        style={primaryBtn(!canConfirmOtp || busy)}
+                        style={{
+                          ...primaryBtn(!canConfirmOtp || busy),
+                          width: "auto",
+                          minWidth: 180,
+                          flex: "1 1 220px",
+                        }}
                         disabled={!canConfirmOtp || busy}
                       >
                         {busy ? "Verifying..." : "Submit Block 2"}
@@ -844,6 +1173,34 @@ export default function CreateEntryPage() {
                         placeholder="Enter the destination number"
                         style={input()}
                       />
+                    </div>
+
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: 12,
+                      }}
+                    >
+                      <div>
+                        <div style={fieldLabel()}>Sort code or branch code (optional)</div>
+                        <input
+                          value={bankSortCode}
+                          onChange={(e) => setBankSortCode(e.target.value)}
+                          placeholder="Needed for UK and similar rails"
+                          style={input()}
+                        />
+                      </div>
+
+                      <div>
+                        <div style={fieldLabel()}>IBAN (optional)</div>
+                        <input
+                          value={bankIban}
+                          onChange={(e) => setBankIban(e.target.value)}
+                          placeholder="Use this where IBAN is standard"
+                          style={input()}
+                        />
+                      </div>
                     </div>
 
                     <div
@@ -928,11 +1285,30 @@ export default function CreateEntryPage() {
                       </div>
                     </div>
 
-                    <div style={{ marginTop: 4 }}>
+                    <div
+                      style={{
+                        marginTop: 4,
+                        display: "flex",
+                        gap: 10,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={clearVerificationBlock}
+                        style={{ ...secondaryBtn(), minWidth: 116 }}
+                      >
+                        Clear
+                      </button>
                       <button
                         type="button"
                         onClick={handleSaveBankDetails}
-                        style={primaryBtn(!canContinueBank || busy)}
+                        style={{
+                          ...primaryBtn(!canContinueBank || busy),
+                          width: "auto",
+                          minWidth: 180,
+                          flex: "1 1 220px",
+                        }}
                         disabled={!canContinueBank || busy}
                       >
                         {busy ? "Saving..." : "Submit Block 2"}
@@ -943,7 +1319,7 @@ export default function CreateEntryPage() {
               ) : null}
             </div>
 
-            <div style={stageShell(stepProgress.community, false)}>
+            <div ref={communityRef} style={stageShell(stepProgress.community, false)}>
               <div
                 style={{
                   display: "flex",
@@ -974,11 +1350,13 @@ export default function CreateEntryPage() {
                   type="button"
                   onClick={() =>
                     openPanel === "community"
-                      ? setOpenPanel("verification")
-                      : handleOpenPanel("community")
+                      ? setOpenPanel(null)
+                      : isDevPreview
+                        ? openCommunityPreview()
+                        : handleOpenPanel("community")
                   }
                   style={secondaryBtn()}
-                  disabled={!canOpenCommunity}
+                  disabled={!canOpenCommunity && !isDevPreview}
                 >
                   {openPanel === "community" ? "Collapse" : "Open Block 3"}
                 </button>
@@ -1020,13 +1398,32 @@ export default function CreateEntryPage() {
                     />
                   </div>
 
-                  <div style={{ marginTop: 4 }}>
+                  <div
+                    style={{
+                      marginTop: 4,
+                      display: "flex",
+                      gap: 10,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={clearCommunityBlock}
+                      style={{ ...secondaryBtn(), minWidth: 116 }}
+                    >
+                      Clear
+                    </button>
                     <button
                       type="submit"
-                      style={primaryBtn(!canContinue || busy)}
+                      style={{
+                        ...primaryBtn(!canContinue || busy),
+                        width: "auto",
+                        minWidth: 220,
+                        flex: "1 1 260px",
+                      }}
                       disabled={!canContinue || busy}
                     >
-                      {busy ? "Continuing..." : "Continue to founder creation"}
+                      {busy ? "Continuing..." : "Final submit"}
                     </button>
                   </div>
                 </form>

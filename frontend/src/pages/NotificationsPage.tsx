@@ -613,8 +613,11 @@ function isTrustOnboardingRow(row: RawNotificationRow | null | undefined): boole
 
   return (
     kind === "trust.onboarding" ||
+    kind === "trust.verification-results" ||
     title.includes("starter trust") ||
-    detail.includes("starter trust")
+    title.includes("onboarding checks") ||
+    detail.includes("starter trust") ||
+    detail.includes("verification checks")
   );
 }
 
