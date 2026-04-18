@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   EntryActionButton,
   EntryBackLink,
-  EntryGuideLauncher,
 } from "../components/EntryControls";
 import GSNBrandMonument from "../components/GSNBrandMonument";
 import {
@@ -217,7 +216,7 @@ export default function WelcomePage() {
       : entryMode === "existing"
       ? "Sign in to continue."
       : step === "choose_new_lane"
-      ? "Choose your path."
+      ? ""
       : "Welcome";
 
   const subtext =
@@ -444,7 +443,7 @@ export default function WelcomePage() {
             </div>
           </div>
 
-          <EntryGuideLauncher onClick={() => setGuideOpen(true)} />
+          <div />
           </div>
 
           {entryMode === "create" && isKnownSingleLane(entryMode) ? (
@@ -563,54 +562,63 @@ export default function WelcomePage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 360px))",
-                gap: 16,
-                justifyContent: "center",
+                justifyItems: "center",
+                gap: 14,
               }}
             >
-              <div style={routeCard()}>
-                <div style={labelText()}>Create</div>
-                <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1.1 }}>
-                  Create a new community
-                </div>
-                <div style={supportText()}>
-                  Start as a founder and set up your new community.
-                </div>
-
-                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                  <EntryActionButton type="button" onClick={openCreate}>
-                    Create
-                  </EntryActionButton>
-                  <EntryActionButton
-                    type="button"
-                    onClick={() => setStep("choose_identity")}
-                    variant="secondary"
+              <div
+                style={{
+                  width: "min(100%, 520px)",
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 188px))",
+                  justifyContent: "center",
+                  gap: isCompact ? 16 : 72,
+                  padding: isCompact ? "8px 0 0" : "10px 0 0",
+                  borderRadius: 28,
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
+                }}
+              >
+                <div style={routeCard()}>
+                  <div
+                    style={{
+                      fontSize: 28,
+                      fontWeight: 900,
+                      lineHeight: 1.08,
+                      textAlign: "center",
+                      textShadow: "0 10px 24px rgba(0,0,0,0.12)",
+                    }}
                   >
-                    Back
-                  </EntryActionButton>
-                </div>
-              </div>
+                    Create a new community
+                  </div>
 
-              <div style={routeCard()}>
-                <div style={labelText()}>Join</div>
-                <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1.1 }}>
-                  Join an existing community
-                </div>
-                <div style={supportText()}>
-                  Continue as a new member joining a community that already exists.
+                  <div style={{ display: "flex", justifyContent: "center" }}>
+                    <EntryActionButton type="button" onClick={openCreate}>
+                      Create
+                    </EntryActionButton>
+                  </div>
                 </div>
 
-                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                  <EntryActionButton type="button" onClick={openJoin}>
-                    Join
-                  </EntryActionButton>
-                  <EntryActionButton
-                    type="button"
-                    onClick={() => setStep("choose_identity")}
-                    variant="secondary"
+                <div style={routeCard()}>
+                  <div
+                    style={{
+                      fontSize: 28,
+                      fontWeight: 900,
+                      lineHeight: 1.08,
+                      textAlign: "center",
+                      textShadow: "0 10px 24px rgba(0,0,0,0.12)",
+                    }}
                   >
-                    Back
-                  </EntryActionButton>
+                    Join an existing community
+                  </div>
+
+                  <div style={{ display: "flex", justifyContent: "center" }}>
+                    <EntryActionButton type="button" onClick={openJoin}>
+                      Join
+                    </EntryActionButton>
+                  </div>
                 </div>
               </div>
             </div>
