@@ -133,7 +133,7 @@ function makeTrustPassportItem(): NavLinkItem {
 
 function makeShopGalleryItem(myShopGalleryTo: string): NavLinkItem {
   return {
-    label: "Shop Gallery",
+    label: "Shop",
     to: myShopGalleryTo,
     match: (pathname) => pathname.startsWith("/app/shop/"),
   };
@@ -181,11 +181,15 @@ function makeAdminItem(): NavLinkItem {
   };
 }
 
-function buildPrimaryItems(canUseAdminTools: boolean): NavLinkItem[] {
+function buildPrimaryItems(
+  myShopGalleryTo: string,
+  canUseAdminTools: boolean
+): NavLinkItem[] {
   const items: NavLinkItem[] = [
     makeDashboardItem(),
     makeCommunityItem(),
     makeMarketplaceItem(),
+    makeShopGalleryItem(myShopGalleryTo),
     makeFinanceItem(),
     makeTrustPassportItem(),
   ];
@@ -202,10 +206,7 @@ function buildTrustPassportItems(): NavLinkItem[] {
 }
 
 function buildCommerceItems(myShopGalleryTo: string): NavLinkItem[] {
-  return [
-    makeShopGalleryItem(myShopGalleryTo),
-    makeShopControlItem(),
-  ];
+  return [makeShopControlItem()];
 }
 
 function buildIdentityItems(): NavLinkItem[] {
@@ -336,8 +337,8 @@ function getSpecialRouteMeta(
 ): RouteMeta | null {
   if (pathname.startsWith("/app/shop/")) {
     return {
-      section: "Shop & storefront",
-      page: "Shop Gallery",
+      section: "Main movement",
+      page: "Shop",
     };
   }
 
@@ -498,6 +499,7 @@ function getPageActions(
     return uniqueNavItems([
       makeCommunityItem(),
       makeMarketplaceItem(),
+      makeShopGalleryItem(myShopGalleryTo),
       { label: "Finance", to: "/app/finance" },
       { label: "Notifications", to: "/app/notifications" },
       { label: "Trust Passport", to: "/app/trust" },
@@ -517,13 +519,14 @@ function getPageActions(
     return uniqueNavItems([
       makeCommunityItem(),
       makeMarketplaceItem(),
-      { label: "Shop Gallery", to: myShopGalleryTo },
+      makeShopGalleryItem(myShopGalleryTo),
       makeDashboardItem(),
     ]);
   }
 
   if (pathname.startsWith("/app/community")) {
     return uniqueNavItems([
+      makeShopGalleryItem(myShopGalleryTo),
       makeShopControlItem(),
       { label: "Demand Box", to: "/app/demand-box" },
       { label: "Finance", to: "/app/finance" },
@@ -535,6 +538,7 @@ function getPageActions(
 
   if (pathname === "/app/marketplace") {
     return uniqueNavItems([
+      makeShopGalleryItem(myShopGalleryTo),
       { label: "Loans & Support", to: "/app/loans" },
       makeShopControlItem(),
       { label: "Finance", to: "/app/finance" },
@@ -1164,8 +1168,8 @@ export default function AppLayout() {
   );
 
   const primaryItems = useMemo(
-    () => buildPrimaryItems(canUseAdminTools),
-    [canUseAdminTools]
+    () => buildPrimaryItems(myShopGalleryTo, canUseAdminTools),
+    [myShopGalleryTo, canUseAdminTools]
   );
 
   const trustPassportItems = useMemo(() => buildTrustPassportItems(), []);
@@ -1183,14 +1187,14 @@ export default function AppLayout() {
         key: "primary",
         label: "Main movement",
         hint:
-          "The main routes stay simple: Dashboard, Community Home, Marketplace, Finance, and Trust Passport.",
+          "The main routes stay simple: Dashboard, Community Home, Marketplace, Shop, Finance, and Trust Passport.",
         items: primaryItems,
       },
       {
         key: "commerce",
-        label: "Shop & storefront",
+        label: "Shop tools",
         hint:
-          "Shop Gallery and Shop Control stay reachable here without taking a primary movement slot.",
+          "Shop Control stays here while Shop itself now sits in the main movement row.",
         items: commerceItems,
       },
       {
@@ -1380,6 +1384,7 @@ export default function AppLayout() {
           pathname.startsWith("/app/community/"),
       },
       makeMarketplaceItem(),
+      makeShopGalleryItem(myShopGalleryTo),
       makeFinanceItem(),
       makeTrustPassportItem(),
     ];
@@ -1409,11 +1414,11 @@ export default function AppLayout() {
       ];
     }
 
-    return [
-      {
-        title: "Shop & storefront",
-        items: commerceItems,
-      },
+      return [
+        {
+          title: "Shop tools",
+          items: commerceItems,
+        },
       {
         title: "Finance tools",
         items: financeToolsItems,
@@ -1463,9 +1468,9 @@ export default function AppLayout() {
               {taskMode ? "Task focus mode" : "Movement order"}
             </div>
             <div style={noteText()}>
-              {taskMode
-                ? taskMode.hint
-                : "Dashboard leads to Community Home. Community Home leads to Marketplace. Marketplace leads to Finance and Trust Passport when deeper money or trust work is needed."}
+                {taskMode
+                  ? taskMode.hint
+                  : "Dashboard leads to Community Home. Community Home leads to Marketplace. Marketplace leads to Shop, Finance, and Trust Passport when deeper work is needed."}
             </div>
           </div>
 
@@ -1596,7 +1601,7 @@ export default function AppLayout() {
               <div style={brandText()}>
                 {taskMode
                   ? taskMode.hint
-                  : "The main routes stay simple. This drawer holds the grouped supporting pages."}
+                  : "The main routes stay simple. Shop now sits with the main movement while this drawer holds the grouped supporting pages."}
               </div>
             </div>
 

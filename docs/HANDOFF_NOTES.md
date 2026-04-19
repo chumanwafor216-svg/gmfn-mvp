@@ -43,6 +43,58 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-19
 
 #### Workstream
+Shared shell movement updated so Shop regains main-domain visibility while
+Shop Control remains a supporting shop tool.
+
+#### Routes/screens affected
+- Shared `/app/*` shell movement and page tools, especially:
+  - `/app/dashboard`
+  - `/app/community`
+  - `/app/marketplace`
+  - `/app/finance`
+  - `/app/trust`
+  - `/app/shop/*`
+
+#### Backend routes/endpoints involved
+- none
+
+#### Files in play
+- `frontend/src/layout/AppLayout.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- `Shop` now sits in the shell's main movement row with:
+  - `Dashboard`
+  - `Community Home`
+  - `Marketplace`
+  - `Shop`
+  - `Finance`
+  - `Trust Passport`
+- `Shop Control` remains reachable under a supporting `Shop tools` group.
+- Mobile bottom navigation now includes `Shop` as a first-class movement item.
+- Route/page metadata for `/app/shop/*` now reads as part of main movement
+  instead of a secondary storefront-only grouping.
+- Dashboard, Community Home, Marketplace, and Shop Control page tools now give
+  clearer direct access to `Shop`.
+- `npm run build` passed in `frontend` after the shell change.
+
+#### Open risks or unknowns
+- This was build-verified, but not followed by a fresh live mobile route sweep
+  of the updated shell movement.
+- The broader architecture docs still need a deeper future rewrite so their
+  examples fully align with the refined canonical skeleton.
+
+#### Next recommended step
+- Review the updated shell live, especially `Shop` visibility on mobile and
+  desktop, then continue the next architecture-alignment pass from the corrected
+  canonical skeleton.
+
+### Previous update
+
+#### Date
+2026-04-19
+
+#### Workstream
 Canonical architecture skeleton refined with cumulative Finance/Trust Passport
 meaning and aggregate Spotlight/Demand Box ownership.
 
@@ -102,8 +154,6 @@ meaning and aggregate Spotlight/Demand Box ownership.
 - Review the refined canonical skeleton before further route or navigation
   changes, then revise the architecture docs and shell movement from that
   corrected basis.
-
-### Previous update
 
 #### Date
 2026-04-19
