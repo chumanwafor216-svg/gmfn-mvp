@@ -41,6 +41,55 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-19
 
 #### Workstream
+Phase 2 dashboard reduction: Spotlight downgraded from oversized hero surface
+to compact summary/launcher behavior.
+
+#### Routes/screens affected
+- `/app/dashboard`
+
+#### Backend routes/endpoints involved
+- none
+
+#### Files in play
+- `frontend/src/pages/DashboardPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Dashboard Spotlight no longer leads with the large media-and-seller-dock
+  treatment on the visible face.
+- The live dashboard face now presents Spotlight as:
+  - a compact summary card
+  - trust/status chips
+  - a smaller media thumb when available on desktop
+  - launcher actions into Marketplace and Shop
+  - a minimize control
+- This keeps Spotlight available on the dashboard but reduces its domain-owner
+  feel, matching the production IA goal that Dashboard should behave like a
+  member workspace rather than a second command centre.
+- The previous oversized spotlight renderer is still parked in the file behind
+  a dormant false branch for reversibility during this recovery phase.
+- `npm run build` passed in `frontend` after the reduction.
+
+#### Open risks or unknowns
+- The dormant legacy spotlight block should be removed in a later cleanup pass
+  once this compact form is confirmed stable.
+- This pass did not change backend behavior or route contracts.
+- This pass was build-verified, but not yet followed by a fresh live mobile
+  click sweep.
+
+#### Next recommended step
+- Do a quick live dashboard check for:
+  - Spotlight open/minimize behavior
+  - Marketplace / Shop launch buttons
+- If stable, continue Phase 2 by trimming the next heaviest dashboard-owned
+  surface instead of reopening shared-shell work.
+
+### Previous update
+
+#### Date
+2026-04-19
+
+#### Workstream
 Primary shell navigation realignment to the production workspace spine.
 
 #### Routes/screens affected

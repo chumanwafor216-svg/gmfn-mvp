@@ -3312,6 +3312,8 @@ export default function DashboardPage() {
     [spotlightVideoSrc]
   );
   const spotlightVideoCandidate = spotlightVideoCandidates[0] || "";
+  const spotlightHasMedia =
+    spotlightImageCandidates.length > 0 || Boolean(spotlightVideoCandidate);
   const spotlightExpiryStatus = useMemo(
     () => describeSpotlightExpiry(activeSpotlight),
     [activeSpotlight]
@@ -5397,8 +5399,9 @@ export default function DashboardPage() {
   const dashboardSpotlightRadius = isCompact ? 20 : 24;
   const dashboardSpotlightTopInset = isCompact ? 6 : 8;
   const dashboardSpotlightBottomInset = isCompact ? 6 : 8;
-  const dashboardSpotlightTitleSize = isCompact ? 15 : 20;
-  const dashboardSpotlightBodyFontSize = isCompact ? 10 : 11;
+  const dashboardSpotlightThumbSize = isCompact ? 84 : 112;
+  const dashboardSpotlightTitleSize = isCompact ? 18 : 22;
+  const dashboardSpotlightBodyFontSize = isCompact ? 12.5 : 13.5;
   const dashboardActionGrid = (
     minWidth = isCompact ? 112 : 132
   ): React.CSSProperties => ({
@@ -7122,6 +7125,212 @@ export default function DashboardPage() {
             Loading spotlight...
           </div>
         ) : activeSpotlight ? (
+          <>
+            <div
+              style={{
+                marginTop: 16,
+                ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
+                border: "1px solid rgba(11,99,209,0.12)",
+                boxShadow:
+                  "0 20px 40px rgba(15,59,116,0.08), inset 0 1px 0 rgba(255,255,255,0.8)",
+              }}
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    !isCompact && spotlightHasMedia
+                      ? `${dashboardSpotlightThumbSize}px minmax(0, 1fr)`
+                      : "1fr",
+                  gap: 14,
+                  alignItems: "start",
+                }}
+              >
+                {!isCompact && spotlightHasMedia ? (
+                  <SpotlightMediaFrame
+                    imageCandidates={spotlightImageCandidates}
+                    videoUrl={spotlightVideoCandidate}
+                    videoPoster={spotlightImageCandidates[0] || ""}
+                    alt={safeStr(
+                      activeSpotlight?.title ||
+                        activeSpotlight?.message ||
+                        "Spotlight"
+                    )}
+                    frameStyle={{
+                      width: dashboardSpotlightThumbSize,
+                      height: dashboardSpotlightThumbSize,
+                      borderRadius: 18,
+                      overflow: "hidden",
+                      border: "1px solid rgba(184,137,45,0.24)",
+                      background:
+                        "linear-gradient(180deg, #0D2742 0%, #0F3B74 62%, #0B63D1 100%)",
+                      boxShadow:
+                        "0 16px 30px rgba(15,59,116,0.14), inset 0 1px 0 rgba(255,255,255,0.12)",
+                    }}
+                    mediaStyle={{
+                      width: "100%",
+                      height: "100%",
+                    }}
+                    contentPadding={10}
+                    showVideoControls={false}
+                    autoPlayVideo={Boolean(spotlightVideoCandidate)}
+                    mutedVideo={Boolean(spotlightVideoCandidate)}
+                    loopVideo={Boolean(spotlightVideoCandidate)}
+                    fallback={
+                      <div
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#F8FBFF",
+                          fontWeight: 900,
+                          letterSpacing: 0.8,
+                          fontSize: 18,
+                        }}
+                      >
+                        GSN
+                      </div>
+                    }
+                  />
+                ) : null}
+
+                <div style={{ display: "grid", gap: 12 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 8,
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span style={badge(true)}>
+                      {safeStr(activeSpotlight.trust_band || "Trusted member")}
+                    </span>
+                    <span
+                      style={{
+                        ...badge(false),
+                        background: spotlightExpiryStatus.urgent
+                          ? "rgba(249,115,22,0.10)"
+                          : "rgba(11,99,209,0.08)",
+                        color: spotlightExpiryStatus.urgent ? "#9A3412" : "#1D4ED8",
+                      }}
+                    >
+                      {spotlightExpiryStatus.chip}
+                    </span>
+                    <span
+                      style={{
+                        ...badge(false),
+                        background: spotlightHasMedia
+                          ? "rgba(15,59,116,0.08)"
+                          : "rgba(249,115,22,0.10)",
+                        color: spotlightHasMedia ? "#0F3B74" : "#9A3412",
+                      }}
+                    >
+                      {spotlightHasMedia ? "Media ready" : "Media unavailable"}
+                    </span>
+                    {!isCompact ? (
+                      <span style={badge(false)}>
+                        {safeDateTime(activeSpotlight.created_at) || "—"}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div
+                    style={{
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      fontSize: dashboardSpotlightTitleSize,
+                      lineHeight: 1.15,
+                      maxWidth: 760,
+                    }}
+                  >
+                    {safeStr(
+                      activeSpotlight.title ||
+                        activeSpotlight.message ||
+                        "Community Spotlight"
+                    )}
+                  </div>
+
+                  <div style={{ ...helperText(), maxWidth: 820 }}>
+                    {safeStr(
+                      activeSpotlight.source_shop_name ||
+                        activeSpotlight.author_name ||
+                        "Community seller"
+                    )}{" "}
+                    •{" "}
+                    {safeStr(
+                      activeSpotlight.source_clan_name ||
+                        currentCommunityName(currentClan, selectedClanId)
+                    )}
+                  </div>
+
+                  {safeStr(activeSpotlight.body || "") ? (
+                    <div
+                      style={{
+                        color: "#475569",
+                        fontSize: dashboardSpotlightBodyFontSize,
+                        lineHeight: 1.65,
+                        maxWidth: 860,
+                        display: "-webkit-box",
+                        WebkitBoxOrient: "vertical",
+                        WebkitLineClamp: isCompact ? 2 : 3,
+                        overflow: "hidden",
+                      }}
+                    >
+                      {safeStr(activeSpotlight.body || "")}
+                    </div>
+                  ) : null}
+
+                  <div
+                    style={{
+                      color: spotlightExpiryStatus.urgent ? "#9A3412" : "#1D4ED8",
+                      fontSize: 13,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {spotlightExpiryStatus.detail}
+                  </div>
+
+                  <div style={{ ...helperText(), maxWidth: 860 }}>
+                    Dashboard now keeps spotlight as a quick summary. Open the
+                    marketplace or shop for the fuller seller and media context.
+                  </div>
+
+                  <div style={{ ...dashboardActionGrid(isCompact ? 128 : 152) }}>
+                    <button
+                      type="button"
+                      onClick={openSpotlightMarketplace}
+                      onPointerDown={consumeDashboardPointerEvent}
+                      style={dashboardFillButton(secondaryBtn(false))}
+                    >
+                      Open marketplace
+                    </button>
+                    {safeStr(activeSpotlight.author_gmfn_id || "") ? (
+                      <button
+                        type="button"
+                        onClick={openSpotlightShop}
+                        onPointerDown={consumeDashboardPointerEvent}
+                        style={dashboardFillButton(secondaryBtn(false))}
+                      >
+                        Open shop
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={minimizeSpotlight}
+                      onPointerDown={consumeDashboardPointerEvent}
+                      style={dashboardFillButton(subtleBtn(false))}
+                    >
+                      Minimize
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {false ? ((activeSpotlight: SpotlightItem) => (
           <div
             style={{
               marginTop: 16,
@@ -7285,7 +7494,7 @@ export default function DashboardPage() {
                       backdropFilter: "blur(10px)",
                     }}
                   >
-                    {safeStr(activeSpotlight.trust_band || "Trusted member")}
+                    {safeStr(activeSpotlight!.trust_band || "Trusted member")}
                   </span>
 
                   <span
@@ -7404,8 +7613,8 @@ export default function DashboardPage() {
                   }}
                 >
                   {safeStr(
-                    activeSpotlight.source_shop_name ||
-                      activeSpotlight.author_name ||
+                    activeSpotlight!.source_shop_name ||
+                      activeSpotlight!.author_name ||
                       "Community seller"
                   )}
                 </div>
@@ -7425,13 +7634,13 @@ export default function DashboardPage() {
                   }}
                 >
                   {safeStr(
-                    activeSpotlight.title ||
-                      activeSpotlight.message ||
+                    activeSpotlight!.title ||
+                      activeSpotlight!.message ||
                       "Community Spotlight"
                   )}
                 </div>
 
-                {!isCompact && safeStr(activeSpotlight.body || "") ? (
+                {!isCompact && safeStr(activeSpotlight!.body || "") ? (
                   <div
                     style={{
                       color: "rgba(255,255,255,0.90)",
@@ -7444,7 +7653,7 @@ export default function DashboardPage() {
                       overflow: "hidden",
                     }}
                   >
-                    {safeStr(activeSpotlight.body || "")}
+                    {safeStr(activeSpotlight!.body || "")}
                   </div>
                 ) : null}
               </div>
@@ -7684,6 +7893,8 @@ export default function DashboardPage() {
               </div>
             ) : null}
           </div>
+            ))(activeSpotlight!) : null}
+          </>
         ) : latestSpotlightSnapshot ? (
           <div
             style={{
