@@ -43,6 +43,63 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-19
 
 #### Workstream
+Canonical marketplace-owned invite-link rule added so future route and IA work
+keeps invite ownership localized to each marketplace/community unit.
+
+#### Routes/screens affected
+- architecture guidance for:
+  - `/app/marketplace`
+  - `/app/community`
+  - `/app/dashboard`
+  - `/app/shop/*`
+  - invite-return flows tied to one community/marketplace
+
+#### Backend routes/endpoints involved
+- confirmed existing marketplace/community invite route:
+  - `GET /clans/{clan_id}/invite-link`
+- confirmed existing vault-access-link infrastructure:
+  - marketplace/vault-access-link and vault-link routes used by frontend API
+
+#### Files in play
+- `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`
+- `docs/HANDOFF_NOTES.md`
+- inspected implementation references:
+  - `frontend/src/pages/MarketplacePage.tsx`
+  - `frontend/src/pages/MarketplaceWorkspacePage.tsx`
+  - `frontend/src/lib/api.ts`
+  - `gmfn_backend/app/api/routes/clans.py`
+  - `gmfn_backend/app/services/vault_access_service.py`
+
+#### Confirmed facts
+- The canonical skeleton now states that invite links live in Marketplace, not
+  in Dashboard and not in the aggregate Community Home layer.
+- The skeleton now records that each marketplace should inherit a
+  marketplace-owned invite-link set by default.
+- Current code confirms:
+  - a marketplace/community join invite route
+  - a sketched shop-view link in Marketplace workspace references
+  - real vault-access-link infrastructure
+- The fourth outward marketplace link family was not renamed from code alone;
+  the skeleton keeps that part generic as additional marketplace-specific
+  outward viewing/access links so future implementation does not invent the
+  wrong label.
+
+#### Open risks or unknowns
+- This was a documentation checkpoint only; no runtime route behavior changed.
+- The exact final user-facing labels for all four marketplace invite-link
+  families still need to be stabilized in product copy and implementation.
+
+#### Next recommended step
+- When marketplace IA work resumes, build the marketplace invite-link surface
+  from this canonical rule and map each outward link family explicitly in the
+  Marketplace UI and APIs.
+
+### Previous update
+
+#### Date
+2026-04-19
+
+#### Workstream
 Marketplace crossover shortcuts reduced so Community Home keeps first-circle
 ownership and Marketplace stays closer to commerce/support work.
 

@@ -113,6 +113,7 @@ Every marketplace should contain the core operational tools for that one
 community, including:
 
 - Shop Gallery
+- marketplace-owned invite links
 - marketplace-specific finance activity
 - Borrow / Lend / Support
 - marketplace demand participation
@@ -127,6 +128,47 @@ Important distinction:
 
 - Marketplace is the unit where one community's own activity happens
 - some domains are then combined upward across multiple marketplaces
+
+## Marketplace-owned invite links
+Invite links belong to Marketplace, not to Dashboard and not to the combined
+Community Home layer.
+
+Reason:
+
+- invite links are customized for one marketplace/community unit
+- their wording should suit that marketplace
+- they travel outward from that marketplace to outsiders or returning members
+- they carry that marketplace/community identity with them so return decisions
+  resolve back into the same marketplace context
+
+This means every marketplace should be treated as owning a marketplace-specific
+invite-link set by default.
+
+The canonical marketplace invite-link set should cover outward access/use cases
+such as:
+
+- joining that marketplace/community
+- viewing the member's shop from that marketplace context
+- viewing authorized Vault content from that marketplace context
+- other marketplace-specific outward viewing/access links required by the
+  product rules of that marketplace
+
+Confirmed implementation facts in the current repo:
+
+- the current community join invite route already exists through the
+  marketplace/community invite flow
+- a shop-view link is already sketched in the Marketplace workspace references
+- vault-access-link infrastructure already exists in the frontend API layer and
+  backend services
+
+Canonical product rule:
+
+- every new marketplace should inherit the marketplace-owned invite-link
+  capability as part of its system-level tool set
+- those links should not be treated as cross-community Community Home tools
+  just because the member belongs to multiple communities
+- the combined Finance domain and combined Trust Passport domain may aggregate
+  meaning upward, but invite-link ownership stays localized to each marketplace
 
 ## Shop Gallery
 Shop Gallery is an offshoot of Marketplace, but it is not trivial.
@@ -343,6 +385,7 @@ Selected community
 
 Marketplace
   -> contains Shop Gallery
+  -> owns one community's outward invite-link set
   -> contains one community's finance activity
   -> contains one community's demand activity
   -> contributes one community's spotlight activity
