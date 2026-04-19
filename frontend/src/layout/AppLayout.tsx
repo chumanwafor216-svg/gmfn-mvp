@@ -610,6 +610,8 @@ function mobileShell(): React.CSSProperties {
   return {
     minHeight: "100vh",
     background: gmfnBrand.gradients.pageWash,
+    display: "flex",
+    flexDirection: "column",
   };
 }
 
@@ -761,9 +763,10 @@ function mainContent(isMobile: boolean, taskMode: boolean): React.CSSProperties 
     padding: isMobile
       ? taskMode
         ? "16px 16px 28px"
-        : "16px 16px calc(168px + env(safe-area-inset-bottom, 0px))"
+        : "16px 16px 28px"
       : "24px 28px 34px",
     overflowX: "hidden",
+    flex: isMobile ? "1 1 auto" : undefined,
   };
 }
 
@@ -962,11 +965,9 @@ function actionsLink(active = false, disabled = false): React.CSSProperties {
 
 function bottomNav(): React.CSSProperties {
   return {
-    position: "fixed",
-    left: 0,
-    right: 0,
+    position: "sticky",
     bottom: 0,
-    zIndex: 20,
+    zIndex: 18,
     display: "flex",
     gap: 8,
     overflowX: "auto",
@@ -974,6 +975,7 @@ function bottomNav(): React.CSSProperties {
     background: "rgba(255,255,255,0.98)",
     backdropFilter: "blur(10px)",
     borderTop: "1px solid rgba(11,31,51,0.08)",
+    boxShadow: "0 -10px 28px rgba(15,23,42,0.08)",
     WebkitOverflowScrolling: "touch",
   };
 }

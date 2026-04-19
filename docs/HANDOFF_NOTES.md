@@ -14,6 +14,14 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 - Separate confirmed facts from inference.
 - After substantial work, add or refresh the latest checkpoint instead of
   leaving the next session to reconstruct intent from git history alone.
+- For the current senior-engineer recovery brief, also read
+  `docs/SENIOR_ENGINEERING_HANDOVER_2026-04-19.md`.
+- For the proposed production route and page ownership model, also read
+  `docs/PRODUCTION_INFORMATION_ARCHITECTURE_BLUEPRINT_2026-04-19.md`.
+- For the proposed execution sequence from current state to that target model,
+  also read `docs/PRODUCTION_IA_IMPLEMENTATION_PLAN_2026-04-19.md`.
+- For the plain-English one-page view of that same model, also read
+  `docs/ONE_PAGE_ROUTE_MAP_2026-04-19.md`.
 
 ## Recommended checkpoint format
 - Date
@@ -28,6 +36,285 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ## Current checkpoint
 
 ### Latest update
+
+#### Date
+2026-04-19
+
+#### Workstream
+Authenticated mobile-sized route sweep after the Community Home and Marketplace
+CTA stabilization pass.
+
+#### Routes/screens affected
+- `/app/dashboard`
+- `/app/community`
+- `/app/marketplace`
+- `/app/demand-box`
+- `/app/my-gmfn-and-i?tab=settings`
+
+#### Backend routes/endpoints involved
+- `POST /auth/login`
+
+#### Files in play
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- A real authenticated headless Chrome session was created against the running
+  local frontend (`127.0.0.1:5174`) and backend (`127.0.0.1:8012`) using the
+  local test account `admin@test.com` / `pass1234`.
+- The target mobile-sized route sweep passed route-load checks for:
+  - `/app/dashboard`
+  - `/app/community`
+  - `/app/marketplace`
+  - `/app/demand-box`
+  - `/app/my-gmfn-and-i?tab=settings`
+- The following in-app click checks also passed in that authenticated session:
+  - dashboard `Community Home` -> `/app/community`
+  - dashboard `Marketplace` -> `/app/marketplace`
+  - dashboard `Open notifications` -> `/app/notifications`
+  - community `Demand Box` -> `/app/demand-box`
+  - community `Money In` -> `/app/payment/pool`
+  - community `Notifications` -> `/app/notifications`
+  - marketplace `Finance` -> `/app/finance`
+  - marketplace `Money Out` -> `/app/withdrawal-instructions`
+  - marketplace `Community Home` -> `/app/community`
+  - settings `Dashboard` -> `/app/dashboard`
+  - settings `Trust Passport` -> `/app/trust`
+- No wrong-route jumps were reproduced in this sweep for the checked buttons.
+
+#### Open risks or unknowns
+- This was a strong targeted runtime sweep, not an exhaustive click-through of
+  every single route and every single CTA in the app.
+- Dynamic shop-row links and lower-priority surfaces outside the tested set
+  should only be chased if new live reports show instability.
+
+#### Next recommended step
+- Treat the current recovery state as a valid freeze-and-commit point before
+  starting more structural or visual changes.
+
+### Earlier update
+
+#### Date
+2026-04-19
+
+#### Workstream
+Community Home and Marketplace CTA interaction-stability pass.
+
+#### Routes/screens affected
+- `/app/community`
+- `/app/marketplace`
+
+#### Backend routes/endpoints involved
+- none
+
+#### Files in play
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `frontend/src/pages/MarketplacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- `CommunityHomePage.tsx` was using `navigateWithOrigin(navigate, ..., location)`
+  without importing or initializing `useLocation`, so the page did not have the
+  same grounded route-helper setup as the dashboard or marketplace.
+- `CommunityHomePage.tsx` now has a local guarded route pattern:
+  - `consumeCommunityPointerEvent()`
+  - `consumeCommunityButtonEvent()`
+  - `openCommunityRoute()`
+- The busiest Community Home CTA clusters were converted from plain app-route
+  `OriginLink` buttons into explicit guarded buttons:
+  - no-community action row
+  - `Community command tools`
+  - `Finance File & Record`
+  - finance preview CTA rows
+  - demand summary CTA rows
+  - first-circle launch button
+- `MarketplacePage.tsx` now has the matching local guarded route pattern:
+  - `consumeMarketplacePointerEvent()`
+  - `consumeMarketplaceButtonEvent()`
+  - `openMarketplaceRoute()`
+- `openFinance()` in marketplace now consumes the click event before routing,
+  instead of routing as an unguarded button action.
+- The busiest Marketplace CTA clusters were converted from plain app-route
+  `OriginLink` buttons into explicit guarded buttons:
+  - top hero route row
+  - top money / trust row
+  - visible trust row
+  - `Money routes` launch buttons
+  - `Community shortcuts`
+  - loan workspace shortcut row
+- After this pass, the only remaining `OriginLink` in `MarketplacePage.tsx` is
+  the dynamic `row.shopTo` shop link, which was not part of the current mobile
+  misrouting pattern.
+- `npm run build` passed in `frontend` after the pass.
+
+#### Open risks or unknowns
+- This pass stabilizes the two heaviest non-dashboard CTA surfaces, but it does
+  not prove every lower-risk page in the app is now fully steady.
+- The dynamic shop-row `OriginLink` in marketplace and any similar dynamic link
+  surfaces elsewhere should be reviewed only if live QA still shows wrong-route
+  behavior after this pass.
+
+#### Next recommended step
+- Do a focused mobile-sized live QA sweep across:
+  - `/app/dashboard`
+  - `/app/community`
+  - `/app/marketplace`
+  - `/app/demand-box`
+  - `/app/my-gmfn-and-i?tab=settings`
+- If those routes now behave steadily, freeze and commit this recovery state
+  before starting any more architecture or UI reshaping.
+
+### Earlier update
+
+#### Date
+2026-04-19
+
+#### Workstream
+Dashboard spotlight missing-media hardening after confirming the live broadcast
+record points to a file that no longer exists on disk.
+
+#### Routes/screens affected
+- `/app/dashboard`
+
+#### Backend routes/endpoints involved
+- `/marketplace/broadcasts`
+- `/uploads/marketplace/images/*`
+- `/uploads/marketplace/videos/*`
+
+#### Files in play
+- `frontend/src/pages/DashboardPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The current live broadcast row in `marketplace_broadcasts` points to
+  `/uploads/marketplace/images/20260419094959_7740ce86046a82c6.jpg`, but that
+  file is missing locally and the backend returns `404` for it.
+- `DashboardPage.tsx` now resolves spotlight image and video asset URLs through
+  the same simpler `resolveSpotlightAssetUrl()` pattern used by the community
+  spotlight.
+- `frontend/src/components/SpotlightMediaFrame.tsx` now stops rendering a broken
+  image after all image candidates fail and falls back cleanly instead.
+- The dashboard spotlight now passes a branded fallback surface so a missing
+  media file shows a useful message instead of a broken-image icon.
+
+#### Open risks or unknowns
+- The current spotlight picture itself is not restored by this code change; the
+  record is still live, but the actual media file needs to be republished or
+  re-uploaded to show the real image again.
+
+#### Next recommended step
+- Build and refresh `/app/dashboard`, confirm the broken icon is gone, then
+  republish the spotlight media from Community Home or Shop Control if the real
+  picture needs to appear again.
+
+### Earlier update
+
+#### Date
+2026-04-19
+
+#### Workstream
+Dashboard spotlight interaction stabilization: defer UI-collapse mutations until
+the shield is active.
+
+#### Routes/screens affected
+- `/app/dashboard`
+
+#### Backend routes/endpoints involved
+- none
+
+#### Files in play
+- `frontend/src/pages/DashboardPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The dashboard spotlight `Minimize` and seller-panel `Close` controls both use
+  the shared `runDashboardUiMutation()` helper.
+- That helper was arming the route-local interaction shield and mutating the
+  layout in the same click cycle, which still left room for taps to fall into
+  another route target as the layout changed.
+- `runDashboardUiMutation()` now defers the layout mutation to the next
+  animation frame after the shield is armed, so the shield is already mounted
+  before the spotlight collapses or closes.
+
+#### Open risks or unknowns
+- This improves the shared dashboard layout-toggle path, but any remaining
+  wrong-route behavior should now be traced as a separate control-specific bug
+  rather than the same spotlight collapse timing issue.
+
+#### Next recommended step
+- Build and live-check the spotlight `Minimize` and seller-panel `Close`
+  controls again on `/app/dashboard`.
+
+### Earlier update
+
+#### Date
+2026-04-19
+
+#### Workstream
+Dashboard spotlight restore: reopen spotlight by default instead of restoring a closed state.
+
+#### Routes/screens affected
+- `/app/dashboard`
+
+#### Backend routes/endpoints involved
+- none
+
+#### Files in play
+- `frontend/src/pages/DashboardPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The dashboard UI state default had `spotlightMinimized: true`, so Spotlight
+  started closed by default.
+- The dashboard UI storage key has been advanced from `gmfn.dashboard.ui.v3`
+  to `gmfn.dashboard.ui.v4`, which clears the old stored minimized state and
+  lets Spotlight reopen with the new default.
+- The new default is `spotlightMinimized: false`, so Spotlight is visible on
+  the dashboard unless the user minimizes it again.
+
+#### Open risks or unknowns
+- Advancing the dashboard UI storage key also resets the saved open/closed
+  state for the other dashboard UI toggles stored in that same object.
+
+#### Next recommended step
+- Build and refresh `/app/dashboard` to confirm Spotlight now appears open
+  again, then continue with the next live dashboard check.
+
+### Earlier update
+
+#### Date
+2026-04-19
+
+#### Workstream
+Dashboard Demand Box routing correction for the `Needs attention` chip.
+
+#### Routes/screens affected
+- `/app/dashboard`
+- `/app/demand-box`
+
+#### Backend routes/endpoints involved
+- none
+
+#### Files in play
+- `frontend/src/pages/DashboardPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- In `frontend/src/pages/DashboardPage.tsx`, the Demand Box chip row treated
+  `Needs attention` as a preview toggle instead of a direct route action.
+- The `Needs attention` chip now routes straight to `/app/demand-box` through
+  the existing dashboard-local navigation helper, while the other demand chips
+  keep their current preview-toggle behavior.
+
+#### Open risks or unknowns
+- Other Demand Box chips such as `Open requests` and `Urgent` still keep the
+  older preview-first behavior. If the product owner wants those to route
+  directly as well, they should be converted deliberately rather than assumed.
+
+#### Next recommended step
+- Build and live-check the dashboard Demand Box block, then keep reviewing
+  whether any other dashboard chips should behave as direct route actions.
+
+### Earlier update
 
 #### Date
 2026-04-19
@@ -1170,6 +1457,102 @@ GSN-branded invite composer and invite-entry continuity.
     same safer pointer pattern
   - after this pass, the dashboard no longer has a mixed population of old
     touch handlers and new touch handlers on the main user-facing controls
+- The dashboard attention engine was then calmed at the shared frontend logic
+  level in `frontend/src/lib/dashboardAttentionEngine.ts` and
+  `frontend/src/pages/DashboardPage.tsx`.
+  - the popup signature no longer depends on raw counts and changing message
+    text, which were making small dashboard state changes look like a brand-new
+    issue
+  - the attention cooldown now keys off the latest real touch time
+    (`shown` / `dismissed` / `acted`) instead of only the first show time
+  - the dashboard attention storage key was advanced to
+    `gmfn.dashboard.attention.v2` so older noisy attention state does not keep
+    forcing unstable popup behavior
+  - the auto-popup also now respects document visibility, so it does not try to
+    reopen while the page is not visibly active
+- The live spotlight was then restored at the backend data level after the
+  dashboard investigation confirmed the real issue was a missing media file,
+  not a closed spotlight.
+  - the old active spotlight trio was still pointing at the deleted file
+    `/uploads/marketplace/images/20260419094959_7740ce86046a82c6.jpg`
+  - a newer uploaded replacement image already existed locally at
+    `/uploads/marketplace/images/20260419185829_6fba5ebff5f080ff.jpg`
+  - the broken active spotlight set was deleted through the real
+    `/marketplace/broadcasts/{id}` route and recreated immediately through
+    `/marketplace/broadcasts` with the same message (`mkt / Tag: 11`), same
+    shop source (`shop_id=1`), and the working replacement image path
+  - direct verification then confirmed:
+    - `/marketplace/broadcasts?limit=3` now returns the restored image path for
+      ids `59, 58, 57`
+    - `GET /uploads/marketplace/images/20260419185829_6fba5ebff5f080ff.jpg`
+      returns `200 OK`
+- The dashboard spotlight was then reduced again in
+  `frontend/src/pages/DashboardPage.tsx`.
+  - the live spotlight frame now uses a much smaller dashboard-sized height:
+    `80px` on compact/mobile and `106px` on desktop
+  - border radius, top/bottom insets, title size, and body text size were
+    reduced with it so the shorter frame still reads cleanly
+  - this was kept route-local to `/app/dashboard`; no other spotlight surface
+    was changed in this pass
+- A route recovery pass then started across `Community Home` and `Marketplace`
+  after confirming the bigger disruption was domain overlap, not one missing
+  route contract.
+  - `frontend/src/pages/CommunityHomePage.tsx` now restores the selected
+    community role on the main hero face and names the tools block as
+    `Community command tools`
+  - the main hero now reads more like a real command-centre surface:
+    - the selected community role is visible again when available
+    - the extra `Current step` noise was removed
+    - the top action now says `Open Marketplace` instead of the less precise
+      `Enter Community`
+  - `frontend/src/pages/MarketplacePage.tsx` now treats the overlapping tools
+    block as a lighter `Community shortcuts` surface instead of a second full
+    command centre
+  - marketplace tool overlap was reduced on purpose:
+    - the heavy admin-style picture/invite/community-link deck was removed from
+      the visible marketplace tools surface
+    - the tools section now defaults closed
+    - the visible shortcuts now point back to the routes that matter most from
+      marketplace context: `Community Home`, `Demand Box`, `Notifications`, and
+      `Build First Circle`
+  - intent going forward:
+    - `Community Home` = community command centre / tool anchor
+    - `Marketplace` = commerce, money-readiness, member rows, and support flow
+- The settings split was then collapsed to one live settings surface.
+  - `frontend/src/layout/AppLayout.tsx`, `frontend/src/App.tsx`,
+    `frontend/src/pages/MyGMFNAndIPage.tsx`, and route helpers already treat
+    settings as `/app/my-gmfn-and-i?tab=settings`
+  - `frontend/src/pages/ThemeSettingsPage.tsx` was confirmed to be a stale
+    standalone surface with no active references
+  - that page is now a thin redirect to the real settings tab instead of a
+    second competing settings UI
+  - intent going forward:
+    - `My GSN and I` settings tab = authoritative settings surface
+    - `ThemeSettingsPage` = legacy-safe redirect only
+- The shared explain-helper layer was then rolled back globally through
+  `frontend/src/components/ExplainToggle.tsx`.
+  - the repeated `What this does` / `What this screen does` helper surfaces had
+    spread across many pages and were adding noise while route stability was
+    still under review
+  - instead of deleting them page by page, the shared component is now switched
+    off behind one global constant so the UI can be stabilized first
+  - this keeps the rollback reversible while ruling out the helper layer as a
+    contributor to perceived clutter and fragility
+- A stronger shared interaction recovery then targeted the likely cross-route
+  source of button instability in `frontend/src/layout/AppLayout.tsx` and
+  `frontend/src/lib/dashboardAttentionEngine.ts`.
+  - the mobile bottom nav no longer behaves like a fixed overlay sitting above
+    route content
+  - the mobile shell now treats the nav as part of layout flow, with the main
+    content carrying normal bottom padding instead of living under a floating
+    nav layer
+  - intent: reduce taps landing on shell navigation when users meant to press
+    route content buttons near the bottom of the screen
+  - the dashboard Attention Guide was also calmed again at the shared engine
+    level
+  - it now auto-pops only the first time for a given issue signature, and then
+    stays quiet unless that same issue becomes long-persistent
+  - intent: keep the guidance value while removing repeated popup disruption
 
 ### Intent
 

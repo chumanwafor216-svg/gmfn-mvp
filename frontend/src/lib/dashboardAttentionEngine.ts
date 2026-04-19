@@ -201,6 +201,42 @@ function pickSourceKind(input: DashboardAttentionInput): DashboardAttentionSourc
   return "steady";
 }
 
+function buildAttentionSignature(
+  input: DashboardAttentionInput,
+  sourceKind: DashboardAttentionSourceKind
+): string {
+  const notificationPressure =
+    input.actNowCount > 0
+      ? "act-now"
+      : input.unreadCount > 0
+      ? "unread"
+      : input.totalNotifications > 0
+      ? "general"
+      : "quiet";
+  const focusPressure =
+    input.focusBehindCount > 0
+      ? "behind"
+      : input.focusWatchCount > 0
+      ? "watch"
+      : "steady";
+
+  return [
+    sourceKind,
+    cleanText(input.userClass),
+    cleanText(input.nextRouteKey),
+    notificationPressure,
+    focusPressure,
+  ].join("|");
+}
+
+function latestAttentionTouchMs(state: DashboardAttentionStoredState): number {
+  return Math.max(
+    parseTimeMs(state.lastShownAt),
+    parseTimeMs(state.lastDismissedAt),
+    parseTimeMs(state.lastActedAt)
+  );
+}
+
 function buildAttentionCopy(
   input: DashboardAttentionInput,
   sourceKind: DashboardAttentionSourceKind,
@@ -508,18 +544,7 @@ export function buildDashboardAttentionSignal(
     };
   }
 
-  const signature = [
-    sourceKind,
-    input.userClass,
-    cleanText(input.nextRouteKey),
-    cleanText(input.nextRouteCopy.issueText),
-    cleanText(input.nextRouteCopy.actionText),
-    input.totalNotifications,
-    input.actNowCount,
-    input.unreadCount,
-    input.focusBehindCount,
-    input.focusWatchCount,
-  ].join("|");
+  const signature = buildAttentionSignature(input, sourceKind);
 
   const nextState =
     storedState.signature === signature
@@ -532,9 +557,14 @@ export function buildDashboardAttentionSignal(
 
   const ageHours = hoursBetween(input.nowMs, nextState.firstSeenAt);
   const { stage, intervalHours } = buildAttentionStage(ageHours);
-  const hoursSinceLastShow = hoursBetween(input.nowMs, nextState.lastShownAt);
+  const lastTouchMs = latestAttentionTouchMs(nextState);
+  const hoursSinceLastTouch = lastTouchMs
+    ? Math.max(0, (input.nowMs - lastTouchMs) / 3600000)
+    : 0;
+  const hasShownBefore = Boolean(parseTimeMs(nextState.lastShownAt));
   const shouldShow =
-    !nextState.lastShownAt || hoursSinceLastShow >= intervalHours;
+    !hasShownBefore ||
+    (stage === "persistent" && hoursSinceLastTouch >= intervalHours);
   const copy = buildAttentionCopy(input, sourceKind, stage, nextState.showCount);
   const detailLines = buildAttentionDetailLines(input, sourceKind);
   const sourceLine =

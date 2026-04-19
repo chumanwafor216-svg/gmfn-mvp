@@ -34,10 +34,12 @@ export default function SpotlightMediaFrame(
 
   const [imageIndex, setImageIndex] = useState(0);
   const [videoFailed, setVideoFailed] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
 
   useEffect(() => {
     setImageIndex(0);
     setVideoFailed(false);
+    setImageFailed(false);
   }, [imageCandidates.join("|"), props.videoUrl]);
 
   const imageSrc = imageCandidates[imageIndex] || "";
@@ -129,7 +131,7 @@ export default function SpotlightMediaFrame(
     );
   }
 
-  if (imageSrc) {
+  if (imageSrc && !imageFailed) {
     return (
       <div style={frameStyle}>
         {backdrop}
@@ -137,12 +139,17 @@ export default function SpotlightMediaFrame(
           <img
             src={imageSrc}
             alt={props.alt}
-            onError={() =>
+            onError={() => {
               setImageIndex((prev) => {
                 const next = prev + 1;
-                return next < imageCandidates.length ? next : prev;
-              })
-            }
+                if (next < imageCandidates.length) {
+                  return next;
+                }
+
+                setImageFailed(true);
+                return prev;
+              });
+            }}
             style={mediaStyle}
           />
         </div>

@@ -303,9 +303,9 @@ type DashboardRouteActionHandler = (
   to: string
 ) => void;
 
-const DASHBOARD_UI_STORAGE_KEY = "gmfn.dashboard.ui.v3";
+const DASHBOARD_UI_STORAGE_KEY = "gmfn.dashboard.ui.v4";
 const DASHBOARD_AVATAR_STORAGE_KEY = "gmfn.member.avatar";
-const DASHBOARD_ATTENTION_STORAGE_KEY = "gmfn.dashboard.attention.v1";
+const DASHBOARD_ATTENTION_STORAGE_KEY = "gmfn.dashboard.attention.v2";
 const DASHBOARD_FOCUS_COMMITMENTS_STORAGE_KEY =
   "gmfn.dashboard.focus-commitments.v1";
 const DASHBOARD_FOCUS_EVENTS_STORAGE_KEY =
@@ -808,34 +808,9 @@ function apiOrigin(): string {
     : "";
 }
 
-function getSpotlightOrigins(): string[] {
-  const out: string[] = [];
-  const base = apiBase();
-
-  const webOrigin =
-    typeof window !== "undefined"
-      ? String(window.location.origin || "").trim().replace(/\/+$/, "")
-      : "";
-
-  if (base.startsWith("http://") || base.startsWith("https://")) {
-    try {
-      const u = new URL(base);
-      out.push(`${u.protocol}//${u.host}`);
-    } catch {
-      // ignore
-    }
-  }
-
-  if (webOrigin) {
-    out.push(webOrigin);
-  }
-
-  return [...new Set(out.filter(Boolean))];
-}
-
-function buildResolvedSpotlightCandidates(src: string): string[] {
-  const raw = safeStr(src);
-  if (!raw) return [];
+function resolveSpotlightAssetUrl(value?: string | null): string {
+  const raw = safeStr(value);
+  if (!raw) return "";
 
   if (
     raw.startsWith("http://") ||
@@ -843,22 +818,19 @@ function buildResolvedSpotlightCandidates(src: string): string[] {
     raw.startsWith("blob:") ||
     raw.startsWith("data:")
   ) {
-    return [raw];
+    return raw;
   }
 
-  const origins = getSpotlightOrigins();
-  const trimmed = raw.replace(/^\/+/, "");
-  const out: string[] = [];
+  const origin = apiOrigin();
+  if (!origin) return raw;
+  return `${origin}${raw.startsWith("/") ? raw : `/${raw}`}`;
+}
 
-  if (raw.startsWith("/")) {
-    for (const origin of origins) out.push(`${origin}${raw}`);
-  } else {
-    for (const origin of origins) out.push(`${origin}/${trimmed}`);
-  }
+function buildResolvedSpotlightCandidates(src: string): string[] {
+  const raw = safeStr(src);
+  if (!raw) return [];
 
-  out.push(raw);
-
-  return [...new Set(out.filter(Boolean))];
+  return [...new Set([resolveSpotlightAssetUrl(raw), raw].filter(Boolean))];
 }
 
 function getStoredCommunitySpotlightImage(clanId: number): string {
@@ -1970,7 +1942,7 @@ function spotlightMarketplaceTo(item: SpotlightItem | null): string {
 
 function defaultDashboardUIState(): DashboardUIState {
   return {
-    spotlightMinimized: true,
+    spotlightMinimized: false,
     routesExpanded:
       typeof window !== "undefined" ? window.innerWidth > 1100 : true,
     appsExpanded:
@@ -4799,6 +4771,12 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!attentionSignal.active || !attentionSignal.shouldShow) return;
+    if (
+      typeof document !== "undefined" &&
+      document.visibilityState !== "visible"
+    ) {
+      return;
+    }
 
     if (
       attentionPopupVisible &&
@@ -4880,7 +4858,15 @@ export default function DashboardPage() {
   ) {
     consumeDashboardButtonEvent(event);
     armDashboardInteractionShield(durationMs);
-    action();
+
+    if (typeof window === "undefined") {
+      action();
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      action();
+    });
   }
 
   function openAttentionTarget(
@@ -5407,12 +5393,12 @@ export default function DashboardPage() {
 
   const profileName = greetingName;
   const showSpotlight = !uiState.spotlightMinimized;
-  const dashboardSpotlightMinHeight = isCompact ? 132 : 176;
-  const dashboardSpotlightRadius = isCompact ? 24 : 28;
-  const dashboardSpotlightTopInset = isCompact ? 8 : 12;
-  const dashboardSpotlightBottomInset = isCompact ? 8 : 12;
-  const dashboardSpotlightTitleSize = isCompact ? 17 : 24;
-  const dashboardSpotlightBodyFontSize = isCompact ? 11 : 12;
+  const dashboardSpotlightMinHeight = isCompact ? 80 : 106;
+  const dashboardSpotlightRadius = isCompact ? 20 : 24;
+  const dashboardSpotlightTopInset = isCompact ? 6 : 8;
+  const dashboardSpotlightBottomInset = isCompact ? 6 : 8;
+  const dashboardSpotlightTitleSize = isCompact ? 15 : 20;
+  const dashboardSpotlightBodyFontSize = isCompact ? 10 : 11;
   const dashboardActionGrid = (
     minWidth = isCompact ? 112 : 132
   ): React.CSSProperties => ({
@@ -7195,6 +7181,68 @@ export default function DashboardPage() {
                   autoPlayVideo={Boolean(spotlightVideoCandidate)}
                   mutedVideo={Boolean(spotlightVideoCandidate)}
                   loopVideo={Boolean(spotlightVideoCandidate)}
+                  fallback={
+                    <div
+                      style={{
+                        minHeight: dashboardSpotlightMinHeight,
+                        width: "100%",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 10,
+                        padding: isCompact ? 16 : 22,
+                        textAlign: "center",
+                        color: "#F8FBFF",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: isCompact ? 54 : 66,
+                          height: isCompact ? 54 : 66,
+                          borderRadius: 999,
+                          border: "1px solid rgba(255,255,255,0.20)",
+                          background:
+                            "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18) 0%, rgba(212,175,55,0.12) 32%, rgba(11,31,51,0.22) 100%)",
+                          boxShadow:
+                            "0 14px 28px rgba(2,12,27,0.26), inset 0 1px 0 rgba(255,255,255,0.08)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontWeight: 900,
+                          fontSize: isCompact ? 18 : 22,
+                          letterSpacing: 0.8,
+                        }}
+                      >
+                        GSN
+                      </div>
+
+                      <div
+                        style={{
+                          fontWeight: 900,
+                          fontSize: isCompact ? 13 : 15,
+                          lineHeight: 1.45,
+                          maxWidth: 380,
+                        }}
+                      >
+                        Spotlight is live, but the media file is unavailable right
+                        now.
+                      </div>
+
+                      <div
+                        style={{
+                          fontSize: isCompact ? 11.5 : 12.5,
+                          lineHeight: 1.6,
+                          color: "rgba(231,238,248,0.90)",
+                          maxWidth: 420,
+                        }}
+                      >
+                        Re-open or republish the spotlight media from Community
+                        Home or Shop Control if you want the picture to appear
+                        again.
+                      </div>
+                    </div>
+                  }
                 />
               ) : null}
 
@@ -7888,19 +7936,28 @@ export default function DashboardPage() {
           >
             {demandDetailPanels.map((panel) => {
               const selected = demandPanelOpenKey === panel.key;
+              const routesStraightToDemandBox =
+                panel.chipLabel === "Needs attention";
 
               return (
                 <button
                   key={`dashboard-demand-chip-${panel.key}`}
                   type="button"
-                  onClick={(event) =>
-                    runDashboardUiMutation(event, () =>
-                      setDemandPanelOpenKey((prev) =>
-                        prev === panel.key ? "" : panel.key
-                      ),
+                  onClick={(event) => {
+                    if (routesStraightToDemandBox) {
+                      openDashboardRoute(event, panel.to);
+                      return;
+                    }
+
+                    runDashboardUiMutation(
+                      event,
+                      () =>
+                        setDemandPanelOpenKey((prev) =>
+                          prev === panel.key ? "" : panel.key
+                        ),
                       260
-                    )
-                  }
+                    );
+                  }}
                   onPointerDown={consumeDashboardPointerEvent}
                   style={{
                     ...subtleBtn(false),

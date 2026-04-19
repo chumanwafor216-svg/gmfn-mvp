@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import CommunityShopControlPanel from "../components/CommunityShopControlPanel";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
-import OriginLink from "../components/OriginLink";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { navigateWithOrigin } from "../lib/nav";
 import {
@@ -59,6 +58,14 @@ type ClanItem = {
   community_trust_band?: string | null;
   member_count?: number | null;
   members_count?: number | null;
+  role?: string | null;
+  member_role?: string | null;
+  membership_role?: string | null;
+  participant_role?: string | null;
+  community?: any;
+  profile?: any;
+  marketplace?: any;
+  clan?: any;
 };
 
 type NoticeTone = "success" | "error";
@@ -325,6 +332,21 @@ function getClanTrust(clan: ClanItem | null | undefined): string {
 function getClanMemberCount(clan: ClanItem | null | undefined): number {
   const count = Number(clan?.member_count ?? clan?.members_count ?? 0);
   return Number.isFinite(count) && count >= 0 ? count : 0;
+}
+
+function getClanRole(clan: ClanItem | null | undefined): string {
+  return (
+    firstTruthy(
+      clan?.role,
+      clan?.member_role,
+      clan?.membership_role,
+      clan?.participant_role,
+      clan?.community?.role,
+      clan?.profile?.role,
+      clan?.marketplace?.role,
+      clan?.clan?.role
+    ) || ""
+  );
 }
 
 function resolveMemberName(me: any): string {
@@ -678,6 +700,7 @@ function normalizeCollapseState(raw: any): CollapseState {
 
 export default function CommunityHomePage() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -1073,6 +1096,7 @@ export default function CommunityHomePage() {
   const selectedClanGlobalId = getClanGlobalId(selectedClan);
   const selectedClanTrust = getClanTrust(selectedClan);
   const selectedClanMemberCount = getClanMemberCount(selectedClan);
+  const selectedClanRole = getClanRole(selectedClan);
   const selectedClanId = getClanId(selectedClan);
 
   const poolAmount = getPoolAmountText(poolInfo);
@@ -1412,6 +1436,33 @@ export default function CommunityHomePage() {
 
     safeCopy(selectedClanGlobalId);
     showNotice("success", "Community ID copied.");
+  }
+
+  function consumeCommunityPointerEvent(
+    event?: React.SyntheticEvent<HTMLElement>
+  ) {
+    if (!event) return;
+    event.stopPropagation();
+  }
+
+  function consumeCommunityButtonEvent(
+    event?: React.SyntheticEvent<HTMLElement>
+  ) {
+    if (!event) return;
+
+    if (event.type === "click" || event.type === "submit") {
+      event.preventDefault();
+    }
+
+    event.stopPropagation();
+  }
+
+  function openCommunityRoute(
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    to: string
+  ) {
+    consumeCommunityButtonEvent(event);
+    navigateWithOrigin(navigate, to, location);
   }
 
   async function openSelectedMarketplace() {
@@ -1842,15 +1893,32 @@ export default function CommunityHomePage() {
               flexWrap: "wrap",
             }}
           >
-            <OriginLink to="/app/clans" style={actionBtn("primary")}>
+            <button
+              type="button"
+              onPointerDown={consumeCommunityPointerEvent}
+              onClick={(event) => openCommunityRoute(event, "/app/clans")}
+              style={actionBtn("primary")}
+            >
               Create New Community
-            </OriginLink>
-            <OriginLink to="/app/build-first-circle" style={actionBtn("secondary")}>
+            </button>
+            <button
+              type="button"
+              onPointerDown={consumeCommunityPointerEvent}
+              onClick={(event) =>
+                openCommunityRoute(event, "/app/build-first-circle")
+              }
+              style={actionBtn("secondary")}
+            >
               Build Your First Circle
-            </OriginLink>
-            <OriginLink to="/app/dashboard" style={actionBtn("secondary")}>
+            </button>
+            <button
+              type="button"
+              onPointerDown={consumeCommunityPointerEvent}
+              onClick={(event) => openCommunityRoute(event, "/app/dashboard")}
+              style={actionBtn("secondary")}
+            >
               Dashboard
-            </OriginLink>
+            </button>
           </div>
         </section>
       </div>
@@ -2013,18 +2081,20 @@ export default function CommunityHomePage() {
                     border: "1px solid rgba(255,255,255,0.08)",
                   }}
                 >
-                  Current page: Community Home
+                  Home command centre
                 </span>
-                <span
-                  style={{
-                    ...badge(false),
-                    background: "rgba(255,255,255,0.12)",
-                    color: "#F8FBFF",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                  }}
-                >
-                  Current step: Confirm community
-                </span>
+                {selectedClanRole ? (
+                  <span
+                    style={{
+                      ...badge(false),
+                      background: "rgba(255,255,255,0.12)",
+                      color: "#F8FBFF",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                    }}
+                  >
+                    Role: {selectedClanRole}
+                  </span>
+                ) : null}
               </div>
 
               <div
@@ -2046,7 +2116,7 @@ export default function CommunityHomePage() {
                 >
                   {changingClanId === selectedClanId
                     ? "Opening..."
-                    : "Enter Community"}
+                    : "Open Marketplace"}
                 </button>
 
                 <button
@@ -2106,7 +2176,7 @@ export default function CommunityHomePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Community tools</div>
+            <div style={sectionLabel()}>Community command tools</div>
             <div
               style={{
                 marginTop: 8,
@@ -2115,7 +2185,8 @@ export default function CommunityHomePage() {
                 lineHeight: 1.75,
               }}
             >
-              Keep your main community actions together so the next step stays clear.
+              Keep the main community actions together here so Community Home stays
+              the command centre for this workspace.
             </div>
           </div>
 
@@ -2137,9 +2208,14 @@ export default function CommunityHomePage() {
               gap: 10,
             }}
           >
-            <OriginLink to="/app/clans" style={actionBtn("primary")}>
+            <button
+              type="button"
+              onPointerDown={consumeCommunityPointerEvent}
+              onClick={(event) => openCommunityRoute(event, "/app/clans")}
+              style={actionBtn("primary")}
+            >
               Create New Community
-            </OriginLink>
+            </button>
 
             <button
               type="button"
@@ -2150,12 +2226,18 @@ export default function CommunityHomePage() {
               Copy Invite Link
             </button>
 
-            <OriginLink to="/app/demand-box" style={actionBtn("secondary")}>
+            <button
+              type="button"
+              onPointerDown={consumeCommunityPointerEvent}
+              onClick={(event) => openCommunityRoute(event, "/app/demand-box")}
+              style={actionBtn("secondary")}
+            >
               Demand Box
-            </OriginLink>
+            </button>
 
             <button
               type="button"
+              onPointerDown={consumeCommunityPointerEvent}
               onClick={openGrowYourCircle}
               style={actionBtn("secondary")}
             >
@@ -2164,6 +2246,7 @@ export default function CommunityHomePage() {
 
             <button
               type="button"
+              onPointerDown={consumeCommunityPointerEvent}
               onClick={openSpotlightGears}
               style={actionBtn("secondary")}
             >
@@ -2172,26 +2255,45 @@ export default function CommunityHomePage() {
 
             <button
               type="button"
+              onPointerDown={consumeCommunityPointerEvent}
               onClick={openShopControlPanel}
               style={actionBtn("secondary")}
             >
               Shop Control
             </button>
 
-            <OriginLink to="/app/notifications" style={actionBtn("secondary")}>
+            <button
+              type="button"
+              onPointerDown={consumeCommunityPointerEvent}
+              onClick={(event) => openCommunityRoute(event, "/app/notifications")}
+              style={actionBtn("secondary")}
+            >
               Notifications
-            </OriginLink>
-
-            <OriginLink to="/app/payment/pool" style={actionBtn("secondary")}>
-              Money In
-            </OriginLink>
-
-            <OriginLink to="/app/withdrawal-instructions" style={actionBtn("secondary")}>
-              Money Out
-            </OriginLink>
+            </button>
 
             <button
               type="button"
+              onPointerDown={consumeCommunityPointerEvent}
+              onClick={(event) => openCommunityRoute(event, "/app/payment/pool")}
+              style={actionBtn("secondary")}
+            >
+              Money In
+            </button>
+
+            <button
+              type="button"
+              onPointerDown={consumeCommunityPointerEvent}
+              onClick={(event) =>
+                openCommunityRoute(event, "/app/withdrawal-instructions")
+              }
+              style={actionBtn("secondary")}
+            >
+              Money Out
+            </button>
+
+            <button
+              type="button"
+              onPointerDown={consumeCommunityPointerEvent}
               onClick={() => void openSelectedMarketplace()}
               disabled={!selectedClanId || changingClanId === selectedClanId}
               style={actionBtn(
@@ -2297,21 +2399,48 @@ export default function CommunityHomePage() {
             ) : null}
 
             <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <OriginLink to="/app/finance" style={actionBtn("primary")}>
+              <button
+                type="button"
+                onPointerDown={consumeCommunityPointerEvent}
+                onClick={(event) => openCommunityRoute(event, "/app/finance")}
+                style={actionBtn("primary")}
+              >
                 Open Finance
-              </OriginLink>
-              <OriginLink to="/app/payment/pool" style={actionBtn("secondary")}>
+              </button>
+              <button
+                type="button"
+                onPointerDown={consumeCommunityPointerEvent}
+                onClick={(event) => openCommunityRoute(event, "/app/payment/pool")}
+                style={actionBtn("secondary")}
+              >
                 Money In
-              </OriginLink>
-              <OriginLink to="/app/withdrawal-instructions" style={actionBtn("secondary")}>
+              </button>
+              <button
+                type="button"
+                onPointerDown={consumeCommunityPointerEvent}
+                onClick={(event) =>
+                  openCommunityRoute(event, "/app/withdrawal-instructions")
+                }
+                style={actionBtn("secondary")}
+              >
                 Money Out
-              </OriginLink>
-              <OriginLink to="/app/payment-rails" style={actionBtn("soft")}>
+              </button>
+              <button
+                type="button"
+                onPointerDown={consumeCommunityPointerEvent}
+                onClick={(event) => openCommunityRoute(event, "/app/payment-rails")}
+                style={actionBtn("soft")}
+              >
                 Payment Rails
-              </OriginLink>
-              <OriginLink to="/app/payout-details" style={actionBtn("soft")}>
+              </button>
+              <button
+                type="button"
+                onPointerDown={consumeCommunityPointerEvent}
+                onClick={(event) => openCommunityRoute(event, "/app/payout-details")}
+                style={actionBtn("soft")}
+              >
                 Payout Details
-              </OriginLink>
+              </button>
             </div>
           </div>
 
@@ -2420,12 +2549,26 @@ export default function CommunityHomePage() {
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <OriginLink to="/app/payment-rails" style={actionBtn("soft")}>
+                      <button
+                        type="button"
+                        onPointerDown={consumeCommunityPointerEvent}
+                        onClick={(event) =>
+                          openCommunityRoute(event, "/app/payment-rails")
+                        }
+                        style={actionBtn("soft")}
+                      >
                         Review Payment Rails
-                      </OriginLink>
-                      <OriginLink to="/app/payout-details" style={actionBtn("soft")}>
+                      </button>
+                      <button
+                        type="button"
+                        onPointerDown={consumeCommunityPointerEvent}
+                        onClick={(event) =>
+                          openCommunityRoute(event, "/app/payout-details")
+                        }
+                        style={actionBtn("soft")}
+                      >
                         Review Payout Details
-                      </OriginLink>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -2479,21 +2622,33 @@ export default function CommunityHomePage() {
                               .join(" - ")}
                           </div>
                           <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                            <OriginLink to="/app/finance" style={actionBtn("soft")}>
+                            <button
+                              type="button"
+                              onPointerDown={consumeCommunityPointerEvent}
+                              onClick={(event) =>
+                                openCommunityRoute(event, "/app/finance")
+                              }
+                              style={actionBtn("soft")}
+                            >
                               Open Finance Record
-                            </OriginLink>
-                            <OriginLink
-                              to={
-                                expectedPaymentState(item) === "Awaiting issue"
-                                  ? "/app/payment/pool"
-                                  : "/app/payment-rails"
+                            </button>
+                            <button
+                              type="button"
+                              onPointerDown={consumeCommunityPointerEvent}
+                              onClick={(event) =>
+                                openCommunityRoute(
+                                  event,
+                                  expectedPaymentState(item) === "Awaiting issue"
+                                    ? "/app/payment/pool"
+                                    : "/app/payment-rails"
+                                )
                               }
                               style={actionBtn("soft")}
                             >
                               {expectedPaymentState(item) === "Awaiting issue"
                                 ? "Open Money In"
                                 : "Open Payment Rails"}
-                            </OriginLink>
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -2583,15 +2738,32 @@ export default function CommunityHomePage() {
             ) : null}
 
             <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <OriginLink to="/app/demand-box#demand-box-create" style={actionBtn("primary")}>
+              <button
+                type="button"
+                onPointerDown={consumeCommunityPointerEvent}
+                onClick={(event) =>
+                  openCommunityRoute(event, "/app/demand-box#demand-box-create")
+                }
+                style={actionBtn("primary")}
+              >
                 Create Demand
-              </OriginLink>
-              <OriginLink to="/app/demand-box" style={actionBtn("secondary")}>
+              </button>
+              <button
+                type="button"
+                onPointerDown={consumeCommunityPointerEvent}
+                onClick={(event) => openCommunityRoute(event, "/app/demand-box")}
+                style={actionBtn("secondary")}
+              >
                 Open Demand Box
-              </OriginLink>
-              <OriginLink to="/app/notifications" style={actionBtn("soft")}>
+              </button>
+              <button
+                type="button"
+                onPointerDown={consumeCommunityPointerEvent}
+                onClick={(event) => openCommunityRoute(event, "/app/notifications")}
+                style={actionBtn("soft")}
+              >
                 Open Action Inbox
-              </OriginLink>
+              </button>
             </div>
           </div>
 
@@ -2655,9 +2827,14 @@ export default function CommunityHomePage() {
                       <span style={badge(false)}>
                         {isMineDemandRow(row, me) ? "My demand" : "Community demand"}
                       </span>
-                      <OriginLink to="/app/demand-box" style={actionBtn("soft")}>
+                      <button
+                        type="button"
+                        onPointerDown={consumeCommunityPointerEvent}
+                        onClick={(event) => openCommunityRoute(event, "/app/demand-box")}
+                        style={actionBtn("soft")}
+                      >
                         Manage in Demand Box
-                      </OriginLink>
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -2787,9 +2964,16 @@ export default function CommunityHomePage() {
                   flexWrap: "wrap",
                 }}
               >
-                <OriginLink to="/app/build-first-circle" style={actionBtn("primary")}>
+                <button
+                  type="button"
+                  onPointerDown={consumeCommunityPointerEvent}
+                  onClick={(event) =>
+                    openCommunityRoute(event, "/app/build-first-circle")
+                  }
+                  style={actionBtn("primary")}
+                >
                   Open First Circle
-                </OriginLink>
+                </button>
 
                 <button
                   type="button"

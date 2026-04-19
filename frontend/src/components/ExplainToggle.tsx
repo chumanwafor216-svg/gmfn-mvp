@@ -1,5 +1,9 @@
 import React, { useState } from "react";
 
+// Shared rollback switch: hide helper explain surfaces globally while we
+// stabilize route behavior and reduce UI noise.
+const EXPLAIN_TOGGLES_ENABLED = false;
+
 type ExplainToggleProps = {
   label: string;
   what: string;
@@ -83,6 +87,10 @@ function toneStyles(tone: "light" | "blue" | "dark"): {
 }
 
 export default function ExplainToggle(props: ExplainToggleProps) {
+  if (!EXPLAIN_TOGGLES_ENABLED) {
+    return null;
+  }
+
   const [open, setOpen] = useState(Boolean(props.defaultOpen));
   const tone = toneStyles(props.tone || "light");
 

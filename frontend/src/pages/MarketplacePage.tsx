@@ -184,7 +184,7 @@ const IMAGE_FIELD_NAMES = [
 const DEFAULT_SECTION_STATE: SectionState = {
   profile: true,
   money: true,
-  tools: true,
+  tools: false,
   members: false,
   support: false,
 };
@@ -1400,7 +1400,35 @@ export default function MarketplacePage() {
     }));
   }
 
-  function openFinance() {
+  function consumeMarketplacePointerEvent(
+    event?: React.SyntheticEvent<HTMLElement>
+  ) {
+    if (!event) return;
+    event.stopPropagation();
+  }
+
+  function consumeMarketplaceButtonEvent(
+    event?: React.SyntheticEvent<HTMLElement>
+  ) {
+    if (!event) return;
+
+    if (event.type === "click" || event.type === "submit") {
+      event.preventDefault();
+    }
+
+    event.stopPropagation();
+  }
+
+  function openMarketplaceRoute(
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    to: string
+  ) {
+    consumeMarketplaceButtonEvent(event);
+    navigateWithOrigin(navigate, to, location);
+  }
+
+  function openFinance(event?: React.SyntheticEvent<HTMLElement>) {
+    consumeMarketplaceButtonEvent(event);
     navigateWithOrigin(navigate, "/app/finance", location);
   }
 
@@ -2153,30 +2181,70 @@ export default function MarketplacePage() {
               flexWrap: "wrap",
             }}
           >
-            <OriginLink to="/app/community" style={actionBtn("secondary")}>
+            <button
+              type="button"
+              onPointerDown={consumeMarketplacePointerEvent}
+              onClick={(event) => openMarketplaceRoute(event, "/app/community")}
+              style={actionBtn("secondary")}
+            >
               Community Home
-            </OriginLink>
-            <OriginLink to="/app/dashboard" style={actionBtn("primary")}>
+            </button>
+            <button
+              type="button"
+              onPointerDown={consumeMarketplacePointerEvent}
+              onClick={(event) => openMarketplaceRoute(event, "/app/dashboard")}
+              style={actionBtn("primary")}
+            >
               Dashboard
-            </OriginLink>
-            <button type="button" onClick={openFinance} style={actionBtn("soft")}>
+            </button>
+            <button
+              type="button"
+              onPointerDown={consumeMarketplacePointerEvent}
+              onClick={openFinance}
+              style={actionBtn("soft")}
+            >
               Finance
             </button>
-            <OriginLink to="/app/notifications" style={actionBtn("soft")}>
+            <button
+              type="button"
+              onPointerDown={consumeMarketplacePointerEvent}
+              onClick={(event) => openMarketplaceRoute(event, "/app/notifications")}
+              style={actionBtn("soft")}
+            >
               Notifications
-            </OriginLink>
-            <OriginLink to="/app/trust" style={actionBtn("soft")}>
+            </button>
+            <button
+              type="button"
+              onPointerDown={consumeMarketplacePointerEvent}
+              onClick={(event) => openMarketplaceRoute(event, "/app/trust")}
+              style={actionBtn("soft")}
+            >
               Trust Passport
-            </OriginLink>
-            <OriginLink to="/app/identity" style={actionBtn("soft")}>
+            </button>
+            <button
+              type="button"
+              onPointerDown={consumeMarketplacePointerEvent}
+              onClick={(event) => openMarketplaceRoute(event, "/app/identity")}
+              style={actionBtn("soft")}
+            >
               CCI
-            </OriginLink>
-            <OriginLink to="/app/trust-slip" style={actionBtn("soft")}>
+            </button>
+            <button
+              type="button"
+              onPointerDown={consumeMarketplacePointerEvent}
+              onClick={(event) => openMarketplaceRoute(event, "/app/trust-slip")}
+              style={actionBtn("soft")}
+            >
               TrustSlip
-            </OriginLink>
-            <OriginLink to="/app/my-gmfn-and-i" style={actionBtn("soft")}>
+            </button>
+            <button
+              type="button"
+              onPointerDown={consumeMarketplacePointerEvent}
+              onClick={(event) => openMarketplaceRoute(event, "/app/my-gmfn-and-i")}
+              style={actionBtn("soft")}
+            >
               My GSN and I
-            </OriginLink>
+            </button>
           </div>
         </section>
       </div>
@@ -2266,13 +2334,23 @@ export default function MarketplacePage() {
               flexWrap: "wrap",
             }}
           >
-            <OriginLink to="/app/community" style={actionBtn("secondary")}>
+            <button
+              type="button"
+              onPointerDown={consumeMarketplacePointerEvent}
+              onClick={(event) => openMarketplaceRoute(event, "/app/community")}
+              style={actionBtn("secondary")}
+            >
               Community Home
-            </OriginLink>
+            </button>
 
-            <OriginLink to="/app/dashboard" style={actionBtn("secondary")}>
+            <button
+              type="button"
+              onPointerDown={consumeMarketplacePointerEvent}
+              onClick={(event) => openMarketplaceRoute(event, "/app/dashboard")}
+              style={actionBtn("secondary")}
+            >
               Dashboard
-            </OriginLink>
+            </button>
           </div>
 
           <div
@@ -2284,6 +2362,7 @@ export default function MarketplacePage() {
           >
             <button
               type="button"
+              onPointerDown={consumeMarketplacePointerEvent}
               onClick={openFinance}
               style={{
                 ...actionBtn("primary"),
@@ -2294,16 +2373,25 @@ export default function MarketplacePage() {
               Finance
             </button>
 
-            <OriginLink to="/app/payment/pool" style={actionBtn("secondary")}>
+            <button
+              type="button"
+              onPointerDown={consumeMarketplacePointerEvent}
+              onClick={(event) => openMarketplaceRoute(event, "/app/payment/pool")}
+              style={actionBtn("secondary")}
+            >
               Money In
-            </OriginLink>
+            </button>
 
-            <OriginLink
-              to="/app/withdrawal-instructions"
+            <button
+              type="button"
+              onPointerDown={consumeMarketplacePointerEvent}
+              onClick={(event) =>
+                openMarketplaceRoute(event, "/app/withdrawal-instructions")
+              }
               style={actionBtn("secondary")}
             >
               Money Out
-            </OriginLink>
+            </button>
           </div>
 
           <div
@@ -2313,17 +2401,32 @@ export default function MarketplacePage() {
               flexWrap: "wrap",
             }}
           >
-            <OriginLink to="/app/trust" style={actionBtn("soft")}>
+            <button
+              type="button"
+              onPointerDown={consumeMarketplacePointerEvent}
+              onClick={(event) => openMarketplaceRoute(event, "/app/trust")}
+              style={actionBtn("soft")}
+            >
               Trust Passport
-            </OriginLink>
+            </button>
 
-            <OriginLink to="/app/identity" style={actionBtn("soft")}>
+            <button
+              type="button"
+              onPointerDown={consumeMarketplacePointerEvent}
+              onClick={(event) => openMarketplaceRoute(event, "/app/identity")}
+              style={actionBtn("soft")}
+            >
               CCI
-            </OriginLink>
+            </button>
 
-            <OriginLink to="/app/trust-slip" style={actionBtn("soft")}>
+            <button
+              type="button"
+              onPointerDown={consumeMarketplacePointerEvent}
+              onClick={(event) => openMarketplaceRoute(event, "/app/trust-slip")}
+              style={actionBtn("soft")}
+            >
               TrustSlip
-            </OriginLink>
+            </button>
           </div>
         </div>
       </section>
@@ -2649,17 +2752,32 @@ export default function MarketplacePage() {
                     flexWrap: "wrap",
                   }}
                 >
-                  <OriginLink to="/app/trust" style={actionBtn("secondary")}>
+                  <button
+                    type="button"
+                    onPointerDown={consumeMarketplacePointerEvent}
+                    onClick={(event) => openMarketplaceRoute(event, "/app/trust")}
+                    style={actionBtn("secondary")}
+                  >
                     Trust Passport
-                  </OriginLink>
+                  </button>
 
-                  <OriginLink to="/app/identity" style={actionBtn("secondary")}>
+                  <button
+                    type="button"
+                    onPointerDown={consumeMarketplacePointerEvent}
+                    onClick={(event) => openMarketplaceRoute(event, "/app/identity")}
+                    style={actionBtn("secondary")}
+                  >
                     CCI
-                  </OriginLink>
+                  </button>
 
-                  <OriginLink to="/app/trust-slip" style={actionBtn("secondary")}>
+                  <button
+                    type="button"
+                    onPointerDown={consumeMarketplacePointerEvent}
+                    onClick={(event) => openMarketplaceRoute(event, "/app/trust-slip")}
+                    style={actionBtn("secondary")}
+                  >
                     TrustSlip
-                  </OriginLink>
+                  </button>
                 </div>
               </div>
             </div>
@@ -2844,9 +2962,14 @@ export default function MarketplacePage() {
               </div>
 
               <div style={{ marginTop: 14 }}>
-                <OriginLink to="/app/payment/pool" style={actionBtn("primary")}>
+                <button
+                  type="button"
+                  onPointerDown={consumeMarketplacePointerEvent}
+                  onClick={(event) => openMarketplaceRoute(event, "/app/payment/pool")}
+                  style={actionBtn("primary")}
+                >
                   Money In
-                </OriginLink>
+                </button>
               </div>
             </div>
 
@@ -2881,12 +3004,16 @@ export default function MarketplacePage() {
               </div>
 
               <div style={{ marginTop: 14 }}>
-                <OriginLink
-                  to="/app/withdrawal-instructions"
+                <button
+                  type="button"
+                  onPointerDown={consumeMarketplacePointerEvent}
+                  onClick={(event) =>
+                    openMarketplaceRoute(event, "/app/withdrawal-instructions")
+                  }
                   style={actionBtn("secondary")}
                 >
                   Money Out
-                </OriginLink>
+                </button>
               </div>
             </div>
 
@@ -2920,7 +3047,12 @@ export default function MarketplacePage() {
               </div>
 
               <div style={{ marginTop: 14 }}>
-                <button type="button" onClick={openFinance} style={actionBtn("secondary")}>
+                <button
+                  type="button"
+                  onPointerDown={consumeMarketplacePointerEvent}
+                  onClick={openFinance}
+                  style={actionBtn("secondary")}
+                >
                   Open Finance
                 </button>
               </div>
@@ -2940,9 +3072,10 @@ export default function MarketplacePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Stable community tools</div>
+            <div style={sectionLabel()}>Community shortcuts</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-               Keep your main community tools close at hand.
+              Keep only a few crossover shortcuts here. The full community
+              command tools live in Community Home.
             </div>
           </div>
 
@@ -2956,10 +3089,10 @@ export default function MarketplacePage() {
         </div>
 
         <ExplainToggle
-          label="What these tools do"
-          what="These are the stable community actions you reach for often when you need to manage visibility, identity, invites, and the main community routes."
-          why="Keeping them together here saves people from hunting across the app for the tools that support everyday marketplace and community work."
-          next="Use this area when you need to update the picture, create or open an invite, copy the community ID, or jump into the next operating page."
+          label="What these shortcuts do"
+          what="These shortcuts keep only the most relevant crossover moves close to the marketplace."
+          why="Marketplace should stay focused on commerce and support. The wider community command work belongs in Community Home."
+          next="Use Community Home for the fuller community tools, then return here when you want the marketplace, member rows, or support flow."
           tone="light"
           style={{ marginTop: 12 }}
         />
@@ -2971,256 +3104,68 @@ export default function MarketplacePage() {
                 borderRadius: 16,
                 border: "1px solid rgba(11,31,51,0.08)",
                 background: "#F8FBFF",
-                padding: 14,
+                padding: 16,
                 display: "grid",
-                gap: 12,
+                gap: 14,
               }}
             >
               <div>
-                <div style={sectionLabel()}>Community link block</div>
+                <div style={sectionLabel()}>Use Community Home for the fuller tool set</div>
                 <div style={{ marginTop: 8, ...helperText() }}>
-                  Keep these customized community links ready in every marketplace.
+                  Community Home remains the place for picture updates, invite
+                  preparation, spotlight control, and the wider community command
+                  work. Marketplace keeps only the shortcuts that help the current
+                  trade or support move.
                 </div>
               </div>
 
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
-                  gap: 12,
-                }}
-              >
-                <div style={softCard("#FFFFFF")}>
-                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>
-                    Join community invite
-                  </div>
-                  <div style={{ marginTop: 8, ...helperText() }}>
-                    Share the invite route tied to this exact community.
-                  </div>
-                  <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    <button
-                      type="button"
-                      onClick={handleOpenJoinLink}
-                      disabled={!inviteLink}
-                      style={actionBtn("secondary", !inviteLink)}
-                    >
-                      Open Join Invite
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!inviteLink) {
-                          showNotice("error", "Join invite link is not ready yet.");
-                          return;
-                        }
-                        safeCopy(inviteLink);
-                        showNotice("success", "Join invite link copied.");
-                      }}
-                      disabled={!inviteLink}
-                      style={actionBtn("secondary", !inviteLink)}
-                    >
-                      Copy Join Invite
-                    </button>
-                  </div>
-                </div>
-
-                <div style={softCard("#FFFFFF")}>
-                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>
-                    Shop gallery link
-                  </div>
-                  <div style={{ marginTop: 8, ...helperText() }}>
-                    Open the public community marketplace/shop gallery for this community.
-                  </div>
-                  <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!publicCommunityWorkspaceLink) {
-                          showNotice("error", "Community shop gallery link is not ready yet.");
-                          return;
-                        }
-                        window.open(publicCommunityWorkspaceLink, "_blank", "noopener,noreferrer");
-                      }}
-                      disabled={!publicCommunityWorkspaceLink}
-                      style={actionBtn("secondary", !publicCommunityWorkspaceLink)}
-                    >
-                      Open Shop Gallery
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!publicCommunityWorkspaceLink) {
-                          showNotice("error", "Community shop gallery link is not ready yet.");
-                          return;
-                        }
-                        safeCopy(publicCommunityWorkspaceLink);
-                        showNotice("success", "Community shop gallery link copied.");
-                      }}
-                      disabled={!publicCommunityWorkspaceLink}
-                      style={actionBtn("secondary", !publicCommunityWorkspaceLink)}
-                    >
-                      Copy Shop Gallery
-                    </button>
-                  </div>
-                </div>
-
-                <div style={softCard("#FFFFFF")}>
-                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>
-                    Vault link
-                  </div>
-                  <div style={{ marginTop: 8, ...helperText() }}>
-                    This slot stays reserved for the community vault route when that route is finalized.
-                  </div>
-                  <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    <button
-                      type="button"
-                      disabled={!publicVaultLink}
-                      style={actionBtn("secondary", !publicVaultLink)}
-                    >
-                      Vault Link Pending
-                    </button>
-                  </div>
-                </div>
-
-                <div style={softCard("#FFFFFF")}>
-                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>
-                    Create community route
-                  </div>
-                  <div style={{ marginTop: 8, ...helperText() }}>
-                    Keep the public create-community route visible from every marketplace.
-                  </div>
-                  <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!publicCreateCommunityLink) return;
-                        window.open(publicCreateCommunityLink, "_blank", "noopener,noreferrer");
-                      }}
-                      disabled={!publicCreateCommunityLink}
-                      style={actionBtn("secondary", !publicCreateCommunityLink)}
-                    >
-                      Open Create Route
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!publicCreateCommunityLink) return;
-                        safeCopy(publicCreateCommunityLink);
-                        showNotice("success", "Create community route copied.");
-                      }}
-                      disabled={!publicCreateCommunityLink}
-                      style={actionBtn("secondary", !publicCreateCommunityLink)}
-                    >
-                      Copy Create Route
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr"
-                  : "minmax(240px, 1fr) auto",
-                gap: 12,
-                alignItems: "center",
-              }}
-            >
-              <input
-                key={communityPictureFileInputKey}
-                type="file"
-                accept="image/*"
-                onChange={(e) =>
-                  void handleUploadCommunityPicture(e.target.files?.[0] || null)
-                }
-                style={inputStyle()}
-              />
-
-              <div
-                style={{
-                  display: "flex",
+                  gridTemplateColumns: isCompact
+                    ? "1fr"
+                    : "repeat(auto-fit, minmax(180px, 1fr))",
                   gap: 10,
-                  flexWrap: "wrap",
-                  justifyContent: isCompact ? "flex-start" : "flex-end",
                 }}
               >
                 <button
                   type="button"
-                  onClick={() => void handleCreateInviteLink()}
-                  disabled={creatingInviteLink}
-                  style={actionBtn("primary", creatingInviteLink)}
+                  onPointerDown={consumeMarketplacePointerEvent}
+                  onClick={(event) => openMarketplaceRoute(event, "/app/community")}
+                  style={actionBtn("primary")}
                 >
-                  {creatingInviteLink ? "Creating..." : "Create Invite Link"}
+                  Community Home
                 </button>
 
                 <button
                   type="button"
-                  onClick={handleOpenJoinLink}
-                  disabled={!inviteLink}
-                  style={actionBtn("secondary", !inviteLink)}
-                >
-                  Open Join Invite
-                </button>
-
-                <button
-                  type="button"
-                  onClick={copyCommunityId}
+                  onPointerDown={consumeMarketplacePointerEvent}
+                  onClick={(event) => openMarketplaceRoute(event, "/app/demand-box")}
                   style={actionBtn("secondary")}
                 >
-                  Copy Community ID
+                  Demand Box
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => void handleRemoveCommunityPicture()}
-                  disabled={
-                    removingCommunityPicture ||
-                    uploadingCommunityPicture ||
-                    !hasCommunityPicture
-                  }
-                  style={actionBtn(
-                    "secondary",
-                    removingCommunityPicture ||
-                      uploadingCommunityPicture ||
-                      !hasCommunityPicture
-                  )}
+                  onPointerDown={consumeMarketplacePointerEvent}
+                  onClick={(event) => openMarketplaceRoute(event, "/app/notifications")}
+                  style={actionBtn("secondary")}
                 >
-                  {removingCommunityPicture ? "Removing..." : "Remove Picture"}
+                  Notifications
+                </button>
+
+                <button
+                  type="button"
+                  onPointerDown={consumeMarketplacePointerEvent}
+                  onClick={(event) =>
+                    openMarketplaceRoute(event, "/app/build-first-circle")
+                  }
+                  style={actionBtn("secondary")}
+                >
+                  Build First Circle
                 </button>
               </div>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
-              }}
-            >
-              <OriginLink
-                to={`/app/community/${activeCommunityId}/join-requests`}
-                style={actionBtn("secondary")}
-              >
-                Join Requests
-              </OriginLink>
-
-              <OriginLink to="/app/demand-box" style={actionBtn("secondary")}>
-                Demand Box
-              </OriginLink>
-
-              <OriginLink to="/app/trust-slip" style={actionBtn("secondary")}>
-                Merchant Verify
-              </OriginLink>
-
-              <OriginLink to="/app/community" style={actionBtn("secondary")}>
-                Community Home
-              </OriginLink>
-
-              <OriginLink to="/app/build-first-circle" style={actionBtn("secondary")}>
-                Build First Circle
-              </OriginLink>
             </div>
           </div>
         ) : null}
@@ -3541,21 +3486,52 @@ export default function MarketplacePage() {
                   flexWrap: "wrap",
                 }}
               >
-                <OriginLink to="/app/loan-readiness" style={actionBtn("soft")}>
+                <button
+                  type="button"
+                  onPointerDown={consumeMarketplacePointerEvent}
+                  onClick={(event) =>
+                    openMarketplaceRoute(event, "/app/loan-readiness")
+                  }
+                  style={actionBtn("soft")}
+                >
                   Loan Readiness
-                </OriginLink>
-                <OriginLink to="/app/loan-suggestions" style={actionBtn("soft")}>
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={consumeMarketplacePointerEvent}
+                  onClick={(event) =>
+                    openMarketplaceRoute(event, "/app/loan-suggestions")
+                  }
+                  style={actionBtn("soft")}
+                >
                   Loan Suggestions
-                </OriginLink>
-                <OriginLink to="/app/loan-workbench" style={actionBtn("soft")}>
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={consumeMarketplacePointerEvent}
+                  onClick={(event) =>
+                    openMarketplaceRoute(event, "/app/loan-workbench")
+                  }
+                  style={actionBtn("soft")}
+                >
                   Loan Workbench
-                </OriginLink>
-                <button type="button" onClick={openFinance} style={actionBtn("soft")}>
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={consumeMarketplacePointerEvent}
+                  onClick={openFinance}
+                  style={actionBtn("soft")}
+                >
                   Finance
                 </button>
-                <OriginLink to="/app/loans" style={actionBtn("soft")}>
+                <button
+                  type="button"
+                  onPointerDown={consumeMarketplacePointerEvent}
+                  onClick={(event) => openMarketplaceRoute(event, "/app/loans")}
+                  style={actionBtn("soft")}
+                >
                   Full Loans View
-                </OriginLink>
+                </button>
               </div>
 
               {loanDraftId ? (
