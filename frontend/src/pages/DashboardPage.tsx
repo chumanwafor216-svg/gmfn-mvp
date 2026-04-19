@@ -3889,6 +3889,20 @@ export default function DashboardPage() {
         : ""
     }.`;
   }, [dashboardNoticeSourceGroups, dashboardNoticeTotalCount]);
+  const dashboardNoticeLeadItem = useMemo(
+    () =>
+      dashboardNoticeSummary.actNow[0] ||
+      dashboardNoticeSummary.dueSoon[0] ||
+      dashboardNoticeSummary.unread[0] ||
+      dashboardNoticeSummary.allRows[0] ||
+      null,
+    [dashboardNoticeSummary]
+  );
+  const dashboardNoticeLeadGroup = dashboardNoticeSourceGroups[0] || null;
+  const dashboardNoticePrimaryActionTo =
+    dashboardNoticeLeadItem?.ctaTo || DASHBOARD_TARGETS.WHAT_MATTERS_NOW;
+  const dashboardNoticePrimaryActionLabel =
+    dashboardNoticeLeadItem?.ctaLabel || "Open notifications";
 
   useEffect(() => {
     if (!noticeSourceOpenKey) return;
@@ -8265,93 +8279,96 @@ export default function DashboardPage() {
             </div>
           ) : null}
 
-          {dashboardNoticeSourceGroups.length > 0 ? (
+          {dashboardNoticeLeadItem ? (
             <div
               style={{
                 marginTop: 12,
-                display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
+                ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
+                border: "1px solid rgba(11,99,209,0.12)",
+                padding: isCompact ? 12 : 14,
+                boxShadow:
+                  "0 12px 28px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.84)",
+                display: "grid",
+                gap: 10,
               }}
             >
-              {dashboardNoticeQuickGroups.map((group) => {
-                const selected = noticeSourceOpenKey === group.key;
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 8,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 800,
+                    lineHeight: 1.3,
+                    flex: "1 1 240px",
+                  }}
+                >
+                  {dashboardNoticeLeadItem.title}
+                </div>
 
-                return (
-                  <button
-                    key={`dashboard-notice-chip-${group.key}`}
-                    type="button"
-                    onClick={(event) =>
-                      runDashboardUiMutation(event, () =>
-                        setNoticeSourceOpenKey((prev) =>
-                          prev === group.key ? "" : group.key
-                        ),
-                        260
-                      )
-                    }
-                    onPointerDown={consumeDashboardPointerEvent}
-                    style={{
-                      ...subtleBtn(false),
-                      minHeight: 32,
-                      padding: "6px 10px",
-                      fontSize: 12,
-                      border: selected
-                        ? "1px solid rgba(11,99,209,0.22)"
-                        : "1px solid rgba(15,59,116,0.10)",
-                      background: selected
-                        ? "linear-gradient(180deg, rgba(226,238,255,0.98) 0%, rgba(212,226,246,0.96) 100%)"
-                        : DASHBOARD_BRAND.quietPanel,
-                    }}
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <span
+                    style={badge(
+                      dashboardNoticeLeadItem.bucket === "actNow"
+                    )}
                   >
-                    {group.title} {group.count}
-                  </button>
-                );
-              })}
-              {dashboardNoticeSourceGroups.map((group) => {
-                const selected = noticeSourceOpenKey === group.key;
+                    {dashboardNoticeLeadItem.bucket === "actNow"
+                      ? "Act now"
+                      : dashboardNoticeLeadItem.unread
+                      ? "Unread"
+                      : "Open"}
+                  </span>
+                  {dashboardNoticeLeadGroup ? (
+                    <span style={badge(false)}>
+                      {dashboardNoticeLeadGroup.title}
+                    </span>
+                  ) : null}
+                  {dashboardNoticeTotalCount > 1 ? (
+                    <span style={badge(false)}>
+                      {dashboardNoticeTotalCount - 1} more waiting
+                    </span>
+                  ) : null}
+                </div>
+              </div>
 
-                return (
-                  <button
-                    key={`dashboard-notice-chip-${group.key}`}
-                    type="button"
-                    onClick={(event) =>
-                      runDashboardUiMutation(event, () =>
-                        setNoticeSourceOpenKey((prev) =>
-                          prev === group.key ? "" : group.key
-                        ),
-                        260
-                      )
-                    }
-                    onPointerDown={consumeDashboardPointerEvent}
-                    style={{
-                      ...subtleBtn(false),
-                      minHeight: 32,
-                      padding: "6px 10px",
-                      fontSize: 12,
-                      border: selected
-                        ? "1px solid rgba(11,99,209,0.22)"
-                        : "1px solid rgba(15,59,116,0.10)",
-                      background: selected
-                        ? "linear-gradient(180deg, rgba(226,238,255,0.98) 0%, rgba(212,226,246,0.96) 100%)"
-                        : DASHBOARD_BRAND.quietPanel,
-                    }}
-                  >
-                    {group.title} {group.count}
-                  </button>
-                );
-              })}
-            </div>
-          ) : null}
+              <div style={{ ...helperText(), fontSize: 13 }}>
+                {dashboardNoticeLeadItem.detail}
+              </div>
 
-          {dashboardNoticeSelectedPanel ? (
-            <div style={{ marginTop: 12 }}>
-              {renderDashboardNoticeSourceGroup(
-                dashboardNoticeSelectedPanel,
-                true,
-                (key) =>
-                  setNoticeSourceOpenKey((prev) => (prev === key ? "" : key)),
-                openDashboardRoute
-              )}
+              {dashboardNoticeLeadGroup ? (
+                <div style={{ ...helperText(), fontSize: 12.5 }}>
+                  {dashboardNoticeLeadGroup.detail}
+                </div>
+              ) : null}
+
+              <div style={{ ...dashboardActionGrid(isCompact ? 132 : 156) }}>
+                <button
+                  type="button"
+                  onClick={(event) =>
+                    openDashboardRoute(event, dashboardNoticePrimaryActionTo)
+                  }
+                  onPointerDown={consumeDashboardPointerEvent}
+                  style={dashboardFillButton(secondaryBtn(false))}
+                >
+                  {dashboardNoticePrimaryActionLabel}
+                </button>
+                <button
+                  type="button"
+                  onClick={(event) =>
+                    openDashboardRoute(event, DASHBOARD_TARGETS.WHAT_MATTERS_NOW)
+                  }
+                  onPointerDown={consumeDashboardPointerEvent}
+                  style={dashboardFillButton(subtleBtn(false))}
+                >
+                  Open notifications
+                </button>
+              </div>
             </div>
           ) : noticesLoading && dashboardNoticeTotalCount === 0 ? (
             <div style={{ marginTop: 12, color: "#64748B", lineHeight: 1.7 }}>

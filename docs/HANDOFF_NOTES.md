@@ -41,6 +41,49 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-19
 
 #### Workstream
+Phase 2 dashboard reduction: Notifications simplified from source-panel
+workspace behavior to compact summary-and-launcher behavior.
+
+#### Routes/screens affected
+- `/app/dashboard`
+
+#### Backend routes/endpoints involved
+- none
+
+#### Files in play
+- `frontend/src/pages/DashboardPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The dashboard Notifications block no longer uses the source-chip toggle and
+  selected-panel pattern on the visible face.
+- The visible dashboard face now keeps Notifications as:
+  - one summary line
+  - one lead notification preview
+  - summary badges
+  - launch buttons into the lead route and the notifications page
+- This keeps notification awareness on the dashboard while removing the
+  mini-workspace behavior that belonged more naturally to the notifications
+  screen itself.
+- `npm run build` passed in `frontend` after the reduction.
+
+#### Open risks or unknowns
+- This pass was build-verified, but not fully re-run through a fresh manual
+  mobile route sweep yet.
+- The underlying source-group logic still exists in `DashboardPage.tsx` and can
+  be cleaned later if the compact face remains stable.
+
+#### Next recommended step
+- Continue Phase 2 by reviewing whether `Market Wisdom` should stay on the
+  dashboard face at its current weight, or whether the next reduction target
+  should be the top trust/identity area instead.
+
+### Previous update
+
+#### Date
+2026-04-19
+
+#### Workstream
 Phase 2 dashboard reduction: Demand Box simplified from mini-workspace behavior
 to compact summary-and-launcher behavior.
 
