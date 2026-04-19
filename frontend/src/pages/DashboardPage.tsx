@@ -2837,8 +2837,6 @@ export default function DashboardPage() {
   const [activeWisdom, setActiveWisdom] = useState<MarketWisdomPair | null>(
     null
   );
-  const [qrReady, setQrReady] = useState<boolean>(false);
-  const [qrFailed, setQrFailed] = useState<boolean>(false);
   const [sellerIdentityDockOpen, setSellerIdentityDockOpen] =
     useState<boolean>(true);
 
@@ -2938,11 +2936,6 @@ export default function DashboardPage() {
       window.removeEventListener("focus", refreshAttentionClock);
     };
   }, []);
-
-  useEffect(() => {
-    setQrReady(false);
-    setQrFailed(false);
-  }, [trustSlip?.code]);
 
   useEffect(() => {
     (async () => {
@@ -3221,48 +3214,6 @@ export default function DashboardPage() {
       letterSpacing: 0.08,
     };
   }
-
-  function trustGoldMiniBtn(): React.CSSProperties {
-    return {
-      ...trustGoldBtn(24, 10),
-      padding: "2px 7px",
-      borderRadius: 8,
-      minWidth: 84,
-      boxShadow:
-        "inset 0 1px 0 rgba(255,248,220,0.92), inset 0 -1px 0 rgba(122,75,0,0.14), 0 5px 10px rgba(15,23,42,0.10)",
-    };
-  }
-
-  const merchantVerifyHref = useMemo(() => {
-    const direct = firstNonEmpty(
-      trustSlip?.public_verify_url,
-      trustSlip?.verify_url
-    );
-
-    if (direct) {
-      if (direct.startsWith("http://") || direct.startsWith("https://")) {
-        return direct;
-      }
-
-      return `${apiOrigin()}${direct.startsWith("/") ? direct : `/${direct}`}`;
-    }
-
-    return trustSlipCode
-      ? `${apiOrigin()}/trust-slips/verify/${encodeURIComponent(
-          trustSlipCode
-        )}/page`
-      : "";
-  }, [trustSlip, trustSlipCode]);
-
-  const trustQrSrc = useMemo(
-    () =>
-      trustSlipCode
-        ? `${apiOrigin()}/trust-slips/verify/${encodeURIComponent(
-            trustSlipCode
-          )}/qr.png`
-        : "",
-    [trustSlipCode]
-  );
 
   const storedCommunitySpotlightImage = useMemo(() => {
     const spotlightClanId = positiveNumber(
@@ -4861,15 +4812,6 @@ export default function DashboardPage() {
     navigateWithOrigin(navigate, app.to, location);
   }
 
-  function openMerchantVerifyPage(
-    event?: React.SyntheticEvent<HTMLElement>
-  ) {
-    consumeDashboardButtonEvent(event);
-    const href = safeStr(merchantVerifyHref);
-    if (!href || typeof window === "undefined") return;
-    window.open(href, "_blank", "noopener,noreferrer");
-  }
-
   function openTrustSlipPage(
     event?: React.SyntheticEvent<HTMLElement>
   ) {
@@ -4877,15 +4819,6 @@ export default function DashboardPage() {
       ? `?code=${encodeURIComponent(trustSlipCode)}`
       : "";
     openDashboardRoute(event, `/app/trust-slip${query}`);
-  }
-
-  function openTrustSlipVerifyInApp(
-    event?: React.SyntheticEvent<HTMLElement>
-  ) {
-    const query = trustSlipCode
-      ? `?code=${encodeURIComponent(trustSlipCode)}`
-      : "";
-    openDashboardRoute(event, `/app/trust-slip/verify${query}`);
   }
 
   function openAvatarPicker() {
@@ -6202,26 +6135,6 @@ export default function DashboardPage() {
                       >
                         Trust and verification
                       </div>
-
-                      <button
-                        type="button"
-                        onClick={(event) =>
-                          runDashboardUiMutation(event, () =>
-                            updateUiState({ trustExpanded: !uiState.trustExpanded })
-                          )
-                        }
-                        onPointerDown={consumeDashboardPointerEvent}
-                        style={{
-                          ...trustGoldBtn(22, 9),
-                          minWidth: 52,
-                          padding: "1px 6px",
-                          borderRadius: 8,
-                          boxShadow:
-                            "inset 0 1px 0 rgba(255,248,220,0.94), inset 0 -1px 0 rgba(122,75,0,0.16), 0 6px 10px rgba(15,23,42,0.10)",
-                        }}
-                      >
-                        {uiState.trustExpanded ? "Collapse" : "Open"}
-                      </button>
                     </div>
 
                     <span
@@ -6324,536 +6237,78 @@ export default function DashboardPage() {
                     to share.
                   </div>
 
-                  {uiState.trustExpanded ? (
-                    <>
-                      <div
-                        style={{
-                          marginTop: 8,
-                          ...innerCard(
-                            "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%)"
-                          ),
-                          border: "1px solid rgba(212,175,55,0.18)",
-                          boxShadow:
-                            "inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 18px rgba(2,12,27,0.08)",
-                          padding: 8,
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-                            gap: 6,
-                          }}
-                        >
-                          <button
-                            type="button"
-                            onClick={(event) => openDashboardRoute(event, "/app/trust")}
-                            onPointerDown={consumeDashboardPointerEvent}
-                            style={{
-                              ...trustGoldBtn(30, 11),
-                              width: "100%",
-                              padding: "6px 10px",
-                            }}
-                          >
-                            Open Trust Passport
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={(event) => openDashboardRoute(event, "/app/identity")}
-                            onPointerDown={consumeDashboardPointerEvent}
-                            style={{
-                              ...trustGoldBtn(30, 11),
-                              width: "100%",
-                              padding: "6px 10px",
-                            }}
-                          >
-                            Open Identity & Integrity
-                          </button>
-
-                          {merchantVerifyHref ? (
-                            <button
-                              type="button"
-                              onClick={openMerchantVerifyPage}
-                              onPointerDown={consumeDashboardPointerEvent}
-                              style={{
-                                ...trustGoldBtn(30, 11),
-                                width: "100%",
-                                padding: "6px 10px",
-                              }}
-                            >
-                              Merchant Verify
-                            </button>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      <div
-                        style={{
-                          marginTop: 10,
-                          ...innerCard(
-                            "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%)"
-                          ),
-                          border: "1px solid rgba(212,175,55,0.20)",
-                          boxShadow:
-                            "inset 0 1px 0 rgba(255,255,255,0.06), 0 12px 24px rgba(2,12,27,0.10)",
-                          padding: 10,
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns:
-                              "repeat(auto-fit, minmax(118px, 1fr))",
-                            gap: 8,
-                          }}
-                        >
-                          <div
-                            style={{
-                              ...statTile(openTrustTone.bg, openTrustTone.border),
-                              padding: 8,
-                              minHeight: 102,
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: "center",
-                              textAlign: "center",
-                            }}
-                          >
-                            <div
-                              style={{
-                                ...sectionLabel(),
-                                textAlign: "center",
-                                width: "100%",
-                              }}
-                            >
-                              Open Trust
-                            </div>
-                            <div
-                              style={{
-                                marginTop: 4,
-                                color: openTrustTone.text,
-                                fontSize: 20,
-                                fontWeight: 900,
-                                lineHeight: 1,
-                                width: "50%",
-                                minWidth: 72,
-                              }}
-                            >
-                              Class {openTrust.classText}
-                            </div>
-                            <div
-                              style={{
-                                marginTop: 4,
-                                ...helperText(),
-                                fontSize: 11,
-                                width: "50%",
-                                minWidth: 72,
-                                textAlign: "center",
-                              }}
-                            >
-                              Score {openTrust.scoreText}
-                            </div>
-                            <div
-                              style={{
-                                marginTop: 2,
-                                color: "#0B1F33",
-                                fontSize: 11,
-                                fontWeight: 700,
-                                lineHeight: 1.25,
-                                width: "50%",
-                                minWidth: 72,
-                                textAlign: "center",
-                              }}
-                            >
-                              {openTrust.statusText}
-                            </div>
-                            <div
-                              style={{
-                                marginTop: "auto",
-                                width: "100%",
-                                display: "flex",
-                                justifyContent: "center",
-                                paddingTop: 6,
-                              }}
-                            >
-                              <button
-                                type="button"
-                                onClick={(event) =>
-                                  openDashboardRoute(event, "/app/open-trust-reading")
-                                }
-                                onPointerDown={consumeDashboardPointerEvent}
-                                style={{
-                                  ...trustGoldBtn(26, 10),
-                                  minWidth: 88,
-                                  padding: "4px 10px",
-                                }}
-                              >
-                                Open Trust
-                              </button>
-                            </div>
-                          </div>
-
-                          <div
-                            style={{
-                              ...statTile(cciTone.bg, cciTone.border),
-                              padding: 8,
-                              minHeight: 102,
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: "center",
-                              textAlign: "center",
-                            }}
-                          >
-                            <div
-                              style={{
-                                ...sectionLabel(),
-                                textAlign: "center",
-                                width: "100%",
-                              }}
-                            >
-                              CCI
-                            </div>
-                            <div
-                              style={{
-                                marginTop: 4,
-                                color: cciTone.text,
-                                fontSize: 20,
-                                fontWeight: 900,
-                                lineHeight: 1,
-                                width: "50%",
-                                minWidth: 72,
-                              }}
-                            >
-                              Class {cci.classText}
-                            </div>
-                            <div
-                              style={{
-                                marginTop: 4,
-                                ...helperText(),
-                                fontSize: 11,
-                                width: "50%",
-                                minWidth: 72,
-                                textAlign: "center",
-                              }}
-                            >
-                              Score {cci.scoreText}
-                            </div>
-                            <div
-                              style={{
-                                marginTop: 2,
-                                color: "#0B1F33",
-                                fontSize: 11,
-                                fontWeight: 700,
-                                lineHeight: 1.25,
-                                width: "50%",
-                                minWidth: 72,
-                                textAlign: "center",
-                              }}
-                            >
-                              {cci.statusText}
-                            </div>
-                            <div
-                              style={{
-                                marginTop: "auto",
-                                width: "100%",
-                                display: "flex",
-                                justifyContent: "center",
-                                paddingTop: 6,
-                              }}
-                            >
-                              <button
-                                type="button"
-                                onClick={(event) =>
-                                  openDashboardRoute(event, "/app/cci-reading")
-                                }
-                                onPointerDown={consumeDashboardPointerEvent}
-                                style={{
-                                  ...trustGoldBtn(26, 10),
-                                  minWidth: 84,
-                                  padding: "4px 10px",
-                                }}
-                              >
-                                Open CCI
-                              </button>
-                            </div>
-                          </div>
-
-                          <div
-                            style={{
-                              ...statTile(
-                                "#F8FBFF",
-                                "1px solid rgba(11,99,209,0.10)"
-                              ),
-                              padding: 8,
-                              minHeight: 102,
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: "center",
-                              textAlign: "center",
-                            }}
-                          >
-                            <div
-                              style={{
-                                ...sectionLabel(),
-                                width: "100%",
-                                textAlign: "center",
-                              }}
-                            >
-                              TrustSlip
-                            </div>
-                            <div
-                              style={{
-                                marginTop: 4,
-                                color: "#0B1F33",
-                                fontSize: 18,
-                                fontWeight: 900,
-                                lineHeight: 1.1,
-                                wordBreak: "break-word",
-                                minHeight: 40,
-                                width: "100%",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                textAlign: "center",
-                              }}
-                            >
-                              {trustSlipCode || "Pending"}
-                            </div>
-                            <div
-                              style={{
-                                marginTop: "auto",
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: 4,
-                                alignItems: "center",
-                                justifyContent: "center",
-                                width: "100%",
-                                paddingTop: 6,
-                              }}
-                            >
-                              <button
-                                type="button"
-                                onClick={openTrustSlipPage}
-                                onPointerDown={consumeDashboardPointerEvent}
-                                style={{
-                                  color: "#14324C",
-                                  fontSize: 10,
-                                  fontWeight: 800,
-                                  padding: 0,
-                                  minHeight: "auto",
-                                  background: "transparent",
-                                  border: "none",
-                                  boxShadow: "none",
-                                  marginTop: 2,
-                                  width: "100%",
-                                  textAlign: "center",
-                                }}
-                              >
-                                Check status
-                              </button>
-                              <button
-                                type="button"
-                                onClick={openTrustSlipPage}
-                                onPointerDown={consumeDashboardPointerEvent}
-                                style={{ ...trustGoldMiniBtn(), marginTop: 2 }}
-                              >
-                                Open TrustSlip
-                              </button>
-                            </div>
-                          </div>
-
-                          <div
-                            style={{
-                              ...statTile(
-                                "#F8FBFF",
-                                "1px solid rgba(11,99,209,0.10)"
-                              ),
-                              padding: 8,
-                              minHeight: 102,
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: "center",
-                              textAlign: "center",
-                            }}
-                          >
-                            <div
-                              style={{
-                                ...sectionLabel(),
-                                width: "100%",
-                                textAlign: "center",
-                              }}
-                            >
-                              Verify QR
-                            </div>
-                            <div
-                              style={{
-                                marginTop: 6,
-                                width: "80%",
-                                aspectRatio: "1 / 1",
-                                minWidth: 64,
-                                maxWidth: 82,
-                                borderRadius: 10,
-                                border: "1px solid rgba(15,59,116,0.14)",
-                                background: "#FFFFFF",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                overflow: "hidden",
-                                position: "relative",
-                                marginLeft: "auto",
-                                marginRight: "auto",
-                              }}
-                            >
-                              {trustQrSrc ? (
-                                <>
-                                  <img
-                                    src={trustQrSrc}
-                                    alt="Trust QR"
-                                    onLoad={() => {
-                                      setQrReady(true);
-                                      setQrFailed(false);
-                                    }}
-                                    onError={() => {
-                                      setQrReady(false);
-                                      setQrFailed(true);
-                                    }}
-                                    style={{
-                                      width: "100%",
-                                      height: "100%",
-                                      display: qrFailed ? "none" : "block",
-                                    }}
-                                  />
-                                  {!qrReady && !qrFailed ? (
-                                    <div
-                                      style={{
-                                        position: "absolute",
-                                        inset: 0,
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        color: "#14324C",
-                                        fontSize: 8,
-                                        fontWeight: 800,
-                                        textAlign: "center",
-                                        padding: 4,
-                                        background:
-                                          "rgba(255,255,255,0.92)",
-                                      }}
-                                    >
-                                      Loading
-                                    </div>
-                                  ) : null}
-                                  {qrFailed ? (
-                                    <div
-                                      style={{
-                                        position: "absolute",
-                                        inset: 0,
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        color: "#7A1F1F",
-                                        fontSize: 8,
-                                        fontWeight: 800,
-                                        textAlign: "center",
-                                        padding: 4,
-                                        background:
-                                          "rgba(255,245,245,0.96)",
-                                      }}
-                                    >
-                                      Unavailable
-                                    </div>
-                                  ) : null}
-                                </>
-                              ) : (
-                                <div
-                                  style={{
-                                    color: "#14324C",
-                                    fontSize: 8,
-                                    fontWeight: 800,
-                                    textAlign: "center",
-                                    padding: 4,
-                                  }}
-                                >
-                                  Pending
-                                </div>
-                              )}
-                            </div>
-                            <div
-                              style={{
-                                marginTop: 4,
-                                color: "#0B1F33",
-                                fontSize: 12,
-                                fontWeight: 900,
-                                lineHeight: 1.1,
-                                textAlign: "center",
-                              }}
-                            >
-                              {qrFailed
-                                ? "Unavailable"
-                                : trustQrSrc
-                                ? "Ready"
-                                : "Pending"}
-                            </div>
-                            <div
-                              style={{
-                                marginTop: 6,
-                                width: "100%",
-                                display: "flex",
-                                justifyContent: "center",
-                              }}
-                            >
-                              <button
-                                type="button"
-                                onClick={openTrustSlipVerifyInApp}
-                                onPointerDown={consumeDashboardPointerEvent}
-                                style={{ ...trustGoldMiniBtn(), marginTop: 2 }}
-                              >
-                                Verify QR
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
+                  <div
+                    style={{
+                      marginTop: 12,
+                      ...innerCard(
+                        "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%)"
+                      ),
+                      border: "1px solid rgba(212,175,55,0.16)",
+                      boxShadow:
+                        "inset 0 1px 0 rgba(255,255,255,0.05), 0 10px 20px rgba(2,12,27,0.08)",
+                      padding: 12,
+                      display: "grid",
+                      gap: 10,
+                    }}
+                  >
                     <div
                       style={{
-                        marginTop: 12,
-                        ...innerCard(
-                          "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%)"
-                        ),
-                        border: "1px solid rgba(212,175,55,0.16)",
-                        boxShadow:
-                          "inset 0 1px 0 rgba(255,255,255,0.05), 0 10px 20px rgba(2,12,27,0.08)",
-                        padding: 12,
+                        display: "flex",
+                        gap: 8,
+                        flexWrap: "wrap",
+                        alignItems: "center",
                       }}
                     >
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: 8,
-                          flexWrap: "wrap",
-                          alignItems: "center",
-                        }}
-                      >
-                        <span style={badge(true)}>
-                          Open Trust {openTrust.classText}
-                        </span>
-                        <span style={badge(false)}>CCI {cci.classText}</span>
-                        <span style={badge(false)}>
-                          TrustSlip {trustSlipCode || "Pending"}
-                        </span>
-                        <span style={badge(false)}>
-                          QR{" "}
-                          {qrFailed
-                            ? "Unavailable"
-                            : trustQrSrc
-                            ? "Ready"
-                            : "Pending"}
-                        </span>
-                      </div>
+                      <span style={badge(true)}>
+                        Open Trust {openTrust.classText}
+                      </span>
+                      <span style={badge(false)}>CCI {cci.classText}</span>
+                      <span style={badge(false)}>
+                        TrustSlip {trustSlipCode || "Pending"}
+                      </span>
                     </div>
-                  )}
+
+                    <div style={{ ...helperText(), color: "rgba(226,232,240,0.86)" }}>
+                      Dashboard keeps the trust signal here. The deeper trust,
+                      TrustSlip, QR, and verification detail now belongs in
+                      Trust Passport and related trust pages.
+                    </div>
+
+                    <div
+                      style={{
+                        ...dashboardActionGrid(isCompact ? 132 : 156),
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={(event) => openDashboardRoute(event, "/app/trust")}
+                        onPointerDown={consumeDashboardPointerEvent}
+                        style={dashboardFillButton(trustGoldBtn(30, 11))}
+                      >
+                        Open Trust Passport
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(event) => openDashboardRoute(event, "/app/identity")}
+                        onPointerDown={consumeDashboardPointerEvent}
+                        style={dashboardFillButton(trustGoldBtn(30, 11))}
+                      >
+                        Open Identity & Integrity
+                      </button>
+
+                      {trustSlipCode ? (
+                        <button
+                          type="button"
+                          onClick={openTrustSlipPage}
+                          onPointerDown={consumeDashboardPointerEvent}
+                          style={dashboardFillButton(trustGoldBtn(30, 11))}
+                        >
+                          Open TrustSlip
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
                 </div>
 
               </div>

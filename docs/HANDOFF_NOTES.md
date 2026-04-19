@@ -41,6 +41,52 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-19
 
 #### Workstream
+Phase 2 dashboard reduction: top trust/identity area reduced to a compact trust
+signal and launcher block.
+
+#### Routes/screens affected
+- `/app/dashboard`
+
+#### Backend routes/endpoints involved
+- none
+
+#### Files in play
+- `frontend/src/pages/DashboardPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The top dashboard trust/verification block no longer expands into a deep
+  trust-control surface with QR, merchant verify, and multi-panel verification
+  detail on the dashboard face.
+- The visible dashboard face now keeps:
+  - `Open Trust` status
+  - `CCI` status
+  - `TrustSlip` status
+  - launcher buttons for `Trust Passport`, `Identity & Integrity`, and
+    `TrustSlip` when available
+- The dashboard copy now explicitly says deeper trust, TrustSlip, QR, and
+  verification detail belongs in Trust Passport and related trust routes.
+- Unused dashboard-local QR and merchant-verify helpers were removed after the
+  compaction.
+- `npm run build` passed in `frontend` after the reduction.
+
+#### Open risks or unknowns
+- This pass was build-verified, but not followed by a fresh live mobile sweep
+  of the updated trust/identity launcher buttons.
+- The trust signal still remains on the dashboard by design; this pass reduced
+  depth and control weight, not presence.
+
+#### Next recommended step
+- Review the dashboard top trust/identity lane live and then continue Phase 2 by
+  reducing the next heaviest member-facing surface only if the launcher pattern
+  feels stable.
+
+### Previous update
+
+#### Date
+2026-04-19
+
+#### Workstream
 Phase 2 dashboard reduction: Market Wisdom simplified from expandable selector
 behavior to one rotating summary signal.
 
@@ -74,8 +120,6 @@ behavior to one rotating summary signal.
 #### Next recommended step
 - Review the top trust/identity area next and decide whether it now carries too
   much visual weight for a member workspace.
-
-### Previous update
 
 #### Date
 2026-04-19
