@@ -2841,7 +2841,6 @@ export default function DashboardPage() {
     useState<boolean>(true);
 
   const [avatarSrc, setAvatarSrc] = useState<string>("");
-  const [pictureOptionsOpen, setPictureOptionsOpen] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [appUsage] = useState<AppUseRecord[]>(() => readDashboardAppUsage());
@@ -5946,10 +5945,10 @@ export default function DashboardPage() {
               <div
                 style={{
                   width: "100%",
-                  maxWidth: isCompact ? 360 : 380,
+                  maxWidth: isCompact ? 300 : 320,
                   margin: "0 auto",
-                  borderRadius: 34,
-                  padding: 10,
+                  borderRadius: 28,
+                  padding: 8,
                   border: "1px solid rgba(255,255,255,0.12)",
                   background:
                     "linear-gradient(180deg, #0A1625 0%, #10263C 48%, #153756 100%)",
@@ -5959,8 +5958,8 @@ export default function DashboardPage() {
               >
                 <div
                   style={{
-                    height: isCompact ? 250 : 280,
-                    borderRadius: 24,
+                    height: isCompact ? 170 : 196,
+                    borderRadius: 20,
                     overflow: "hidden",
                     border: "1px solid rgba(212,175,55,0.16)",
                     background:
@@ -5986,8 +5985,8 @@ export default function DashboardPage() {
                   ) : (
                     <div
                       style={{
-                        width: 120,
-                        height: 120,
+                        width: 92,
+                        height: 92,
                         borderRadius: 999,
                         border: "1px solid rgba(212,175,55,0.28)",
                         background:
@@ -5996,7 +5995,7 @@ export default function DashboardPage() {
                           "0 18px 40px rgba(3,10,22,0.28), inset 0 1px 0 rgba(255,255,255,0.08)",
                         color: "#F8FBFF",
                         fontWeight: 900,
-                        fontSize: 42,
+                        fontSize: 32,
                         letterSpacing: 1.4,
                         display: "flex",
                         alignItems: "center",
@@ -6006,39 +6005,6 @@ export default function DashboardPage() {
                       {profileInitials}
                     </div>
                   )}
-
-                  <button
-                    type="button"
-                    onClick={(event) =>
-                      runDashboardUiMutation(event, () =>
-                        setPictureOptionsOpen((prev) => !prev)
-                      )
-                    }
-                    onPointerDown={consumeDashboardPointerEvent}
-                    style={{
-                      ...secondaryBtn(false),
-                      position: "absolute",
-                      right: 14,
-                      bottom: 14,
-                      width: "auto",
-                      minWidth: 42,
-                      minHeight: 24,
-                      padding: "3px 6px",
-                      justifyContent: "space-between",
-                      gap: 3,
-                      background:
-                        "linear-gradient(180deg, rgba(247,217,120,0.96) 0%, rgba(212,175,55,0.98) 52%, rgba(184,137,45,1) 100%)",
-                      color: "#4A3200",
-                      border: "1px solid rgba(122,75,0,0.24)",
-                      boxShadow:
-                        "0 16px 28px rgba(2,12,27,0.28), inset 0 1px 0 rgba(255,255,255,0.42)",
-                      backdropFilter: "blur(8px)",
-                      fontSize: 9,
-                    }}
-                  >
-                    <span>Picture frame</span>
-                    <span>{pictureOptionsOpen ? "-" : "+"}</span>
-                  </button>
                 </div>
               </div>
 
@@ -6050,45 +6016,38 @@ export default function DashboardPage() {
                 style={{ display: "none" }}
               />
 
-              {pictureOptionsOpen ? (
-                <div
-                  style={{
-                    marginTop: 10,
-                    display: "grid",
-                    gridTemplateColumns:
-                      isCompact ? "repeat(3, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))",
-                    gap: 8,
-                  }}
+              <div
+                style={{
+                  marginTop: 10,
+                  display: "grid",
+                  gridTemplateColumns: avatarSrc
+                    ? "repeat(2, minmax(0, 1fr))"
+                    : "minmax(0, 1fr)",
+                  gap: 8,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={openAvatarPicker}
+                  onPointerDown={consumeDashboardPointerEvent}
+                  style={{ ...dashboardFillButton(subtleBtn(false)) }}
                 >
+                  {avatarSrc ? "Change photo" : "Upload photo"}
+                </button>
+
+                {avatarSrc ? (
                   <button
                     type="button"
-                    onClick={openAvatarPicker}
+                    onClick={(event) =>
+                      runDashboardUiMutation(event, removeAvatar, 260)
+                    }
                     onPointerDown={consumeDashboardPointerEvent}
                     style={{ ...dashboardFillButton(subtleBtn(false)) }}
-                  >
-                    Upload
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={openAvatarPicker}
-                    onPointerDown={consumeDashboardPointerEvent}
-                    style={{ ...dashboardFillButton(subtleBtn(false)) }}
-                  >
-                    Change
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={(event) => runDashboardUiMutation(event, removeAvatar, 260)}
-                    onPointerDown={consumeDashboardPointerEvent}
-                    style={{ ...dashboardFillButton(subtleBtn(!avatarSrc)) }}
-                    disabled={!avatarSrc}
                   >
                     Remove
                   </button>
-                </div>
-              ) : null}
+                ) : null}
+              </div>
             </div>
 
             <div>

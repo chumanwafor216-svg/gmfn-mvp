@@ -41,6 +41,46 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-19
 
 #### Workstream
+Phase 2 dashboard reduction: top identity/photo lane reduced from picture-frame
+studio behavior to a compact member-photo card with direct actions.
+
+#### Routes/screens affected
+- `/app/dashboard`
+
+#### Backend routes/endpoints involved
+- none
+
+#### Files in play
+- `frontend/src/pages/DashboardPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The large picture-frame overlay control was removed from the top dashboard
+  identity card.
+- The member photo card is now shorter and lighter on the dashboard face.
+- Photo actions are now direct:
+  - `Upload photo` / `Change photo`
+  - `Remove` only when a photo exists
+- The dashboard no longer uses a separate picture-options toggle state for that
+  lane.
+- `npm run build` passed in `frontend` after the reduction.
+
+#### Open risks or unknowns
+- This pass was build-verified, but not followed by a fresh live mobile sweep
+  of the updated photo actions.
+- The top hero area is lighter now, but still remains visually prominent by
+  design.
+
+#### Next recommended step
+- Review the dashboard top identity/trust lane live and then continue Phase 2
+  only if another surface still clearly reads as domain-heavy.
+
+### Previous update
+
+#### Date
+2026-04-19
+
+#### Workstream
 Phase 2 dashboard reduction: top trust/identity area reduced to a compact trust
 signal and launcher block.
 
@@ -80,8 +120,6 @@ signal and launcher block.
 - Review the dashboard top trust/identity lane live and then continue Phase 2 by
   reducing the next heaviest member-facing surface only if the launcher pattern
   feels stable.
-
-### Previous update
 
 #### Date
 2026-04-19
