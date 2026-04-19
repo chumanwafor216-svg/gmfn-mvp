@@ -41,6 +41,48 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-19
 
 #### Workstream
+Phase 2 dashboard reduction: Demand Box simplified from mini-workspace behavior
+to compact summary-and-launcher behavior.
+
+#### Routes/screens affected
+- `/app/dashboard`
+
+#### Backend routes/endpoints involved
+- none
+
+#### Files in play
+- `frontend/src/pages/DashboardPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The dashboard Demand Box no longer uses the chip-toggle and selected-panel
+  pattern.
+- The visible dashboard face now keeps Demand Box as:
+  - a summary line
+  - current demand preview when one exists
+  - urgent/open status badges
+  - one clear launcher button into Demand Box
+- This removes the dashboard's mini-workspace behavior for demand while keeping
+  the route easy to open.
+- Unused demand detail panel types/state were removed from
+  `DashboardPage.tsx`.
+- `npm run build` passed in `frontend` after the reduction.
+
+#### Open risks or unknowns
+- This pass was build-verified, but not fully re-run through a fresh manual
+  mobile route sweep yet.
+- Demand Box route contracts and backend behavior were not changed.
+
+#### Next recommended step
+- Continue Phase 2 by compacting the dashboard Notifications block so it also
+  behaves more like a summary/launcher than a mini workspace.
+
+### Previous update
+
+#### Date
+2026-04-19
+
+#### Workstream
 Phase 2 dashboard reduction: Spotlight downgraded from oversized hero surface
 to compact summary/launcher behavior.
 

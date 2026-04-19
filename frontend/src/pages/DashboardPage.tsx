@@ -180,23 +180,6 @@ type DashboardNoticeSourceGroup = {
 
 type DashboardNoticeQuickGroupKey = "act-now" | "due-soon" | "unread";
 
-type DemandDetailPanelKey =
-  | "open-requests"
-  | "urgent"
-  | "current-request"
-  | "create-demand";
-
-type DemandDetailPanel = {
-  key: DemandDetailPanelKey;
-  chipLabel: string;
-  title: string;
-  detail: string;
-  to: string;
-  ctaLabel: string;
-  tone: DashboardNoticePreviewTone;
-  items: DemandItem[];
-};
-
 type UserOperationalClass =
   | "repair"
   | "approval"
@@ -2847,7 +2830,6 @@ export default function DashboardPage() {
   const [noticeSourceOpenKey, setNoticeSourceOpenKey] = useState<string>("");
 
   const [demandItems, setDemandItems] = useState<DemandItem[]>([]);
-  const [demandPanelOpenKey, setDemandPanelOpenKey] = useState<string>("");
 
   const [marketWisdomIndex, setMarketWisdomIndex] = useState<number>(0);
   const [marketWisdomSignalIndex, setMarketWisdomSignalIndex] =
@@ -3971,108 +3953,19 @@ export default function DashboardPage() {
       selectedClanId
     )}. Open Demand Box when you want to create or review demand.`;
   }, [currentClan, currentDemandItem, selectedClanId]);
-
-  const demandDetailPanels = useMemo<DemandDetailPanel[]>(() => {
-    const panels: DemandDetailPanel[] = [];
-    const hasMultipleDemandItems = demandItems.length > 1;
-    const currentDemandIsUrgent =
-      safeStr(currentDemandItem?.urgency).toLowerCase() === "high";
-
-    if (hasMultipleDemandItems) {
-      panels.push({
-        key: "open-requests",
-        chipLabel: `Open requests ${demandItems.length}`,
-        title:
-          `${demandItems.length} open requests are waiting`,
-        detail:
-          urgentDemandItems.length > 0
-            ? "Start with the request that is already under pressure."
-            : "Open the live queue and review what needs response first.",
-        to: DASHBOARD_TARGETS.DEMAND_BOX,
-        ctaLabel: "Open Demand Box",
-        tone: urgentDemandItems.length > 0 ? "red" : "blue",
-        items: demandItems.slice(0, 2),
-      });
-    }
-
-    if (demandItems.length > 0) {
-      panels.push({
-        key: "current-request",
-        chipLabel:
-          demandItems.length === 1
-            ? currentDemandIsUrgent
-              ? "Needs attention"
-              : "Request"
-            : "Current request",
-        title: safeStr(currentDemandItem?.title || "Current request"),
-        detail: safeStr(
-          currentDemandItem?.description ||
-            "Open Demand Box to read the full request and decide the next move."
-        ),
-        to: DASHBOARD_TARGETS.DEMAND_BOX,
-        ctaLabel: "Open current request",
-        tone:
-          safeStr(currentDemandItem?.urgency).toLowerCase() === "high"
-            ? "red"
-            : "blue",
-        items: currentDemandItem ? [currentDemandItem] : [],
-      });
-    }
-
-    if (
-      urgentDemandItems.length > 0 &&
-      (urgentDemandItems.length > 1 || hasMultipleDemandItems || !currentDemandIsUrgent)
-    ) {
-      panels.push({
-        key: "urgent",
-        chipLabel: `Urgent ${urgentDemandItems.length}`,
-        title:
-          urgentDemandItems.length === 1
-            ? "1 urgent demand needs review"
-            : `${urgentDemandItems.length} urgent demands need review`,
-        detail: "Urgent demand should be checked before it drifts further.",
-        to: DASHBOARD_TARGETS.DEMAND_BOX,
-        ctaLabel: "Review urgent demand",
-        tone: "red",
-        items: urgentDemandItems.slice(0, 2),
-      });
-    }
-
-    if (demandItems.length === 0) {
-      panels.push({
-        key: "create-demand",
-        chipLabel: "Create demand",
-        title: "No open demand is waiting",
-        detail:
-          "Create a demand when a member or seller needs the community to respond.",
-        to: "/app/demand-box#demand-box-create",
-        ctaLabel: "Create demand",
-        tone: "slate",
-        items: [],
-      });
-    }
-
-    return panels;
-  }, [currentDemandItem, demandItems, urgentDemandItems]);
-
-  useEffect(() => {
-    if (!demandPanelOpenKey) return;
-
-    const currentStillExists = demandDetailPanels.some(
-      (panel) => panel.key === demandPanelOpenKey
-    );
-
-    if (!currentStillExists) {
-      setDemandPanelOpenKey("");
-    }
-  }, [demandDetailPanels, demandPanelOpenKey]);
-
-  const selectedDemandPanel = useMemo(
-    () =>
-      demandDetailPanels.find((panel) => panel.key === demandPanelOpenKey) ||
-      null,
-    [demandDetailPanels, demandPanelOpenKey]
-  );
+  const currentDemandIsUrgent =
+    safeStr(currentDemandItem?.urgency).toLowerCase() === "high";
+  const remainingDemandCount = Math.max(demandItems.length - 1, 0);
+  const demandPrimaryActionTo =
+    demandItems.length === 0
+      ? "/app/demand-box#demand-box-create"
+      : DASHBOARD_TARGETS.DEMAND_BOX;
+  const demandPrimaryActionLabel =
+    demandItems.length === 0
+      ? "Create demand"
+      : urgentDemandItems.length > 0
+      ? "Open urgent demand"
+      : "Open Demand Box";
 
   const demandSurfaceChrome = useMemo(() => {
     if (urgentDemandItems.length > 0) {
@@ -8140,191 +8033,135 @@ export default function DashboardPage() {
           <div
             style={{
               marginTop: 12,
+              ...innerCard(demandSurfaceChrome.detailBg),
+              border: demandSurfaceChrome.detailBorder,
+              padding: isCompact ? 12 : 14,
+              boxShadow:
+                "0 12px 28px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.84)",
               display: "grid",
-              gridTemplateColumns: `repeat(auto-fit, minmax(${isCompact ? 108 : 124}px, 1fr))`,
-              gap: 8,
+              gap: 10,
             }}
           >
-            {demandDetailPanels.map((panel) => {
-              const selected = demandPanelOpenKey === panel.key;
-              const routesStraightToDemandBox =
-                panel.chipLabel === "Needs attention";
-
-              return (
-                <button
-                  key={`dashboard-demand-chip-${panel.key}`}
-                  type="button"
-                  onClick={(event) => {
-                    if (routesStraightToDemandBox) {
-                      openDashboardRoute(event, panel.to);
-                      return;
-                    }
-
-                    runDashboardUiMutation(
-                      event,
-                      () =>
-                        setDemandPanelOpenKey((prev) =>
-                          prev === panel.key ? "" : panel.key
-                        ),
-                      260
-                    );
-                  }}
-                  onPointerDown={consumeDashboardPointerEvent}
-                  style={{
-                    ...subtleBtn(false),
-                    width: "100%",
-                    minHeight: 34,
-                    padding: "7px 10px",
-                    fontSize: 12,
-                    border: selected
-                      ? demandSurfaceChrome.chipSelectedBorder
-                      : demandSurfaceChrome.chipBorder,
-                    background: selected
-                      ? demandSurfaceChrome.chipSelectedBg
-                      : demandSurfaceChrome.chipBg,
-                    boxShadow: selected
-                      ? "0 10px 20px rgba(11,99,209,0.08), inset 0 1px 0 rgba(255,255,255,0.82)"
-                      : "0 6px 14px rgba(10,24,49,0.04), inset 0 1px 0 rgba(255,255,255,0.82)",
-                  }}
-                >
-                  {panel.chipLabel}
-                </button>
-              );
-            })}
-          </div>
-
-          {selectedDemandPanel ? (
-            <div
-              style={{
-                marginTop: 12,
-                ...innerCard(demandSurfaceChrome.detailBg),
-                border: demandSurfaceChrome.detailBorder,
-                padding: isCompact ? 12 : 14,
-                boxShadow:
-                  "0 12px 28px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.84)",
-              }}
-            >
+            {currentDemandItem ? (
               <div
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 10,
-                  alignItems: "center",
-                  flexWrap: "wrap",
+                  ...softCard(demandSurfaceChrome.itemBg),
+                  border: demandSurfaceChrome.itemBorder,
+                  padding: 12,
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.84), 0 8px 18px rgba(10,24,49,0.05)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 8,
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div
+                    style={{
+                      color: "#0B1F33",
+                      fontWeight: 800,
+                      lineHeight: 1.3,
+                      flex: "1 1 220px",
+                    }}
+                  >
+                    {safeStr(currentDemandItem.title || "Current demand request")}
+                  </div>
+
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <span style={badge(currentDemandIsUrgent)}>
+                      {currentDemandIsUrgent ? "Urgent" : "Open"}
+                    </span>
+                    {safeDateTime(currentDemandItem.created_at) ? (
+                      <span style={badge(false)}>
+                        {safeDateTime(currentDemandItem.created_at)}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                  {safeStr(
+                    currentDemandItem.description ||
+                      "Open Demand Box to read the full request."
+                  )}
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 8,
+                    display: "flex",
+                    gap: 8,
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                  }}
+                >
+                  {safeStr(
+                    currentDemandItem.requester_name ||
+                      currentDemandItem.requester_nickname
+                  ) ? (
+                    <span style={badge(false)}>
+                      {safeStr(
+                        currentDemandItem.requester_name ||
+                          currentDemandItem.requester_nickname
+                      )}
+                    </span>
+                  ) : null}
+                  {remainingDemandCount > 0 ? (
+                    <span style={badge(false)}>
+                      {remainingDemandCount} more waiting
+                    </span>
+                  ) : null}
+                  {urgentDemandItems.length > 1 ? (
+                    <span style={badge(true)}>
+                      {urgentDemandItems.length} urgent total
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            ) : (
+              <div
+                style={{
+                  ...softCard(demandSurfaceChrome.itemBg),
+                  border: demandSurfaceChrome.itemBorder,
+                  padding: 12,
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.84), 0 8px 18px rgba(10,24,49,0.05)",
                 }}
               >
                 <div
                   style={{
                     color: "#0B1F33",
-                    fontWeight: 900,
-                    fontSize: 15.5,
+                    fontWeight: 800,
                     lineHeight: 1.3,
                   }}
                 >
-                  {selectedDemandPanel.title}
+                  No open demand is waiting.
                 </div>
-
-                <span style={badge(selectedDemandPanel.tone === "red")}>
-                  {selectedDemandPanel.items.length > 0
-                    ? selectedDemandPanel.items.length
-                    : "Ready"}
-                </span>
-              </div>
-
-              <div style={{ marginTop: 8, ...helperText() }}>
-                {selectedDemandPanel.detail}
-              </div>
-
-              {selectedDemandPanel.items.length > 0 ? (
-                <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
-                  {selectedDemandPanel.items.map((item, index) => (
-                    <div
-                      key={`dashboard-demand-item-${selectedDemandPanel.key}-${item.id || index}`}
-                      style={{
-                        ...softCard(demandSurfaceChrome.itemBg),
-                        border: demandSurfaceChrome.itemBorder,
-                        padding: 12,
-                        boxShadow:
-                          "inset 0 1px 0 rgba(255,255,255,0.84), 0 8px 18px rgba(10,24,49,0.05)",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          gap: 8,
-                          alignItems: "center",
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <div
-                          style={{
-                            color: "#0B1F33",
-                            fontWeight: 800,
-                            lineHeight: 1.3,
-                            flex: "1 1 220px",
-                          }}
-                        >
-                          {safeStr(item.title || "Demand request")}
-                        </div>
-
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          <span
-                            style={badge(
-                              safeStr(item.urgency).toLowerCase() === "high"
-                            )}
-                          >
-                            {safeStr(item.urgency).toLowerCase() === "high"
-                              ? "Urgent"
-                              : "Open"}
-                          </span>
-                          {safeDateTime(item.created_at) ? (
-                            <span style={badge(false)}>
-                              {safeDateTime(item.created_at)}
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
-                        {safeStr(
-                          item.description ||
-                            "Open Demand Box to read the full request."
-                        )}
-                      </div>
-
-                      {safeStr(item.requester_name || item.requester_nickname) ? (
-                        <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          <span style={badge(false)}>
-                            {safeStr(item.requester_name || item.requester_nickname)}
-                          </span>
-                        </div>
-                      ) : null}
-                    </div>
-                  ))}
+                <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                  Create a demand when a member or seller needs the community to
+                  respond.
                 </div>
-              ) : null}
-
-              <div style={{ marginTop: 12 }}>
-                <button
-                  type="button"
-                  onClick={(event) =>
-                    openDashboardRoute(event, selectedDemandPanel.to)
-                  }
-                  onPointerDown={consumeDashboardPointerEvent}
-                  style={{
-                    ...secondaryBtn(false),
-                    width: "100%",
-                    minHeight: isCompact ? 38 : 36,
-                    padding: isCompact ? "8px 11px" : "7px 11px",
-                    fontSize: 12.5,
-                  }}
-                >
-                  {selectedDemandPanel.ctaLabel}
-                </button>
               </div>
+            )}
+
+            <div style={{ ...dashboardActionGrid(isCompact ? 132 : 156) }}>
+              <button
+                type="button"
+                onClick={(event) =>
+                  openDashboardRoute(event, demandPrimaryActionTo)
+                }
+                onPointerDown={consumeDashboardPointerEvent}
+                style={dashboardFillButton(secondaryBtn(false))}
+              >
+                {demandPrimaryActionLabel}
+              </button>
             </div>
-          ) : null}
+          </div>
         </div>
       </section>
 
