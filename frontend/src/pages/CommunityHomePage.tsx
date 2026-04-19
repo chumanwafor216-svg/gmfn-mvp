@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CommunityShopControlPanel from "../components/CommunityShopControlPanel";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import OriginLink from "../components/OriginLink";
+import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { navigateWithOrigin } from "../lib/nav";
 import {
   createMarketplaceBroadcast,
@@ -19,6 +20,7 @@ import {
   safeCopy,
   selectClan,
   uploadMarketplaceImageFile,
+  uploadMarketplaceVideoFile,
 } from "../lib/api";
 import {
   getCommunityMoneySurface,
@@ -33,6 +35,10 @@ import {
   relationshipLabel,
   roleLabel,
 } from "../lib/firstCircle";
+import {
+  prepareSpotlightImageFile,
+  prepareSpotlightVideoFile,
+} from "../lib/spotlightMediaPrep";
 
 type ClanItem = {
   id?: number;
@@ -75,6 +81,7 @@ type ActiveCommunitySpotlight = {
   id?: number;
   message: string;
   imageUrl: string;
+  videoUrl: string;
   expiresAt: string;
   createdAt: string;
 };
@@ -108,9 +115,116 @@ type ExpectedPaymentRecord = {
 
 const COMMUNITY_HOME_COLLAPSE_KEY = "gmfn.communityHome.sections.v1";
 const SPOTLIGHT_DRAFT_PREFIX = "gmfn.communityHome.spotlightDraft.";
+const SPOTLIGHT_ALLOWED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+];
+const SPOTLIGHT_ALLOWED_VIDEO_TYPES = [
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+];
+const SPOTLIGHT_IMAGE_TYPE_ALIASES: Record<string, string> = {
+  "image/jpg": "image/jpeg",
+  "image/pjpeg": "image/jpeg",
+  "image/x-png": "image/png",
+};
+const SPOTLIGHT_VIDEO_TYPE_ALIASES: Record<string, string> = {
+  "video/mov": "video/quicktime",
+};
+const SPOTLIGHT_GENERIC_IMAGE_TYPES = [
+  "",
+  "application/octet-stream",
+  "binary/octet-stream",
+];
+const SPOTLIGHT_GENERIC_VIDEO_TYPES = [
+  "",
+  "application/octet-stream",
+  "binary/octet-stream",
+];
+const SPOTLIGHT_ALLOWED_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
+const SPOTLIGHT_ALLOWED_VIDEO_EXTENSIONS = [".mp4", ".webm", ".mov"];
+const SPOTLIGHT_ALLOWED_IMAGE_LABEL = "JPG, PNG, or WebP";
+const SPOTLIGHT_ALLOWED_VIDEO_LABEL = "MP4, WebM, or MOV";
+const SPOTLIGHT_MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const SPOTLIGHT_MAX_VIDEO_BYTES = 10 * 1024 * 1024;
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
+}
+
+function formatFileSize(bytes: number): string {
+  const size = Number(bytes || 0);
+  if (!Number.isFinite(size) || size <= 0) return "0 KB";
+  if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(size / 1024))} KB`;
+}
+
+function normalizeSpotlightImageType(contentType: string): string {
+  const raw = safeStr(contentType).toLowerCase().split(";")[0]?.trim() || "";
+  return SPOTLIGHT_IMAGE_TYPE_ALIASES[raw] || raw;
+}
+
+function spotlightMediaExtension(filename: string): string {
+  const raw = safeStr(filename).toLowerCase();
+  const dot = raw.lastIndexOf(".");
+  return dot >= 0 ? raw.slice(dot) : "";
+}
+
+function validateSpotlightImageFile(
+  file: File | null | undefined,
+  enforceSize = true
+): string {
+  if (!file) return "";
+
+  const contentType = normalizeSpotlightImageType(file.type);
+  const ext = spotlightMediaExtension(file.name);
+  const hasAcceptedType = SPOTLIGHT_ALLOWED_IMAGE_TYPES.includes(contentType);
+  const hasAcceptedExtension = SPOTLIGHT_ALLOWED_IMAGE_EXTENSIONS.includes(ext);
+  const hasGenericType = SPOTLIGHT_GENERIC_IMAGE_TYPES.includes(contentType);
+
+  if (!hasAcceptedType && !(hasGenericType && hasAcceptedExtension)) {
+    return `Use a ${SPOTLIGHT_ALLOWED_IMAGE_LABEL} image. Other formats are not accepted yet.`;
+  }
+
+  if (enforceSize && Number(file.size || 0) > SPOTLIGHT_MAX_IMAGE_BYTES) {
+    return `Image is ${formatFileSize(
+      file.size
+    )}. Spotlight images must be 10 MB or smaller.`;
+  }
+
+  return "";
+}
+
+function normalizeSpotlightVideoType(contentType: string): string {
+  const raw = safeStr(contentType).toLowerCase().split(";")[0]?.trim() || "";
+  return SPOTLIGHT_VIDEO_TYPE_ALIASES[raw] || raw;
+}
+
+function validateSpotlightVideoFile(
+  file: File | null | undefined,
+  enforceSize = true
+): string {
+  if (!file) return "";
+
+  const contentType = normalizeSpotlightVideoType(file.type);
+  const ext = spotlightMediaExtension(file.name);
+  const hasAcceptedType = SPOTLIGHT_ALLOWED_VIDEO_TYPES.includes(contentType);
+  const hasAcceptedExtension = SPOTLIGHT_ALLOWED_VIDEO_EXTENSIONS.includes(ext);
+  const hasGenericType = SPOTLIGHT_GENERIC_VIDEO_TYPES.includes(contentType);
+
+  if (!hasAcceptedType && !(hasGenericType && hasAcceptedExtension)) {
+    return `Use a ${SPOTLIGHT_ALLOWED_VIDEO_LABEL} video. Other formats are not accepted yet.`;
+  }
+
+  if (enforceSize && Number(file.size || 0) > SPOTLIGHT_MAX_VIDEO_BYTES) {
+    return `Video is ${formatFileSize(
+      file.size
+    )}. Spotlight videos must be 10 MB or smaller.`;
+  }
+
+  return "";
 }
 
 function toBackendAssetUrl(path: string): string {
@@ -590,7 +704,20 @@ export default function CommunityHomePage() {
     null
   );
   const [spotlightPreviewUrl, setSpotlightPreviewUrl] = useState("");
+  const [preparingSpotlightImage, setPreparingSpotlightImage] = useState(false);
+  const [spotlightVideoFile, setSpotlightVideoFile] = useState<File | null>(
+    null
+  );
+  const [spotlightVideoPreviewUrl, setSpotlightVideoPreviewUrl] = useState("");
+  const [spotlightVideoDurationSeconds, setSpotlightVideoDurationSeconds] =
+    useState<number | null>(null);
+  const [preparingSpotlightVideo, setPreparingSpotlightVideo] = useState(false);
   const [spotlightFileInputKey, setSpotlightFileInputKey] = useState(0);
+  const [spotlightVideoInputKey, setSpotlightVideoInputKey] = useState(0);
+  const [spotlightNotice, setSpotlightNotice] = useState<{
+    tone: NoticeTone;
+    text: string;
+  } | null>(null);
   const [activeCommunitySpotlight, setActiveCommunitySpotlight] =
     useState<ActiveCommunitySpotlight | null>(null);
   const [activeCommunitySpotlightLoading, setActiveCommunitySpotlightLoading] =
@@ -616,6 +743,8 @@ export default function CommunityHomePage() {
       readLocalJSON(COMMUNITY_HOME_COLLAPSE_KEY, defaultCollapseState())
     )
   );
+  const spotlightImagePrepJobRef = useRef(0);
+  const spotlightVideoPrepJobRef = useRef(0);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -659,6 +788,20 @@ export default function CommunityHomePage() {
       URL.revokeObjectURL(objectUrl);
     };
   }, [spotlightImageFile]);
+
+  useEffect(() => {
+    if (!spotlightVideoFile) {
+      setSpotlightVideoPreviewUrl("");
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(spotlightVideoFile);
+    setSpotlightVideoPreviewUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [spotlightVideoFile]);
 
   useEffect(() => {
     function refreshFirstCircleDraft() {
@@ -1053,7 +1196,8 @@ export default function CommunityHomePage() {
       Boolean(safeStr(spotlightDescription)) ||
       Boolean(safeStr(spotlightTagNumber)) ||
       Boolean(safeStr(spotlightExpiry)) ||
-      Boolean(spotlightImageFile);
+      Boolean(spotlightImageFile) ||
+      Boolean(spotlightVideoFile);
 
     if (activeCommunitySpotlight) {
       return {
@@ -1075,7 +1219,7 @@ export default function CommunityHomePage() {
     return {
       title: "Prepare a spotlight draft first",
       detail:
-        "Add the description, optional expiry, and image here. Once the draft looks right, publish it so the live state can appear below.",
+        "Add the description, optional expiry, and image or short video here. Once the draft looks right, publish it so the live state can appear below.",
     };
   }, [
     activeCommunitySpotlight,
@@ -1083,6 +1227,7 @@ export default function CommunityHomePage() {
     spotlightTagNumber,
     spotlightExpiry,
     spotlightImageFile,
+    spotlightVideoFile,
   ]);
 
   async function refreshActiveCommunitySpotlight(clanId: number) {
@@ -1119,6 +1264,7 @@ export default function CommunityHomePage() {
               id: Number(firstActive?.id || 0) || undefined,
               message: safeStr(firstActive?.message || ""),
               imageUrl: toBackendAssetUrl(safeStr(firstActive?.image_url || "")),
+              videoUrl: toBackendAssetUrl(safeStr(firstActive?.video_url || "")),
               expiresAt: safeStr(firstActive?.expires_at || ""),
               createdAt: safeStr(firstActive?.created_at || ""),
             }
@@ -1175,6 +1321,11 @@ export default function CommunityHomePage() {
 
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });
+  }
+
+  function showSpotlightNotice(tone: NoticeTone, text: string) {
+    setSpotlightNotice({ tone, text });
+    showNotice(tone, text);
   }
 
   function toggleSection(key: CollapseKey) {
@@ -1286,16 +1437,154 @@ export default function CommunityHomePage() {
 
   function clearSpotlightDraft() {
     const clanId = getClanId(selectedClan);
+    spotlightImagePrepJobRef.current += 1;
+    spotlightVideoPrepJobRef.current += 1;
 
     setSpotlightImageFile(null);
+    setSpotlightVideoFile(null);
+    setSpotlightVideoDurationSeconds(null);
+    setPreparingSpotlightImage(false);
+    setPreparingSpotlightVideo(false);
+    setSpotlightNotice(null);
     setSpotlightDescription("");
     setSpotlightTagNumber("");
     setSpotlightExpiry("");
     setSpotlightPreviewUrl("");
+    setSpotlightVideoPreviewUrl("");
     setSpotlightFileInputKey((x) => x + 1);
+    setSpotlightVideoInputKey((x) => x + 1);
 
     if (clanId) {
       removeLocal(spotlightDraftStorageKey(clanId));
+    }
+  }
+
+  async function handleSpotlightImageChange(file: File | null) {
+    spotlightImagePrepJobRef.current += 1;
+    const prepJob = spotlightImagePrepJobRef.current;
+
+    if (!file) {
+      setPreparingSpotlightImage(false);
+      setSpotlightImageFile(null);
+      setSpotlightNotice(null);
+      return;
+    }
+
+    const validationIssue = validateSpotlightImageFile(file, false);
+    if (validationIssue) {
+      setPreparingSpotlightImage(false);
+      setSpotlightImageFile(null);
+      setSpotlightPreviewUrl("");
+      setSpotlightFileInputKey((x) => x + 1);
+      showSpotlightNotice("error", validationIssue);
+      return;
+    }
+
+    try {
+      setPreparingSpotlightImage(true);
+
+      const prepared = await prepareSpotlightImageFile(file, {
+        maxBytes: SPOTLIGHT_MAX_IMAGE_BYTES,
+      });
+      if (spotlightImagePrepJobRef.current !== prepJob) return;
+
+      const preparedValidationIssue = validateSpotlightImageFile(
+        prepared.file,
+        true
+      );
+      if (preparedValidationIssue) {
+        throw new Error(preparedValidationIssue);
+      }
+
+      setSpotlightImageFile(prepared.file);
+      setSpotlightNotice({
+        tone: "success",
+        text:
+          prepared.message ||
+          (spotlightVideoFile
+            ? `${safeStr(prepared.file.name) || "Selected image"} is ready as the fallback cover for your spotlight video.`
+            : `${safeStr(prepared.file.name) || "Selected image"} is ready for spotlight publish.`),
+      });
+    } catch (err: any) {
+      if (spotlightImagePrepJobRef.current !== prepJob) return;
+      setSpotlightImageFile(null);
+      setSpotlightPreviewUrl("");
+      setSpotlightFileInputKey((x) => x + 1);
+      showSpotlightNotice(
+        "error",
+        safeStr(err?.message) || "This image could not be prepared right now."
+      );
+    } finally {
+      if (spotlightImagePrepJobRef.current === prepJob) {
+        setPreparingSpotlightImage(false);
+      }
+    }
+  }
+
+  async function handleSpotlightVideoChange(file: File | null) {
+    spotlightVideoPrepJobRef.current += 1;
+    const prepJob = spotlightVideoPrepJobRef.current;
+
+    if (!file) {
+      setPreparingSpotlightVideo(false);
+      setSpotlightVideoFile(null);
+      setSpotlightVideoDurationSeconds(null);
+      setSpotlightNotice(null);
+      return;
+    }
+
+    const validationIssue = validateSpotlightVideoFile(file, false);
+    if (validationIssue) {
+      setPreparingSpotlightVideo(false);
+      setSpotlightVideoFile(null);
+      setSpotlightVideoDurationSeconds(null);
+      setSpotlightVideoPreviewUrl("");
+      setSpotlightVideoInputKey((x) => x + 1);
+      showSpotlightNotice("error", validationIssue);
+      return;
+    }
+
+    try {
+      setPreparingSpotlightVideo(true);
+
+      const prepared = await prepareSpotlightVideoFile(file, {
+        maxBytes: SPOTLIGHT_MAX_VIDEO_BYTES,
+        maxDurationSeconds: 5,
+      });
+      if (spotlightVideoPrepJobRef.current !== prepJob) return;
+
+      const preparedValidationIssue = validateSpotlightVideoFile(
+        prepared.file,
+        true
+      );
+      if (preparedValidationIssue) {
+        throw new Error(preparedValidationIssue);
+      }
+
+      setSpotlightVideoFile(prepared.file);
+      setSpotlightVideoDurationSeconds(prepared.durationSeconds ?? null);
+      setSpotlightNotice({
+        tone: "success",
+        text:
+          prepared.message ||
+          (spotlightImageFile
+            ? `${safeStr(prepared.file.name) || "Selected video"} is ready for spotlight publish. Your selected image will stay as the fallback cover.`
+            : `${safeStr(prepared.file.name) || "Selected video"} is ready for spotlight publish.`),
+      });
+    } catch (err: any) {
+      if (spotlightVideoPrepJobRef.current !== prepJob) return;
+      setSpotlightVideoFile(null);
+      setSpotlightVideoDurationSeconds(null);
+      setSpotlightVideoPreviewUrl("");
+      setSpotlightVideoInputKey((x) => x + 1);
+      showSpotlightNotice(
+        "error",
+        safeStr(err?.message) || "This video could not be prepared right now."
+      );
+    } finally {
+      if (spotlightVideoPrepJobRef.current === prepJob) {
+        setPreparingSpotlightVideo(false);
+      }
     }
   }
 
@@ -1318,7 +1607,18 @@ export default function CommunityHomePage() {
 
   async function publishSpotlight() {
     if (!selectedClanId) {
-      showNotice("error", "Select a community before publishing spotlight.");
+      showSpotlightNotice(
+        "error",
+        "Select a community before publishing spotlight."
+      );
+      return;
+    }
+
+    if (preparingSpotlightImage || preparingSpotlightVideo) {
+      showSpotlightNotice(
+        "error",
+        "Please wait while the app prepares your spotlight media."
+      );
       return;
     }
 
@@ -1331,15 +1631,32 @@ export default function CommunityHomePage() {
       .filter(Boolean)
       .join("\n");
 
-    if (!combinedMessage && !spotlightImageFile) {
-      showNotice("error", "Add a spotlight description or image first.");
+    if (!combinedMessage && !spotlightImageFile && !spotlightVideoFile) {
+      showSpotlightNotice(
+        "error",
+        "Add a spotlight description, image, or short video first."
+      );
+      return;
+    }
+
+    const imageValidationIssue = validateSpotlightImageFile(spotlightImageFile);
+    if (imageValidationIssue) {
+      showSpotlightNotice("error", imageValidationIssue);
+      return;
+    }
+
+    const videoValidationIssue = validateSpotlightVideoFile(spotlightVideoFile);
+    if (videoValidationIssue) {
+      showSpotlightNotice("error", videoValidationIssue);
       return;
     }
 
     try {
       setPublishingSpotlight(true);
+      setSpotlightNotice(null);
 
       let imageUrl = "";
+      let videoUrl = "";
       let spotlightShopId = 0;
 
       if (spotlightImageFile) {
@@ -1364,6 +1681,29 @@ export default function CommunityHomePage() {
         }
       }
 
+      if (spotlightVideoFile) {
+        const uploadRes = await uploadMarketplaceVideoFile(
+          spotlightVideoFile,
+          spotlightVideoDurationSeconds,
+          selectedClanId
+        );
+
+        videoUrl = firstTruthy(
+          uploadRes?.video_url,
+          uploadRes?.url,
+          uploadRes?.file_url,
+          uploadRes?.path,
+          uploadRes?.item?.video_url,
+          uploadRes?.data?.video_url
+        );
+
+        if (!videoUrl) {
+          throw new Error(
+            "Video upload completed but the system did not return a usable video link."
+          );
+        }
+      }
+
       if (myGmfnId) {
         const shopRes = await getMarketplaceShopByGmfnId(myGmfnId, {
           clan_id: selectedClanId,
@@ -1384,18 +1724,24 @@ export default function CommunityHomePage() {
         shop_id: spotlightShopId > 0 ? spotlightShopId : undefined,
         message: combinedMessage || "Spotlight update",
         image_url: imageUrl || undefined,
+        video_url: videoUrl || undefined,
         expires_at: resolvedExpiry,
       });
 
       await refreshActiveCommunitySpotlight(selectedClanId);
       clearSpotlightDraft();
 
-      showNotice(
+      showSpotlightNotice(
         "success",
-        "Spotlight uploaded successfully. It should now appear on the dashboard spotlight screen."
+        videoUrl
+          ? "Spotlight video uploaded successfully. It should now appear on the dashboard spotlight screen."
+          : "Spotlight uploaded successfully. It should now appear on the dashboard spotlight screen."
       );
     } catch (err: any) {
-      showNotice("error", safeStr(err?.message) || "Spotlight upload failed.");
+      showSpotlightNotice(
+        "error",
+        safeStr(err?.message) || "Spotlight upload failed."
+      );
     } finally {
       setPublishingSpotlight(false);
     }
@@ -2553,8 +2899,9 @@ export default function CommunityHomePage() {
                 lineHeight: 1.75,
               }}
             >
-              Choose the spotlight image and details here, preview it first, then
-              publish it to the dashboard spotlight screen.
+              Choose the spotlight image or short video and details here,
+              preview it first, then publish it to the dashboard spotlight
+              screen.
             </div>
           </div>
 
@@ -2626,12 +2973,95 @@ export default function CommunityHomePage() {
                 <input
                   key={spotlightFileInputKey}
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/jpg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
                   onChange={(e) =>
-                    setSpotlightImageFile(e.target.files?.[0] || null)
+                    handleSpotlightImageChange(e.target.files?.[0] || null)
                   }
                   style={{ ...inputStyle(), marginTop: 8, paddingTop: 10 }}
                 />
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#5F7287",
+                    fontSize: 13,
+                    lineHeight: 1.7,
+                  }}
+                >
+                  Accepted image types: {SPOTLIGHT_ALLOWED_IMAGE_LABEL}. Maximum
+                  size: 10 MB. If a photo is heavier than that, the app will try
+                  to prepare a lighter copy automatically before upload.
+                </div>
+                {spotlightImageFile ? (
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B1F33",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    Selected image: {safeStr(spotlightImageFile.name) || "image"} |{" "}
+                    {formatFileSize(spotlightImageFile.size)} |{" "}
+                    {safeStr(spotlightImageFile.type) || "unknown type"}
+                  </div>
+                ) : null}
+              </div>
+
+              <div style={{ marginTop: 14 }}>
+                <div style={sectionLabel()}>Short video (optional)</div>
+                <input
+                  key={spotlightVideoInputKey}
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
+                  onChange={(e) =>
+                    handleSpotlightVideoChange(e.target.files?.[0] || null)
+                  }
+                  style={{ ...inputStyle(), marginTop: 8, paddingTop: 10 }}
+                />
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#5F7287",
+                    fontSize: 13,
+                    lineHeight: 1.7,
+                  }}
+                >
+                  Accepted video types: {SPOTLIGHT_ALLOWED_VIDEO_LABEL}. Maximum
+                  size: 10 MB. If a clip is too heavy or too long, the app will
+                  try to prepare a shorter spotlight-ready version
+                  automatically. If you add both image and video, the video
+                  becomes the live spotlight media and the image stays as the
+                  fallback cover.
+                </div>
+                {spotlightVideoFile ? (
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B1F33",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    Selected video: {safeStr(spotlightVideoFile.name) || "video"} |{" "}
+                    {formatFileSize(spotlightVideoFile.size)} |{" "}
+                    {safeStr(spotlightVideoFile.type) || "unknown type"}
+                    {spotlightVideoDurationSeconds != null
+                      ? ` | ${spotlightVideoDurationSeconds.toFixed(1)}s`
+                      : ""}
+                  </div>
+                ) : null}
+                {spotlightNotice ? (
+                  <div
+                    style={{
+                      marginTop: 12,
+                      ...noticeCard(spotlightNotice.tone),
+                    }}
+                  >
+                    {spotlightNotice.text}
+                  </div>
+                ) : null}
               </div>
 
               <div
@@ -2645,10 +3075,23 @@ export default function CommunityHomePage() {
                 <button
                   type="button"
                   onClick={publishSpotlight}
-                  disabled={publishingSpotlight}
-                  style={actionBtn("primary", publishingSpotlight)}
+                  disabled={
+                    publishingSpotlight ||
+                    preparingSpotlightImage ||
+                    preparingSpotlightVideo
+                  }
+                  style={actionBtn(
+                    "primary",
+                    publishingSpotlight ||
+                      preparingSpotlightImage ||
+                      preparingSpotlightVideo
+                  )}
                 >
-                  {publishingSpotlight ? "Publishing..." : "Publish Spotlight"}
+                  {publishingSpotlight
+                    ? "Publishing..."
+                    : preparingSpotlightImage || preparingSpotlightVideo
+                    ? "Preparing media..."
+                    : "Publish Spotlight"}
                 </button>
 
                 <button
@@ -2674,46 +3117,42 @@ export default function CommunityHomePage() {
                   </div>
                 ) : activeCommunitySpotlight ? (
                   <>
-                    <div
-                      style={{
-                        marginTop: 12,
-                        borderRadius: 18,
-                        overflow: "hidden",
-                        border: "1px solid rgba(212,175,55,0.14)",
-                        background:
-                  "linear-gradient(180deg, rgba(24,58,88,0.98) 0%, rgba(38,84,122,0.98) 100%)",
-                        minHeight: 180,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      {activeCommunitySpotlight.imageUrl ? (
-                        <img
-                          src={activeCommunitySpotlight.imageUrl}
-                          alt="Live community spotlight"
-                          style={{
-                            width: "100%",
-                            minHeight: 180,
-                            maxHeight: 260,
-                            objectFit: "cover",
-                            display: "block",
-                          }}
-                        />
-                      ) : (
-                        <div
-                          style={{
-                            padding: 20,
-                            textAlign: "center",
-                            color: "#D7E3F1",
-                            fontWeight: 800,
-                            fontSize: 14,
-                            lineHeight: 1.7,
-                          }}
-                        >
-                          The active spotlight is live, but no image is attached to it.
-                        </div>
-                      )}
+                    <div style={{ marginTop: 12 }}>
+                      <SpotlightMediaFrame
+                        imageUrl={activeCommunitySpotlight.imageUrl}
+                        videoUrl={activeCommunitySpotlight.videoUrl}
+                        videoPoster={activeCommunitySpotlight.imageUrl}
+                        alt="Live community spotlight"
+                        frameStyle={{
+                          minHeight: 180,
+                          maxHeight: 260,
+                          borderRadius: 18,
+                          border: "1px solid rgba(212,175,55,0.14)",
+                          background:
+                            "linear-gradient(180deg, rgba(24,58,88,0.98) 0%, rgba(38,84,122,0.98) 100%)",
+                        }}
+                        mediaStyle={{
+                          minHeight: 180,
+                          maxHeight: 260,
+                        }}
+                        showVideoControls={Boolean(
+                          activeCommunitySpotlight.videoUrl
+                        )}
+                        fallback={
+                          <div
+                            style={{
+                              padding: 20,
+                              textAlign: "center",
+                              color: "#D7E3F1",
+                              fontWeight: 800,
+                              fontSize: 14,
+                              lineHeight: 1.7,
+                            }}
+                          >
+                            The active spotlight is live, but no image or video is attached to it.
+                          </div>
+                        }
+                      />
                     </div>
                     <div
                       style={{
@@ -2728,6 +3167,11 @@ export default function CommunityHomePage() {
                     </div>
                     <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <span style={badge(true)}>Active now</span>
+                      {activeCommunitySpotlight.videoUrl ? (
+                        <span style={badge(false)}>Short video live</span>
+                      ) : activeCommunitySpotlight.imageUrl ? (
+                        <span style={badge(false)}>Image live</span>
+                      ) : null}
                       {activeCommunitySpotlight.expiresAt ? (
                         <span style={badge(false)}>
                           Expires: {new Date(activeCommunitySpotlight.expiresAt).toLocaleString()}
@@ -2805,20 +3249,15 @@ export default function CommunityHomePage() {
               <div style={sectionLabel()}>Preview before publish</div>
 
               <div style={{ marginTop: 14 }}>
-                <div style={previewMediaBox()}>
-                  {spotlightPreviewUrl ? (
-                    <img
-                      src={spotlightPreviewUrl}
-                      alt="Spotlight preview"
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        minHeight: 220,
-                        objectFit: "cover",
-                        display: "block",
-                      }}
-                    />
-                  ) : (
+                <SpotlightMediaFrame
+                  imageUrl={spotlightPreviewUrl}
+                  videoUrl={spotlightVideoPreviewUrl}
+                  videoPoster={spotlightPreviewUrl}
+                  alt="Spotlight preview"
+                  frameStyle={previewMediaBox()}
+                  mediaStyle={{ minHeight: 220 }}
+                  showVideoControls={Boolean(spotlightVideoPreviewUrl)}
+                  fallback={
                     <div
                       style={{
                         padding: 18,
@@ -2829,10 +3268,10 @@ export default function CommunityHomePage() {
                         lineHeight: 1.5,
                       }}
                     >
-                      No image selected yet
+                      No image or video selected yet
                     </div>
-                  )}
-                </div>
+                  }
+                />
 
                 <div
                   style={{
@@ -2864,6 +3303,14 @@ export default function CommunityHomePage() {
                     <span style={badge(false)}>Expiry: {safeStr(spotlightExpiry)}</span>
                   ) : (
                     <span style={badge(false)}>No expiry set</span>
+                  )}
+
+                  {spotlightVideoPreviewUrl ? (
+                    <span style={badge(true)}>Short video selected</span>
+                  ) : spotlightPreviewUrl ? (
+                    <span style={badge(false)}>Image selected</span>
+                  ) : (
+                    <span style={badge(false)}>No media selected</span>
                   )}
 
                   <span style={badge(false)}>

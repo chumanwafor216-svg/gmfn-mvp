@@ -1009,6 +1009,7 @@ class MarketplaceBroadcast(Base):
 
     message: Mapped[str] = mapped_column(Text, nullable=False)
     image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    video_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     priority_mode: Mapped[str] = mapped_column(
         String(20),

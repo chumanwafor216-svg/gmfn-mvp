@@ -12,8 +12,8 @@ from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/marketplace/media", tags=["marketplace-media"])
 
-MAX_IMAGE_BYTES = 5 * 1024 * 1024
-MAX_VIDEO_BYTES = 8 * 1024 * 1024
+MAX_IMAGE_BYTES = 10 * 1024 * 1024
+MAX_VIDEO_BYTES = 10 * 1024 * 1024
 
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 ALLOWED_VIDEO_EXTENSIONS = {".mp4", ".webm", ".mov"}
@@ -29,6 +29,14 @@ ALLOWED_VIDEO_CONTENT_TYPES = {
     "video/webm",
     "video/quicktime",
 }
+
+CONTENT_TYPE_ALIASES = {
+    "image/jpg": "image/jpeg",
+    "image/pjpeg": "image/jpeg",
+    "image/x-png": "image/png",
+}
+
+GENERIC_CONTENT_TYPES = {"", "application/octet-stream", "binary/octet-stream"}
 
 
 def _now_utc() -> datetime:
@@ -88,15 +96,26 @@ def _validate_media_type(media_type: str) -> str:
     return mt
 
 
-def _validate_content_type(media_type: str, content_type: str) -> None:
+def _normalize_content_type(content_type: str) -> str:
     ct = str(content_type or "").strip().lower()
+    if ";" in ct:
+        ct = ct.split(";", 1)[0].strip().lower()
+    return CONTENT_TYPE_ALIASES.get(ct, ct)
+
+
+def _validate_content_type(media_type: str, content_type: str, ext: str = "") -> None:
+    ct = _normalize_content_type(content_type)
 
     if media_type == "image":
+        if ct in GENERIC_CONTENT_TYPES and ext in ALLOWED_IMAGE_EXTENSIONS:
+            return
         if ct not in ALLOWED_IMAGE_CONTENT_TYPES:
             raise HTTPException(status_code=400, detail="Unsupported image content type.")
         return
 
     if media_type == "video":
+        if ct in GENERIC_CONTENT_TYPES and ext in ALLOWED_VIDEO_EXTENSIONS:
+            return
         if ct not in ALLOWED_VIDEO_CONTENT_TYPES:
             raise HTTPException(status_code=400, detail="Unsupported video content type.")
         return
@@ -148,11 +167,11 @@ async def create_marketplace_upload_url(
     _ensure_dirs()
 
     media_type = _validate_media_type(payload.media_type)
-    content_type = str(payload.content_type or "").strip().lower()
     ext = _safe_ext(payload.filename)
+    content_type = _normalize_content_type(payload.content_type)
 
     _validate_ext(media_type, ext)
-    _validate_content_type(media_type, content_type)
+    _validate_content_type(media_type, content_type, ext)
 
     generated_name = _random_name(ext)
     kind = "images" if media_type == "image" else "videos"
@@ -188,8 +207,8 @@ async def upload_marketplace_file_direct(
 
     _validate_ext(media_type, ext)
 
-    content_type = str(request.headers.get("content-type") or "").strip().lower()
-    _validate_content_type(media_type, content_type)
+    content_type = _normalize_content_type(request.headers.get("content-type"))
+    _validate_content_type(media_type, content_type, ext)
 
     raw = await request.body()
     if not raw:
@@ -223,17 +242,17 @@ async def upload_marketplace_image(
     _ensure_dirs()
 
     ext = _safe_ext(file.filename)
-    content_type = (file.content_type or "").lower().strip()
+    content_type = _normalize_content_type(file.content_type)
 
     _validate_ext("image", ext)
-    _validate_content_type("image", content_type)
+    _validate_content_type("image", content_type, ext)
 
     data = await _read_limited_bytes(file, MAX_IMAGE_BYTES)
     if not data:
         raise HTTPException(status_code=400, detail="Image file is empty.")
 
     filename = _random_name(ext)
-    filepath = IMAGE_UPLOAD_DIR / filename
+    filepath = _image_upload_dir() / filename
     filepath.write_bytes(data)
 
     return {
@@ -256,10 +275,10 @@ async def upload_marketplace_video(
     _ensure_dirs()
 
     ext = _safe_ext(file.filename)
-    content_type = (file.content_type or "").lower().strip()
+    content_type = _normalize_content_type(file.content_type)
 
     _validate_ext("video", ext)
-    _validate_content_type("video", content_type)
+    _validate_content_type("video", content_type, ext)
 
     if duration_seconds is not None and float(duration_seconds) > 5.0:
         raise HTTPException(
@@ -272,7 +291,7 @@ async def upload_marketplace_video(
         raise HTTPException(status_code=400, detail="Video file is empty.")
 
     filename = _random_name(ext)
-    filepath = VIDEO_UPLOAD_DIR / filename
+    filepath = _video_upload_dir() / filename
     filepath.write_bytes(data)
 
     return {

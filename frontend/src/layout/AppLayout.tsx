@@ -1,8 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { getCurrentClan, getMe, logout } from "../lib/api";
+import {
+  getDashboardAppUsageEntryFromLocation,
+  recordDashboardAppUsage,
+} from "../lib/dashboardAppUsage";
 import WorkspaceSettingsBridge from "../components/WorkspaceSettingsBridge";
 import WorkspaceCompanionBridge from "../components/WorkspaceCompanionBridge";
+import { gmfnBrand } from "../styles/gmfnBrand";
 
 type NavLinkItem = {
   label: string;
@@ -597,14 +602,14 @@ function desktopShell(): React.CSSProperties {
     minHeight: "100vh",
     display: "grid",
     gridTemplateColumns: "286px minmax(0, 1fr)",
-    background: "#F4F7FB",
+    background: gmfnBrand.gradients.pageWash,
   };
 }
 
 function mobileShell(): React.CSSProperties {
   return {
     minHeight: "100vh",
-    background: "#F4F7FB",
+    background: gmfnBrand.gradients.pageWash,
   };
 }
 
@@ -615,9 +620,8 @@ function sidebar(): React.CSSProperties {
     height: "100vh",
     overflowY: "auto",
     padding: 18,
-    color: "#FFFFFF",
-    background:
-      "linear-gradient(180deg, #10253B 0%, #163A5C 100%), radial-gradient(circle at top left, rgba(255,255,255,0.08), transparent 35%)",
+    color: gmfnBrand.colors.darkText,
+    background: gmfnBrand.gradients.heroSidebar,
     display: "flex",
     flexDirection: "column",
     gap: 14,
@@ -628,9 +632,9 @@ function brandCard(): React.CSSProperties {
   return {
     borderRadius: 22,
     padding: 18,
-    background: "rgba(255,255,255,0.07)",
+    background: gmfnBrand.gradients.glass,
     border: "1px solid rgba(255,255,255,0.10)",
-    boxShadow: "0 12px 28px rgba(0,0,0,0.10)",
+    boxShadow: gmfnBrand.shadows.glass,
   };
 }
 
@@ -640,7 +644,7 @@ function brandEyebrow(): React.CSSProperties {
     fontWeight: 800,
     letterSpacing: "0.08em",
     textTransform: "uppercase",
-    color: "rgba(255,255,255,0.78)",
+    color: "rgba(248,251,255,0.78)",
   };
 }
 
@@ -650,7 +654,7 @@ function brandTitle(): React.CSSProperties {
     fontSize: 22,
     fontWeight: 900,
     lineHeight: 1.15,
-    color: "#FFFFFF",
+    color: gmfnBrand.colors.darkText,
   };
 }
 
@@ -659,7 +663,7 @@ function brandText(): React.CSSProperties {
     marginTop: 10,
     fontSize: 13,
     lineHeight: 1.7,
-    color: "rgba(255,255,255,0.78)",
+    color: "rgba(248,251,255,0.78)",
   };
 }
 
@@ -678,7 +682,7 @@ function noteTitle(): React.CSSProperties {
     fontWeight: 900,
     letterSpacing: "0.06em",
     textTransform: "uppercase",
-    color: "rgba(255,255,255,0.72)",
+    color: "rgba(248,251,255,0.72)",
   };
 }
 
@@ -687,7 +691,7 @@ function noteText(): React.CSSProperties {
     marginTop: 8,
     fontSize: 13,
     lineHeight: 1.7,
-    color: "rgba(255,255,255,0.78)",
+    color: "rgba(248,251,255,0.78)",
   };
 }
 
@@ -706,8 +710,10 @@ function groupHeader(active = false): React.CSSProperties {
     border: active
       ? "1px solid rgba(255,255,255,0.14)"
       : "1px solid rgba(255,255,255,0.08)",
-    background: active ? "rgba(11,99,209,0.28)" : "rgba(255,255,255,0.03)",
-    color: "#FFFFFF",
+    background: active
+      ? "rgba(29,78,216,0.28)"
+      : "rgba(255,255,255,0.03)",
+    color: gmfnBrand.colors.darkText,
     borderRadius: 14,
     padding: "10px 12px",
     fontWeight: 800,
@@ -755,7 +761,7 @@ function mainContent(isMobile: boolean, taskMode: boolean): React.CSSProperties 
     padding: isMobile
       ? taskMode
         ? "16px 16px 28px"
-        : "16px 16px 120px"
+        : "16px 16px calc(168px + env(safe-area-inset-bottom, 0px))"
       : "24px 28px 34px",
     overflowX: "hidden",
   };
@@ -1008,9 +1014,12 @@ export default function AppLayout() {
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [mobileShellRouteGuardActive, setMobileShellRouteGuardActive] =
+    useState(false);
   const [myGmfnId, setMyGmfnId] = useState<string>("");
   const [myRole, setMyRole] = useState<string>(() => readRole());
   const [myClanRole, setMyClanRole] = useState<string>("");
+  const mobileShellRouteGuardTimerRef = React.useRef<number | null>(null);
 
   const isAdmin = useMemo(() => {
     const role = String(myRole || "").trim().toLowerCase();
@@ -1080,6 +1089,17 @@ export default function AppLayout() {
     window.addEventListener("resize", handleResize);
 
     return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (
+        typeof window !== "undefined" &&
+        mobileShellRouteGuardTimerRef.current !== null
+      ) {
+        window.clearTimeout(mobileShellRouteGuardTimerRef.current);
+      }
+    };
   }, []);
 
   const myShopGalleryTo = useMemo(() => {
@@ -1182,6 +1202,16 @@ export default function AppLayout() {
   }, [isMobile]);
 
   useEffect(() => {
+    const usageEntry = getDashboardAppUsageEntryFromLocation(
+      location.pathname,
+      location.search
+    );
+    if (!usageEntry) return;
+
+    recordDashboardAppUsage(usageEntry);
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
     if (typeof document === "undefined") return;
     if (!isMobile) return;
 
@@ -1237,6 +1267,20 @@ export default function AppLayout() {
     setIsDrawerOpen(false);
     setIsActionsOpen(false);
     navigate("/login?force=1", { replace: true });
+  }
+
+  function armMobileShellRouteGuard(durationMs = 480) {
+    if (typeof window === "undefined" || !isMobile) return;
+
+    if (mobileShellRouteGuardTimerRef.current !== null) {
+      window.clearTimeout(mobileShellRouteGuardTimerRef.current);
+    }
+
+    setMobileShellRouteGuardActive(true);
+    mobileShellRouteGuardTimerRef.current = window.setTimeout(() => {
+      setMobileShellRouteGuardActive(false);
+      mobileShellRouteGuardTimerRef.current = null;
+    }, durationMs);
   }
 
   const routeMeta = findCurrentRouteMeta(
@@ -1509,7 +1553,14 @@ export default function AppLayout() {
             onClick={closeActions}
           />
 
-          <div style={actionsPanel(isActionsOpen)} aria-hidden={!isActionsOpen}>
+          <div
+            style={{
+              ...actionsPanel(isActionsOpen),
+              pointerEvents:
+                isActionsOpen && !mobileShellRouteGuardActive ? "auto" : "none",
+            }}
+            aria-hidden={!isActionsOpen}
+          >
             <div
               style={{
                 display: "flex",
@@ -1583,14 +1634,24 @@ export default function AppLayout() {
         </>
       )}
 
-      <main style={mainContent(isMobile, !!taskMode)}>
+      <main
+        style={mainContent(isMobile, !!taskMode)}
+        onPointerDownCapture={() => armMobileShellRouteGuard()}
+        onTouchStartCapture={() => armMobileShellRouteGuard()}
+        onMouseDownCapture={() => armMobileShellRouteGuard()}
+      >
         <WorkspaceCompanionBridge />
         <WorkspaceSettingsBridge />
         <Outlet />
       </main>
 
       {isMobile && !taskMode ? (
-        <nav style={bottomNav()}>
+        <nav
+          style={{
+            ...bottomNav(),
+            pointerEvents: mobileShellRouteGuardActive ? "none" : "auto",
+          }}
+        >
           {mobileBottomItems.map((item) => (
             <Link
               key={`bottom-${item.label}-${item.to}`}

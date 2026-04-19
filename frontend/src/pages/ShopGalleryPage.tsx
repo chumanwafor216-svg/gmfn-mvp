@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
+import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import {
   getCurrentClan,
   getMarketplaceBroadcasts,
@@ -39,6 +40,7 @@ type ShopProduct = {
 type ShopBroadcast = {
   id?: number;
   imageUrl: string;
+  videoUrl: string;
   message: string;
   sourceShopName: string;
   sourceClanName: string;
@@ -264,6 +266,7 @@ function normalizeBroadcast(raw: any): ShopBroadcast | null {
   return {
     id: positiveNumber(src?.id) || undefined,
     imageUrl: resolveImageSrc(src?.image_url),
+    videoUrl: resolveImageSrc(src?.video_url),
     message: firstMeaningful(src?.message),
     sourceShopName: firstMeaningful(src?.source_shop_name),
     sourceClanName: firstMeaningful(src?.source_clan_name),
@@ -296,6 +299,32 @@ function spotlightBroadcastSortValue(item: ShopBroadcast | null): number {
   if (!item?.createdAt) return 0;
   const timestamp = new Date(item.createdAt).getTime();
   return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function splitSpotlightMessage(raw: any): {
+  summary: string;
+  tagLabel: string;
+} {
+  const lines = safeStr(raw)
+    .split(/\r?\n+/)
+    .map((line) => firstMeaningful(line))
+    .filter(Boolean);
+
+  let tagLabel = "";
+  const bodyLines: string[] = [];
+
+  for (const line of lines) {
+    if (!tagLabel && /\btag\s*:/i.test(line)) {
+      tagLabel = line;
+      continue;
+    }
+    bodyLines.push(line);
+  }
+
+  return {
+    summary: firstMeaningful(bodyLines.join(" "), safeStr(raw)),
+    tagLabel,
+  };
 }
 
 function normalizeProduct(raw: any, slotNumber: number): ShopProduct | null {
@@ -820,6 +849,7 @@ export default function ShopGalleryPage() {
     const currentShopGmfnId = firstMeaningful(effectiveShop?.gmfnId).toUpperCase();
     const spotlightShopGmfnId = firstMeaningful(miniSpotlight?.authorGmfnId);
     const spotlightClanId = positiveNumber(miniSpotlight?.sourceClanId);
+    const messageParts = splitSpotlightMessage(miniSpotlight?.message);
     const isCurrentShop =
       Boolean(currentShopGmfnId) &&
       Boolean(spotlightShopGmfnId) &&
@@ -827,33 +857,33 @@ export default function ShopGalleryPage() {
     const shopTo = spotlightShopGmfnId
       ? `/shop/${encodeURIComponent(spotlightShopGmfnId)}`
       : "";
-    const marketplaceTo = spotlightClanId
+    const communityTo = spotlightClanId
       ? `/community/${encodeURIComponent(String(spotlightClanId))}`
-      : "/app/marketplace";
+      : "";
 
     return {
       title: firstMeaningful(miniSpotlight?.sourceShopName, "Mini Spotlight"),
       detail: firstMeaningful(
-        miniSpotlight?.message,
+        messageParts.summary,
         "Live promoted visibility from the current community spotlight source."
       ),
+      tagLabel: messageParts.tagLabel,
       communityName: firstMeaningful(miniSpotlight?.sourceClanName, effectiveShop?.communityName),
       trustBand: firstMeaningful(miniSpotlight?.trustBand, "Trusted visibility"),
       createdAt: firstMeaningful(miniSpotlight?.createdAt),
       createdLabel: miniSpotlight?.createdAt ? formatWhen(miniSpotlight.createdAt) : "",
       imageUrl: firstMeaningful(miniSpotlight?.imageUrl),
+      videoUrl: firstMeaningful(miniSpotlight?.videoUrl),
       shopTo,
-      marketplaceTo,
+      communityTo,
       isCurrentShop,
-      primaryLabel: shopTo
-        ? "Open Shop"
-        : "Open Marketplace",
-      secondaryLabel: spotlightClanId ? "Open community" : "Open marketplace",
+      shopLabel: "Shop",
+      communityLabel: "Community",
       helperLine: isCurrentShop
         ? "This live spotlight currently belongs to the shop you are already viewing."
         : shopTo
         ? "Open the shop owner behind the current live spotlight item."
-        : "Open the wider marketplace page tied to the current spotlight context.",
+        : "This live spotlight item does not currently expose a linked shop owner.",
     };
   }, [miniSpotlight, effectiveShop]);
 
@@ -1329,7 +1359,7 @@ export default function ShopGalleryPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.16fr) 296px",
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.12fr) minmax(320px, 336px)",
             gap: 8,
             alignItems: "stretch",
           }}
@@ -1431,8 +1461,10 @@ export default function ShopGalleryPage() {
                 ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"),
                 border: "1px solid rgba(11,99,209,0.14)",
                 boxShadow: "0 18px 38px rgba(29,78,216,0.10)",
-                padding: 9,
+                padding: 8,
                 overflow: "hidden",
+                display: "grid",
+                gap: 4,
               }}
             >
               <div
@@ -1453,16 +1485,28 @@ export default function ShopGalleryPage() {
                   justifyContent: "space-between",
                   gap: 6,
                   alignItems: "center",
-                  flexWrap: "wrap",
+                  flexWrap: "nowrap",
                 }}
               >
-                <div style={sectionLabel()}>Mini Spotlight</div>
+                <div
+                  style={{
+                    ...sectionLabel(),
+                    minWidth: 0,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Mini Spotlight
+                </div>
                 <span
                   style={{
                     ...badge(true),
-                    minHeight: 24,
-                    padding: "3px 8px",
-                    fontSize: 10.5,
+                    minHeight: 22,
+                    padding: "2px 7px",
+                    fontSize: 10,
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
                   }}
                 >
                   Live promo
@@ -1471,30 +1515,166 @@ export default function ShopGalleryPage() {
 
               <div
                 style={{
-                  marginTop: 6,
-                  borderRadius: 14,
-                  overflow: "hidden",
-                  border: "1px solid rgba(11,99,209,0.14)",
-                  background:
-                    "linear-gradient(180deg, rgba(24,58,88,0.98) 0%, rgba(38,84,122,0.98) 100%)",
-                  minHeight: 88,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  marginTop: 4,
+                  minHeight: isCompact ? 284 : 310,
+                  position: "relative",
                 }}
               >
-                {miniSpotlightView.imageUrl ? (
-                  <img
-                    src={miniSpotlightView.imageUrl}
-                    alt={miniSpotlightView.title}
-                    style={{
-                      width: "100%",
-                      minHeight: 88,
-                      maxHeight: 108,
-                      objectFit: "cover",
-                      display: "block",
-                    }}
-                  />
+                {miniSpotlightView.imageUrl || miniSpotlightView.videoUrl ? (
+                  <>
+                    <SpotlightMediaFrame
+                      imageUrl={miniSpotlightView.imageUrl}
+                      videoUrl={miniSpotlightView.videoUrl}
+                      videoPoster={miniSpotlightView.imageUrl}
+                      alt={miniSpotlightView.title}
+                      contentPadding={2}
+                      frameStyle={{
+                        minHeight: isCompact ? 284 : 310,
+                        height: isCompact ? 284 : 310,
+                        borderRadius: 16,
+                        border: "1px solid rgba(11,99,209,0.14)",
+                        background:
+                          "linear-gradient(180deg, rgba(24,58,88,0.98) 0%, rgba(38,84,122,0.98) 100%)",
+                      }}
+                      mediaStyle={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        objectPosition: "center center",
+                      }}
+                      showVideoControls={false}
+                      autoPlayVideo={Boolean(miniSpotlightView.videoUrl)}
+                      mutedVideo={Boolean(miniSpotlightView.videoUrl)}
+                      loopVideo={Boolean(miniSpotlightView.videoUrl)}
+                    />
+
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 8,
+                        right: 8,
+                        display: "flex",
+                        gap: 4,
+                        alignItems: "center",
+                        zIndex: 3,
+                      }}
+                    >
+                      {miniSpotlightView.shopTo ? (
+                        <OriginLink
+                          to={miniSpotlightView.shopTo}
+                          title={miniSpotlightView.helperLine}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            minHeight: 20,
+                            padding: "2px 6px",
+                            borderRadius: 999,
+                            border: "1px solid rgba(255,255,255,0.55)",
+                            background: "rgba(203,213,225,0.68)",
+                            color: "#12263A",
+                            fontWeight: 800,
+                            fontSize: 9.5,
+                            lineHeight: 1,
+                            textDecoration: "none",
+                            whiteSpace: "nowrap",
+                            backdropFilter: "blur(10px)",
+                            boxShadow: "0 6px 14px rgba(15,23,42,0.16)",
+                          }}
+                        >
+                          {miniSpotlightView.shopLabel}
+                        </OriginLink>
+                      ) : null}
+                      {miniSpotlightView.communityTo ? (
+                        <OriginLink
+                          to={miniSpotlightView.communityTo}
+                          title={miniSpotlightView.communityName || "Open linked community"}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            minHeight: 20,
+                            padding: "2px 6px",
+                            borderRadius: 999,
+                            border: "1px solid rgba(255,255,255,0.5)",
+                            background: "rgba(226,232,240,0.54)",
+                            color: "#203247",
+                            fontWeight: 700,
+                            fontSize: 9.5,
+                            lineHeight: 1,
+                            textDecoration: "none",
+                            whiteSpace: "nowrap",
+                            backdropFilter: "blur(10px)",
+                            boxShadow: "0 6px 14px rgba(15,23,42,0.12)",
+                          }}
+                        >
+                          {miniSpotlightView.communityLabel}
+                        </OriginLink>
+                      ) : null}
+                    </div>
+
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: 8,
+                        right: 8,
+                        bottom: 8,
+                        display: "flex",
+                        gap: 4,
+                        flexWrap: "nowrap",
+                        alignItems: "center",
+                        pointerEvents: "none",
+                      }}
+                    >
+                      <span
+                        style={{
+                          ...badge(true),
+                          minHeight: 22,
+                          padding: "2px 7px",
+                          fontSize: 10,
+                          background: "rgba(255,255,255,0.88)",
+                          color: "#1D4ED8",
+                          whiteSpace: "nowrap",
+                          flexShrink: 0,
+                        }}
+                      >
+                        Community spotlight
+                      </span>
+                      {miniSpotlightView.videoUrl ? (
+                        <span
+                          style={{
+                            ...badge(false),
+                            minHeight: 22,
+                            padding: "2px 7px",
+                            fontSize: 10,
+                            background: "rgba(255,255,255,0.82)",
+                            color: "#24415C",
+                            whiteSpace: "nowrap",
+                            flexShrink: 0,
+                          }}
+                        >
+                          Short video
+                        </span>
+                      ) : null}
+                      <span
+                        style={{
+                          ...badge(false),
+                          minHeight: 22,
+                          padding: "2px 7px",
+                          fontSize: 10,
+                          background: "rgba(255,255,255,0.82)",
+                          color: "#24415C",
+                          minWidth: 0,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          flex: "1 1 auto",
+                        }}
+                      >
+                        {miniSpotlightView.communityName || "Current community"}
+                      </span>
+                    </div>
+                  </>
                 ) : (
                   <div
                     style={{
@@ -1510,71 +1690,118 @@ export default function ShopGalleryPage() {
                       ? "Live community spotlight is active here, but this current item has no image."
                       : "No live community spotlight is visible right now."}
                   </div>
-                )}
-              </div>
-
-              <div style={{ marginTop: 4, display: "flex", gap: 4, flexWrap: "wrap" }}>
-                <span style={{ ...badge(true), minHeight: 24, padding: "3px 8px", fontSize: 10.5 }}>
-                  Community spotlight
-                </span>
-                <span style={{ ...badge(false), minHeight: 24, padding: "3px 8px", fontSize: 10.5 }}>
-                  {miniSpotlightView.communityName || "Current community"}
-                </span>
+                    )}
               </div>
 
               <div
                 style={{
-                  marginTop: 4,
-                  color: "#0B1F33",
-                  fontSize: 13,
-                  fontWeight: 900,
-                  lineHeight: 1.18,
-                  display: "-webkit-box",
-                  WebkitLineClamp: 1,
-                  WebkitBoxOrient: "vertical" as any,
-                  overflow: "hidden",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  flexWrap: isCompact ? "wrap" : "nowrap",
+                  minWidth: 0,
+                  color: "#5F7287",
+                  fontSize: 10,
+                  lineHeight: 1.15,
+                  justifyContent: "space-between",
                 }}
               >
-                {miniSpotlightView.title}
+                <span
+                  style={{
+                    minWidth: 0,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    color: "#0B1F33",
+                    fontSize: 11.8,
+                    fontWeight: 900,
+                    flex: "1 1 auto",
+                  }}
+                >
+                  {miniSpotlightView.title}
+                </span>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 5,
+                    flexShrink: 0,
+                    justifyContent: "flex-end",
+                    minWidth: 0,
+                  }}
+                >
+                  {miniSpotlightView.tagLabel ? (
+                    <span
+                      style={{
+                        flexShrink: 0,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        fontWeight: 800,
+                        maxWidth: isCompact ? 120 : 132,
+                      }}
+                    >
+                      {miniSpotlightView.tagLabel}
+                    </span>
+                  ) : null}
+                  {miniSpotlightView.createdLabel ? (
+                    <span
+                      style={{
+                        flexShrink: 0,
+                        color: "#94A3B8",
+                        fontWeight: 700,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      |
+                    </span>
+                  ) : null}
+                  {miniSpotlightView.createdLabel ? (
+                    <span
+                      style={{
+                        flexShrink: 0,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        maxWidth: isCompact ? "100%" : 86,
+                      }}
+                    >
+                      {miniSpotlightView.createdLabel}
+                    </span>
+                  ) : null}
+                </div>
               </div>
-              <div
-                style={{
-                  marginTop: 2,
-                  ...helperText(),
-                  fontSize: 10.8,
-                  lineHeight: 1.32,
-                  display: "-webkit-box",
-                  WebkitLineClamp: 1,
-                  WebkitBoxOrient: "vertical" as any,
-                  overflow: "hidden",
-                }}
-              >
-                {miniSpotlightView.detail}
-              </div>
-              <div style={{ marginTop: 3, display: "flex", gap: 4, flexWrap: "wrap" }}>
-                <span style={{ ...badge(false), minHeight: 24, padding: "3px 8px", fontSize: 10.5 }}>
+              {miniSpotlightView.detail ? (
+                <div
+                  style={{
+                    marginTop: 1,
+                    ...helperText(),
+                    fontSize: 9.8,
+                    lineHeight: 1.15,
+                    display: "-webkit-box",
+                    WebkitLineClamp: 1,
+                    WebkitBoxOrient: "vertical" as any,
+                    overflow: "hidden",
+                  }}
+                  title={miniSpotlightView.detail}
+                >
+                  {miniSpotlightView.detail}
+                </div>
+              ) : miniSpotlightView.trustBand ? (
+                <div
+                  style={{
+                    marginTop: 1,
+                    color: "#6B7280",
+                    fontSize: 9.6,
+                    lineHeight: 1.1,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
                   {miniSpotlightView.trustBand}
-                </span>
-                {miniSpotlightView.createdLabel ? (
-                  <span style={{ ...badge(false), minHeight: 24, padding: "3px 8px", fontSize: 10.5 }}>
-                    {miniSpotlightView.createdLabel}
-                  </span>
-                ) : null}
-              </div>
-              <div style={{ marginTop: 4, display: "flex", gap: 5, flexWrap: "wrap" }}>
-                <OriginLink
-                  to={miniSpotlightView.shopTo || miniSpotlightView.marketplaceTo}
-                  style={{ ...primaryBtn(false), minHeight: 34, padding: "6px 10px", fontSize: 12 }}
-                >
-                  {miniSpotlightView.primaryLabel}
-                </OriginLink>
-                <OriginLink
-                  to={miniSpotlightView.marketplaceTo}
-                  style={{ ...secondaryBtn(false), minHeight: 34, padding: "6px 10px", fontSize: 12 }}
-                >
-                  {miniSpotlightView.secondaryLabel}
-                </OriginLink>
-              </div>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -1828,6 +2055,7 @@ export default function ShopGalleryPage() {
     </div>
   );
 }
+
 
 
 

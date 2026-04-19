@@ -5,7 +5,8 @@ Before changing code, read these files in this order:
 1. `README.md`
 2. `docs/PROJECT_PROTOCOL.md`
 3. `docs/FREEZE_POLICY.md`
-4. backend and frontend files directly related to the requested route or screen
+4. `docs/HANDOFF_NOTES.md`
+5. backend and frontend files directly related to the requested route or screen
 
 Do not start coding from assumptions. Inspect the code first.
 
@@ -15,6 +16,15 @@ Do not start coding from assumptions. Inspect the code first.
 This repository refers to the same product using two names: **GMFM** and **GMFN**.
 Until the product owner standardizes the final spelling, treat **GMFM** and **GMFN** as the same system and the same business domain.
 Do not create separate concepts, services, routes, or data models based only on the naming difference.
+
+Surface-brand rule:
+- **GMFN** = the wider corporation / owner context (`Global Mutual Funds Network`)
+- **GSN** = the current user-facing product brand (`Global Support Network`)
+- Default all user-visible frontend copy, labels, headers, helper text, and branded UX surfaces to **GSN** unless the product owner explicitly says otherwise.
+- Do not rename internal technical contracts, ids, or backend models just for branding unless the task explicitly requires it.
+
+Current owner-frozen UI area:
+- The `/app/dashboard` **Market Wisdom** presentation and interaction model is frozen unless the product owner explicitly asks to change it. Do not restyle, restructure, or "improve" that section on your own.
 
 ---
 
@@ -55,6 +65,8 @@ Business logic, route purpose, state transitions, permissions, and expected outc
 8. When uncertain, inspect backend + frontend implementations before asking questions.
 9. For low-risk work in non-frozen files, proceed autonomously and then report exactly what changed.
 10. After changes, explain impact by route, screen, and shared logic.
+11. Default user-visible guidance, helper text, explanation layers, and layman-language translations to shared/system-level frontend logic where possible. Do not leave this kind of interpretation trapped in one page unless the product owner explicitly asks for a page-local exception and that exception is clearly recorded.
+12. When a helper block, notification surface, or decision card points a user toward another screen, it should first explain in simple language what is wrong, why it matters, and the first thing to do. Do not make users open another page just to decode the problem unless the product owner explicitly accepts that behavior.
 
 ---
 
@@ -71,6 +83,7 @@ For every coding task:
    - routes/screens affected
    - behavior changed
    - remaining risks or unknowns
+8. Update `docs/HANDOFF_NOTES.md` after substantial work so the next session can resume without depending on chat history.
 
 ---
 

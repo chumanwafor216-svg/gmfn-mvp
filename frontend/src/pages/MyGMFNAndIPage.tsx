@@ -5,6 +5,20 @@ import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import { getCurrentClan, getMe, getMySettings } from "../lib/api";
 import { buildGuidanceSnapshot } from "../lib/guidance";
+import {
+  brandActionButton,
+  brandBadge,
+  brandHelperText,
+  brandInnerCard,
+  brandPageCard,
+  brandSectionLabel,
+  brandSoftCard,
+  gmfnBrand,
+} from "../styles/gmfnBrand";
+import {
+  GMFN_CAPABILITY_COUNT,
+  GMFN_CAPABILITIES,
+} from "../lib/gmfnCapabilities";
 import * as api from "../lib/api";
 
 type SettingsState = {
@@ -15,13 +29,6 @@ type SettingsState = {
 };
 
 type NoticeTone = "success" | "error";
-type CapabilityItem = {
-  id: number;
-  title: string;
-  whatItIs?: string;
-  howItWorks?: string;
-  whyItMatters?: string;
-};
 
 const SETTINGS_STORAGE_KEY = "gmfn.myGmfnAndI.settings.v2";
 
@@ -31,40 +38,6 @@ const DEFAULT_SETTINGS: SettingsState = {
   openActionsDirectly: true,
   tonePreset: "balanced-default",
 };
-
-const CAPABILITIES: readonly CapabilityItem[] = [
-  { id: 1, title: "Release Before Payment" },
-  { id: 2, title: "Trusted Buying and Selling" },
-  { id: 3, title: "Cross-Community Trade" },
-  { id: 4, title: "Fraud Reduction Before Action" },
-  { id: 5, title: "Spotlight Visibility" },
-  { id: 6, title: "Reputation-Based Visibility" },
-  { id: 7, title: "Marketplace Presence Across Communities" },
-  { id: 8, title: "People-Backed Loans" },
-  { id: 9, title: "Supporting Others" },
-  { id: 10, title: "Emergency Support" },
-  { id: 11, title: "Diaspora Trust Bridge" },
-  { id: 12, title: "Trust Savings (ROSCA Support)" },
-  { id: 13, title: "Contribution Tracking" },
-  { id: 14, title: "Continuity Across Distance" },
-  { id: 15, title: "Portable Trust Identity" },
-  { id: 16, title: "Reputation Mobility" },
-  { id: 17, title: "One Global Shop" },
-  { id: 18, title: "Service Economy Participation" },
-  { id: 19, title: "Trust-Based Hiring" },
-  { id: 20, title: "Demand Box" },
-  { id: 21, title: "Community Economic Power" },
-  {
-    id: 22,
-    title: "Commitment Builder",
-    whatItIs:
-      "Commitment Builder helps members turn savings goals, business targets, repayment plans, retirement readiness, and other intentions into structured, achievable follow-through.",
-    howItWorks:
-      "The app can help a member start a savings target, business target, repayment target, retirement-readiness target, or another structured commitment, then turn that intention into a clearer plan, reminders, step-by-step progress, and visible follow-through.",
-    whyItMatters:
-      "The point is not to collect goals. The point is to build execution discipline that can support savings behavior, retirement readiness, repayment follow-through, business targets, and more dependable action over time.",
-  },
-] as const;
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -79,33 +52,15 @@ function firstTruthy(...values: any[]): string {
 }
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
-  return {
-    borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 20,
-    boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
-    overflow: "hidden",
-  };
+  return brandPageCard(bg);
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
-  return {
-    borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 16,
-  };
+  return brandSoftCard(bg);
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
-  return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 14,
-  };
+  return brandInnerCard(bg);
 }
 
 function routeTile(primary = false): React.CSSProperties {
@@ -116,9 +71,9 @@ function routeTile(primary = false): React.CSSProperties {
     minHeight: 108,
     borderRadius: 18,
     border: primary
-      ? "1px solid rgba(29,78,216,0.18)"
-      : "1px solid rgba(11,31,51,0.08)",
-    background: primary ? "#F7FAFF" : "#FFFFFF",
+      ? `1px solid ${gmfnBrand.colors.accentBorder}`
+      : `1px solid ${gmfnBrand.colors.line}`,
+    background: primary ? "#F7FAFF" : gmfnBrand.colors.panel,
     padding: 16,
     textDecoration: "none",
     boxShadow: primary ? "0 10px 24px rgba(29,78,216,0.05)" : "none",
@@ -129,111 +84,30 @@ function capabilityCard(primary = false): React.CSSProperties {
   return {
     borderRadius: 18,
     border: primary
-      ? "1px solid rgba(29,78,216,0.18)"
-      : "1px solid rgba(11,31,51,0.08)",
-    background: primary ? "#F7FAFF" : "#FFFFFF",
+      ? `1px solid ${gmfnBrand.colors.accentBorder}`
+      : `1px solid ${gmfnBrand.colors.line}`,
+    background: primary ? "#F7FAFF" : gmfnBrand.colors.panel,
     padding: 16,
   };
 }
 
 function sectionLabel(): React.CSSProperties {
-  return {
-    fontSize: 12,
-    color: "#5D7389",
-    fontWeight: 900,
-    letterSpacing: 0.35,
-    textTransform: "uppercase",
-  };
+  return brandSectionLabel();
 }
 
 function badge(primary = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 6,
-    minHeight: 30,
-    borderRadius: 999,
-    padding: "6px 10px",
-    background: primary ? "rgba(29,78,216,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#1D4ED8" : "#51657A",
-    fontSize: 12,
-    fontWeight: 900,
-    whiteSpace: "normal",
-  };
+  return brandBadge(primary);
 }
 
 function actionBtn(
   kind: "primary" | "secondary" | "soft" = "secondary",
   disabled = false
 ): React.CSSProperties {
-  if (kind === "primary") {
-    return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 42,
-      padding: "10px 14px",
-      borderRadius: 14,
-      border: "none",
-      background: disabled ? "#CBD5E1" : "#1D4ED8",
-      color: "#FFFFFF",
-      fontWeight: 900,
-      fontSize: 14,
-      textAlign: "center",
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      opacity: disabled ? 0.86 : 1,
-    };
-  }
-
-  if (kind === "soft") {
-    return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 38,
-      padding: "8px 12px",
-      borderRadius: 12,
-      border: "1px solid rgba(11,31,51,0.08)",
-      background: "#F8FBFF",
-      color: disabled ? "#94A3B8" : "#24415C",
-      fontWeight: 800,
-      fontSize: 13,
-      textAlign: "center",
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      opacity: disabled ? 0.86 : 1,
-    };
-  }
-
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
-    borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
-    color: disabled ? "#94A3B8" : "#0B1F33",
-    fontWeight: 800,
-    fontSize: 14,
-    textAlign: "center",
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    opacity: disabled ? 0.86 : 1,
-  };
+  return brandActionButton(kind, disabled);
 }
 
 function helperText(): React.CSSProperties {
-  return {
-    color: "#5F7287",
-    fontSize: 14,
-    lineHeight: 1.75,
-  };
+  return brandHelperText();
 }
 
 function selectStyle(): React.CSSProperties {
@@ -241,11 +115,11 @@ function selectStyle(): React.CSSProperties {
     width: "100%",
     minHeight: 44,
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: `1px solid ${gmfnBrand.colors.lineStrong}`,
+    background: gmfnBrand.colors.panel,
     padding: "11px 12px",
     fontSize: 14,
-    color: "#0B1F33",
+    color: gmfnBrand.colors.ink,
     outline: "none",
     boxSizing: "border-box",
   };
@@ -256,7 +130,7 @@ function checkboxRow(): React.CSSProperties {
     display: "flex",
     gap: 10,
     alignItems: "flex-start",
-    color: "#0B1F33",
+    color: gmfnBrand.colors.ink,
     fontSize: 14,
     lineHeight: 1.6,
   };
@@ -452,6 +326,7 @@ export default function MyGMFNAndIPage() {
   }, [currentClan]);
 
   const nextBestStep = guidance?.nextBestStep || null;
+  const capabilityCount = GMFN_CAPABILITY_COUNT;
 
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });
@@ -559,7 +434,7 @@ export default function MyGMFNAndIPage() {
       <PageTopNav
         sectionLabel="My GSN and I"
         title="My GSN and I"
-        subtitle="Keep the 22 core capabilities visible here while workspace settings stay in a separate tab."
+        subtitle={`Keep the ${capabilityCount} core capabilities visible here while workspace settings stay in a separate tab.`}
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
@@ -585,9 +460,7 @@ export default function MyGMFNAndIPage() {
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
-        style={pageCard(
-          "linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)"
-        )}
+        style={pageCard(gmfnBrand.gradients.hero)}
       >
         <div
           style={{
@@ -603,7 +476,7 @@ export default function MyGMFNAndIPage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#F8FBFF",
+                color: gmfnBrand.colors.darkText,
                 fontWeight: 900,
                 fontSize: isCompact ? 28 : 34,
                 lineHeight: 1.1,
@@ -616,11 +489,11 @@ export default function MyGMFNAndIPage() {
               style={{
                 marginTop: 12,
                 ...helperText(),
-                color: "#D7E3F1",
+                color: gmfnBrand.colors.darkMuted,
                 maxWidth: 860,
               }}
             >
-              GSN is your stable identity layer. The current executive summary says the network makes trust visible, portable, and usable across trade, finance, savings, identity, work, community participation, and disciplined follow-through. This keeps those 22 core capabilities visible in one place.
+              GSN is your stable identity layer. The current executive summary says the network makes trust visible, portable, and usable across trade, finance, savings, identity, work, community participation, and disciplined follow-through. This keeps those {capabilityCount} core capabilities visible in one place.
             </div>
 
             <div
@@ -633,14 +506,14 @@ export default function MyGMFNAndIPage() {
             >
               <span style={badge(true)}>GMFN ID: {gmfnId}</span>
               <span style={badge(false)}>Community: {communityLabel}</span>
-              <span style={badge(false)}>22 core capabilities</span>
+              <span style={badge(false)}>{capabilityCount} core capabilities</span>
               <span style={badge(false)}>Member guide</span>
             </div>
           </div>
 
           <div
             style={{
-              ...softCard("rgba(255,255,255,0.94)"),
+              ...softCard(gmfnBrand.colors.overlayPanel),
               border: "1px solid rgba(148,163,184,0.16)",
             }}
           >
@@ -695,10 +568,10 @@ export default function MyGMFNAndIPage() {
       {activeTab === "guide" ? (
         <>
           <section style={pageCard("#FFFFFF")}>
-            <div style={sectionLabel()}>22 things GSN can do for you</div>
+            <div style={sectionLabel()}>{capabilityCount} things GSN can do for you</div>
 
             <div style={{ marginTop: 10, ...helperText(), maxWidth: 920 }}>
-              These are the 22 core capabilities that explain what GSN can do for you.
+              These are the {capabilityCount} core capabilities that explain what GSN can do for you.
             </div>
 
             <ExplainToggle
@@ -720,7 +593,7 @@ export default function MyGMFNAndIPage() {
                 gap: 12,
               }}
             >
-              {CAPABILITIES.map((item, index) => (
+              {GMFN_CAPABILITIES.map((item, index) => (
                 <div
                   key={item.id}
                   style={capabilityCard(index === 0)}
@@ -743,14 +616,16 @@ export default function MyGMFNAndIPage() {
           </section>
 
           <section style={pageCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Full explanation of the 22 core capabilities</div>
+            <div style={sectionLabel()}>
+              Full explanation of the {capabilityCount} core capabilities
+            </div>
 
             <div style={{ marginTop: 10, ...helperText(), maxWidth: 920 }}>
-              The executive summary uses the same explanation structure for all 22 capabilities.
+              The executive summary uses the same explanation structure for all {capabilityCount} capabilities.
             </div>
 
             <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
-              {CAPABILITIES.map((item) => (
+              {GMFN_CAPABILITIES.map((item) => (
                 <div key={`full-${item.id}`} style={innerCard("#FCFEFF")}>
                   <div
                     style={{
@@ -776,17 +651,24 @@ export default function MyGMFNAndIPage() {
                   <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
                     <div style={helperText()}>
                       <strong style={{ color: "#0B1F33" }}>What it is:</strong>{" "}
-                      {item.whatItIs || "Exists in real life, made visible in GSN."}
+                      {item.whatItIs ||
+                        item.proverb ||
+                        "Exists in real life, made visible in GSN."}
                     </div>
 
                     <div style={helperText()}>
                       <strong style={{ color: "#0B1F33" }}>How it works:</strong>{" "}
-                      {item.howItWorks || "Identity + trust + community."}
+                      {item.howItWorks ||
+                        item.gmfn ||
+                        "Identity + trust + community."}
                     </div>
 
                     <div style={helperText()}>
                       <strong style={{ color: "#0B1F33" }}>Why it matters:</strong>{" "}
-                      {item.whyItMatters || "Improves access, reduces risk."}
+                      {item.whyItMatters ||
+                        item.gmfn ||
+                        item.proverb ||
+                        "Improves access, reduces risk."}
                     </div>
                   </div>
                 </div>
@@ -798,7 +680,7 @@ export default function MyGMFNAndIPage() {
             <div style={sectionLabel()}>Where these capabilities usually appear in the app</div>
 
             <div style={{ marginTop: 10, ...helperText(), maxWidth: 920 }}>
-              The 22 capabilities do not all live on one page. Different pages carry different parts of the system.
+              The {capabilityCount} capabilities do not all live on one page. Different pages carry different parts of the system.
             </div>
 
             <div
@@ -931,7 +813,7 @@ export default function MyGMFNAndIPage() {
           <div style={sectionLabel()}>Workspace settings</div>
 
           <div style={{ marginTop: 10, ...helperText(), maxWidth: 860 }}>
-            Keep the app calmer and easier to read without changing the 22 core capabilities guide.
+            Keep the app calmer and easier to read without changing the {capabilityCount} core capabilities guide.
           </div>
 
           <div

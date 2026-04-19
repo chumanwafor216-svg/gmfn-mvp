@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
+import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import SystemPictureFrame from "../components/SystemPictureFrame";
 import { useLocation, useNavigate } from "react-router-dom";
-import OriginLink from "../components/OriginLink";
-import { EntryBackLink } from "../components/EntryControls";
 import { navigateWithOrigin } from "../lib/nav";
 import {
   getCommunityJoinRequests,
@@ -21,9 +20,34 @@ import {
   type GuidanceSnapshot,
 } from "../lib/guidance";
 import {
+  GMFN_CAPABILITY_COUNT,
+  getFeaturedGmfnCapability,
+  getGmfnCapability,
+  getGmfnCapabilityGuideLine,
+} from "../lib/gmfnCapabilities";
+import {
   getSmartMarketWisdomPair,
   type MarketWisdomPair,
 } from "../lib/marketWisdom";
+import {
+  buildDashboardNextRouteCopy,
+  buildDashboardTrustAttentionCore,
+  buildDashboardTrustNoticeCopy,
+  getDashboardRouteSurfaceLabel,
+} from "../lib/dashboardUserGuidance";
+import {
+  readDashboardAppUsage,
+  sortAppUsageRows,
+  type AppUseRecord,
+} from "../lib/dashboardAppUsage";
+import {
+  buildDashboardAttentionSignal,
+  defaultDashboardAttentionStoredState,
+  markDashboardAttentionActed,
+  markDashboardAttentionDismissed,
+  markDashboardAttentionShown,
+  normalizeDashboardAttentionStoredState,
+} from "../lib/dashboardAttentionEngine";
 
 type SpotlightItem = {
   id?: number;
@@ -32,6 +56,7 @@ type SpotlightItem = {
   body?: string | null;
   image_url?: string | null;
   image?: string | null;
+  video_url?: string | null;
   source_shop_name?: string | null;
   source_clan_name?: string | null;
   source_clan_id?: number | string | null;
@@ -110,8 +135,6 @@ type DashboardUIState = {
   trustExpanded: boolean;
 };
 
-type DashboardNoticeBucket = "actNow" | "dueSoon" | "watch" | "unread";
-
 type DashboardNoticeItem = {
   id: string;
   title: string;
@@ -125,6 +148,7 @@ type DashboardNoticeItem = {
 };
 
 type DashboardNoticeSummary = {
+  allRows: DashboardNoticeItem[];
   actNow: DashboardNoticeItem[];
   dueSoon: DashboardNoticeItem[];
   watch: DashboardNoticeItem[];
@@ -135,6 +159,42 @@ type DashboardNoticeSummary = {
     watch: number;
     unread: number;
   };
+};
+
+type DashboardNoticePreviewTone = "red" | "yellow" | "blue" | "slate";
+
+type DashboardNoticeSourceGroup = {
+  key: string;
+  title: string;
+  detail: string;
+  count: number;
+  unreadCount: number;
+  actNowCount: number;
+  dueSoonCount: number;
+  watchCount: number;
+  to: string;
+  ctaLabel: string;
+  tone: DashboardNoticePreviewTone;
+  rows: DashboardNoticeItem[];
+};
+
+type DashboardNoticeQuickGroupKey = "act-now" | "due-soon" | "unread";
+
+type DemandDetailPanelKey =
+  | "open-requests"
+  | "urgent"
+  | "current-request"
+  | "create-demand";
+
+type DemandDetailPanel = {
+  key: DemandDetailPanelKey;
+  chipLabel: string;
+  title: string;
+  detail: string;
+  to: string;
+  ctaLabel: string;
+  tone: DashboardNoticePreviewTone;
+  items: DemandItem[];
 };
 
 type UserOperationalClass =
@@ -151,15 +211,6 @@ type IntelligentRoute = {
   detail: string;
   to: string;
   reason?: string;
-};
-
-type AppUseRecord = {
-  key: string;
-  label: string;
-  detail: string;
-  to: string;
-  count: number;
-  lastOpenedAt: string;
 };
 
 type FocusCommitmentCategory =
@@ -247,9 +298,14 @@ type TrustJourneyModel = {
   commitmentLine: string;
 };
 
+type DashboardRouteActionHandler = (
+  event: React.SyntheticEvent<HTMLElement> | undefined,
+  to: string
+) => void;
+
 const DASHBOARD_UI_STORAGE_KEY = "gmfn.dashboard.ui.v3";
 const DASHBOARD_AVATAR_STORAGE_KEY = "gmfn.member.avatar";
-const DASHBOARD_APP_USAGE_STORAGE_KEY = "gmfn.dashboard.app-usage.v1";
+const DASHBOARD_ATTENTION_STORAGE_KEY = "gmfn.dashboard.attention.v1";
 const DASHBOARD_FOCUS_COMMITMENTS_STORAGE_KEY =
   "gmfn.dashboard.focus-commitments.v1";
 const DASHBOARD_FOCUS_EVENTS_STORAGE_KEY =
@@ -407,14 +463,38 @@ const EXACT_TARGET_ALIASES: Record<string, string> = {
   "guarantor-earnings": DASHBOARD_TARGETS.GUARANTOR_EARNINGS,
 };
 
+const DASHBOARD_BRAND = {
+  pageWash:
+    "radial-gradient(circle at top, rgba(47,103,196,0.16) 0%, rgba(16,37,59,0.00) 22%), linear-gradient(180deg, #F5FAFF 0%, #EEF5FD 42%, #F8FBFF 100%)",
+  heroField:
+    "radial-gradient(circle at top, rgba(47,103,196,0.16) 0%, rgba(16,37,59,0.00) 32%), linear-gradient(180deg, #10243A 0%, #173654 62%, #26527C 100%)",
+  heroGlass:
+    "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.06) 100%)",
+  summaryPanel:
+    "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(230,239,252,0.96) 58%, rgba(212,226,246,0.92) 100%)",
+  summaryButton:
+    "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(229,237,249,0.96) 100%)",
+  softPanel: "linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%)",
+  raisedPanel: "linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)",
+  quietPanel: "linear-gradient(180deg, #FFFFFF 0%, #FCFEFF 100%)",
+  cardBorder: "rgba(16,37,59,0.10)",
+  cardBorderStrong: "rgba(16,37,59,0.14)",
+  ink: "#10253B",
+  subInk: "#35516B",
+  helper: "#4A6580",
+  label: "#355A86",
+  accentDeep: "#123055",
+  goldText: "#8A651E",
+};
+
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 26,
-    border: "1px solid rgba(15,59,116,0.16)",
+    border: `1px solid ${DASHBOARD_BRAND.cardBorderStrong}`,
     background: bg,
     padding: 20,
     boxShadow:
-      "0 20px 42px rgba(7,16,28,0.10), inset 0 1px 0 rgba(255,255,255,0.46)",
+      "0 20px 44px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.72)",
     overflow: "hidden",
   };
 }
@@ -422,22 +502,22 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     borderRadius: 18,
-    border: "1px solid rgba(15,59,116,0.10)",
+    border: `1px solid ${DASHBOARD_BRAND.cardBorder}`,
     background: bg,
     padding: 16,
     boxShadow:
-      "inset 0 1px 0 rgba(255,255,255,0.82), 0 10px 22px rgba(10,24,49,0.05)",
+      "inset 0 1px 0 rgba(255,255,255,0.86), 0 12px 26px rgba(10,24,49,0.05)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 18,
-    border: "1px solid rgba(15,59,116,0.12)",
+    border: `1px solid ${DASHBOARD_BRAND.cardBorderStrong}`,
     background: bg,
     padding: 16,
     boxShadow:
-      "inset 0 1px 0 rgba(255,255,255,0.82), 0 12px 26px rgba(10,24,49,0.05)",
+      "inset 0 1px 0 rgba(255,255,255,0.84), 0 14px 28px rgba(10,24,49,0.05)",
   };
 }
 
@@ -463,16 +543,16 @@ function routeTile(primary = false): React.CSSProperties {
     minHeight: 88,
     borderRadius: 16,
     border: primary
-      ? "1px solid rgba(11,99,209,0.18)"
-      : "1px solid rgba(15,59,116,0.10)",
+      ? "1px solid rgba(29,78,216,0.18)"
+      : `1px solid ${DASHBOARD_BRAND.cardBorder}`,
     background: primary
-      ? "linear-gradient(180deg, #F7FBFF 0%, #EDF5FF 100%)"
-      : "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)",
+      ? DASHBOARD_BRAND.summaryPanel
+      : DASHBOARD_BRAND.raisedPanel,
     padding: 14,
     textDecoration: "none",
     boxShadow: primary
-      ? "0 12px 24px rgba(11,99,209,0.07), inset 0 1px 0 rgba(255,255,255,0.72)"
-      : "0 10px 22px rgba(10,24,49,0.04), inset 0 1px 0 rgba(255,255,255,0.78)",
+      ? "0 12px 24px rgba(29,78,216,0.07), inset 0 1px 0 rgba(255,255,255,0.78)"
+      : "0 10px 22px rgba(10,24,49,0.04), inset 0 1px 0 rgba(255,255,255,0.82)",
   };
 }
 
@@ -481,24 +561,28 @@ function primaryBtn(disabled = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
-    borderRadius: 14,
-    border: "1px solid rgba(145,103,19,0.22)",
+    minHeight: 38,
+    padding: "8px 12px",
+    borderRadius: 13,
+    border: `1px solid ${DASHBOARD_BRAND.cardBorderStrong}`,
     background: disabled
       ? "linear-gradient(180deg, #E2E8F0 0%, #CBD5E1 100%)"
-      : "linear-gradient(180deg, #F8DE8D 0%, #F3D06A 52%, #D9A941 100%)",
-    color: disabled ? "#64748B" : "#10253B",
+      : "linear-gradient(180deg, #1B4B78 0%, #2B6599 56%, #3B78AE 100%)",
+    color: disabled ? "#64748B" : "#FFFFFF",
     fontWeight: 900,
-    fontSize: 14,
+    fontSize: 13,
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.85 : 1,
     whiteSpace: "normal",
     textAlign: "center",
+    lineHeight: 1.18,
+    maxWidth: "100%",
+    overflowWrap: "anywhere",
+    wordBreak: "break-word",
     boxShadow: disabled
       ? "none"
-      : "0 14px 28px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.58), inset 0 -8px 14px rgba(125,85,10,0.10)",
+      : "0 16px 30px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.16)",
   };
 }
 
@@ -507,23 +591,27 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
-    borderRadius: 14,
-    border: "1px solid rgba(145,103,19,0.18)",
+    minHeight: 38,
+    padding: "8px 12px",
+    borderRadius: 13,
+    border: `1px solid ${DASHBOARD_BRAND.cardBorderStrong}`,
     background: disabled
       ? "linear-gradient(180deg, #F8FAFC 0%, #E2E8F0 100%)"
-      : "linear-gradient(180deg, #FFF6D8 0%, #F7E4A8 54%, #E9C870 100%)",
-    color: disabled ? "#94A3B8" : "#5A3900",
+      : DASHBOARD_BRAND.summaryButton,
+    color: disabled ? "#94A3B8" : DASHBOARD_BRAND.accentDeep,
     fontWeight: 800,
-    fontSize: 14,
+    fontSize: 13,
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     textAlign: "center",
+    lineHeight: 1.18,
+    maxWidth: "100%",
+    overflowWrap: "anywhere",
+    wordBreak: "break-word",
     boxShadow: disabled
       ? "none"
-      : "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.78)",
+      : "0 10px 22px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
   };
 }
 
@@ -532,29 +620,33 @@ function subtleBtn(disabled = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 38,
-    padding: "8px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(145,103,19,0.16)",
+    minHeight: 34,
+    padding: "6px 10px",
+    borderRadius: 11,
+    border: `1px solid ${DASHBOARD_BRAND.cardBorder}`,
     background: disabled
       ? "linear-gradient(180deg, #F8FAFC 0%, #E2E8F0 100%)"
-      : "linear-gradient(180deg, #FFF8E4 0%, #F5E2A8 100%)",
-    color: disabled ? "#94A3B8" : "#6B4300",
+      : DASHBOARD_BRAND.quietPanel,
+    color: disabled ? "#94A3B8" : DASHBOARD_BRAND.subInk,
     fontWeight: 800,
-    fontSize: 13,
+    fontSize: 12,
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     textAlign: "center",
+    lineHeight: 1.16,
+    maxWidth: "100%",
+    overflowWrap: "anywhere",
+    wordBreak: "break-word",
     boxShadow: disabled
       ? "none"
-      : "0 8px 16px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.76)",
+      : "0 8px 18px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.82)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#355A86",
+    color: DASHBOARD_BRAND.label,
     fontWeight: 900,
     letterSpacing: 0.35,
     textTransform: "uppercase",
@@ -570,21 +662,21 @@ function badge(primary = false): React.CSSProperties {
     borderRadius: 999,
     padding: "6px 10px",
     background: primary
-      ? "linear-gradient(180deg, rgba(248,222,141,0.72) 0%, rgba(243,208,106,0.52) 100%)"
-      : "linear-gradient(180deg, rgba(255,255,255,0.84) 0%, rgba(235,244,255,0.84) 100%)",
-    color: primary ? "#7A5200" : "#355A86",
+      ? "linear-gradient(180deg, rgba(243,208,106,0.22) 0%, rgba(243,208,106,0.12) 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(240,246,255,0.92) 100%)",
+    color: primary ? DASHBOARD_BRAND.goldText : DASHBOARD_BRAND.label,
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
     border: primary
       ? "1px solid rgba(145,103,19,0.18)"
-      : "1px solid rgba(15,59,116,0.10)",
+      : `1px solid ${DASHBOARD_BRAND.cardBorder}`,
   };
 }
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#476581",
+    color: DASHBOARD_BRAND.helper,
     fontSize: 14,
     lineHeight: 1.75,
   };
@@ -595,12 +687,11 @@ function fieldInputStyle(): React.CSSProperties {
     width: "100%",
     minHeight: 42,
     borderRadius: 12,
-    border: "1px solid rgba(15,59,116,0.14)",
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.98) 100%)",
+    border: `1px solid ${DASHBOARD_BRAND.cardBorderStrong}`,
+    background: DASHBOARD_BRAND.quietPanel,
     padding: "10px 12px",
     fontSize: 14,
-    color: "#0B1F33",
+    color: DASHBOARD_BRAND.ink,
     outline: "none",
     boxShadow:
       "inset 0 1px 0 rgba(255,255,255,0.86), 0 6px 14px rgba(10,24,49,0.04)",
@@ -613,6 +704,12 @@ function fieldTextareaStyle(): React.CSSProperties {
     minHeight: 84,
     resize: "vertical",
   };
+}
+
+function stopDashboardPointerEvent(
+  event?: React.SyntheticEvent<HTMLElement>
+) {
+  event?.stopPropagation();
 }
 
 function safeStr(x: unknown): string {
@@ -762,37 +859,6 @@ function buildResolvedSpotlightCandidates(src: string): string[] {
   out.push(raw);
 
   return [...new Set(out.filter(Boolean))];
-}
-
-function RotatingSpotlightImage(props: {
-  candidates: string[];
-  alt: string;
-  style: React.CSSProperties;
-  fallback?: React.ReactNode;
-}) {
-  const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    setIndex(0);
-  }, [props.candidates.join("|")]);
-
-  const src = props.candidates[index] || "";
-
-  if (!src) return <>{props.fallback || null}</>;
-
-  return (
-    <img
-      src={src}
-      alt={props.alt}
-      onError={() =>
-        setIndex((prev) => {
-          const next = prev + 1;
-          return next <= props.candidates.length ? next : prev;
-        })
-      }
-      style={props.style}
-    />
-  );
 }
 
 function getStoredCommunitySpotlightImage(clanId: number): string {
@@ -957,13 +1023,37 @@ function focusCategoryLabel(category: FocusCommitmentCategory): string {
   return "Community";
 }
 
-function operationalClassLabel(value: UserOperationalClass): string {
-  if (value === "repair") return "Repair mode";
-  if (value === "approval") return "Approval pressure";
-  if (value === "setup") return "Setup mode";
-  if (value === "seller") return "Seller mode";
-  if (value === "demand") return "Demand response";
-  return "Steady mode";
+function routeSurfaceLabel(route: IntelligentRoute): string {
+  return getDashboardRouteSurfaceLabel({
+    key: route.key,
+    label: route.label,
+  });
+}
+
+function buildNextRouteCopy(params: {
+  userClass: UserOperationalClass;
+  pendingRequestsCount: number;
+  urgentDemandCount: number;
+  actNowCount: number;
+  openTrust: ReadingState;
+  cci: ReadingState;
+  trustSlipCode: string;
+  primaryLabel: string;
+  trustExplainer?: {
+    helps?: string[];
+    weakens?: string[];
+    next?: string[];
+  } | null;
+}): {
+  badge: string;
+  title: string;
+  detail: string;
+  issueText: string;
+  consequenceText: string;
+  actionText: string;
+  supportHint: string;
+} {
+  return buildDashboardNextRouteCopy(params);
 }
 
 function formatFocusProgress(
@@ -1592,44 +1682,62 @@ function dashboardNoticeScore(
   return bucketScore + unreadScore + sourceScore;
 }
 
-function dashboardNoticeMeta(bucket: DashboardNoticeBucket) {
-  if (bucket === "actNow") {
+function dashboardNoticePreviewToneStyles(
+  tone: DashboardNoticePreviewTone
+): {
+  bg: string;
+  border: string;
+  text: string;
+  badgeBg: string;
+  badgeText: string;
+} {
+  if (tone === "red") {
     return {
-      title: "Act now",
-      detail: "Items waiting directly on you or blocking movement.",
-      bg: "#FFF5F5",
-      border: "1px solid rgba(239,68,68,0.16)",
+      bg: "#FFF7F7",
+      border: "1px solid rgba(239,68,68,0.14)",
       text: "#991B1B",
+      badgeBg: "rgba(239,68,68,0.10)",
+      badgeText: "#991B1B",
     };
   }
 
-  if (bucket === "dueSoon") {
+  if (tone === "yellow") {
     return {
-      title: "Due soon",
-      detail: "Important items that should be handled before they drift.",
       bg: "#FFFBEF",
-      border: "1px solid rgba(245,158,11,0.16)",
+      border: "1px solid rgba(245,158,11,0.14)",
       text: "#92400E",
+      badgeBg: "rgba(245,158,11,0.14)",
+      badgeText: "#92400E",
     };
   }
 
-  if (bucket === "watch") {
+  if (tone === "blue") {
     return {
-      title: "Watch",
-      detail: "Signals already moving that you should keep in view.",
-      bg: "#F8FBFF",
+      bg: "#F7FAFF",
       border: "1px solid rgba(11,99,209,0.12)",
       text: "#0B63D1",
+      badgeBg: "rgba(11,99,209,0.10)",
+      badgeText: "#0B63D1",
     };
   }
 
   return {
-    title: "Unread",
-    detail: "Unread items are still waiting across your dashboard.",
     bg: "#F8FAFC",
     border: "1px solid rgba(148,163,184,0.16)",
     text: "#334155",
+    badgeBg: "rgba(148,163,184,0.12)",
+    badgeText: "#334155",
   };
+}
+
+function dashboardNoticeSourceKey(source: string): string {
+  return (
+    safeStr(source)
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "general"
+  );
 }
 
 function sortDashboardNoticeItems(rows: DashboardNoticeItem[]): DashboardNoticeItem[] {
@@ -1642,9 +1750,31 @@ function sortDashboardNoticeItems(rows: DashboardNoticeItem[]): DashboardNoticeI
   });
 }
 
-function renderDashboardNoticeCard(item: DashboardNoticeItem) {
+function renderDashboardNoticeCard(
+  item: DashboardNoticeItem,
+  onOpenRoute: DashboardRouteActionHandler
+) {
+  const bucketLabel =
+    item.bucket === "actNow"
+      ? "Act now"
+      : item.bucket === "dueSoon"
+      ? "Due soon"
+      : "Watch";
+  const bucketTone =
+    item.bucket === "actNow"
+      ? { bg: "rgba(239,68,68,0.10)", text: "#991B1B" }
+      : item.bucket === "dueSoon"
+      ? { bg: "rgba(245,158,11,0.14)", text: "#92400E" }
+      : { bg: "rgba(11,99,209,0.10)", text: "#0B63D1" };
+
   return (
-    <div key={item.id} style={innerCard("#FCFEFF")}>
+    <div
+      key={item.id}
+      style={{
+        ...softCard("#FFFFFF"),
+        padding: 12,
+      }}
+    >
       <div
         style={{
           display: "flex",
@@ -1657,26 +1787,173 @@ function renderDashboardNoticeCard(item: DashboardNoticeItem) {
         <div
           style={{
             color: "#0B1F33",
-            fontWeight: 900,
+            fontWeight: 800,
             lineHeight: 1.32,
+            flex: "1 1 220px",
           }}
         >
           {item.title}
         </div>
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <span style={badge(false)}>{item.source}</span>
+          <span
+            style={{
+              ...badge(false),
+              background: bucketTone.bg,
+              color: bucketTone.text,
+              border: "none",
+            }}
+          >
+            {bucketLabel}
+          </span>
           {item.unread ? <span style={badge(true)}>Unread</span> : null}
         </div>
       </div>
 
-      <div style={{ marginTop: 8, ...helperText() }}>{item.detail}</div>
-
-      <div style={{ marginTop: 12 }}>
-        <OriginLink to={item.ctaTo} style={secondaryBtn(false)}>
-          {item.ctaLabel}
-        </OriginLink>
+      <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+        {item.detail}
       </div>
+
+      <div style={{ marginTop: 10 }}>
+        <button
+          type="button"
+          onClick={(event) => onOpenRoute(event, item.ctaTo)}
+          onPointerDown={stopDashboardPointerEvent}
+          style={{
+            ...subtleBtn(false),
+            minHeight: 34,
+            padding: "7px 11px",
+            fontSize: 12.5,
+          }}
+        >
+          {item.ctaLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function renderDashboardNoticeSourceGroup(
+  item: DashboardNoticeSourceGroup,
+  expanded: boolean,
+  onToggle: (key: string) => void,
+  onOpenRoute: DashboardRouteActionHandler
+) {
+  const tone = dashboardNoticePreviewToneStyles(item.tone);
+  const visibleRows = item.rows.slice(0, 2);
+  const hiddenCount = Math.max(item.rows.length - visibleRows.length, 0);
+
+  return (
+    <div
+      key={item.key}
+      style={{
+        ...innerCard(tone.bg),
+        border: tone.border,
+        padding: 12,
+        boxShadow: "0 10px 22px rgba(10,24,49,0.04)",
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => onToggle(item.key)}
+        onPointerDown={stopDashboardPointerEvent}
+        style={{
+          width: "100%",
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 10,
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+          background: "transparent",
+          border: "none",
+          padding: 0,
+          cursor: "pointer",
+          textAlign: "left",
+        }}
+      >
+        <div
+          style={{
+            minWidth: 0,
+            flex: "1 1 220px",
+          }}
+        >
+          <div
+            style={{
+              color: tone.text,
+              fontWeight: 900,
+              fontSize: 15,
+              lineHeight: 1.25,
+            }}
+          >
+            {item.title}
+          </div>
+
+          <div
+            style={{
+              marginTop: 6,
+              color: "#4A6580",
+              fontSize: 12.5,
+              lineHeight: 1.58,
+              whiteSpace: expanded ? "normal" : "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {item.detail}
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
+            justifyContent: "flex-end",
+            alignItems: "center",
+          }}
+        >
+          <span
+            style={{
+              ...badge(false),
+              background: tone.badgeBg,
+              color: tone.badgeText,
+              border: "none",
+              minWidth: 30,
+              justifyContent: "center",
+            }}
+          >
+            {item.count}
+          </span>
+          <span style={badge(false)}>{expanded ? "Close" : "Open"}</span>
+        </div>
+      </button>
+
+      {expanded ? (
+        <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={(event) => onOpenRoute(event, item.to)}
+              onPointerDown={stopDashboardPointerEvent}
+              style={{
+                ...secondaryBtn(false),
+                minHeight: 36,
+                padding: "8px 12px",
+                fontSize: 12.5,
+              }}
+            >
+              {item.ctaLabel}
+            </button>
+            {hiddenCount > 0 ? (
+              <span style={badge(false)}>
+                {hiddenCount} more on this screen
+              </span>
+            ) : null}
+          </div>
+
+          {visibleRows.map((row) => renderDashboardNoticeCard(row, onOpenRoute))}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -1794,45 +2071,6 @@ function focusStatusMeta(status: FocusCommitmentStatus) {
   };
 }
 
-function sortAppUsageRows(rows: AppUseRecord[]): AppUseRecord[] {
-  return [...rows].sort((a, b) => {
-    if (b.count !== a.count) return b.count - a.count;
-    const dateCompare = safeStr(b.lastOpenedAt).localeCompare(
-      safeStr(a.lastOpenedAt)
-    );
-    if (dateCompare !== 0) return dateCompare;
-    return safeStr(a.label).localeCompare(safeStr(b.label));
-  });
-}
-
-function trackAppUsage(
-  rows: AppUseRecord[],
-  next: Pick<AppUseRecord, "key" | "label" | "detail" | "to">
-): AppUseRecord[] {
-  const copy = [...rows];
-  const index = copy.findIndex((row) => row.key === next.key);
-
-  if (index >= 0) {
-    copy[index] = {
-      ...copy[index],
-      label: next.label,
-      detail: next.detail,
-      to: next.to,
-      count: positiveNumber(copy[index].count) + 1,
-      lastOpenedAt: isoNow(),
-    };
-    return sortAppUsageRows(copy);
-  }
-
-  copy.push({
-    ...next,
-    count: 1,
-    lastOpenedAt: isoNow(),
-  });
-
-  return sortAppUsageRows(copy);
-}
-
 function buildMostUsedAppFallback(params: {
   userClass: UserOperationalClass;
   myShopLink: string;
@@ -1859,6 +2097,30 @@ function buildMostUsedAppFallback(params: {
       label: "Finance",
       detail: "Pool, locks, support, and money events.",
       to: DASHBOARD_TARGETS.FINANCE,
+      count: 0,
+      lastOpenedAt: "",
+    },
+    support: {
+      key: "support",
+      label: "Loans & Support",
+      detail: "Loans, readiness, suggestions, workbench, and support paths.",
+      to: DASHBOARD_TARGETS.LOANS,
+      count: 0,
+      lastOpenedAt: "",
+    },
+    "money-in": {
+      key: "money-in",
+      label: "Money In",
+      detail: "Add money into the pool path.",
+      to: DASHBOARD_TARGETS.MONEY_IN,
+      count: 0,
+      lastOpenedAt: "",
+    },
+    "money-out": {
+      key: "money-out",
+      label: "Money Out",
+      detail: "Open the clean money-out route.",
+      to: DASHBOARD_TARGETS.MONEY_OUT,
       count: 0,
       lastOpenedAt: "",
     },
@@ -1922,16 +2184,76 @@ function buildMostUsedAppFallback(params: {
 
   const order =
     params.userClass === "repair"
-      ? ["trust", "cci", "notifications", "trust-slip", "community", "finance"]
+      ? [
+          "trust",
+          "cci",
+          "notifications",
+          "support",
+          "trust-slip",
+          "community",
+          "finance",
+          "money-in",
+          "money-out",
+        ]
       : params.userClass === "approval"
-      ? ["community", "notifications", "trust", "finance", "marketplace", "guide"]
+      ? [
+          "community",
+          "notifications",
+          "support",
+          "trust",
+          "finance",
+          "marketplace",
+          "money-in",
+          "money-out",
+          "guide",
+        ]
       : params.userClass === "setup"
-      ? ["trust-slip", "trust", "community", "guide", "notifications", "finance"]
+      ? [
+          "trust-slip",
+          "trust",
+          "community",
+          "support",
+          "guide",
+          "notifications",
+          "finance",
+          "marketplace",
+          "money-in",
+        ]
       : params.userClass === "demand"
-      ? ["demand-box", "marketplace", "notifications", "finance", "community", "shop"]
+      ? [
+          "demand-box",
+          "support",
+          "marketplace",
+          "notifications",
+          "finance",
+          "community",
+          "money-in",
+          "money-out",
+          "shop",
+        ]
       : params.userClass === "seller"
-      ? ["shop", "marketplace", "finance", "trust-slip", "notifications", "community"]
-      : ["notifications", "community", "marketplace", "finance", "trust", "shop"];
+      ? [
+          "shop",
+          "marketplace",
+          "support",
+          "finance",
+          "money-in",
+          "money-out",
+          "trust-slip",
+          "notifications",
+          "community",
+        ]
+      : [
+          "notifications",
+          "community",
+          "marketplace",
+          "support",
+          "finance",
+          "money-in",
+          "money-out",
+          "trust",
+          "shop",
+        ];
 
   return order.map((key) => catalog[key]).filter(Boolean);
 }
@@ -1947,17 +2269,17 @@ function buildMostUsedAppRows(
     if (seen.has(row.key)) continue;
     seen.add(row.key);
     result.push(row);
-    if (result.length >= 6) return result;
+    if (result.length >= 8) return result;
   }
 
   for (const row of fallback) {
     if (seen.has(row.key)) continue;
     seen.add(row.key);
     result.push(row);
-    if (result.length >= 6) return result;
+    if (result.length >= 8) return result;
   }
 
-  return result.slice(0, 6);
+  return result.slice(0, 8);
 }
 
 function getUserOperationalClass(params: {
@@ -2011,47 +2333,7 @@ function buildPriorityRoutes(params: {
   detail: string;
   primaryRoute: IntelligentRoute;
   supportingRoutes: IntelligentRoute[];
-  utilityRoutes: IntelligentRoute[];
 } {
-  const sharedUtilityRoutes: IntelligentRoute[] = [
-    {
-      key: "community",
-      label: "Community",
-      detail: "Your community page.",
-      to: DASHBOARD_TARGETS.COMMUNITY,
-    },
-    {
-      key: "marketplace",
-      label: "Marketplace",
-      detail: "Your community marketplace page.",
-      to: DASHBOARD_TARGETS.MARKETPLACE,
-    },
-    {
-      key: "finance",
-      label: "Finance",
-      detail: "Pool, locks, support, and money events.",
-      to: DASHBOARD_TARGETS.FINANCE,
-    },
-    {
-      key: "notifications",
-      label: "What Matters Now",
-      detail: "Organised live actions and next priorities.",
-      to: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
-    },
-    {
-      key: "trust",
-      label: "Trust",
-      detail: "Read trust movement and repair paths.",
-      to: DASHBOARD_TARGETS.TRUST,
-    },
-    {
-      key: "demand-box",
-      label: "Demand Box",
-      detail: "Your demand page.",
-      to: DASHBOARD_TARGETS.DEMAND_BOX,
-    },
-  ];
-
   const joinRequestsTo = params.selectedClanId
     ? `/app/community/${params.selectedClanId}/join-requests`
     : DASHBOARD_TARGETS.COMMUNITY;
@@ -2064,7 +2346,7 @@ function buildPriorityRoutes(params: {
     const trustPrimary = params.openTrustTone === "red";
 
     return {
-      title: "Repair trust before expanding",
+      title: "Fix trust first",
       detail:
         "Your current trust position is under pressure. Protect tomorrow’s options before chasing more visibility or movement.",
       primaryRoute: trustPrimary
@@ -2106,10 +2388,9 @@ function buildPriorityRoutes(params: {
           key: "notifications",
           label: "Open What Matters Now",
           detail: "Review the actions waiting for you now.",
-          to: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
-        },
+            to: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
+          },
       ],
-      utilityRoutes: sharedUtilityRoutes,
     };
   }
 
@@ -2146,7 +2427,6 @@ function buildPriorityRoutes(params: {
           to: DASHBOARD_TARGETS.TRUST,
         },
       ],
-      utilityRoutes: sharedUtilityRoutes,
     };
   }
 
@@ -2184,7 +2464,6 @@ function buildPriorityRoutes(params: {
           to: DASHBOARD_TARGETS.GUIDE,
         },
       ],
-      utilityRoutes: sharedUtilityRoutes,
     };
   }
 
@@ -2226,7 +2505,6 @@ function buildPriorityRoutes(params: {
           to: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
         },
       ],
-      utilityRoutes: sharedUtilityRoutes,
     };
   }
 
@@ -2262,7 +2540,6 @@ function buildPriorityRoutes(params: {
           to: DASHBOARD_TARGETS.FINANCE,
         },
       ],
-      utilityRoutes: sharedUtilityRoutes,
     };
   }
 
@@ -2297,7 +2574,6 @@ function buildPriorityRoutes(params: {
         to: DASHBOARD_TARGETS.FINANCE,
       },
     ],
-    utilityRoutes: sharedUtilityRoutes,
   };
 }
 
@@ -2375,7 +2651,7 @@ function summarizeFocusCommitments(
             ? "tomorrow"
             : `on ${formatDateLabel(nextReview.nextCheckInDate)}`
         }`
-      : "No review scheduled",
+      : "",
     disciplineLine,
   };
 }
@@ -2401,19 +2677,19 @@ function buildTrustJourneyModel(params: {
     return {
       tone: "neutral",
       posture: "unverified",
-      postureTitle: "Incomplete and unverified",
+      postureTitle: "Finish your trust record first",
       postureDetail:
-        "Your verification record is not fully ready yet. Complete it before expecting stronger trust and confidence.",
+        "Your verification is still not complete. Finish it before you expect stronger trust.",
       primaryRoute: {
         key: "trust-slip",
         label: "Open TrustSlip",
-        detail: "Complete your verification record.",
+        detail: "Finish the missing verification step.",
         to: DASHBOARD_TARGETS.TRUST_SLIP,
       },
       secondaryRoute: {
         key: "trust",
         label: "Open Trust Passport",
-        detail: "Understand the trust path clearly.",
+        detail: "See the trust path in a simpler view.",
         to: DASHBOARD_TARGETS.TRUST,
       },
       helps,
@@ -2426,27 +2702,27 @@ function buildTrustJourneyModel(params: {
     return {
       tone: "red",
       posture: "repair",
-      postureTitle: "At risk and needs repair",
+      postureTitle: "Fix this trust issue now",
       postureDetail:
-        "Trust pressure is visible. Repair should come before expansion, borrowing, or wider exposure.",
+        "Something is hurting trust right now. Fix it before you grow, ask for support, or open up to more people.",
       primaryRoute:
         params.openTrust.tone === "red"
           ? {
               key: "trust",
               label: "Open Trust",
-              detail: "Review the trust pressure in your community.",
+              detail: "See what is hurting trust in your community.",
               to: DASHBOARD_TARGETS.TRUST,
             }
           : {
               key: "cci",
               label: "Open CCI",
-              detail: "Review the cross-community integrity pressure.",
+              detail: "See what is hurting trust outside your community.",
               to: DASHBOARD_TARGETS.CCI,
             },
       secondaryRoute: {
         key: "notifications",
         label: "Open What Matters Now",
-        detail: "Review the next corrective action waiting on you.",
+        detail: "Check the next item waiting for your action.",
         to: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
       },
       helps,
@@ -2470,19 +2746,19 @@ function buildTrustJourneyModel(params: {
     return {
       tone: "yellow",
       posture: "drifting",
-      postureTitle: "Drifting and needs correction",
+      postureTitle: "Trust is starting to slip",
       postureDetail:
-        "The position is still recoverable without heavy damage, but delay will make repair more expensive.",
+        "You can still fix this early. Do not leave it until it becomes a bigger problem.",
       primaryRoute: {
         key: "trust",
         label: "Review Trust",
-        detail: "Inspect what is weakening trust now.",
+        detail: "See what is starting to weaken trust.",
         to: DASHBOARD_TARGETS.TRUST,
       },
       secondaryRoute: {
         key: "cci",
         label: "Review CCI",
-        detail: "Review the wider integrity picture.",
+        detail: "Check the wider trust picture.",
         to: DASHBOARD_TARGETS.CCI,
       },
       helps,
@@ -2505,19 +2781,19 @@ function buildTrustJourneyModel(params: {
     return {
       tone: "green",
       posture: "strongPortable",
-      postureTitle: "Strong and portable",
+      postureTitle: "Trust is working well",
       postureDetail:
-        "Trust is stable, visible, and supported by execution discipline. Keep it protected through consistency.",
+        "People can see your steady follow-through. Keep it that way.",
       primaryRoute: {
         key: "trust-slip",
         label: "Use TrustSlip",
-        detail: "Keep merchant verification ready and visible.",
+        detail: "Keep your trust record ready to show.",
         to: DASHBOARD_TARGETS.TRUST_SLIP,
       },
       secondaryRoute: {
         key: "trust",
         label: "Open Trust",
-        detail: "Review what is strengthening trust.",
+        detail: "See what is helping trust.",
         to: DASHBOARD_TARGETS.TRUST,
       },
       helps: [
@@ -2541,19 +2817,19 @@ function buildTrustJourneyModel(params: {
   return {
     tone: "green",
     posture: "stableProtected",
-    postureTitle: "Stable and should be protected",
+    postureTitle: "Trust is steady",
     postureDetail:
-      "The trust position is not under major pressure, but steady participation and visible follow-through still matter.",
+      "Nothing serious is wrong now. Keep answering people and keeping your word.",
     primaryRoute: {
       key: "trust",
       label: "Open Trust",
-      detail: "Review the current trust path.",
+      detail: "Check your current trust path.",
       to: DASHBOARD_TARGETS.TRUST,
     },
     secondaryRoute: {
       key: "notifications",
       label: "Open What Matters Now",
-      detail: "Review the organised queue before branching.",
+      detail: "Check your organised list before branching out.",
       to: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
     },
     helps,
@@ -2590,14 +2866,22 @@ export default function DashboardPage() {
   const [spotlights, setSpotlights] = useState<SpotlightItem[]>([]);
   const [spotlightLoading, setSpotlightLoading] = useState<boolean>(false);
   const [spotlightIndex, setSpotlightIndex] = useState<number>(0);
+  const [latestSpotlightSnapshot, setLatestSpotlightSnapshot] =
+    useState<SpotlightItem | null>(null);
 
   const [pendingRequests, setPendingRequests] = useState<JoinRequestItem[]>([]);
   const [notices, setNotices] = useState<NoticeItem[]>([]);
   const [noticesLoading, setNoticesLoading] = useState<boolean>(false);
+  const [noticeSourceOpenKey, setNoticeSourceOpenKey] = useState<string>("");
 
   const [demandItems, setDemandItems] = useState<DemandItem[]>([]);
+  const [demandPanelOpenKey, setDemandPanelOpenKey] = useState<string>("");
 
   const [marketWisdomIndex, setMarketWisdomIndex] = useState<number>(0);
+  const [marketWisdomSignalIndex, setMarketWisdomSignalIndex] =
+    useState<number>(0);
+  const [marketWisdomSignalsOpen, setMarketWisdomSignalsOpen] =
+    useState<boolean>(false);
   const [activeWisdom, setActiveWisdom] = useState<MarketWisdomPair | null>(
     null
   );
@@ -2610,9 +2894,7 @@ export default function DashboardPage() {
   const [pictureOptionsOpen, setPictureOptionsOpen] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [appUsage, setAppUsage] = useState<AppUseRecord[]>(() =>
-    readLocalJSON(DASHBOARD_APP_USAGE_STORAGE_KEY, [])
-  );
+  const [appUsage] = useState<AppUseRecord[]>(() => readDashboardAppUsage());
   const [focusCommitments, setFocusCommitments] = useState<FocusCommitment[]>(
     () => readLocalJSON(DASHBOARD_FOCUS_COMMITMENTS_STORAGE_KEY, [])
   );
@@ -2626,6 +2908,22 @@ export default function DashboardPage() {
   const [focusProgressDrafts, setFocusProgressDrafts] = useState<
     Record<string, string>
   >({});
+  const [attentionState, setAttentionState] = useState(() =>
+    normalizeDashboardAttentionStoredState(
+      readLocalJSON(
+        DASHBOARD_ATTENTION_STORAGE_KEY,
+        defaultDashboardAttentionStoredState()
+      )
+    )
+  );
+  const [attentionPopupVisible, setAttentionPopupVisible] =
+    useState<boolean>(false);
+  const [attentionClockMs, setAttentionClockMs] = useState<number>(() =>
+    Date.now()
+  );
+  const [dashboardInteractionShieldVisible, setDashboardInteractionShieldVisible] =
+    useState<boolean>(false);
+  const dashboardInteractionShieldTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -2641,12 +2939,19 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    writeLocalJSON(DASHBOARD_UI_STORAGE_KEY, uiState);
-  }, [uiState]);
+    return () => {
+      if (
+        typeof window !== "undefined" &&
+        dashboardInteractionShieldTimerRef.current !== null
+      ) {
+        window.clearTimeout(dashboardInteractionShieldTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
-    writeLocalJSON(DASHBOARD_APP_USAGE_STORAGE_KEY, appUsage);
-  }, [appUsage]);
+    writeLocalJSON(DASHBOARD_UI_STORAGE_KEY, uiState);
+  }, [uiState]);
 
   useEffect(() => {
     writeLocalJSON(DASHBOARD_FOCUS_COMMITMENTS_STORAGE_KEY, focusCommitments);
@@ -2657,7 +2962,29 @@ export default function DashboardPage() {
   }, [focusEvents]);
 
   useEffect(() => {
+    writeLocalJSON(DASHBOARD_ATTENTION_STORAGE_KEY, attentionState);
+  }, [attentionState]);
+
+  useEffect(() => {
     setAvatarSrc(readStoredImage(DASHBOARD_AVATAR_STORAGE_KEY));
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    function refreshAttentionClock() {
+      setAttentionClockMs(Date.now());
+    }
+
+    refreshAttentionClock();
+
+    const timer = window.setInterval(refreshAttentionClock, 60000);
+    window.addEventListener("focus", refreshAttentionClock);
+
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refreshAttentionClock);
+    };
   }, []);
 
   useEffect(() => {
@@ -2732,6 +3059,26 @@ export default function DashboardPage() {
           : [];
 
         setSpotlights(items);
+
+        if (items.length > 0) {
+          setLatestSpotlightSnapshot(items[0] || null);
+          return;
+        }
+
+        const recentRes = await getMarketplaceBroadcasts({
+          active_only: false,
+          limit: 5,
+        });
+
+        if (!alive) return;
+
+        const recentItems: SpotlightItem[] = Array.isArray(recentRes)
+          ? recentRes
+          : Array.isArray((recentRes as any)?.items)
+          ? (recentRes as any).items
+          : [];
+
+        setLatestSpotlightSnapshot(recentItems[0] || null);
       } catch {
         // Keep the current spotlight state if the refresh fails temporarily.
       } finally {
@@ -2847,7 +3194,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const timer = window.setInterval(() => {
       setMarketWisdomIndex((prev) => prev + 1);
-    }, 600000);
+    }, 60000);
 
     return () => window.clearInterval(timer);
   }, []);
@@ -2934,13 +3281,6 @@ export default function DashboardPage() {
     };
   }
 
-  const verificationStatus =
-    safeStr(
-      trustSlip?.status ||
-        trustSlip?.verification_status ||
-        (trustSlipCode ? "Verification ready" : "")
-    ) || "Verification pending";
-
   const merchantVerifyHref = useMemo(() => {
     const direct = firstNonEmpty(
       trustSlip?.public_verify_url,
@@ -2994,9 +3334,19 @@ export default function DashboardPage() {
     () => buildResolvedSpotlightCandidates(spotlightImageSrc),
     [spotlightImageSrc]
   );
+  const spotlightVideoSrc = safeStr(activeSpotlight?.video_url || "");
+  const spotlightVideoCandidates = useMemo(
+    () => buildResolvedSpotlightCandidates(spotlightVideoSrc),
+    [spotlightVideoSrc]
+  );
+  const spotlightVideoCandidate = spotlightVideoCandidates[0] || "";
   const spotlightExpiryStatus = useMemo(
     () => describeSpotlightExpiry(activeSpotlight),
     [activeSpotlight]
+  );
+  const latestSpotlightStatus = useMemo(
+    () => describeSpotlightExpiry(latestSpotlightSnapshot),
+    [latestSpotlightSnapshot]
   );
 
   const myShopLink = safeStr(me?.gmfn_id)
@@ -3243,44 +3593,32 @@ export default function DashboardPage() {
       );
     }
 
-    if (openTrust.tone === "red" || cci.tone === "red") {
+    const trustNotice = buildDashboardTrustNoticeCopy({
+      openTrust,
+      cci,
+      trustSlipCode,
+      trustExplainer,
+    });
+
+    if (trustNotice) {
       pushItem(
         makeItem({
-          id: "synthetic-trust-risk",
-          title: "Trust event needs attention",
-          detail:
-            "Open Trust or CCI to review the current trust pressure before it affects your next movement.",
-          ctaLabel: "Open Trust",
+          id:
+            trustNotice.bucket === "actNow"
+              ? "synthetic-trust-risk"
+              : "synthetic-trust-review",
+          title: trustNotice.title,
+          detail: trustNotice.detail,
+          ctaLabel: trustNotice.ctaLabel,
           ctaTo:
-            openTrust.tone === "red"
+            trustNotice.ctaRouteKey === "trust"
               ? DASHBOARD_TARGETS.TRUST
-              : DASHBOARD_TARGETS.CCI,
+              : trustNotice.ctaRouteKey === "cci"
+              ? DASHBOARD_TARGETS.CCI
+              : DASHBOARD_TARGETS.TRUST_SLIP,
           source: "Trust Events",
-          bucket: "actNow",
-          scoreBoost: 16,
-        })
-      );
-    } else if (
-      openTrust.tone === "yellow" ||
-      cci.tone === "yellow" ||
-      !trustSlipCode
-    ) {
-      pushItem(
-        makeItem({
-          id: "synthetic-trust-review",
-          title: !trustSlipCode
-            ? "TrustSlip still preparing"
-            : "Trust review coming up",
-          detail: !trustSlipCode
-            ? "TrustSlip is still preparing. Open it now and make sure your verification record is ready."
-            : "Open Trust or CCI to review the current reading before it drifts into pressure.",
-          ctaLabel: !trustSlipCode ? "Open TrustSlip" : "Open Trust",
-          ctaTo: !trustSlipCode
-            ? DASHBOARD_TARGETS.TRUST_SLIP
-            : DASHBOARD_TARGETS.TRUST,
-          source: "Trust Events",
-          bucket: "dueSoon",
-          scoreBoost: 10,
+          bucket: trustNotice.bucket,
+          scoreBoost: trustNotice.bucket === "actNow" ? 16 : 10,
         })
       );
     }
@@ -3322,7 +3660,9 @@ export default function DashboardPage() {
           title: `${focusSummary.watchCount} focus commitment${
             focusSummary.watchCount === 1 ? "" : "s"
           } due for closer review`,
-          detail: `${focusSummary.nextReviewLabel}. Keep the next checkpoint visible before it drifts into pressure.`,
+          detail: focusSummary.nextReviewLabel
+            ? `${focusSummary.nextReviewLabel}. Keep the next checkpoint visible before it drifts into pressure.`
+            : "Keep the next checkpoint visible before it drifts into pressure.",
           ctaLabel: "Review commitments",
           ctaTo: `${DASHBOARD_TARGETS.DASHBOARD}#focus-commitments`,
           source: "Focus Commitments",
@@ -3335,7 +3675,9 @@ export default function DashboardPage() {
         makeItem({
           id: "synthetic-focus-steady",
           title: "Focus commitments active",
-          detail: `${focusSummary.nextReviewLabel}. ${focusSummary.disciplineLine}.`,
+          detail: focusSummary.nextReviewLabel
+            ? `${focusSummary.nextReviewLabel}. ${focusSummary.disciplineLine}.`
+            : focusSummary.disciplineLine,
           ctaLabel: "Open commitments",
           ctaTo: `${DASHBOARD_TARGETS.DASHBOARD}#focus-commitments`,
           source: "Focus Commitments",
@@ -3380,6 +3722,7 @@ export default function DashboardPage() {
     );
 
     return {
+      allRows,
       actNow: actNow.slice(0, 3),
       dueSoon: dueSoon.slice(0, 3),
       watch: watch.slice(0, 3),
@@ -3406,6 +3749,444 @@ export default function DashboardPage() {
     focusSummary,
   ]);
 
+  const dashboardNoticeSourceGroups = useMemo<DashboardNoticeSourceGroup[]>(() => {
+    const grouped = new Map<string, DashboardNoticeItem[]>();
+
+    for (const item of dashboardNoticeSummary.allRows) {
+      const key = dashboardNoticeSourceKey(item.source);
+      const bucket = grouped.get(key) || [];
+      bucket.push(item);
+      grouped.set(key, bucket);
+    }
+
+    return [...grouped.entries()]
+      .map(([key, rows]) => {
+        const sortedRows = sortDashboardNoticeItems(rows);
+        const first = sortedRows[0] || null;
+        const actNowCount = sortedRows.filter((item) => item.bucket === "actNow").length;
+        const dueSoonCount = sortedRows.filter((item) => item.bucket === "dueSoon").length;
+        const watchCount = sortedRows.filter((item) => item.bucket === "watch").length;
+        const unreadCount = sortedRows.filter((item) => item.unread).length;
+        const detailParts: string[] = [];
+        const tone: DashboardNoticePreviewTone =
+          actNowCount > 0
+            ? "red"
+            : dueSoonCount > 0
+            ? "yellow"
+            : watchCount > 0 || unreadCount > 0
+            ? "blue"
+            : "slate";
+
+        if (actNowCount > 0) {
+          detailParts.push(
+            `${actNowCount} ${actNowCount === 1 ? "needs" : "need"} action now`
+          );
+        }
+
+        if (dueSoonCount > 0) {
+          detailParts.push(`${dueSoonCount} due soon`);
+        }
+
+        if (unreadCount > 0) {
+          detailParts.push(`${unreadCount} unread`);
+        }
+
+        if (detailParts.length === 0) {
+          detailParts.push(
+            `${sortedRows.length} notification${sortedRows.length === 1 ? "" : "s"} ready`
+          );
+        }
+
+        return {
+          key: `source-${key}`,
+          title: safeStr(first?.source || "General"),
+          detail: detailParts.join(" • "),
+          count: sortedRows.length,
+          unreadCount,
+          actNowCount,
+          dueSoonCount,
+          watchCount,
+          to: first?.ctaTo || DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
+          ctaLabel:
+            sortedRows.length === 1
+              ? safeStr(first?.ctaLabel || "Open notification")
+              : safeStr(first?.source || "General") === "General"
+              ? "Open notifications"
+              : `Open ${safeStr(first?.source || "screen")}`,
+          tone,
+          rows: sortedRows,
+        };
+      })
+      .sort((a, b) => {
+        const aScore =
+          a.actNowCount * 100 +
+          a.dueSoonCount * 60 +
+          a.unreadCount * 20 +
+          a.watchCount * 10 +
+          a.count;
+        const bScore =
+          b.actNowCount * 100 +
+          b.dueSoonCount * 60 +
+          b.unreadCount * 20 +
+          b.watchCount * 10 +
+          b.count;
+
+        if (bScore !== aScore) return bScore - aScore;
+        return a.title.localeCompare(b.title);
+      });
+  }, [dashboardNoticeSummary]);
+
+  const dashboardNoticeQuickGroups = useMemo<DashboardNoticeSourceGroup[]>(() => {
+    const makeGroup = (
+      key: DashboardNoticeQuickGroupKey,
+      title: string,
+      rows: DashboardNoticeItem[],
+      tone: DashboardNoticePreviewTone,
+      emptyDetail: string
+    ): DashboardNoticeSourceGroup => {
+      const sortedRows = sortDashboardNoticeItems(rows);
+      const first = sortedRows[0] || null;
+      const actNowCount = sortedRows.filter((item) => item.bucket === "actNow").length;
+      const dueSoonCount = sortedRows.filter((item) => item.bucket === "dueSoon").length;
+      const watchCount = sortedRows.filter((item) => item.bucket === "watch").length;
+      const unreadCount = sortedRows.filter((item) => item.unread).length;
+
+      return {
+        key: `quick-${key}`,
+        title,
+        detail:
+          sortedRows.length > 0
+            ? first?.title ||
+              `${sortedRows.length} notification${sortedRows.length === 1 ? "" : "s"} ready`
+            : emptyDetail,
+        count: sortedRows.length,
+        unreadCount,
+        actNowCount,
+        dueSoonCount,
+        watchCount,
+        to: first?.ctaTo || DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
+        ctaLabel: first?.ctaLabel || "Open notifications",
+        tone,
+        rows: sortedRows,
+      };
+    };
+
+    return [
+      makeGroup(
+        "act-now",
+        "Act now",
+        dashboardNoticeSummary.allRows.filter((item) => item.bucket === "actNow"),
+        "red",
+        "Nothing needs immediate action right now."
+      ),
+      makeGroup(
+        "due-soon",
+        "Due soon",
+        dashboardNoticeSummary.allRows.filter((item) => item.bucket === "dueSoon"),
+        "yellow",
+        "Nothing important is drifting right now."
+      ),
+      makeGroup(
+        "unread",
+        "Unread",
+        dashboardNoticeSummary.allRows.filter((item) => item.unread),
+        "blue",
+        "No unread notification is waiting right now."
+      ),
+    ].filter((group) => group.count > 0);
+  }, [dashboardNoticeSummary]);
+
+  const dashboardNoticePanels = useMemo(
+    () => [...dashboardNoticeQuickGroups, ...dashboardNoticeSourceGroups],
+    [dashboardNoticeQuickGroups, dashboardNoticeSourceGroups]
+  );
+
+  const dashboardNoticeTotalCount = useMemo(
+    () =>
+      dashboardNoticeSourceGroups.reduce((sum, group) => sum + group.count, 0),
+    [dashboardNoticeSourceGroups]
+  );
+
+  const dashboardNoticeSummaryLine = useMemo(() => {
+    if (dashboardNoticeTotalCount === 0) {
+      return "No new notification is waiting right now.";
+    }
+
+    const visibleSources = dashboardNoticeSourceGroups
+      .slice(0, 3)
+      .map((group) => group.title);
+    const moreSources = Math.max(dashboardNoticeSourceGroups.length - visibleSources.length, 0);
+    const sourceLine =
+      visibleSources.length === 1
+        ? visibleSources[0]
+        : visibleSources.length === 2
+        ? `${visibleSources[0]} and ${visibleSources[1]}`
+        : `${visibleSources.slice(0, -1).join(", ")}, and ${
+            visibleSources[visibleSources.length - 1]
+          }`;
+
+    return `You have ${dashboardNoticeTotalCount} notification${
+      dashboardNoticeTotalCount === 1 ? "" : "s"
+    } from ${sourceLine}${
+      moreSources > 0
+        ? ` and ${moreSources} more place${moreSources === 1 ? "" : "s"}`
+        : ""
+    }.`;
+  }, [dashboardNoticeSourceGroups, dashboardNoticeTotalCount]);
+
+  useEffect(() => {
+    if (!noticeSourceOpenKey) return;
+
+    const currentStillExists = dashboardNoticePanels.some(
+      (group) => group.key === noticeSourceOpenKey
+    );
+
+    if (!currentStillExists) {
+      setNoticeSourceOpenKey("");
+    }
+  }, [dashboardNoticePanels, noticeSourceOpenKey]);
+
+  const dashboardNoticeSelectedPanel = useMemo(
+    () =>
+      dashboardNoticePanels.find((group) => group.key === noticeSourceOpenKey) ||
+      null,
+    [dashboardNoticePanels, noticeSourceOpenKey]
+  );
+
+  const dashboardNoticeSourceTitles = useMemo(
+    () => dashboardNoticeSourceGroups.map((group) => safeStr(group.title)).filter(Boolean),
+    [dashboardNoticeSourceGroups]
+  );
+
+  const urgentDemandItems = useMemo(
+    () =>
+      demandItems.filter(
+        (item) => safeStr(item.urgency).toLowerCase() === "high"
+      ),
+    [demandItems]
+  );
+
+  const currentDemandItem = demandItems[0] || null;
+
+  const demandSummaryLine = useMemo(() => {
+    if (demandItems.length === 0) {
+      return "No open demand request is waiting right now.";
+    }
+
+    if (urgentDemandItems.length > 0) {
+      return `You have ${demandItems.length} demand request${
+        demandItems.length === 1 ? "" : "s"
+      }. ${urgentDemandItems.length} need attention now.`;
+    }
+
+    return `You have ${demandItems.length} demand request${
+      demandItems.length === 1 ? "" : "s"
+    } waiting now.`;
+  }, [demandItems, urgentDemandItems]);
+
+  const demandSummarySubline = useMemo(() => {
+    if (currentDemandItem) {
+      return `${currentCommunityName(
+        currentClan,
+        selectedClanId
+      )}${safeDateTime(currentDemandItem.created_at) ? `, ${safeDateTime(currentDemandItem.created_at)}` : ""}`;
+    }
+
+    return `${currentCommunityName(
+      currentClan,
+      selectedClanId
+    )}. Open Demand Box when you want to create or review demand.`;
+  }, [currentClan, currentDemandItem, selectedClanId]);
+
+  const demandDetailPanels = useMemo<DemandDetailPanel[]>(() => {
+    const panels: DemandDetailPanel[] = [];
+    const hasMultipleDemandItems = demandItems.length > 1;
+    const currentDemandIsUrgent =
+      safeStr(currentDemandItem?.urgency).toLowerCase() === "high";
+
+    if (hasMultipleDemandItems) {
+      panels.push({
+        key: "open-requests",
+        chipLabel: `Open requests ${demandItems.length}`,
+        title:
+          `${demandItems.length} open requests are waiting`,
+        detail:
+          urgentDemandItems.length > 0
+            ? "Start with the request that is already under pressure."
+            : "Open the live queue and review what needs response first.",
+        to: DASHBOARD_TARGETS.DEMAND_BOX,
+        ctaLabel: "Open Demand Box",
+        tone: urgentDemandItems.length > 0 ? "red" : "blue",
+        items: demandItems.slice(0, 2),
+      });
+    }
+
+    if (demandItems.length > 0) {
+      panels.push({
+        key: "current-request",
+        chipLabel:
+          demandItems.length === 1
+            ? currentDemandIsUrgent
+              ? "Needs attention"
+              : "Request"
+            : "Current request",
+        title: safeStr(currentDemandItem?.title || "Current request"),
+        detail: safeStr(
+          currentDemandItem?.description ||
+            "Open Demand Box to read the full request and decide the next move."
+        ),
+        to: DASHBOARD_TARGETS.DEMAND_BOX,
+        ctaLabel: "Open current request",
+        tone:
+          safeStr(currentDemandItem?.urgency).toLowerCase() === "high"
+            ? "red"
+            : "blue",
+        items: currentDemandItem ? [currentDemandItem] : [],
+      });
+    }
+
+    if (
+      urgentDemandItems.length > 0 &&
+      (urgentDemandItems.length > 1 || hasMultipleDemandItems || !currentDemandIsUrgent)
+    ) {
+      panels.push({
+        key: "urgent",
+        chipLabel: `Urgent ${urgentDemandItems.length}`,
+        title:
+          urgentDemandItems.length === 1
+            ? "1 urgent demand needs review"
+            : `${urgentDemandItems.length} urgent demands need review`,
+        detail: "Urgent demand should be checked before it drifts further.",
+        to: DASHBOARD_TARGETS.DEMAND_BOX,
+        ctaLabel: "Review urgent demand",
+        tone: "red",
+        items: urgentDemandItems.slice(0, 2),
+      });
+    }
+
+    if (demandItems.length === 0) {
+      panels.push({
+        key: "create-demand",
+        chipLabel: "Create demand",
+        title: "No open demand is waiting",
+        detail:
+          "Create a demand when a member or seller needs the community to respond.",
+        to: "/app/demand-box#demand-box-create",
+        ctaLabel: "Create demand",
+        tone: "slate",
+        items: [],
+      });
+    }
+
+    return panels;
+  }, [currentDemandItem, demandItems, urgentDemandItems]);
+
+  useEffect(() => {
+    if (!demandPanelOpenKey) return;
+
+    const currentStillExists = demandDetailPanels.some(
+      (panel) => panel.key === demandPanelOpenKey
+    );
+
+    if (!currentStillExists) {
+      setDemandPanelOpenKey("");
+    }
+  }, [demandDetailPanels, demandPanelOpenKey]);
+
+  const selectedDemandPanel = useMemo(
+    () =>
+      demandDetailPanels.find((panel) => panel.key === demandPanelOpenKey) ||
+      null,
+    [demandDetailPanels, demandPanelOpenKey]
+  );
+
+  const demandSurfaceChrome = useMemo(() => {
+    if (urgentDemandItems.length > 0) {
+      return {
+        shellBg:
+          "radial-gradient(circle at top left, rgba(245,158,11,0.14) 0%, rgba(245,158,11,0.00) 24%), linear-gradient(180deg, #F7FBFF 0%, #EEF5FF 52%, #E4EEF9 100%)",
+        shellBorder: "1px solid rgba(11,99,209,0.12)",
+        accent:
+          "linear-gradient(90deg, #0B63D1 0%, #3B82F6 54%, #F59E0B 100%)",
+        leadBg:
+          "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(243,248,255,0.97) 52%, rgba(227,237,248,0.95) 100%)",
+        leadBorder: "1px solid rgba(11,99,209,0.12)",
+        leadShadow:
+          "0 16px 34px rgba(11,99,209,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
+        statusBg: "rgba(245,158,11,0.14)",
+        statusText: "#9A4D04",
+        chipBg:
+          "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(245,249,255,0.96) 100%)",
+        chipBorder: "1px solid rgba(15,59,116,0.10)",
+        chipSelectedBg:
+          "linear-gradient(180deg, rgba(230,239,252,1.00) 0%, rgba(210,225,244,0.98) 100%)",
+        chipSelectedBorder: "1px solid rgba(11,99,209,0.22)",
+        detailBg:
+          "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,250,255,0.96) 100%)",
+        detailBorder: "1px solid rgba(11,99,209,0.12)",
+        itemBg:
+          "linear-gradient(180deg, rgba(252,254,255,0.98) 0%, rgba(242,247,253,0.96) 100%)",
+        itemBorder: "1px solid rgba(15,59,116,0.10)",
+      };
+    }
+
+    if (demandItems.length > 0) {
+      return {
+        shellBg:
+          "radial-gradient(circle at top left, rgba(59,130,246,0.12) 0%, rgba(59,130,246,0.00) 26%), linear-gradient(180deg, #F8FBFF 0%, #F1F7FF 52%, #E7F0FB 100%)",
+        shellBorder: "1px solid rgba(11,99,209,0.12)",
+        accent:
+          "linear-gradient(90deg, #0B63D1 0%, #60A5FA 60%, #93C5FD 100%)",
+        leadBg:
+          "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(245,249,255,0.97) 52%, rgba(232,240,250,0.95) 100%)",
+        leadBorder: "1px solid rgba(11,99,209,0.12)",
+        leadShadow:
+          "0 16px 34px rgba(11,99,209,0.07), inset 0 1px 0 rgba(255,255,255,0.84)",
+        statusBg: "rgba(11,99,209,0.10)",
+        statusText: "#0B63D1",
+        chipBg:
+          "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.96) 100%)",
+        chipBorder: "1px solid rgba(15,59,116,0.10)",
+        chipSelectedBg:
+          "linear-gradient(180deg, rgba(226,238,255,0.98) 0%, rgba(212,226,246,0.96) 100%)",
+        chipSelectedBorder: "1px solid rgba(11,99,209,0.22)",
+        detailBg:
+          "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,251,255,0.96) 100%)",
+        detailBorder: "1px solid rgba(11,99,209,0.12)",
+        itemBg:
+          "linear-gradient(180deg, rgba(252,254,255,0.98) 0%, rgba(245,249,255,0.96) 100%)",
+        itemBorder: "1px solid rgba(15,59,116,0.10)",
+      };
+    }
+
+    return {
+      shellBg:
+        "radial-gradient(circle at top left, rgba(148,163,184,0.10) 0%, rgba(148,163,184,0.00) 26%), linear-gradient(180deg, #F8FBFF 0%, #F4F8FD 52%, #EEF4FB 100%)",
+      shellBorder: "1px solid rgba(148,163,184,0.14)",
+      accent:
+        "linear-gradient(90deg, #64748B 0%, #94A3B8 58%, #CBD5E1 100%)",
+      leadBg:
+        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.97) 52%, rgba(237,242,247,0.95) 100%)",
+      leadBorder: "1px solid rgba(148,163,184,0.14)",
+      leadShadow:
+        "0 14px 30px rgba(10,24,49,0.05), inset 0 1px 0 rgba(255,255,255,0.84)",
+      statusBg: "rgba(148,163,184,0.14)",
+      statusText: "#475569",
+      chipBg:
+        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.96) 100%)",
+      chipBorder: "1px solid rgba(148,163,184,0.14)",
+      chipSelectedBg:
+        "linear-gradient(180deg, rgba(237,242,247,0.98) 0%, rgba(226,232,240,0.96) 100%)",
+      chipSelectedBorder: "1px solid rgba(148,163,184,0.20)",
+      detailBg:
+        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(249,250,251,0.96) 100%)",
+      detailBorder: "1px solid rgba(148,163,184,0.14)",
+      itemBg:
+        "linear-gradient(180deg, rgba(252,253,255,0.98) 0%, rgba(246,248,251,0.96) 100%)",
+      itemBorder: "1px solid rgba(148,163,184,0.14)",
+    };
+  }, [demandItems.length, urgentDemandItems.length]);
+
   const activeWisdomCapability = safeStr((activeWisdom as any)?.capability || "");
   const activeWisdomTitle = safeStr((activeWisdom as any)?.title || "");
 
@@ -3422,6 +4203,315 @@ export default function DashboardPage() {
         ? (guidance as any).marketWisdomCard.title
         : "")
   );
+
+  const activeWisdomCategory = safeStr((activeWisdom as any)?.category || "");
+  const activeWisdomGuideCapability = useMemo(() => {
+    const seed = [
+      activeWisdomTitle,
+      activeWisdomCategory,
+      activeSpotlight?.id,
+      urgentDemandItems.length,
+      demandItems.length,
+      pendingRequests.length,
+      dashboardNoticeSummary.counts.unread,
+      openTrust.tone,
+      cci.tone,
+    ].join("|");
+
+    return (
+      getGmfnCapability(activeWisdomCapability) ||
+      getFeaturedGmfnCapability(seed)
+    );
+  }, [
+    activeSpotlight?.id,
+    activeWisdomCapability,
+    activeWisdomCategory,
+    activeWisdomTitle,
+    cci.tone,
+    dashboardNoticeSummary.counts.unread,
+    demandItems.length,
+    openTrust.tone,
+    pendingRequests.length,
+    urgentDemandItems.length,
+  ]);
+
+  const activeWisdomCategoryLabel = useMemo(() => {
+    switch (activeWisdomCategory) {
+      case "trade":
+        return "Trade";
+      case "visibility":
+        return "Visibility";
+      case "finance":
+        return "Finance";
+      case "support":
+        return "Support";
+      case "community":
+        return "Community";
+      case "identity":
+        return "Identity";
+      case "work":
+        return "Work";
+      case "operating":
+        return "Operating";
+      default:
+        return "Market";
+    }
+  }, [activeWisdomCategory]);
+
+  const marketWisdomNowLine = useMemo(() => {
+    if (activeSpotlight) {
+      return "Spotlight is live. Check seller trust before the next move.";
+    }
+
+    if (urgentDemandItems.length > 0) {
+      return "Urgent demand is live. Check timing and response now.";
+    }
+
+    if (demandItems.length > 0) {
+      return "Demand Box is active. Read the current need before you act.";
+    }
+
+    if (pendingRequests.length > 0) {
+      return "Support requests are waiting. Review and respond when ready.";
+    }
+
+    if (dashboardNoticeSummary.counts.unread > 0) {
+      return "New signals are waiting. Open the screen that needs you next.";
+    }
+
+    if (openTrust.tone === "red" || cci.tone === "red") {
+      return "Trust is under pressure. Read risk before the next move.";
+    }
+
+    if (openTrust.tone === "yellow" || cci.tone === "yellow") {
+      return "Trust needs steadier handling today. Move with care.";
+    }
+
+    switch (activeWisdomCategory) {
+      case "trade":
+        return "Use this before trade, pricing, or the next seller decision.";
+      case "visibility":
+        return "Use this before spotlight, display, or seller-reach decisions.";
+      case "finance":
+        return "Use this before contribution, borrowing, or repayment decisions.";
+      case "support":
+        return "Use this before helping, approving, or reviewing another member.";
+      case "community":
+        return "Use this before a wider group decision or a shared next step.";
+      case "identity":
+        return "Use this before trust, access, or verification decisions.";
+      case "work":
+        return "Use this before offering service, hiring, or taking on the next task.";
+      default:
+        return "Use this to steady the next move before you act.";
+    }
+  }, [
+    activeSpotlight,
+    activeWisdomCategory,
+    cci.tone,
+    dashboardNoticeSummary.counts.unread,
+    demandItems.length,
+    openTrust.tone,
+    pendingRequests.length,
+    urgentDemandItems.length,
+  ]);
+
+  const marketWisdomGuideLine = useMemo(() => {
+    const seed = [
+      activeWisdomTitle,
+      activeWisdomCategory,
+      activeSpotlight?.id,
+      urgentDemandItems.length,
+      demandItems.length,
+      pendingRequests.length,
+      dashboardNoticeSummary.counts.unread,
+      openTrust.tone,
+      cci.tone,
+    ].join("|");
+    const guideLine = getGmfnCapabilityGuideLine(
+      activeWisdomGuideCapability?.id,
+      seed
+    );
+
+    if (activeWisdomGuideCapability) {
+      return `${activeWisdomGuideCapability.title}: ${guideLine}`;
+    }
+
+    return `My GSN and I keeps the ${GMFN_CAPABILITY_COUNT} core capabilities visible behind this reading.`;
+  }, [
+    activeSpotlight?.id,
+    activeWisdomCategory,
+    activeWisdomGuideCapability,
+    activeWisdomTitle,
+    cci.tone,
+    dashboardNoticeSummary.counts.unread,
+    demandItems.length,
+    openTrust.tone,
+    pendingRequests.length,
+    urgentDemandItems.length,
+  ]);
+
+  const marketWisdomAttentionState = useMemo(() => {
+    if (activeSpotlight) {
+      return {
+        label: "Spotlight live",
+        detail: "Live seller visibility is shaping the current reading.",
+        accent: "#A16207",
+        border: "rgba(184,137,45,0.18)",
+        background:
+          "linear-gradient(180deg, rgba(248,222,141,0.24) 0%, rgba(255,255,255,0.96) 100%)",
+      };
+    }
+
+    if (urgentDemandItems.length > 0) {
+      return {
+        label: "Urgent demand",
+        detail: "Demand pressure is shaping the current reading right now.",
+        accent: "#B91C1C",
+        border: "rgba(220,38,38,0.18)",
+        background:
+          "linear-gradient(180deg, rgba(254,226,226,0.88) 0%, rgba(255,255,255,0.96) 100%)",
+      };
+    }
+
+    if (pendingRequests.length > 0) {
+      return {
+        label: "Support waiting",
+        detail: "Pending community requests are shaping the current reading.",
+        accent: "#B45309",
+        border: "rgba(217,119,6,0.18)",
+        background:
+          "linear-gradient(180deg, rgba(254,243,199,0.90) 0%, rgba(255,255,255,0.96) 100%)",
+      };
+    }
+
+    if (dashboardNoticeSummary.counts.unread > 0) {
+      return {
+        label: "New signal",
+        detail: "Unread dashboard activity is shaping the current reading.",
+        accent: "#1D4ED8",
+        border: "rgba(29,78,216,0.16)",
+        background:
+          "linear-gradient(180deg, rgba(219,234,254,0.90) 0%, rgba(255,255,255,0.96) 100%)",
+      };
+    }
+
+    if (openTrust.tone === "red" || cci.tone === "red") {
+      return {
+        label: "Trust warning",
+        detail: "Trust pressure is shaping the current reading.",
+        accent: "#B91C1C",
+        border: "rgba(220,38,38,0.18)",
+        background:
+          "linear-gradient(180deg, rgba(254,226,226,0.88) 0%, rgba(255,255,255,0.96) 100%)",
+      };
+    }
+
+    if (openTrust.tone === "yellow" || cci.tone === "yellow") {
+      return {
+        label: "Trust watch",
+        detail: "Trust caution is shaping the current reading.",
+        accent: "#B45309",
+        border: "rgba(217,119,6,0.18)",
+        background:
+          "linear-gradient(180deg, rgba(254,243,199,0.90) 0%, rgba(255,255,255,0.96) 100%)",
+      };
+    }
+
+    return {
+      label: `${activeWisdomCategoryLabel} focus`,
+      detail: "GSN is rotating the current reading from live activity and guide context.",
+      accent: "#1D4ED8",
+      border: "rgba(29,78,216,0.16)",
+      background:
+        "linear-gradient(180deg, rgba(219,234,254,0.90) 0%, rgba(255,255,255,0.96) 100%)",
+    };
+  }, [
+    activeSpotlight,
+    activeWisdomCategoryLabel,
+    cci.tone,
+    dashboardNoticeSummary.counts.unread,
+    openTrust.tone,
+    pendingRequests.length,
+    urgentDemandItems.length,
+  ]);
+
+  const marketWisdomSignals = useMemo(
+    () => [
+      {
+        key: "market",
+        label: "Market",
+        title: activeWisdomTitle || "Market reading",
+        text: signalText,
+        accent: "#1D4ED8",
+        border: "rgba(29,78,216,0.16)",
+        background:
+          "linear-gradient(180deg, rgba(219,234,254,0.88) 0%, rgba(255,255,255,0.96) 100%)",
+      },
+      {
+        key: "gsn",
+        label: "GSN",
+        title: "GSN line",
+        text:
+          signalSupport ||
+          "GSN keeps identity, trust, and community readable before movement.",
+        accent: "#0F766E",
+        border: "rgba(15,118,110,0.16)",
+        background:
+          "linear-gradient(180deg, rgba(220,252,231,0.88) 0%, rgba(255,255,255,0.96) 100%)",
+      },
+      {
+        key: "guide",
+        label: "Guide",
+        title: activeWisdomGuideCapability?.title || "My GSN and I",
+        text: marketWisdomGuideLine,
+        accent: DASHBOARD_BRAND.goldText,
+        border: "rgba(184,137,45,0.18)",
+        background:
+          "linear-gradient(180deg, rgba(254,243,199,0.90) 0%, rgba(255,255,255,0.96) 100%)",
+      },
+      {
+        key: "now",
+        label: "Now",
+        title: marketWisdomAttentionState.label,
+        text: marketWisdomNowLine,
+        accent: marketWisdomAttentionState.accent,
+        border: marketWisdomAttentionState.border,
+        background: marketWisdomAttentionState.background,
+      },
+    ],
+    [
+      activeWisdomGuideCapability?.title,
+      activeWisdomTitle,
+      marketWisdomAttentionState,
+      marketWisdomGuideLine,
+      marketWisdomNowLine,
+      signalSupport,
+      signalText,
+    ]
+  );
+
+  const activeMarketWisdomSignal = useMemo(() => {
+    if (marketWisdomSignals.length === 0) return null;
+    return (
+      marketWisdomSignals[marketWisdomSignalIndex % marketWisdomSignals.length] ||
+      marketWisdomSignals[0]
+    );
+  }, [marketWisdomSignalIndex, marketWisdomSignals]);
+
+  useEffect(() => {
+    if (marketWisdomSignals.length <= 1) return;
+
+    const timer = window.setInterval(() => {
+      setMarketWisdomSignalIndex((prev) => (prev + 1) % marketWisdomSignals.length);
+    }, 7000);
+
+    return () => window.clearInterval(timer);
+  }, [marketWisdomSignals.length]);
+
+  useEffect(() => {
+    setMarketWisdomSignalIndex(0);
+  }, [activeWisdom?.id, marketWisdomNowLine]);
 
   const guidancePulse = useMemo<GuidancePulse | null>(() => {
     if (!guidance && !nextBestStep && !todayTomorrow && !weeklyFocus) return null;
@@ -3501,20 +4591,6 @@ export default function DashboardPage() {
     signalText,
   ]);
 
-  const nextRouteTo = normalizeActionTargetPath(
-    weeklyFocus?.ctaTo ||
-      recoveryPath?.ctaTo ||
-      nextBestStep?.ctaTo ||
-      DASHBOARD_TARGETS.WHAT_MATTERS_NOW
-  );
-
-  const nextRouteLabel = safeStr(
-    weeklyFocus?.ctaLabel ||
-      recoveryPath?.ctaLabel ||
-      nextBestStep?.ctaLabel ||
-      "Open next step"
-  );
-
   const activeFocusCount = useMemo(
     () =>
       focusCommitments.filter((item) => !item.archived && !item.completedAt)
@@ -3570,6 +4646,124 @@ export default function DashboardPage() {
     ]
   );
 
+  const urgentDemandCount = useMemo(
+    () =>
+      demandItems.filter((item) => safeStr(item.urgency).toLowerCase() === "high")
+        .length,
+    [demandItems]
+  );
+
+  // Keep all priority-route-derived values below this block so later dashboard
+  // tweaks do not accidentally reintroduce TDZ/HMR ordering errors.
+  const nextRouteCopy = useMemo(
+    () =>
+      buildNextRouteCopy({
+        userClass: userOperationalClass,
+        pendingRequestsCount: pendingRequests.length,
+        urgentDemandCount,
+        actNowCount: dashboardNoticeSummary.counts.actNow,
+        openTrust,
+        cci,
+        trustSlipCode,
+        primaryLabel: routeSurfaceLabel(priorityRoutes.primaryRoute),
+        trustExplainer,
+      }),
+    [
+      userOperationalClass,
+      pendingRequests.length,
+      urgentDemandCount,
+      dashboardNoticeSummary.counts.actNow,
+      openTrust,
+      cci,
+      trustSlipCode,
+      priorityRoutes.primaryRoute,
+      trustExplainer,
+    ]
+  );
+
+  const attentionSignal = useMemo(
+    () =>
+      buildDashboardAttentionSignal({
+        userClass: userOperationalClass,
+        nextRouteKey: priorityRoutes.primaryRoute.key,
+        nextRouteLabel: routeSurfaceLabel(priorityRoutes.primaryRoute),
+        nextRouteTo: priorityRoutes.primaryRoute.to,
+        nextRouteCopy,
+        totalNotifications: dashboardNoticeTotalCount,
+        actNowCount: dashboardNoticeSummary.counts.actNow,
+        unreadCount: dashboardNoticeSummary.counts.unread,
+        sourceTitles: dashboardNoticeSourceTitles,
+        focusBehindCount: focusSummary.behindCount,
+        focusWatchCount: focusSummary.watchCount,
+        focusNextReviewLabel: focusSummary.nextReviewLabel,
+        focusRouteTo: `${DASHBOARD_TARGETS.DASHBOARD}#focus-commitments`,
+        notificationsTo: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
+        nowMs: attentionClockMs,
+        storedState: attentionState,
+      }),
+    [
+      userOperationalClass,
+      priorityRoutes.primaryRoute,
+      nextRouteCopy,
+      dashboardNoticeTotalCount,
+      dashboardNoticeSummary.counts.actNow,
+      dashboardNoticeSummary.counts.unread,
+      dashboardNoticeSourceTitles,
+      focusSummary.behindCount,
+      focusSummary.watchCount,
+      focusSummary.nextReviewLabel,
+      attentionClockMs,
+      attentionState,
+    ]
+  );
+
+  const trustAttentionCore = useMemo(
+    () =>
+      buildDashboardTrustAttentionCore({
+        openTrust,
+        cci,
+        trustSlipCode,
+        trustExplainer,
+        pendingRequestsCount: pendingRequests.length,
+        unreadCount: dashboardNoticeSummary.counts.unread,
+        actNowCount: dashboardNoticeSummary.counts.actNow,
+        urgentDemandCount,
+        focusBehindCount: focusSummary.behindCount,
+        focusWatchCount: focusSummary.watchCount,
+        focusOnTrackCount: focusSummary.onTrackCount,
+        focusCompletedCount: focusSummary.completedCount,
+        primaryLabel: routeSurfaceLabel(priorityRoutes.primaryRoute),
+      }),
+    [
+      openTrust,
+      cci,
+      trustSlipCode,
+      trustExplainer,
+      pendingRequests.length,
+      dashboardNoticeSummary.counts.unread,
+      dashboardNoticeSummary.counts.actNow,
+      urgentDemandCount,
+      focusSummary.behindCount,
+      focusSummary.watchCount,
+      focusSummary.onTrackCount,
+      focusSummary.completedCount,
+      priorityRoutes.primaryRoute,
+    ]
+  );
+
+  const attentionDisplaySignal = useMemo(() => {
+    if (!attentionSignal.active || attentionSignal.sourceKind === "seller") {
+      return attentionSignal;
+    }
+
+    return {
+      ...attentionSignal,
+      problemText: trustAttentionCore.problemText,
+      consequenceText: trustAttentionCore.consequenceText,
+      actionText: trustAttentionCore.actionText,
+    };
+  }, [attentionSignal, trustAttentionCore]);
+
   const mostUsedAppFallback = useMemo(
     () =>
       buildMostUsedAppFallback({
@@ -3579,38 +4773,52 @@ export default function DashboardPage() {
     [userOperationalClass, myShopLink]
   );
 
-  const mostUsedApps = useMemo(
-    () => buildMostUsedAppRows(appUsage, mostUsedAppFallback),
-    [appUsage, mostUsedAppFallback]
+  const actualMostUsedApps = useMemo(
+    () => sortAppUsageRows(appUsage).filter((row) => row.count > 0),
+    [appUsage]
   );
-  const mostUsedAppPreview = useMemo(() => {
-    const primary = mostUsedApps[0] || null;
-    const financeApp =
-      mostUsedApps.find((app) => app.key === "finance") ||
-      mostUsedAppFallback.find((app) => app.key === "finance") ||
-      null;
-    if (primary && financeApp && financeApp.key !== primary.key) {
-      return [primary, financeApp];
-    }
-    return mostUsedApps.slice(0, 2);
-  }, [mostUsedApps, mostUsedAppFallback]);
-
-  const trustJourneyModel = useMemo(
+  const mostUsedAppSurface = useMemo(
     () =>
-      buildTrustJourneyModel({
-        openTrust,
-        cci,
-        trustSlipCode,
-        trustExplainer,
-        focusSummary,
-      }),
-    [openTrust, cci, trustSlipCode, trustExplainer, focusSummary]
+      (actualMostUsedApps.length > 0
+        ? actualMostUsedApps
+        : mostUsedAppFallback
+      ).slice(0, 4),
+    [actualMostUsedApps, mostUsedAppFallback]
   );
 
-  const trustJourneyTone = useMemo(
-    () => toneStyles(trustJourneyModel.tone),
-    [trustJourneyModel.tone]
-  );
+  useEffect(() => {
+    if (attentionSignal.active) return;
+
+    setAttentionPopupVisible(false);
+    setAttentionState((prev) =>
+      prev.signature
+        ? defaultDashboardAttentionStoredState()
+        : prev
+    );
+  }, [attentionSignal.active]);
+
+  useEffect(() => {
+    if (!attentionSignal.active || !attentionSignal.shouldShow) return;
+
+    if (
+      attentionPopupVisible &&
+      attentionState.signature === attentionSignal.signature
+    ) {
+      return;
+    }
+
+    const nowIso = new Date(attentionClockMs).toISOString();
+    setAttentionPopupVisible(true);
+    setAttentionState(markDashboardAttentionShown(attentionSignal.state, nowIso));
+  }, [
+    attentionSignal.active,
+    attentionSignal.shouldShow,
+    attentionSignal.signature,
+    attentionSignal.state,
+    attentionPopupVisible,
+    attentionState.signature,
+    attentionClockMs,
+  ]);
 
   function updateUiState(patch: Partial<DashboardUIState>) {
     setUiState((prev) => ({
@@ -3619,17 +4827,123 @@ export default function DashboardPage() {
     }));
   }
 
-  function goPrevSpotlight() {
-    if (spotlights.length <= 1) return;
-    setSpotlightIndex((prev) => (prev <= 0 ? spotlights.length - 1 : prev - 1));
+  function dismissAttentionPopup() {
+    const nowIso = new Date().toISOString();
+    setAttentionPopupVisible(false);
+    setAttentionState(markDashboardAttentionDismissed(attentionSignal.state, nowIso));
   }
 
-  function goNextSpotlight() {
-    if (spotlights.length <= 1) return;
-    setSpotlightIndex((prev) => (prev >= spotlights.length - 1 ? 0 : prev + 1));
+  function consumeDashboardPointerEvent(
+    event?: React.SyntheticEvent<HTMLElement>
+  ) {
+    stopDashboardPointerEvent(event);
   }
 
-  function openSpotlightShop() {
+  function consumeDashboardButtonEvent(
+    event?: React.SyntheticEvent<HTMLElement>
+  ) {
+    if (!event) return;
+
+    if (event.type === "click" || event.type === "submit") {
+      event.preventDefault();
+    }
+
+    event.stopPropagation();
+  }
+
+  function openDashboardRoute(
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    to: string
+  ) {
+    consumeDashboardButtonEvent(event);
+    navigateWithOrigin(navigate, to, location);
+  }
+
+  function armDashboardInteractionShield(durationMs = 420) {
+    if (typeof window === "undefined") return;
+
+    if (dashboardInteractionShieldTimerRef.current !== null) {
+      window.clearTimeout(dashboardInteractionShieldTimerRef.current);
+    }
+
+    setDashboardInteractionShieldVisible(true);
+    dashboardInteractionShieldTimerRef.current = window.setTimeout(() => {
+      setDashboardInteractionShieldVisible(false);
+      dashboardInteractionShieldTimerRef.current = null;
+    }, durationMs);
+  }
+
+  function runDashboardUiMutation(
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    action: () => void,
+    durationMs = 420
+  ) {
+    consumeDashboardButtonEvent(event);
+    armDashboardInteractionShield(durationMs);
+    action();
+  }
+
+  function openAttentionTarget(
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    to: string
+  ) {
+    consumeDashboardButtonEvent(event);
+    const nowIso = new Date().toISOString();
+    setAttentionPopupVisible(false);
+    setAttentionState(markDashboardAttentionActed(attentionSignal.state, nowIso));
+    navigateWithOrigin(navigate, to, location);
+  }
+
+  function openTrustJourneyFromAttention(
+    event?: React.SyntheticEvent<HTMLElement>
+  ) {
+    consumeDashboardButtonEvent(event);
+    const nowIso = new Date().toISOString();
+    setAttentionPopupVisible(false);
+    setAttentionState(markDashboardAttentionActed(attentionSignal.state, nowIso));
+    navigateWithOrigin(navigate, "/app/trust#trust-journey", location);
+  }
+
+  function goPrevSpotlight(event?: React.SyntheticEvent<HTMLElement>) {
+    runDashboardUiMutation(event, () => {
+      if (spotlights.length <= 1) return;
+      setSpotlightIndex((prev) => (prev <= 0 ? spotlights.length - 1 : prev - 1));
+    });
+  }
+
+  function goNextSpotlight(event?: React.SyntheticEvent<HTMLElement>) {
+    runDashboardUiMutation(event, () => {
+      if (spotlights.length <= 1) return;
+      setSpotlightIndex((prev) => (prev >= spotlights.length - 1 ? 0 : prev + 1));
+    });
+  }
+
+  function openSellerIdentityDock(
+    event?: React.SyntheticEvent<HTMLButtonElement>
+  ) {
+    runDashboardUiMutation(event, () => setSellerIdentityDockOpen(true));
+  }
+
+  function closeSellerIdentityDock(
+    event?: React.SyntheticEvent<HTMLButtonElement>
+  ) {
+    runDashboardUiMutation(event, () => setSellerIdentityDockOpen(false));
+  }
+
+  function openSpotlightPanel(event?: React.SyntheticEvent<HTMLElement>) {
+    runDashboardUiMutation(event, () =>
+      updateUiState({ spotlightMinimized: false })
+    );
+  }
+
+  function minimizeSpotlight(event?: React.SyntheticEvent<HTMLElement>) {
+    runDashboardUiMutation(event, () =>
+      updateUiState({ spotlightMinimized: true })
+    );
+  }
+
+  function openSpotlightShop(event?: React.SyntheticEvent<HTMLElement>) {
+    consumeDashboardButtonEvent(event);
     const spotlightGmfnId = safeStr(activeSpotlight?.author_gmfn_id || "");
     if (!spotlightGmfnId) return;
 
@@ -3640,63 +4954,45 @@ export default function DashboardPage() {
     );
   }
 
-  function openSpotlightMarketplace() {
-    navigateWithOrigin(
-      navigate,
-      spotlightMarketplaceTo(activeSpotlight),
-      location
-    );
-  }
-
-  function rememberAppOpen(route: {
-    key: string;
-    label: string;
-    detail: string;
-    to: string;
-  }) {
-    setAppUsage((prev) => trackAppUsage(prev, route));
+  function openSpotlightMarketplace(
+    event?: React.SyntheticEvent<HTMLElement>
+  ) {
+    openDashboardRoute(event, spotlightMarketplaceTo(activeSpotlight));
   }
 
   function openTrackedRoute(route: IntelligentRoute) {
-    rememberAppOpen({
-      key: route.key,
-      label: route.label,
-      detail: route.detail,
-      to: route.to,
-    });
-
     navigateWithOrigin(navigate, route.to, location);
   }
 
   function openTrackedApp(app: AppUseRecord) {
-    rememberAppOpen({
-      key: app.key,
-      label: app.label,
-      detail: app.detail,
-      to: app.to,
-    });
-
     navigateWithOrigin(navigate, app.to, location);
   }
 
-  function openMerchantVerifyPage() {
+  function openMerchantVerifyPage(
+    event?: React.SyntheticEvent<HTMLElement>
+  ) {
+    consumeDashboardButtonEvent(event);
     const href = safeStr(merchantVerifyHref);
     if (!href || typeof window === "undefined") return;
     window.open(href, "_blank", "noopener,noreferrer");
   }
 
-  function openTrustSlipPage() {
+  function openTrustSlipPage(
+    event?: React.SyntheticEvent<HTMLElement>
+  ) {
     const query = trustSlipCode
       ? `?code=${encodeURIComponent(trustSlipCode)}`
       : "";
-    navigateWithOrigin(navigate, `/app/trust-slip${query}`, location);
+    openDashboardRoute(event, `/app/trust-slip${query}`);
   }
 
-  function openTrustSlipVerifyInApp() {
+  function openTrustSlipVerifyInApp(
+    event?: React.SyntheticEvent<HTMLElement>
+  ) {
     const query = trustSlipCode
       ? `?code=${encodeURIComponent(trustSlipCode)}`
       : "";
-    navigateWithOrigin(navigate, `/app/trust-slip/verify${query}`, location);
+    openDashboardRoute(event, `/app/trust-slip/verify${query}`);
   }
 
   function openAvatarPicker() {
@@ -3986,18 +5282,670 @@ export default function DashboardPage() {
     setFocusEvents((prev) => [completedEvent, ...prev].slice(0, 120));
   }
 
+  const attentionPopupTone =
+    attentionDisplaySignal.sourceKind === "focus" ||
+    attentionDisplaySignal.stage === "persistent"
+      ? {
+          border: "1px solid rgba(220,38,38,0.18)",
+          bar: "linear-gradient(90deg, #991B1B 0%, #DC2626 60%, #FCA5A5 100%)",
+          shadow: "0 28px 54px rgba(153,27,27,0.20)",
+          labelBg: "rgba(220,38,38,0.10)",
+          labelColor: "#991B1B",
+        }
+      : attentionDisplaySignal.stage === "followup"
+      ? {
+          border: "1px solid rgba(245,158,11,0.18)",
+          bar: "linear-gradient(90deg, #92400E 0%, #F59E0B 60%, #FCD34D 100%)",
+          shadow: "0 28px 54px rgba(146,64,14,0.18)",
+          labelBg: "rgba(245,158,11,0.12)",
+          labelColor: "#92400E",
+        }
+      : {
+          border: "1px solid rgba(11,99,209,0.18)",
+          bar: "linear-gradient(90deg, #0F3B74 0%, #0B63D1 60%, #93C5FD 100%)",
+          shadow: "0 28px 54px rgba(11,99,209,0.18)",
+          labelBg: "rgba(11,99,209,0.10)",
+          labelColor: "#0F3B74",
+        };
+
+  const attentionPopupChrome =
+    attentionDisplaySignal.sourceKind === "focus" ||
+    attentionDisplaySignal.stage === "persistent"
+      ? {
+          shellBg:
+            "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,244,244,0.98) 100%)",
+          heroBg:
+            "radial-gradient(circle at top left, rgba(252,165,165,0.18) 0%, rgba(153,27,27,0) 36%), linear-gradient(135deg, #10243A 0%, #3B1020 42%, #7F1D1D 100%)",
+          heroBorder: "1px solid rgba(252,165,165,0.18)",
+          heroTitle: "#FFF7F7",
+          heroBody: "rgba(255,241,242,0.90)",
+          heroLabel: "rgba(255,228,230,0.82)",
+          stageBg:
+            "linear-gradient(180deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.10) 100%)",
+          stageBorder: "1px solid rgba(255,228,230,0.24)",
+          stageText: "#FFF4F4",
+          bodyBg:
+            "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,249,249,0.94) 100%)",
+          panelBg: "#FFFFFF",
+          panelBorder: "1px solid rgba(220,38,38,0.10)",
+          actionBg:
+            "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,244,244,0.96) 100%)",
+          connectBg:
+            "linear-gradient(180deg, rgba(255,247,247,0.98) 0%, rgba(255,255,255,0.98) 100%)",
+          connectBorder: "1px solid rgba(220,38,38,0.10)",
+          reminderBg:
+            "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,245,245,0.94) 100%)",
+          reminderText: "#681A1A",
+        }
+      : attentionDisplaySignal.stage === "followup"
+      ? {
+          shellBg:
+            "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,251,243,0.98) 100%)",
+          heroBg:
+            "radial-gradient(circle at top left, rgba(252,211,77,0.18) 0%, rgba(146,64,14,0) 34%), linear-gradient(135deg, #10243A 0%, #4B2A0D 48%, #A16207 100%)",
+          heroBorder: "1px solid rgba(252,211,77,0.18)",
+          heroTitle: "#FFFBF0",
+          heroBody: "rgba(255,247,225,0.88)",
+          heroLabel: "rgba(255,241,204,0.84)",
+          stageBg:
+            "linear-gradient(180deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.10) 100%)",
+          stageBorder: "1px solid rgba(253,230,138,0.24)",
+          stageText: "#FFF8E4",
+          bodyBg:
+            "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,252,246,0.94) 100%)",
+          panelBg: "#FFFFFF",
+          panelBorder: "1px solid rgba(245,158,11,0.10)",
+          actionBg:
+            "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,249,239,0.96) 100%)",
+          connectBg:
+            "linear-gradient(180deg, rgba(255,251,243,0.98) 0%, rgba(255,255,255,0.98) 100%)",
+          connectBorder: "1px solid rgba(245,158,11,0.10)",
+          reminderBg:
+            "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,251,241,0.94) 100%)",
+          reminderText: "#6C4407",
+        }
+      : {
+          shellBg:
+            "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,249,255,0.98) 100%)",
+          heroBg:
+            "radial-gradient(circle at top left, rgba(147,197,253,0.22) 0%, rgba(11,99,209,0) 34%), linear-gradient(135deg, #10243A 0%, #15395B 44%, #1F5F95 100%)",
+          heroBorder: "1px solid rgba(147,197,253,0.18)",
+          heroTitle: "#F8FBFF",
+          heroBody: "rgba(225,238,252,0.90)",
+          heroLabel: "rgba(217,231,245,0.84)",
+          stageBg:
+            "linear-gradient(180deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.10) 100%)",
+          stageBorder: "1px solid rgba(191,219,254,0.24)",
+          stageText: "#F3F9FF",
+          bodyBg:
+            "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.94) 100%)",
+          panelBg: "#FFFFFF",
+          panelBorder: "1px solid rgba(11,99,209,0.10)",
+          actionBg:
+            "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(243,248,255,0.96) 100%)",
+          connectBg:
+            "linear-gradient(180deg, rgba(244,249,255,0.98) 0%, rgba(255,255,255,0.98) 100%)",
+          connectBorder: "1px solid rgba(11,99,209,0.10)",
+          reminderBg:
+            "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(241,247,255,0.94) 100%)",
+          reminderText: "#123055",
+        };
+
+  const attentionStageLabel =
+    attentionDisplaySignal.stage === "persistent"
+      ? "Urgent now"
+      : attentionDisplaySignal.stage === "followup"
+      ? "Follow-up"
+      : "Active guide";
+
+  const attentionStageDot =
+    attentionDisplaySignal.stage === "persistent"
+      ? "#FCA5A5"
+      : attentionDisplaySignal.stage === "followup"
+      ? "#FCD34D"
+      : "#93C5FD";
+
   const profileName = greetingName;
-  const showSpotlight = !uiState.spotlightMinimized; 
+  const showSpotlight = !uiState.spotlightMinimized;
+  const dashboardSpotlightMinHeight = isCompact ? 132 : 176;
+  const dashboardSpotlightRadius = isCompact ? 24 : 28;
+  const dashboardSpotlightTopInset = isCompact ? 8 : 12;
+  const dashboardSpotlightBottomInset = isCompact ? 8 : 12;
+  const dashboardSpotlightTitleSize = isCompact ? 17 : 24;
+  const dashboardSpotlightBodyFontSize = isCompact ? 11 : 12;
+  const dashboardActionGrid = (
+    minWidth = isCompact ? 112 : 132
+  ): React.CSSProperties => ({
+    display: "grid",
+    gridTemplateColumns: `repeat(auto-fit, minmax(${minWidth}px, 1fr))`,
+    gap: 8,
+    alignItems: "stretch",
+  });
+  const dashboardFillButton = (
+    base: React.CSSProperties,
+    overrides: React.CSSProperties = {}
+  ): React.CSSProperties => ({
+    ...base,
+    width: "100%",
+    minWidth: 0,
+    maxWidth: "100%",
+    ...overrides,
+  });
   return (
     <div
       style={{
         minHeight: "100%",
         margin: "0 -16px",
         padding: "18px 16px 40px",
-        background:
-          "radial-gradient(circle at top, rgba(47,103,196,0.16) 0%, rgba(16,37,59,0.00) 32%), linear-gradient(180deg, #10243A 0%, #173654 62%, #26527C 100%)",
+        background: DASHBOARD_BRAND.pageWash,
       }}
     >
+      {attentionDisplaySignal.active ? (
+        <>
+          <style>
+            {`
+              @keyframes dashboardAttentionPopupSlide {
+                0% {
+                  opacity: 0;
+                  transform: translateY(-14px) scale(0.98);
+                }
+                100% {
+                  opacity: 1;
+                  transform: translateY(0) scale(1);
+                }
+              }
+
+              @keyframes dashboardAttentionPillPulse {
+                0%, 100% {
+                  box-shadow: 0 12px 28px rgba(15, 59, 116, 0.16);
+                }
+                50% {
+                  box-shadow: 0 18px 34px rgba(15, 59, 116, 0.26);
+                }
+              }
+            `}
+          </style>
+
+          {attentionPopupVisible ? (
+            <div
+              style={{
+                position: "fixed",
+                top: isCompact ? 12 : 18,
+                right: isCompact ? 12 : 18,
+                left: isCompact ? 12 : "auto",
+                width: isCompact ? "auto" : 452,
+                zIndex: 1200,
+                borderRadius: 22,
+                overflow: "hidden",
+                border: attentionPopupTone.border,
+                background: attentionPopupChrome.shellBg,
+                boxShadow: attentionPopupTone.shadow,
+                animation: "dashboardAttentionPopupSlide 240ms ease-out",
+                backdropFilter: "blur(14px)",
+              }}
+            >
+              <div
+                style={{
+                  height: 4,
+                  background: attentionPopupTone.bar,
+                }}
+              />
+
+              <div
+                style={{
+                  padding: isCompact ? 14 : 16,
+                  background: attentionPopupChrome.heroBg,
+                  borderBottom: attentionPopupChrome.heroBorder,
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    alignItems: "flex-start",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div style={{ flex: "1 1 260px", minWidth: 0 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <div
+                        style={{
+                          ...sectionLabel(),
+                          color: attentionPopupChrome.heroLabel,
+                        }}
+                      >
+                        Attention Guide
+                      </div>
+
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                          minHeight: 26,
+                          padding: "4px 9px",
+                          borderRadius: 999,
+                          background: attentionPopupChrome.stageBg,
+                          border: attentionPopupChrome.stageBorder,
+                          color: attentionPopupChrome.stageText,
+                          fontSize: 10.5,
+                          fontWeight: 900,
+                          letterSpacing: 0.18,
+                          textTransform: "uppercase",
+                          boxShadow:
+                            "inset 0 1px 0 rgba(255,255,255,0.18), 0 10px 20px rgba(7,16,28,0.12)",
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 7,
+                            height: 7,
+                            borderRadius: 999,
+                            background: attentionStageDot,
+                            flexShrink: 0,
+                          }}
+                        />
+                        {attentionStageLabel}
+                      </span>
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: attentionPopupChrome.heroTitle,
+                        fontSize: isCompact ? 18 : 20,
+                        fontWeight: 900,
+                        lineHeight: 1.18,
+                        maxWidth: 500,
+                        textWrap: "balance",
+                      }}
+                    >
+                      {attentionDisplaySignal.title}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: attentionPopupChrome.heroBody,
+                        fontSize: 13,
+                        lineHeight: 1.58,
+                        fontWeight: 700,
+                        maxWidth: 520,
+                      }}
+                    >
+                      {attentionDisplaySignal.intro}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      justifyItems: isCompact ? "start" : "end",
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        minHeight: 28,
+                        padding: "5px 9px",
+                        borderRadius: 999,
+                        background: attentionPopupChrome.stageBg,
+                        border: attentionPopupChrome.stageBorder,
+                        color: attentionPopupChrome.stageText,
+                        fontSize: 11,
+                        fontWeight: 900,
+                        letterSpacing: 0.12,
+                        boxShadow:
+                          "inset 0 1px 0 rgba(255,255,255,0.16), 0 10px 20px rgba(7,16,28,0.10)",
+                      }}
+                    >
+                      Every {attentionDisplaySignal.intervalHours} hour
+                      {attentionDisplaySignal.intervalHours === 1 ? "" : "s"}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={(event) =>
+                        runDashboardUiMutation(event, dismissAttentionPopup, 260)
+                      }
+                      onPointerDown={consumeDashboardPointerEvent}
+                      style={{
+                        ...subtleBtn(false),
+                        minHeight: 32,
+                        padding: "5px 10px",
+                        fontSize: 11.5,
+                        borderRadius: 12,
+                        border: "1px solid rgba(255,255,255,0.18)",
+                        background:
+                          "linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.08) 100%)",
+                        color: attentionPopupChrome.stageText,
+                        boxShadow:
+                          "inset 0 1px 0 rgba(255,255,255,0.14), 0 10px 20px rgba(7,16,28,0.10)",
+                      }}
+                    >
+                      Hide for now
+                    </button>
+                  </div>
+                </div>
+
+                {attentionDisplaySignal.sourceLine ? (
+                  <div
+                    style={{
+                      marginTop: 10,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 8,
+                      minHeight: 28,
+                      maxWidth: "100%",
+                      padding: "5px 9px",
+                      borderRadius: 12,
+                      background:
+                        "linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.08) 100%)",
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      color: attentionPopupChrome.heroBody,
+                      fontSize: 12,
+                      fontWeight: 800,
+                      lineHeight: 1.42,
+                      boxShadow:
+                        "inset 0 1px 0 rgba(255,255,255,0.14), 0 10px 20px rgba(7,16,28,0.10)",
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 7,
+                        height: 7,
+                        borderRadius: 999,
+                        background: attentionStageDot,
+                        flexShrink: 0,
+                      }}
+                    />
+                    {attentionDisplaySignal.sourceLine}
+                  </div>
+                ) : null}
+              </div>
+
+              <div
+                style={{
+                  padding: isCompact ? 12 : 14,
+                  background: attentionPopupChrome.bodyBg,
+                }}
+              >
+                <div
+                  style={{
+                    ...innerCard(attentionPopupChrome.connectBg),
+                    padding: isCompact ? 10 : 11,
+                    border: attentionPopupChrome.connectBorder,
+                    marginTop: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      ...sectionLabel(),
+                      color: attentionPopupTone.labelColor,
+                    }}
+                  >
+                    How it connects
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 7,
+                      color: DASHBOARD_BRAND.ink,
+                      fontSize: 12.5,
+                      fontWeight: 800,
+                      lineHeight: 1.54,
+                    }}
+                  >
+                    {trustAttentionCore.connectionText}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 10,
+                    display: "grid",
+                    gridTemplateColumns: isCompact
+                      ? "1fr"
+                      : "minmax(0, 1fr) minmax(0, 1fr)",
+                    gap: 8,
+                  }}
+                >
+                  <div
+                    style={{
+                      ...innerCard(attentionPopupChrome.panelBg),
+                      border: attentionPopupChrome.panelBorder,
+                      padding: isCompact ? 10 : 11,
+                    }}
+                  >
+                    <div style={sectionLabel()}>Problem</div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: DASHBOARD_BRAND.ink,
+                        fontSize: 13.5,
+                        fontWeight: 800,
+                        lineHeight: 1.52,
+                      }}
+                    >
+                      {attentionDisplaySignal.problemText}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      ...innerCard(attentionPopupChrome.panelBg),
+                      border: attentionPopupChrome.panelBorder,
+                      padding: isCompact ? 10 : 11,
+                    }}
+                  >
+                    <div style={sectionLabel()}>Why it matters</div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: DASHBOARD_BRAND.subInk,
+                        fontSize: 13,
+                        fontWeight: 800,
+                        lineHeight: 1.54,
+                      }}
+                    >
+                      {attentionDisplaySignal.consequenceText}
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 8,
+                    ...innerCard(attentionPopupChrome.actionBg),
+                    border: attentionPopupChrome.panelBorder,
+                    padding: isCompact ? 10 : 11,
+                  }}
+                >
+                  <div
+                    style={{
+                      ...sectionLabel(),
+                      color: attentionPopupTone.labelColor,
+                    }}
+                  >
+                    Do this now
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#1D4ED8",
+                      fontSize: 13.5,
+                      fontWeight: 900,
+                      lineHeight: 1.54,
+                    }}
+                  >
+                    {attentionDisplaySignal.actionText}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 10,
+                    ...innerCard("linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,250,255,0.96) 100%)"),
+                    padding: 8,
+                    border: attentionPopupChrome.connectBorder,
+                    ...dashboardActionGrid(isCompact ? 108 : 124),
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={(event) =>
+                      openAttentionTarget(event, attentionDisplaySignal.ctaTo)
+                    }
+                    onPointerDown={consumeDashboardPointerEvent}
+                    style={{
+                      ...dashboardFillButton(primaryBtn(false), {
+                        minHeight: isCompact ? 34 : 36,
+                        padding: isCompact ? "7px 10px" : "8px 12px",
+                        fontSize: isCompact ? 11.5 : 12.25,
+                        borderRadius: isCompact ? 11 : 13,
+                      }),
+                      background:
+                        "linear-gradient(180deg, #103B70 0%, #0B63D1 60%, #3B82F6 100%)",
+                      boxShadow:
+                        "inset 0 1px 0 rgba(255,255,255,0.22), 0 16px 26px rgba(11,99,209,0.18)",
+                    }}
+                  >
+                    {attentionDisplaySignal.ctaLabel}
+                  </button>
+
+                  {attentionDisplaySignal.secondaryCtaLabel &&
+                  attentionDisplaySignal.secondaryCtaTo ? (
+                    <button
+                      type="button"
+                      onClick={(event) =>
+                        openAttentionTarget(
+                          event,
+                          attentionDisplaySignal.secondaryCtaTo || ""
+                        )
+                      }
+                      onPointerDown={consumeDashboardPointerEvent}
+                      style={{
+                        ...dashboardFillButton(secondaryBtn(false), {
+                          minHeight: isCompact ? 34 : 36,
+                          padding: isCompact ? "7px 10px" : "8px 12px",
+                          fontSize: isCompact ? 11.5 : 12.25,
+                          borderRadius: isCompact ? 11 : 13,
+                        }),
+                        background: DASHBOARD_BRAND.summaryButton,
+                        border: `1px solid ${DASHBOARD_BRAND.cardBorderStrong}`,
+                        color: DASHBOARD_BRAND.accentDeep,
+                        boxShadow:
+                          "inset 0 1px 0 rgba(255,255,255,0.86), 0 14px 24px rgba(10,24,49,0.08)",
+                      }}
+                    >
+                      {attentionDisplaySignal.secondaryCtaLabel}
+                    </button>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    onClick={openTrustJourneyFromAttention}
+                    onPointerDown={consumeDashboardPointerEvent}
+                    style={{
+                      ...dashboardFillButton(secondaryBtn(false), {
+                        minHeight: isCompact ? 34 : 36,
+                        padding: isCompact ? "7px 10px" : "8px 12px",
+                        fontSize: isCompact ? 11.5 : 12.25,
+                        borderRadius: isCompact ? 11 : 13,
+                      }),
+                      background:
+                        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,249,255,0.96) 100%)",
+                      border: "1px solid rgba(184,137,45,0.20)",
+                      color: DASHBOARD_BRAND.goldText,
+                      boxShadow:
+                        "inset 0 1px 0 rgba(255,255,255,0.88), 0 14px 24px rgba(10,24,49,0.08)",
+                    }}
+                  >
+                    Trust Journey
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={(event) =>
+                runDashboardUiMutation(event, () => setAttentionPopupVisible(true), 260)
+              }
+              onPointerDown={consumeDashboardPointerEvent}
+              style={{
+                position: "fixed",
+                top: isCompact ? 12 : 18,
+                right: isCompact ? 12 : 18,
+                zIndex: 1190,
+                borderRadius: 16,
+                border: attentionPopupTone.border,
+                background: attentionPopupChrome.reminderBg,
+                color: attentionPopupChrome.reminderText,
+                minHeight: 42,
+                padding: "8px 12px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 9,
+                fontWeight: 900,
+                fontSize: 12,
+                boxShadow: "0 12px 28px rgba(15,59,116,0.16)",
+                animation:
+                  attentionDisplaySignal.shouldShow || attentionDisplaySignal.stage !== "early"
+                    ? "dashboardAttentionPillPulse 1.8s ease-in-out infinite"
+                    : undefined,
+                backdropFilter: "blur(12px)",
+              }}
+            >
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 999,
+                  background:
+                    attentionDisplaySignal.stage === "persistent"
+                      ? "#DC2626"
+                      : attentionDisplaySignal.stage === "followup"
+                      ? "#F59E0B"
+                      : "#0B63D1",
+                  flexShrink: 0,
+                }}
+              />
+              <span
+                style={{
+                  display: "grid",
+                  gap: 1,
+                  textAlign: "left",
+                  lineHeight: 1.15,
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 10.5,
+                    letterSpacing: 0.18,
+                    textTransform: "uppercase",
+                    opacity: 0.72,
+                  }}
+                >
+                  Attention Guide
+                </span>
+                <span style={{ fontSize: 12 }}>{attentionStageLabel}</span>
+              </span>
+            </button>
+          )}
+        </>
+      ) : null}
+
       <div
         style={{
           maxWidth: 1180,
@@ -4007,83 +5955,113 @@ export default function DashboardPage() {
         }}
       >
       <section
-        style={pageCard(
-          "radial-gradient(circle at top, rgba(47,103,196,0.16) 0%, rgba(16,37,59,0.00) 32%), linear-gradient(180deg, #10243A 0%, #173654 62%, #26527C 100%)"
-        )}
+        style={{
+          ...pageCard(DASHBOARD_BRAND.heroField),
+          padding: isCompact ? 16 : 18,
+          border: "1px solid rgba(255,255,255,0.14)",
+          boxShadow:
+            "0 28px 60px rgba(7,16,28,0.14), inset 0 1px 0 rgba(255,255,255,0.08)",
+        }}
       >
         <div
           style={{
             ...innerCard(
-              "linear-gradient(180deg, #0D243B 0%, #13314D 54%, #1E4A70 100%)"
+              "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%)"
             ),
-            border: "1px solid rgba(212,175,55,0.20)",
-            boxShadow: "0 18px 38px rgba(7,16,28,0.16)",
-            padding: isCompact ? 16 : 18,
+            border: "1px solid rgba(255,255,255,0.14)",
+            boxShadow:
+              "0 20px 42px rgba(7,16,28,0.16), inset 0 1px 0 rgba(255,255,255,0.12)",
+            padding: isCompact ? 14 : 16,
+            borderRadius: 28,
+            backdropFilter: "blur(14px)",
           }}
         >
           <div
             style={{
               ...softCard(
-                "linear-gradient(180deg, #1B4B78 0%, #2B6599 56%, #3B78AE 100%)"
+                "linear-gradient(180deg, rgba(249,252,255,0.98) 0%, rgba(230,239,252,0.94) 100%)"
               ),
-              border: "1px solid rgba(255,255,255,0.14)",
-              color: "#FFFFFF",
-              padding: isCompact ? 12 : 14,
+              border: "1px solid rgba(255,255,255,0.34)",
+              boxShadow:
+                "0 18px 38px rgba(5,16,38,0.18), inset 0 1px 0 rgba(255,255,255,0.78)",
+              color: DASHBOARD_BRAND.ink,
+              padding: isCompact ? 14 : 16,
+              borderRadius: 24,
             }}
           >
             <div
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                position: "relative",
+                display: "grid",
                 gap: 8,
-                marginBottom: 8,
+                justifyItems: "center",
+                marginBottom: 6,
+                minHeight: isCompact ? 56 : 60,
               }}
             >
-              <EntryBackLink to="/app/community" />
+              <button
+                type="button"
+                onClick={(event) => openDashboardRoute(event, "/app/community")}
+                onPointerDown={consumeDashboardPointerEvent}
+                aria-label="Back"
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  top: 0,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: isCompact ? 40 : 42,
+                  minWidth: isCompact ? 40 : 42,
+                  padding: 0,
+                  borderRadius: 999,
+                  border: "1px solid rgba(16,37,59,0.10)",
+                  background:
+                    "linear-gradient(180deg, #1B4B78 0%, #2B6599 56%, #3B78AE 100%)",
+                  boxShadow:
+                    "0 12px 24px rgba(10,24,49,0.18), inset 0 1px 0 rgba(255,255,255,0.18)",
+                  textDecoration: "none",
+                }}
+              >
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 24,
+                    height: 24,
+                    borderRadius: 999,
+                    color: "#F8FBFF",
+                    fontSize: 14,
+                    fontWeight: 900,
+                  lineHeight: 1,
+                }}
+              >
+                {"<-"}
+              </span>
+              </button>
 
               <div
                 style={{
-                  flex: 1,
                   textAlign: "center",
                   fontSize: isCompact ? 24 : 31,
                   fontWeight: 900,
                   lineHeight: 1.04,
-                  padding: "0 8px",
+                  padding: "0 44px",
+                  color: DASHBOARD_BRAND.ink,
                 }}
               >
                 Trust is the first currency.
               </div>
 
-              <span
-                style={{
-                  ...badge(true),
-                  minHeight: 28,
-                  padding: "4px 10px",
-                  background: "rgba(255,255,255,0.14)",
-                  color: "#FFFFFF",
-                  border: "1px solid rgba(255,255,255,0.16)",
-                  boxShadow: "0 10px 20px rgba(2,12,27,0.12)",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                Navigator
-              </span>
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gap: 10,
-                alignItems: "start",
-              }}
-            >
               <div
                 style={{
-                  fontSize: 14.5,
+                  textAlign: "center",
+                  fontSize: isCompact ? 13 : 14.5,
                   lineHeight: 1.68,
-                  color: "rgba(255,255,255,0.92)",
+                  color: "rgba(16,37,59,0.88)",
                   maxWidth: 760,
+                  padding: "0 18px",
                 }}
               >
                 GSN makes it visible, portable, and usable before trade,
@@ -4095,16 +6073,16 @@ export default function DashboardPage() {
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  justifySelf: "start",
-                  minHeight: isCompact ? 44 : 48,
+                  justifySelf: "center",
+                  minHeight: isCompact ? 40 : 44,
                   padding: isCompact ? "0 18px" : "0 22px",
                   borderRadius: 999,
                   background:
-                    "linear-gradient(180deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.10) 42%, rgba(255,255,255,0.05) 100%)",
-                  border: "1px solid rgba(255,255,255,0.18)",
+                    "linear-gradient(180deg, rgba(255,255,255,0.50) 0%, rgba(233,240,250,0.18) 100%)",
+                  border: "1px solid rgba(255,255,255,0.42)",
                   boxShadow:
-                    "0 16px 28px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -6px 12px rgba(6,18,35,0.12)",
-                  color: "#F3D06A",
+                    "0 18px 36px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.78)",
+                  color: DASHBOARD_BRAND.goldText,
                   fontSize: isCompact ? 18 : 20,
                   fontWeight: 1000,
                   letterSpacing: 4.2,
@@ -4118,23 +6096,34 @@ export default function DashboardPage() {
 
           <div
             style={{
-              marginTop: 16,
+              marginTop: 18,
               display: "grid",
               gridTemplateColumns: isCompact
                 ? "1fr"
                 : "220px minmax(0, 1fr)",
-              gap: 18,
+              gap: 16,
               alignItems: "start",
             }}
           >
-            <div>
+            <div
+              style={{
+                ...innerCard(
+                  "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%)"
+                ),
+                border: "1px solid rgba(255,255,255,0.12)",
+                boxShadow:
+                  "0 18px 34px rgba(2,12,27,0.14), inset 0 1px 0 rgba(255,255,255,0.08)",
+                padding: isCompact ? 12 : 14,
+              }}
+            >
               <div
                 style={{
-                  width: isCompact ? "84%" : "80%",
+                  width: "100%",
+                  maxWidth: isCompact ? 360 : 380,
                   margin: "0 auto",
                   borderRadius: 34,
                   padding: 10,
-                  border: "1px solid rgba(212,175,55,0.22)",
+                  border: "1px solid rgba(255,255,255,0.12)",
                   background:
                     "linear-gradient(180deg, #0A1625 0%, #10263C 48%, #153756 100%)",
                   boxShadow:
@@ -4193,7 +6182,12 @@ export default function DashboardPage() {
 
                   <button
                     type="button"
-                    onClick={() => setPictureOptionsOpen((prev) => !prev)}
+                    onClick={(event) =>
+                      runDashboardUiMutation(event, () =>
+                        setPictureOptionsOpen((prev) => !prev)
+                      )
+                    }
+                    onPointerDown={consumeDashboardPointerEvent}
                     style={{
                       ...secondaryBtn(false),
                       position: "absolute",
@@ -4232,16 +6226,18 @@ export default function DashboardPage() {
               {pictureOptionsOpen ? (
                 <div
                   style={{
-                    marginTop: 12,
-                    display: "flex",
+                    marginTop: 10,
+                    display: "grid",
+                    gridTemplateColumns:
+                      isCompact ? "repeat(3, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))",
                     gap: 8,
-                    flexWrap: "wrap",
                   }}
                 >
                   <button
                     type="button"
                     onClick={openAvatarPicker}
-                    style={subtleBtn(false)}
+                    onPointerDown={consumeDashboardPointerEvent}
+                    style={{ ...dashboardFillButton(subtleBtn(false)) }}
                   >
                     Upload
                   </button>
@@ -4249,15 +6245,17 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     onClick={openAvatarPicker}
-                    style={subtleBtn(false)}
+                    onPointerDown={consumeDashboardPointerEvent}
+                    style={{ ...dashboardFillButton(subtleBtn(false)) }}
                   >
                     Change
                   </button>
 
                   <button
                     type="button"
-                    onClick={removeAvatar}
-                    style={subtleBtn(!avatarSrc)}
+                    onClick={(event) => runDashboardUiMutation(event, removeAvatar, 260)}
+                    onPointerDown={consumeDashboardPointerEvent}
+                    style={{ ...dashboardFillButton(subtleBtn(!avatarSrc)) }}
                     disabled={!avatarSrc}
                   >
                     Remove
@@ -4276,10 +6274,11 @@ export default function DashboardPage() {
                 <div
                   style={{
                     ...innerCard(
-                      "linear-gradient(180deg, #12304D 0%, #0B1F33 100%)"
+                      "linear-gradient(180deg, rgba(18,48,77,0.96) 0%, rgba(11,31,51,0.98) 100%)"
                     ),
-                    border: "1px solid rgba(184,137,45,0.24)",
-                    boxShadow: "0 16px 32px rgba(15,23,42,0.14)",
+                    border: "1px solid rgba(255,255,255,0.14)",
+                    boxShadow:
+                      "0 18px 36px rgba(15,23,42,0.16), inset 0 1px 0 rgba(255,255,255,0.08)",
                     padding: isCompact ? 12 : 14,
                   }}
                 >
@@ -4312,9 +6311,12 @@ export default function DashboardPage() {
 
                       <button
                         type="button"
-                        onClick={() =>
-                          updateUiState({ trustExpanded: !uiState.trustExpanded })
+                        onClick={(event) =>
+                          runDashboardUiMutation(event, () =>
+                            updateUiState({ trustExpanded: !uiState.trustExpanded })
+                          )
                         }
+                        onPointerDown={consumeDashboardPointerEvent}
                         style={{
                           ...trustGoldBtn(22, 9),
                           minWidth: 52,
@@ -4449,8 +6451,10 @@ export default function DashboardPage() {
                             gap: 6,
                           }}
                         >
-                          <OriginLink
-                            to="/app/trust"
+                          <button
+                            type="button"
+                            onClick={(event) => openDashboardRoute(event, "/app/trust")}
+                            onPointerDown={consumeDashboardPointerEvent}
                             style={{
                               ...trustGoldBtn(30, 11),
                               width: "100%",
@@ -4458,10 +6462,12 @@ export default function DashboardPage() {
                             }}
                           >
                             Open Trust Passport
-                          </OriginLink>
+                          </button>
 
-                          <OriginLink
-                            to="/app/identity"
+                          <button
+                            type="button"
+                            onClick={(event) => openDashboardRoute(event, "/app/identity")}
+                            onPointerDown={consumeDashboardPointerEvent}
                             style={{
                               ...trustGoldBtn(30, 11),
                               width: "100%",
@@ -4469,12 +6475,13 @@ export default function DashboardPage() {
                             }}
                           >
                             Open Identity & Integrity
-                          </OriginLink>
+                          </button>
 
                           {merchantVerifyHref ? (
                             <button
                               type="button"
                               onClick={openMerchantVerifyPage}
+                              onPointerDown={consumeDashboardPointerEvent}
                               style={{
                                 ...trustGoldBtn(30, 11),
                                 width: "100%",
@@ -4575,8 +6582,12 @@ export default function DashboardPage() {
                                 paddingTop: 6,
                               }}
                             >
-                              <OriginLink
-                                to="/app/open-trust-reading"
+                              <button
+                                type="button"
+                                onClick={(event) =>
+                                  openDashboardRoute(event, "/app/open-trust-reading")
+                                }
+                                onPointerDown={consumeDashboardPointerEvent}
                                 style={{
                                   ...trustGoldBtn(26, 10),
                                   minWidth: 88,
@@ -4584,7 +6595,7 @@ export default function DashboardPage() {
                                 }}
                               >
                                 Open Trust
-                              </OriginLink>
+                              </button>
                             </div>
                           </div>
 
@@ -4656,8 +6667,12 @@ export default function DashboardPage() {
                                 paddingTop: 6,
                               }}
                             >
-                              <OriginLink
-                                to="/app/cci-reading"
+                              <button
+                                type="button"
+                                onClick={(event) =>
+                                  openDashboardRoute(event, "/app/cci-reading")
+                                }
+                                onPointerDown={consumeDashboardPointerEvent}
                                 style={{
                                   ...trustGoldBtn(26, 10),
                                   minWidth: 84,
@@ -4665,7 +6680,7 @@ export default function DashboardPage() {
                                 }}
                               >
                                 Open CCI
-                              </OriginLink>
+                              </button>
                             </div>
                           </div>
 
@@ -4725,6 +6740,7 @@ export default function DashboardPage() {
                               <button
                                 type="button"
                                 onClick={openTrustSlipPage}
+                                onPointerDown={consumeDashboardPointerEvent}
                                 style={{
                                   color: "#14324C",
                                   fontSize: 10,
@@ -4744,6 +6760,7 @@ export default function DashboardPage() {
                               <button
                                 type="button"
                                 onClick={openTrustSlipPage}
+                                onPointerDown={consumeDashboardPointerEvent}
                                 style={{ ...trustGoldMiniBtn(), marginTop: 2 }}
                               >
                                 Open TrustSlip
@@ -4894,6 +6911,7 @@ export default function DashboardPage() {
                               <button
                                 type="button"
                                 onClick={openTrustSlipVerifyInApp}
+                                onPointerDown={consumeDashboardPointerEvent}
                                 style={{ ...trustGoldMiniBtn(), marginTop: 2 }}
                               >
                                 Verify QR
@@ -4951,8 +6969,25 @@ export default function DashboardPage() {
       </section>
 
       <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%)")}
+        style={{
+          ...pageCard(demandSurfaceChrome.shellBg),
+          position: "relative",
+          border: demandSurfaceChrome.shellBorder,
+          padding: isCompact ? 16 : 18,
+          boxShadow:
+            "0 20px 44px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.76)",
+        }}
       >
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 4,
+            background: demandSurfaceChrome.accent,
+          }}
+        />
         <div
           style={{
             display: "flex",
@@ -4964,19 +6999,6 @@ export default function DashboardPage() {
         >
           <div>
             <div style={sectionLabel()}>Spotlight</div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#5F7287",
-                lineHeight: 1.7,
-                fontSize: 14,
-                maxWidth: 780,
-              }}
-            >
-              Spotlight is the main visibility window for trusted value in the
-              marketplace. It should feel premium, clear, and instantly
-              actionable.
-            </div>
           </div>
 
           <div
@@ -4992,6 +7014,7 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={goPrevSpotlight}
+                  onPointerDown={consumeDashboardPointerEvent}
                   style={secondaryBtn(false)}
                 >
                   Previous
@@ -5004,6 +7027,7 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={goNextSpotlight}
+                  onPointerDown={consumeDashboardPointerEvent}
                   style={secondaryBtn(false)}
                 >
                   Next
@@ -5011,15 +7035,16 @@ export default function DashboardPage() {
               </>
             ) : null}
 
-            <button
-              type="button"
-              onClick={() =>
-                updateUiState({ spotlightMinimized: showSpotlight })
-              }
-              style={secondaryBtn(false)}
-            >
-              {showSpotlight ? "Minimize spotlight" : "Open spotlight"}
-            </button>
+            {!showSpotlight ? (
+              <button
+                type="button"
+                onClick={openSpotlightPanel}
+                onPointerDown={consumeDashboardPointerEvent}
+                style={secondaryBtn(false)}
+              >
+                Open spotlight
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -5044,19 +7069,6 @@ export default function DashboardPage() {
               <div>
                 <div
                   style={{
-                    display: "flex",
-                    gap: 8,
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                  }}
-                >
-                  <span style={badge(true)}>Spotlight Visibility</span>
-                  <span style={badge(false)}>Reputation-Based Visibility</span>
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 10,
                     color: "#0B1F33",
                     fontWeight: 900,
                     fontSize: 20,
@@ -5110,23 +7122,11 @@ export default function DashboardPage() {
               >
                 <button
                   type="button"
-                  onClick={() =>
-                    updateUiState({ spotlightMinimized: false })
-                  }
+                  onClick={openSpotlightPanel}
+                  onPointerDown={consumeDashboardPointerEvent}
                   style={primaryBtn(false)}
                 >
                   Open spotlight
-                </button>
-
-                <button
-                  type="button"
-                  style={secondaryBtn(
-                    !safeStr(activeSpotlight?.author_gmfn_id || "")
-                  )}
-                  onClick={openSpotlightShop}
-                  disabled={!safeStr(activeSpotlight?.author_gmfn_id || "")}
-                >
-                  Open shop
                 </button>
               </div>
             </div>
@@ -5136,11 +7136,22 @@ export default function DashboardPage() {
             Loading spotlight...
           </div>
         ) : activeSpotlight ? (
-          <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
+          <div
+            style={{
+              marginTop: 16,
+              display: "grid",
+              gridTemplateColumns:
+                isCompact || !sellerIdentityDockOpen
+                  ? "1fr"
+                  : "minmax(0, 1.08fr) minmax(320px, 0.92fr)",
+              gap: 14,
+              alignItems: "start",
+            }}
+          >
             <SystemPictureFrame
               outerStyle={{
-                minHeight: isCompact ? 320 : 450,
-                borderRadius: 36,
+                minHeight: dashboardSpotlightMinHeight,
+                borderRadius: dashboardSpotlightRadius,
                 border: "1px solid rgba(184,137,45,0.32)",
                 outline: "1px solid rgba(255,255,255,0.14)",
                 outlineOffset: "-8px",
@@ -5150,29 +7161,40 @@ export default function DashboardPage() {
                   "0 34px 70px rgba(2,12,27,0.30), 0 14px 34px rgba(15,59,116,0.20), inset 0 0 0 1px rgba(255,255,255,0.10), inset 0 1px 0 rgba(255,255,255,0.16)",
               }}
               innerStyle={{
-                minHeight: isCompact ? 320 : 450,
-                borderRadius: 36,
+                minHeight: dashboardSpotlightMinHeight,
+                borderRadius: dashboardSpotlightRadius,
                 border: "none",
                 background:
                   "linear-gradient(180deg, #081625 0%, #0D2742 42%, #0F3B74 74%, #0B63D1 100%)",
               }}
             >
-              {spotlightImageCandidates.length > 0 ? (
-                <RotatingSpotlightImage
-                  candidates={spotlightImageCandidates}
+              {spotlightImageCandidates.length > 0 || spotlightVideoCandidate ? (
+                <SpotlightMediaFrame
+                  imageCandidates={spotlightImageCandidates}
+                  videoUrl={spotlightVideoCandidate}
+                  videoPoster={spotlightImageCandidates[0] || ""}
                   alt={safeStr(
                     activeSpotlight?.title ||
                       activeSpotlight?.message ||
                       "Spotlight"
                   )}
-                  style={{
+                  frameStyle={{
                     width: "100%",
                     height: "100%",
-                    minHeight: isCompact ? 320 : 450,
-                    objectFit: "cover",
-                    objectPosition: "center 20%",
-                    display: "block",
+                    minHeight: dashboardSpotlightMinHeight,
+                    borderRadius: dashboardSpotlightRadius,
+                    background: "transparent",
                   }}
+                  mediaStyle={{
+                    width: "100%",
+                    height: "100%",
+                    minHeight: dashboardSpotlightMinHeight,
+                  }}
+                  contentPadding={isCompact ? 12 : 16}
+                  showVideoControls={false}
+                  autoPlayVideo={Boolean(spotlightVideoCandidate)}
+                  mutedVideo={Boolean(spotlightVideoCandidate)}
+                  loopVideo={Boolean(spotlightVideoCandidate)}
                 />
               ) : null}
 
@@ -5188,11 +7210,11 @@ export default function DashboardPage() {
               <div
                 style={{
                   position: "absolute",
-                  top: 18,
-                  left: 18,
-                  right: 18,
+                  top: dashboardSpotlightTopInset,
+                  left: dashboardSpotlightTopInset,
+                  right: dashboardSpotlightTopInset,
                   display: "flex",
-                  justifyContent: "space-between",
+                  justifyContent: "flex-end",
                   gap: 10,
                   flexWrap: "wrap",
                   alignItems: "flex-start",
@@ -5203,48 +7225,8 @@ export default function DashboardPage() {
                     display: "flex",
                     gap: 8,
                     flexWrap: "wrap",
-                  }}
-                >
-                  <span
-                    style={{
-                      ...badge(true),
-                      background: "rgba(255,255,255,0.16)",
-                      color: "#FFFFFF",
-                      backdropFilter: "blur(10px)",
-                    }}
-                  >
-                    Spotlight Visibility
-                  </span>
-
-                  <span
-                    style={{
-                      ...badge(false),
-                      background: "rgba(255,255,255,0.12)",
-                      color: "#FFFFFF",
-                      backdropFilter: "blur(10px)",
-                    }}
-                  >
-                    Reputation-Based Visibility
-                  </span>
-
-                  <span
-                    style={{
-                      ...badge(false),
-                      background: "rgba(255,255,255,0.12)",
-                      color: "#FFFFFF",
-                      backdropFilter: "blur(10px)",
-                    }}
-                  >
-                    One Global Shop
-                  </span>
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 8,
-                    flexWrap: "wrap",
-                    justifyContent: isCompact ? "flex-start" : "flex-end",
+                    justifyContent: "flex-end",
+                    alignItems: "center",
                   }}
                 >
                   <span
@@ -5271,33 +7253,103 @@ export default function DashboardPage() {
                     {spotlightExpiryStatus.chip}
                   </span>
 
-                  <span
-                    style={{
-                      ...badge(false),
-                      background: "rgba(255,255,255,0.12)",
-                      color: "#FFFFFF",
-                      backdropFilter: "blur(10px)",
-                    }}
-                  >
-                    {safeDateTime(activeSpotlight.created_at) || "—"}
-                  </span>
+                  {!isCompact ? (
+                    <span
+                      style={{
+                        ...badge(false),
+                        background: "rgba(255,255,255,0.12)",
+                        color: "#FFFFFF",
+                        backdropFilter: "blur(10px)",
+                      }}
+                    >
+                      {safeDateTime(activeSpotlight.created_at) || "—"}
+                    </span>
+                  ) : null}
                 </div>
               </div>
 
               <div
                 style={{
                   position: "absolute",
-                  left: 20,
-                  right: 20,
-                  bottom: 20,
+                  right: isCompact ? 8 : 14,
+                  top: isCompact ? 42 : "50%",
+                  transform: isCompact ? "none" : "translateY(-50%)",
+                  zIndex: 3,
                   display: "grid",
-                  gap: 12,
+                  gap: isCompact ? 6 : 8,
+                }}
+              >
+                {!sellerIdentityDockOpen ? (
+                  <button
+                    type="button"
+                    onClick={openSellerIdentityDock}
+                    onPointerDown={consumeDashboardPointerEvent}
+                    style={{
+                      minWidth: isCompact ? 82 : 118,
+                      minHeight: isCompact ? 36 : 44,
+                      padding: isCompact ? "6px 10px" : "9px 15px",
+                      borderRadius: 999,
+                      border: "1px solid rgba(255,255,255,0.38)",
+                      background:
+                        "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(233,241,251,0.94) 48%, rgba(173,201,236,0.88) 100%)",
+                      color: "#0D2B4A",
+                      fontSize: isCompact ? 10.5 : 12.5,
+                      fontWeight: 900,
+                      letterSpacing: 0.3,
+                      cursor: "pointer",
+                      touchAction: "manipulation",
+                      boxShadow:
+                        "0 16px 28px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.94), inset 0 -10px 18px rgba(15,59,116,0.12)",
+                      backdropFilter: "blur(12px)",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Open
+                  </button>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={minimizeSpotlight}
+                  onPointerDown={consumeDashboardPointerEvent}
+                  style={{
+                      minWidth: isCompact ? 82 : 118,
+                    minHeight: isCompact ? 34 : 38,
+                    padding: isCompact ? "6px 10px" : "7px 14px",
+                    borderRadius: 999,
+                    border: "1px solid rgba(255,255,255,0.36)",
+                    background:
+                      "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(231,237,245,0.92) 52%, rgba(187,198,212,0.86) 100%)",
+                    color: "#314559",
+                    fontSize: isCompact ? 10.5 : 11.5,
+                    fontWeight: 900,
+                    letterSpacing: 0.25,
+                    cursor: "pointer",
+                    touchAction: "manipulation",
+                    boxShadow:
+                      "0 12px 22px rgba(2,12,27,0.18), inset 0 1px 0 rgba(255,255,255,0.96), inset 0 -8px 14px rgba(100,116,139,0.12)",
+                    backdropFilter: "blur(12px)",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Minimize
+                </button>
+              </div>
+
+              <div
+                style={{
+                  position: "absolute",
+                  left: isCompact ? 12 : 18,
+                  right: isCompact ? 12 : 18,
+                  bottom: dashboardSpotlightBottomInset,
+                  display: "grid",
+                  gap: isCompact ? 5 : 8,
                 }}
               >
                 <div
                   style={{
                     color: "rgba(255,255,255,0.92)",
-                    fontSize: 13,
+                    fontSize: isCompact ? 10.5 : 12,
                     fontWeight: 800,
                     letterSpacing: 0.35,
                     textTransform: "uppercase",
@@ -5314,9 +7366,13 @@ export default function DashboardPage() {
                   style={{
                     color: "#FFFFFF",
                     fontWeight: 900,
-                    fontSize: isCompact ? 30 : 44,
-                    lineHeight: 1.08,
-                    maxWidth: 900,
+                    fontSize: dashboardSpotlightTitleSize,
+                    lineHeight: isCompact ? 1.02 : 1.06,
+                    maxWidth: isCompact ? 520 : 760,
+                    display: "-webkit-box",
+                    WebkitBoxOrient: "vertical",
+                    WebkitLineClamp: isCompact ? 2 : 3,
+                    overflow: "hidden",
                     textShadow: "0 10px 28px rgba(0,0,0,0.32)",
                   }}
                 >
@@ -5327,97 +7383,37 @@ export default function DashboardPage() {
                   )}
                 </div>
 
-                <div
-                  style={{
-                    color: "rgba(255,255,255,0.90)",
-                    fontSize: 15,
-                    lineHeight: 1.75,
-                    maxWidth: 860,
-                  }}
-                >
-                  {safeStr(
-                    activeSpotlight.body ||
-                      activeSpotlight.message ||
-                      "No extra detail is available yet."
-                  )}
-                </div>
+                {!isCompact && safeStr(activeSpotlight.body || "") ? (
+                  <div
+                    style={{
+                      color: "rgba(255,255,255,0.90)",
+                      fontSize: dashboardSpotlightBodyFontSize,
+                      lineHeight: 1.56,
+                      maxWidth: 720,
+                      display: "-webkit-box",
+                      WebkitBoxOrient: "vertical",
+                      WebkitLineClamp: 2,
+                      overflow: "hidden",
+                    }}
+                  >
+                    {safeStr(activeSpotlight.body || "")}
+                  </div>
+                ) : null}
               </div>
             </SystemPictureFrame>
 
-            <div
-              style={{
-                position: "relative",
-                ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
-                border: "1px solid rgba(184,137,45,0.18)",
-                boxShadow: "0 24px 46px rgba(15,59,116,0.10), inset 0 1px 0 rgba(255,255,255,0.72)",
-                overflow: "hidden",
-              }}
-            >
+            {sellerIdentityDockOpen ? (
               <div
                 style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 4,
-                  background:
-                    "linear-gradient(90deg, #0F3B74 0%, #0B63D1 50%, #93C5FD 100%)",
-                }}
-              />
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
-                  gap: 12,
-                  alignItems: "center",
+                  position: "relative",
+                  ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
+                  border: "1px solid rgba(184,137,45,0.18)",
+                  boxShadow: "0 24px 46px rgba(15,59,116,0.10), inset 0 1px 0 rgba(255,255,255,0.72)",
+                  overflow: "hidden",
                 }}
               >
                 <div
                   style={{
-                    display: "flex",
-                    gap: 8,
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                    minWidth: 0,
-                  }}
-                >
-                  <span style={badge(true)}>Seller Identity Dock</span>
-                  <span
-                    style={{
-                      ...badge(false),
-                      background: "rgba(15,59,116,0.08)",
-                      color: "#0F3B74",
-                    }}
-                  >
-                    Trusted visibility
-                  </span>
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: isCompact ? "flex-start" : "flex-end",
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setSellerIdentityDockOpen((prev) => !prev)}
-                    style={{
-                      ...secondaryBtn(false),
-                      minWidth: 138,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {sellerIdentityDockOpen ? "Collapse dock" : "Open dock"}
-                  </button>
-                </div>
-              </div>
-
-              {sellerIdentityDockOpen ? (
-                <div
-                  style={{
-                    marginTop: 14,
                     display: "grid",
                     gridTemplateColumns: isCompact
                       ? "1fr"
@@ -5547,84 +7543,43 @@ export default function DashboardPage() {
                         "linear-gradient(180deg, #0D1B2A 0%, #12293F 100%)"
                       ),
                       border: "1px solid rgba(212,175,55,0.24)",
-                      minHeight: 220,
                       boxShadow: "0 18px 36px rgba(2,12,27,0.24)",
                     }}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 8,
-                        flexWrap: "wrap",
-                        alignItems: "center",
-                      }}
-                    >
-                      <span style={badge(true)}>Visibility & Action</span>
-                      <span
-                        style={{
-                          ...badge(false),
-                          background: "rgba(212,175,55,0.10)",
-                          color: "#F6D77A",
-                        }}
-                      >
-                        Reputation-based presence
-                      </span>
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 10,
-                        color: "#F8FBFF",
-                        fontWeight: 900,
-                        fontSize: 18,
-                        lineHeight: 1.3,
-                      }}
-                    >
-                      Featured visibility before the buyer decides.
-                    </div>
+                    <div style={sectionLabel()}>Actions</div>
 
                     <div
                       style={{
                         marginTop: 10,
                         color: "#F8FBFF",
                         fontSize: 14,
-                        lineHeight: 1.78,
+                        lineHeight: 1.72,
                       }}
                     >
-                      Spotlight should help the right goods, services, and
-                      merchants become visible with more confidence. It is not
-                      just display; it is visible reputation, visible trust, and
-                      visible market presence before action.
+                      {spotlightExpiryStatus.detail}
                     </div>
 
-                    <div
-                      style={{
-                        marginTop: 12,
-                        display: "flex",
-                        gap: 8,
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <span style={badge(true)}>Spotlight Visibility</span>
-                      <span
+                    {spotlightVideoCandidate ? (
+                      <div
                         style={{
-                          ...badge(false),
-                          background: "rgba(212,175,55,0.10)",
-                          color: "#F6D77A",
+                          marginTop: 12,
+                          display: "flex",
+                          gap: 8,
+                          flexWrap: "wrap",
                         }}
                       >
-                        Reputation-Based Visibility
-                      </span>
-                      <span
-                        style={{
-                          ...badge(false),
-                          background: "rgba(255,255,255,0.10)",
-                          color: "#F8FBFF",
-                        }}
-                      >
-                        One Global Shop
-                      </span>
-                    </div>
+                        <span
+                          style={{
+                            ...badge(false),
+                            background: "rgba(255,255,255,0.12)",
+                            color: "#FFFFFF",
+                            backdropFilter: "blur(10px)",
+                          }}
+                        >
+                          Short video spotlight
+                        </span>
+                      </div>
+                    ) : null}
 
                     <div
                       style={{
@@ -5635,37 +7590,155 @@ export default function DashboardPage() {
                     >
                       <button
                         type="button"
-                        style={primaryBtn(
-                          !safeStr(activeSpotlight.author_gmfn_id || "")
-                        )}
-                        onClick={openSpotlightShop}
-                        disabled={!safeStr(activeSpotlight.author_gmfn_id || "")}
-                      >
-                        Open shop
-                      </button>
-
-                      <button
-                        type="button"
                         onClick={openSpotlightMarketplace}
+                        onPointerDown={consumeDashboardPointerEvent}
                         style={secondaryBtn(false)}
                       >
                         Open marketplace
                       </button>
+                    </div>
 
+                    <div
+                      style={{
+                        marginTop: 10,
+                        display: "flex",
+                        justifyContent: "flex-end",
+                      }}
+                    >
                       <button
                         type="button"
-                        onClick={() =>
-                          updateUiState({ spotlightMinimized: true })
-                        }
-                        style={subtleBtn(false)}
+                        onClick={closeSellerIdentityDock}
+                        onPointerDown={consumeDashboardPointerEvent}
+                        style={{
+                          ...subtleBtn(false),
+                          minHeight: isCompact ? 32 : 34,
+                          minWidth: isCompact ? 70 : 78,
+                          padding: isCompact ? "5px 9px" : "6px 10px",
+                          borderRadius: 10,
+                          border: "1px solid rgba(255,255,255,0.24)",
+                          background:
+                            "linear-gradient(180deg, rgba(248,250,253,0.98) 0%, rgba(225,232,241,0.96) 52%, rgba(177,191,207,0.90) 100%)",
+                          color: "#314559",
+                          boxShadow:
+                            "0 10px 18px rgba(2,12,27,0.16), inset 0 1px 0 rgba(255,255,255,0.96)",
+                          fontSize: isCompact ? 10.5 : 11.5,
+                          letterSpacing: 0.2,
+                          touchAction: "manipulation",
+                          textTransform: "uppercase",
+                        }}
                       >
-                        Minimize spotlight
+                        Close
                       </button>
                     </div>
                   </div>
 
                 </div>
-              ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : latestSpotlightSnapshot ? (
+          <div
+            style={{
+              marginTop: 16,
+              ...innerCard("#FFFFFF"),
+              border: "1px solid rgba(11,99,209,0.10)",
+              display: "grid",
+              gap: 12,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
+              <span style={badge(true)}>No live spotlight now</span>
+              <span
+                style={{
+                  ...badge(false),
+                  background: latestSpotlightStatus.urgent
+                    ? "rgba(249,115,22,0.10)"
+                    : "rgba(11,99,209,0.08)",
+                  color: latestSpotlightStatus.urgent ? "#9A3412" : "#1D4ED8",
+                }}
+              >
+                {latestSpotlightStatus.chip}
+              </span>
+            </div>
+
+            <div
+              style={{
+                color: "#0B1F33",
+                fontWeight: 900,
+                fontSize: 20,
+                lineHeight: 1.25,
+              }}
+            >
+              {safeStr(
+                latestSpotlightSnapshot.title ||
+                  latestSpotlightSnapshot.message ||
+                  "Most recent community spotlight"
+              )}
+            </div>
+
+            <div style={{ ...helperText(), maxWidth: 820 }}>
+              {safeStr(
+                latestSpotlightSnapshot.source_shop_name ||
+                  latestSpotlightSnapshot.author_name ||
+                  "Community seller"
+              )}{" "}
+              •{" "}
+              {safeStr(
+                latestSpotlightSnapshot.source_clan_name ||
+                  currentCommunityName(currentClan, selectedClanId)
+              )}
+            </div>
+
+            <div
+              style={{
+                color: latestSpotlightStatus.urgent ? "#9A3412" : "#1D4ED8",
+                fontSize: 13,
+                fontWeight: 700,
+              }}
+            >
+              {latestSpotlightStatus.detail}
+            </div>
+
+            <div style={{ ...helperText(), maxWidth: 860 }}>
+              This spotlight has ended. Open Community Home to publish a new
+              spotlight.
+            </div>
+
+            <div
+              style={{
+                ...dashboardActionGrid(isCompact ? 128 : 152),
+              }}
+            >
+              <button
+                type="button"
+                onClick={(event) =>
+                  openDashboardRoute(
+                    event,
+                    spotlightMarketplaceTo(latestSpotlightSnapshot)
+                  )
+                }
+                onPointerDown={consumeDashboardPointerEvent}
+                style={dashboardFillButton(secondaryBtn(false))}
+              >
+                Open marketplace
+              </button>
+              <button
+                type="button"
+                onClick={(event) =>
+                  openDashboardRoute(event, DASHBOARD_TARGETS.COMMUNITY)
+                }
+                onPointerDown={consumeDashboardPointerEvent}
+                style={dashboardFillButton(secondaryBtn(false))}
+              >
+                Open community home
+              </button>
             </div>
           </div>
         ) : (
@@ -5675,9 +7748,7 @@ export default function DashboardPage() {
         )}
       </section>
 
-      <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%)")}
-      >
+      <section style={pageCard(DASHBOARD_BRAND.summaryPanel)}>
         <div
           style={{
             display: "flex",
@@ -5688,530 +7759,181 @@ export default function DashboardPage() {
           }}
         >
           <div>
-            <div style={{ ...sectionLabel(), color: "#0F3B74" }}>Demand Control</div>
-            <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-              Read the live need signal in your community and decide whether to review, respond, or return later.
+            <div style={sectionLabel()}>Demand Box</div>
+            <div style={{ marginTop: 3, ...helperText(), maxWidth: 420 }}>
+              Live demand in your community.
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={badge(true)}>Open requests: {demandItems.length}</span>
-            <span style={badge(false)}>
-              Urgent now: {demandItems.filter((item) => safeStr(item.urgency).toLowerCase() === "high").length}
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+              justifyContent: "flex-end",
+              alignItems: "center",
+            }}
+          >
+            <span
+              style={{
+                ...badge(false),
+                background: "rgba(15,59,116,0.08)",
+                color: "#0F3B74",
+              }}
+            >
+              {demandItems.length}
+            </span>
+            <span
+              style={{
+                ...badge(false),
+                background: demandSurfaceChrome.statusBg,
+                color: demandSurfaceChrome.statusText,
+                border: "none",
+              }}
+            >
+              {urgentDemandItems.length > 0
+                ? "Needs response"
+                : demandItems.length > 0
+                ? "Open queue"
+                : "Steady"}
             </span>
           </div>
         </div>
 
-        <ExplainToggle
-          label="What Demand Control does"
-          what="Demand Control surfaces the live request pressure inside your current community instead of making you search for it elsewhere."
-          why="Open demand can affect trade, trust, and follow-through, so the current request, urgency, and next action need to stay visible."
-          next="Read the current request first, then open Demand Box if you want the wider queue, the details behind it, or the place to create a new demand."
-          tone="blue"
-          style={{ marginTop: 16 }}
-        />
         <div
           style={{
-            marginTop: 16,
-            display: "grid",
-            gridTemplateColumns: isCompact
-              ? "1fr"
-              : "minmax(0, 1.1fr) minmax(280px, 0.9fr)",
-            gap: 14,
-            alignItems: "start",
+            marginTop: 14,
+            ...innerCard(demandSurfaceChrome.leadBg),
+            border: demandSurfaceChrome.leadBorder,
+            boxShadow: demandSurfaceChrome.leadShadow,
+            padding: isCompact ? 14 : 16,
           }}
         >
           <div
             style={{
-              ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F6FAFF 100%)"),
-              border: "1px solid rgba(11,99,209,0.12)",
-              boxShadow: "0 14px 30px rgba(11,99,209,0.05)",
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 10,
+              alignItems: "center",
+              flexWrap: "wrap",
             }}
           >
-            <div style={{ ...sectionLabel(), color: "#0F3B74" }}>Current request</div>
             <div
               style={{
-                marginTop: 10,
                 color: "#0B1F33",
-                fontSize: 20,
                 fontWeight: 900,
-                lineHeight: 1.3,
-              }}
-            >
-              {safeStr(
-                demandItems[0]?.title || "No open request is pressing right now"
-              )}
-            </div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#35516B",
-                fontSize: 14,
-                lineHeight: 1.75,
+                fontSize: 18,
+                lineHeight: 1.32,
                 maxWidth: 760,
               }}
             >
-              {safeStr(
-                demandItems[0]?.description ||
-                  "No request is pressing right now. You can open Demand Box to create one or review the wider queue."
-              )}
+              {demandSummaryLine}
             </div>
-            {demandItems[0] ? (
-              <div
-                style={{
-                  marginTop: 10,
-                  color: "#4C647B",
-                  fontSize: 13,
-                  lineHeight: 1.65,
-                  maxWidth: 760,
-                }}
-              >
-                {safeStr(demandItems[0]?.requester_name || demandItems[0]?.requester_nickname)
-                  ? `A member in ${currentCommunityName(currentClan, selectedClanId)} raised this request${safeDateTime(demandItems[0]?.created_at) ? ` on ${safeDateTime(demandItems[0]?.created_at)}` : ""}.`
-                  : `This request is active in ${currentCommunityName(currentClan, selectedClanId)}${safeDateTime(demandItems[0]?.created_at) ? ` since ${safeDateTime(demandItems[0]?.created_at)}` : ""}.`}
-              </div>
-            ) : null}
-            {demandItems[0] ? (
-              <div
-                style={{
-                  marginTop: 12,
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                }}
-              >
-                <span style={badge(true)}>
-                  {safeStr(demandItems[0]?.urgency).toLowerCase() === "high"
-                    ? "Urgent"
-                    : "Normal"}
-                </span>
-                {safeStr(demandItems[0]?.requester_name || demandItems[0]?.requester_nickname) ? (
-                  <span style={badge(false)}>
-                    Raised by {safeStr(demandItems[0]?.requester_name || demandItems[0]?.requester_nickname)}
-                  </span>
-                ) : null}
-                <span style={badge(false)}>
-                  {currentCommunityName(currentClan, selectedClanId)}
-                </span>
-                {safeDateTime(demandItems[0]?.created_at) ? (
-                  <span style={badge(false)}>{safeDateTime(demandItems[0]?.created_at)}</span>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-          <div
-            style={{
-              ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #FCFEFF 100%)"),
-              border: "1px solid rgba(15,59,116,0.18)",
-            }}
-          >
-            <div style={{ ...sectionLabel(), color: "#0F3B74" }}>What you can do now</div>
-            <div
-              style={{
-                marginTop: 10,
-                color: "#0B1F33",
-                fontSize: 18,
-                fontWeight: 900,
-                lineHeight: 1.3,
-              }}
-            >
-              {demandItems.length > 1
-                ? demandItems.filter((item) => safeStr(item.urgency).toLowerCase() === "high").length > 0
-                  ? "High-pressure requests need review now."
-                  : "Several open requests are waiting for review in your community."
-                : demandItems.length === 1
-                ? "This request is waiting for your decision."
-                : "No live request is pressing right now."}
-            </div>
-            <div style={{ marginTop: 10, ...helperText() }}>
-              {demandItems.length > 1
-                ? "Open the queue and start with the strongest live need first."
-                : demandItems.length === 1
-                ? "Check the details and decide whether to respond now or continue later."
-                : "Create a new request or open Demand Box to review the wider queue."}
-            </div>
-            <div style={{ marginTop: 14 }}>
-              <OriginLink
-                to={demandItems.length === 0 ? "/app/demand-box#demand-box-create" : DASHBOARD_TARGETS.DEMAND_BOX}
-                style={primaryBtn(false)}
-              >
-                {demandItems.length > 1
-                  ? "Review open demands"
-                  : demandItems.length === 1
-                  ? "Open Demand Box"
-                  : "Create demand"}
-              </OriginLink>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      <section
-        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%)")}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>What Matters Now</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Organised signals from spotlight demand, demand box, join links,
-              trust events, open finance, community voting, and other dashboard
-              signals.
-            </div>
-          </div>
-
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button
-              type="button"
-              onClick={() =>
-                updateUiState({ inboxExpanded: !uiState.inboxExpanded })
-              }
-              style={secondaryBtn(false)}
-            >
-              {uiState.inboxExpanded ? "Collapse notifications" : "Open notifications"}
-            </button>
-
-            <OriginLink
-              to={DASHBOARD_TARGETS.WHAT_MATTERS_NOW}
-              style={primaryBtn(false)}
-            >
-              Open What Matters Now
-            </OriginLink>
-          </div>
-        </div>
-
-        <ExplainToggle
-          label="What What Matters Now does"
-          what="This area organises the strongest current dashboard signals into one action inbox."
-          why="It helps you separate what is urgent, what is nearing drift, what is already moving, and what is simply unread."
-          next="Open notifications for the fuller queue, or start with the strongest bucket if you only have time for the next important move."
-          tone="blue"
-          style={{ marginTop: 16 }}
-        />
-
-        <div
-          style={{
-            marginTop: 16,
-            display: "grid",
-            gridTemplateColumns: isCompact
-              ? "1fr 1fr"
-              : "repeat(4, minmax(0, 1fr))",
-            gap: 12,
-          }}
-        >
-          <div
-            style={statTile("#FFF5F5", "1px solid rgba(239,68,68,0.16)")}
-          >
-            <div style={sectionLabel()}>Act now</div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#991B1B",
-                fontWeight: 900,
-                fontSize: 24,
-              }}
-            >
-              {dashboardNoticeSummary.counts.actNow}
-            </div>
-            <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
-              Direct blockers and waiting actions
-            </div>
-          </div>
-
-          <div
-            style={statTile("#FFFBEF", "1px solid rgba(245,158,11,0.16)")}
-          >
-            <div style={sectionLabel()}>Due soon</div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#92400E",
-                fontWeight: 900,
-                fontSize: 24,
-              }}
-            >
-              {dashboardNoticeSummary.counts.dueSoon}
-            </div>
-            <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
-              Important items that should not drift
-            </div>
-          </div>
-
-          <div
-            style={statTile("#F7FAFF", "1px solid rgba(11,99,209,0.14)")}
-          >
-            <div style={sectionLabel()}>Watch</div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#0B63D1",
-                fontWeight: 900,
-                fontSize: 24,
-              }}
-            >
-              {dashboardNoticeSummary.counts.watch}
-            </div>
-            <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
-              Signals already moving
-            </div>
-          </div>
-
-          <div
-            style={statTile("#F8FAFC", "1px solid rgba(148,163,184,0.16)")}
-          >
-            <div style={sectionLabel()}>Unread</div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#334155",
-                fontWeight: 900,
-                fontSize: 24,
-              }}
-            >
-              {dashboardNoticeSummary.counts.unread}
-            </div>
-            <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
-              Unread dashboard-linked items
-            </div>
-          </div>
-        </div>
-
-        {guidanceError ? (
-          <div
-            style={{
-              marginTop: 14,
-              ...softCard("#FEF2F2"),
-              color: "#991B1B",
-              border: "1px solid rgba(239,68,68,0.16)",
-              fontWeight: 800,
-            }}
-          >
-            {guidanceError}
-          </div>
-        ) : guidanceLoading && !guidancePulse ? (
-          <div style={{ marginTop: 14, color: "#64748B", lineHeight: 1.8 }}>
-            Preparing your guided focus...
-          </div>
-        ) : uiState.inboxExpanded ? (
-          <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
-            {guidancePulse ? (
-              <div
-                style={{
-                  ...innerCard(
-                    guidancePulse.severity === "urgent"
-                      ? "linear-gradient(180deg, #FFF5F5 0%, #FFFFFF 100%)"
-                      : guidancePulse.severity === "important"
-                      ? "linear-gradient(180deg, #FFFBEF 0%, #FFFFFF 100%)"
-                      : "linear-gradient(180deg, #F7FAFF 0%, #FFFFFF 100%)"
-                  ),
-                  border:
-                    guidancePulse.severity === "urgent"
-                      ? "1px solid rgba(239,68,68,0.16)"
-                      : guidancePulse.severity === "important"
-                      ? "1px solid rgba(245,158,11,0.16)"
-                      : "1px solid rgba(11,99,209,0.12)",
-                  boxShadow:
-                    guidancePulse.severity === "urgent"
-                      ? "0 14px 28px rgba(239,68,68,0.06)"
-                      : guidancePulse.severity === "important"
-                      ? "0 14px 28px rgba(245,158,11,0.06)"
-                      : "0 14px 28px rgba(11,99,209,0.05)",
-                }}
-              >
-                <div
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {urgentDemandItems.length > 0 ? (
+                <span
                   style={{
-                    display: "flex",
-                    gap: 8,
-                    flexWrap: "wrap",
+                    ...badge(true),
+                    background: "rgba(245,158,11,0.16)",
+                    color: "#9A4D04",
+                    border: "none",
                   }}
                 >
-                  <span
-                    style={{
-                      ...badge(true),
-                      background:
-                        guidancePulse.severity === "urgent"
-                          ? "rgba(220,38,38,0.10)"
-                          : guidancePulse.severity === "important"
-                          ? "rgba(245,158,11,0.14)"
-                          : "rgba(11,99,209,0.10)",
-                      color:
-                        guidancePulse.severity === "urgent"
-                          ? "#B91C1C"
-                          : guidancePulse.severity === "important"
-                          ? "#92400E"
-                          : "#0B63D1",
-                    }}
-                  >
-                    {guidancePulse.severity}
-                  </span>
-
-                  <span style={badge(false)}>Highlighted now</span>
-                </div>
-
-                <div
+                  Act now
+                </span>
+              ) : demandItems.length > 0 ? (
+                <span
                   style={{
-                    marginTop: 12,
-                    color: "#0B1F33",
-                    fontSize: isCompact ? 22 : 28,
-                    fontWeight: 900,
-                    lineHeight: 1.15,
+                    ...badge(false),
+                    background: "rgba(11,99,209,0.10)",
+                    color: "#0B63D1",
+                    border: "none",
                   }}
                 >
-                  {guidancePulse.title}
-                </div>
-
-                <div style={{ marginTop: 10, ...helperText() }}>
-                  {guidancePulse.nowLine}
-                </div>
-              </div>
-            ) : (
-              <div style={innerCard("#FCFEFF")}>
-                <div style={helperText()}>
-                  No urgent step is blocking you right now.
-                </div>
-              </div>
-            )}
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr"
-                  : "repeat(2, minmax(0, 1fr))",
-                gap: 12,
-              }}
-            >
-              {(["actNow", "dueSoon", "watch", "unread"] as DashboardNoticeBucket[]).map(
-                (bucket) => {
-                  const meta = dashboardNoticeMeta(bucket);
-                  const rows =
-                    bucket === "actNow"
-                      ? dashboardNoticeSummary.actNow
-                      : bucket === "dueSoon"
-                      ? dashboardNoticeSummary.dueSoon
-                      : bucket === "watch"
-                      ? dashboardNoticeSummary.watch
-                      : dashboardNoticeSummary.unread;
-                  const count =
-                    bucket === "actNow"
-                      ? dashboardNoticeSummary.counts.actNow
-                      : bucket === "dueSoon"
-                      ? dashboardNoticeSummary.counts.dueSoon
-                      : bucket === "watch"
-                      ? dashboardNoticeSummary.counts.watch
-                      : dashboardNoticeSummary.counts.unread;
-
-                  return (
-                    <div
-                      key={`dashboard-bucket-${bucket}`}
-                      style={{
-                        ...innerCard(meta.bg),
-                        border: meta.border,
-                        padding: 12,
-                        boxShadow:
-                          bucket === "actNow"
-                            ? "0 10px 24px rgba(239,68,68,0.05)"
-                            : bucket === "dueSoon"
-                            ? "0 10px 24px rgba(245,158,11,0.05)"
-                            : bucket === "watch"
-                            ? "0 10px 24px rgba(11,99,209,0.05)"
-                            : "0 10px 24px rgba(148,163,184,0.05)",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          gap: 10,
-                          alignItems: "center",
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <div
-                          style={{
-                            color: meta.text,
-                            fontSize: 18,
-                            fontWeight: 900,
-                            lineHeight: 1.25,
-                          }}
-                        >
-                          {meta.title}
-                        </div>
-
-                        <span style={badge(bucket === "actNow")}>{count}</span>
-                      </div>
-
-                      <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                        {meta.detail}
-                      </div>
-
-                      <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                        {noticesLoading && count === 0 ? (
-                          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                            Loading signals...
-                          </div>
-                        ) : rows.length > 0 ? (
-                          rows.map(renderDashboardNoticeCard)
-                        ) : (
-                          <div style={innerCard("#FFFFFF")}>
-                            <div style={helperText()}>
-                              Nothing is sitting in this bucket right now.
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                }
+                  Open queue
+                </span>
+              ) : (
+                <span
+                  style={{
+                    ...badge(false),
+                    background: "rgba(148,163,184,0.14)",
+                    color: "#475569",
+                    border: "none",
+                  }}
+                >
+                  Steady
+                </span>
               )}
             </div>
-
-            <div
-              style={{
-                ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
-                border: "1px solid rgba(11,99,209,0.10)",
-              }}
-            >
-              <div style={sectionLabel()}>Next step</div>
-
-              <div
-                style={{
-                  marginTop: 10,
-                  color: "#0B1F33",
-                  fontSize: 18,
-                  fontWeight: 900,
-                  lineHeight: 1.32,
-                }}
-              >
-                {weeklyFocus?.title || "Next clean route"}
-              </div>
-
-              <div style={{ marginTop: 8, ...helperText() }}>
-                {weeklyFocus?.detail ||
-                  guidancePulse?.nextLine ||
-                  "Keep tomorrow lighter by finishing the current step well."}
-              </div>
-
-              <div style={{ marginTop: 14 }}>
-                <OriginLink to={nextRouteTo} style={secondaryBtn(false)}>
-                  {nextRouteLabel}
-                </OriginLink>
-              </div>
-            </div>
           </div>
-        ) : (
-          <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+
+          <div
+            style={{
+              marginTop: 6,
+              ...helperText(),
+              maxWidth: 820,
+              color: "#44617D",
+            }}
+          >
+            {demandSummarySubline}
+          </div>
+
+          <div
+            style={{
+              marginTop: 12,
+              display: "grid",
+              gridTemplateColumns: `repeat(auto-fit, minmax(${isCompact ? 108 : 124}px, 1fr))`,
+              gap: 8,
+            }}
+          >
+            {demandDetailPanels.map((panel) => {
+              const selected = demandPanelOpenKey === panel.key;
+
+              return (
+                <button
+                  key={`dashboard-demand-chip-${panel.key}`}
+                  type="button"
+                  onClick={(event) =>
+                    runDashboardUiMutation(event, () =>
+                      setDemandPanelOpenKey((prev) =>
+                        prev === panel.key ? "" : panel.key
+                      ),
+                      260
+                    )
+                  }
+                  onPointerDown={consumeDashboardPointerEvent}
+                  style={{
+                    ...subtleBtn(false),
+                    width: "100%",
+                    minHeight: 34,
+                    padding: "7px 10px",
+                    fontSize: 12,
+                    border: selected
+                      ? demandSurfaceChrome.chipSelectedBorder
+                      : demandSurfaceChrome.chipBorder,
+                    background: selected
+                      ? demandSurfaceChrome.chipSelectedBg
+                      : demandSurfaceChrome.chipBg,
+                    boxShadow: selected
+                      ? "0 10px 20px rgba(11,99,209,0.08), inset 0 1px 0 rgba(255,255,255,0.82)"
+                      : "0 6px 14px rgba(10,24,49,0.04), inset 0 1px 0 rgba(255,255,255,0.82)",
+                  }}
+                >
+                  {panel.chipLabel}
+                </button>
+              );
+            })}
+          </div>
+
+          {selectedDemandPanel ? (
             <div
               style={{
-                ...innerCard("linear-gradient(180deg, #F7FAFF 0%, #FFFFFF 100%)"),
-                border: "1px solid rgba(11,99,209,0.10)",
-                boxShadow: "0 10px 24px rgba(11,99,209,0.05)",
+                marginTop: 12,
+                ...innerCard(demandSurfaceChrome.detailBg),
+                border: demandSurfaceChrome.detailBorder,
+                padding: isCompact ? 12 : 14,
+                boxShadow:
+                  "0 12px 28px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.84)",
               }}
             >
               <div
@@ -6227,28 +7949,312 @@ export default function DashboardPage() {
                   style={{
                     color: "#0B1F33",
                     fontWeight: 900,
-                    fontSize: 18,
+                    fontSize: 15.5,
                     lineHeight: 1.3,
                   }}
                 >
-                  {dashboardNoticeSummary.actNow[0]?.title ||
-                    guidancePulse?.title ||
-                    "No urgent dashboard signal right now"}
+                  {selectedDemandPanel.title}
                 </div>
 
-                <span style={badge(true)}>
-                  {dashboardNoticeSummary.counts.actNow > 0 ? "Act now" : "Calm"}
+                <span style={badge(selectedDemandPanel.tone === "red")}>
+                  {selectedDemandPanel.items.length > 0
+                    ? selectedDemandPanel.items.length
+                    : "Ready"}
                 </span>
               </div>
 
               <div style={{ marginTop: 8, ...helperText() }}>
-                {dashboardNoticeSummary.actNow[0]?.detail ||
-                  guidancePulse?.nowLine ||
-                  "Open notifications to review your organised signals."}
+                {selectedDemandPanel.detail}
+              </div>
+
+              {selectedDemandPanel.items.length > 0 ? (
+                <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+                  {selectedDemandPanel.items.map((item, index) => (
+                    <div
+                      key={`dashboard-demand-item-${selectedDemandPanel.key}-${item.id || index}`}
+                      style={{
+                        ...softCard(demandSurfaceChrome.itemBg),
+                        border: demandSurfaceChrome.itemBorder,
+                        padding: 12,
+                        boxShadow:
+                          "inset 0 1px 0 rgba(255,255,255,0.84), 0 8px 18px rgba(10,24,49,0.05)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: 8,
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <div
+                          style={{
+                            color: "#0B1F33",
+                            fontWeight: 800,
+                            lineHeight: 1.3,
+                            flex: "1 1 220px",
+                          }}
+                        >
+                          {safeStr(item.title || "Demand request")}
+                        </div>
+
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <span
+                            style={badge(
+                              safeStr(item.urgency).toLowerCase() === "high"
+                            )}
+                          >
+                            {safeStr(item.urgency).toLowerCase() === "high"
+                              ? "Urgent"
+                              : "Open"}
+                          </span>
+                          {safeDateTime(item.created_at) ? (
+                            <span style={badge(false)}>
+                              {safeDateTime(item.created_at)}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                        {safeStr(
+                          item.description ||
+                            "Open Demand Box to read the full request."
+                        )}
+                      </div>
+
+                      {safeStr(item.requester_name || item.requester_nickname) ? (
+                        <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <span style={badge(false)}>
+                            {safeStr(item.requester_name || item.requester_nickname)}
+                          </span>
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              <div style={{ marginTop: 12 }}>
+                <button
+                  type="button"
+                  onClick={(event) =>
+                    openDashboardRoute(event, selectedDemandPanel.to)
+                  }
+                  onPointerDown={consumeDashboardPointerEvent}
+                  style={{
+                    ...secondaryBtn(false),
+                    width: "100%",
+                    minHeight: isCompact ? 38 : 36,
+                    padding: isCompact ? "8px 11px" : "7px 11px",
+                    fontSize: 12.5,
+                  }}
+                >
+                  {selectedDemandPanel.ctaLabel}
+                </button>
               </div>
             </div>
+          ) : null}
+        </div>
+      </section>
+
+      <section style={pageCard(DASHBOARD_BRAND.summaryPanel)}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={{ marginTop: 2, ...helperText(), maxWidth: 420 }}>
+              See which screen the latest notification is coming from.
+            </div>
           </div>
-        )}
+
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <span
+              style={{
+                ...badge(false),
+                background: "rgba(15,59,116,0.08)",
+                color: "#0F3B74",
+              }}
+            >
+              Notifications
+            </span>
+            {dashboardNoticeTotalCount > 0 ? (
+              <span style={badge(true)}>{dashboardNoticeTotalCount}</span>
+            ) : null}
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            ...innerCard("linear-gradient(180deg, #F7FAFF 0%, #FFFFFF 100%)"),
+            border: "1px solid rgba(11,99,209,0.10)",
+            boxShadow: "0 10px 24px rgba(11,99,209,0.05)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 10,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <div
+              style={{
+                color: "#0B1F33",
+                fontWeight: 900,
+                fontSize: 18,
+                lineHeight: 1.32,
+                maxWidth: 760,
+              }}
+            >
+              {dashboardNoticeSummaryLine}
+            </div>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {dashboardNoticeSourceGroups.length > 0 ? (
+                <span style={badge(false)}>
+                  {dashboardNoticeSourceGroups.length} screen
+                  {dashboardNoticeSourceGroups.length === 1 ? "" : "s"}
+                </span>
+              ) : null}
+              {dashboardNoticeSummary.counts.actNow > 0 ? (
+                <span style={badge(true)}>
+                  Act now {dashboardNoticeSummary.counts.actNow}
+                </span>
+              ) : null}
+              {dashboardNoticeSummary.counts.unread > 0 ? (
+                <span style={badge(false)}>
+                  Unread {dashboardNoticeSummary.counts.unread}
+                </span>
+              ) : null}
+            </div>
+          </div>
+
+          {guidanceError ? (
+            <div
+              style={{
+                marginTop: 12,
+                ...softCard("#FEF2F2"),
+                color: "#991B1B",
+                border: "1px solid rgba(239,68,68,0.16)",
+                fontWeight: 800,
+                padding: 12,
+              }}
+            >
+              {guidanceError}
+            </div>
+          ) : guidanceLoading && dashboardNoticeTotalCount === 0 ? (
+            <div style={{ marginTop: 12, color: "#64748B", lineHeight: 1.7 }}>
+              Preparing dashboard notifications...
+            </div>
+          ) : null}
+
+          {dashboardNoticeSourceGroups.length > 0 ? (
+            <div
+              style={{
+                marginTop: 12,
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
+              {dashboardNoticeQuickGroups.map((group) => {
+                const selected = noticeSourceOpenKey === group.key;
+
+                return (
+                  <button
+                    key={`dashboard-notice-chip-${group.key}`}
+                    type="button"
+                    onClick={(event) =>
+                      runDashboardUiMutation(event, () =>
+                        setNoticeSourceOpenKey((prev) =>
+                          prev === group.key ? "" : group.key
+                        ),
+                        260
+                      )
+                    }
+                    onPointerDown={consumeDashboardPointerEvent}
+                    style={{
+                      ...subtleBtn(false),
+                      minHeight: 32,
+                      padding: "6px 10px",
+                      fontSize: 12,
+                      border: selected
+                        ? "1px solid rgba(11,99,209,0.22)"
+                        : "1px solid rgba(15,59,116,0.10)",
+                      background: selected
+                        ? "linear-gradient(180deg, rgba(226,238,255,0.98) 0%, rgba(212,226,246,0.96) 100%)"
+                        : DASHBOARD_BRAND.quietPanel,
+                    }}
+                  >
+                    {group.title} {group.count}
+                  </button>
+                );
+              })}
+              {dashboardNoticeSourceGroups.map((group) => {
+                const selected = noticeSourceOpenKey === group.key;
+
+                return (
+                  <button
+                    key={`dashboard-notice-chip-${group.key}`}
+                    type="button"
+                    onClick={(event) =>
+                      runDashboardUiMutation(event, () =>
+                        setNoticeSourceOpenKey((prev) =>
+                          prev === group.key ? "" : group.key
+                        ),
+                        260
+                      )
+                    }
+                    onPointerDown={consumeDashboardPointerEvent}
+                    style={{
+                      ...subtleBtn(false),
+                      minHeight: 32,
+                      padding: "6px 10px",
+                      fontSize: 12,
+                      border: selected
+                        ? "1px solid rgba(11,99,209,0.22)"
+                        : "1px solid rgba(15,59,116,0.10)",
+                      background: selected
+                        ? "linear-gradient(180deg, rgba(226,238,255,0.98) 0%, rgba(212,226,246,0.96) 100%)"
+                        : DASHBOARD_BRAND.quietPanel,
+                    }}
+                  >
+                    {group.title} {group.count}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+
+          {dashboardNoticeSelectedPanel ? (
+            <div style={{ marginTop: 12 }}>
+              {renderDashboardNoticeSourceGroup(
+                dashboardNoticeSelectedPanel,
+                true,
+                (key) =>
+                  setNoticeSourceOpenKey((prev) => (prev === key ? "" : key)),
+                openDashboardRoute
+              )}
+            </div>
+          ) : noticesLoading && dashboardNoticeTotalCount === 0 ? (
+            <div style={{ marginTop: 12, color: "#64748B", lineHeight: 1.7 }}>
+              Loading notifications...
+            </div>
+          ) : null}
+
+        </div>
       </section>
 
       <section
@@ -6274,113 +8280,267 @@ export default function DashboardPage() {
             >
               Market Wisdom
             </div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#4A6580",
-                fontSize: 14,
-                lineHeight: 1.75,
-                maxWidth: 760,
-              }}
-            >
-              Read one clear market signal first, then use the supporting insight only if it helps your next move.
-            </div>
           </div>
-
-          <span
-            style={{
-              ...badge(true),
-              background:
-                "linear-gradient(180deg, rgba(248,222,141,0.82) 0%, rgba(243,208,106,0.64) 100%)",
-              color: "#7A5200",
-              border: "1px solid rgba(184,137,45,0.22)",
-            }}
-          >
-            Today
-          </span>
         </div>
-
-        <ExplainToggle
-          label="What Market Wisdom does"
-          what="Market Wisdom gives you one clear signal to read before you move into trade, support, or another commitment."
-          why="It is meant to steady judgment, not overload you, so the main signal should be easy to read before the supporting insight."
-          next="Read the main signal quickly, then use the supporting insight only if it helps the next move you are about to make."
-          tone="blue"
-          style={{ marginTop: 14 }}
-        />
 
         <div
           style={{
-            marginTop: 12,
+            marginTop: 10,
             ...innerCard(
               "linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)"
             ),
             border: "1px solid rgba(15,59,116,0.12)",
-            padding: 16,
+            padding: 14,
             boxShadow:
               "inset 0 1px 0 rgba(255,255,255,0.78), 0 12px 24px rgba(2,12,27,0.08)",
           }}
         >
-          {activeWisdomTitle ? (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 10,
+              alignItems: "flex-start",
+              flexWrap: "wrap",
+            }}
+          >
             <div
               style={{
                 color: "#0B1F33",
-                fontSize: 20,
+                fontSize: 18,
                 fontWeight: 900,
-                lineHeight: 1.28,
+                lineHeight: 1.26,
+                flex: "1 1 280px",
               }}
             >
-              {activeWisdomTitle}
+              {activeWisdomTitle || "Live GSN reading"}
             </div>
-          ) : null}
 
-          <div
-            style={{
-              marginTop: activeWisdomTitle ? 8 : 0,
-              color: "#35516B",
-              fontSize: 15,
-              fontWeight: 800,
-              lineHeight: 1.72,
-              maxWidth: 860,
-            }}
-          >
-            {guidancePulse?.wisdomLine || signalText}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                alignItems: "center",
+                minHeight: 1,
+              }}
+            />
           </div>
 
-          {signalSupport ? (
+          {activeMarketWisdomSignal ? (
             <div
               style={{
-                marginTop: 8,
-                color: "rgba(226,232,240,0.82)",
-                fontSize: 13,
-                lineHeight: 1.68,
-                maxWidth: 760,
+                marginTop: 10,
+                display: "grid",
+                gap: 10,
               }}
             >
-              {signalSupport}
-            </div>
-          ) : null}
-
-          {activeWisdomCapability ? (
-            <div
-              style={{
-                marginTop: 12,
-                display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
-                alignItems: "center",
-              }}
-            >
-              <span
+              <div
                 style={{
-                  ...badge(false),
-                  background: "rgba(184,137,45,0.18)",
-                  color: "#F4D58D",
-                  border: "1px solid rgba(184,137,45,0.22)",
+                  ...softCard(activeMarketWisdomSignal.background),
+                  padding: "12px 14px",
+                  border: `1px solid ${activeMarketWisdomSignal.border}`,
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.82), 0 14px 28px rgba(10,24,49,0.06)",
                 }}
               >
-                Capability {activeWisdomCapability}
-              </span>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 8,
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <span
+                    style={{
+                      ...badge(false),
+                      background: "rgba(255,255,255,0.82)",
+                      color: activeMarketWisdomSignal.accent,
+                      border: `1px solid ${activeMarketWisdomSignal.border}`,
+                    }}
+                  >
+                    {activeMarketWisdomSignal.label}
+                  </span>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 8,
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                      justifyContent: "flex-end",
+                    }}
+                  >
+                    <div
+                      style={{
+                        color: DASHBOARD_BRAND.helper,
+                        fontSize: 11.5,
+                        fontWeight: 900,
+                        letterSpacing: 0.22,
+                      }}
+                    >
+                      {((marketWisdomSignalIndex % marketWisdomSignals.length) || 0) + 1} /{" "}
+                      {marketWisdomSignals.length}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(event) =>
+                        runDashboardUiMutation(event, () =>
+                          setMarketWisdomSignalsOpen((prev) => !prev),
+                          260
+                        )
+                      }
+                      onPointerDown={consumeDashboardPointerEvent}
+                      style={{
+                        ...subtleBtn(false),
+                        minHeight: 28,
+                        padding: "5px 10px",
+                        fontSize: 11.5,
+                        border: "1px solid rgba(148,163,184,0.18)",
+                        background:
+                          "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(226,232,240,0.90) 100%)",
+                        color: "#526274",
+                        boxShadow:
+                          "0 8px 16px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.92)",
+                      }}
+                    >
+                      {marketWisdomSignalsOpen ? "Hide all" : "Open all"}
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 6,
+                    color: DASHBOARD_BRAND.helper,
+                    fontSize: 11.8,
+                    lineHeight: 1.55,
+                  }}
+                >
+                  {marketWisdomAttentionState.detail}
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 10,
+                    color: "#0B1F33",
+                    fontSize: 16,
+                    fontWeight: 900,
+                    lineHeight: 1.28,
+                  }}
+                >
+                  {activeMarketWisdomSignal.title}
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontSize: activeMarketWisdomSignal.key === "market" ? 14.5 : 13.5,
+                    fontWeight: activeMarketWisdomSignal.key === "market" ? 800 : 700,
+                    lineHeight: 1.62,
+                  }}
+                >
+                  {activeMarketWisdomSignal.text}
+                </div>
+              </div>
+
+              {marketWisdomSignalsOpen ? (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: isCompact
+                      ? "repeat(2, minmax(0, 1fr))"
+                      : "repeat(4, minmax(0, 1fr))",
+                    gap: 8,
+                  }}
+                >
+                  {marketWisdomSignals.map((signal, index) => {
+                    const selected = activeMarketWisdomSignal.key === signal.key;
+
+                    return (
+                      <button
+                        key={`market-wisdom-selector-${signal.key}`}
+                        type="button"
+                        onClick={(event) =>
+                          runDashboardUiMutation(
+                            event,
+                            () => setMarketWisdomSignalIndex(index),
+                            180
+                          )
+                        }
+                        onPointerDown={consumeDashboardPointerEvent}
+                        style={{
+                          ...subtleBtn(false),
+                          minHeight: 76,
+                          padding: "9px 10px",
+                          display: "grid",
+                          gap: 6,
+                          alignContent: "start",
+                          justifyItems: "stretch",
+                          textAlign: "left",
+                          background: selected ? signal.background : DASHBOARD_BRAND.quietPanel,
+                          border: selected
+                            ? `1px solid ${signal.border}`
+                            : "1px solid rgba(15,59,116,0.10)",
+                          boxShadow: selected
+                            ? "0 12px 22px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.86)"
+                            : "0 8px 18px rgba(10,24,49,0.05), inset 0 1px 0 rgba(255,255,255,0.82)",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            gap: 8,
+                            alignItems: "center",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: 11.5,
+                              fontWeight: 900,
+                              letterSpacing: 0.25,
+                              textTransform: "uppercase",
+                              color: selected ? signal.accent : DASHBOARD_BRAND.label,
+                            }}
+                          >
+                            {signal.label}
+                          </span>
+
+                          <span
+                            style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: 999,
+                              background: selected ? signal.accent : "rgba(148,163,184,0.5)",
+                              boxShadow: selected
+                                ? `0 0 0 4px ${signal.border}`
+                                : "none",
+                              flexShrink: 0,
+                            }}
+                          />
+                        </div>
+
+                        <div
+                          style={{
+                            color: "#0B1F33",
+                            fontSize: 12.5,
+                            fontWeight: selected ? 800 : 700,
+                            lineHeight: 1.45,
+                            maxHeight: 36,
+                            overflow: "hidden",
+                          }}
+                        >
+                          {signal.text}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
             </div>
           ) : null}
 
@@ -6393,16 +8553,16 @@ export default function DashboardPage() {
                 flexWrap: "wrap",
                 alignItems: "center",
                 justifyContent: "space-between",
-                padding: "12px 14px",
-                borderRadius: 16,
-                background: "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(191,219,254,0.16)",
+                padding: "10px 12px",
+                borderRadius: 14,
+                background: "rgba(255,255,255,0.68)",
+                border: "1px solid rgba(16,37,59,0.10)",
               }}
             >
               <div>
                 <div
                   style={{
-                    color: "#F8FBFF",
+                    color: DASHBOARD_BRAND.ink,
                     fontSize: 14,
                     fontWeight: 900,
                     lineHeight: 1.35,
@@ -6413,77 +8573,55 @@ export default function DashboardPage() {
                 <div
                   style={{
                     marginTop: 4,
-                    color: "rgba(226,232,240,0.82)",
+                    color: DASHBOARD_BRAND.helper,
                     fontSize: 12,
-                    lineHeight: 1.6,
+                    lineHeight: 1.5,
                   }}
                 >
-                  Turn goals into steadier follow-through after today's main signal is clear.
+                  Keep follow-through close when today's signal points to execution.
                 </div>
               </div>
 
-              <OriginLink
-                to={`${DASHBOARD_TARGETS.DASHBOARD}#focus-commitments`}
+              <button
+                type="button"
+                onClick={(event) =>
+                  openDashboardRoute(
+                    event,
+                    `${DASHBOARD_TARGETS.DASHBOARD}#focus-commitments`
+                  )
+                }
+                onPointerDown={consumeDashboardPointerEvent}
                 style={{
                   ...secondaryBtn(false),
+                  minHeight: 34,
+                  padding: "8px 12px",
+                  fontSize: 12.5,
                   background: "rgba(255,255,255,0.94)",
                   color: "#173654",
                   border: "1px solid rgba(23,54,84,0.14)",
                   boxShadow: "0 8px 18px rgba(15,23,42,0.06)",
                 }}
               >
-                Open Commitment Builder
-              </OriginLink>
+                Open
+              </button>
             </div>
           ) : null}
         </div>
       </section>
 
-      <section
-        id="operational-focus"
-        style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)")}
-      >
+      <section id="most-used-apps" style={pageCard(DASHBOARD_BRAND.raisedPanel)}>
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>Operational Focus</div>
-            <div style={{ marginTop: 8, ...helperText(), maxWidth: 840 }}>
-              Priority routes, regular app pages, structured commitments, and trust
-              consequence in one disciplined working view.
-            </div>
-          </div>
-
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={badge(true)}>{operationalClassLabel(userOperationalClass)}</span>
-            <span style={badge(false)}>{focusSummary.nextReviewLabel}</span>
-          </div>
-        </div>
-
-        <div
-          style={{
-            marginTop: 16,
             display: "grid",
-            gridTemplateColumns: isCompact
-              ? "1fr"
-              : "minmax(0, 1.18fr) minmax(340px, 0.82fr)",
             gap: 14,
-            alignItems: "start",
           }}
         >
           <div
-            id="priority-routes"
             style={{
               position: "relative",
-              ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F3F8FF 100%)"),
-              border: "1px solid rgba(11,99,209,0.14)",
-              boxShadow: "0 16px 34px rgba(11,99,209,0.06)",
+              ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)"),
+              border: "1px solid rgba(11,99,209,0.12)",
+              boxShadow: "0 16px 32px rgba(11,99,209,0.06)",
               overflow: "hidden",
             }}
           >
@@ -6502,528 +8640,79 @@ export default function DashboardPage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
                 gap: 12,
-                alignItems: "center",
               }}
             >
-              <div>
-                <div style={sectionLabel()}>Priority Routes</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#0B1F33",
-                    fontSize: 21,
-                    fontWeight: 900,
-                    lineHeight: 1.25,
-                  }}
-                >
-                  {priorityRoutes.title}
-                </div>
-                <div style={{ marginTop: 8, ...helperText() }}>
-                  {priorityRoutes.detail}
-                </div>
-              </div>
+              <div style={sectionLabel()}>Regular Apps</div>
 
               <div
                 style={{
-                  display: "flex",
-                  justifyContent: isCompact ? "flex-start" : "flex-end",
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "repeat(2, minmax(0, 1fr))"
+                    : "repeat(4, minmax(0, 1fr))",
+                  gap: 8,
                 }}
               >
-                <button
-                  type="button"
-                  onClick={() =>
-                    updateUiState({ routesExpanded: !uiState.routesExpanded })
-                  }
-                  style={{
-                    ...secondaryBtn(false),
-                    minWidth: 146,
-                    flexShrink: 0,
-                  }}
-                >
-                  {uiState.routesExpanded ? "Collapse routes" : "Open routes"}
-                </button>
-              </div>
-            </div>
-
-            {uiState.routesExpanded ? (
-              <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
-                <button
-                  type="button"
-                  onClick={() => openTrackedRoute(priorityRoutes.primaryRoute)}
-                  style={{
-                    ...routeTile(true),
-                    width: "100%",
-                    minHeight: 132,
-                    cursor: "pointer",
-                    textAlign: "left",
-                    background: "linear-gradient(180deg, #0F3B74 0%, #0B63D1 100%)",
-                    boxShadow: "0 18px 34px rgba(11,99,209,0.16)",
-                    border: "1px solid rgba(11,99,209,0.22)",
-                  }}
-                >
-                  <div
+                {mostUsedAppSurface.map((app, index) => (
+                  <button
+                    key={`most-used-app-surface-${app.key}`}
+                    type="button"
+                    onClick={() => openTrackedApp(app)}
+                    onPointerDown={consumeDashboardPointerEvent}
                     style={{
+                      width: "100%",
+                      borderRadius: 12,
+                      border:
+                        index === 0
+                          ? "1px solid rgba(29,78,216,0.18)"
+                          : `1px solid ${DASHBOARD_BRAND.cardBorder}`,
+                      cursor: "pointer",
+                      textAlign: "center",
                       display: "flex",
-                      justifyContent: "space-between",
-                      gap: 8,
                       alignItems: "center",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <span
-                      style={{
-                        ...badge(true),
-                        background: "rgba(255,255,255,0.16)",
-                        color: "#FFFFFF",
-                      }}
-                    >
-                      Primary route
-                    </span>
-
-                    <span
-                      style={{
-                        ...badge(false),
-                        background: "rgba(255,255,255,0.12)",
-                        color: "#FFFFFF",
-                      }}
-                    >
-                      {operationalClassLabel(userOperationalClass)}
-                    </span>
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 12,
-                      color: "#FFFFFF",
-                      fontSize: 22,
-                      fontWeight: 900,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {priorityRoutes.primaryRoute.label}
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "rgba(255,255,255,0.88)",
-                      fontSize: 14,
-                      lineHeight: 1.75,
-                    }}
-                  >
-                    {priorityRoutes.primaryRoute.detail}
-                  </div>
-
-                  {priorityRoutes.primaryRoute.reason ? (
-                    <div
-                      style={{
-                        marginTop: 10,
-                        color: "#BFDBFE",
-                        fontSize: 13,
-                        fontWeight: 900,
-                        lineHeight: 1.6,
-                      }}
-                    >
-                      {priorityRoutes.primaryRoute.reason}
-                    </div>
-                  ) : null}
-                </button>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: isCompact
-                      ? "1fr"
-                      : "repeat(3, minmax(0, 1fr))",
-                    gap: 10,
-                  }}
-                >
-                  {priorityRoutes.supportingRoutes.map((route) => (
-                    <button
-                      key={`supporting-route-${route.key}`}
-                      type="button"
-                      onClick={() => openTrackedRoute(route)}
-                      style={{
-                        ...routeTile(false),
-                        width: "100%",
-                        cursor: "pointer",
-                        textAlign: "left",
-                      }}
-                    >
-                      <div
-                        style={{
-                          color: "#0B1F33",
-                          fontWeight: 900,
-                          fontSize: 15,
-                          lineHeight: 1.3,
-                        }}
-                      >
-                        {route.label}
-                      </div>
-                      <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
-                        {route.detail}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-
-                <div>
-                  <div style={sectionLabel()}>Other core routes</div>
-                  <div
-                    style={{
-                      marginTop: 10,
-                      display: "grid",
-                      gridTemplateColumns: isCompact
-                        ? "repeat(2, minmax(0, 1fr))"
-                        : "repeat(3, minmax(0, 1fr))",
-                      gap: 10,
-                    }}
-                  >
-                    {priorityRoutes.utilityRoutes.map((route) => (
-                      <button
-                        key={`utility-route-${route.key}`}
-                        type="button"
-                        onClick={() => openTrackedRoute(route)}
-                        style={{
-                          ...routeTile(false),
-                          width: "100%",
-                          minHeight: 82,
-                          cursor: "pointer",
-                          textAlign: "left",
-                        }}
-                      >
-                        <div
-                          style={{
-                            color: "#0B1F33",
-                            fontWeight: 900,
-                            fontSize: 14,
-                            lineHeight: 1.25,
-                          }}
-                        >
-                          {route.label}
-                        </div>
-                        <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
-                          {route.detail}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-                <div
-                  style={{
-                    ...innerCard("linear-gradient(180deg, #F7FAFF 0%, #FFFFFF 100%)"),
-                    border: "1px solid rgba(11,99,209,0.10)",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 10,
-                      alignItems: "center",
-                      flexWrap: "wrap",
+                      justifyContent: "center",
+                      minHeight: isCompact ? 34 : 36,
+                      padding: isCompact ? "6px 8px" : "7px 9px",
+                      boxShadow:
+                        index === 0
+                          ? "0 8px 16px rgba(29,78,216,0.06), inset 0 1px 0 rgba(255,255,255,0.78)"
+                          : "0 6px 14px rgba(10,24,49,0.04), inset 0 1px 0 rgba(255,255,255,0.82)",
+                      background:
+                        index === 0
+                          ? "linear-gradient(180deg, #F2F8FF 0%, #E3F0FF 100%)"
+                          : DASHBOARD_BRAND.quietPanel,
                     }}
                   >
                     <div
                       style={{
                         color: "#0B1F33",
                         fontWeight: 900,
-                        fontSize: 18,
-                        lineHeight: 1.3,
+                        fontSize: isCompact ? 11.75 : 12.5,
+                        lineHeight: 1.15,
+                        whiteSpace: "normal",
+                        overflowWrap: "anywhere",
                       }}
                     >
-                      {priorityRoutes.primaryRoute.label}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => openTrackedRoute(priorityRoutes.primaryRoute)}
-                      style={primaryBtn(false)}
-                    >
-                      Open
-                    </button>
-                  </div>
-
-                  <div style={{ marginTop: 8, ...helperText() }}>
-                    {priorityRoutes.primaryRoute.detail}
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: isCompact
-                      ? "1fr"
-                      : "repeat(2, minmax(0, 1fr))",
-                    gap: 10,
-                  }}
-                >
-                  {priorityRoutes.supportingRoutes.slice(0, 2).map((route) => (
-                    <button
-                      key={`supporting-preview-${route.key}`}
-                      type="button"
-                      onClick={() => openTrackedRoute(route)}
-                      style={{
-                        ...routeTile(false),
-                        width: "100%",
-                        minHeight: 84,
-                        cursor: "pointer",
-                        textAlign: "left",
-                      }}
-                    >
-                      <div
-                        style={{
-                          color: "#0B1F33",
-                          fontWeight: 900,
-                          fontSize: 14,
-                          lineHeight: 1.25,
-                        }}
-                      >
-                        {route.label}
-                      </div>
-
-                      <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
-                        {route.detail}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div
-            id="most-used-apps"
-            style={{
-              position: "relative",
-              ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)"),
-              border: "1px solid rgba(11,31,51,0.10)",
-              boxShadow: "0 14px 30px rgba(15,23,42,0.05)",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 4,
-                background:
-                  "linear-gradient(90deg, #0B1F33 0%, #24415C 55%, #94A3B8 100%)",
-              }}
-            />
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
-                gap: 12,
-                alignItems: "center",
-              }}
-            >
-              <div>
-                <div style={sectionLabel()}>Most Used Apps</div>
-                <div style={{ marginTop: 8, ...helperText() }}>
-                  Regular pages you may want close at hand.
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                  justifyContent: isCompact ? "flex-start" : "flex-end",
-                }}
-              >
-                <span style={badge(false)}>
-                  {appUsage.length > 0 ? "Usage-aware" : "Building usage"}
-                </span>
-
-                <OriginLink
-                  to={DASHBOARD_TARGETS.FINANCE}
-                  style={primaryBtn(false)}
-                >
-                  Open Finance
-                </OriginLink>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    updateUiState({ appsExpanded: !uiState.appsExpanded })
-                  }
-                  style={{
-                    ...secondaryBtn(false),
-                    minWidth: 136,
-                    flexShrink: 0,
-                  }}
-                >
-                  {uiState.appsExpanded ? "Collapse apps" : "Open apps"}
-                </button>
-              </div>
-            </div>
-
-            {uiState.appsExpanded ? (
-              <div
-                style={{
-                  marginTop: 14,
-                  display: "grid",
-                  gridTemplateColumns: isCompact
-                    ? "1fr"
-                    : "repeat(2, minmax(0, 1fr))",
-                  gap: 10,
-                }}
-              >
-                {mostUsedApps.map((app) => (
-                  <button
-                    key={`most-used-app-${app.key}`}
-                    type="button"
-                    onClick={() => openTrackedApp(app)}
-                    style={{
-                      ...routeTile(false),
-                      width: "100%",
-                      minHeight: 100,
-                      cursor: "pointer",
-                      textAlign: "left",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: 8,
-                        alignItems: "center",
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <div
-                        style={{
-                          color: "#0B1F33",
-                          fontWeight: 900,
-                          fontSize: 15,
-                          lineHeight: 1.3,
-                        }}
-                      >
-                        {app.label}
-                      </div>
-
-                      <span style={badge(app.count > 0)}>
-                        {app.count > 0
-                          ? `${app.count} open${app.count === 1 ? "" : "s"}`
-                          : "Common"}
-                      </span>
-                    </div>
-
-                    <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
-                      {app.detail}
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 10,
-                        color: "#64748B",
-                        fontSize: 12,
-                        fontWeight: 800,
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {app.lastOpenedAt
-                        ? `Last opened ${safeDateTime(app.lastOpenedAt)}`
-                        : "Ready when you need it"}
+                      {app.label}
                     </div>
                   </button>
                 ))}
               </div>
-            ) : (
-              <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-                <div
-                  style={{
-                    ...innerCard("linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%)"),
-                    border: "1px solid rgba(15,59,116,0.18)",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 10,
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <div
-                      style={{
-                        color: "#0B1F33",
-                        fontWeight: 900,
-                        fontSize: 18,
-                        lineHeight: 1.3,
-                      }}
-                    >
-                      Most used right now
-                    </div>
-
-                    <span style={badge(true)}>
-                      {mostUsedApps[0]?.label || "Apps ready"}
-                    </span>
-                  </div>
-
-                  <div style={{ marginTop: 8, ...helperText() }}>
-                    Keep the full app set one click away, but let the card collapse to
-                    the pages you actually use most.
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: isCompact
-                      ? "1fr"
-                      : "repeat(2, minmax(0, 1fr))",
-                    gap: 10,
-                  }}
-                >
-                  {mostUsedAppPreview.map((app) => (
-                    <button
-                      key={`most-used-app-preview-${app.key}`}
-                      type="button"
-                      onClick={() => openTrackedApp(app)}
-                      style={{
-                        ...routeTile(false),
-                        width: "100%",
-                        minHeight: 92,
-                        cursor: "pointer",
-                        textAlign: "left",
-                      }}
-                    >
-                      <div
-                        style={{
-                          color: "#0B1F33",
-                          fontWeight: 900,
-                          fontSize: 15,
-                          lineHeight: 1.3,
-                        }}
-                      >
-                        {app.label}
-                      </div>
-
-                      <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
-                        {app.detail}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         </div>
 
-        <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
+      </section>
+
+      <section
+        style={{
+          marginTop: 14,
+          ...pageCard(DASHBOARD_BRAND.raisedPanel),
+          display: "grid",
+          gap: 14,
+        }}
+      >
           <div
             id="focus-commitments"
             style={{
@@ -7055,31 +8744,21 @@ export default function DashboardPage() {
                 flexWrap: "wrap",
               }}
             >
-              <div>
-                <div style={sectionLabel()}>Focus Commitments</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#0B1F33",
-                    fontSize: 20,
-                    fontWeight: 900,
-                    lineHeight: 1.25,
-                  }}
-                >
-                  Train execution, not just intention.
-                </div>
-                <div style={{ marginTop: 8, ...helperText(), maxWidth: 860 }}>
-                  Keep one or two structured targets visible, review them weekly or
-                  monthly, and let the dashboard reflect whether your commitments are
-                  being kept.
-                </div>
-              </div>
+              <div style={sectionLabel()}>Focus Commitments</div>
 
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {focusSummary.nextReviewLabel ? (
+                  <span style={badge(false)}>{focusSummary.nextReviewLabel}</span>
+                ) : null}
                 <span style={badge(true)}>Max 2 active</span>
                 <button
                   type="button"
-                  onClick={() => setFocusComposerOpen((prev) => !prev)}
+                  onClick={(event) =>
+                    runDashboardUiMutation(event, () =>
+                      setFocusComposerOpen((prev) => !prev)
+                    )
+                  }
+                  onPointerDown={consumeDashboardPointerEvent}
                   style={secondaryBtn(activeFocusCount >= 2)}
                   disabled={activeFocusCount >= 2}
                 >
@@ -7092,81 +8771,92 @@ export default function DashboardPage() {
               style={{
                 marginTop: 14,
                 display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr 1fr"
-                  : "repeat(4, minmax(0, 1fr))",
                 gap: 10,
               }}
             >
-              <div style={statTile("#F3FBF5", "1px solid rgba(34,197,94,0.16)")}>
-                <div style={sectionLabel()}>On track</div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                  gap: 8,
+                }}
+              >
                 <div
                   style={{
-                    marginTop: 8,
-                    color: "#166534",
-                    fontWeight: 900,
-                    fontSize: 24,
+                    ...statTile("#F3FBF5", "1px solid rgba(34,197,94,0.16)"),
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 8,
+                    padding: "8px 10px",
                   }}
                 >
-                  {focusSummary.onTrackCount}
+                  <div style={sectionLabel()}>On track</div>
+                  <div
+                    style={{
+                      color: "#166534",
+                      fontWeight: 900,
+                      fontSize: 17,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {focusSummary.onTrackCount}
+                  </div>
                 </div>
-                <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
-                  Visible commitments keeping pace
-                </div>
-              </div>
 
-              <div style={statTile("#FFFBEF", "1px solid rgba(245,158,11,0.16)")}>
-                <div style={sectionLabel()}>Watch</div>
                 <div
                   style={{
-                    marginTop: 8,
-                    color: "#92400E",
-                    fontWeight: 900,
-                    fontSize: 24,
+                    ...statTile("#FFFBEF", "1px solid rgba(245,158,11,0.16)"),
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 8,
+                    padding: "8px 10px",
                   }}
                 >
-                  {focusSummary.watchCount}
+                  <div style={sectionLabel()}>Watch</div>
+                  <div
+                    style={{
+                      color: "#92400E",
+                      fontWeight: 900,
+                      fontSize: 17,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {focusSummary.watchCount}
+                  </div>
                 </div>
-                <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
-                  Nearer to deadline or review
-                </div>
-              </div>
 
-              <div style={statTile("#FFF5F5", "1px solid rgba(239,68,68,0.16)")}>
-                <div style={sectionLabel()}>Behind</div>
                 <div
                   style={{
-                    marginTop: 8,
-                    color: "#991B1B",
-                    fontWeight: 900,
-                    fontSize: 24,
+                    ...statTile("#FFF5F5", "1px solid rgba(239,68,68,0.16)"),
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 8,
+                    padding: "8px 10px",
                   }}
                 >
-                  {focusSummary.behindCount}
-                </div>
-                <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
-                  Needs visible correction
-                </div>
-              </div>
-
-              <div style={statTile("#F8FAFC", "1px solid rgba(148,163,184,0.16)")}>
-                <div style={sectionLabel()}>Next review</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#334155",
-                    fontWeight: 900,
-                    fontSize: 14,
-                    lineHeight: 1.45,
-                  }}
-                >
-                  {focusSummary.nextReviewLabel}
-                </div>
-                <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
-                  {focusSummary.disciplineLine}
+                  <div style={sectionLabel()}>Behind</div>
+                  <div
+                    style={{
+                      color: "#991B1B",
+                      fontWeight: 900,
+                      fontSize: 17,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {focusSummary.behindCount}
+                  </div>
                 </div>
               </div>
             </div>
+
+            {activeFocusCount > 0 ? (
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
+                {focusSummary.disciplineLine}
+              </div>
+            ) : null}
 
             {focusComposerOpen ? (
               <div
@@ -7187,30 +8877,33 @@ export default function DashboardPage() {
                 >
                   <div>
                     <div style={sectionLabel()}>New commitment</div>
-                    <div style={{ marginTop: 8, ...helperText() }}>
-                      Keep it real, measurable, and time-bound.
+                    <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                      Keep it measurable and time-bound.
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <div style={dashboardActionGrid(isCompact ? 96 : 120)}>
                     <button
                       type="button"
                       onClick={() => prefillFocusDraft("savings")}
-                      style={subtleBtn(false)}
+                      onPointerDown={consumeDashboardPointerEvent}
+                      style={dashboardFillButton(subtleBtn(false))}
                     >
                       Savings idea
                     </button>
                     <button
                       type="button"
                       onClick={() => prefillFocusDraft("business")}
-                      style={subtleBtn(false)}
+                      onPointerDown={consumeDashboardPointerEvent}
+                      style={dashboardFillButton(subtleBtn(false))}
                     >
                       Business idea
                     </button>
                     <button
                       type="button"
                       onClick={() => prefillFocusDraft("repayment")}
-                      style={subtleBtn(false)}
+                      onPointerDown={consumeDashboardPointerEvent}
+                      style={dashboardFillButton(subtleBtn(false))}
                     >
                       Repayment idea
                     </button>
@@ -7350,14 +9043,15 @@ export default function DashboardPage() {
                       : "Two active commitments maximum keeps the dashboard focused."}
                   </div>
 
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <div style={dashboardActionGrid(isCompact ? 118 : 136)}>
                     <button
                       type="button"
                       onClick={() => {
                         resetFocusDraft();
                         setFocusComposerOpen(false);
                       }}
-                      style={secondaryBtn(false)}
+                      onPointerDown={consumeDashboardPointerEvent}
+                      style={dashboardFillButton(secondaryBtn(false))}
                     >
                       Cancel
                     </button>
@@ -7365,7 +9059,10 @@ export default function DashboardPage() {
                     <button
                       type="button"
                       onClick={saveFocusCommitment}
-                      style={primaryBtn(!safeStr(focusDraft.title) || activeFocusCount >= 2)}
+                      onPointerDown={consumeDashboardPointerEvent}
+                      style={dashboardFillButton(
+                        primaryBtn(!safeStr(focusDraft.title) || activeFocusCount >= 2)
+                      )}
                       disabled={!safeStr(focusDraft.title) || activeFocusCount >= 2}
                     >
                       Save commitment
@@ -7543,7 +9240,7 @@ export default function DashboardPage() {
                           marginTop: 12,
                           display: "grid",
                           gridTemplateColumns: isCompact
-                            ? "1fr"
+                            ? "repeat(2, minmax(0, 1fr))"
                             : "minmax(0, 180px) repeat(3, auto)",
                           gap: 8,
                           alignItems: "center",
@@ -7563,13 +9260,15 @@ export default function DashboardPage() {
                           style={{
                             ...fieldInputStyle(),
                             minHeight: 38,
+                            gridColumn: isCompact ? "1 / -1" : undefined,
                           }}
                         />
 
                         <button
                           type="button"
                           onClick={() => submitFocusCheckIn(item.id)}
-                          style={secondaryBtn(false)}
+                          onPointerDown={consumeDashboardPointerEvent}
+                          style={dashboardFillButton(secondaryBtn(false))}
                         >
                           Check in
                         </button>
@@ -7577,7 +9276,8 @@ export default function DashboardPage() {
                         <button
                           type="button"
                           onClick={() => replanFocusCommitment(item.id)}
-                          style={subtleBtn(false)}
+                          onPointerDown={consumeDashboardPointerEvent}
+                          style={dashboardFillButton(subtleBtn(false))}
                         >
                           Replan
                         </button>
@@ -7585,7 +9285,8 @@ export default function DashboardPage() {
                         <button
                           type="button"
                           onClick={() => completeFocusCommitment(item.id)}
-                          style={primaryBtn(false)}
+                          onPointerDown={consumeDashboardPointerEvent}
+                          style={dashboardFillButton(primaryBtn(false))}
                         >
                           Complete
                         </button>
@@ -7608,28 +9309,40 @@ export default function DashboardPage() {
                         lineHeight: 1.3,
                     }}
                   >
-                    No active focus commitment is visible yet.
+                    No active commitment yet.
                   </div>
 
-                  <div style={{ marginTop: 10, ...helperText(), color: "#F8FBFF", maxWidth: 860 }}>
-                    Use one or two serious targets only. The point is not to collect
-                    goals. The point is to build execution discipline that can later
-                    support trust, savings behavior, repayment readiness, and more
-                    dependable follow-through.
+                  <div
+                    style={{
+                      marginTop: 8,
+                      ...helperText(),
+                      color: "#F8FBFF",
+                      maxWidth: 640,
+                    }}
+                  >
+                    Start one or two real targets and keep them visible.
                   </div>
 
                   <div
                     style={{
                       marginTop: 14,
-                      display: "flex",
+                      display: "grid",
+                      gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
                       gap: 8,
-                      flexWrap: "wrap",
                     }}
                   >
                     <button
                       type="button"
                       onClick={() => prefillFocusDraft("savings")}
-                      style={secondaryBtn(false)}
+                      onPointerDown={consumeDashboardPointerEvent}
+                      style={{
+                        ...dashboardFillButton(secondaryBtn(false)),
+                        width: "100%",
+                        minHeight: 36,
+                        padding: "7px 9px",
+                        whiteSpace: "normal",
+                        textAlign: "center",
+                      }}
                     >
                       Start savings target
                     </button>
@@ -7637,7 +9350,15 @@ export default function DashboardPage() {
                     <button
                       type="button"
                       onClick={() => prefillFocusDraft("business")}
-                      style={secondaryBtn(false)}
+                      onPointerDown={consumeDashboardPointerEvent}
+                      style={{
+                        ...dashboardFillButton(secondaryBtn(false)),
+                        width: "100%",
+                        minHeight: 36,
+                        padding: "7px 9px",
+                        whiteSpace: "normal",
+                        textAlign: "center",
+                      }}
                     >
                       Start business target
                     </button>
@@ -7645,7 +9366,15 @@ export default function DashboardPage() {
                     <button
                       type="button"
                       onClick={() => prefillFocusDraft("repayment")}
-                      style={secondaryBtn(false)}
+                      onPointerDown={consumeDashboardPointerEvent}
+                      style={{
+                        ...dashboardFillButton(secondaryBtn(false)),
+                        width: "100%",
+                        minHeight: 36,
+                        padding: "7px 9px",
+                        whiteSpace: "normal",
+                        textAlign: "center",
+                      }}
                     >
                       Start repayment target
                     </button>
@@ -7654,349 +9383,24 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
-
-          <div
-            id="trust-journey"
-            style={{
-              position: "relative",
-              ...innerCard(
-                trustJourneyModel.tone === "red"
-                  ? "linear-gradient(180deg, #FFF5F5 0%, #FFFFFF 100%)"
-                  : trustJourneyModel.tone === "yellow"
-                  ? "linear-gradient(180deg, #FFFBEF 0%, #FFFFFF 100%)"
-                  : "linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"
-              ),
-              border: trustJourneyTone.border,
-              boxShadow:
-                trustJourneyModel.tone === "red"
-                  ? "0 16px 34px rgba(239,68,68,0.07)"
-                  : trustJourneyModel.tone === "yellow"
-                  ? "0 16px 34px rgba(245,158,11,0.07)"
-                  : "0 16px 34px rgba(11,99,209,0.06)",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 4,
-                background:
-                  trustJourneyModel.tone === "red"
-                    ? "linear-gradient(90deg, #991B1B 0%, #DC2626 55%, #FCA5A5 100%)"
-                    : trustJourneyModel.tone === "yellow"
-                    ? "linear-gradient(90deg, #92400E 0%, #F59E0B 55%, #FCD34D 100%)"
-                    : "linear-gradient(90deg, #166534 0%, #0B63D1 55%, #93C5FD 100%)",
-              }}
-            />
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 12,
-                alignItems: "center",
-                flexWrap: "wrap",
-              }}
-            >
-              <div>
-                <div style={sectionLabel()}>Trust Journey</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: trustJourneyTone.text,
-                    fontSize: 22,
-                    fontWeight: 900,
-                    lineHeight: 1.22,
-                  }}
-                >
-                  {trustJourneyModel.postureTitle}
-                </div>
-                <div style={{ marginTop: 8, ...helperText(), maxWidth: 860 }}>
-                  {trustJourneyModel.postureDetail}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() =>
-                  updateUiState({ trustExpanded: !uiState.trustExpanded })
-                }
-                style={secondaryBtn(false)}
-              >
-                {uiState.trustExpanded ? "Collapse trust detail" : "Open trust detail"}
-              </button>
-            </div>
-
-            <div
-              style={{
-                marginTop: 14,
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr 1fr"
-                  : "repeat(4, minmax(0, 1fr))",
-                gap: 10,
-              }}
-            >
-              <div style={statTile(openTrustTone.bg, openTrustTone.border)}>
-                <div style={sectionLabel()}>Open Trust</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: openTrustTone.text,
-                    fontWeight: 900,
-                    fontSize: 24,
-                    lineHeight: 1,
-                  }}
-                >
-                  {openTrust.classText}
-                </div>
-                <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
-                  {openTrust.statusText}
-                </div>
-              </div>
-
-              <div style={statTile(cciTone.bg, cciTone.border)}>
-                <div style={sectionLabel()}>CCI</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: cciTone.text,
-                    fontWeight: 900,
-                    fontSize: 24,
-                    lineHeight: 1,
-                  }}
-                >
-                  {cci.classText}
-                </div>
-                <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
-                  {cci.statusText}
-                </div>
-              </div>
-
-              <div style={statTile("#F8FBFF", "1px solid rgba(11,99,209,0.10)")}>
-                <div style={sectionLabel()}>TrustSlip</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    fontSize: 18,
-                    lineHeight: 1.3,
-                    wordBreak: "break-word",
-                  }}
-                >
-                  {trustSlipCode || "Pending"}
-                </div>
-                <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
-                  {verificationStatus}
-                </div>
-              </div>
-
-              <div
-                style={statTile(
-                  focusSummary.behindCount > 0
-                    ? "#FFF5F5"
-                    : focusSummary.watchCount > 0
-                    ? "#FFFBEF"
-                    : "#F3FBF5",
-                  focusSummary.behindCount > 0
-                    ? "1px solid rgba(239,68,68,0.16)"
-                    : focusSummary.watchCount > 0
-                    ? "1px solid rgba(245,158,11,0.16)"
-                    : "1px solid rgba(34,197,94,0.16)"
-                )}
-              >
-                <div style={sectionLabel()}>Commitment discipline</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color:
-                      focusSummary.behindCount > 0
-                        ? "#991B1B"
-                        : focusSummary.watchCount > 0
-                        ? "#92400E"
-                        : "#166534",
-                    fontWeight: 900,
-                    fontSize: 14,
-                    lineHeight: 1.45,
-                  }}
-                >
-                  {trustJourneyModel.commitmentLine}
-                </div>
-                <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
-                  {focusSummary.nextReviewLabel}
-                </div>
-              </div>
-            </div>
-
-            <div
-              style={{
-                marginTop: 12,
-                display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
-              }}
-            >
-              <span style={badge(true)}>Built: {trustJourney?.builtCount || 0}</span>
-              <span style={badge(false)}>
-                Protected: {trustJourney?.protectedCount || 0}
-              </span>
-              <span style={badge(false)}>
-                Weakened: {trustJourney?.weakenedCount || 0}
-              </span>
-              <span style={badge(false)}>
-                Repair: {trustJourney?.repairCount || 0}
-              </span>
-            </div>
-
-            {uiState.trustExpanded ? (
-              <div
-                style={{
-                  marginTop: 14,
-                  display: "grid",
-                  gridTemplateColumns: isCompact
-                    ? "1fr"
-                    : "repeat(3, minmax(0, 1fr))",
-                  gap: 12,
-                }}
-              >
-                <div style={innerCard("#FFFFFF")}>
-                  <div style={sectionLabel()}>What builds trust</div>
-                  <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                    {trustJourneyModel.helps.length > 0 ? (
-                      trustJourneyModel.helps.map((item, index) => (
-                        <div key={`trust-help-${index}`} style={helperText()}>
-                          {item}
-                        </div>
-                      ))
-                    ) : (
-                      <div style={helperText()}>
-                        No strong positive trust movement explanation is visible right now.
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div
-                  style={innerCard(
-                    trustJourneyModel.weakens.length > 0 ? "#FFFBEF" : "#FFFFFF"
-                  )}
-                >
-                  <div style={sectionLabel()}>What weakens trust</div>
-                  <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                    {trustJourneyModel.weakens.length > 0 ? (
-                      trustJourneyModel.weakens.map((item, index) => (
-                        <div key={`trust-weak-${index}`} style={helperText()}>
-                          {item}
-                        </div>
-                      ))
-                    ) : (
-                      <div style={helperText()}>
-                        No major trust drag is visible right now.
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
-                    border: "1px solid rgba(11,99,209,0.10)",
-                  }}
-                >
-                  <div style={sectionLabel()}>Best next trust action</div>
-
-                  <div
-                    style={{
-                      marginTop: 10,
-                      color: "#0B1F33",
-                      fontSize: 18,
-                      fontWeight: 900,
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    {trustJourneyModel.primaryRoute.label}
-                  </div>
-
-                  <div style={{ marginTop: 8, ...helperText() }}>
-                    {trustJourneyModel.primaryRoute.detail}
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 14,
-                      display: "flex",
-                      gap: 8,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => openTrackedRoute(trustJourneyModel.primaryRoute)}
-                      style={primaryBtn(false)}
-                    >
-                      {trustJourneyModel.primaryRoute.label}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => openTrackedRoute(trustJourneyModel.secondaryRoute)}
-                      style={secondaryBtn(false)}
-                    >
-                      {trustJourneyModel.secondaryRoute.label}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div style={{ marginTop: 14 }}>
-                <div
-                  style={{
-                    ...innerCard("#FFFFFF"),
-                    border: trustJourneyTone.border,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 10,
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <div
-                      style={{
-                        color: "#0B1F33",
-                        fontWeight: 900,
-                        fontSize: 18,
-                        lineHeight: 1.3,
-                      }}
-                    >
-                      {trustJourneyModel.primaryRoute.label}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => openTrackedRoute(trustJourneyModel.primaryRoute)}
-                      style={primaryBtn(false)}
-                    >
-                      Open
-                    </button>
-                  </div>
-
-                  <div style={{ marginTop: 8, ...helperText() }}>
-                    {trustJourneyModel.primaryRoute.detail}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
       </section>
+
+      {dashboardInteractionShieldVisible ? (
+        <div
+          aria-hidden="true"
+          onPointerDown={consumeDashboardPointerEvent}
+          onClick={consumeDashboardButtonEvent}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "transparent",
+            pointerEvents: "auto",
+            touchAction: "none",
+          }}
+        />
+      ) : null}
+
       </div>
     </div>
   );

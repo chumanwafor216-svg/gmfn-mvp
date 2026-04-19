@@ -10,6 +10,7 @@ import {
 
 import AppLayout from "./layout/AppLayout";
 import RequireAuth from "./components/RequireAuth";
+import { gmfnBrand } from "./styles/gmfnBrand";
 
 const CoverPage = React.lazy(() => import("./pages/CoverPage"));
 const CreateEntryPage = React.lazy(() => import("./pages/CreateEntryPage"));
@@ -147,8 +148,8 @@ function RouteFallback() {
         alignItems: "center",
         justifyContent: "center",
         padding: "24px",
-        background: "#F4F7FB",
-        color: "#0B1F33",
+        background: gmfnBrand.gradients.pageWash,
+        color: gmfnBrand.colors.ink,
         fontSize: "15px",
         fontWeight: 700,
       }}

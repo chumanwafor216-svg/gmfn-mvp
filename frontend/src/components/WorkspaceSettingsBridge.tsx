@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { getMySettings } from "../lib/api";
 import { subscribeVisualSettingsUpdated } from "../lib/workspaceEvents";
+import { gmfnBrand } from "../styles/gmfnBrand";
 
 type ThemePreset =
   | "professional-blue"
@@ -49,11 +50,12 @@ function normalizeSettings(input: any): WorkspaceSettings {
 
 function getThemeFromPreset(
   preset: ThemePreset
-): { accent: string; page: string; text: string } {
+): { accent: string; page: string; pageWash: string; text: string } {
   if (preset === "cooperative-warm") {
     return {
       accent: "#8A5A2B",
       page: "#F8F3ED",
+      pageWash: "linear-gradient(180deg, #FCF8F3 0%, #F8F3ED 100%)",
       text: "#2F241A",
     };
   }
@@ -62,14 +64,16 @@ function getThemeFromPreset(
     return {
       accent: "#0F766E",
       page: "#F2FAF8",
+      pageWash: "linear-gradient(180deg, #F8FCFB 0%, #F2FAF8 100%)",
       text: "#102A27",
     };
   }
 
   return {
-    accent: "#0B63D1",
-    page: "#F4F8FC",
-    text: "#0B1F33",
+    accent: gmfnBrand.colors.accent,
+    page: gmfnBrand.colors.page,
+    pageWash: gmfnBrand.gradients.pageWash,
+    text: gmfnBrand.colors.ink,
   };
 }
 
@@ -156,6 +160,7 @@ export default function WorkspaceSettingsBridge() {
 
     html.style.setProperty("--gmfn-workspace-accent", theme.accent);
     html.style.setProperty("--gmfn-workspace-page", theme.page);
+    html.style.setProperty("--gmfn-workspace-page-wash", theme.pageWash);
     html.style.setProperty("--gmfn-workspace-text", theme.text);
     html.style.setProperty(
       "--gmfn-workspace-density-scale",
@@ -167,6 +172,7 @@ export default function WorkspaceSettingsBridge() {
     );
 
     body.style.backgroundColor = theme.page;
+    body.style.background = theme.pageWash;
     body.style.color = theme.text;
 
     const styleId = "gmfn-workspace-settings-bridge-style";
@@ -212,11 +218,13 @@ export default function WorkspaceSettingsBridge() {
 
       currentHtml.style.removeProperty("--gmfn-workspace-accent");
       currentHtml.style.removeProperty("--gmfn-workspace-page");
+      currentHtml.style.removeProperty("--gmfn-workspace-page-wash");
       currentHtml.style.removeProperty("--gmfn-workspace-text");
       currentHtml.style.removeProperty("--gmfn-workspace-density-scale");
       currentHtml.style.removeProperty("--gmfn-workspace-text-scale");
 
       currentBody.style.backgroundColor = "";
+      currentBody.style.background = "";
       currentBody.style.color = "";
     };
   }, [settings, theme]);

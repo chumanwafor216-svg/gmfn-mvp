@@ -2098,6 +2098,7 @@ export async function createMarketplaceBroadcast(payload: {
   shop_id?: number | null;
   message: string;
   image_url?: string | null;
+  video_url?: string | null;
   expires_at?: string | null;
 }): Promise<any> {
   const effectiveClanId =
@@ -2107,10 +2108,11 @@ export async function createMarketplaceBroadcast(payload: {
   const shopId = Number(payload?.shop_id || 0);
   const message = String(payload?.message || "").trim();
   const imageUrl = String(payload?.image_url || "").trim();
+  const videoUrl = String(payload?.video_url || "").trim();
   const expiresAt = normalizeApiDateTime(payload?.expires_at);
 
-  if (!message && !imageUrl) {
-    throw new Error("message or image_url is required");
+  if (!message && !imageUrl && !videoUrl) {
+    throw new Error("message, image_url, or video_url is required");
   }
 
   const baseBody: Record<string, any> = {
@@ -2119,6 +2121,10 @@ export async function createMarketplaceBroadcast(payload: {
 
   if (imageUrl) {
     baseBody.image_url = imageUrl;
+  }
+
+  if (videoUrl) {
+    baseBody.video_url = videoUrl;
   }
 
   if (expiresAt) {

@@ -1350,6 +1350,22 @@ export default function MarketplacePage() {
     return positiveNumber(selectedCommunity?.id || selectedCommunity?.clan_id);
   }, [selectedCommunity]);
 
+  const publicCommunityWorkspaceLink = useMemo(() => {
+    const origin = browserOrigin();
+    if (!origin || !activeCommunityId) return "";
+    return `${origin}/community/${encodeURIComponent(String(activeCommunityId))}`;
+  }, [activeCommunityId]);
+
+  const publicCreateCommunityLink = useMemo(() => {
+    const origin = browserOrigin();
+    if (!origin) return "";
+    return `${origin}/create`;
+  }, []);
+
+  const publicVaultLink = useMemo(() => {
+    return "";
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -2950,6 +2966,158 @@ export default function MarketplacePage() {
 
         {sectionsOpen.tools ? (
           <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
+            <div
+              style={{
+                borderRadius: 16,
+                border: "1px solid rgba(11,31,51,0.08)",
+                background: "#F8FBFF",
+                padding: 14,
+                display: "grid",
+                gap: 12,
+              }}
+            >
+              <div>
+                <div style={sectionLabel()}>Community link block</div>
+                <div style={{ marginTop: 8, ...helperText() }}>
+                  Keep these customized community links ready in every marketplace.
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+                  gap: 12,
+                }}
+              >
+                <div style={softCard("#FFFFFF")}>
+                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>
+                    Join community invite
+                  </div>
+                  <div style={{ marginTop: 8, ...helperText() }}>
+                    Share the invite route tied to this exact community.
+                  </div>
+                  <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      onClick={handleOpenJoinLink}
+                      disabled={!inviteLink}
+                      style={actionBtn("secondary", !inviteLink)}
+                    >
+                      Open Join Invite
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!inviteLink) {
+                          showNotice("error", "Join invite link is not ready yet.");
+                          return;
+                        }
+                        safeCopy(inviteLink);
+                        showNotice("success", "Join invite link copied.");
+                      }}
+                      disabled={!inviteLink}
+                      style={actionBtn("secondary", !inviteLink)}
+                    >
+                      Copy Join Invite
+                    </button>
+                  </div>
+                </div>
+
+                <div style={softCard("#FFFFFF")}>
+                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>
+                    Shop gallery link
+                  </div>
+                  <div style={{ marginTop: 8, ...helperText() }}>
+                    Open the public community marketplace/shop gallery for this community.
+                  </div>
+                  <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!publicCommunityWorkspaceLink) {
+                          showNotice("error", "Community shop gallery link is not ready yet.");
+                          return;
+                        }
+                        window.open(publicCommunityWorkspaceLink, "_blank", "noopener,noreferrer");
+                      }}
+                      disabled={!publicCommunityWorkspaceLink}
+                      style={actionBtn("secondary", !publicCommunityWorkspaceLink)}
+                    >
+                      Open Shop Gallery
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!publicCommunityWorkspaceLink) {
+                          showNotice("error", "Community shop gallery link is not ready yet.");
+                          return;
+                        }
+                        safeCopy(publicCommunityWorkspaceLink);
+                        showNotice("success", "Community shop gallery link copied.");
+                      }}
+                      disabled={!publicCommunityWorkspaceLink}
+                      style={actionBtn("secondary", !publicCommunityWorkspaceLink)}
+                    >
+                      Copy Shop Gallery
+                    </button>
+                  </div>
+                </div>
+
+                <div style={softCard("#FFFFFF")}>
+                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>
+                    Vault link
+                  </div>
+                  <div style={{ marginTop: 8, ...helperText() }}>
+                    This slot stays reserved for the community vault route when that route is finalized.
+                  </div>
+                  <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      disabled={!publicVaultLink}
+                      style={actionBtn("secondary", !publicVaultLink)}
+                    >
+                      Vault Link Pending
+                    </button>
+                  </div>
+                </div>
+
+                <div style={softCard("#FFFFFF")}>
+                  <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>
+                    Create community route
+                  </div>
+                  <div style={{ marginTop: 8, ...helperText() }}>
+                    Keep the public create-community route visible from every marketplace.
+                  </div>
+                  <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!publicCreateCommunityLink) return;
+                        window.open(publicCreateCommunityLink, "_blank", "noopener,noreferrer");
+                      }}
+                      disabled={!publicCreateCommunityLink}
+                      style={actionBtn("secondary", !publicCreateCommunityLink)}
+                    >
+                      Open Create Route
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!publicCreateCommunityLink) return;
+                        safeCopy(publicCreateCommunityLink);
+                        showNotice("success", "Create community route copied.");
+                      }}
+                      disabled={!publicCreateCommunityLink}
+                      style={actionBtn("secondary", !publicCreateCommunityLink)}
+                    >
+                      Copy Create Route
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div
               style={{
                 display: "grid",

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import OriginLink from "./OriginLink";
+import SpotlightMediaFrame from "./SpotlightMediaFrame";
 import {
   getMarketplaceBroadcasts,
   getSelectedClanId,
@@ -12,6 +13,7 @@ type MarketplaceFeedItem = {
   expires_at?: string | null;
   author_user_id?: number;
   image_url?: string | null;
+  video_url?: string | null;
   source_shop_name?: string | null;
   source_clan_name?: string | null;
   trust_band?: string | null;
@@ -60,6 +62,41 @@ function formatWhen(value?: string | null): string {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
   return d.toLocaleString();
+}
+
+function apiOrigin(): string {
+  const raw =
+    (typeof import.meta !== "undefined" &&
+      (import.meta as any)?.env?.VITE_API_BASE_URL) ||
+    "/api";
+  const base = String(raw || "").trim().replace(/\/+$/, "");
+
+  if (/^https?:\/\//i.test(base)) {
+    try {
+      return new URL(base).origin;
+    } catch {
+      return typeof window !== "undefined" ? window.location.origin : "";
+    }
+  }
+
+  return typeof window !== "undefined" ? window.location.origin : "";
+}
+
+function resolveSpotlightAssetUrl(value?: string | null): string {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (
+    raw.startsWith("http://") ||
+    raw.startsWith("https://") ||
+    raw.startsWith("blob:") ||
+    raw.startsWith("data:")
+  ) {
+    return raw;
+  }
+
+  const origin = apiOrigin();
+  if (!origin) return raw;
+  return `${origin}${raw.startsWith("/") ? raw : `/${raw}`}`;
 }
 
 type SpotlightItem =
@@ -237,6 +274,7 @@ export default function CommunityMarketplaceSpotlight() {
         title: "",
         detail: "",
         heroImageSrc: "",
+        heroVideoSrc: "",
         heroAlt: "Marketplace spotlight",
         kindLabel: "Marketplace Spotlight",
         showVisualPriority: false,
@@ -252,9 +290,10 @@ export default function CommunityMarketplaceSpotlight() {
       kind: "broadcast" as const,
       title: activeItem.feed?.source_shop_name || "Community Spotlight",
       detail: activeItem.feed?.message || "No spotlight message.",
-      heroImageSrc: activeItem.feed?.image_url || "",
+      heroImageSrc: resolveSpotlightAssetUrl(activeItem.feed?.image_url || ""),
+      heroVideoSrc: resolveSpotlightAssetUrl(activeItem.feed?.video_url || ""),
       heroAlt: activeItem.feed?.source_shop_name || "Marketplace spotlight",
-      kindLabel: "Community Spotlight",
+      kindLabel: activeItem.feed?.video_url ? "Community Video Spotlight" : "Community Spotlight",
       showVisualPriority: false,
       priceLine: "",
       metaLines: [
@@ -362,30 +401,40 @@ export default function CommunityMarketplaceSpotlight() {
             style={{
               minHeight: 300,
               background:
-                activeItemView.heroImageSrc
+                activeItemView.heroImageSrc || activeItemView.heroVideoSrc
                   ? "#E2E8F0"
                   : "linear-gradient(135deg,#EAF2FF,#F0F7FF)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
               position: "relative",
               overflow: "hidden",
             }}
           >
-            {activeItemView.heroImageSrc ? (
-              <img
-                src={activeItemView.heroImageSrc}
+            {activeItemView.heroImageSrc || activeItemView.heroVideoSrc ? (
+              <SpotlightMediaFrame
+                imageUrl={activeItemView.heroImageSrc}
+                videoUrl={activeItemView.heroVideoSrc}
+                videoPoster={activeItemView.heroImageSrc}
                 alt={activeItemView.heroAlt}
-                style={{
-                  width: "100%",
+                frameStyle={{
+                  minHeight: 300,
                   height: 300,
-                  objectFit: "cover",
-                  display: "block",
+                  borderRadius: 0,
                 }}
+                mediaStyle={{
+                  width: "100%",
+                  height: "100%",
+                }}
+                showVideoControls={false}
+                autoPlayVideo={Boolean(activeItemView.heroVideoSrc)}
+                mutedVideo={Boolean(activeItemView.heroVideoSrc)}
+                loopVideo={Boolean(activeItemView.heroVideoSrc)}
               />
             ) : (
               <div
                 style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: 300,
                   color: "#1D4ED8",
                   fontWeight: 1000,
                   fontSize: 22,

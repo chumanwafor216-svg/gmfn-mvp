@@ -487,6 +487,7 @@ class MarketplaceBroadcastCreateIn(BaseModel):
     shop_id: Optional[int] = Field(default=None, gt=0)
     message: str = Field(min_length=2, max_length=2000)
     image_url: Optional[str] = Field(default=None, max_length=4000)
+    video_url: Optional[str] = Field(default=None, max_length=4000)
     expires_at: Optional[datetime] = None
     priority_mode: Optional[str] = Field(default=SPOTLIGHT_FREE, max_length=20)
     visibility_scope: Optional[str] = Field(default="direct_communities", max_length=32)
@@ -656,6 +657,7 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
         "shop_id": int(item.shop_id) if getattr(item, "shop_id", None) is not None else None,
         "message": item.message,
         "image_url": item.image_url,
+        "video_url": getattr(item, "video_url", None),
         "priority_mode": _safe_str(getattr(item, "priority_mode", None), SPOTLIGHT_FREE),
         "visibility_scope": _safe_str(
             getattr(item, "visibility_scope", None),
@@ -1914,6 +1916,7 @@ def create_marketplace_broadcast(
             shop_id=int(shop.id) if shop is not None else None,
             message=_safe_str(payload.message),
             image_url=_safe_str(payload.image_url) or None,
+            video_url=_safe_str(payload.video_url) or None,
             priority_mode=priority_mode,
             visibility_scope=visibility_scope,
             expires_at=expires_at,
@@ -1948,6 +1951,7 @@ def create_marketplace_broadcast(
                 "shop_id": int(canonical_shop.id) if canonical_shop else None,
                 "message_preview": _safe_str(item.message)[:120],
                 "image_url": item.image_url,
+                "video_url": getattr(item, "video_url", None),
                 "priority_mode": priority_mode,
                 "visibility_scope": visibility_scope,
                 "expires_at": item.expires_at.isoformat() if item.expires_at else None,
@@ -1998,6 +2002,7 @@ def delete_marketplace_broadcast(
             MarketplaceBroadcast.created_at == item.created_at,
             MarketplaceBroadcast.message == item.message,
             MarketplaceBroadcast.image_url == item.image_url,
+            MarketplaceBroadcast.video_url == getattr(item, "video_url", None),
             MarketplaceBroadcast.expires_at == item.expires_at,
             MarketplaceBroadcast.priority_mode == item.priority_mode,
         )
@@ -2026,6 +2031,7 @@ def delete_marketplace_broadcast(
                 "visibility_scope": deleted_snapshot.get("visibility_scope"),
                 "message_preview": _safe_str(deleted_snapshot.get("message"))[:120],
                 "image_url": deleted_snapshot.get("image_url"),
+                "video_url": deleted_snapshot.get("video_url"),
                 "propagated_delete": True,
                 "reason": "marketplace_broadcast_deleted",
             },

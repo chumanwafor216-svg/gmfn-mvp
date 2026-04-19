@@ -9,7 +9,7 @@ function pageShell(): React.CSSProperties {
   return {
     minHeight: "100vh",
     background:
-      "radial-gradient(circle at top, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0) 24%), radial-gradient(circle at top right, rgba(74,132,214,0.18) 0%, rgba(74,132,214,0) 28%), radial-gradient(circle at bottom left, rgba(39,91,156,0.20) 0%, rgba(39,91,156,0) 30%), linear-gradient(180deg, #07101C 0%, #0B1F33 36%, #173654 70%, #26527C 100%)",
+      "radial-gradient(circle at top, rgba(243,208,106,0.14) 0%, rgba(243,208,106,0) 22%), radial-gradient(circle at top right, rgba(74,132,214,0.20) 0%, rgba(74,132,214,0) 30%), radial-gradient(circle at bottom left, rgba(39,91,156,0.22) 0%, rgba(39,91,156,0) 34%), linear-gradient(180deg, #07101C 0%, #0B1F33 32%, #173654 68%, #26527C 100%)",
     padding: "22px 24px",
     boxSizing: "border-box",
   };
@@ -20,25 +20,25 @@ function frameCard(): React.CSSProperties {
     width: "min(100%, 640px)",
     margin: "0 auto",
     boxSizing: "border-box",
-    borderRadius: 26,
-    border: "1px solid rgba(255,255,255,0.30)",
+    borderRadius: 30,
+    border: "1px solid rgba(255,255,255,0.34)",
     background:
-      "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(230,239,252,0.96) 58%, rgba(212,226,246,0.92) 100%)",
+      "linear-gradient(180deg, rgba(252,253,255,0.99) 0%, rgba(236,244,253,0.97) 56%, rgba(214,228,246,0.93) 100%)",
     boxShadow:
-      "0 22px 56px rgba(5,16,38,0.26), inset 0 1px 0 rgba(255,255,255,0.82)",
-    padding: 16,
+      "0 26px 64px rgba(5,16,38,0.28), inset 0 1px 0 rgba(255,255,255,0.86)",
+    padding: 18,
     overflow: "hidden",
   };
 }
 
 function darkPanel(): React.CSSProperties {
   return {
-    borderRadius: 22,
+    borderRadius: 24,
     background:
       "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)",
-    border: "1px solid rgba(16,37,59,0.16)",
+    border: "1px solid rgba(212,175,55,0.24)",
     boxShadow:
-      "0 18px 34px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
+      "0 20px 38px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.08)",
     padding: 14,
     position: "relative",
     overflow: "hidden",
@@ -179,7 +179,7 @@ export default function InviteComposerPreviewPage() {
               position: "relative",
               zIndex: 1,
               display: "grid",
-              gridTemplateColumns: "56px 1fr",
+              gridTemplateColumns: "56px 1fr 56px",
               alignItems: "center",
               gap: 12,
             }}
@@ -197,17 +197,40 @@ export default function InviteComposerPreviewPage() {
               >
                 GSN
               </div>
-                <div
-                  style={{
-                    marginTop: 6,
-                    color: "#E9F2FF",
-                    fontSize: 16,
-                    fontWeight: 900,
-                  }}
-                >
-                  Invite sender form
-                </div>
+              <div
+                style={{
+                  marginTop: 6,
+                  color: "#E9F2FF",
+                  fontSize: 16,
+                  fontWeight: 900,
+                }}
+              >
+                Invite sender form
+              </div>
             </div>
+            <span
+              style={{
+                justifySelf: "end",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: 36,
+                padding: "0 12px",
+                borderRadius: 999,
+                background:
+                  "linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.07) 100%)",
+                border: "1px solid rgba(255,255,255,0.16)",
+                color: "rgba(255,255,255,0.82)",
+                fontSize: 10.5,
+                fontWeight: 900,
+                letterSpacing: 0.9,
+                textTransform: "uppercase",
+                boxShadow:
+                  "0 10px 22px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.14)",
+              }}
+            >
+              Navigator
+            </span>
           </div>
         </div>
 

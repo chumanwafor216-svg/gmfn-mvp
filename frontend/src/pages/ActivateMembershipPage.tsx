@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { EntryBackLink, EntryGuideLauncher } from "../components/EntryControls";
+import { EntryGuideLauncher } from "../components/EntryControls";
 import {
   activateMembership,
   setAccessToken,
@@ -15,7 +15,7 @@ function pageShell(): React.CSSProperties {
     alignItems: "center",
     justifyContent: "center",
     background:
-      "radial-gradient(circle at top, rgba(47,103,196,0.16) 0%, rgba(16,37,59,0.00) 32%), linear-gradient(180deg, #10243A 0%, #173654 62%, #26527C 100%)",
+      "radial-gradient(circle at top, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0) 24%), radial-gradient(circle at top right, rgba(74,132,214,0.18) 0%, rgba(74,132,214,0) 30%), radial-gradient(circle at bottom left, rgba(39,91,156,0.20) 0%, rgba(39,91,156,0) 32%), linear-gradient(180deg, #07101C 0%, #0B1F33 36%, #173654 70%, #26527C 100%)",
     color: "#FFFFFF",
     fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
     padding: "22px",
@@ -23,31 +23,14 @@ function pageShell(): React.CSSProperties {
   };
 }
 
-function heroCard(): React.CSSProperties {
-  return {
-    width: "100%",
-    maxWidth: 760,
-    borderRadius: 36,
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.06) 100%)",
-    border: "1px solid rgba(255,255,255,0.16)",
-    boxShadow:
-      "0 28px 72px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.10)",
-    padding: 22,
-    backdropFilter: "blur(10px)",
-    position: "relative",
-    overflow: "hidden",
-  };
-}
-
 function whiteCard(): React.CSSProperties {
   return {
     borderRadius: 24,
-    border: "1px solid rgba(255,255,255,0.30)",
+    border: "1px solid rgba(255,255,255,0.34)",
     background:
-      "linear-gradient(180deg, rgba(252,254,255,0.99) 0%, rgba(242,247,252,0.98) 58%, rgba(230,238,248,0.96) 100%)",
+      "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(230,239,252,0.96) 58%, rgba(212,226,246,0.92) 100%)",
     boxShadow:
-      "0 18px 36px rgba(4,14,32,0.18), inset 0 1px 0 rgba(255,255,255,0.86)",
+      "0 22px 56px rgba(5,16,38,0.26), inset 0 1px 0 rgba(255,255,255,0.82)",
     padding: 22,
     overflow: "hidden",
   };
@@ -55,12 +38,12 @@ function whiteCard(): React.CSSProperties {
 
 function innerPanel(): React.CSSProperties {
   return {
-    borderRadius: 20,
-    border: "1px solid rgba(28,76,126,0.16)",
+    borderRadius: 16,
+    border: "1px solid rgba(16,37,59,0.10)",
     background:
-      "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(233,241,251,0.96) 100%)",
+      "linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(245,249,253,0.68) 100%)",
     boxShadow:
-      "0 14px 30px rgba(16,37,59,0.07), inset 0 1px 0 rgba(255,255,255,0.76)",
+      "inset 0 1px 0 rgba(255,255,255,0.82), 0 8px 20px rgba(10,24,49,0.06)",
     padding: 18,
   };
 }
@@ -335,177 +318,43 @@ export default function ActivateMembershipPage() {
     <div style={pageShell()}>
       <div
         style={{
-          ...heroCard(),
+          width: "100%",
+          maxWidth: 760,
           display: "grid",
           gap: 18,
+          position: "relative",
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            pointerEvents: "none",
-            background:
-              "radial-gradient(circle at top, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0) 28%), radial-gradient(circle at bottom, rgba(123,181,255,0.10) 0%, rgba(123,181,255,0) 30%)",
-          }}
-        />
-
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <div
-            style={{
-              width: innerRailWidth,
-              margin: "0 auto",
-              display: "grid",
-              gridTemplateColumns: "56px 1fr auto",
-              alignItems: "center",
-              gap: 12,
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "flex-start" }}>
-              <EntryBackLink to="/welcome" />
-            </div>
-
-            <div style={{ textAlign: "center" }}>
+        <div style={{ display: "grid", gap: 18, width: innerRailWidth, margin: "0 auto" }}>
+            <div style={whiteCard()}>
               <div
                 style={{
-                  fontSize: 14,
-                  color: "#F3D06A",
-                  fontWeight: 900,
-                  letterSpacing: 3.8,
-                  textTransform: "uppercase",
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  marginBottom: guideOpen ? 14 : 0,
                 }}
               >
-                GSN
+                <EntryGuideLauncher
+                  label="About"
+                  text="Activation Guide"
+                  onClick={() => setGuideOpen((current) => !current)}
+                />
               </div>
-            </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <EntryGuideLauncher
-                label="About"
-                text="Activation Guide"
-                onClick={() => setGuideOpen((current) => !current)}
-              />
-            </div>
-          </div>
-
-          <div
-            style={{
-              width: innerRailWidth,
-              margin: "18px auto 0",
-              fontSize: isCompact ? 20 : 24,
-              fontWeight: 1000,
-              color: "#F8FBFF",
-              lineHeight: 1.2,
-              textAlign: "center",
-            }}
-          >
-            Activate membership to continue
-          </div>
-
-          {guideOpen ? (
-            <div
-              style={{
-                marginTop: 16,
-                width: innerRailWidth,
-                marginLeft: "auto",
-                marginRight: "auto",
-                borderRadius: 22,
-                border: "1px solid rgba(255,255,255,0.42)",
-                background:
-                  "linear-gradient(180deg, rgba(251,253,255,0.99) 0%, rgba(235,242,251,0.98) 34%, rgba(220,232,247,0.95) 68%, rgba(206,221,240,0.92) 100%)",
-                boxShadow:
-                  "0 24px 60px rgba(5,16,38,0.28), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -18px 30px rgba(122,147,180,0.08)",
-                padding: 24,
-                color: "#17324D",
-                lineHeight: 1.8,
-                position: "relative",
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  pointerEvents: "none",
-                  background:
-                    "radial-gradient(circle at top, rgba(243,208,106,0.16) 0%, rgba(243,208,106,0) 26%), radial-gradient(circle at bottom right, rgba(52,101,164,0.14) 0%, rgba(52,101,164,0) 30%)",
-                }}
-              />
-              <div style={{ position: "relative", zIndex: 1, display: "grid", gap: 14 }}>
-                <div style={{ display: "grid", gap: 6, justifyItems: "center", textAlign: "center" }}>
-                  <div
-                    style={{
-                      ...labelText(true),
-                      color: "#B88721",
-                      textShadow: "0 1px 0 rgba(255,255,255,0.76)",
-                    }}
-                  >
+              {guideOpen ? (
+                <div style={{ ...innerPanel(), marginBottom: 16 }}>
+                  <div style={{ ...labelText(true), color: "#B88721", marginBottom: 10 }}>
                     Activation guide
                   </div>
-                  <div
-                    style={{
-                      color: "#0B1F33",
-                      fontSize: 30,
-                      fontWeight: 1000,
-                      lineHeight: 1.06,
-                      textShadow:
-                        "0 1px 0 rgba(255,255,255,0.92), 0 10px 24px rgba(10,24,49,0.12)",
-                    }}
-                  >
+                  <div style={{ marginBottom: 8, color: "#10253B", fontWeight: 1000, fontSize: 22 }}>
                     Approved member path
                   </div>
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <button
-                    type="button"
-                    onClick={() => setGuideOpen(false)}
-                    style={secondaryBtn()}
-                  >
-                    Collapse
-                  </button>
-                </div>
-
-                <div style={{ display: "grid", gap: 12 }}>
-                  <div style={innerPanel()}>
-                    <strong style={{ color: "#10253B" }}>1. Use your approved identity.</strong>{" "}
-                    Enter the GMFN ID that was issued after your community approval.
-                  </div>
-                  <div style={innerPanel()}>
-                    <strong style={{ color: "#10253B" }}>2. Create your first password.</strong>{" "}
-                    This is not normal sign-in yet. This page is where your approved member identity creates its first password.
-                  </div>
-                  <div style={innerPanel()}>
-                    <strong style={{ color: "#10253B" }}>3. Enter the workspace properly.</strong>{" "}
-                    After activation succeeds, the system opens your authenticated member route and you can later return through normal sign-in.
+                  <div style={helperText()}>
+                    Use this page only when your identity has already been approved and you are creating your first password for entry into the workspace.
                   </div>
                 </div>
-              </div>
-            </div>
-          ) : null}
-        </div>
+              ) : null}
 
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <div style={{ display: "grid", gap: 18, width: innerRailWidth, margin: "0 auto" }}>
-            {(initialGmfnId || requestId) && (
-              <div style={whiteCard()}>
-                <div style={{ ...labelText(), marginBottom: 12 }}>Recognition</div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {initialGmfnId ? (
-                    <div style={{ ...secondaryBtn(), width: "auto", cursor: "default" }}>
-                      GMFN ID detected
-                    </div>
-                  ) : null}
-                  {requestId ? (
-                    <div style={{ ...secondaryBtn(), width: "auto", cursor: "default" }}>
-                      Request ID: {requestId}
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            )}
-
-            <div style={whiteCard()}>
               {err ? <div style={{ marginBottom: 16, ...noticeStyle("error") }}>{err}</div> : null}
               {msg ? <div style={{ marginBottom: 16, ...noticeStyle("success") }}>{msg}</div> : null}
               {!initialGmfnId && !msg ? (
@@ -521,6 +370,21 @@ export default function ActivateMembershipPage() {
                   <div style={{ marginBottom: 10, color: "#0B1F33", fontWeight: 1000, fontSize: 22 }}>
                     Finish your member activation
                   </div>
+
+                  {(initialGmfnId || requestId) && (
+                    <div style={{ marginBottom: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {initialGmfnId ? (
+                        <div style={{ ...secondaryBtn(), width: "auto", cursor: "default" }}>
+                          GMFN ID detected
+                        </div>
+                      ) : null}
+                      {requestId ? (
+                        <div style={{ ...secondaryBtn(), width: "auto", cursor: "default" }}>
+                          Request ID: {requestId}
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
 
                   <div style={{ marginBottom: 16, ...helperText() }}>
                     Enter only the raw GMFN ID, for example: <strong>GMFN-U-A66CF7C0</strong>
@@ -574,25 +438,6 @@ export default function ActivateMembershipPage() {
                 </div>
               </form>
             </div>
-
-            <div style={whiteCard()}>
-              <div style={{ ...labelText(), marginBottom: 14 }}>What happens next</div>
-              <div style={{ display: "grid", gap: 12 }}>
-                <div style={innerPanel()}>
-                  <strong style={{ color: "#10253B" }}>1. Password binding.</strong>{" "}
-                  Your approved GSN identity becomes linked to your first password.
-                </div>
-                <div style={innerPanel()}>
-                  <strong style={{ color: "#10253B" }}>2. Active access.</strong>{" "}
-                  The system opens your authenticated member route properly after activation.
-                </div>
-                <div style={innerPanel()}>
-                  <strong style={{ color: "#10253B" }}>3. Future sign in.</strong>{" "}
-                  After this first activation step, later access belongs to the normal sign-in route.
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

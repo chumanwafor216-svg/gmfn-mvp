@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
+import { gmfnBrand } from "../styles/gmfnBrand";
 
 function card(): React.CSSProperties {
   return {
@@ -30,7 +31,12 @@ function linkBtn(primary = false): React.CSSProperties {
 }
 
 const THEMES = [
-  { key: "deep_blue", label: "Deep Blue", note: "Institutional default", preview: "#0B63D1" },
+  {
+    key: "deep_blue",
+    label: "GSN Institutional Blue",
+    note: "Default standard for the branded workspace",
+    preview: gmfnBrand.colors.accent,
+  },
   { key: "soft_light", label: "Soft Light", note: "Easier for some eyes", preview: "#CBD5E1" },
   { key: "dark", label: "Dark", note: "Night mode style", preview: "#0F172A" },
   { key: "royal_purple", label: "Royal Purple", note: "Premium visual feel", preview: "#6B46C1" },

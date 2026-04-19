@@ -41,6 +41,92 @@ type InviteState = {
   whatsappShareText?: string | null;
 };
 
+function overlayShell(): React.CSSProperties {
+  return {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(7,16,28,0.64)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 18,
+    zIndex: 50,
+  };
+}
+
+function modalCard(): React.CSSProperties {
+  return {
+    width: "min(100%, 720px)",
+    borderRadius: 26,
+    border: "1px solid rgba(255,255,255,0.28)",
+    background:
+      "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(230,239,252,0.96) 58%, rgba(212,226,246,0.92) 100%)",
+    boxShadow:
+      "0 26px 64px rgba(5,16,38,0.30), inset 0 1px 0 rgba(255,255,255,0.82)",
+    padding: 20,
+    overflow: "hidden",
+  };
+}
+
+function darkPanel(): React.CSSProperties {
+  return {
+    borderRadius: 22,
+    background:
+      "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)",
+    border: "1px solid rgba(16,37,59,0.16)",
+    boxShadow:
+      "0 18px 34px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
+    padding: 18,
+    position: "relative",
+    overflow: "hidden",
+  };
+}
+
+function inputStyle(): React.CSSProperties {
+  return {
+    width: "100%",
+    borderRadius: 14,
+    border: "1px solid rgba(28,76,126,0.16)",
+    padding: "13px 14px",
+    outline: "none",
+    fontSize: 14,
+    color: "#0B1F33",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.98) 100%)",
+    boxSizing: "border-box",
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.86), 0 6px 14px rgba(10,24,49,0.04)",
+  };
+}
+
+function textareaStyle(): React.CSSProperties {
+  return {
+    ...inputStyle(),
+    minHeight: 120,
+    resize: "vertical",
+    fontFamily: "inherit",
+    lineHeight: 1.65,
+  };
+}
+
+function modalChip(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    padding: "6px 10px",
+    borderRadius: 999,
+    background: primary ? "rgba(243,208,106,0.16)" : "rgba(16,37,59,0.06)",
+    color: primary ? "#8A6508" : "#475569",
+    border: primary
+      ? "1px solid rgba(243,208,106,0.28)"
+      : "1px solid rgba(11,31,51,0.08)",
+    fontSize: 12,
+    fontWeight: 900,
+    whiteSpace: "normal",
+  };
+}
+
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
@@ -228,6 +314,7 @@ export default function ClansPage() {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteState, setInviteState] = useState<InviteState | null>(null);
   const [copied, setCopied] = useState("");
+  const [inviteComposerOpen, setInviteComposerOpen] = useState(false);
 
   const [communityNameInput, setCommunityNameInput] = useState("");
   const [communityDescriptionInput, setCommunityDescriptionInput] = useState("");
@@ -311,6 +398,7 @@ export default function ClansPage() {
           communityName(selectedCommunity)
         )
       );
+      setInviteComposerOpen(false);
     } finally {
       setInviteLoading(false);
     }
@@ -859,10 +947,10 @@ export default function ClansPage() {
           <button
             type="button"
             style={btn(true, !selectedCommunityId || inviteLoading)}
-            onClick={handleCreateInvite}
+            onClick={() => setInviteComposerOpen(true)}
             disabled={!selectedCommunityId || inviteLoading}
           >
-            {inviteLoading ? "Creating..." : "Create invite"}
+            {inviteLoading ? "Creating..." : "Open invite form"}
           </button>
         </div>
 
@@ -882,93 +970,50 @@ export default function ClansPage() {
                 fontSize: 16,
               }}
             >
-              Invite details
+              Invite form summary
             </div>
 
             <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
-              <div>
-                <div
-                  style={{
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    fontSize: 14,
-                    marginBottom: 6,
-                  }}
-                >
-                  Sender
-                </div>
-                <div
-                  style={{
-                    borderRadius: 12,
-                    border: "1px solid rgba(11,31,51,0.08)",
-                    background: "#F8FBFF",
-                    padding: "12px 14px",
-                    color: "#0B1F33",
-                    fontWeight: 700,
-                  }}
-                >
-                  {senderName}
-                </div>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                }}
+              >
+                <span style={modalChip(true)}>Sender known</span>
+                <span style={modalChip(false)}>
+                  {selectedCommunity ? communityName(selectedCommunity) : "No community selected"}
+                </span>
+              </div>
+
+              <div
+                style={{
+                  borderRadius: 12,
+                  border: "1px solid rgba(11,31,51,0.08)",
+                  background: "#F8FBFF",
+                  padding: "12px 14px",
+                  color: "#0B1F33",
+                  fontWeight: 700,
+                }}
+              >
+                Sender: {senderName}
+              </div>
+
+              <div style={{ color: "#64748B", lineHeight: 1.7, fontSize: 14 }}>
+                Use the invite form to attach the receiver name and short note
+                before the join package is generated.
               </div>
 
               <div>
-                <div
-                  style={{
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    fontSize: 14,
-                    marginBottom: 6,
-                  }}
+                <button
+                  type="button"
+                  style={btn(true, !selectedCommunityId || inviteLoading)}
+                  onClick={() => setInviteComposerOpen(true)}
+                  disabled={!selectedCommunityId || inviteLoading}
                 >
-                  Intended receiver
-                </div>
-                <input
-                  value={inviteReceiver}
-                  onChange={(e) => setInviteReceiver(e.target.value)}
-                  placeholder="Enter receiver name or leave blank"
-                  style={{
-                    width: "100%",
-                    borderRadius: 12,
-                    border: "1px solid rgba(11,31,51,0.12)",
-                    padding: "12px 14px",
-                    outline: "none",
-                    fontSize: 14,
-                    color: "#0B1F33",
-                    background: "#FFFFFF",
-                    boxSizing: "border-box",
-                  }}
-                />
-              </div>
-
-              <div>
-                <div
-                  style={{
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    fontSize: 14,
-                    marginBottom: 6,
-                  }}
-                >
-                  Editable short message
-                </div>
-                <textarea
-                  value={inviteMessage}
-                  onChange={(e) => setInviteMessage(e.target.value)}
-                  placeholder="Add a short personal message"
-                  rows={4}
-                  style={{
-                    width: "100%",
-                    borderRadius: 12,
-                    border: "1px solid rgba(11,31,51,0.12)",
-                    padding: "12px 14px",
-                    outline: "none",
-                    fontSize: 14,
-                    color: "#0B1F33",
-                    background: "#FFFFFF",
-                    boxSizing: "border-box",
-                    resize: "vertical",
-                  }}
-                />
+                  {inviteLoading ? "Creating..." : "Open invite form"}
+                </button>
               </div>
             </div>
           </div>
@@ -1180,14 +1225,160 @@ export default function ClansPage() {
                     fontSize: 14,
                   }}
                 >
-                  Create an invite when you are ready. The package will include
-                  sender, receiver, message, guide link, and share-ready copy.
+                  Open the invite form when you are ready. The package will
+                  include sender, receiver, message, guide link, and share-ready
+                  copy.
                 </div>
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {inviteComposerOpen ? (
+        <div style={overlayShell()}>
+          <div style={modalCard()}>
+            <div style={{ ...darkPanel(), marginBottom: 16 }}>
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  pointerEvents: "none",
+                  background:
+                    "radial-gradient(circle at top, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0) 28%), radial-gradient(circle at bottom, rgba(123,181,255,0.10) 0%, rgba(123,181,255,0) 30%)",
+                }}
+              />
+              <div style={{ position: "relative", zIndex: 1 }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#F3D06A",
+                    fontWeight: 1000,
+                    letterSpacing: 3.2,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  GSN
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#F8FBFF",
+                    fontSize: 24,
+                    fontWeight: 1000,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  Invite sender form
+                </div>
+                <div
+                  style={{
+                    marginTop: 10,
+                    color: "#D7E3F1",
+                    fontSize: 14,
+                    lineHeight: 1.7,
+                    maxWidth: 560,
+                  }}
+                >
+                  Fill the receiver name and short note here. GSN will use this
+                  together with the selected community to prepare the outgoing join
+                  invitation.
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gap: 14 }}>
+              <div style={softCard("#FFFFFF")}>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    flexWrap: "wrap",
+                    marginBottom: 14,
+                  }}
+                >
+                  <span style={modalChip(true)}>Sender known</span>
+                  <span style={modalChip(false)}>
+                    {selectedCommunity ? communityName(selectedCommunity) : "No community selected"}
+                  </span>
+                </div>
+                <div style={sectionLabel()}>Sender</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 16,
+                  }}
+                >
+                  {senderName}
+                </div>
+              </div>
+
+              <div style={softCard("#FFFFFF")}>
+                <div style={sectionLabel()}>Selected community</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 16,
+                  }}
+                >
+                  {selectedCommunity ? communityName(selectedCommunity) : "No community selected"}
+                </div>
+              </div>
+
+              <div style={softCard("#FFFFFF")}>
+                <div style={sectionLabel()}>Receiver name</div>
+                <input
+                  value={inviteReceiver}
+                  onChange={(e) => setInviteReceiver(e.target.value)}
+                  placeholder="Enter the name of the person you want to invite"
+                  style={{ ...inputStyle(), marginTop: 8 }}
+                />
+              </div>
+
+              <div style={softCard("#FFFFFF")}>
+                <div style={sectionLabel()}>Short invitation note</div>
+                <textarea
+                  value={inviteMessage}
+                  onChange={(e) => setInviteMessage(e.target.value)}
+                  placeholder="Add a short personal note"
+                  rows={4}
+                  style={{ ...textareaStyle(), marginTop: 8 }}
+                />
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  flexWrap: "wrap",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setInviteComposerOpen(false)}
+                  style={btn(false)}
+                  disabled={inviteLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleCreateInvite()}
+                  style={btn(true, inviteLoading || !selectedCommunityId)}
+                  disabled={inviteLoading || !selectedCommunityId}
+                >
+                  {inviteLoading ? "Creating..." : "Create invite package"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div style={pageCard("#FFFFFF")}>
         <div

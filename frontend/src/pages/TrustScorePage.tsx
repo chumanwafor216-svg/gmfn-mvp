@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
@@ -7,6 +8,7 @@ import {
   buildGuidanceSnapshot,
   type GuidanceSnapshot,
 } from "../lib/guidance";
+import { buildDashboardTrustJourneyCopy } from "../lib/dashboardUserGuidance";
 
 type NoticeTone = "success" | "error";
 
@@ -16,6 +18,45 @@ type CollapseState = {
   breakdown: boolean;
   evidence: boolean;
   routes: boolean;
+};
+
+type TrustReadingState = {
+  classText: string;
+  scoreText: string;
+  tone: "green" | "yellow" | "red" | "neutral";
+  statusText: string;
+  whyText: string;
+};
+
+type FocusCommitmentSummary = {
+  onTrackCount: number;
+  watchCount: number;
+  behindCount: number;
+  completedCount: number;
+  nextReviewLabel: string;
+  disciplineLine: string;
+};
+
+type TrustJourneyModel = {
+  tone: "neutral" | "green" | "yellow" | "red";
+  posture: "unverified" | "repair" | "drifting" | "building" | "steady";
+  postureTitle: string;
+  postureDetail: string;
+  primaryRoute: {
+    key: string;
+    label: string;
+    detail: string;
+    to: string;
+  };
+  secondaryRoute: {
+    key: string;
+    label: string;
+    detail: string;
+    to: string;
+  };
+  helps: string[];
+  weakens: string[];
+  commitmentLine: string;
 };
 
 type ExplainabilityEvent = {
@@ -153,6 +194,10 @@ type ClanListItem = {
 };
 
 const TRUST_PASSPORT_UI_STORAGE_KEY = "gmfn.trustPassport.sections.v2";
+const DASHBOARD_FOCUS_COMMITMENTS_STORAGE_KEY =
+  "gmfn.dashboard.focus-commitments.v1";
+const DASHBOARD_FOCUS_EVENTS_STORAGE_KEY =
+  "gmfn.dashboard.focus-events.v1";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -169,6 +214,25 @@ function firstTruthy(...values: any[]): string {
 function positiveNumber(value: any): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function firstNonEmpty(...values: unknown[]): string {
+  for (const value of values) {
+    const text = safeStr(value);
+    if (text) return text;
+  }
+  return "";
+}
+
+function firstNumberLike(...values: unknown[]): number | null {
+  for (const value of values) {
+    if (value === null || value === undefined || String(value).trim() === "") {
+      continue;
+    }
+    const num = Number(value);
+    if (!Number.isNaN(num)) return num;
+  }
+  return null;
 }
 
 function safeDateTime(x: any): string {
@@ -200,6 +264,14 @@ function rowsOf<T = any>(input: any): T[] {
   if (Array.isArray(input?.results)) return input.results as T[];
   if (Array.isArray(input?.rows)) return input.rows as T[];
   return [];
+}
+
+function normalizeDate(value: any): Date | null {
+  const raw = safeStr(value);
+  if (!raw) return null;
+  const dt = new Date(raw);
+  if (!Number.isFinite(dt.getTime())) return null;
+  return dt;
 }
 
 function apiBase(): string {
@@ -744,7 +816,688 @@ function absoluteUrl(pathOrUrl: string): string {
   return raw;
 }
 
+function daysUntil(value: any): number | null {
+  const dt = normalizeDate(value);
+  if (!dt) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(dt);
+  target.setHours(0, 0, 0, 0);
+  return Math.floor((target.getTime() - today.getTime()) / 86400000);
+}
+
+function formatDateLabel(value: any): string {
+  const dt = normalizeDate(value);
+  if (!dt) return "soon";
+  return dt.toLocaleDateString(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function toneStyles(tone: "green" | "yellow" | "red" | "neutral") {
+  if (tone === "green") {
+    return {
+      bg: "#F3FBF5",
+      border: "1px solid rgba(34,197,94,0.16)",
+      text: "#166534",
+    };
+  }
+
+  if (tone === "yellow") {
+    return {
+      bg: "#FFFBEF",
+      border: "1px solid rgba(245,158,11,0.16)",
+      text: "#92400E",
+    };
+  }
+
+  if (tone === "red") {
+    return {
+      bg: "#FFF5F5",
+      border: "1px solid rgba(239,68,68,0.16)",
+      text: "#991B1B",
+    };
+  }
+
+  return {
+    bg: "#F8FAFC",
+    border: "1px solid rgba(148,163,184,0.16)",
+    text: "#334155",
+  };
+}
+
+function getCciState(me: any, trustSlip: any): TrustReadingState {
+  const rawScore =
+    me?.cci_score ??
+    me?.cross_client_integrity_score ??
+    me?.cross_clan_integrity_score ??
+    me?.cross_community_integrity_score ??
+    trustSlip?.cci_score ??
+    null;
+
+  const rawClass =
+    me?.cci_class ??
+    me?.cross_client_integrity_class ??
+    me?.cross_clan_integrity_class ??
+    me?.cross_community_integrity_class ??
+    trustSlip?.cci_band ??
+    "";
+
+  const rawWhy =
+    me?.cci_reason ??
+    me?.cross_client_integrity_reason ??
+    me?.cross_clan_integrity_reason ??
+    me?.cross_community_integrity_reason ??
+    "";
+
+  const scoreNum =
+    rawScore === null || rawScore === undefined || String(rawScore).trim() === ""
+      ? null
+      : Number(rawScore);
+
+  const classText = String(rawClass || "").trim().toUpperCase();
+
+  if (classText) {
+    if (classText === "A" || classText === "A+") {
+      return {
+        classText,
+        scoreText:
+          scoreNum === null || Number.isNaN(scoreNum)
+            ? "—"
+            : String(Math.round(scoreNum)),
+        tone: "green",
+        statusText: "Healthy across visible communities",
+        whyText: String(rawWhy || "Your trust position is steady right now."),
+      };
+    }
+
+    if (classText === "B") {
+      return {
+        classText,
+        scoreText:
+          scoreNum === null || Number.isNaN(scoreNum)
+            ? "—"
+            : String(Math.round(scoreNum)),
+        tone: "green",
+        statusText: "Stable and growing",
+        whyText: String(
+          rawWhy || "Keep consistent positive actions across communities."
+        ),
+      };
+    }
+
+    if (classText === "C") {
+      return {
+        classText,
+        scoreText:
+          scoreNum === null || Number.isNaN(scoreNum)
+            ? "—"
+            : String(Math.round(scoreNum)),
+        tone: "yellow",
+        statusText: "Needs attention",
+        whyText: String(
+          rawWhy || "A few better actions can improve your standing."
+        ),
+      };
+    }
+
+    return {
+      classText,
+      scoreText:
+        scoreNum === null || Number.isNaN(scoreNum)
+          ? "—"
+          : String(Math.round(scoreNum)),
+      tone: "red",
+      statusText: "At risk",
+      whyText: String(rawWhy || "Your trust position needs action and repair."),
+    };
+  }
+
+  if (scoreNum !== null && !Number.isNaN(scoreNum)) {
+    if (scoreNum >= 75) {
+      return {
+        classText: "A",
+        scoreText: String(Math.round(scoreNum)),
+        tone: "green",
+        statusText: "Healthy across visible communities",
+        whyText: String(rawWhy || "Your trust position is looking strong."),
+      };
+    }
+
+    if (scoreNum >= 55) {
+      return {
+        classText: "B",
+        scoreText: String(Math.round(scoreNum)),
+        tone: "green",
+        statusText: "Stable and growing",
+        whyText: String(
+          rawWhy || "Keep consistent actions to strengthen your standing."
+        ),
+      };
+    }
+
+    if (scoreNum >= 35) {
+      return {
+        classText: "C",
+        scoreText: String(Math.round(scoreNum)),
+        tone: "yellow",
+        statusText: "Needs attention",
+        whyText: String(
+          rawWhy || "Some recent actions may have reduced your trust strength."
+        ),
+      };
+    }
+
+    return {
+      classText: "D",
+      scoreText: String(Math.round(scoreNum)),
+      tone: "red",
+      statusText: "At risk",
+      whyText: String(rawWhy || "Your trust position needs urgent improvement."),
+    };
+  }
+
+  return {
+    classText: "Pending",
+    scoreText: "—",
+    tone: "neutral",
+    statusText: "CCI is being prepared",
+    whyText: "A fuller cross-community reading will appear when available.",
+  };
+}
+
+function getOpenTrustState(
+  me: any,
+  trustSlip: any,
+  hasSelectedCommunity: boolean
+): TrustReadingState {
+  const rawClass = firstNonEmpty(
+    me?.open_trust_class,
+    me?.open_trust_band,
+    me?.current_community_trust_class,
+    me?.current_community_trust_band,
+    me?.community_trust_class,
+    me?.community_trust_band,
+    me?.selected_clan_trust_class,
+    me?.selected_clan_trust_band,
+    trustSlip?.open_trust_class,
+    trustSlip?.open_trust_band,
+    trustSlip?.community_trust_class,
+    trustSlip?.community_trust_band,
+    me?.trust_class,
+    me?.trust_band,
+    trustSlip?.trust_class,
+    trustSlip?.trust_band
+  ).toUpperCase();
+
+  const rawScore = firstNumberLike(
+    me?.open_trust_score,
+    me?.current_community_trust_score,
+    me?.community_trust_score,
+    me?.selected_clan_trust_score,
+    trustSlip?.open_trust_score,
+    trustSlip?.community_trust_score,
+    me?.trust_score,
+    trustSlip?.trust_score
+  );
+
+  const rawWhy = firstNonEmpty(
+    me?.open_trust_reason,
+    me?.current_community_trust_reason,
+    me?.community_trust_reason,
+    me?.selected_clan_trust_reason,
+    trustSlip?.open_trust_reason,
+    trustSlip?.community_trust_reason,
+    me?.trust_reason,
+    trustSlip?.trust_reason
+  );
+
+  if (rawClass) {
+    if (rawClass === "A" || rawClass === "A+") {
+      return {
+        classText: rawClass,
+        scoreText:
+          rawScore === null || Number.isNaN(rawScore)
+            ? "—"
+            : String(Math.round(rawScore)),
+        tone: "green",
+        statusText: "Strong in your current community",
+        whyText: rawWhy || "Your present community reading is strong.",
+      };
+    }
+
+    if (rawClass === "B") {
+      return {
+        classText: rawClass,
+        scoreText:
+          rawScore === null || Number.isNaN(rawScore)
+            ? "—"
+            : String(Math.round(rawScore)),
+        tone: "green",
+        statusText: "Stable in your current community",
+        whyText:
+          rawWhy || "Your current community reading looks steady right now.",
+      };
+    }
+
+    if (rawClass === "C") {
+      return {
+        classText: rawClass,
+        scoreText:
+          rawScore === null || Number.isNaN(rawScore)
+            ? "—"
+            : String(Math.round(rawScore)),
+        tone: "yellow",
+        statusText: "Needs attention in your current community",
+        whyText:
+          rawWhy ||
+          "Your current community reading suggests some areas need attention.",
+      };
+    }
+
+    return {
+      classText: rawClass,
+      scoreText:
+        rawScore === null || Number.isNaN(rawScore)
+          ? "—"
+          : String(Math.round(rawScore)),
+      tone: "red",
+      statusText: "At risk in your current community",
+      whyText:
+        rawWhy ||
+        "Your current community reading shows pressure that needs attention.",
+    };
+  }
+
+  if (rawScore !== null && !Number.isNaN(rawScore)) {
+    if (rawScore >= 75) {
+      return {
+        classText: "A",
+        scoreText: String(Math.round(rawScore)),
+        tone: "green",
+        statusText: "Strong in your current community",
+        whyText: rawWhy || "Your current community reading is strong.",
+      };
+    }
+
+    if (rawScore >= 55) {
+      return {
+        classText: "B",
+        scoreText: String(Math.round(rawScore)),
+        tone: "green",
+        statusText: "Stable in your current community",
+        whyText:
+          rawWhy || "Your current community reading looks steady right now.",
+      };
+    }
+
+    if (rawScore >= 35) {
+      return {
+        classText: "C",
+        scoreText: String(Math.round(rawScore)),
+        tone: "yellow",
+        statusText: "Needs attention in your current community",
+        whyText:
+          rawWhy ||
+          "Your current community reading suggests some areas need attention.",
+      };
+    }
+
+    return {
+      classText: "D",
+      scoreText: String(Math.round(rawScore)),
+      tone: "red",
+      statusText: "At risk in your current community",
+      whyText:
+        rawWhy ||
+        "Your current community reading shows pressure that needs attention.",
+    };
+  }
+
+  if (!hasSelectedCommunity) {
+    return {
+      classText: "Pending",
+      scoreText: "—",
+      tone: "neutral",
+      statusText: "Select a community to view Open Trust",
+      whyText:
+        "Open Trust belongs to your immediate community reading, not to your cross-community integrity reading.",
+    };
+  }
+
+  return {
+    classText: "Pending",
+    scoreText: "—",
+    tone: "neutral",
+    statusText: "Open Trust is being prepared",
+    whyText:
+      "Open Trust reflects your standing in the community you are using now and will appear here when available.",
+  };
+}
+
+function getStoredFocusCommitmentStatus(item: any) {
+  if (item?.completedAt) return "completed";
+
+  const target = Number(item?.targetValue || 0);
+  const current = Number(item?.currentValue || 0);
+  const dueIn = daysUntil(item?.dueDate);
+  const reviewIn = daysUntil(item?.nextCheckInDate);
+
+  if (target > 0 && current >= target) return "completed";
+  if (dueIn !== null && dueIn < 0) return "behind";
+  if (reviewIn !== null && reviewIn < 0) return "behind";
+  if ((dueIn !== null && dueIn <= 7) || (reviewIn !== null && reviewIn <= 3)) {
+    return "watch";
+  }
+
+  return "onTrack";
+}
+
+function summarizeStoredFocusCommitments(): FocusCommitmentSummary {
+  const commitments = readLocalJSON<any[]>(
+    DASHBOARD_FOCUS_COMMITMENTS_STORAGE_KEY,
+    []
+  ).filter((item) => item && typeof item === "object");
+
+  const events = readLocalJSON<any[]>(DASHBOARD_FOCUS_EVENTS_STORAGE_KEY, []).filter(
+    (item) => item && typeof item === "object"
+  );
+
+  const active = commitments
+    .filter((item) => !item.archived && !item.completedAt)
+    .sort((a, b) => {
+      const aDays = daysUntil(a?.nextCheckInDate) ?? daysUntil(a?.dueDate) ?? 999999;
+      const bDays = daysUntil(b?.nextCheckInDate) ?? daysUntil(b?.dueDate) ?? 999999;
+      return aDays - bDays;
+    })
+    .slice(0, 2);
+
+  let onTrackCount = 0;
+  let watchCount = 0;
+  let behindCount = 0;
+  let completedCount = 0;
+
+  for (const item of commitments.filter((row) => !row.archived)) {
+    const status = getStoredFocusCommitmentStatus(item);
+    if (status === "completed") completedCount += 1;
+    if (status === "onTrack") onTrackCount += 1;
+    if (status === "watch") watchCount += 1;
+    if (status === "behind") behindCount += 1;
+  }
+
+  const recentEvents = [...events]
+    .sort((a, b) => safeStr(b?.createdAt).localeCompare(safeStr(a?.createdAt)))
+    .slice(0, 8);
+
+  const checkins = recentEvents.filter((row) => row?.kind === "checkin").length;
+  const milestones = recentEvents.filter((row) => row?.kind === "milestone").length;
+  const completions = recentEvents.filter((row) => row?.kind === "complete").length;
+  const replans = recentEvents.filter((row) => row?.kind === "replan").length;
+  const misses = recentEvents.filter(
+    (row) => row?.kind === "missed-reported"
+  ).length;
+
+  const nextReview = active[0];
+  const nextReviewLabel = nextReview
+    ? `${safeStr(nextReview?.title || "Next target")} review ${
+        daysUntil(nextReview?.nextCheckInDate) === 0
+          ? "today"
+          : daysUntil(nextReview?.nextCheckInDate) === 1
+          ? "tomorrow"
+          : `on ${formatDateLabel(nextReview?.nextCheckInDate)}`
+      }`
+    : "";
+
+  const disciplineLine =
+    completions > 0
+      ? `${completions} recent completion${
+          completions === 1 ? "" : "s"
+        } visible`
+      : misses > 0 && checkins === 0 && milestones === 0
+      ? "Discipline is under pressure and needs visible follow-through"
+      : checkins > 0 || milestones > 0
+      ? `${checkins + milestones} recent execution update${
+          checkins + milestones === 1 ? "" : "s"
+        } kept${
+          replans > 0
+            ? `, ${replans} honest replan${replans === 1 ? "" : "s"}`
+            : ""
+        }`
+      : "No recent execution signal is visible yet";
+
+  return {
+    onTrackCount,
+    watchCount,
+    behindCount,
+    completedCount,
+    nextReviewLabel,
+    disciplineLine,
+  };
+}
+
+function countGuidanceNoticesMatching(
+  guidance: GuidanceSnapshot | null,
+  tokens: string[]
+): number {
+  if (!guidance?.actionInboxSummary) return 0;
+
+  const all = [
+    ...(guidance.actionInboxSummary.actNow || []),
+    ...(guidance.actionInboxSummary.dueSoon || []),
+    ...(guidance.actionInboxSummary.watchAndWait || []),
+    ...(guidance.actionInboxSummary.generalUpdates || []),
+  ];
+
+  return all.filter((item) => {
+    const joined = `${safeStr(item?.title)} ${safeStr(item?.detail)} ${safeStr(
+      item?.ctaTo
+    )}`.toLowerCase();
+    return tokens.some((token) => joined.includes(token));
+  }).length;
+}
+
+function buildTrustJourneyModel(params: {
+  openTrust: TrustReadingState;
+  cci: TrustReadingState;
+  trustSlipCode: string;
+  trustExplainer: any;
+  focusSummary: FocusCommitmentSummary;
+}): TrustJourneyModel {
+  const helps = [...(params.trustExplainer?.helps || [])]
+    .slice(0, 2)
+    .map((item: string) => safeStr(item))
+    .filter(Boolean);
+
+  const weakens = [...(params.trustExplainer?.weakens || [])]
+    .slice(0, 2)
+    .map((item: string) => safeStr(item))
+    .filter(Boolean);
+
+  if (!safeStr(params.trustSlipCode)) {
+    return {
+      tone: "neutral",
+      posture: "unverified",
+      postureTitle: "Finish your trust record first",
+      postureDetail:
+        "Your verification is still not complete. Finish it before you expect stronger trust.",
+      primaryRoute: {
+        key: "trust-slip",
+        label: "Open TrustSlip",
+        detail: "Finish the missing verification step.",
+        to: "/app/trust-slip",
+      },
+      secondaryRoute: {
+        key: "trust",
+        label: "Open Trust Passport",
+        detail: "See the trust path in a simpler view.",
+        to: "/app/trust",
+      },
+      helps,
+      weakens,
+      commitmentLine: params.focusSummary.disciplineLine,
+    };
+  }
+
+  if (params.openTrust.tone === "red" || params.cci.tone === "red") {
+    return {
+      tone: "red",
+      posture: "repair",
+      postureTitle: "Fix this trust issue now",
+      postureDetail:
+        "Something is hurting trust right now. Fix it before you grow, ask for support, or open up to more people.",
+      primaryRoute:
+        params.openTrust.tone === "red"
+          ? {
+              key: "trust",
+              label: "Open Trust",
+              detail: "See what is hurting trust in your community.",
+              to: "/app/trust",
+            }
+          : {
+              key: "cci",
+              label: "Open CCI",
+              detail: "See what is hurting trust outside your community.",
+              to: "/app/identity",
+            },
+      secondaryRoute: {
+        key: "notifications",
+        label: "Open Notifications",
+        detail: "Check the next item waiting for your action.",
+        to: "/app/notifications",
+      },
+      helps,
+      weakens: [
+        ...weakens,
+        params.focusSummary.behindCount > 0
+          ? `${params.focusSummary.behindCount} focus commitment${
+              params.focusSummary.behindCount === 1 ? "" : "s"
+            } behind`
+          : "",
+      ].filter(Boolean),
+      commitmentLine: params.focusSummary.disciplineLine,
+    };
+  }
+
+  if (
+    params.openTrust.tone === "yellow" ||
+    params.cci.tone === "yellow" ||
+    params.focusSummary.behindCount > 0
+  ) {
+    return {
+      tone: "yellow",
+      posture: "drifting",
+      postureTitle: "Trust is starting to slip",
+      postureDetail:
+        "A warning sign is visible now. Correct it early before it becomes a larger trust problem.",
+      primaryRoute:
+        params.focusSummary.behindCount > 0
+          ? {
+              key: "focus",
+              label: "Open Focus Commitments",
+              detail: "Correct the commitment that has slipped behind.",
+              to: "/app/dashboard#focus-commitments",
+            }
+          : params.openTrust.tone === "yellow"
+          ? {
+              key: "trust",
+              label: "Open Trust",
+              detail: "Review the community trust warning and correct it early.",
+              to: "/app/trust",
+            }
+          : {
+              key: "cci",
+              label: "Open CCI",
+              detail: "Review the cross-community warning and correct it early.",
+              to: "/app/identity",
+            },
+      secondaryRoute: {
+        key: "notifications",
+        label: "Open Notifications",
+        detail: "Check the next item that still needs your answer.",
+        to: "/app/notifications",
+      },
+      helps,
+      weakens: [
+        ...weakens,
+        params.focusSummary.behindCount > 0
+          ? `${params.focusSummary.behindCount} focus commitment${
+              params.focusSummary.behindCount === 1 ? "" : "s"
+            } behind`
+          : "",
+      ].filter(Boolean),
+      commitmentLine: params.focusSummary.disciplineLine,
+    };
+  }
+
+  if (
+    params.focusSummary.onTrackCount > 0 ||
+    params.focusSummary.completedCount > 0
+  ) {
+    return {
+      tone: "green",
+      posture: "building",
+      postureTitle: "Trust is working well",
+      postureDetail:
+        "Your visible follow-through is helping trust stay steadier right now.",
+      primaryRoute: {
+        key: "trust",
+        label: "Open Trust Passport",
+        detail: "Review the full trust path and keep it steady.",
+        to: "/app/trust",
+      },
+      secondaryRoute: {
+        key: "focus",
+        label: "Open Focus Commitments",
+        detail: "Keep the next target visible and on track.",
+        to: "/app/dashboard#focus-commitments",
+      },
+      helps: [
+        ...helps,
+        params.focusSummary.onTrackCount > 0
+          ? `${params.focusSummary.onTrackCount} focus commitment${
+              params.focusSummary.onTrackCount === 1 ? "" : "s"
+            } on track`
+          : "",
+        params.focusSummary.completedCount > 0
+          ? `${params.focusSummary.completedCount} commitment${
+              params.focusSummary.completedCount === 1 ? "" : "s"
+            } already completed`
+          : "",
+      ].filter(Boolean),
+      weakens,
+      commitmentLine: params.focusSummary.disciplineLine,
+    };
+  }
+
+  return {
+    tone: "green",
+    posture: "steady",
+    postureTitle: "Trust is steady",
+    postureDetail:
+      "No major trust problem is showing right now. Keep your actions visible and consistent.",
+    primaryRoute: {
+      key: "trust",
+      label: "Open Trust Passport",
+      detail: "Review the full trust path when you need it.",
+      to: "/app/trust",
+    },
+    secondaryRoute: {
+      key: "notifications",
+      label: "Open Notifications",
+      detail: "Answer new items early so trust stays clean.",
+      to: "/app/notifications",
+    },
+    helps,
+    weakens,
+    commitmentLine: params.focusSummary.disciplineLine,
+  };
+}
+
 export default function TrustScorePage() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
@@ -760,6 +1513,7 @@ export default function TrustScorePage() {
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [trustJourneyExpanded, setTrustJourneyExpanded] = useState(false);
   const [notice, setNotice] = useState<{
     tone: NoticeTone;
     text: string;
@@ -803,6 +1557,20 @@ export default function TrustScorePage() {
 
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  useEffect(() => {
+    if (loading || location.hash !== "#trust-journey") return;
+
+    setTrustJourneyExpanded(true);
+
+    const timer = window.setTimeout(() => {
+      const target = document.getElementById("trust-journey");
+      if (!target) return;
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+
+    return () => window.clearTimeout(timer);
+  }, [loading, location.hash]);
 
   async function loadAll() {
     const clanHeaders: Record<string, string> = {};
@@ -1111,6 +1879,135 @@ export default function TrustScorePage() {
   const riskFlags = Array.isArray(trustSlipSummary?.risk_flags)
     ? trustSlipSummary!.risk_flags!
     : [];
+  const hasSelectedCommunity = useMemo(
+    () => positiveNumber(currentClan?.id || currentClan?.clan_id || selectedClanId) > 0,
+    [currentClan, selectedClanId]
+  );
+  const openTrust = useMemo(
+    () => getOpenTrustState(me, trustSlipSummary, hasSelectedCommunity),
+    [me, trustSlipSummary, hasSelectedCommunity]
+  );
+  const cci = useMemo(() => getCciState(me, trustSlipSummary), [me, trustSlipSummary]);
+  const focusSummary = useMemo(() => summarizeStoredFocusCommitments(), []);
+  const trustExplainer = guidance?.trustChangeExplainer || null;
+  const trustSlipCode = useMemo(
+    () =>
+      firstTruthy(
+        trustSlipSummary?.code,
+        trustSlipSummary?.verification_code,
+        trustSlipSummary?.token
+      ),
+    [trustSlipSummary]
+  );
+  const pendingJoinRequestCount = useMemo(
+    () =>
+      countGuidanceNoticesMatching(guidance, [
+        "join request",
+        "join approval",
+        "invite link",
+        "pending approval",
+        "membership request",
+      ]),
+    [guidance]
+  );
+  const urgentDemandCount = useMemo(
+    () =>
+      countGuidanceNoticesMatching(guidance, [
+        "demand box",
+        "open demand",
+        "market demand",
+        "buyer need",
+        "request for goods",
+        "request for item",
+      ]),
+    [guidance]
+  );
+  const trustJourneyModel = useMemo(
+    () =>
+      buildTrustJourneyModel({
+        openTrust,
+        cci,
+        trustSlipCode,
+        trustExplainer,
+        focusSummary,
+      }),
+    [openTrust, cci, trustSlipCode, trustExplainer, focusSummary]
+  );
+  const trustJourneyTone = useMemo(
+    () => toneStyles(trustJourneyModel.tone),
+    [trustJourneyModel.tone]
+  );
+  const trustJourneyCopy = useMemo(
+    () =>
+      buildDashboardTrustJourneyCopy({
+        openTrust,
+        cci,
+        trustSlipCode,
+        trustExplainer,
+        pendingRequestsCount: pendingJoinRequestCount,
+        unreadCount: guidance?.actionInboxSummary?.unreadCount || 0,
+        actNowCount: guidance?.actionInboxSummary?.actNow?.length || 0,
+        urgentDemandCount,
+        focusBehindCount: focusSummary.behindCount,
+        focusWatchCount: focusSummary.watchCount,
+        focusOnTrackCount: focusSummary.onTrackCount,
+        focusCompletedCount: focusSummary.completedCount,
+      }),
+    [
+      openTrust,
+      cci,
+      trustSlipCode,
+      trustExplainer,
+      pendingJoinRequestCount,
+      guidance,
+      urgentDemandCount,
+      focusSummary,
+    ]
+  );
+  const trustJourneyCountLine = [
+    guidance?.trustJourneySummary?.builtCount
+      ? `Built ${guidance.trustJourneySummary.builtCount}`
+      : "",
+    guidance?.trustJourneySummary?.protectedCount
+      ? `Protected ${guidance.trustJourneySummary.protectedCount}`
+      : "",
+    guidance?.trustJourneySummary?.weakenedCount
+      ? `Weakened ${guidance.trustJourneySummary.weakenedCount}`
+      : "",
+    guidance?.trustJourneySummary?.repairCount
+      ? `Repair ${guidance.trustJourneySummary.repairCount}`
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" | ");
+  const trustJourneyFocusLabel =
+    focusSummary.behindCount > 0
+      ? `${focusSummary.behindCount} behind`
+      : focusSummary.watchCount > 0
+      ? `${focusSummary.watchCount} watch`
+      : focusSummary.onTrackCount > 0
+      ? `${focusSummary.onTrackCount} on track`
+      : focusSummary.completedCount > 0
+      ? `${focusSummary.completedCount} done`
+      : "No target";
+  const trustJourneyPrimaryLabel =
+    safeStr(trustJourneyModel.primaryRoute.to) === "/app/trust"
+      ? "Review Trust Passport"
+      : trustJourneyModel.primaryRoute.label;
+  const trustJourneyPrimaryDetail =
+    safeStr(trustJourneyModel.primaryRoute.to) === "/app/trust"
+      ? "Use this Trust Passport reading to see what is helping, what needs care, and what to repair next."
+      : trustJourneyModel.primaryRoute.detail;
+
+  function openTrustJourneyRoute(route: { to: string }) {
+    if (safeStr(route.to) === "/app/trust") {
+      setCollapsed((prev) => ({ ...prev, overview: false }));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    navigate(route.to);
+  }
 
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
@@ -1465,6 +2362,466 @@ export default function TrustScorePage() {
               )}
             </div>
           </div>
+        </div>
+      </section>
+
+      <section
+        id="trust-journey"
+        style={{
+          ...pageCard("#FFFFFF"),
+          display: "grid",
+          gap: 14,
+        }}
+      >
+        <div
+          style={{
+            position: "relative",
+            ...innerCard(
+              trustJourneyModel.tone === "red"
+                ? "linear-gradient(180deg, #FFF5F5 0%, #FFFFFF 100%)"
+                : trustJourneyModel.tone === "yellow"
+                ? "linear-gradient(180deg, #FFFBEF 0%, #FFFFFF 100%)"
+                : "linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"
+            ),
+            border: trustJourneyTone.border,
+            boxShadow:
+              trustJourneyModel.tone === "red"
+                ? "0 16px 34px rgba(239,68,68,0.07)"
+                : trustJourneyModel.tone === "yellow"
+                ? "0 16px 34px rgba(245,158,11,0.07)"
+                : "0 16px 34px rgba(11,99,209,0.06)",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 4,
+              background:
+                trustJourneyModel.tone === "red"
+                  ? "linear-gradient(90deg, #991B1B 0%, #DC2626 55%, #FCA5A5 100%)"
+                  : trustJourneyModel.tone === "yellow"
+                  ? "linear-gradient(90deg, #92400E 0%, #F59E0B 55%, #FCD34D 100%)"
+                  : "linear-gradient(90deg, #166534 0%, #0B63D1 55%, #93C5FD 100%)",
+            }}
+          />
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              alignItems: "flex-start",
+              flexWrap: "wrap",
+            }}
+          >
+            <div style={{ flex: "1 1 420px", minWidth: 0 }}>
+              <div style={sectionLabel()}>Trust Journey</div>
+              <div
+                style={{
+                  marginTop: 6,
+                  color: trustJourneyTone.text,
+                  fontSize: isCompact ? 18 : 20,
+                  fontWeight: 900,
+                  lineHeight: 1.25,
+                }}
+              >
+                {trustJourneyModel.postureTitle}
+              </div>
+              <div
+                style={{
+                  marginTop: 6,
+                  ...helperText(),
+                  maxWidth: 760,
+                  fontSize: 13,
+                  lineHeight: 1.55,
+                }}
+              >
+                {trustJourneyModel.postureDetail}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setTrustJourneyExpanded((prev) => !prev)}
+              style={collapseToggle()}
+            >
+              {trustJourneyExpanded ? "Collapse" : "Open"}
+            </button>
+          </div>
+
+          <div
+            style={{
+              marginTop: 12,
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
+            {[
+              {
+                label: "Trust",
+                value: openTrust.classText,
+                color: toneStyles(openTrust.tone).text,
+                background: toneStyles(openTrust.tone).bg,
+                border: toneStyles(openTrust.tone).border,
+              },
+              {
+                label: "CCI",
+                value: cci.classText,
+                color: toneStyles(cci.tone).text,
+                background: toneStyles(cci.tone).bg,
+                border: toneStyles(cci.tone).border,
+              },
+              {
+                label: "Slip",
+                value: trustSlipCode ? "Ready" : "Pending",
+                color: "#0B1F33",
+                background: "#F8FBFF",
+                border: "1px solid rgba(11,99,209,0.10)",
+              },
+              {
+                label: "Focus",
+                value: trustJourneyFocusLabel,
+                color:
+                  focusSummary.behindCount > 0
+                    ? "#991B1B"
+                    : focusSummary.watchCount > 0
+                    ? "#92400E"
+                    : "#166534",
+                background:
+                  focusSummary.behindCount > 0
+                    ? "#FFF5F5"
+                    : focusSummary.watchCount > 0
+                    ? "#FFFBEF"
+                    : "#F3FBF5",
+                border:
+                  focusSummary.behindCount > 0
+                    ? "1px solid rgba(239,68,68,0.16)"
+                    : focusSummary.watchCount > 0
+                    ? "1px solid rgba(245,158,11,0.16)"
+                    : "1px solid rgba(34,197,94,0.16)",
+              },
+            ].map((item) => (
+              <div
+                key={`trust-journey-pill-${item.label}`}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  minHeight: 34,
+                  padding: "7px 11px",
+                  borderRadius: 999,
+                  border: item.border,
+                  background: item.background,
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.72), 0 8px 18px rgba(10,24,49,0.04)",
+                }}
+              >
+                <span
+                  style={{
+                    color: "#5D7389",
+                    fontSize: 11,
+                    fontWeight: 900,
+                    letterSpacing: 0.28,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {item.label}
+                </span>
+                <span
+                  style={{
+                    color: item.color,
+                    fontSize: 13,
+                    fontWeight: 900,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {item.value}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div
+            style={{
+              marginTop: 10,
+              ...helperText(),
+              fontSize: 12.8,
+              lineHeight: 1.6,
+              color: "#0B1F33",
+            }}
+          >
+            <strong>How they connect:</strong> {trustJourneyCopy.connectionSummary}
+          </div>
+
+          <div
+            style={{
+              marginTop: 12,
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "1fr"
+                : "minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.05fr)",
+              gap: 10,
+            }}
+          >
+            <div style={innerCard("#FFFFFF")}>
+              <div style={sectionLabel()}>Helping</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 14,
+                  fontWeight: 800,
+                  lineHeight: 1.55,
+                }}
+              >
+                {trustJourneyCopy.helpingText}
+              </div>
+            </div>
+
+            <div
+              style={innerCard(
+                trustJourneyModel.weakens.length > 0 ? "#FFFBEF" : "#FFFFFF"
+              )}
+            >
+              <div style={sectionLabel()}>Needs care</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 14,
+                  fontWeight: 800,
+                  lineHeight: 1.55,
+                }}
+              >
+                {trustJourneyCopy.careText}
+              </div>
+            </div>
+
+            <div
+              style={{
+                ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
+                border: "1px solid rgba(11,99,209,0.10)",
+              }}
+            >
+              <div style={sectionLabel()}>Do this now</div>
+
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 17,
+                  fontWeight: 900,
+                  lineHeight: 1.28,
+                }}
+              >
+                {trustJourneyPrimaryLabel}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 6,
+                  ...helperText(),
+                  fontSize: 13,
+                  lineHeight: 1.55,
+                }}
+              >
+                {trustJourneyPrimaryDetail}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => openTrustJourneyRoute(trustJourneyModel.primaryRoute)}
+                  style={actionBtn("primary")}
+                >
+                  {safeStr(trustJourneyModel.primaryRoute.to) === "/app/trust"
+                    ? "Review"
+                    : "Open"}
+                </button>
+
+                {trustJourneyExpanded ? (
+                  <button
+                    type="button"
+                    onClick={() => openTrustJourneyRoute(trustJourneyModel.secondaryRoute)}
+                    style={actionBtn("secondary")}
+                  >
+                    {trustJourneyModel.secondaryRoute.label}
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          {trustJourneyExpanded ? (
+            <div
+              style={{
+                marginTop: 14,
+                display: "grid",
+                gap: 10,
+              }}
+            >
+              <div
+                style={{
+                  ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
+                  border: "1px solid rgba(11,99,209,0.10)",
+                  display: "grid",
+                  gap: 10,
+                }}
+              >
+                <div style={sectionLabel()}>How these connect</div>
+
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontSize: 13.5,
+                    fontWeight: 800,
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {trustJourneyCopy.connectionSummary}
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: isCompact
+                      ? "1fr"
+                      : "repeat(2, minmax(0, 1fr))",
+                    gap: 10,
+                  }}
+                >
+                  {trustJourneyCopy.connectionItems.map((item) => (
+                    <div
+                      key={`trust-connect-${item.key}`}
+                      style={innerCard("#FFFFFF")}
+                    >
+                      <div style={sectionLabel()}>{item.title}</div>
+                      <div
+                        style={{
+                          marginTop: 8,
+                          color: "#0B1F33",
+                          fontSize: 13.5,
+                          fontWeight: 800,
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        {item.detail}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "1fr"
+                    : "repeat(2, minmax(0, 1fr))",
+                  gap: 10,
+                }}
+              >
+                <div style={innerCard("#FFFFFF")}>
+                  <div style={sectionLabel()}>What is helping</div>
+                  <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                    {trustJourneyModel.helps.length > 0 ? (
+                      trustJourneyModel.helps.map((item, index) => (
+                        <div key={`trust-help-${index}`} style={helperText()}>
+                          {item}
+                        </div>
+                      ))
+                    ) : (
+                      <div style={helperText()}>
+                        No strong trust support is showing yet.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div
+                  style={innerCard(
+                    trustJourneyModel.weakens.length > 0 ? "#FFFBEF" : "#FFFFFF"
+                  )}
+                >
+                  <div style={sectionLabel()}>What needs care</div>
+                  <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                    {trustJourneyModel.weakens.length > 0 ? (
+                      trustJourneyModel.weakens.map((item, index) => (
+                        <div key={`trust-weak-${index}`} style={helperText()}>
+                          {item}
+                        </div>
+                      ))
+                    ) : (
+                      <div style={helperText()}>
+                        No major trust problem is showing right now.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  ...innerCard("#FFFFFF"),
+                  border: trustJourneyTone.border,
+                  display: "grid",
+                  gap: 12,
+                }}
+              >
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: isCompact
+                      ? "1fr"
+                      : "minmax(0, 1fr) auto",
+                    gap: 10,
+                    alignItems: "center",
+                  }}
+                >
+                  <div style={helperText()}>
+                    {trustJourneyModel.commitmentLine}
+                    {focusSummary.nextReviewLabel
+                      ? ` ${focusSummary.nextReviewLabel}.`
+                      : ""}
+                    {trustJourneyCountLine ? ` ${trustJourneyCountLine}.` : ""}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => openTrustJourneyRoute(trustJourneyModel.secondaryRoute)}
+                    style={actionBtn("secondary")}
+                  >
+                    {trustJourneyModel.secondaryRoute.label}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : trustJourneyCountLine || focusSummary.nextReviewLabel ? (
+            <div
+              style={{
+                marginTop: 10,
+                ...helperText(),
+                fontSize: 12.5,
+                lineHeight: 1.5,
+              }}
+            >
+              {[focusSummary.nextReviewLabel || "", trustJourneyCountLine]
+                .filter(Boolean)
+                .join(" | ")}
+            </div>
+          ) : null}
         </div>
       </section>
 
