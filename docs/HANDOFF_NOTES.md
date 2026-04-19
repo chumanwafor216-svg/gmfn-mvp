@@ -27,6 +27,51 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 
 ## Current checkpoint
 
+### Latest update
+
+#### Date
+2026-04-19
+
+#### Workstream
+Repo-foundation cleanup: stop tracking generated marketplace upload artifacts.
+
+#### Routes/screens affected
+- none directly
+
+#### Backend routes/endpoints involved
+- `/marketplace/media/upload-url`
+- `/marketplace/media/upload-direct/{kind}/{filename}`
+- `/marketplace/media/image`
+- `/marketplace/media/video`
+
+#### Files in play
+- `.gitignore`
+- `gmfn_backend/app/api/routes/marketplace_media.py`
+- `gmfn_backend/app/main.py`
+- `docs/HANDOFF_NOTES.md`
+- tracked generated files under `gmfn_backend/uploads/`
+
+#### Confirmed facts
+- `gmfn_backend/uploads/` is now ignored in `.gitignore`.
+- The backend recreates required upload directories at runtime:
+  `gmfn_backend/app/api/routes/marketplace_media.py` calls `_ensure_dirs()`,
+  and `gmfn_backend/app/main.py` also creates the root uploads directory before
+  mounting static files.
+- A repo-wide reference check did not find source code depending on specific
+- checked-in upload filenames outside the generated upload tree itself.
+- The pending git change set removes old tracked marketplace upload artifacts
+  from version control so runtime-generated media no longer pollutes the repo.
+
+#### Open risks or unknowns
+- If any outside process was informally depending on historical uploaded sample
+  files living in the repo, those files are now removed from git tracking.
+- Runtime uploads will still be created locally during normal use, but they are
+  now treated as generated artifacts rather than source files.
+
+#### Next recommended step
+- Commit the staged upload-artifact removal and treat that commit as the new
+  repo-foundation freeze point before more feature work.
+
 ### Date
 2026-04-19
 
