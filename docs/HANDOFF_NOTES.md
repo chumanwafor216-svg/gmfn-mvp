@@ -43,6 +43,45 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-19
 
 #### Workstream
+Marketplace crossover shortcuts reduced so Community Home keeps first-circle
+ownership and Marketplace stays closer to commerce/support work.
+
+#### Routes/screens affected
+- `/app/marketplace`
+- related launch movement back to:
+  - `/app/community`
+
+#### Backend routes/endpoints involved
+- none
+
+#### Files in play
+- `frontend/src/pages/MarketplacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- `Build First Circle` was removed from the Marketplace community-shortcuts
+  block.
+- Marketplace shortcut guidance now states more clearly that first-circle work
+  belongs back in Community Home.
+- `npm run build` passed in `frontend` after the reduction.
+
+#### Open risks or unknowns
+- This was build-verified, but not followed by a fresh live mobile sweep of the
+  reduced Marketplace shortcut block.
+- Broader marketplace/community ownership still needs more structural
+  tightening later, especially around Spotlight, Demand Box, and deeper
+  marketplace-local versus aggregate signals.
+
+#### Next recommended step
+- Review `/app/marketplace` live, then continue reducing any remaining
+  Marketplace controls that still imply wider community command ownership.
+
+### Previous update
+
+#### Date
+2026-04-19
+
+#### Workstream
 Community Home finance controls reduced so Community Home stops owning deep
 money routes and points into the Finance workspace instead.
 

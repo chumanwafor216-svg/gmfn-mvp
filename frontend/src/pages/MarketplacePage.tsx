@@ -3130,9 +3130,9 @@ export default function MarketplacePage() {
                 <div style={sectionLabel()}>Use Community Home for the fuller tool set</div>
                 <div style={{ marginTop: 8, ...helperText() }}>
                   Community Home remains the place for picture updates, invite
-                  preparation, spotlight control, and the wider community command
-                  work. Marketplace keeps only the shortcuts that help the current
-                  trade or support move.
+                  preparation, spotlight control, first-circle work, and the
+                  wider community command work. Marketplace keeps only the
+                  shortcuts that help the current trade or support move.
                 </div>
               </div>
 
@@ -3170,17 +3170,6 @@ export default function MarketplacePage() {
                   style={actionBtn("secondary")}
                 >
                   Notifications
-                </button>
-
-                <button
-                  type="button"
-                  onPointerDown={consumeMarketplacePointerEvent}
-                  onClick={(event) =>
-                    openMarketplaceRoute(event, "/app/build-first-circle")
-                  }
-                  style={actionBtn("secondary")}
-                >
-                  Build First Circle
                 </button>
               </div>
             </div>
