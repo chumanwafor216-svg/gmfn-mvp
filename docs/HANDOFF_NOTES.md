@@ -41,6 +41,80 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-19
 
 #### Workstream
+Primary shell navigation realignment to the production workspace spine.
+
+#### Routes/screens affected
+- shared authenticated `/app/*` shell
+- especially:
+  - `/app/dashboard`
+  - `/app/community`
+  - `/app/marketplace`
+  - `/app/finance`
+  - `/app/trust`
+  - `/app/my-gmfn-and-i?tab=settings`
+  - `/app/shop/*`
+  - `/app/shop-control`
+
+#### Backend routes/endpoints involved
+- none
+
+#### Files in play
+- `frontend/src/layout/AppLayout.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The shell previously treated the primary movement spine as:
+  - Dashboard
+  - Community Home
+  - Marketplace
+  - Shop Gallery
+  - Settings
+- `frontend/src/layout/AppLayout.tsx` now aligns the shell more closely with
+  the production blueprint:
+  - primary movement now presents:
+    - Dashboard
+    - Community Home
+    - Marketplace
+    - Finance
+    - Trust Passport
+  - `Shop Gallery` and `Shop Control` now live under a secondary
+    `Shop & storefront` group
+  - `Money In`, `Money Out`, `Payment Rails`, and `Payout Details` now live
+    under a secondary `Finance tools` group
+  - `Settings` now stays under the secondary `Identity & settings` group
+  - `TrustSlip` now stays under a secondary `Trust detail` group while
+    `Trust Passport` itself remains primary
+- The shell copy was updated to reflect the new movement order so the route
+  guidance no longer describes Shop Gallery and Settings as primary movement.
+- `Finance` now has a first-class shell item with active-route matching that
+  also covers:
+  - `/app/payment/pool`
+  - `/app/payment-rails`
+  - `/app/payout-details`
+  - `/app/withdrawal-instructions`
+  - `/app/payment/loans/*`
+- Authenticated mobile-sized headless checks then confirmed:
+  - dashboard `Finance` -> `/app/finance`
+  - dashboard `Trust Passport` -> `/app/trust`
+  - dashboard `Community` -> `/app/community`
+- `npm run build` passed in `frontend` after the shell change.
+
+#### Open risks or unknowns
+- This is a shell-level expression of the new architecture, not yet the deeper
+  page-content reduction pass on Dashboard, Community Home, or Marketplace.
+- The current route content still needs to keep converging toward the same
+  ownership model so the shell and the page surfaces fully agree.
+
+#### Next recommended step
+- Start the next planned structural pass: Dashboard reduction, now that the
+  shell expresses the intended primary workspace model.
+
+### Earlier update
+
+#### Date
+2026-04-19
+
+#### Workstream
 Authenticated mobile-sized route sweep after the Community Home and Marketplace
 CTA stabilization pass.
 

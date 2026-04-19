@@ -105,13 +105,37 @@ function makeMarketplaceItem(): NavLinkItem {
   };
 }
 
+function makeFinanceItem(): NavLinkItem {
+  return {
+    label: "Finance",
+    to: "/app/finance",
+    match: (pathname) =>
+      pathname === "/app/finance" ||
+      pathname === "/app/payment/pool" ||
+      pathname === "/app/payment-rails" ||
+      pathname === "/app/payout-details" ||
+      pathname === "/app/withdrawal-instructions" ||
+      pathname.startsWith("/app/payment/loans/"),
+  };
+}
+
+function makeTrustPassportItem(): NavLinkItem {
+  return {
+    label: "Trust Passport",
+    to: "/app/trust",
+    match: (pathname) =>
+      pathname === "/app/trust" ||
+      pathname === "/app/open-trust-reading" ||
+      pathname === "/app/trust-slip" ||
+      pathname.startsWith("/app/trust-slip/"),
+  };
+}
+
 function makeShopGalleryItem(myShopGalleryTo: string): NavLinkItem {
   return {
     label: "Shop Gallery",
     to: myShopGalleryTo,
-    match: (pathname) =>
-      pathname.startsWith("/app/shop/") ||
-      pathname === "/app/shop-control",
+    match: (pathname) => pathname.startsWith("/app/shop/"),
   };
 }
 
@@ -157,16 +181,13 @@ function makeAdminItem(): NavLinkItem {
   };
 }
 
-function buildPrimaryItems(
-  myShopGalleryTo: string,
-  canUseAdminTools: boolean
-): NavLinkItem[] {
+function buildPrimaryItems(canUseAdminTools: boolean): NavLinkItem[] {
   const items: NavLinkItem[] = [
     makeDashboardItem(),
     makeCommunityItem(),
     makeMarketplaceItem(),
-    makeShopGalleryItem(myShopGalleryTo),
-    makeSettingsItem(),
+    makeFinanceItem(),
+    makeTrustPassportItem(),
   ];
 
   if (canUseAdminTools) {
@@ -177,9 +198,13 @@ function buildPrimaryItems(
 }
 
 function buildTrustPassportItems(): NavLinkItem[] {
+  return [{ label: "TrustSlip", to: "/app/trust-slip" }];
+}
+
+function buildCommerceItems(myShopGalleryTo: string): NavLinkItem[] {
   return [
-    { label: "Trust", to: "/app/trust" },
-    { label: "TrustSlip", to: "/app/trust-slip" },
+    makeShopGalleryItem(myShopGalleryTo),
+    makeShopControlItem(),
   ];
 }
 
@@ -188,14 +213,22 @@ function buildIdentityItems(): NavLinkItem[] {
     { label: "Identity Integrity", to: "/app/identity" },
     { label: "Notifications", to: "/app/notifications" },
     makeGuideItem(),
+    makeSettingsItem(),
+  ];
+}
+
+function buildFinanceToolsItems(): NavLinkItem[] {
+  return [
+    { label: "Money In", to: "/app/payment/pool" },
+    { label: "Money Out", to: "/app/withdrawal-instructions" },
+    { label: "Payment Rails", to: "/app/payment-rails" },
+    { label: "Payout Details", to: "/app/payout-details" },
   ];
 }
 
 function buildLoansItems(): NavLinkItem[] {
   return [
     { label: "Loans & Support", to: "/app/loans" },
-    { label: "Money In", to: "/app/payment/pool" },
-    { label: "Money Out", to: "/app/withdrawal-instructions" },
     { label: "Readiness", to: "/app/loan-readiness" },
     { label: "Suggestions", to: "/app/loan-suggestions" },
     { label: "Workbench", to: "/app/loan-workbench" },
@@ -303,7 +336,7 @@ function getSpecialRouteMeta(
 ): RouteMeta | null {
   if (pathname.startsWith("/app/shop/")) {
     return {
-      section: "Main movement",
+      section: "Shop & storefront",
       page: "Shop Gallery",
     };
   }
@@ -338,21 +371,30 @@ function getSpecialRouteMeta(
 
   if (pathname === "/app/notifications") {
     return {
-      section: "Identity",
+      section: "Identity & settings",
       page: "Action Inbox",
+    };
+  }
+
+  if (pathname === "/app/trust-slip" || pathname.startsWith("/app/trust-slip/")) {
+    return {
+      section: "Trust detail",
+      page: pathname.startsWith("/app/trust-slip/verify")
+        ? "TrustSlip verify"
+        : "TrustSlip",
     };
   }
 
   if (pathname === "/app/my-gmfn-and-i" && search.includes("tab=settings")) {
     return {
-      section: "Main movement",
+      section: "Identity & settings",
       page: "Settings",
     };
   }
 
   if (pathname === "/app/my-gmfn-and-i") {
     return {
-      section: "Identity",
+      section: "Identity & settings",
       page: "My GSN and I",
     };
   }
@@ -497,7 +539,7 @@ function getPageActions(
       makeShopControlItem(),
       { label: "Finance", to: "/app/finance" },
       { label: "Notifications", to: "/app/notifications" },
-      { label: "Trust", to: "/app/trust" },
+      { label: "Trust Passport", to: "/app/trust" },
     ]);
   }
 
@@ -567,7 +609,7 @@ function getPageActions(
       makeCommunityItem(),
       makeMarketplaceItem(),
       { label: "Notifications", to: "/app/notifications" },
-      { label: "Trust", to: "/app/trust" },
+      { label: "Trust Passport", to: "/app/trust" },
     ]);
   }
 
@@ -1122,12 +1164,17 @@ export default function AppLayout() {
   );
 
   const primaryItems = useMemo(
-    () => buildPrimaryItems(myShopGalleryTo, canUseAdminTools),
-    [myShopGalleryTo, canUseAdminTools]
+    () => buildPrimaryItems(canUseAdminTools),
+    [canUseAdminTools]
   );
 
   const trustPassportItems = useMemo(() => buildTrustPassportItems(), []);
+  const commerceItems = useMemo(
+    () => buildCommerceItems(myShopGalleryTo),
+    [myShopGalleryTo]
+  );
   const identityItems = useMemo(() => buildIdentityItems(), []);
+  const financeToolsItems = useMemo(() => buildFinanceToolsItems(), []);
   const loansItems = useMemo(() => buildLoansItems(), []);
 
   const groups = useMemo<NavGroup[]>(() => {
@@ -1136,21 +1183,35 @@ export default function AppLayout() {
         key: "primary",
         label: "Main movement",
         hint:
-          "The main routes stay simple: Dashboard, Community Home, Marketplace, Shop Gallery, and Settings.",
+          "The main routes stay simple: Dashboard, Community Home, Marketplace, Finance, and Trust Passport.",
         items: primaryItems,
       },
       {
-        key: "trust-passport",
-        label: "Trust Passport",
+        key: "commerce",
+        label: "Shop & storefront",
         hint:
-          "Trust pages stay grouped here instead of competing with the main movement row.",
+          "Shop Gallery and Shop Control stay reachable here without taking a primary movement slot.",
+        items: commerceItems,
+      },
+      {
+        key: "finance-tools",
+        label: "Finance tools",
+        hint:
+          "Money In, Money Out, rails, and payout details stay grouped under the Finance workspace.",
+        items: financeToolsItems,
+      },
+      {
+        key: "trust-passport",
+        label: "Trust detail",
+        hint:
+          "TrustSlip stays grouped here while Trust Passport itself now sits in the main movement row.",
         items: trustPassportItems,
       },
       {
         key: "identity",
-        label: "Identity",
+        label: "Identity & settings",
         hint:
-          "Identity integrity, notifications, and the readable guide live here.",
+          "Identity integrity, notifications, your guide, and settings live here.",
         items: identityItems,
       },
       {
@@ -1161,7 +1222,14 @@ export default function AppLayout() {
         items: loansItems,
       },
     ];
-  }, [primaryItems, trustPassportItems, identityItems, loansItems]);
+  }, [
+    primaryItems,
+    commerceItems,
+    financeToolsItems,
+    trustPassportItems,
+    identityItems,
+    loansItems,
+  ]);
 
   const displayedGroups = useMemo(() => {
     if (!taskMode) return groups;
@@ -1312,8 +1380,8 @@ export default function AppLayout() {
           pathname.startsWith("/app/community/"),
       },
       makeMarketplaceItem(),
-      makeShopGalleryItem(myShopGalleryTo),
-      makeSettingsItem(),
+      makeFinanceItem(),
+      makeTrustPassportItem(),
     ];
 
     if (canUseAdminTools) {
@@ -1343,11 +1411,19 @@ export default function AppLayout() {
 
     return [
       {
-        title: "Trust Passport",
+        title: "Shop & storefront",
+        items: commerceItems,
+      },
+      {
+        title: "Finance tools",
+        items: financeToolsItems,
+      },
+      {
+        title: "Trust detail",
         items: trustPassportItems,
       },
       {
-        title: "Identity",
+        title: "Identity & settings",
         items: identityItems,
       },
       {
@@ -1355,7 +1431,14 @@ export default function AppLayout() {
         items: loansItems,
       },
     ];
-  }, [taskMode, trustPassportItems, identityItems, loansItems]);
+  }, [
+    taskMode,
+    commerceItems,
+    financeToolsItems,
+    trustPassportItems,
+    identityItems,
+    loansItems,
+  ]);
 
   return (
     <div style={isMobile ? mobileShell() : desktopShell()}>
@@ -1370,7 +1453,7 @@ export default function AppLayout() {
               <div style={brandTitle()}>Member workspace</div>
               <div style={brandText()}>
                 A guided, calmer workspace for community movement, marketplace,
-                shop gallery, trust, identity, and support.
+                finance, trust, identity, and support.
               </div>
             </div>
           </Link>
@@ -1382,7 +1465,7 @@ export default function AppLayout() {
             <div style={noteText()}>
               {taskMode
                 ? taskMode.hint
-                : "Dashboard leads to Community Home. Community Home leads to Marketplace. Marketplace leads to Shop Gallery. Focused tasks temporarily reduce other movement."}
+                : "Dashboard leads to Community Home. Community Home leads to Marketplace. Marketplace leads to Finance and Trust Passport when deeper money or trust work is needed."}
             </div>
           </div>
 
