@@ -1171,32 +1171,32 @@ export default function CommunityHomePage() {
   const financeNextAction = useMemo(() => {
     if (!selectedClanId) {
       return {
-        title: "Select a community before reviewing the finance file",
+        title: "Select a community before reviewing the finance signal",
         detail:
-          "Choose your community first, then review pool position, references, and payment follow-through here.",
+          "Choose your community first, then review the current signal here before opening the combined Finance workspace.",
       };
     }
 
     if (pendingFinanceCount > 0) {
-    return {
-      title: "Reconciliation is waiting inside the finance record",
-      detail:
-        "One or more expected payments are still waiting for confirmation or bank match. Open Finance and review the live record before moving on.",
-    };
-  }
+      return {
+        title: "Reconciliation is waiting inside this community finance signal",
+        detail:
+          "One or more expected payments are still waiting for confirmation or bank match. Review this community signal first, then open Finance for the fuller combined money record.",
+      };
+    }
 
     if (moneySurface?.pendingWithdrawals && safeStr(moneySurface.pendingWithdrawals) !== "0.00") {
       return {
-        title: "A money-out record is already open",
+        title: "A money-out record is already open in this community",
         detail:
-          "Withdrawal movement is already visible in the community finance file. Review the current record and destination details before opening another page.",
+          "Withdrawal movement is already visible in this community signal. Review the current record and destination details before opening another page.",
       };
     }
 
     return {
-      title: "Community Home holds the live finance file",
+      title: "Community Home shows only the current finance signal",
       detail:
-        "Review the current money record here first, then open Finance when you need the deeper event history and fuller finance page.",
+        "Review this community signal here first, then open Finance when you need the combined money record across marketplaces.",
     };
   }, [selectedClanId, pendingFinanceCount, moneySurface]);
 
@@ -1938,7 +1938,7 @@ export default function CommunityHomePage() {
       <PageTopNav
         sectionLabel="Community Home"
         title="Community Home"
-        subtitle="Choose your working community, confirm where you are, use community tools, and move into the right route when you are ready."
+        subtitle="See all your communities here, confirm which one is in focus, and open the selected one as a marketplace when you are ready."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
@@ -1954,9 +1954,9 @@ export default function CommunityHomePage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="Community Home is where you confirm the community you are working in, open its live tools, and keep the right community context before you go elsewhere."
-        why="Many actions depend on the correct community being active first, so this screen anchors trust, demand, money, invites, and spotlight work in the right place."
-        next="Confirm the selected community first, then open the tools, circle, spotlight, or other community sections you need next."
+        what="Community Home is the combined index of the communities you belong to. Use it to confirm which community is in focus before opening that community as a marketplace."
+        why="It keeps the cross-community view, identity, and wider signals together so one marketplace does not pretend to represent every community at once."
+        next="Confirm the selected community first, then open its marketplace or the wider community-home tools you need next."
         tone="light"
       />
 
@@ -2320,7 +2320,7 @@ export default function CommunityHomePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Finance File & Record</div>
+            <div style={sectionLabel()}>Finance signal</div>
             <div
               style={{
                 marginTop: 8,
@@ -2330,9 +2330,9 @@ export default function CommunityHomePage() {
                 maxWidth: 860,
               }}
             >
-              Review your current pool position, pending money movement, payment
-              reference state, and next finance action here before you open the
-              fuller finance record.
+              Review the current community money signal here first, then open
+              Finance when you need the broader combined record across
+              marketplaces.
             </div>
           </div>
 
@@ -2349,9 +2349,9 @@ export default function CommunityHomePage() {
 
         <ExplainToggle
           label="What this finance record does"
-          what="This keeps the current community money reading in one place so users can see pool position, pending movement, expected payments, and the next finance action before opening deeper records."
-          why="Finance is easier to trust when the community can read the live money state here first instead of jumping straight into a larger ledger view."
-          next="Read the next action and live finance record first, then open Finance, Money In, Money Out, Payment Rails, or Payout Details only when you need the fuller route."
+          what="This keeps the current community money signal in one place so users can see pool position, pending movement, expected payments, and the next finance action before opening the broader Finance domain."
+          why="Finance is easier to trust when users can first read the current community signal without mistaking Community Home for the whole combined money workspace."
+          next="Read the next action and current signal first, then open Finance, Money In, Money Out, Payment Rails, or Payout Details when you need the fuller route."
           tone="light"
           style={{ marginTop: 12 }}
         />
@@ -2371,7 +2371,7 @@ export default function CommunityHomePage() {
             <div style={sectionLabel()}>Current next action</div>
             <ExplainToggle
               label="What this finance next action does"
-              what="This card highlights the next clean finance step for the current community after reading the money record below."
+              what="This card highlights the next clean finance step for the current community after reading the signal below."
               why="It helps users avoid guessing whether they should review Finance, pay in, pay out, or reconcile something first."
               next="Read this action first, then open the linked finance route that matches the move you need to make next."
               tone="light"
@@ -2445,13 +2445,13 @@ export default function CommunityHomePage() {
           </div>
 
           <div style={softCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Live finance record</div>
+            <div style={sectionLabel()}>Current-community finance signal</div>
 
             <ExplainToggle
               label="What this live finance record does"
-              what="This card gathers the current community money reading into one place, including pool position, movement, record status, money routes, and expected payments."
-              why="It helps users understand the live finance picture here first instead of jumping across several money routes to work out what state the community is in."
-              next="Read this summary first, then open Finance, Payment Rails, Money In, Money Out, or Payout Details only when you need the deeper route."
+              what="This card gathers the current community money signal into one place, including pool position, movement, record status, money routes, and expected payments."
+              why="It helps users understand this marketplace-linked finance picture here first instead of jumping across several money routes to work out what state the community is in."
+              next="Read this summary first, then open Finance, Payment Rails, Money In, Money Out, or Payout Details when you need the deeper route."
               tone="light"
               style={{ marginTop: 12 }}
             />

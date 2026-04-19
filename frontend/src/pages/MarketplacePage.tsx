@@ -1345,6 +1345,11 @@ export default function MarketplacePage() {
 
   const selectedClanId = Number(getSelectedClanId() || 0);
   const currentGmfnId = safeStr(me?.gmfn_id || "");
+  const myShopTo = useMemo(() => {
+    return currentGmfnId
+      ? `/app/shop/${encodeURIComponent(currentGmfnId)}`
+      : "";
+  }, [currentGmfnId]);
 
   const activeCommunityId = useMemo(() => {
     return positiveNumber(selectedCommunity?.id || selectedCommunity?.clan_id);
@@ -2291,11 +2296,12 @@ export default function MarketplacePage() {
             maxWidth: 920,
           }}
         >
-          Use this marketplace to review the community profile, open money tools,
-          browse community-visible shop links, and continue into support when
-          needed. Private Vault Shops do not appear in ordinary browsing here.
-          Once a money or support route starts, that route should take over and
-          guide you to a clear conclusion.
+          This marketplace is one community in action. Use it to review the
+          community profile, open money tools, open your Shop, browse
+          community-visible shop links, and continue into support when needed.
+          Private Vault Shops do not appear in ordinary browsing here. Once a
+          money or support route starts, that route should take over and guide
+          you to a clear conclusion.
         </div>
 
         <div
@@ -2317,7 +2323,7 @@ export default function MarketplacePage() {
             Payout account: {payoutReady ? "Ready" : "Awaiting issue"}
           </span>
           <span style={badge(false)}>Current page: Marketplace</span>
-          <span style={badge(false)}>Current step: Launch community work</span>
+          <span style={badge(false)}>Current step: One community in action</span>
         </div>
 
         <div
@@ -2351,6 +2357,17 @@ export default function MarketplacePage() {
             >
               Dashboard
             </button>
+
+            {myShopTo ? (
+              <button
+                type="button"
+                onPointerDown={consumeMarketplacePointerEvent}
+                onClick={(event) => openMarketplaceRoute(event, myShopTo)}
+                style={actionBtn("secondary")}
+              >
+                Shop
+              </button>
+            ) : null}
           </div>
 
           <div
@@ -2433,9 +2450,9 @@ export default function MarketplacePage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="Marketplace is where you read the current community identity, check money readiness, browse community-visible shop activity, and continue into the next trade or support route."
-        why="It keeps community commerce grounded in the right context so users can see who is visible, what is ready, and when a money or support route should take over."
-        next="Read the community identity first, then move into the money, tools, members, or support sections depending on what you need to do."
+        what="Marketplace is where one selected community becomes active. Read the current community identity, open Shop, check money readiness, and continue into the next trade or support route."
+        why="It keeps one community in focus so users can see who is visible, what is ready, and when a money or support route should take over."
+        next="Read the community identity first, then move into Shop, money, members, or support depending on what you need to do in this community."
         tone="dark"
       />
 

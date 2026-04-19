@@ -43,6 +43,56 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-19
 
 #### Workstream
+Community Home and Marketplace copy/launcher alignment updated to match the
+corrected marketplace-versus-cross-community model.
+
+#### Routes/screens affected
+- `/app/community`
+- `/app/marketplace`
+- related launches into:
+  - `/app/shop/*`
+  - `/app/finance`
+
+#### Backend routes/endpoints involved
+- none
+
+#### Files in play
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `frontend/src/pages/MarketplacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- `Community Home` now describes itself more clearly as the combined index of
+  all communities, where the selected community is confirmed before opening it
+  as a marketplace.
+- The Community Home finance area now talks about a current-community finance
+  signal instead of claiming to own the full finance record.
+- Community Home finance guidance now points users toward the broader combined
+  `Finance` workspace when they need the fuller money record across
+  marketplaces.
+- `Marketplace` hero copy now describes the page as one community in action.
+- `Marketplace` hero actions now surface `Shop` directly when the current
+  member has a GSN ID, instead of leaving shop access only to later sections or
+  the shell.
+- `npm run build` passed in `frontend` after the page-level alignment.
+
+#### Open risks or unknowns
+- This was build-verified, but not followed by a fresh live mobile sweep of the
+  new Marketplace `Shop` hero button.
+- Broader marketplace/community ownership still needs more structural
+  tightening later, especially around Spotlight, Demand Box, and finance depth.
+
+#### Next recommended step
+- Review `/app/community` and `/app/marketplace` live, then continue reducing
+  any remaining route text or controls that still imply the older ownership
+  model.
+
+### Previous update
+
+#### Date
+2026-04-19
+
+#### Workstream
 Shared shell movement updated so Shop regains main-domain visibility while
 Shop Control remains a supporting shop tool.
 
@@ -54,42 +104,6 @@ Shop Control remains a supporting shop tool.
   - `/app/finance`
   - `/app/trust`
   - `/app/shop/*`
-
-#### Backend routes/endpoints involved
-- none
-
-#### Files in play
-- `frontend/src/layout/AppLayout.tsx`
-- `docs/HANDOFF_NOTES.md`
-
-#### Confirmed facts
-- `Shop` now sits in the shell's main movement row with:
-  - `Dashboard`
-  - `Community Home`
-  - `Marketplace`
-  - `Shop`
-  - `Finance`
-  - `Trust Passport`
-- `Shop Control` remains reachable under a supporting `Shop tools` group.
-- Mobile bottom navigation now includes `Shop` as a first-class movement item.
-- Route/page metadata for `/app/shop/*` now reads as part of main movement
-  instead of a secondary storefront-only grouping.
-- Dashboard, Community Home, Marketplace, and Shop Control page tools now give
-  clearer direct access to `Shop`.
-- `npm run build` passed in `frontend` after the shell change.
-
-#### Open risks or unknowns
-- This was build-verified, but not followed by a fresh live mobile route sweep
-  of the updated shell movement.
-- The broader architecture docs still need a deeper future rewrite so their
-  examples fully align with the refined canonical skeleton.
-
-#### Next recommended step
-- Review the updated shell live, especially `Shop` visibility on mobile and
-  desktop, then continue the next architecture-alignment pass from the corrected
-  canonical skeleton.
-
-### Previous update
 
 #### Date
 2026-04-19
