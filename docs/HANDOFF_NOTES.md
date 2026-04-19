@@ -43,6 +43,61 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-19
 
 #### Workstream
+Marketplace now exposes a real marketplace-owned outward-links surface instead
+of only a hidden invite-ready status chip.
+
+#### Routes/screens affected
+- `/app/marketplace`
+- outward link handling tied to:
+  - `/join`
+  - `/community/:clanId`
+  - `/shop/:gmfnId`
+  - controlled Vault/shop-control flows
+
+#### Backend routes/endpoints involved
+- existing marketplace/community invite route:
+  - `GET /clans/{clan_id}/invite-link`
+- existing vault-access-link infrastructure already used for controlled outward
+  links
+
+#### Files in play
+- `frontend/src/pages/MarketplacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Marketplace now has a `Marketplace links & shortcuts` section.
+- That section now surfaces the marketplace-owned outward link families that are
+  already safe to show from current implementation:
+  - join this community
+  - view this marketplace
+  - view this shop
+- The section also now explains controlled outward links more honestly:
+  Vault and vote-style links remain marketplace-owned but are issued as
+  conditional live links rather than one fixed public URL.
+- The join link uses the existing invite-link contract and keeps the current
+  create/refresh behavior.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- This pass was build-verified only; it was not followed by a fresh live mobile
+  sweep of the new Marketplace link section.
+- The exact final user-facing names for all four marketplace link families are
+  still not fully stabilized in product copy.
+- The current section still reuses the existing collapsed `tools` state, so
+  users with an already-saved collapsed state may not see the new links until
+  they open the section.
+
+#### Next recommended step
+- Live-review `/app/marketplace` on mobile-sized viewport and decide whether the
+  marketplace links section should stay toggle-based or become open-by-default
+  in a later pass.
+
+### Previous update
+
+#### Date
+2026-04-19
+
+#### Workstream
 Canonical marketplace-owned invite-link rule added so future route and IA work
 keeps invite ownership localized to each marketplace/community unit.
 

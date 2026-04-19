@@ -1361,15 +1361,19 @@ export default function MarketplacePage() {
     return `${origin}/community/${encodeURIComponent(String(activeCommunityId))}`;
   }, [activeCommunityId]);
 
-  const publicCreateCommunityLink = useMemo(() => {
+  const publicShopViewLink = useMemo(() => {
     const origin = browserOrigin();
-    if (!origin) return "";
-    return `${origin}/create`;
-  }, []);
+    if (!origin || !currentGmfnId) return "";
+    return `${origin}/shop/${encodeURIComponent(currentGmfnId)}`;
+  }, [currentGmfnId]);
 
-  const publicVaultLink = useMemo(() => {
-    return "";
-  }, []);
+  const controlledMarketplaceLinkNote = useMemo(() => {
+    if (!selectedCommunity) {
+      return "Select a community first. This marketplace issues controlled outward links only after the community and shop context are known.";
+    }
+
+    return "Vault and other controlled outward links belong to this marketplace, but they are issued as live approved links rather than one permanent public URL.";
+  }, [selectedCommunity]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1845,6 +1849,31 @@ export default function MarketplacePage() {
 
     if (typeof window !== "undefined") {
       window.open(inviteLink, "_blank", "noopener,noreferrer");
+    }
+  }
+
+  function copyMarketplaceLink(
+    url: string,
+    successText: string,
+    missingText: string
+  ) {
+    if (!url) {
+      showNotice("error", missingText);
+      return;
+    }
+
+    safeCopy(url);
+    showNotice("success", successText);
+  }
+
+  function openMarketplaceExternalLink(url: string, missingText: string) {
+    if (!url) {
+      showNotice("error", missingText);
+      return;
+    }
+
+    if (typeof window !== "undefined") {
+      window.open(url, "_blank", "noopener,noreferrer");
     }
   }
 
@@ -3089,10 +3118,10 @@ export default function MarketplacePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Community shortcuts</div>
+            <div style={sectionLabel()}>Marketplace links & shortcuts</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Keep only a few crossover shortcuts here. The full community
-              command tools live in Community Home.
+              This marketplace owns the outward links for this one community,
+              then keeps only a few crossover shortcuts beside them.
             </div>
           </div>
 
@@ -3107,15 +3136,237 @@ export default function MarketplacePage() {
 
         <ExplainToggle
           label="What these shortcuts do"
-          what="These shortcuts keep only the most relevant crossover moves close to the marketplace."
-          why="Marketplace should stay focused on commerce and support. The wider community command work belongs in Community Home."
-          next="Use Community Home for the fuller community tools, then return here when you want the marketplace, member rows, or support flow."
+          what="This area keeps the marketplace-owned outward links for this one community together with only a few crossover shortcuts."
+          why="Invite links, shop-facing links, and other outward paths should stay localized to this marketplace, while the wider command tools remain in Community Home."
+          next="Use the join, marketplace-view, or shop-view links from here when something must leave this community, then use the shortcuts below only when the next move belongs back inside the app."
           tone="light"
           style={{ marginTop: 12 }}
         />
 
         {sectionsOpen.tools ? (
           <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
+            <div
+              style={{
+                borderRadius: 16,
+                border: "1px solid rgba(11,31,51,0.08)",
+                background: "#FCFEFF",
+                padding: 16,
+                display: "grid",
+                gap: 14,
+              }}
+            >
+              <div>
+                <div style={sectionLabel()}>Marketplace-owned outward links</div>
+                <div style={{ marginTop: 8, ...helperText() }}>
+                  These links belong to this marketplace only. They carry this
+                  community identity outward and should return people into this
+                  same marketplace context.
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "1fr"
+                    : "repeat(auto-fit, minmax(220px, 1fr))",
+                  gap: 12,
+                }}
+              >
+                <div style={innerCard("#FFFFFF")}>
+                  <div style={sectionLabel()}>Join this community</div>
+                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                    Use the marketplace join invite when someone should begin
+                    the request-to-join path for this community. Members still
+                    review and vote after the person returns.
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      fontSize: 13,
+                      lineHeight: 1.5,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {inviteLink || "Join invite link not ready yet."}
+                  </div>
+                  <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      onPointerDown={consumeMarketplacePointerEvent}
+                      onClick={() => void handleCreateInviteLink()}
+                      style={actionBtn("primary", creatingInviteLink)}
+                      disabled={creatingInviteLink}
+                    >
+                      {creatingInviteLink ? "Refreshing..." : "Create / Refresh"}
+                    </button>
+                    <button
+                      type="button"
+                      onPointerDown={consumeMarketplacePointerEvent}
+                      onClick={() =>
+                        copyMarketplaceLink(
+                          inviteLink,
+                          "Join invite link copied.",
+                          "Join invite link is not ready yet."
+                        )
+                      }
+                      style={actionBtn("secondary", !inviteLink)}
+                      disabled={!inviteLink}
+                    >
+                      Copy Link
+                    </button>
+                    <button
+                      type="button"
+                      onPointerDown={consumeMarketplacePointerEvent}
+                      onClick={handleOpenJoinLink}
+                      style={actionBtn("secondary", !inviteLink)}
+                      disabled={!inviteLink}
+                    >
+                      Open Link
+                    </button>
+                  </div>
+                </div>
+
+                <div style={innerCard("#FFFFFF")}>
+                  <div style={sectionLabel()}>View this marketplace</div>
+                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                    Share this when someone should see this community's outward
+                    marketplace face directly.
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      fontSize: 13,
+                      lineHeight: 1.5,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {publicCommunityWorkspaceLink ||
+                      "Marketplace view link not ready yet."}
+                  </div>
+                  <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      onPointerDown={consumeMarketplacePointerEvent}
+                      onClick={() =>
+                        copyMarketplaceLink(
+                          publicCommunityWorkspaceLink,
+                          "Marketplace view link copied.",
+                          "Marketplace view link is not ready yet."
+                        )
+                      }
+                      style={actionBtn("secondary", !publicCommunityWorkspaceLink)}
+                      disabled={!publicCommunityWorkspaceLink}
+                    >
+                      Copy Link
+                    </button>
+                    <button
+                      type="button"
+                      onPointerDown={consumeMarketplacePointerEvent}
+                      onClick={() =>
+                        openMarketplaceExternalLink(
+                          publicCommunityWorkspaceLink,
+                          "Marketplace view link is not ready yet."
+                        )
+                      }
+                      style={actionBtn("secondary", !publicCommunityWorkspaceLink)}
+                      disabled={!publicCommunityWorkspaceLink}
+                    >
+                      Open Link
+                    </button>
+                  </div>
+                </div>
+
+                <div style={innerCard("#FFFFFF")}>
+                  <div style={sectionLabel()}>View this shop</div>
+                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                    Share this when someone should see the same one-shop
+                    storefront that follows you across marketplaces.
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      fontSize: 13,
+                      lineHeight: 1.5,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {publicShopViewLink || "Shop view link not ready yet."}
+                  </div>
+                  <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      onPointerDown={consumeMarketplacePointerEvent}
+                      onClick={() =>
+                        copyMarketplaceLink(
+                          publicShopViewLink,
+                          "Shop view link copied.",
+                          "Shop view link is not ready yet."
+                        )
+                      }
+                      style={actionBtn("secondary", !publicShopViewLink)}
+                      disabled={!publicShopViewLink}
+                    >
+                      Copy Link
+                    </button>
+                    <button
+                      type="button"
+                      onPointerDown={consumeMarketplacePointerEvent}
+                      onClick={() =>
+                        openMarketplaceExternalLink(
+                          publicShopViewLink,
+                          "Shop view link is not ready yet."
+                        )
+                      }
+                      style={actionBtn("secondary", !publicShopViewLink)}
+                      disabled={!publicShopViewLink}
+                    >
+                      Open Link
+                    </button>
+                  </div>
+                </div>
+
+                <div style={innerCard("#F8FBFF")}>
+                  <div style={sectionLabel()}>Controlled outward links</div>
+                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                    {controlledMarketplaceLinkNote}
+                  </div>
+                  <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <span style={badge(false)}>Vault access is conditional</span>
+                    <span style={badge(false)}>Vote-style access stays controlled</span>
+                  </div>
+                  <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    {myShopTo ? (
+                      <button
+                        type="button"
+                        onPointerDown={consumeMarketplacePointerEvent}
+                        onClick={(event) => openMarketplaceRoute(event, myShopTo)}
+                        style={actionBtn("secondary")}
+                      >
+                        Open Shop
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      onPointerDown={consumeMarketplacePointerEvent}
+                      onClick={(event) =>
+                        openMarketplaceRoute(event, "/app/shop-control")
+                      }
+                      style={actionBtn("secondary")}
+                    >
+                      Open Shop Control
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div
               style={{
                 borderRadius: 16,
