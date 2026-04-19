@@ -46,6 +46,14 @@ communities.
 
 The member does not become a different identity in each community.
 
+Important architectural meaning:
+
+- the member's identity is stable across all communities
+- Marketplace may show that identity in one selected community
+- but the stronger identity anchor belongs to the combined community layer
+- Community Home is therefore the clearer place from which one member identity
+  is understood across many communities
+
 ### 3. Shop ownership
 One global member ID is entitled to:
 
@@ -190,6 +198,22 @@ Important rules:
 - internal community members can view the shop in their marketplace context
 - outside viewers may view it through the appropriate link/invite path
 
+Exposure rule:
+
+- shop ownership follows the one global member ID
+- but shop exposure is governed by community membership boundaries
+- in normal operation, the shop is visible through the communities and
+  marketplaces the member belongs to
+- broader exposure can extend only through the approved outward-link/repost
+  logic of the product
+
+So:
+
+- shop identity is member-global
+- shop exposure is community-governed
+- Marketplace is where that community-governed exposure becomes active for one
+  selected community
+
 Because of the role it plays, Shop Gallery deserves strong recognition even
 though it sits under Marketplace conceptually.
 
@@ -231,6 +255,15 @@ So the relationship is:
 - Marketplace finance = one community's finance unit
 - Finance domain = the combined finance reading across marketplaces
 
+Important architectural anchor:
+
+- Finance should see one global member ID through the eyes of all communities
+  the member belongs to
+- it gathers local finance units from marketplaces
+- but the stronger combined truth belongs to the cross-community layer
+- Community Home is therefore the clearer anchor from which the broader Finance
+  reading is understood
+
 ## Trust, CCI, Trust Passport, and TrustSlip
 
 ### Trust
@@ -261,6 +294,13 @@ So the relationship is:
 
 - marketplace trust = trust truth in one community
 - Trust Passport = combined trust reading across marketplaces/communities
+
+Important architectural anchor:
+
+- Trust Passport gathers local trust truth from marketplaces
+- but its stronger combined meaning belongs to the cross-community layer
+- Community Home is therefore the clearer anchor from which one member's trust
+  position across many communities is understood
 
 ### TrustSlip
 TrustSlip exists so that a member does not need to start from zero in every new
@@ -314,6 +354,17 @@ Admin is primarily:
 
 Admin should not be confused with the member's working surfaces.
 
+Admin sits on the other side of ordinary member activity.
+It should:
+
+- observe
+- record
+- infer
+- support oversight and evidence
+
+It should not be treated as an interfering participant in the member's normal
+community and marketplace flow.
+
 ## Route-purpose consequences
 
 ### Dashboard
@@ -330,6 +381,11 @@ Should not become:
 - a deep trust surface
 - a full finance surface
 - a full marketplace workspace
+
+Dashboard is therefore best understood as:
+
+- a reflector of what is happening now
+- not the owner of the underlying domains
 
 ### Community Home
 Should remain:

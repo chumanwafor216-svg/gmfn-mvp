@@ -43,6 +43,59 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-20
 
 #### Workstream
+Canonical architecture refined so shop exposure is community-governed and the
+stronger combined truth for Finance and Trust Passport is anchored from the
+cross-community layer rather than treated as only a loose marketplace sum.
+
+#### Routes/screens affected
+- architecture guidance for:
+  - `/app/community`
+  - `/app/marketplace`
+  - `/app/finance`
+  - `/app/trust`
+  - `/app/shop/*`
+  - `/app/dashboard`
+
+#### Backend routes/endpoints involved
+- supporting truth rechecked only:
+  - community code / marketplace name fields from clan/community responses
+  - current community-money surface built from `clanId + gmfnId`
+  - marketplace/community invite route
+
+#### Files in play
+- `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`
+- `docs/MARKETPLACE_PAGE_BLUEPRINT_2026-04-20.md`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The canonical skeleton now states more clearly that:
+  - one global member ID belongs to the cross-community layer
+  - shop identity is member-global
+  - shop exposure is governed by community membership boundaries
+  - Finance gathers local marketplace units but its stronger combined reading is
+    anchored from the cross-community layer
+  - Trust Passport gathers local marketplace trust pieces but its stronger
+    combined meaning is anchored from the cross-community layer
+- The Marketplace blueprint now reflects that same logic for page-composition
+  work.
+- Dashboard remains recorded as a reflector, not a domain owner.
+- Admin remains recorded as an oversight surface, not an ordinary live actor.
+
+#### Open risks or unknowns
+- This was a documentation checkpoint only; no runtime route behavior changed.
+- A later implementation pass is still needed to make live page composition
+  match the refined anchor logic more explicitly.
+
+#### Next recommended step
+- Use this refined cross-community anchor rule when touching Marketplace top
+  block, Shop exposure behavior, Finance framing, and Trust Passport framing.
+
+### Previous update
+
+#### Date
+2026-04-20
+
+#### Workstream
 Marketplace page composition is now documented as a concrete block-order
 blueprint rather than only a high-level architecture statement.
 

@@ -76,6 +76,8 @@ Should show the current member inside this marketplace:
 - current member local pool standing in this marketplace
 
 Important rule:
+- the member ID shown here is the same one global member ID carried across all
+  communities
 - this is not the combined finance view across all communities
 - this is the member's local standing inside the currently selected marketplace
 
@@ -161,6 +163,15 @@ So:
 - shop identity is member-global
 - the same shop may appear through multiple marketplaces
 
+Important exposure rule:
+
+- shop identity follows the one global member ID
+- but shop exposure is governed by community membership boundaries
+- the visible shop is therefore limited by the communities and marketplaces the
+  member belongs to
+- broader outward exposure can extend only through the approved share/repost
+  logic of the product
+
 ### Button behavior
 If a member has a visible shop in this marketplace:
 - the member row should show an `Open Shop` / `Open Shop Gallery` action
@@ -242,6 +253,11 @@ Dashboard only reflects.
 ### Community Home
 Community Home should not own the working internals of one marketplace.
 It indexes communities and aggregates above them.
+It is also the stronger cross-community anchor for:
+
+- one global member identity across many communities
+- cumulative Finance understanding
+- cumulative Trust Passport understanding
 
 ## Relationship to Finance and Trust Passport
 
@@ -260,6 +276,15 @@ So:
 - Marketplace = local finance unit
 - Finance = cumulative finance domain
 
+Important anchor:
+
+- Finance sees one global member ID through the eyes of all communities the
+  member belongs to
+- it gathers local finance units from marketplaces
+- but the stronger combined reading belongs to the cross-community layer
+- Community Home is therefore the clearer anchor for how cumulative Finance is
+  understood
+
 ### Marketplace trust
 Marketplace contains one community's trust truth:
 - how this one community reads the member
@@ -271,6 +296,13 @@ It combines trust/evidence across communities and marketplaces.
 So:
 - Marketplace = local trust unit
 - Trust Passport = cumulative trust domain
+
+Important anchor:
+
+- Trust Passport gathers local trust pieces from marketplaces
+- but its stronger combined meaning belongs to the cross-community layer
+- Community Home is therefore the clearer anchor for how one member's trust
+  position across many communities is understood
 
 ## Current repo truths already supporting this model
 
