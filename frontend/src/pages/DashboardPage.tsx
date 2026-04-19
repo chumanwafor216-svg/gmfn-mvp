@@ -2834,8 +2834,6 @@ export default function DashboardPage() {
   const [marketWisdomIndex, setMarketWisdomIndex] = useState<number>(0);
   const [marketWisdomSignalIndex, setMarketWisdomSignalIndex] =
     useState<number>(0);
-  const [marketWisdomSignalsOpen, setMarketWisdomSignalsOpen] =
-    useState<boolean>(false);
   const [activeWisdom, setActiveWisdom] = useState<MarketWisdomPair | null>(
     null
   );
@@ -8505,31 +8503,6 @@ export default function DashboardPage() {
                       {((marketWisdomSignalIndex % marketWisdomSignals.length) || 0) + 1} /{" "}
                       {marketWisdomSignals.length}
                     </div>
-
-                    <button
-                      type="button"
-                      onClick={(event) =>
-                        runDashboardUiMutation(event, () =>
-                          setMarketWisdomSignalsOpen((prev) => !prev),
-                          260
-                        )
-                      }
-                      onPointerDown={consumeDashboardPointerEvent}
-                      style={{
-                        ...subtleBtn(false),
-                        minHeight: 28,
-                        padding: "5px 10px",
-                        fontSize: 11.5,
-                        border: "1px solid rgba(148,163,184,0.18)",
-                        background:
-                          "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(226,232,240,0.90) 100%)",
-                        color: "#526274",
-                        boxShadow:
-                          "0 8px 16px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.92)",
-                      }}
-                    >
-                      {marketWisdomSignalsOpen ? "Hide all" : "Open all"}
-                    </button>
                   </div>
                 </div>
 
@@ -8567,102 +8540,20 @@ export default function DashboardPage() {
                 >
                   {activeMarketWisdomSignal.text}
                 </div>
-              </div>
 
-              {marketWisdomSignalsOpen ? (
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: isCompact
-                      ? "repeat(2, minmax(0, 1fr))"
-                      : "repeat(4, minmax(0, 1fr))",
-                    gap: 8,
+                    marginTop: 8,
+                    color: DASHBOARD_BRAND.helper,
+                    fontSize: 11.8,
+                    lineHeight: 1.55,
                   }}
                 >
-                  {marketWisdomSignals.map((signal, index) => {
-                    const selected = activeMarketWisdomSignal.key === signal.key;
-
-                    return (
-                      <button
-                        key={`market-wisdom-selector-${signal.key}`}
-                        type="button"
-                        onClick={(event) =>
-                          runDashboardUiMutation(
-                            event,
-                            () => setMarketWisdomSignalIndex(index),
-                            180
-                          )
-                        }
-                        onPointerDown={consumeDashboardPointerEvent}
-                        style={{
-                          ...subtleBtn(false),
-                          minHeight: 76,
-                          padding: "9px 10px",
-                          display: "grid",
-                          gap: 6,
-                          alignContent: "start",
-                          justifyItems: "stretch",
-                          textAlign: "left",
-                          background: selected ? signal.background : DASHBOARD_BRAND.quietPanel,
-                          border: selected
-                            ? `1px solid ${signal.border}`
-                            : "1px solid rgba(15,59,116,0.10)",
-                          boxShadow: selected
-                            ? "0 12px 22px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.86)"
-                            : "0 8px 18px rgba(10,24,49,0.05), inset 0 1px 0 rgba(255,255,255,0.82)",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            gap: 8,
-                            alignItems: "center",
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: 11.5,
-                              fontWeight: 900,
-                              letterSpacing: 0.25,
-                              textTransform: "uppercase",
-                              color: selected ? signal.accent : DASHBOARD_BRAND.label,
-                            }}
-                          >
-                            {signal.label}
-                          </span>
-
-                          <span
-                            style={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: 999,
-                              background: selected ? signal.accent : "rgba(148,163,184,0.5)",
-                              boxShadow: selected
-                                ? `0 0 0 4px ${signal.border}`
-                                : "none",
-                              flexShrink: 0,
-                            }}
-                          />
-                        </div>
-
-                        <div
-                          style={{
-                            color: "#0B1F33",
-                            fontSize: 12.5,
-                            fontWeight: selected ? 800 : 700,
-                            lineHeight: 1.45,
-                            maxHeight: 36,
-                            overflow: "hidden",
-                          }}
-                        >
-                          {signal.text}
-                        </div>
-                      </button>
-                    );
-                  })}
+                  Dashboard keeps one live reading here. The wider wisdom set
+                  now rotates quietly instead of opening into a larger dashboard
+                  control block.
                 </div>
-              ) : null}
+              </div>
             </div>
           ) : null}
 

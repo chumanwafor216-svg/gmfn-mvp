@@ -41,6 +41,46 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-19
 
 #### Workstream
+Phase 2 dashboard reduction: Market Wisdom simplified from expandable selector
+behavior to one rotating summary signal.
+
+#### Routes/screens affected
+- `/app/dashboard`
+
+#### Backend routes/endpoints involved
+- none
+
+#### Files in play
+- `frontend/src/pages/DashboardPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The dashboard Market Wisdom block no longer opens into a multi-signal selector
+  grid on the visible face.
+- The visible dashboard face now keeps Market Wisdom as:
+  - one active rotating signal
+  - signal count context
+  - one short supporting explanation
+- This removes another expandable dashboard control surface while preserving the
+  live reading itself.
+- `npm run build` passed in `frontend` after the reduction.
+
+#### Open risks or unknowns
+- This pass was build-verified, but not followed by a fresh full live mobile
+  route sweep.
+- The block still remains on the dashboard; this pass only reduced its control
+  weight, not its presence.
+
+#### Next recommended step
+- Review the top trust/identity area next and decide whether it now carries too
+  much visual weight for a member workspace.
+
+### Previous update
+
+#### Date
+2026-04-19
+
+#### Workstream
 Phase 2 dashboard reduction: Notifications simplified from source-panel
 workspace behavior to compact summary-and-launcher behavior.
 
