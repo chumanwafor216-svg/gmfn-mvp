@@ -2373,7 +2373,7 @@ export default function CommunityHomePage() {
               label="What this finance next action does"
               what="This card highlights the next clean finance step for the current community after reading the signal below."
               why="It helps users avoid guessing whether they should review Finance, pay in, pay out, or reconcile something first."
-              next="Read this action first, then open the linked finance route that matches the move you need to make next."
+              next="Read this action first, then open Finance when you need the fuller combined money workspace and deeper money routes."
               tone="light"
               style={{ marginTop: 12 }}
             />
@@ -2407,40 +2407,12 @@ export default function CommunityHomePage() {
               >
                 Open Finance
               </button>
-              <button
-                type="button"
-                onPointerDown={consumeCommunityPointerEvent}
-                onClick={(event) => openCommunityRoute(event, "/app/payment/pool")}
-                style={actionBtn("secondary")}
-              >
-                Money In
-              </button>
-              <button
-                type="button"
-                onPointerDown={consumeCommunityPointerEvent}
-                onClick={(event) =>
-                  openCommunityRoute(event, "/app/withdrawal-instructions")
-                }
-                style={actionBtn("secondary")}
-              >
-                Money Out
-              </button>
-              <button
-                type="button"
-                onPointerDown={consumeCommunityPointerEvent}
-                onClick={(event) => openCommunityRoute(event, "/app/payment-rails")}
-                style={actionBtn("soft")}
-              >
-                Payment Rails
-              </button>
-              <button
-                type="button"
-                onPointerDown={consumeCommunityPointerEvent}
-                onClick={(event) => openCommunityRoute(event, "/app/payout-details")}
-                style={actionBtn("soft")}
-              >
-                Payout Details
-              </button>
+            </div>
+
+            <div style={{ marginTop: 10, color: "#5F7287", fontSize: 13, lineHeight: 1.78 }}>
+              Money In, Money Out, Payment Rails, and Payout Details now sit
+              inside the fuller Finance workspace instead of owning space on
+              Community Home.
             </div>
           </div>
 

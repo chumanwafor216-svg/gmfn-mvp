@@ -43,6 +43,49 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-19
 
 #### Workstream
+Community Home finance controls reduced so Community Home stops owning deep
+money routes and points into the Finance workspace instead.
+
+#### Routes/screens affected
+- `/app/community`
+  - `/app/finance`
+
+#### Backend routes/endpoints involved
+- none
+
+#### Files in play
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Community Home finance guidance now explicitly says deeper money routes belong
+  inside `Finance`.
+- The Community Home finance next-action card now keeps only `Open Finance` as
+  its direct launcher.
+- Direct `Money In`, `Money Out`, `Payment Rails`, and `Payout Details` buttons
+  were removed from the Community Home finance block.
+- A short helper note now explains that those deeper money routes live in the
+  fuller Finance workspace instead of on Community Home.
+- `npm run build` passed in `frontend` after the reduction.
+
+#### Open risks or unknowns
+- This was build-verified, but not followed by a fresh live mobile sweep of the
+  reduced Community Home finance block.
+- Broader marketplace/community ownership still needs more structural
+  tightening later, especially around Spotlight, Demand Box, and the remaining
+  finance signal depth.
+
+#### Next recommended step
+- Review `/app/community` live, then continue reducing any remaining Community
+  Home controls that still look like deep domain ownership instead of index and
+  aggregate-signal behavior.
+
+### Previous update
+
+#### Date
+2026-04-19
+
+#### Workstream
 Community Home and Marketplace copy/launcher alignment updated to match the
 corrected marketplace-versus-cross-community model.
 
@@ -86,8 +129,6 @@ corrected marketplace-versus-cross-community model.
 - Review `/app/community` and `/app/marketplace` live, then continue reducing
   any remaining route text or controls that still imply the older ownership
   model.
-
-### Previous update
 
 #### Date
 2026-04-19
