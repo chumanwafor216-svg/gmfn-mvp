@@ -6,6 +6,11 @@
 ## Purpose
 This is the plain-English route map for the GSN product.
 
+For the corrected canonical community/marketplace/shop skeleton, also read
+`docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`.
+Where this route map conflicts with that canonical skeleton, the canonical
+system skeleton wins until this route map is revised.
+
 It is meant to show, in the simplest possible way:
 
 - what each major page is for
@@ -445,4 +450,3 @@ The app should feel like:
 
 If every page sticks to that job, the app will become much easier to use and
 much stronger to present.
-

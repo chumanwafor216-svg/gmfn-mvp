@@ -14,6 +14,8 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 - Separate confirmed facts from inference.
 - After substantial work, add or refresh the latest checkpoint instead of
   leaving the next session to reconstruct intent from git history alone.
+- For the current canonical product skeleton, also read
+  `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`.
 - For the current senior-engineer recovery brief, also read
   `docs/SENIOR_ENGINEERING_HANDOVER_2026-04-19.md`.
 - For the proposed production route and page ownership model, also read
@@ -36,6 +38,70 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ## Current checkpoint
 
 ### Latest update
+
+#### Date
+2026-04-19
+
+#### Workstream
+Canonical architecture skeleton recorded from product-owner clarification and
+placed in the required reading path.
+
+#### Routes/screens affected
+- Documentation and future route/architecture work across:
+  - `/app/dashboard`
+  - `/app/community`
+  - `/app/marketplace`
+  - `/app/finance`
+  - `/app/trust`
+  - `/app/shop/*`
+  - admin/oversight interpretation
+
+#### Backend routes/endpoints involved
+- none
+
+#### Files in play
+- `README.md`
+- `docs/PROJECT_PROTOCOL.md`
+- `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`
+- `docs/PRODUCTION_INFORMATION_ARCHITECTURE_BLUEPRINT_2026-04-19.md`
+- `docs/PRODUCTION_IA_IMPLEMENTATION_PLAN_2026-04-19.md`
+- `docs/ONE_PAGE_ROUTE_MAP_2026-04-19.md`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The product owner clarified that:
+  - Community Home is the combined index/list of all communities a member
+    belongs to
+  - Marketplace is the operational nucleus of one selected community
+  - each community has its own global community ID
+  - each individual has one global member ID across all communities
+  - one global member ID maps to one shop only
+  - one shop maps to six vaults
+  - the same shop appears across all marketplaces the member belongs to
+  - per-marketplace finance and trust are distinct from broader cumulative
+    finance/trust readings
+  - CCI belongs to the cross-community layer more than the single-marketplace
+    layer
+  - Dashboard is a reflector/launcher, not the command centre
+- The canonical architecture basis is now written in
+  `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`.
+- `README.md` and `docs/PROJECT_PROTOCOL.md` now point future route/IA work to
+  that canonical skeleton before further architecture changes.
+- The older provisional architecture docs now explicitly defer to the canonical
+  skeleton where conflicts remain.
+
+#### Open risks or unknowns
+- The production blueprint, implementation plan, and one-page route map still
+  need a deeper future rewrite to fully align with the new skeleton, even though
+  they now carry conflict warnings.
+- No runtime code changed in this step.
+
+#### Next recommended step
+- Review the canonical skeleton with the next assistant/engineer before making
+  further route or navigation changes, then revise the architecture docs and
+  shell movement from that corrected basis.
+
+### Previous update
 
 #### Date
 2026-04-19
@@ -74,8 +140,6 @@ studio behavior to a compact member-photo card with direct actions.
 #### Next recommended step
 - Review the dashboard top identity/trust lane live and then continue Phase 2
   only if another surface still clearly reads as domain-heavy.
-
-### Previous update
 
 #### Date
 2026-04-19

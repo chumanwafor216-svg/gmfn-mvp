@@ -15,6 +15,25 @@ This product is a community-centered system built around entry flows, communitie
 
 The goal of this document is to give the assistant a stable mental model so it can work with less confusion, fewer repetitive questions, and less risk of damaging the codebase.
 
+### 1.1 Mandatory architecture reference
+Before doing route-purpose work, navigation restructuring, marketplace/community
+ownership changes, or page-responsibility changes, also read:
+
+- `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`
+
+That document is the current authoritative skeleton for:
+
+- Community Home
+- Marketplace
+- Shop Gallery
+- Finance
+- Trust / CCI / Trust Passport / TrustSlip
+- Dashboard
+- Admin / oversight
+
+If that document conflicts with older provisional architecture notes, the
+canonical system skeleton wins until those notes are updated.
+
 ---
 
 ## 2. Primary product objective

@@ -12,6 +12,12 @@ Proposed implementation plan derived from:
 
 This is an execution plan, not a direct code change.
 
+Important update:
+- For the corrected canonical community/marketplace/shop skeleton, also read
+  `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`.
+- Where this plan conflicts with that canonical skeleton, the canonical
+  skeleton wins until this plan is revised.
+
 ## Purpose
 This plan explains how to move from the current mixed route state to the
 target production information architecture without destabilizing the app.

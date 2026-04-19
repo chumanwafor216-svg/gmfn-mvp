@@ -9,6 +9,12 @@ and page responsibility.
 
 This is a decision document, not an implementation commit.
 
+Important update:
+- For the corrected canonical community/marketplace/shop skeleton, also read
+  `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`.
+- Where this blueprint conflicts with that canonical skeleton, the canonical
+  skeleton wins until this blueprint is rewritten.
+
 ## Purpose
 This document sets out the strongest production information architecture for the
 current GSN product based on:
@@ -485,4 +491,3 @@ The strongest next step after accepting this blueprint is:
 - decide what leaves `Community Home`
 - decide what leaves `Marketplace`
 - promote `Finance` explicitly as a first-class workspace
-
