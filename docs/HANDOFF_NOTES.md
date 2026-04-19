@@ -40,6 +40,61 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-20
+
+#### Workstream
+Marketplace page composition is now documented as a concrete block-order
+blueprint rather than only a high-level architecture statement.
+
+#### Routes/screens affected
+- architecture guidance for:
+  - `/app/marketplace`
+  - marketplace-launched routes that must carry current marketplace context
+
+#### Backend routes/endpoints involved
+- checked current supporting truth only:
+  - `GET /clans/{clan_id}/invite-link`
+  - community code / marketplace name fields from clan/community responses
+  - current community-money surface inputs built from `clanId + gmfnId`
+
+#### Files in play
+- `docs/MARKETPLACE_PAGE_BLUEPRINT_2026-04-20.md`
+- `docs/PROJECT_PROTOCOL.md`
+- `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`
+- `docs/HANDOFF_NOTES.md`
+- inspected current implementation references:
+  - `frontend/src/pages/MarketplacePage.tsx`
+  - `frontend/src/lib/communityMoney.ts`
+  - `gmfn_backend/app/api/routes/clans.py`
+
+#### Confirmed facts
+- The repo now has a dedicated Marketplace page blueprint.
+- The protocol now tells future assistants to read that blueprint for
+  Marketplace page-composition work.
+- The blueprint locks the intended Marketplace page order as:
+  1. Marketplace Profile and Member Standing
+  2. Marketplace Shortcuts
+  3. Member Roles and Shops
+  4. Marketplace-Owned Links
+  5. Demand Box
+  6. Borrow / Lend / Support
+- The blueprint also locks the rule that Marketplace remains one selected
+  community in action, while Finance and Trust Passport remain cumulative
+  domains above that local truth.
+
+#### Open risks or unknowns
+- This is a documentation checkpoint only; no runtime page layout changed in
+  this step.
+- The current live Marketplace page still needs later implementation alignment
+  to match the new block-order blueprint more closely.
+
+#### Next recommended step
+- Use the new Marketplace page blueprint as the implementation reference before
+  the next Marketplace layout pass.
+
+### Previous update
+
+#### Date
 2026-04-19
 
 #### Workstream

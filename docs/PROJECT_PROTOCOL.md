@@ -21,6 +21,10 @@ ownership changes, or page-responsibility changes, also read:
 
 - `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`
 
+For Marketplace page-composition work specifically, also read:
+
+- `docs/MARKETPLACE_PAGE_BLUEPRINT_2026-04-20.md`
+
 That document is the current authoritative skeleton for:
 
 - Community Home

@@ -108,6 +108,11 @@ So:
 
 Marketplace is the strongest internal working domain for one community.
 
+For the concrete Marketplace page block order and screen-composition rules, also
+read:
+
+- `docs/MARKETPLACE_PAGE_BLUEPRINT_2026-04-20.md`
+
 ## What every marketplace should contain
 Every marketplace should contain the core operational tools for that one
 community, including:
