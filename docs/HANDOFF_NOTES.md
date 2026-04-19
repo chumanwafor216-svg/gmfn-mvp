@@ -43,6 +43,72 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-19
 
 #### Workstream
+Canonical architecture skeleton refined with cumulative Finance/Trust Passport
+meaning and aggregate Spotlight/Demand Box ownership.
+
+#### Routes/screens affected
+- Documentation and future route/architecture work across:
+  - `/app/dashboard`
+  - `/app/community`
+  - `/app/marketplace`
+  - `/app/finance`
+  - `/app/trust`
+  - `/app/shop/*`
+  - admin/oversight interpretation
+
+#### Backend routes/endpoints involved
+- none
+
+#### Files in play
+- `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The product owner clarified that:
+  - Community Home is the combined index/list of all communities a member
+    belongs to
+  - Marketplace is the operational nucleus of one selected community
+  - each community has its own global community ID
+  - each individual has one global member ID across all communities
+  - one global member ID maps to one shop only
+  - one shop maps to six vaults
+  - the same shop appears across all marketplaces the member belongs to
+  - each marketplace has its own peculiar/local finance and trust unit
+  - the `Finance` domain should combine finance activity across the
+    marketplaces the member belongs to
+  - `Trust Passport` should combine trust activity across the communities and
+    marketplaces the member belongs to
+  - `Spotlight` is an aggregate feed sourced from multiple marketplaces rather
+    than a purely one-marketplace domain
+  - `Demand Box` is the opposite-side aggregate counterpart to Spotlight, even
+    though members originate demand inside marketplaces
+  - CCI belongs to the cross-community layer more than the single-marketplace
+    layer
+  - Dashboard is a reflector/launcher, not the command centre
+- The canonical architecture basis is now written in
+  `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`.
+- The canonical skeleton now distinguishes:
+  - marketplace-specific activity
+  - cumulative cross-marketplace domains
+  - aggregate community-home-level feeds
+
+#### Open risks or unknowns
+- The production blueprint, implementation plan, one-page route map, and shell
+  movement still need a deeper future rewrite to fully align with this refined
+  skeleton.
+- No runtime code changed in this step.
+
+#### Next recommended step
+- Review the refined canonical skeleton before further route or navigation
+  changes, then revise the architecture docs and shell movement from that
+  corrected basis.
+
+### Previous update
+
+#### Date
+2026-04-19
+
+#### Workstream
 Canonical architecture skeleton recorded from product-owner clarification and
 placed in the required reading path.
 
@@ -100,8 +166,6 @@ placed in the required reading path.
 - Review the canonical skeleton with the next assistant/engineer before making
   further route or navigation changes, then revise the architecture docs and
   shell movement from that corrected basis.
-
-### Previous update
 
 #### Date
 2026-04-19
