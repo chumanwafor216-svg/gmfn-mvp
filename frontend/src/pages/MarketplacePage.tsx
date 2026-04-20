@@ -2298,9 +2298,12 @@ export default function MarketplacePage() {
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
-        style={pageCard(
-          "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
-        )}
+        style={{
+          ...pageCard(
+            "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+          ),
+          order: 1,
+        }}
       >
         <div style={{ ...sectionLabel(), color: "#A8C7E8" }}>
           Marketplace profile and member standing
@@ -2497,7 +2500,7 @@ export default function MarketplacePage() {
         </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section style={{ ...pageCard("#FFFFFF"), order: 2 }}>
         <div style={sectionLabel()}>Marketplace shortcuts</div>
 
         <div
@@ -2657,9 +2660,10 @@ export default function MarketplacePage() {
         why="It keeps one community in focus so users can see who is visible, what is ready, and when a money or support route should take over."
         next="Read the community identity first, then move into Shop, money, members, or support depending on what you need to do in this community."
         tone="dark"
+        style={{ order: 9 }}
       />
 
-      <section style={pageCard("#FFFFFF")}>
+      <section style={{ ...pageCard("#FFFFFF"), order: 7 }}>
         <div
           style={{
             display: "flex",
@@ -2670,10 +2674,10 @@ export default function MarketplacePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Marketplace detail</div>
+            <div style={sectionLabel()}>Optional marketplace detail</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Open this only when you need the fuller marketplace picture,
-              story, and profile controls.
+              Kept below the main marketplace blocks. Open this only when you
+              need the fuller picture, story, and profile controls.
             </div>
           </div>
 
@@ -3006,7 +3010,7 @@ export default function MarketplacePage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section style={{ ...pageCard("#FFFFFF"), order: 8 }}>
         <div
           style={{
             display: "flex",
@@ -3017,10 +3021,11 @@ export default function MarketplacePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Money routes</div>
+            <div style={sectionLabel()}>Optional money route detail</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Use these routes when you want to pay in, withdraw, or open the
-              finance view for this community.
+              The first block already shows money readiness. Open this detail
+              when you want to inspect pay-in, payout, or Finance routes more
+              slowly.
             </div>
           </div>
 
@@ -3282,7 +3287,7 @@ export default function MarketplacePage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section style={{ ...pageCard("#FFFFFF"), order: 4 }}>
         <div
           style={{
             display: "flex",
@@ -3546,7 +3551,7 @@ export default function MarketplacePage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section style={{ ...pageCard("#FFFFFF"), order: 3 }}>
         <div
           style={{
             display: "flex",
@@ -3698,7 +3703,7 @@ export default function MarketplacePage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section style={{ ...pageCard("#FFFFFF"), order: 5 }}>
         <div style={sectionLabel()}>Demand Box</div>
 
         <div
@@ -3758,7 +3763,7 @@ export default function MarketplacePage() {
       <section
         id="marketplace-loans-support"
         ref={supportSectionRef}
-        style={pageCard("#FFFFFF")}
+        style={{ ...pageCard("#FFFFFF"), order: 6 }}
       >
         <div
           style={{

@@ -46,6 +46,49 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-20
 
 #### Workstream
+Marketplace runtime order now visually follows the canonical Marketplace
+blueprint before optional detail sections.
+
+#### Routes/screens affected
+- `/app/marketplace`
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+
+#### Files in play
+- `frontend/src/pages/MarketplacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The Marketplace page now visually orders its major blocks as:
+  1. Marketplace Profile and Member Standing
+  2. Marketplace Shortcuts
+  3. Member Roles and Shops
+  4. Marketplace-Owned Links
+  5. Demand Box
+  6. Loans & Support
+- Optional Marketplace detail and optional money-route detail are demoted below
+  the core marketplace flow.
+- The hidden screen-level guide has an explicit low priority order so it does
+  not jump above the profile block if guides are re-enabled later.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- This pass changes visual order through route-local styling, not backend
+  behaviour.
+- A live browser/mobile click sweep is still needed to confirm touch behaviour
+  and destination context.
+
+#### Next recommended step
+- Live-review `/app/marketplace` at mobile width, especially the shortcut row,
+  member shop links, Demand Box, and Money In/Out movement.
+
+### Previous update
+
+#### Date
+2026-04-20
+
+#### Workstream
 Innovation and policy logic documented so the architecture can be explained as
 community-anchored economic infrastructure, not just app screens.
 
