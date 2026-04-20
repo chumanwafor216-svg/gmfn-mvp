@@ -384,7 +384,7 @@ function pageShell(): React.CSSProperties {
 
     fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
 
-    padding: "10px 16px",
+    padding: 0,
 
     boxSizing: "border-box",
 
@@ -398,9 +398,9 @@ function frameStyle(): React.CSSProperties {
 
   return {
 
-    width: "min(92vw, 470px)",
+    width: "min(100vw, 520px)",
 
-    minHeight: "calc(100dvh - 20px)",
+    minHeight: "100dvh",
 
     display: "flex",
 
@@ -410,7 +410,7 @@ function frameStyle(): React.CSSProperties {
 
     alignItems: "center",
 
-    justifyContent: "space-between",
+    justifyContent: "center",
 
   };
 
@@ -424,9 +424,11 @@ function artworkShell(): React.CSSProperties {
 
     width: "100%",
 
+    height: "100dvh",
+
     position: "relative",
 
-    borderRadius: 28,
+    borderRadius: 0,
 
     overflow: "hidden",
 
@@ -496,7 +498,7 @@ function GSNSplashArtwork() {
 
         width: "100%",
 
-        aspectRatio: "9 / 12.8",
+        height: "100%",
 
         position: "relative",
 
@@ -525,6 +527,8 @@ function GSNSplashArtwork() {
         }}
 
         xmlns="http://www.w3.org/2000/svg"
+
+        preserveAspectRatio="xMidYMid slice"
 
       >
 

@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { EntryBackLink, EntryGuideLauncher } from "../components/EntryControls";
 import { getAccessToken, getMe, loginAndStore } from "../lib/api";
 
-function pageShell(): React.CSSProperties {
+function pageShell(compact = false): React.CSSProperties {
   return {
     minHeight: "100vh",
     width: "100%",
@@ -14,7 +14,7 @@ function pageShell(): React.CSSProperties {
       "radial-gradient(circle at top, rgba(47,103,196,0.16) 0%, rgba(16,37,59,0.00) 32%), linear-gradient(180deg, #10243A 0%, #173654 62%, #26527C 100%)",
     color: "#FFFFFF",
     fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
-    padding: "22px",
+    padding: compact ? "16px 18px" : "22px",
     boxSizing: "border-box",
   };
 }
@@ -334,12 +334,14 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={pageShell()}>
+    <div style={pageShell(isCompact)}>
       <div
         style={{
           ...heroCard(),
           display: "grid",
-          gap: 18,
+          gap: isCompact ? 13 : 18,
+          borderRadius: isCompact ? 30 : 36,
+          padding: isCompact ? 18 : 22,
         }}
       >
         <div
@@ -362,9 +364,11 @@ export default function LoginPage() {
               width: innerRailWidth,
               margin: "0 auto",
               display: "grid",
-              gridTemplateColumns: "56px 1fr auto",
+              gridTemplateColumns: isCompact
+                ? "44px minmax(0, 1fr) auto"
+                : "56px 1fr auto",
               alignItems: "center",
-              gap: 12,
+              gap: isCompact ? 8 : 12,
               position: "relative",
               zIndex: 1,
             }}
@@ -392,6 +396,7 @@ export default function LoginPage() {
                 label="About"
                 text="Sign In Guide"
                 onClick={() => setGuideOpen((current) => !current)}
+                compact={isCompact}
               />
             </div>
           </div>
@@ -399,11 +404,11 @@ export default function LoginPage() {
           <div
             style={{
               width: innerRailWidth,
-              margin: "18px auto 0",
-              fontSize: isCompact ? 20 : 24,
+              margin: isCompact ? "10px auto 0" : "18px auto 0",
+              fontSize: isCompact ? 18 : 24,
               fontWeight: 1000,
               color: "#F8FBFF",
-              lineHeight: 1.2,
+              lineHeight: isCompact ? 1.14 : 1.2,
               textAlign: "center",
             }}
           >

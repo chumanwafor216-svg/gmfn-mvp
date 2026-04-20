@@ -90,6 +90,9 @@ type DemandItem = {
   description?: string | null;
   status?: string;
   urgency?: string | null;
+  area?: string | null;
+  payment_mode?: string | null;
+  requester_trust_band?: string | null;
   requester_name?: string | null;
   requester_nickname?: string | null;
   requester_email?: string | null;
@@ -2844,6 +2847,8 @@ export default function DashboardPage() {
   );
   const [sellerIdentityDockOpen, setSellerIdentityDockOpen] =
     useState<boolean>(true);
+  const [spotlightGuideOpen, setSpotlightGuideOpen] = useState<boolean>(false);
+  const [demandGuideOpen, setDemandGuideOpen] = useState<boolean>(false);
 
   const [avatarSrc, setAvatarSrc] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -3199,7 +3204,7 @@ export default function DashboardPage() {
   const trustSlipCode = safeStr(trustSlip?.code || "");
   const avatarInputId = "dashboard-avatar-upload-input";
 
-  function trustGoldBtn(minHeight = 34, fontSize = 13): React.CSSProperties {
+  function trustWhiteBtn(minHeight = 34, fontSize = 13): React.CSSProperties {
     return {
       display: "inline-flex",
       alignItems: "center",
@@ -3207,10 +3212,10 @@ export default function DashboardPage() {
       minHeight,
       padding: "6px 10px",
       borderRadius: 11,
-      border: "1px solid rgba(122,75,0,0.24)",
+      border: "1px solid rgba(11,99,209,0.14)",
       background:
-        "linear-gradient(180deg, #F6D77A 0%, #E1B948 48%, #C9971F 100%)",
-      color: "#533300",
+        "linear-gradient(180deg, #FFFFFF 0%, #F4F8FC 100%)",
+      color: "#123055",
       fontWeight: 900,
       fontSize,
       textDecoration: "none",
@@ -3218,7 +3223,7 @@ export default function DashboardPage() {
       whiteSpace: "normal",
       textAlign: "center",
       boxShadow:
-        "inset 0 1px 0 rgba(255,248,220,0.9), inset 0 -2px 0 rgba(122,75,0,0.16), 0 7px 12px rgba(15,23,42,0.12)",
+        "0 10px 20px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.86)",
       letterSpacing: 0.08,
     };
   }
@@ -3266,7 +3271,7 @@ export default function DashboardPage() {
   });
 
   const trustActionButton = (): React.CSSProperties =>
-    dashboardFillButton(trustGoldBtn(isPhone ? 34 : 30, isPhone ? 10.5 : 11), {
+    dashboardFillButton(trustWhiteBtn(isPhone ? 34 : 30, isPhone ? 10.5 : 11), {
       minHeight: isPhone ? 34 : 30,
       padding: isPhone ? "5px 6px" : "6px 10px",
       borderRadius: isPhone ? 10 : 11,
@@ -4005,6 +4010,18 @@ export default function DashboardPage() {
       : urgentDemandItems.length > 0
       ? "Open urgent demand"
       : "Open Demand Box";
+  const demandCommunityLabel = currentCommunityName(currentClan, selectedClanId);
+  const demandRequesterId = safeStr(currentDemandItem?.requester_gmfn_id || "");
+  const demandRequesterTrust = safeStr(
+    currentDemandItem?.requester_trust_band || ""
+  );
+  const demandPaymentMode = safeStr(currentDemandItem?.payment_mode || "");
+  const demandArea = safeStr(currentDemandItem?.area || "");
+  const demandGuideTitle = demandItems.length
+    ? "This demand is live in your community."
+    : "Create a demand when this community needs help.";
+  const demandGuideBody =
+    "Your GSN ID shows who is asking. The community name shows where the need belongs. Trust, TrustSlip, payment terms, and trust credit help both sides decide whether to respond safely.";
 
   const demandSurfaceChrome = useMemo(() => {
     if (urgentDemandItems.length > 0) {
@@ -4862,6 +4879,16 @@ export default function DashboardPage() {
     );
   }
 
+  function toggleSpotlightGuide(event?: React.SyntheticEvent<HTMLElement>) {
+    consumeDashboardButtonEvent(event);
+    setSpotlightGuideOpen((open) => !open);
+  }
+
+  function toggleDemandGuide(event?: React.SyntheticEvent<HTMLElement>) {
+    consumeDashboardButtonEvent(event);
+    setDemandGuideOpen((open) => !open);
+  }
+
   function openSpotlightShop(event?: React.SyntheticEvent<HTMLElement>) {
     consumeDashboardButtonEvent(event);
     const spotlightGmfnId = safeStr(activeSpotlight?.author_gmfn_id || "");
@@ -5296,6 +5323,13 @@ export default function DashboardPage() {
   const dashboardSpotlightTopInset = isCompact ? 6 : 8;
   const dashboardSpotlightBottomInset = isCompact ? 6 : 8;
   const dashboardSpotlightThumbSize = isCompact ? 84 : 112;
+  const dashboardSpotlightScreenHeight = isPhone
+    ? spotlightGuideOpen
+      ? 302
+      : 278
+    : isCompact
+    ? 260
+    : 320;
   const dashboardSpotlightTitleSize = isPhone ? 16 : isCompact ? 18 : 22;
   const dashboardSpotlightBodyFontSize = isPhone
     ? 12.25
@@ -5336,6 +5370,71 @@ export default function DashboardPage() {
     maxWidth: "100%",
     ...overrides,
   });
+  const spotlightWhiteButton = (
+    overrides: React.CSSProperties = {}
+  ): React.CSSProperties =>
+    dashboardFillButton(
+      {
+        ...secondaryBtn(false),
+        minHeight: isPhone ? 46 : 40,
+        padding: isPhone ? "10px 12px" : "8px 14px",
+        borderRadius: isPhone ? 15 : 15,
+        background:
+          "linear-gradient(180deg, #FFFFFF 0%, #F4F8FC 100%)",
+        border: "1px solid rgba(11,99,209,0.14)",
+        color: "#123055",
+        fontWeight: 900,
+        userSelect: "none",
+        touchAction: "manipulation",
+        boxShadow:
+          "0 10px 20px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.86)",
+      },
+      overrides
+    );
+  const spotlightActionButton = (
+    overrides: React.CSSProperties = {}
+  ): React.CSSProperties =>
+    dashboardFillButton(
+      {
+        ...secondaryBtn(false),
+        minHeight: isPhone ? 46 : 40,
+        padding: isPhone ? "10px 12px" : "8px 14px",
+        borderRadius: isPhone ? 15 : 15,
+        background:
+          "linear-gradient(180deg, #FFFFFF 0%, #F4F8FC 100%)",
+        border: "1px solid rgba(11,99,209,0.14)",
+        color: "#123055",
+        fontWeight: 900,
+        userSelect: "none",
+        touchAction: "manipulation",
+        boxShadow:
+          "0 10px 20px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.86)",
+      },
+      overrides
+    );
+  const attentionConnectionText = isPhone
+    ? "Focus shows follow-through. Trust is how your community reads it. CCI is how outsiders may read it. TrustSlip keeps later proof. The waiting request is the issue now."
+    : trustAttentionCore.connectionText;
+  const attentionConsequenceText = isPhone
+    ? "Leaving it waiting weakens trust now. If it stays open, it can affect CCI and make your TrustSlip story look less steady."
+    : attentionDisplaySignal.consequenceText;
+  const attentionPopupLabelStyle = (
+    color = DASHBOARD_BRAND.label
+  ): React.CSSProperties => ({
+    ...sectionLabel(),
+    color,
+    fontSize: isPhone ? 9.6 : 12,
+    letterSpacing: isPhone ? 0.5 : 0.35,
+    lineHeight: 1.05,
+  });
+  const attentionPhoneCardTight: React.CSSProperties = isPhone
+    ? {
+        borderRadius: 13,
+        padding: 8,
+        boxShadow:
+          "inset 0 1px 0 rgba(255,255,255,0.78), 0 8px 16px rgba(10,24,49,0.04)",
+      }
+    : {};
   return (
     <div
       style={{
@@ -5375,18 +5474,20 @@ export default function DashboardPage() {
             <div
               style={{
                 position: "fixed",
-                top: isCompact ? 12 : 18,
-                right: isCompact ? 12 : 18,
-                left: isCompact ? 12 : "auto",
+                top: isPhone ? 8 : isCompact ? 12 : 18,
+                right: isPhone ? 10 : isCompact ? 12 : 18,
+                left: isPhone ? 10 : isCompact ? 12 : "auto",
                 width: isCompact ? "auto" : 452,
                 zIndex: 1200,
-                borderRadius: 22,
+                borderRadius: isPhone ? 20 : 22,
                 overflow: "hidden",
                 border: attentionPopupTone.border,
                 background: attentionPopupChrome.shellBg,
                 boxShadow: attentionPopupTone.shadow,
                 animation: "dashboardAttentionPopupSlide 240ms ease-out",
                 backdropFilter: "blur(14px)",
+                maxHeight: isPhone ? "calc(100dvh - 16px)" : undefined,
+                overflowY: isPhone ? "auto" : undefined,
               }}
             >
               <div
@@ -5398,16 +5499,16 @@ export default function DashboardPage() {
 
               <div
                 style={{
-                  padding: isCompact ? 14 : 16,
+                  padding: isPhone ? 11 : isCompact ? 14 : 16,
                   background: attentionPopupChrome.heroBg,
                   borderBottom: attentionPopupChrome.heroBorder,
                 }}
               >
                 <div
                   style={{
-                    display: "flex",
+                    display: isPhone ? "grid" : "flex",
                     justifyContent: "space-between",
-                    gap: 10,
+                    gap: isPhone ? 8 : 10,
                     alignItems: "flex-start",
                     flexWrap: "wrap",
                   }}
@@ -5417,14 +5518,15 @@ export default function DashboardPage() {
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: 8,
+                        gap: isPhone ? 6 : 8,
                         flexWrap: "wrap",
                       }}
                     >
                       <div
                         style={{
-                          ...sectionLabel(),
-                          color: attentionPopupChrome.heroLabel,
+                          ...attentionPopupLabelStyle(
+                            attentionPopupChrome.heroLabel
+                          ),
                         }}
                       >
                         Attention Guide
@@ -5434,14 +5536,14 @@ export default function DashboardPage() {
                         style={{
                           display: "inline-flex",
                           alignItems: "center",
-                          gap: 6,
-                          minHeight: 26,
-                          padding: "4px 9px",
+                          gap: isPhone ? 5 : 6,
+                          minHeight: isPhone ? 22 : 26,
+                          padding: isPhone ? "3px 8px" : "4px 9px",
                           borderRadius: 999,
                           background: attentionPopupChrome.stageBg,
                           border: attentionPopupChrome.stageBorder,
                           color: attentionPopupChrome.stageText,
-                          fontSize: 10.5,
+                          fontSize: isPhone ? 9.6 : 10.5,
                           fontWeight: 900,
                           letterSpacing: 0.18,
                           textTransform: "uppercase",
@@ -5466,9 +5568,9 @@ export default function DashboardPage() {
                       style={{
                         marginTop: 8,
                         color: attentionPopupChrome.heroTitle,
-                        fontSize: isCompact ? 18 : 20,
+                        fontSize: isPhone ? 16.5 : isCompact ? 18 : 20,
                         fontWeight: 900,
-                        lineHeight: 1.18,
+                        lineHeight: isPhone ? 1.12 : 1.18,
                         maxWidth: 500,
                         textWrap: "balance",
                       }}
@@ -5480,8 +5582,8 @@ export default function DashboardPage() {
                       style={{
                         marginTop: 8,
                         color: attentionPopupChrome.heroBody,
-                        fontSize: 13,
-                        lineHeight: 1.58,
+                        fontSize: isPhone ? 12 : 13,
+                        lineHeight: isPhone ? 1.36 : 1.58,
                         fontWeight: 700,
                         maxWidth: 520,
                       }}
@@ -5493,7 +5595,12 @@ export default function DashboardPage() {
                   <div
                     style={{
                       display: "grid",
-                      gap: 6,
+                      gridTemplateColumns: isPhone
+                        ? "repeat(2, minmax(0, auto))"
+                        : "1fr",
+                      gap: isPhone ? 7 : 6,
+                      alignItems: "center",
+                      justifyContent: isPhone ? "start" : undefined,
                       justifyItems: isCompact ? "start" : "end",
                     }}
                   >
@@ -5501,14 +5608,14 @@ export default function DashboardPage() {
                       style={{
                         display: "inline-flex",
                         alignItems: "center",
-                        gap: 6,
-                        minHeight: 28,
-                        padding: "5px 9px",
+                        gap: isPhone ? 5 : 6,
+                        minHeight: isPhone ? 26 : 28,
+                        padding: isPhone ? "4px 8px" : "5px 9px",
                         borderRadius: 999,
                         background: attentionPopupChrome.stageBg,
                         border: attentionPopupChrome.stageBorder,
                         color: attentionPopupChrome.stageText,
-                        fontSize: 11,
+                        fontSize: isPhone ? 10.2 : 11,
                         fontWeight: 900,
                         letterSpacing: 0.12,
                         boxShadow:
@@ -5527,9 +5634,9 @@ export default function DashboardPage() {
                       onPointerDown={consumeDashboardPointerEvent}
                       style={{
                         ...subtleBtn(false),
-                        minHeight: 32,
-                        padding: "5px 10px",
-                        fontSize: 11.5,
+                        minHeight: isPhone ? 26 : 32,
+                        padding: isPhone ? "4px 9px" : "5px 10px",
+                        fontSize: isPhone ? 10.3 : 11.5,
                         borderRadius: 12,
                         border: "1px solid rgba(255,255,255,0.18)",
                         background:
@@ -5550,18 +5657,18 @@ export default function DashboardPage() {
                       marginTop: 10,
                       display: "inline-flex",
                       alignItems: "center",
-                      gap: 8,
-                      minHeight: 28,
+                      gap: isPhone ? 6 : 8,
+                      minHeight: isPhone ? 24 : 28,
                       maxWidth: "100%",
-                      padding: "5px 9px",
+                      padding: isPhone ? "4px 8px" : "5px 9px",
                       borderRadius: 12,
                       background:
                         "linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.08) 100%)",
                       border: "1px solid rgba(255,255,255,0.14)",
                       color: attentionPopupChrome.heroBody,
-                      fontSize: 12,
+                      fontSize: isPhone ? 10.8 : 12,
                       fontWeight: 800,
-                      lineHeight: 1.42,
+                      lineHeight: isPhone ? 1.24 : 1.42,
                       boxShadow:
                         "inset 0 1px 0 rgba(255,255,255,0.14), 0 10px 20px rgba(7,16,28,0.10)",
                     }}
@@ -5582,64 +5689,69 @@ export default function DashboardPage() {
 
               <div
                 style={{
-                  padding: isCompact ? 12 : 14,
+                  padding: isPhone ? 9 : isCompact ? 12 : 14,
                   background: attentionPopupChrome.bodyBg,
                 }}
               >
                 <div
                   style={{
                     ...innerCard(attentionPopupChrome.connectBg),
-                    padding: isCompact ? 10 : 11,
+                    ...attentionPhoneCardTight,
+                    padding: isPhone ? 8 : isCompact ? 10 : 11,
                     border: attentionPopupChrome.connectBorder,
                     marginTop: 0,
                   }}
                 >
                   <div
                     style={{
-                      ...sectionLabel(),
-                      color: attentionPopupTone.labelColor,
+                      ...attentionPopupLabelStyle(
+                        attentionPopupTone.labelColor
+                      ),
                     }}
                   >
                     How it connects
                   </div>
                   <div
                     style={{
-                      marginTop: 7,
+                      marginTop: isPhone ? 5 : 7,
                       color: DASHBOARD_BRAND.ink,
-                      fontSize: 12.5,
+                      fontSize: isPhone ? 11.35 : 12.5,
                       fontWeight: 800,
-                      lineHeight: 1.54,
+                      lineHeight: isPhone ? 1.34 : 1.54,
                     }}
                   >
-                    {trustAttentionCore.connectionText}
+                    {attentionConnectionText}
                   </div>
                 </div>
 
                 <div
                   style={{
-                    marginTop: 10,
+                    marginTop: isPhone ? 7 : 10,
                     display: "grid",
-                    gridTemplateColumns: isCompact
+                    gridTemplateColumns: isPhone
+                      ? "minmax(0, 0.9fr) minmax(0, 1.1fr)"
+                      : isCompact
                       ? "1fr"
                       : "minmax(0, 1fr) minmax(0, 1fr)",
-                    gap: 8,
+                    gap: isPhone ? 7 : 8,
                   }}
                 >
                   <div
                     style={{
                       ...innerCard(attentionPopupChrome.panelBg),
                       border: attentionPopupChrome.panelBorder,
-                      padding: isCompact ? 10 : 11,
+                      ...attentionPhoneCardTight,
+                      padding: isPhone ? 8 : isCompact ? 10 : 11,
                     }}
                   >
-                    <div style={sectionLabel()}>Problem</div>
+                    <div style={attentionPopupLabelStyle()}>Problem</div>
                     <div
                       style={{
-                        marginTop: 8,
+                        marginTop: isPhone ? 5 : 8,
                         color: DASHBOARD_BRAND.ink,
-                        fontSize: 13.5,
+                        fontSize: isPhone ? 11.4 : 13.5,
                         fontWeight: 800,
-                        lineHeight: 1.52,
+                        lineHeight: isPhone ? 1.34 : 1.52,
                       }}
                     >
                       {attentionDisplaySignal.problemText}
@@ -5650,47 +5762,50 @@ export default function DashboardPage() {
                     style={{
                       ...innerCard(attentionPopupChrome.panelBg),
                       border: attentionPopupChrome.panelBorder,
-                      padding: isCompact ? 10 : 11,
+                      ...attentionPhoneCardTight,
+                      padding: isPhone ? 8 : isCompact ? 10 : 11,
                     }}
                   >
-                    <div style={sectionLabel()}>Why it matters</div>
+                    <div style={attentionPopupLabelStyle()}>Why it matters</div>
                     <div
                       style={{
-                        marginTop: 8,
+                        marginTop: isPhone ? 5 : 8,
                         color: DASHBOARD_BRAND.subInk,
-                        fontSize: 13,
+                        fontSize: isPhone ? 11.2 : 13,
                         fontWeight: 800,
-                        lineHeight: 1.54,
+                        lineHeight: isPhone ? 1.34 : 1.54,
                       }}
                     >
-                      {attentionDisplaySignal.consequenceText}
+                      {attentionConsequenceText}
                     </div>
                   </div>
                 </div>
 
                 <div
                   style={{
-                    marginTop: 8,
+                    marginTop: isPhone ? 7 : 8,
                     ...innerCard(attentionPopupChrome.actionBg),
                     border: attentionPopupChrome.panelBorder,
-                    padding: isCompact ? 10 : 11,
+                    ...attentionPhoneCardTight,
+                    padding: isPhone ? 8 : isCompact ? 10 : 11,
                   }}
                 >
                   <div
                     style={{
-                      ...sectionLabel(),
-                      color: attentionPopupTone.labelColor,
+                      ...attentionPopupLabelStyle(
+                        attentionPopupTone.labelColor
+                      ),
                     }}
                   >
                     Do this now
                   </div>
                   <div
                     style={{
-                      marginTop: 8,
+                      marginTop: isPhone ? 5 : 8,
                       color: "#1D4ED8",
-                      fontSize: 13.5,
+                      fontSize: isPhone ? 11.8 : 13.5,
                       fontWeight: 900,
-                      lineHeight: 1.54,
+                      lineHeight: isPhone ? 1.32 : 1.54,
                     }}
                   >
                     {attentionDisplaySignal.actionText}
@@ -5699,11 +5814,23 @@ export default function DashboardPage() {
 
                 <div
                   style={{
-                    marginTop: 10,
+                    marginTop: isPhone ? 7 : 10,
                     ...innerCard("linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,250,255,0.96) 100%)"),
-                    padding: 8,
+                    ...attentionPhoneCardTight,
+                    padding: isPhone ? 6 : 8,
                     border: attentionPopupChrome.connectBorder,
-                    ...dashboardActionGrid(isCompact ? 108 : 124),
+                    ...(isPhone
+                      ? {
+                          display: "grid",
+                          gridTemplateColumns:
+                            attentionDisplaySignal.secondaryCtaLabel &&
+                            attentionDisplaySignal.secondaryCtaTo
+                              ? "repeat(3, minmax(0, 1fr))"
+                              : "repeat(2, minmax(0, 1fr))",
+                          gap: 6,
+                          alignItems: "stretch",
+                        }
+                      : dashboardActionGrid(isCompact ? 108 : 124)),
                   }}
                 >
                   <button
@@ -5714,10 +5841,14 @@ export default function DashboardPage() {
                     onPointerDown={consumeDashboardPointerEvent}
                     style={{
                       ...dashboardFillButton(primaryBtn(false), {
-                        minHeight: isCompact ? 34 : 36,
-                        padding: isCompact ? "7px 10px" : "8px 12px",
-                        fontSize: isCompact ? 11.5 : 12.25,
-                        borderRadius: isCompact ? 11 : 13,
+                        minHeight: isPhone ? 30 : isCompact ? 34 : 36,
+                        padding: isPhone
+                          ? "5px 6px"
+                          : isCompact
+                          ? "7px 10px"
+                          : "8px 12px",
+                        fontSize: isPhone ? 10.1 : isCompact ? 11.5 : 12.25,
+                        borderRadius: isPhone ? 10 : isCompact ? 11 : 13,
                       }),
                       background:
                         "linear-gradient(180deg, #103B70 0%, #0B63D1 60%, #3B82F6 100%)",
@@ -5741,10 +5872,18 @@ export default function DashboardPage() {
                       onPointerDown={consumeDashboardPointerEvent}
                       style={{
                         ...dashboardFillButton(secondaryBtn(false), {
-                          minHeight: isCompact ? 34 : 36,
-                          padding: isCompact ? "7px 10px" : "8px 12px",
-                          fontSize: isCompact ? 11.5 : 12.25,
-                          borderRadius: isCompact ? 11 : 13,
+                          minHeight: isPhone ? 30 : isCompact ? 34 : 36,
+                          padding: isPhone
+                            ? "5px 6px"
+                            : isCompact
+                            ? "7px 10px"
+                            : "8px 12px",
+                          fontSize: isPhone
+                            ? 10.1
+                            : isCompact
+                            ? 11.5
+                            : 12.25,
+                          borderRadius: isPhone ? 10 : isCompact ? 11 : 13,
                         }),
                         background: DASHBOARD_BRAND.summaryButton,
                         border: `1px solid ${DASHBOARD_BRAND.cardBorderStrong}`,
@@ -5763,10 +5902,14 @@ export default function DashboardPage() {
                     onPointerDown={consumeDashboardPointerEvent}
                     style={{
                       ...dashboardFillButton(secondaryBtn(false), {
-                        minHeight: isCompact ? 34 : 36,
-                        padding: isCompact ? "7px 10px" : "8px 12px",
-                        fontSize: isCompact ? 11.5 : 12.25,
-                        borderRadius: isCompact ? 11 : 13,
+                        minHeight: isPhone ? 30 : isCompact ? 34 : 36,
+                        padding: isPhone
+                          ? "5px 6px"
+                          : isCompact
+                          ? "7px 10px"
+                          : "8px 12px",
+                        fontSize: isPhone ? 10.1 : isCompact ? 11.5 : 12.25,
+                        borderRadius: isPhone ? 10 : isCompact ? 11 : 13,
                       }),
                       background:
                         "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,249,255,0.96) 100%)",
@@ -5930,17 +6073,40 @@ export default function DashboardPage() {
           <div
             style={{
               marginTop: isPhone ? 6 : 12,
-              borderRadius: isPhone ? 14 : 18,
-              padding: isPhone ? 8 : 14,
-              background: "rgba(255,255,255,0.72)",
-              border: "1px solid rgba(11,99,209,0.10)",
-              color: "#35516B",
-              fontSize: isPhone ? 12 : 14,
-              lineHeight: isPhone ? 1.38 : 1.75,
+              display: "grid",
+              gridTemplateColumns: isPhone ? "auto minmax(0, 1fr)" : "1fr",
+              gap: isPhone ? 7 : 8,
+              alignItems: "center",
+              borderRadius: isPhone ? 13 : 18,
+              padding: isPhone ? "7px 8px" : 14,
+              background:
+                "radial-gradient(circle at top left, rgba(11,99,209,0.16) 0%, rgba(11,99,209,0) 35%), linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(237,246,255,0.94) 100%)",
+              border: "1px solid rgba(11,99,209,0.14)",
+              color: "#233D57",
+              fontSize: isPhone ? 11.4 : 14,
+              fontWeight: 800,
+              lineHeight: isPhone ? 1.32 : 1.75,
+              boxShadow:
+                "inset 0 1px 0 rgba(255,255,255,0.88), 0 10px 20px rgba(10,24,49,0.05)",
             }}
           >
-            Dashboard is your quick first look. It shows what needs attention
-            now and points you to the right page to handle it.
+            {isPhone ? (
+              <span
+                aria-hidden="true"
+                style={{
+                  width: 9,
+                  height: 36,
+                  borderRadius: 999,
+                  background:
+                    "linear-gradient(180deg, #0B63D1 0%, #F3D06A 100%)",
+                  boxShadow: "0 8px 16px rgba(11,99,209,0.16)",
+                }}
+              />
+            ) : null}
+            <span>
+              Dashboard is your quick first look. It shows what needs attention
+              now and points you to the right page to handle it.
+            </span>
           </div>
         </details>
 
@@ -6588,13 +6754,16 @@ export default function DashboardPage() {
 
       <section
         style={{
-          ...pageCard(demandSurfaceChrome.shellBg),
+          ...pageCard(
+            "radial-gradient(circle at top left, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0) 38%), linear-gradient(180deg, #F8FBFF 0%, #EEF6FF 100%)"
+          ),
           position: "relative",
-          border: demandSurfaceChrome.shellBorder,
-          padding: isPhone ? 12 : isCompact ? 16 : 18,
-          borderRadius: isPhone ? 22 : 26,
+          border: "1px solid rgba(15,59,116,0.16)",
+          padding: isPhone ? 10 : isCompact ? 16 : 18,
+          borderRadius: isPhone ? 24 : 28,
           boxShadow:
-            "0 20px 44px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.76)",
+            "0 22px 46px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.82)",
+          overflow: "hidden",
         }}
       >
         <div
@@ -6603,8 +6772,9 @@ export default function DashboardPage() {
             top: 0,
             left: 0,
             right: 0,
-            height: 4,
-            background: demandSurfaceChrome.accent,
+            height: isPhone ? 5 : 6,
+            background:
+              "linear-gradient(90deg, #0B63D1 0%, #F3D06A 44%, #0F3B74 100%)",
           }}
         />
         <div
@@ -6634,12 +6804,27 @@ export default function DashboardPage() {
                   type="button"
                   onClick={goPrevSpotlight}
                   onPointerDown={consumeDashboardPointerEvent}
-                  style={secondaryBtn(false)}
+                  style={spotlightWhiteButton({
+                    width: "auto",
+                    minWidth: isPhone ? 92 : 120,
+                  })}
                 >
                   Previous
                 </button>
 
-                <span style={badge(false)}>
+                <span
+                  style={{
+                    ...badge(false),
+                    minHeight: isPhone ? 46 : 40,
+                    padding: isPhone ? "10px 12px" : "8px 14px",
+                    borderRadius: isPhone ? 15 : 15,
+                    background:
+                      "linear-gradient(180deg, #FFFFFF 0%, #F4F8FC 100%)",
+                    color: "#123055",
+                    boxShadow:
+                      "0 10px 20px rgba(10,24,49,0.05), inset 0 1px 0 rgba(255,255,255,0.86)",
+                  }}
+                >
                   Spotlight {(spotlightIndex % spotlights.length) + 1} / {spotlights.length}
                 </span>
 
@@ -6647,7 +6832,10 @@ export default function DashboardPage() {
                   type="button"
                   onClick={goNextSpotlight}
                   onPointerDown={consumeDashboardPointerEvent}
-                  style={secondaryBtn(false)}
+                  style={spotlightWhiteButton({
+                    width: "auto",
+                    minWidth: isPhone ? 74 : 104,
+                  })}
                 >
                   Next
                 </button>
@@ -6760,27 +6948,32 @@ export default function DashboardPage() {
               style={{
                 marginTop: isPhone ? 10 : 16,
                 ...innerCard(
-                  "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"
+                  "linear-gradient(180deg, #09233C 0%, #0D355B 48%, #0B63D1 100%)"
                 ),
-                border: "1px solid rgba(11,99,209,0.12)",
-                padding: isPhone ? 10 : 16,
-                borderRadius: isPhone ? 16 : 18,
+                border: "1px solid rgba(243,208,106,0.30)",
+                padding: isPhone ? 8 : 12,
+                borderRadius: isPhone ? 20 : 22,
                 boxShadow:
-                  "0 20px 40px rgba(15,59,116,0.08), inset 0 1px 0 rgba(255,255,255,0.8)",
+                  "0 24px 48px rgba(9,35,60,0.20), inset 0 1px 0 rgba(255,255,255,0.14)",
               }}
             >
               <div
                 style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    !isCompact && spotlightHasMedia
-                      ? `${dashboardSpotlightThumbSize}px minmax(0, 1fr)`
-                      : "1fr",
-                  gap: isPhone ? 9 : 14,
-                  alignItems: "start",
+                  position: "relative",
+                  minHeight: dashboardSpotlightScreenHeight,
+                  padding: isPhone ? 8 : 10,
+                  borderRadius: isPhone ? 18 : 22,
+                  overflow: "hidden",
+                  border: "1px solid rgba(243,208,106,0.38)",
+                  outline: "1px solid rgba(255,255,255,0.12)",
+                  outlineOffset: "-6px",
+                  background:
+                    "linear-gradient(180deg, #061525 0%, #0A2744 45%, #0F3B74 100%)",
+                  boxShadow:
+                    "0 18px 34px rgba(2,12,27,0.24), inset 0 0 0 1px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.16)",
                 }}
               >
-                {!isCompact && spotlightHasMedia ? (
+                {false ? (
                   <SpotlightMediaFrame
                     imageCandidates={spotlightImageCandidates}
                     videoUrl={spotlightVideoCandidate}
@@ -6830,7 +7023,150 @@ export default function DashboardPage() {
                   />
                 ) : null}
 
-                <div style={{ display: "grid", gap: 12 }}>
+                <SpotlightMediaFrame
+                  imageCandidates={spotlightImageCandidates}
+                  videoUrl={spotlightVideoCandidate}
+                  videoPoster={spotlightImageCandidates[0] || ""}
+                  alt={safeStr(
+                    activeSpotlight?.title ||
+                      activeSpotlight?.message ||
+                      "Spotlight"
+                  )}
+                  frameStyle={{
+                    width: "100%",
+                    height: dashboardSpotlightScreenHeight,
+                    minHeight: dashboardSpotlightScreenHeight,
+                    borderRadius: isPhone ? 12 : 14,
+                    background: "transparent",
+                    boxShadow:
+                      "inset 0 0 0 1px rgba(255,255,255,0.10), 0 0 0 1px rgba(2,12,27,0.46)",
+                  }}
+                  mediaStyle={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                  contentPadding={0}
+                  showVideoControls={false}
+                  autoPlayVideo={Boolean(spotlightVideoCandidate)}
+                  mutedVideo={Boolean(spotlightVideoCandidate)}
+                  loopVideo={Boolean(spotlightVideoCandidate)}
+                  fallback={
+                    <div
+                      style={{
+                        width: "100%",
+                        height: dashboardSpotlightScreenHeight,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#F8FBFF",
+                        fontWeight: 900,
+                        letterSpacing: 0.8,
+                        fontSize: isPhone ? 18 : 24,
+                      }}
+                    >
+                      GSN Spotlight
+                    </div>
+                  }
+                />
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: isPhone ? 8 : 10,
+                    borderRadius: isPhone ? 12 : 14,
+                    pointerEvents: "none",
+                    background:
+                      "linear-gradient(180deg, rgba(6,19,34,0.16) 0%, rgba(6,19,34,0.08) 38%, rgba(6,19,34,0.72) 100%)",
+                  }}
+                />
+                <div
+                  style={{
+                    position: "absolute",
+                    top: isPhone ? 16 : 18,
+                    left: isPhone ? 16 : 18,
+                    right: isPhone ? 16 : 18,
+                    display: "flex",
+                    gap: isPhone ? 5 : 7,
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    pointerEvents: "none",
+                  }}
+                >
+                  <span
+                    style={{
+                      ...badge(true),
+                      minHeight: isPhone ? 26 : 30,
+                      padding: isPhone ? "5px 8px" : "6px 10px",
+                      background: "rgba(255,255,255,0.9)",
+                      boxShadow: "0 10px 22px rgba(2,12,27,0.12)",
+                    }}
+                  >
+                    {safeStr(activeSpotlight.trust_band || "Trusted member")}
+                  </span>
+                  <span
+                    style={{
+                      ...badge(false),
+                      minHeight: isPhone ? 26 : 30,
+                      padding: isPhone ? "5px 8px" : "6px 10px",
+                      background: spotlightExpiryStatus.urgent
+                        ? "rgba(255,247,237,0.92)"
+                        : "rgba(239,246,255,0.92)",
+                      color: spotlightExpiryStatus.urgent ? "#9A3412" : "#1D4ED8",
+                      boxShadow: "0 10px 22px rgba(2,12,27,0.12)",
+                    }}
+                  >
+                    {spotlightExpiryStatus.chip}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    position: "absolute",
+                    left: isPhone ? 18 : 22,
+                    right: isPhone ? 18 : 22,
+                    bottom: isPhone ? 17 : 20,
+                    display: "grid",
+                    gap: 4,
+                    color: "#FFFFFF",
+                    pointerEvents: "none",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontWeight: 900,
+                      fontSize: dashboardSpotlightTitleSize,
+                      lineHeight: 1.15,
+                      textShadow: "0 10px 22px rgba(0,0,0,0.34)",
+                    }}
+                  >
+                    {safeStr(
+                      activeSpotlight.title ||
+                        activeSpotlight.message ||
+                        "Community Spotlight"
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: isPhone ? 12 : 13,
+                      lineHeight: 1.32,
+                      color: "rgba(255,255,255,0.88)",
+                      fontWeight: 800,
+                      textShadow: "0 8px 18px rgba(0,0,0,0.34)",
+                    }}
+                  >
+                    {safeStr(
+                      activeSpotlight.source_shop_name ||
+                        activeSpotlight.author_name ||
+                        "Community seller"
+                    )}{" "}
+                    -{" "}
+                    {safeStr(
+                      activeSpotlight.source_clan_name ||
+                        currentCommunityName(currentClan, selectedClanId)
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ display: "none" }}>
                   <div
                     style={{
                       display: "flex",
@@ -6984,6 +7320,138 @@ export default function DashboardPage() {
                     </button>
                   </div>
                 </div>
+              </div>
+              <div
+                onPointerDown={consumeDashboardPointerEvent}
+                style={{
+                  marginTop: isPhone ? 14 : 10,
+                  borderRadius: isPhone ? 16 : 17,
+                  border: "1px solid rgba(243,208,106,0.24)",
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(238,246,255,0.97) 100%)",
+                  padding: isPhone ? 10 : 9,
+                  color: "#35516B",
+                  fontSize: isPhone ? 11.8 : 13,
+                  lineHeight: isPhone ? 1.38 : 1.55,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={toggleSpotlightGuide}
+                  onPointerDown={consumeDashboardPointerEvent}
+                  style={{
+                    width: "100%",
+                    minHeight: isPhone ? 54 : 42,
+                    padding: isPhone ? "10px 14px" : "8px 14px",
+                    border: "1px solid rgba(15,59,116,0.16)",
+                    borderRadius: isPhone ? 16 : 14,
+                    background:
+                      "linear-gradient(180deg, #FFFFFF 0%, #F4F8FC 100%)",
+                    boxShadow:
+                      "0 12px 24px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
+                    cursor: "pointer",
+                    color: "#123055",
+                    fontWeight: 900,
+                    fontSize: isPhone ? 13.4 : 13,
+                    letterSpacing: 0.12,
+                    touchAction: "manipulation",
+                    userSelect: "none",
+                  }}
+                >
+                  {spotlightGuideOpen ? "Close Spotlight" : "About Spotlight"}
+                </button>
+                {spotlightGuideOpen ? (
+                  <div
+                    style={{
+                      marginTop: isPhone ? 12 : 7,
+                      display: "grid",
+                      gap: isPhone ? 6 : 8,
+                      maxHeight: isPhone ? 216 : undefined,
+                      overflowY: isPhone ? "auto" : undefined,
+                      paddingRight: isPhone ? 2 : 0,
+                    }}
+                  >
+                  <div
+                    style={{
+                      ...helperText(),
+                      ...dashboardPhoneHelper,
+                      fontSize: isPhone ? 11.4 : 13,
+                      lineHeight: isPhone ? 1.3 : 1.58,
+                    }}
+                  >
+                    Spotlight is your community display window. Show goods,
+                    services, or an update your community should notice.
+                  </div>
+                  <div
+                    style={{
+                      color: "#475569",
+                      fontSize: isPhone ? 11.3 : dashboardSpotlightBodyFontSize,
+                      lineHeight: isPhone ? 1.3 : 1.58,
+                      fontWeight: 800,
+                    }}
+                  >
+                    Open Community Home to upload a picture or video. GSN will
+                    show it here as a quick live preview, then people can open
+                    your marketplace or shop for the full details.
+                  </div>
+                  <div
+                    style={{
+                      color: spotlightExpiryStatus.urgent ? "#9A3412" : "#1D4ED8",
+                      fontSize: isPhone ? 10.9 : 12.5,
+                      fontWeight: 800,
+                    }}
+                  >
+                    Current slot: {spotlightExpiryStatus.detail}
+                  </div>
+                  <div
+                    style={
+                      isPhone
+                        ? {
+                            display: "grid",
+                            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                            gap: 8,
+                            alignItems: "stretch",
+                          }
+                        : { ...dashboardActionGrid(isCompact ? 118 : 152) }
+                    }
+                  >
+                    <button
+                      type="button"
+                      onClick={(event) => openDashboardRoute(event, "/app/community")}
+                      onPointerDown={consumeDashboardPointerEvent}
+                      style={spotlightActionButton()}
+                    >
+                      Upload
+                    </button>
+                    <button
+                      type="button"
+                      onClick={openSpotlightMarketplace}
+                      onPointerDown={consumeDashboardPointerEvent}
+                      style={spotlightActionButton()}
+                    >
+                      Market
+                    </button>
+                    {safeStr(activeSpotlight.author_gmfn_id || "") ? (
+                      <button
+                        type="button"
+                        onClick={openSpotlightShop}
+                        onPointerDown={consumeDashboardPointerEvent}
+                        style={spotlightActionButton()}
+                      >
+                        Shop
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={minimizeSpotlight}
+                      onPointerDown={consumeDashboardPointerEvent}
+                      style={spotlightWhiteButton()}
+                    >
+                      Hide
+                    </button>
+                  </div>
+                </div>
+                ) : null}
               </div>
             </div>
 
@@ -7811,6 +8279,63 @@ export default function DashboardPage() {
 
           <div
             style={{
+              marginTop: isPhone ? 9 : 12,
+              display: "grid",
+              gap: isPhone ? 7 : 9,
+            }}
+            onPointerDown={consumeDashboardPointerEvent}
+          >
+            <button
+              type="button"
+              onClick={toggleDemandGuide}
+              onPointerDown={consumeDashboardPointerEvent}
+              style={spotlightWhiteButton({
+                minHeight: isPhone ? 42 : 40,
+                padding: isPhone ? "8px 12px" : "8px 14px",
+              })}
+            >
+              {demandGuideOpen ? "Close Demand Box guide" : "About Demand Box"}
+            </button>
+
+            {demandGuideOpen ? (
+              <div
+                style={{
+                  borderRadius: isPhone ? 15 : 18,
+                  border: "1px solid rgba(11,99,209,0.12)",
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(242,247,253,0.95) 100%)",
+                  padding: isPhone ? "10px 11px" : "12px 14px",
+                  color: "#123055",
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.84), 0 10px 22px rgba(10,24,49,0.05)",
+                }}
+              >
+                <div
+                  style={{
+                    fontWeight: 900,
+                    fontSize: isPhone ? 13.5 : 15,
+                    lineHeight: 1.28,
+                  }}
+                >
+                  {demandGuideTitle}
+                </div>
+                <div
+                  style={{
+                    marginTop: 6,
+                    fontSize: isPhone ? 12.2 : 13,
+                    lineHeight: isPhone ? 1.45 : 1.6,
+                    fontWeight: 700,
+                    color: "#49647E",
+                  }}
+                >
+                  {demandGuideBody}
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <div
+            style={{
               marginTop: 12,
               ...innerCard(demandSurfaceChrome.detailBg),
               border: demandSurfaceChrome.detailBorder,
@@ -7889,6 +8414,7 @@ export default function DashboardPage() {
                     alignItems: "center",
                   }}
                 >
+                  <span style={badge(false)}>{demandCommunityLabel}</span>
                   {safeStr(
                     currentDemandItem.requester_name ||
                       currentDemandItem.requester_nickname
@@ -7899,6 +8425,21 @@ export default function DashboardPage() {
                           currentDemandItem.requester_nickname
                       )}
                     </span>
+                  ) : null}
+                  {demandRequesterId ? (
+                    <span style={badge(false)}>GSN ID {demandRequesterId}</span>
+                  ) : null}
+                  {demandRequesterTrust ? (
+                    <span style={badge(false)}>Trust {demandRequesterTrust}</span>
+                  ) : null}
+                  {demandPaymentMode ? (
+                    <span style={badge(false)}>{demandPaymentMode}</span>
+                  ) : null}
+                  {currentDemandItem.allow_trust_credit ? (
+                    <span style={badge(false)}>Trust credit accepted</span>
+                  ) : null}
+                  {demandArea ? (
+                    <span style={badge(false)}>{demandArea}</span>
                   ) : null}
                   {remainingDemandCount > 0 ? (
                     <span style={badge(false)}>
@@ -7941,8 +8482,23 @@ export default function DashboardPage() {
                     lineHeight: isPhone ? 1.46 : 1.75,
                   }}
                 >
-                  Create a demand when a member or seller needs the community to
-                  respond.
+                  Create a demand when this community needs goods, service,
+                  support, or follow-up. Your GSN ID stays attached so people
+                  know who is asking.
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    display: "flex",
+                    gap: 8,
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                  }}
+                >
+                  <span style={badge(false)}>{demandCommunityLabel}</span>
+                  {safeStr(me?.gmfn_id) ? (
+                    <span style={badge(false)}>GSN ID {safeStr(me?.gmfn_id)}</span>
+                  ) : null}
                 </div>
               </div>
             )}
@@ -7954,10 +8510,7 @@ export default function DashboardPage() {
                   openDashboardRoute(event, demandPrimaryActionTo)
                 }
                 onPointerDown={consumeDashboardPointerEvent}
-                style={dashboardFillButton(
-                  secondaryBtn(false),
-                  dashboardPhoneButton
-                )}
+                style={spotlightWhiteButton(dashboardPhoneButton)}
               >
                 {demandPrimaryActionLabel}
               </button>

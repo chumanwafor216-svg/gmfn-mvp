@@ -686,6 +686,18 @@ function brandCard(): React.CSSProperties {
   };
 }
 
+function drawerBrandCard(): React.CSSProperties {
+  return {
+    borderRadius: 18,
+    padding: "10px 12px",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.105) 0%, rgba(255,255,255,0.055) 100%)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.12), 0 16px 34px rgba(7,16,28,0.16)",
+  };
+}
+
 function brandEyebrow(): React.CSSProperties {
   return {
     fontSize: 11,
@@ -894,16 +906,16 @@ function drawerPanel(open: boolean): React.CSSProperties {
     top: 0,
     left: 0,
     bottom: 0,
-    width: "84vw",
-    maxWidth: 356,
-    padding: 16,
+    width: "min(94vw, 380px)",
+    maxWidth: 380,
+    padding: "12px 12px max(12px, env(safe-area-inset-bottom))",
     background:
       "linear-gradient(180deg, #10253B 0%, #163A5C 100%), radial-gradient(circle at top left, rgba(255,255,255,0.08), transparent 35%)",
     color: "#FFFFFF",
     overflowY: "auto",
     transform: open ? "translateX(0)" : "translateX(-100%)",
     transition: "transform 0.25s ease",
-    zIndex: 25,
+    zIndex: 1300,
     boxShadow: "12px 0 30px rgba(11,31,51,0.18)",
   };
 }
@@ -914,15 +926,15 @@ function drawerHeader(): React.CSSProperties {
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 10,
   };
 }
 
 function overlayCloseButton(dark = false): React.CSSProperties {
   return {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: 34,
+    height: 34,
+    borderRadius: 11,
     border: dark
       ? "1px solid rgba(255,255,255,0.12)"
       : "1px solid rgba(11,31,51,0.10)",
@@ -935,10 +947,10 @@ function overlayCloseButton(dark = false): React.CSSProperties {
 
 function drawerSectionTitle(): React.CSSProperties {
   return {
-    margin: "16px 0 8px",
-    fontSize: 11,
+    margin: "10px 0 6px",
+    fontSize: 10,
     fontWeight: 800,
-    letterSpacing: "0.08em",
+    letterSpacing: "0.1em",
     textTransform: "uppercase",
     color: "rgba(255,255,255,0.72)",
   };
@@ -946,12 +958,15 @@ function drawerSectionTitle(): React.CSSProperties {
 
 function drawerLink(active = false, disabled = false): React.CSSProperties {
   return {
-    display: "block",
-    padding: "12px 13px",
-    borderRadius: 14,
+    display: "flex",
+    alignItems: "center",
+    minHeight: 34,
+    padding: "7px 10px",
+    borderRadius: 12,
     textDecoration: "none",
     fontWeight: 800,
-    fontSize: 14,
+    fontSize: 12.3,
+    lineHeight: 1.08,
     color: disabled ? "rgba(255,255,255,0.48)" : "#FFFFFF",
     background: active ? "#0B63D1" : "rgba(255,255,255,0.05)",
     border: active
@@ -960,6 +975,16 @@ function drawerLink(active = false, disabled = false): React.CSSProperties {
     pointerEvents: disabled ? "none" : "auto",
     touchAction: "manipulation",
     opacity: disabled ? 0.7 : 1,
+    overflowWrap: "anywhere",
+  };
+}
+
+function drawerLinkGrid(single = false): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: single ? "1fr" : "repeat(2, minmax(0, 1fr))",
+    gap: 6,
+    alignItems: "stretch",
   };
 }
 
@@ -980,7 +1005,7 @@ function actionsPanel(open: boolean): React.CSSProperties {
     opacity: open ? 1 : 0,
     pointerEvents: open ? "auto" : "none",
     transition: "opacity 0.2s ease, transform 0.2s ease",
-    zIndex: 35,
+    zIndex: 1300,
   };
 }
 
@@ -1625,13 +1650,23 @@ export default function AppLayout() {
             </button>
           </header>
 
-          <div style={overlayBackdrop(isDrawerOpen, 24)} onClick={closeDrawer} />
+          <div
+            style={overlayBackdrop(isDrawerOpen, 1290)}
+            onClick={closeDrawer}
+          />
 
           <aside style={drawerPanel(isDrawerOpen)} aria-hidden={!isDrawerOpen}>
             <div style={drawerHeader()}>
               <div>
                 <div style={brandEyebrow()}>GSN</div>
-                <div style={{ marginTop: 6, fontSize: 18, fontWeight: 900 }}>
+                <div
+                  style={{
+                    marginTop: 5,
+                    fontSize: 18,
+                    fontWeight: 900,
+                    letterSpacing: 0.2,
+                  }}
+                >
                   Navigation
                 </div>
               </div>
@@ -1646,25 +1681,39 @@ export default function AppLayout() {
               </button>
             </div>
 
-            <div style={brandCard()}>
+            <div style={drawerBrandCard()}>
               <div style={brandEyebrow()}>
-                {taskMode ? "Focused task" : "Current area"}
+                {taskMode ? "Focused task" : "You are here"}
               </div>
-              <div style={{ marginTop: 8, fontSize: 20, fontWeight: 900 }}>
+              <div
+                style={{
+                  marginTop: 5,
+                  fontSize: 19,
+                  fontWeight: 900,
+                  lineHeight: 1.12,
+                }}
+              >
                 {taskMode ? taskMode.title : routeMeta.page}
               </div>
-              <div style={brandText()}>
-                {taskMode
-                  ? taskMode.hint
-                  : "The main routes stay simple. Shop now sits with the main movement while this drawer holds the grouped supporting pages."}
-              </div>
+              {taskMode ? (
+                <div
+                  style={{
+                    ...brandText(),
+                    marginTop: 7,
+                    fontSize: 12,
+                    lineHeight: 1.36,
+                  }}
+                >
+                  {taskMode.hint}
+                </div>
+              ) : null}
             </div>
 
             {mobileDrawerGroups.map((group) => (
               <div key={group.title}>
                 <div style={drawerSectionTitle()}>{group.title}</div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={drawerLinkGrid(group.items.length === 1)}>
                   {group.items.map((item) => (
                     <Link
                       key={`${group.title}-${item.label}-${item.to}`}
@@ -1695,7 +1744,7 @@ export default function AppLayout() {
           </aside>
 
           <div
-            style={overlayBackdrop(isActionsOpen, 34)}
+            style={overlayBackdrop(isActionsOpen, 1290)}
             onClick={closeActions}
           />
 

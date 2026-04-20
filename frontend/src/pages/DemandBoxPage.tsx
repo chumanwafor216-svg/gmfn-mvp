@@ -332,6 +332,7 @@ export default function DemandBoxPage() {
   const [category, setCategory] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [expiresInHours, setExpiresInHours] = useState("72");
+  const [paymentMode, setPaymentMode] = useState("");
   const [allowTrustCredit, setAllowTrustCredit] = useState(false);
 
   const [creating, setCreating] = useState(false);
@@ -427,6 +428,7 @@ export default function DemandBoxPage() {
         area: safeStr(area) || undefined,
         whatsapp_number: safeStr(whatsappNumber) || undefined,
         expires_in_hours: Number(expiresInHours || 0) > 0 ? Number(expiresInHours) : undefined,
+        payment_mode: safeStr(paymentMode) || undefined,
         allow_trust_credit: allowTrustCredit,
         clan_id: selectedClanId,
       });
@@ -438,6 +440,7 @@ export default function DemandBoxPage() {
       setCategory("");
       setWhatsappNumber("");
       setExpiresInHours("72");
+      setPaymentMode("");
       setAllowTrustCredit(false);
 
       await loadPage();
@@ -665,9 +668,9 @@ export default function DemandBoxPage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="Demand Box is where identity-based needs are created, tracked, updated, and closed inside your current community."
-        why="It keeps demand tied to the real person and community behind the request instead of turning it into a loose anonymous post."
-        next="Start with the current demand context, then post a clear demand or review the visible needs that already need follow-up."
+        what="Demand Box is where a real person raises a real need inside one community."
+        why="Your GSN ID shows who is asking. The community name shows where the need belongs. Trust and payment terms help people decide whether to respond."
+        next="Post only clear live needs, include the payment or trust-credit terms, then close the demand when it is fulfilled or no longer needed."
         tone="blue"
       />
 
@@ -711,8 +714,8 @@ export default function DemandBoxPage() {
                 maxWidth: 840,
               }}
             >
-              Demand belongs to the person asking. It should be clear, identity-based,
-              and easy to update or close when the need changes.
+              Demand belongs to the person asking, but it also carries the
+              community context where the need is being raised.
             </div>
 
             <div
@@ -724,6 +727,9 @@ export default function DemandBoxPage() {
               }}
             >
               <span style={badge(true)}>Member: {memberName}</span>
+              {safeStr(me?.gmfn_id) ? (
+                <span style={badge(false)}>GSN ID: {safeStr(me?.gmfn_id)}</span>
+              ) : null}
               <span style={badge(false)}>Context: {currentCommunityName}</span>
               <span style={badge(false)}>My open needs: {myOpenRows.length}</span>
               <span style={badge(false)}>Visible needs: {visibleRows.length}</span>
@@ -811,8 +817,8 @@ export default function DemandBoxPage() {
         <ExplainToggle
           label="What this does"
           what="This form posts a real current need into your community so other people can understand it and respond."
-          why="It keeps demand clear and specific instead of turning it into a vague or anonymous note."
-          next="Write the need in simple direct language, add only the detail people need to respond, and then post it into the community."
+          why="It keeps demand clear and specific instead of turning it into a vague note. People can see what is needed, where it belongs, and what terms apply."
+          next="Write the need in simple direct language, add the payment or trust-credit terms if they matter, and then post it into the community."
           tone="light"
           style={{ marginTop: 14 }}
         />
@@ -936,6 +942,22 @@ export default function DemandBoxPage() {
                   />
                 </div>
 
+                <div>
+                  <div style={sectionLabel()}>Payment terms</div>
+                  <select
+                    value={paymentMode}
+                    onChange={(e) => setPaymentMode(e.target.value)}
+                    style={{ ...inputStyle(), marginTop: 8 }}
+                  >
+                    <option value="">Choose if needed</option>
+                    <option value="Pay now">Pay now</option>
+                    <option value="Pay later">Pay later</option>
+                    <option value="Trust credit">Trust credit</option>
+                    <option value="Negotiable">Negotiable</option>
+                    <option value="Support / no payment">Support / no payment</option>
+                  </select>
+                </div>
+
                 <div style={innerCard("#F8FBFF")}>
                   <label
                     style={{
@@ -1036,6 +1058,11 @@ export default function DemandBoxPage() {
                     >
                       {safeStr(row?.area) ? (
                         <span style={badge(false)}>Area: {safeStr(row?.area)}</span>
+                      ) : null}
+                      {safeStr(row?.payment_mode) ? (
+                        <span style={badge(false)}>
+                          Terms: {safeStr(row?.payment_mode)}
+                        </span>
                       ) : null}
                       {row?.allow_trust_credit ? (
                         <span style={badge(false)}>Trust credit allowed</span>
@@ -1143,8 +1170,21 @@ export default function DemandBoxPage() {
                     }}
                   >
                     <span style={badge(false)}>By: {requesterName(row)}</span>
+                    {safeStr(row?.requester_gmfn_id) ? (
+                      <span style={badge(false)}>
+                        GSN ID {safeStr(row?.requester_gmfn_id)}
+                      </span>
+                    ) : null}
                     {safeStr(row?.area) ? (
                       <span style={badge(false)}>Area: {safeStr(row?.area)}</span>
+                    ) : null}
+                    {safeStr(row?.payment_mode) ? (
+                      <span style={badge(false)}>
+                        Terms: {safeStr(row?.payment_mode)}
+                      </span>
+                    ) : null}
+                    {row?.allow_trust_credit ? (
+                      <span style={badge(false)}>Trust credit allowed</span>
                     ) : null}
                   </div>
                 </div>

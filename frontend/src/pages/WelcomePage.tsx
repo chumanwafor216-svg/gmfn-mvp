@@ -57,7 +57,7 @@ function pageShell(): React.CSSProperties {
       "radial-gradient(circle at top, rgba(47,103,196,0.16) 0%, rgba(16,37,59,0.00) 32%), linear-gradient(180deg, #10243A 0%, #173654 62%, #26527C 100%)",
     color: "#FFFFFF",
     fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
-    padding: "22px",
+    padding: "18px",
     boxSizing: "border-box",
   };
 }
@@ -66,13 +66,13 @@ function heroCard(): React.CSSProperties {
   return {
     maxWidth: 980,
     width: "100%",
-    borderRadius: 36,
+    borderRadius: 34,
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.06) 100%)",
     border: "1px solid rgba(255,255,255,0.16)",
     boxShadow:
       "0 28px 72px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.10)",
-    padding: 22,
+    padding: 18,
     backdropFilter: "blur(10px)",
     position: "relative",
     overflow: "hidden",
@@ -98,10 +98,10 @@ function routeCard(): React.CSSProperties {
       "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.06) 100%)",
     border: "1px solid rgba(255,255,255,0.14)",
     boxShadow: "0 18px 34px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.10)",
-    padding: 10,
+    padding: 9,
     display: "grid",
     gap: 6,
-    minHeight: 82,
+    minHeight: 78,
     alignContent: "start",
   };
 }
@@ -408,9 +408,11 @@ export default function WelcomePage() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "1fr minmax(0, 760px) 1fr",
+              gridTemplateColumns: isCompact
+                ? "44px minmax(0, 1fr) 44px"
+                : "1fr minmax(0, 760px) 1fr",
               alignItems: "start",
-              gap: 10,
+              gap: isCompact ? 8 : 10,
             }}
           >
           <div style={{ display: "flex", justifyContent: "flex-start" }}>
@@ -421,11 +423,11 @@ export default function WelcomePage() {
             <div style={labelText()}>GSN</div>
             <div
               style={{
-                fontSize: isCompact ? 30 : 40,
+                fontSize: isCompact ? 27 : 40,
                 fontWeight: 900,
                 lineHeight: 1.03,
                 letterSpacing: 0.2,
-                maxWidth: 760,
+                maxWidth: isCompact ? 270 : 760,
                 textShadow: "0 12px 30px rgba(0,0,0,0.22)",
               }}
             >
@@ -434,8 +436,8 @@ export default function WelcomePage() {
 
             <div
               style={{
-                fontSize: 15,
-                lineHeight: 1.65,
+                fontSize: isCompact ? 13.5 : 15,
+                lineHeight: isCompact ? 1.42 : 1.65,
                 color: "rgba(255,255,255,0.90)",
                 maxWidth: 760,
               }}
@@ -444,19 +446,47 @@ export default function WelcomePage() {
             </div>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <EntryGuideLauncher
-              label="About"
-              text="GSN and I"
-              onClick={() => setGuideOpen(true)}
-            />
+          <div style={{ display: isCompact ? "block" : "flex", justifyContent: "flex-end" }}>
+            {isCompact ? null : (
+              <EntryGuideLauncher
+                label="About"
+                text="GSN and I"
+                onClick={() => setGuideOpen(true)}
+                compact={false}
+              />
+            )}
           </div>
           </div>
 
+          {isCompact ? (
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <EntryGuideLauncher
+                label="About"
+                text="GSN and I"
+                onClick={() => setGuideOpen(true)}
+                compact
+              />
+            </div>
+          ) : null}
+
           {entryMode === "create" && isKnownSingleLane(entryMode) ? (
-            <div style={routeCard()}>
+            <div
+              style={{
+                ...routeCard(),
+                width: isCompact ? "min(100%, 268px)" : routeCard().width,
+                minHeight: isCompact ? 72 : routeCard().minHeight,
+                padding: isCompact ? 9 : routeCard().padding,
+                gap: isCompact ? 7 : routeCard().gap,
+              }}
+            >
               <div style={labelText()}>Create</div>
-              <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1.1 }}>
+              <div
+                style={{
+                  fontSize: isCompact ? 23 : 28,
+                  fontWeight: 900,
+                  lineHeight: 1.08,
+                }}
+              >
                 Create a new community
               </div>
               <div

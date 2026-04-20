@@ -101,11 +101,46 @@ export function EntryGuideLauncher({
   label = "About",
   text = "GSN and I",
   onClick,
+  compact = false,
 }: {
   label?: string;
   text?: string;
   onClick: () => void;
+  compact?: boolean;
 }) {
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: 36,
+          maxWidth: "100%",
+          padding: "8px 13px",
+          borderRadius: 999,
+          border: "1px solid rgba(255,255,255,0.18)",
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.07) 100%)",
+          boxShadow:
+            "0 10px 22px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.18)",
+          color: "#F8FBFF",
+          fontSize: 11,
+          fontWeight: 900,
+          letterSpacing: 0.45,
+          lineHeight: 1.05,
+          textAlign: "center",
+          whiteSpace: "nowrap",
+          cursor: "pointer",
+        }}
+      >
+        {text}
+      </button>
+    );
+  }
+
   return (
     <div
       style={{
