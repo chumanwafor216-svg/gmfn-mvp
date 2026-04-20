@@ -406,6 +406,8 @@ export default function DemandBoxPage() {
   const [creating, setCreating] = useState(false);
   const [selectingClanId, setSelectingClanId] = useState<number>(0);
   const [updatingDemandId, setUpdatingDemandId] = useState<number>(0);
+  const [createCommunityConfirmed, setCreateCommunityConfirmed] =
+    useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -504,6 +506,9 @@ export default function DemandBoxPage() {
       await selectClan(clanId);
       setSelectedClanIdState(clanId);
       setCurrentClan(community);
+      if (isCreateMode) {
+        setCreateCommunityConfirmed(true);
+      }
       showNotice(
         "success",
         `${communityName(community, clanId)} selected for this demand.`
@@ -618,6 +623,7 @@ export default function DemandBoxPage() {
   const memberCciLabel = cciLabel(me);
 
   const visiblePreview = useMemo(() => visibleRows.slice(0, 6), [visibleRows]);
+  const isCreateMode = location.hash === "#demand-box-create";
   const currentPath = `${location.pathname}${location.search}${location.hash}`;
   const originPath = useMemo(() => {
     if (!location.state || typeof location.state !== "object") return "";
@@ -633,7 +639,8 @@ export default function DemandBoxPage() {
   useEffect(() => {
     if (typeof document === "undefined") return;
     if (loading) return;
-    if (location.hash !== "#demand-box-create") return;
+    if (!isCreateMode) return;
+    if (communities.length > 1 && !createCommunityConfirmed) return;
 
     const timer = window.setTimeout(() => {
       document.getElementById("demand-box-create")?.scrollIntoView({
@@ -643,7 +650,7 @@ export default function DemandBoxPage() {
     }, 80);
 
     return () => window.clearTimeout(timer);
-  }, [location.hash, loading]);
+  }, [communities.length, createCommunityConfirmed, isCreateMode, loading]);
 
   if (loading) {
     return (
@@ -781,6 +788,104 @@ export default function DemandBoxPage() {
     );
   }
 
+  if (isCreateMode && communities.length > 1 && !createCommunityConfirmed) {
+    return (
+      <div
+        style={{
+          maxWidth: 1180,
+          margin: "0 auto",
+          paddingBottom: 40,
+          display: "grid",
+          gap: 18,
+        }}
+      >
+        <PageTopNav
+          sectionLabel="Demand Box"
+          title="Choose community for this demand"
+          subtitle="Pick the trusted room this request should come from."
+          homeTo="/app/dashboard"
+          homeLabel="Dashboard"
+          backTo={demandReturnTo}
+          backLabel={demandReturnLabel}
+        />
+
+        {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
+
+        <section style={demandBrandShell()}>
+          <div style={{ ...sectionLabel(), color: "#C9D7E8" }}>
+            Step 1 of 3
+          </div>
+
+          <div
+            style={{
+              marginTop: 12,
+              color: "#F8FBFF",
+              fontSize: isCompact ? 28 : 34,
+              fontWeight: 900,
+              lineHeight: 1.12,
+              maxWidth: 780,
+            }}
+          >
+            Which community should speak behind this demand?
+          </div>
+
+          <div
+            style={{
+              marginTop: 12,
+              ...helperText(),
+              color: "#D7E3F1",
+              maxWidth: 860,
+            }}
+          >
+            Your request is personal, but the community gives it the right
+            trusted context. After you choose, GSN will open the create-demand
+            form for that community.
+          </div>
+
+          <div
+            style={{
+              marginTop: 18,
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "1fr"
+                : "repeat(auto-fit, minmax(240px, 1fr))",
+              gap: 10,
+            }}
+          >
+            {communities.map((community, index) => {
+              const clanId = Number(community?.id || community?.clan_id || 0);
+              const active = clanId > 0 && clanId === selectedClanId;
+              const busy = selectingClanId === clanId;
+
+              return (
+                <button
+                  key={`${clanId || index}`}
+                  type="button"
+                  onClick={() => void handleChooseDemandCommunity(community)}
+                  disabled={busy || !clanId}
+                  style={{
+                    ...(active
+                      ? whiteActionBtn(busy || !clanId)
+                      : secondaryBtn(busy || !clanId)),
+                    width: "100%",
+                    justifyContent: "space-between",
+                    textAlign: "left",
+                    minHeight: 54,
+                  }}
+                >
+                  <span>{communityName(community, clanId)}</span>
+                  <span style={{ opacity: 0.82 }}>
+                    {busy ? "Opening..." : active ? "Use this" : "Choose"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -793,8 +898,16 @@ export default function DemandBoxPage() {
     >
       <PageTopNav
         sectionLabel="Demand Box"
-        title="Demand Box"
-        subtitle="Ask for what you need, from the right community, with trust attached."
+        title={
+          isCreateMode
+            ? `${currentCommunityName} Demand Box`
+            : "Demand Box"
+        }
+        subtitle={
+          isCreateMode
+            ? "Create your demand from this community."
+            : "Ask for what you need, from the right community, with trust attached."
+        }
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo={demandReturnTo}
@@ -803,6 +916,7 @@ export default function DemandBoxPage() {
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
+      {!isCreateMode ? (
       <section style={demandBrandShell()}>
         <div
           style={{
@@ -975,6 +1089,7 @@ export default function DemandBoxPage() {
           </div>
         </div>
       </section>
+      ) : null}
 
       <section id="demand-box-create" style={pageCard("#FFFFFF")}>
         <div
@@ -987,7 +1102,9 @@ export default function DemandBoxPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Create demand</div>
+            <div style={sectionLabel()}>
+              {isCreateMode ? currentCommunityName : "Create demand"}
+            </div>
             <div
               style={{
                 marginTop: 8,
@@ -997,7 +1114,9 @@ export default function DemandBoxPage() {
                 lineHeight: 1.12,
               }}
             >
-              Tell your community what you need.
+              {isCreateMode
+                ? "Create your demand."
+                : "Tell your community what you need."}
             </div>
             <div
               style={{
@@ -1006,11 +1125,13 @@ export default function DemandBoxPage() {
                 maxWidth: 760,
               }}
             >
-              Keep it simple: what you need, where it is needed, how people can
-              reach you, and what proof or payment should be clear first.
+              {isCreateMode
+                ? `You are posting from ${currentCommunityName}. Fill in the need, contact, area, and proof expectation, then send it.`
+                : "Keep it simple: what you need, where it is needed, how people can reach you, and what proof or payment should be clear first."}
             </div>
           </div>
 
+          {!isCreateMode ? (
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <OriginLink to={demandReturnTo} style={whiteActionBtn(false)}>
               {demandReturnLabel}
@@ -1019,8 +1140,27 @@ export default function DemandBoxPage() {
               Dashboard
             </OriginLink>
           </div>
+          ) : null}
         </div>
 
+        {isCreateMode ? (
+          <div
+            style={{
+              marginTop: 14,
+              ...innerCard("#F8FBFF"),
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}
+          >
+            <span style={badge(true)}>From {currentCommunityName}</span>
+            <span style={badge(false)}>Step 2: fill the request</span>
+            <span style={badge(false)}>Step 3: post demand</span>
+          </div>
+        ) : null}
+
+        {!isCreateMode ? (
         <div
           style={{
             marginTop: 14,
@@ -1082,6 +1222,7 @@ export default function DemandBoxPage() {
             )}
           </div>
         </div>
+        ) : null}
 
         <div
           style={{
@@ -1301,6 +1442,7 @@ export default function DemandBoxPage() {
         </div>
       </section>
 
+      {!isCreateMode ? (
       <section
         style={{
           display: "grid",
@@ -1538,6 +1680,7 @@ export default function DemandBoxPage() {
           </div>
         </section>
       </section>
+      ) : null}
     </div>
   );
 }
