@@ -8497,14 +8497,28 @@ export default function DashboardPage() {
               </div>
             )}
 
-            <div style={{ ...dashboardActionGrid(isCompact ? 132 : 156) }}>
+            <div
+              onClick={consumeDashboardButtonEvent}
+              onPointerDown={consumeDashboardPointerEvent}
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: isPhone ? "4px 0" : "2px 0",
+              }}
+            >
               <button
                 type="button"
                 onClick={(event) =>
                   openDashboardRoute(event, demandPrimaryActionTo)
                 }
                 onPointerDown={consumeDashboardPointerEvent}
-                style={spotlightWhiteButton(dashboardPhoneButton)}
+                style={spotlightWhiteButton({
+                  ...dashboardPhoneButton,
+                  width: isPhone ? "min(100%, 230px)" : "min(100%, 260px)",
+                  minWidth: isPhone ? 168 : 176,
+                  flex: "0 0 auto",
+                })}
               >
                 {demandPrimaryActionLabel}
               </button>
