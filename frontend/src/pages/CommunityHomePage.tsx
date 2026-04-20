@@ -120,7 +120,7 @@ type ExpectedPaymentRecord = {
   confirmed_at?: string | null;
 };
 
-const COMMUNITY_HOME_COLLAPSE_KEY = "gmfn.communityHome.sections.v1";
+const COMMUNITY_HOME_COLLAPSE_KEY = "gmfn.communityHome.sections.v2";
 const SPOTLIGHT_DRAFT_PREFIX = "gmfn.communityHome.spotlightDraft.";
 const SPOTLIGHT_ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
@@ -325,7 +325,40 @@ function getClanTrust(clan: ClanItem | null | undefined): string {
     clan?.community_trust_band,
     clan?.trust_band,
     clan?.trust_class,
+    clan?.community?.trust_band,
+    clan?.marketplace?.trust_band,
     "Visible community"
+  );
+}
+
+function getClanFinanceHealth(clan: ClanItem | null | undefined): string {
+  return firstTruthy(
+    (clan as any)?.community_finance_health,
+    (clan as any)?.finance_health,
+    (clan as any)?.finance_band,
+    (clan as any)?.liquidity_band,
+    (clan as any)?.exposure_band,
+    clan?.community?.finance_health,
+    clan?.community?.liquidity_band,
+    clan?.marketplace?.finance_health,
+    clan?.marketplace?.liquidity_band,
+    "Preparing"
+  );
+}
+
+function getClanCci(clan: ClanItem | null | undefined): string {
+  return firstTruthy(
+    (clan as any)?.community_cci_band,
+    (clan as any)?.community_cci_score,
+    (clan as any)?.cci_band,
+    (clan as any)?.cci_score,
+    (clan as any)?.community_integrity_band,
+    (clan as any)?.group_integrity_band,
+    clan?.community?.cci_band,
+    clan?.community?.cci_score,
+    clan?.marketplace?.cci_band,
+    clan?.marketplace?.cci_score,
+    "Preparing"
   );
 }
 
@@ -682,7 +715,7 @@ function defaultCollapseState(): CollapseState {
     tools: true,
     circle: false,
     spotlight: true,
-    communities: true,
+    communities: false,
   };
 }
 
@@ -1095,9 +1128,19 @@ export default function CommunityHomePage() {
   const selectedClanDescription = getClanDescription(selectedClan);
   const selectedClanGlobalId = getClanGlobalId(selectedClan);
   const selectedClanTrust = getClanTrust(selectedClan);
+  const selectedClanFinanceHealth = getClanFinanceHealth(selectedClan);
+  const selectedClanCci = getClanCci(selectedClan);
   const selectedClanMemberCount = getClanMemberCount(selectedClan);
   const selectedClanRole = getClanRole(selectedClan);
   const selectedClanId = getClanId(selectedClan);
+  const memberGlobalId = firstTruthy(
+    me?.gmfn_id,
+    me?.global_member_id,
+    me?.member_global_id,
+    me?.member_id,
+    me?.id,
+    "Awaiting issue"
+  );
 
   const poolAmount = getPoolAmountText(poolInfo);
   const poolCurrency = getPoolCurrency(poolInfo);
@@ -1171,32 +1214,32 @@ export default function CommunityHomePage() {
   const financeNextAction = useMemo(() => {
     if (!selectedClanId) {
       return {
-        title: "Select a community before reviewing the finance signal",
+        title: "Select a marketplace group before reviewing finance",
         detail:
-          "Choose your community first, then review the current signal here before opening the combined Finance workspace.",
+          "Choose one community from Community Home first, then review its local signal here before opening the combined Finance workspace.",
       };
     }
 
     if (pendingFinanceCount > 0) {
       return {
-        title: "Reconciliation is waiting inside this community finance signal",
+        title: "Reconciliation is waiting inside this marketplace signal",
         detail:
-          "One or more expected payments are still waiting for confirmation or bank match. Review this community signal first, then open Finance for the fuller combined money record.",
+          "One or more expected payments are still waiting for confirmation or bank match. Review this local group signal first, then open Finance for the fuller cumulative money record.",
       };
     }
 
     if (moneySurface?.pendingWithdrawals && safeStr(moneySurface.pendingWithdrawals) !== "0.00") {
       return {
-        title: "A money-out record is already open in this community",
+        title: "A money-out record is already open in this marketplace",
         detail:
-          "Withdrawal movement is already visible in this community signal. Review the current record and destination details before opening another page.",
+          "Withdrawal movement is already visible in this selected marketplace signal. Review the current record and destination details before opening another page.",
       };
     }
 
     return {
-      title: "Community Home shows only the current finance signal",
+      title: "Community Home shows the local finance signal only",
       detail:
-        "Review this community signal here first, then open Finance when you need the combined money record across marketplaces.",
+        "Review this marketplace group signal here first, then open Finance when you need your combined money record across all marketplaces.",
     };
   }, [selectedClanId, pendingFinanceCount, moneySurface]);
 
@@ -1938,7 +1981,7 @@ export default function CommunityHomePage() {
       <PageTopNav
         sectionLabel="Community Home"
         title="Community Home"
-        subtitle="See all your communities here, confirm which one is in focus, and open the selected one as a marketplace when you are ready."
+        subtitle="See every community you belong to as a marketplace group, then open one selected community as the working marketplace."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
@@ -1954,18 +1997,21 @@ export default function CommunityHomePage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="Community Home is the combined index of the communities you belong to. Use it to confirm which community is in focus before opening that community as a marketplace."
-        why="It keeps the cross-community view, identity, and wider signals together so one marketplace does not pretend to represent every community at once."
-        next="Confirm the selected community first, then open its marketplace or the wider community-home tools you need next."
+        what="Community Home is the combined index of the communities you belong to. Each community appears here as one marketplace group before you open it for deeper work."
+        why="It keeps group-level finance, trust, CCI, demand, and spotlight signals separate from the private personal records that belong in Finance and Trust Passport."
+        next="Review the marketplace groups, set the right one as current, then open its Marketplace when you need to work inside that community."
         tone="light"
       />
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
-        style={pageCard(
-          "linear-gradient(180deg, #10243A 0%, #163552 52%, #244B72 100%)"
-        )}
+        style={{
+          ...pageCard(
+            "linear-gradient(180deg, #10243A 0%, #163552 52%, #244B72 100%)"
+          ),
+          order: 10,
+        }}
       >
         <div
           style={{
@@ -1977,7 +2023,9 @@ export default function CommunityHomePage() {
           }}
         >
           <div>
-            <div style={{ ...sectionLabel(), color: "#D7E3F1" }}>Selected community</div>
+            <div style={{ ...sectionLabel(), color: "#D7E3F1" }}>
+              Active marketplace entry
+            </div>
             <div
               style={{
                 marginTop: 8,
@@ -1986,7 +2034,9 @@ export default function CommunityHomePage() {
                 lineHeight: 1.75,
               }}
             >
-              You are currently working in this community.
+              This is the community currently selected from your Community Home
+              circle. Open it as Marketplace when you need the live working
+              tools.
             </div>
           </div>
 
@@ -2061,7 +2111,37 @@ export default function CommunityHomePage() {
                     border: "1px solid rgba(255,255,255,0.08)",
                   }}
                 >
+                  Member ID: {memberGlobalId}
+                </span>
+                <span
+                  style={{
+                    ...badge(false),
+                    background: "rgba(255,255,255,0.12)",
+                    color: "#F8FBFF",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}
+                >
                   Trust: {selectedClanTrust}
+                </span>
+                <span
+                  style={{
+                    ...badge(false),
+                    background: "rgba(255,255,255,0.12)",
+                    color: "#F8FBFF",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}
+                >
+                  Finance: {selectedClanFinanceHealth}
+                </span>
+                <span
+                  style={{
+                    ...badge(false),
+                    background: "rgba(255,255,255,0.12)",
+                    color: "#F8FBFF",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}
+                >
+                  CCI: {selectedClanCci}
                 </span>
                 <span
                   style={{
@@ -2081,7 +2161,7 @@ export default function CommunityHomePage() {
                     border: "1px solid rgba(255,255,255,0.08)",
                   }}
                 >
-                  Home command centre
+                  Opens as Marketplace
                 </span>
                 {selectedClanRole ? (
                   <span
@@ -2158,14 +2238,15 @@ export default function CommunityHomePage() {
                 }}
               >
                 This shows only your own visible pool position in your current
-                community.
+                community. Open Finance for the cumulative money picture across
+                all communities.
               </div>
             </div>
           </div>
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section style={{ ...pageCard("#FFFFFF"), order: 30 }}>
         <div
           style={{
             display: "flex",
@@ -2176,7 +2257,7 @@ export default function CommunityHomePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Community command tools</div>
+            <div style={sectionLabel()}>Community Home tools</div>
             <div
               style={{
                 marginTop: 8,
@@ -2185,8 +2266,9 @@ export default function CommunityHomePage() {
                 lineHeight: 1.75,
               }}
             >
-              Keep the main community actions together here so Community Home stays
-              the command centre for this workspace.
+              These are doorway actions from the combined community layer. Deep
+              work still belongs inside the selected Marketplace, Finance, Trust,
+              Demand Box, or Shop route.
             </div>
           </div>
 
@@ -2309,7 +2391,7 @@ export default function CommunityHomePage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section style={{ ...pageCard("#FFFFFF"), order: 40 }}>
         <div
           style={{
             display: "flex",
@@ -2320,7 +2402,7 @@ export default function CommunityHomePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Finance signal</div>
+            <div style={sectionLabel()}>Selected marketplace finance signal</div>
             <div
               style={{
                 marginTop: 8,
@@ -2330,8 +2412,8 @@ export default function CommunityHomePage() {
                 maxWidth: 860,
               }}
             >
-              Review the current community money signal here first, then open
-              Finance when you need the broader combined record across
+              Read the local money signal for the selected marketplace here,
+              then open Finance for the personal cumulative record across all
               marketplaces.
             </div>
           </div>
@@ -2633,7 +2715,7 @@ export default function CommunityHomePage() {
         </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section style={{ ...pageCard("#FFFFFF"), order: 50 }}>
         <div
           style={{
             display: "flex",
@@ -2816,13 +2898,13 @@ export default function CommunityHomePage() {
         </div>
       </section>
 
-      <div id="community-home-shop-control">
+      <div id="community-home-shop-control" style={{ order: 60 }}>
         <CommunityShopControlPanel />
       </div>
 
       <section
         id="community-home-grow-your-circle"
-        style={pageCard("#FFFFFF")}
+        style={{ ...pageCard("#FFFFFF"), order: 70 }}
       >
         <div
           style={{
@@ -3035,7 +3117,10 @@ export default function CommunityHomePage() {
         ) : null}
       </section>
 
-      <section id="community-home-spotlight-gears" style={pageCard("#FFFFFF")}>
+      <section
+        id="community-home-spotlight-gears"
+        style={{ ...pageCard("#FFFFFF"), order: 80 }}
+      >
         <div
           style={{
             display: "flex",
@@ -3479,7 +3564,7 @@ export default function CommunityHomePage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section style={{ ...pageCard("#FFFFFF"), order: 20 }}>
         <div
           style={{
             display: "flex",
@@ -3490,7 +3575,7 @@ export default function CommunityHomePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Your communities</div>
+            <div style={sectionLabel()}>Marketplace group rollup</div>
             <div
               style={{
                 marginTop: 8,
@@ -3499,13 +3584,14 @@ export default function CommunityHomePage() {
                 lineHeight: 1.75,
               }}
             >
-              Choose the community you want to work with, then open it when you
-              are ready to continue there.
+              Each row is one community you belong to, shown as a group unit.
+              Set one as current, then open it as the working Marketplace.
             </div>
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={badge(false)}>{sortedClans.length} communities</span>
+            <span style={badge(false)}>{sortedClans.length} marketplace groups</span>
+            <span style={badge(false)}>One global member ID</span>
             <button
               type="button"
               onClick={() => toggleSection("communities")}
@@ -3576,8 +3662,15 @@ export default function CommunityHomePage() {
                           Trust: {getClanTrust(clan)}
                         </span>
                         <span style={badge(false)}>
+                          Finance: {getClanFinanceHealth(clan)}
+                        </span>
+                        <span style={badge(false)}>CCI: {getClanCci(clan)}</span>
+                        <span style={badge(false)}>
                           Members: {getClanMemberCount(clan)}
                         </span>
+                        {getClanRole(clan) ? (
+                          <span style={badge(false)}>Role: {getClanRole(clan)}</span>
+                        ) : null}
                       </div>
                     </div>
 
@@ -3589,8 +3682,8 @@ export default function CommunityHomePage() {
                       }}
                     >
                       {active
-                        ? "You are in your current community."
-                        : "Select this community to make it current."}
+                        ? "This marketplace group is currently selected. Its live work opens in Marketplace."
+                        : "Select this marketplace group before opening its live Marketplace tools."}
                     </div>
 
                     <div
@@ -3607,7 +3700,7 @@ export default function CommunityHomePage() {
                         disabled={working}
                         style={actionBtn("secondary", working)}
                       >
-                        {active ? "Selected" : working ? "Selecting..." : "Select"}
+                        {active ? "Current" : working ? "Selecting..." : "Set Current"}
                       </button>
 
                       <button
@@ -3616,7 +3709,7 @@ export default function CommunityHomePage() {
                         disabled={working}
                         style={actionBtn("primary", working)}
                       >
-                        {working ? "Opening..." : "Enter Community"}
+                        {working ? "Opening..." : "Open Marketplace"}
                       </button>
                     </div>
                   </div>

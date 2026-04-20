@@ -46,6 +46,61 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-20
 
 #### Workstream
+Community Home route visually aligned with the canonical marketplace-group
+rollup model.
+
+#### Routes/screens affected
+- `/app/community`
+- movement from `/app/community` to:
+  - `/app/marketplace`
+  - `/app/finance`
+  - `/app/demand-box`
+  - `/app/notifications`
+  - `/app/payment/pool`
+  - `/app/withdrawal-instructions`
+  - `/app/payment-rails`
+  - `/app/payout-details`
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+
+#### Files in play
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The Community Home top language now presents the page as the combined index
+  of all communities/marketplace groups tied to one member.
+- The selected community block now reads as the active Marketplace entry, not
+  the full working surface itself.
+- The selected block shows community ID, member ID, trust, finance, CCI,
+  member count, role, and local pool context.
+- The marketplace-group rollup list is open by default under a new localStorage
+  collapse key so stale saved state does not hide the primary rollup.
+- Each community row now shows group-level finance, trust, CCI, member count,
+  role, and an explicit `Open Marketplace` action.
+- Community Home tools now describe themselves as doorway actions into deeper
+  domains rather than as the owner of all work.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- Group finance and CCI labels depend on fields already present or later added
+  to community payloads. Until then they safely show `Preparing`.
+- The visual order is route-local and does not change backend route ownership.
+- A live mobile review is still needed to confirm the rollup list, current
+  selection buttons, and Open Marketplace action feel right by touch.
+
+#### Next recommended step
+- Live-review `/app/community` on mobile, then decide whether the lower
+  Community Home tools, finance signal, demand signal, shop control, circle,
+  and spotlight panels should be collapsed or trimmed further.
+
+### Previous update
+
+#### Date
+2026-04-20
+
+#### Workstream
 Canonical architecture clarified for Community Home marketplace rollups,
 group-dynamics readings, and Spotlight visibility boundaries.
 
