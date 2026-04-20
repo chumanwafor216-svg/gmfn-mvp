@@ -205,7 +205,7 @@ function buildTrustPassportItems(): NavLinkItem[] {
   return [{ label: "TrustSlip", to: "/app/trust-slip" }];
 }
 
-function buildCommerceItems(myShopGalleryTo: string): NavLinkItem[] {
+function buildCommerceItems(): NavLinkItem[] {
   return [makeShopControlItem()];
 }
 
@@ -579,6 +579,7 @@ function getPageActions(
 
   if (pathname.startsWith("/app/notifications")) {
     return uniqueNavItems([
+      makeDashboardItem(),
       makeMarketplaceItem(),
       makeCommunityItem(),
       { label: "Loans & Support", to: "/app/loans" },
@@ -1231,10 +1232,7 @@ export default function AppLayout() {
   );
 
   const trustPassportItems = useMemo(() => buildTrustPassportItems(), []);
-  const commerceItems = useMemo(
-    () => buildCommerceItems(myShopGalleryTo),
-    [myShopGalleryTo]
-  );
+  const commerceItems = useMemo(() => buildCommerceItems(), []);
   const identityItems = useMemo(() => buildIdentityItems(), []);
   const financeToolsItems = useMemo(() => buildFinanceToolsItems(), []);
   const loansItems = useMemo(() => buildLoansItems(), []);
@@ -1494,11 +1492,15 @@ export default function AppLayout() {
       ];
     }
 
-      return [
-        {
-          title: "Shop tools",
-          items: commerceItems,
-        },
+    return [
+      {
+        title: "Main movement",
+        items: primaryItems,
+      },
+      {
+        title: "Shop tools",
+        items: commerceItems,
+      },
       {
         title: "Finance tools",
         items: financeToolsItems,
@@ -1518,6 +1520,7 @@ export default function AppLayout() {
     ];
   }, [
     taskMode,
+    primaryItems,
     commerceItems,
     financeToolsItems,
     trustPassportItems,
