@@ -1015,6 +1015,13 @@ export async function getPoolMe(
   );
 }
 
+export async function getPoolMeSummary(currency: string = "NGN"): Promise<any> {
+  return httpJson(
+    `/pool/me/summary${buildQuery({ currency })}`,
+    "GET"
+  );
+}
+
 export async function createPoolInstruction(payload: {
   clan_id: number;
   amount: string;

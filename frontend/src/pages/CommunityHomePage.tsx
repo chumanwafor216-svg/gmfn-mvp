@@ -14,6 +14,7 @@ import {
   getMarketplaceShopByGmfnId,
   getMe,
   getPoolMe,
+  getPoolMeSummary,
   getSelectedClanId,
   listMarketplaceRequests,
   listMyClans,
@@ -725,6 +726,20 @@ function getPoolCurrency(payload: any): string {
   );
 }
 
+function getSummaryTotal(payload: any, key: string, fallback = "0.00"): string {
+  return firstTruthy(payload?.totals?.[key], payload?.summary?.totals?.[key], fallback);
+}
+
+function getSummaryCurrency(payload: any): string {
+  return firstTruthy(payload?.currency, payload?.summary?.currency, "NGN");
+}
+
+function formatMoneySignal(amount: string, currency: string): string {
+  const cleanAmount = safeStr(amount) || "0.00";
+  const cleanCurrency = safeStr(currency) || "NGN";
+  return `${cleanAmount} ${cleanCurrency}`;
+}
+
 function getInviteUrl(payload: any): string {
   return firstTruthy(
     payload?.url,
@@ -850,6 +865,8 @@ export default function CommunityHomePage() {
   const [clans, setClans] = useState<ClanItem[]>([]);
   const [selectedClan, setSelectedClan] = useState<ClanItem | null>(null);
   const [poolInfo, setPoolInfo] = useState<any>(null);
+  const [poolSummary, setPoolSummary] = useState<any>(null);
+  const [poolSummaryIssue, setPoolSummaryIssue] = useState("");
   const [inviteLink, setInviteLink] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [changingClanId, setChangingClanId] = useState<number>(0);
@@ -1039,19 +1056,30 @@ export default function CommunityHomePage() {
 
     if (!clanId) {
       setPoolInfo(null);
+      setPoolSummary(null);
+      setPoolSummaryIssue("");
       setInviteLink("");
       return;
     }
 
     (async () => {
-      const [poolRes, inviteRes] = await Promise.all([
+      const [poolRes, summaryRes, inviteRes] = await Promise.all([
         getPoolMe("NGN", 20).catch(() => null),
+        getPoolMeSummary("NGN").catch((err) => ({
+          __failed: String(
+            err?.message || err || "Cumulative finance summary is not ready."
+          ),
+        })),
         getClanInviteLink(clanId).catch(() => null),
       ]);
 
       if (!alive) return;
 
       setPoolInfo(poolRes);
+      setPoolSummary(
+        summaryRes && !(summaryRes as any).__failed ? summaryRes : null
+      );
+      setPoolSummaryIssue(safeStr((summaryRes as any)?.__failed || ""));
       setInviteLink(getInviteUrl(inviteRes));
     })();
 
@@ -1250,6 +1278,22 @@ export default function CommunityHomePage() {
 
   const poolAmount = getPoolAmountText(poolInfo);
   const poolCurrency = getPoolCurrency(poolInfo);
+  const poolSummaryCurrency = getSummaryCurrency(poolSummary);
+  const cumulativeAvailable = getSummaryTotal(
+    poolSummary,
+    "effective_available",
+    getSummaryTotal(poolSummary, "available_balance", "0.00")
+  );
+  const cumulativeReserved = getSummaryTotal(poolSummary, "reserved_pool", "0.00");
+  const cumulativePendingIn = getSummaryTotal(poolSummary, "pending_deposits", "0.00");
+  const cumulativePendingOut = getSummaryTotal(poolSummary, "pending_withdrawals", "0.00");
+  const cumulativeLockedGuarantee = getSummaryTotal(
+    poolSummary,
+    "guarantee_locked_as_guarantor",
+    "0.00"
+  );
+  const communityHomeOwnerName = resolveMemberName(me);
+  const communityCountFromSummary = Number(poolSummary?.communities_count || clans.length || 0);
 
   const sortedClans = useMemo(() => {
     return [...clans].sort((a, b) => getClanName(a).localeCompare(getClanName(b)));
@@ -1348,6 +1392,46 @@ export default function CommunityHomePage() {
         "Review this marketplace group signal here first, then open Finance when you need your combined money record across all marketplaces.",
     };
   }, [selectedClanId, pendingFinanceCount, moneySurface]);
+
+  const cumulativeFinanceNextAction = useMemo(() => {
+    if (poolSummaryIssue) {
+      return {
+        title: "Cumulative finance is syncing",
+        detail:
+          "The app can still show the selected community signal, but the full cross-community finance reading needs another refresh.",
+      };
+    }
+
+    if (Number(cumulativeLockedGuarantee || 0) > 0) {
+      return {
+        title: "Part of your pool is already backing trust",
+        detail:
+          "Some money is locked because you guaranteed support. Open Finance to see where the lock sits before taking another money step.",
+      };
+    }
+
+    if (
+      Number(cumulativePendingIn || 0) > 0 ||
+      Number(cumulativePendingOut || 0) > 0
+    ) {
+      return {
+        title: "Money movement is still settling",
+        detail:
+          "At least one money-in or money-out record is not fully settled yet. Open Finance when you need the full cross-community record.",
+      };
+    }
+
+    return {
+      title: "Your cross-community finance signal is steady",
+      detail:
+        "This is your quick money reading across the communities attached to your GSN ID. Open Finance for the fuller breakdown.",
+    };
+  }, [
+    cumulativeLockedGuarantee,
+    cumulativePendingIn,
+    cumulativePendingOut,
+    poolSummaryIssue,
+  ]);
 
   const firstCircleProgress = useMemo(
     () => getFirstCircleProgress(firstCircleDraft),
@@ -2151,7 +2235,7 @@ export default function CommunityHomePage() {
                     lineHeight: 1.15,
                   }}
                 >
-                  All communities. One identity.
+                  Community Home of {communityHomeOwnerName}
                 </div>
               </div>
             ) : null}
@@ -2171,7 +2255,7 @@ export default function CommunityHomePage() {
                     letterSpacing: -0.4,
                   }}
                 >
-                  All communities. One identity.
+                  Community Home of {communityHomeOwnerName}
                 </div>
               </>
             ) : null}
@@ -2185,36 +2269,22 @@ export default function CommunityHomePage() {
                 maxWidth: 880,
               }}
             >
-              Community Home keeps every group you belong to in one calm place.
-              Pick the right community, then GSN opens that community as a
-              Marketplace for live work.
+              This page gathers the communities attached to your one GSN ID.
+              Choose a community here when you want to open its Marketplace.
+              Your wider finance, trust, shop, and spotlight controls stay tied
+              to this same identity.
             </div>
 
             <div
               style={{
                 marginTop: 14,
                 display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "repeat(2, minmax(0, 1fr))"
-                  : "repeat(4, minmax(0, 1fr))",
+                gridTemplateColumns: "repeat(auto-fit, minmax(142px, 1fr))",
                 gap: 8,
               }}
             >
               <div style={innerCard("rgba(255,255,255,0.74)")}>
-                <div style={sectionLabel()}>Communities</div>
-                <div
-                  style={{
-                    marginTop: 6,
-                    color: COMMUNITY_BRAND.ink,
-                    fontSize: 24,
-                    fontWeight: 900,
-                  }}
-                >
-                  {clans.length}
-                </div>
-              </div>
-              <div style={innerCard("rgba(255,255,255,0.74)")}>
-                <div style={sectionLabel()}>Current</div>
+                <div style={sectionLabel()}>Holder</div>
                 <div
                   style={{
                     marginTop: 6,
@@ -2222,13 +2292,14 @@ export default function CommunityHomePage() {
                     fontSize: 15,
                     fontWeight: 900,
                     lineHeight: 1.25,
+                    wordBreak: "break-word",
                   }}
                 >
-                  {selectedClanName}
+                  {communityHomeOwnerName}
                 </div>
               </div>
               <div style={innerCard("rgba(255,255,255,0.74)")}>
-                <div style={sectionLabel()}>Member ID</div>
+                <div style={sectionLabel()}>GSN ID</div>
                 <div
                   style={{
                     marginTop: 6,
@@ -2243,7 +2314,20 @@ export default function CommunityHomePage() {
                 </div>
               </div>
               <div style={innerCard("rgba(255,255,255,0.74)")}>
-                <div style={sectionLabel()}>Rule</div>
+                <div style={sectionLabel()}>Communities</div>
+                <div
+                  style={{
+                    marginTop: 6,
+                    color: COMMUNITY_BRAND.ink,
+                    fontSize: 24,
+                    fontWeight: 900,
+                  }}
+                >
+                  {communityCountFromSummary}
+                </div>
+              </div>
+              <div style={innerCard("rgba(255,255,255,0.74)")}>
+                <div style={sectionLabel()}>Shop</div>
                 <div
                   style={{
                     marginTop: 6,
@@ -2254,6 +2338,35 @@ export default function CommunityHomePage() {
                   }}
                 >
                   One ID. One shop.
+                </div>
+              </div>
+              <div style={innerCard("rgba(255,255,255,0.74)")}>
+                <div style={sectionLabel()}>Spotlight</div>
+                <div
+                  style={{
+                    marginTop: 6,
+                    color: COMMUNITY_BRAND.ink,
+                    fontSize: 15,
+                    fontWeight: 900,
+                    lineHeight: 1.25,
+                  }}
+                >
+                  Community-governed exposure
+                </div>
+              </div>
+              <div style={innerCard("rgba(255,255,255,0.74)")}>
+                <div style={sectionLabel()}>Cumulative pool</div>
+                <div
+                  style={{
+                    marginTop: 6,
+                    color: COMMUNITY_BRAND.ink,
+                    fontSize: 15,
+                    fontWeight: 900,
+                    lineHeight: 1.25,
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {formatMoneySignal(cumulativeAvailable, poolSummaryCurrency)}
                 </div>
               </div>
             </div>
@@ -2281,7 +2394,7 @@ export default function CommunityHomePage() {
           ...pageCard(
             "linear-gradient(180deg, #10243A 0%, #163552 52%, #244B72 100%)"
           ),
-          order: 10,
+          order: 30,
         }}
       >
         <div
@@ -2313,6 +2426,7 @@ export default function CommunityHomePage() {
 
           <button
             type="button"
+            onPointerDown={consumeCommunityPointerEvent}
             onClick={() => toggleSection("selected")}
             style={collapseToggle()}
           >
@@ -2458,6 +2572,7 @@ export default function CommunityHomePage() {
               >
                 <button
                   type="button"
+                  onPointerDown={consumeCommunityPointerEvent}
                   onClick={() => void openSelectedMarketplace()}
                   disabled={!selectedClanId || changingClanId === selectedClanId}
                   style={actionBtn(
@@ -2472,6 +2587,7 @@ export default function CommunityHomePage() {
 
                 <button
                   type="button"
+                  onPointerDown={consumeCommunityPointerEvent}
                   onClick={copyCommunityId}
                   style={actionBtn("secondary")}
                 >
@@ -2517,7 +2633,7 @@ export default function CommunityHomePage() {
         ) : null}
       </section>
 
-      <section style={{ ...pageCard("#FFFFFF"), order: 30 }}>
+      <section style={{ ...pageCard("#FFFFFF"), order: 65 }}>
         <div
           style={{
             display: "flex",
@@ -2528,7 +2644,7 @@ export default function CommunityHomePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Community Home tools</div>
+            <div style={sectionLabel()}>Owner controls</div>
             <div
               style={{
                 marginTop: 8,
@@ -2537,14 +2653,15 @@ export default function CommunityHomePage() {
                 lineHeight: 1.75,
               }}
             >
-              These are doorway actions from the combined community layer. Deep
-              work still belongs inside the selected Marketplace, Finance, Trust,
-              Demand Box, or Shop route.
+              These actions belong to the owner side of Community Home: create a
+              new community, manage the one shop tied to your GSN ID, grow your
+              trusted circle, and open the selected marketplace tools.
             </div>
           </div>
 
           <button
             type="button"
+            onPointerDown={consumeCommunityPointerEvent}
             onClick={() => toggleSection("tools")}
             style={collapseToggle()}
           >
@@ -2572,11 +2689,12 @@ export default function CommunityHomePage() {
 
             <button
               type="button"
+              onPointerDown={consumeCommunityPointerEvent}
               onClick={copyInviteLink}
               style={actionBtn("secondary", !inviteLink)}
               disabled={!inviteLink}
             >
-              Copy Invite Link
+              Copy Selected Community Link
             </button>
 
             <button
@@ -2673,7 +2791,7 @@ export default function CommunityHomePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Selected marketplace finance signal</div>
+            <div style={sectionLabel()}>Cumulative finance summary</div>
             <div
               style={{
                 marginTop: 8,
@@ -2683,28 +2801,28 @@ export default function CommunityHomePage() {
                 maxWidth: 860,
               }}
             >
-              Read the local money signal for the selected marketplace here,
-              then open Finance for the personal cumulative record across all
-              marketplaces.
+              This is your money signal across the communities attached to your
+              GSN ID. The selected marketplace signal is still shown below, but
+              the fuller personal record belongs in Finance.
             </div>
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <span style={badge(true)}>
-              Pool: {safeStr(moneySurface?.poolAmount || poolAmount)} {safeStr(moneySurface?.poolCurrency || poolCurrency)}
+              Available: {formatMoneySignal(cumulativeAvailable, poolSummaryCurrency)}
             </span>
             <span style={badge(false)}>
-              Expected payments: {activeExpectedPayments.length}
+              Locked: {formatMoneySignal(cumulativeLockedGuarantee, poolSummaryCurrency)}
             </span>
-            <span style={badge(false)}>Waiting: {pendingFinanceCount}</span>
+            <span style={badge(false)}>Communities: {communityCountFromSummary}</span>
           </div>
         </div>
 
         <ExplainToggle
-          label="What this finance record does"
-          what="This keeps the current community money signal in one place so users can see pool position, pending movement, expected payments, and the next finance action before opening the broader Finance domain."
-          why="Finance is easier to trust when users can first read the current community signal without mistaking Community Home for the whole combined money workspace."
-          next="Read the next action and current signal first, then open Finance, Money In, Money Out, Payment Rails, or Payout Details when you need the fuller route."
+          label="About finance here"
+          what="This gives you one quick money reading across your communities, then keeps the local selected-community money signal underneath."
+          why="A person can belong to many communities, so GSN must help them see the wider money picture before they take another money step."
+          next="Open Finance when you need the full breakdown, including the separate record for each community."
           tone="light"
           style={{ marginTop: 12 }}
         />
@@ -2721,12 +2839,12 @@ export default function CommunityHomePage() {
           }}
         >
           <div style={softCard("#F8FBFF")}>
-            <div style={sectionLabel()}>Current next action</div>
+            <div style={sectionLabel()}>Cross-community reading</div>
             <ExplainToggle
-              label="What this finance next action does"
-              what="This card highlights the next clean finance step for the current community after reading the signal below."
-              why="It helps users avoid guessing whether they should review Finance, pay in, pay out, or reconcile something first."
-              next="Read this action first, then open Finance when you need the fuller combined money workspace and deeper money routes."
+              label="About this finance reading"
+              what="This card reads your finance signal across all communities currently attached to your GSN ID."
+              why="It helps you avoid borrowing, guaranteeing, or paying from one place while missing what is already happening elsewhere."
+              next="Open Finance when you need to see each community record and the full money trail."
               tone="light"
               style={{ marginTop: 12 }}
             />
@@ -2739,17 +2857,52 @@ export default function CommunityHomePage() {
                 lineHeight: 1.28,
               }}
             >
-              {financeNextAction.title}
+              {cumulativeFinanceNextAction.title}
             </div>
             <div style={{ marginTop: 10, color: "#5F7287", fontSize: 14, lineHeight: 1.78 }}>
-              {financeNextAction.detail}
+              {cumulativeFinanceNextAction.detail}
             </div>
+
+            {poolSummaryIssue ? (
+              <div style={{ marginTop: 12, ...noticeCard("error") }}>
+                {poolSummaryIssue}
+              </div>
+            ) : null}
 
             {financeSyncIssue ? (
               <div style={{ marginTop: 12, ...noticeCard("error") }}>
                 {financeSyncIssue}
               </div>
             ) : null}
+
+            <div style={{ marginTop: 14, display: "grid", gap: 8 }}>
+              <div style={innerCard("#FFFFFF")}>
+                <div style={sectionLabel()}>Cumulative available</div>
+                <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 20, fontWeight: 900 }}>
+                  {formatMoneySignal(cumulativeAvailable, poolSummaryCurrency)}
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 8 }}>
+                <div style={innerCard("#FFFFFF")}>
+                  <div style={sectionLabel()}>Money settling</div>
+                  <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900 }}>
+                    In {formatMoneySignal(cumulativePendingIn, poolSummaryCurrency)} | Out {formatMoneySignal(cumulativePendingOut, poolSummaryCurrency)}
+                  </div>
+                </div>
+                <div style={innerCard("#FFFFFF")}>
+                  <div style={sectionLabel()}>Guarantee locked</div>
+                  <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900 }}>
+                    {formatMoneySignal(cumulativeLockedGuarantee, poolSummaryCurrency)}
+                  </div>
+                </div>
+              </div>
+              <div style={innerCard("#FFFFFF")}>
+                <div style={sectionLabel()}>Reserved pool</div>
+                <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900 }}>
+                  {formatMoneySignal(cumulativeReserved, poolSummaryCurrency)}
+                </div>
+              </div>
+            </div>
 
             <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
               <button
@@ -2771,6 +2924,28 @@ export default function CommunityHomePage() {
 
           <div style={softCard("#FFFFFF")}>
             <div style={sectionLabel()}>Current-community finance signal</div>
+
+            <div
+              style={{
+                marginTop: 10,
+                color: "#0B1F33",
+                fontSize: 18,
+                fontWeight: 900,
+                lineHeight: 1.35,
+              }}
+            >
+              {financeNextAction.title}
+            </div>
+            <div
+              style={{
+                marginTop: 8,
+                color: "#5F7287",
+                fontSize: 13,
+                lineHeight: 1.7,
+              }}
+            >
+              {financeNextAction.detail}
+            </div>
 
             <ExplainToggle
               label="What this live finance record does"
@@ -2986,7 +3161,151 @@ export default function CommunityHomePage() {
         </div>
       </section>
 
-      <section style={{ ...pageCard("#FFFFFF"), order: 50 }}>
+      <section style={{ ...pageCard("#FFFFFF"), order: 45 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Cumulative trust summary</div>
+            <div
+              style={{
+                marginTop: 8,
+                color: "#5F7287",
+                fontSize: 14,
+                lineHeight: 1.75,
+                maxWidth: 860,
+              }}
+            >
+              Community Home can show the quick trust signal, but the fuller
+              story belongs in Trust Passport. TrustSlip is the portable proof
+              people can check when they need confidence.
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span style={badge(true)}>Trust: {selectedClanTrust}</span>
+            <span style={badge(false)}>CCI: {selectedClanCci}</span>
+            <span style={badge(false)}>One GSN ID</span>
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            display: "grid",
+            gridTemplateColumns: isCompact
+              ? "1fr"
+              : "minmax(0, 1.05fr) minmax(320px, 0.95fr)",
+            gap: 16,
+            alignItems: "stretch",
+          }}
+        >
+          <div style={softCard("#F8FBFF")}>
+            <div style={sectionLabel()}>What this means</div>
+            <div
+              style={{
+                marginTop: 10,
+                color: "#0B1F33",
+                fontSize: 22,
+                fontWeight: 900,
+                lineHeight: 1.28,
+              }}
+            >
+              Your trust follows one identity across many communities.
+            </div>
+            <div
+              style={{
+                marginTop: 10,
+                color: "#5F7287",
+                fontSize: 14,
+                lineHeight: 1.78,
+              }}
+            >
+              One community can show a local trust reading. Trust Passport
+              gathers the fuller record across your communities. TrustSlip is
+              the shorter proof another person may check before trade, support,
+              or decision.
+            </div>
+          </div>
+
+          <div style={softCard("#FFFFFF")}>
+            <div style={sectionLabel()}>Open the right trust page</div>
+            <div
+              style={{
+                marginTop: 12,
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : "repeat(3, minmax(0, 1fr))",
+                gap: 10,
+              }}
+            >
+              <button
+                type="button"
+                onPointerDown={consumeCommunityPointerEvent}
+                onClick={(event) => openCommunityRoute(event, "/app/trust")}
+                style={actionBtn("secondary")}
+              >
+                Trust Passport
+              </button>
+              <button
+                type="button"
+                onPointerDown={consumeCommunityPointerEvent}
+                onClick={(event) => openCommunityRoute(event, "/app/trust-slip")}
+                style={actionBtn("secondary")}
+              >
+                TrustSlip
+              </button>
+              <button
+                type="button"
+                onPointerDown={consumeCommunityPointerEvent}
+                onClick={(event) => openCommunityRoute(event, "/app/identity")}
+                style={actionBtn("secondary")}
+              >
+                Identity
+              </button>
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : "repeat(3, minmax(0, 1fr))",
+                gap: 8,
+              }}
+            >
+              <div style={innerCard("#FCFEFF")}>
+                <div style={sectionLabel()}>Selected community</div>
+                <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900 }}>
+                  {selectedClanName}
+                </div>
+              </div>
+              <div style={innerCard("#FCFEFF")}>
+                <div style={sectionLabel()}>Trust</div>
+                <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900 }}>
+                  {selectedClanTrust}
+                </div>
+              </div>
+              <div style={innerCard("#FCFEFF")}>
+                <div style={sectionLabel()}>CCI</div>
+                <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900 }}>
+                  {selectedClanCci}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section style={{ ...pageCard("#FFFFFF"), order: 90 }}>
         <div
           style={{
             display: "flex",
@@ -3203,6 +3522,7 @@ export default function CommunityHomePage() {
 
           <button
             type="button"
+            onPointerDown={consumeCommunityPointerEvent}
             onClick={() => toggleSection("circle")}
             style={collapseToggle()}
           >
@@ -3419,6 +3739,7 @@ export default function CommunityHomePage() {
 
           <button
             type="button"
+            onPointerDown={consumeCommunityPointerEvent}
             onClick={() => toggleSection("spotlight")}
             style={collapseToggle()}
           >
@@ -3846,7 +4167,7 @@ export default function CommunityHomePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Marketplace group rollup</div>
+            <div style={sectionLabel()}>Your communities</div>
             <div
               style={{
                 marginTop: 8,
@@ -3855,16 +4176,17 @@ export default function CommunityHomePage() {
                 lineHeight: 1.75,
               }}
             >
-              Each row is one community you belong to, shown as a group unit.
-              Set one as current, then open it as the working Marketplace.
+              Each line is one community attached to your GSN ID. Choose one,
+              then open it as Marketplace when you want to work inside it.
             </div>
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={badge(false)}>{sortedClans.length} marketplace groups</span>
+            <span style={badge(false)}>{sortedClans.length} communities</span>
             <span style={badge(false)}>One global member ID</span>
             <button
               type="button"
+              onPointerDown={consumeCommunityPointerEvent}
               onClick={() => toggleSection("communities")}
               style={collapseToggle()}
             >
@@ -3901,7 +4223,7 @@ export default function CommunityHomePage() {
                           lineHeight: 1.35,
                         }}
                       >
-                        {getClanName(clan)}
+                        {index + 1}. {getClanName(clan)}
                       </div>
 
                       <div
@@ -3912,7 +4234,7 @@ export default function CommunityHomePage() {
                           lineHeight: 1.75,
                         }}
                       >
-                        {getClanDescription(clan)}
+                        Community ID: {getClanGlobalId(clan)}
                       </div>
 
                       <div
@@ -3925,9 +4247,6 @@ export default function CommunityHomePage() {
                       >
                         <span style={badge(active)}>
                           {active ? "Selected" : "Available"}
-                        </span>
-                        <span style={badge(false)}>
-                          Community ID: {getClanGlobalId(clan)}
                         </span>
                         <span style={badge(false)}>
                           Trust: {getClanTrust(clan)}
@@ -3953,8 +4272,8 @@ export default function CommunityHomePage() {
                       }}
                     >
                       {active
-                        ? "This marketplace group is currently selected. Its live work opens in Marketplace."
-                        : "Select this marketplace group before opening its live Marketplace tools."}
+                        ? "This community is selected. Its live work opens in Marketplace."
+                        : "Set this community first, then open its Marketplace."}
                     </div>
 
                     <div
