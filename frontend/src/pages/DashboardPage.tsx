@@ -3844,6 +3844,24 @@ export default function DashboardPage() {
         : ""
     }.`;
   }, [dashboardNoticeSourceGroups, dashboardNoticeTotalCount]);
+  const dashboardNoticePhoneSummaryLine = useMemo(() => {
+    if (dashboardNoticeTotalCount === 0) {
+      return "No new notification is waiting right now.";
+    }
+
+    const firstSource = safeStr(dashboardNoticeSourceGroups[0]?.title || "");
+    const otherScreens = Math.max(dashboardNoticeSourceGroups.length - 1, 0);
+
+    return `${dashboardNoticeTotalCount} notification${
+      dashboardNoticeTotalCount === 1 ? "" : "s"
+    } waiting${
+      firstSource ? `, first from ${firstSource}` : ""
+    }${
+      otherScreens > 0
+        ? ` and ${otherScreens} more screen${otherScreens === 1 ? "" : "s"}`
+        : ""
+    }.`;
+  }, [dashboardNoticeSourceGroups, dashboardNoticeTotalCount]);
   const dashboardNoticeLeadItem = useMemo(
     () =>
       dashboardNoticeSummary.actNow[0] ||
@@ -3895,7 +3913,7 @@ export default function DashboardPage() {
 
   const demandSummaryLine = useMemo(() => {
     if (demandItems.length === 0) {
-      return "No open demand request is waiting right now.";
+      return "No demand is waiting right now.";
     }
 
     if (urgentDemandItems.length > 0) {
@@ -5226,14 +5244,34 @@ export default function DashboardPage() {
   const dashboardSpotlightTopInset = isCompact ? 6 : 8;
   const dashboardSpotlightBottomInset = isCompact ? 6 : 8;
   const dashboardSpotlightThumbSize = isCompact ? 84 : 112;
-  const dashboardSpotlightTitleSize = isCompact ? 18 : 22;
-  const dashboardSpotlightBodyFontSize = isCompact ? 12.5 : 13.5;
+  const dashboardSpotlightTitleSize = isPhone ? 16 : isCompact ? 18 : 22;
+  const dashboardSpotlightBodyFontSize = isPhone
+    ? 12.25
+    : isCompact
+    ? 12.5
+    : 13.5;
+  const dashboardPhoneButton: React.CSSProperties = isPhone
+    ? {
+        minHeight: 34,
+        padding: "6px 10px",
+        borderRadius: 11,
+        fontSize: 12,
+      }
+    : {};
+  const dashboardPhoneHelper: React.CSSProperties = isPhone
+    ? {
+        fontSize: 12.5,
+        lineHeight: 1.48,
+      }
+    : {};
   const dashboardActionGrid = (
     minWidth = isCompact ? 112 : 132
   ): React.CSSProperties => ({
     display: "grid",
-    gridTemplateColumns: `repeat(auto-fit, minmax(${minWidth}px, 1fr))`,
-    gap: 8,
+    gridTemplateColumns: isPhone
+      ? "1fr"
+      : `repeat(auto-fit, minmax(${minWidth}px, 1fr))`,
+    gap: isPhone ? 7 : 8,
     alignItems: "stretch",
   });
   const dashboardFillButton = (
@@ -6406,7 +6444,8 @@ export default function DashboardPage() {
           ...pageCard(demandSurfaceChrome.shellBg),
           position: "relative",
           border: demandSurfaceChrome.shellBorder,
-          padding: isCompact ? 16 : 18,
+          padding: isPhone ? 12 : isCompact ? 16 : 18,
+          borderRadius: isPhone ? 22 : 26,
           boxShadow:
             "0 20px 44px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.76)",
         }}
@@ -6425,7 +6464,7 @@ export default function DashboardPage() {
           style={{
             display: "flex",
             justifyContent: "space-between",
-            gap: 12,
+            gap: isPhone ? 8 : 12,
             alignItems: "center",
             flexWrap: "wrap",
           }}
@@ -6437,7 +6476,7 @@ export default function DashboardPage() {
           <div
             style={{
               display: "flex",
-              gap: 8,
+              gap: isPhone ? 6 : 8,
               flexWrap: "wrap",
               alignItems: "center",
             }}
@@ -6572,9 +6611,13 @@ export default function DashboardPage() {
           <>
             <div
               style={{
-                marginTop: 16,
-                ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
+                marginTop: isPhone ? 10 : 16,
+                ...innerCard(
+                  "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"
+                ),
                 border: "1px solid rgba(11,99,209,0.12)",
+                padding: isPhone ? 10 : 16,
+                borderRadius: isPhone ? 16 : 18,
                 boxShadow:
                   "0 20px 40px rgba(15,59,116,0.08), inset 0 1px 0 rgba(255,255,255,0.8)",
               }}
@@ -6586,7 +6629,7 @@ export default function DashboardPage() {
                     !isCompact && spotlightHasMedia
                       ? `${dashboardSpotlightThumbSize}px minmax(0, 1fr)`
                       : "1fr",
-                  gap: 14,
+                  gap: isPhone ? 9 : 14,
                   alignItems: "start",
                 }}
               >
@@ -6644,7 +6687,7 @@ export default function DashboardPage() {
                   <div
                     style={{
                       display: "flex",
-                      gap: 8,
+                      gap: isPhone ? 6 : 8,
                       flexWrap: "wrap",
                       alignItems: "center",
                     }}
@@ -6663,17 +6706,19 @@ export default function DashboardPage() {
                     >
                       {spotlightExpiryStatus.chip}
                     </span>
-                    <span
-                      style={{
-                        ...badge(false),
-                        background: spotlightHasMedia
-                          ? "rgba(15,59,116,0.08)"
-                          : "rgba(249,115,22,0.10)",
-                        color: spotlightHasMedia ? "#0F3B74" : "#9A3412",
-                      }}
-                    >
-                      {spotlightHasMedia ? "Media ready" : "Media unavailable"}
-                    </span>
+                    {!isPhone ? (
+                      <span
+                        style={{
+                          ...badge(false),
+                          background: spotlightHasMedia
+                            ? "rgba(15,59,116,0.08)"
+                            : "rgba(249,115,22,0.10)",
+                          color: spotlightHasMedia ? "#0F3B74" : "#9A3412",
+                        }}
+                      >
+                        {spotlightHasMedia ? "Media ready" : "Media unavailable"}
+                      </span>
+                    ) : null}
                     {!isCompact ? (
                       <span style={badge(false)}>
                         {safeDateTime(activeSpotlight.created_at) || "—"}
@@ -6697,7 +6742,13 @@ export default function DashboardPage() {
                     )}
                   </div>
 
-                  <div style={{ ...helperText(), maxWidth: 820 }}>
+                  <div
+                    style={{
+                      ...helperText(),
+                      ...dashboardPhoneHelper,
+                      maxWidth: 820,
+                    }}
+                  >
                     {safeStr(
                       activeSpotlight.source_shop_name ||
                         activeSpotlight.author_name ||
@@ -6715,7 +6766,7 @@ export default function DashboardPage() {
                       style={{
                         color: "#475569",
                         fontSize: dashboardSpotlightBodyFontSize,
-                        lineHeight: 1.65,
+                        lineHeight: isPhone ? 1.45 : 1.65,
                         maxWidth: 860,
                         display: "-webkit-box",
                         WebkitBoxOrient: "vertical",
@@ -6730,14 +6781,20 @@ export default function DashboardPage() {
                   <div
                     style={{
                       color: spotlightExpiryStatus.urgent ? "#9A3412" : "#1D4ED8",
-                      fontSize: 13,
+                      fontSize: isPhone ? 12.5 : 13,
                       fontWeight: 700,
                     }}
                   >
                     {spotlightExpiryStatus.detail}
                   </div>
 
-                  <div style={{ ...helperText(), maxWidth: 860 }}>
+                  <div
+                    style={{
+                      ...helperText(),
+                      ...dashboardPhoneHelper,
+                      maxWidth: 860,
+                    }}
+                  >
                     Dashboard now keeps spotlight as a quick summary. Open the
                     marketplace or shop for the fuller seller and media context.
                   </div>
@@ -6747,7 +6804,10 @@ export default function DashboardPage() {
                       type="button"
                       onClick={openSpotlightMarketplace}
                       onPointerDown={consumeDashboardPointerEvent}
-                      style={dashboardFillButton(secondaryBtn(false))}
+                      style={dashboardFillButton(
+                        secondaryBtn(false),
+                        dashboardPhoneButton
+                      )}
                     >
                       Open marketplace
                     </button>
@@ -6756,7 +6816,10 @@ export default function DashboardPage() {
                         type="button"
                         onClick={openSpotlightShop}
                         onPointerDown={consumeDashboardPointerEvent}
-                        style={dashboardFillButton(secondaryBtn(false))}
+                        style={dashboardFillButton(
+                          secondaryBtn(false),
+                          dashboardPhoneButton
+                        )}
                       >
                         Open shop
                       </button>
@@ -6765,7 +6828,10 @@ export default function DashboardPage() {
                       type="button"
                       onClick={minimizeSpotlight}
                       onPointerDown={consumeDashboardPointerEvent}
-                      style={dashboardFillButton(subtleBtn(false))}
+                      style={dashboardFillButton(
+                        subtleBtn(false),
+                        dashboardPhoneButton
+                      )}
                     >
                       Minimize
                     </button>
@@ -7451,26 +7517,39 @@ export default function DashboardPage() {
         )}
       </section>
 
-      <section style={pageCard(DASHBOARD_BRAND.summaryPanel)}>
+      <section
+        style={{
+          ...pageCard(DASHBOARD_BRAND.summaryPanel),
+          padding: isPhone ? 14 : 20,
+          borderRadius: isPhone ? 22 : 26,
+        }}
+      >
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
-            gap: 12,
+            gap: isPhone ? 8 : 12,
             alignItems: "center",
             flexWrap: "wrap",
           }}
         >
           <div>
             <div style={sectionLabel()}>Demand Box</div>
-            <div style={{ marginTop: 3, ...helperText(), maxWidth: 420 }}>
+            <div
+              style={{
+                marginTop: 3,
+                ...helperText(),
+                ...dashboardPhoneHelper,
+                maxWidth: 420,
+              }}
+            >
               Live demand in your community.
             </div>
           </div>
           <div
             style={{
               display: "flex",
-              gap: 8,
+              gap: isPhone ? 6 : 8,
               flexWrap: "wrap",
               justifyContent: "flex-end",
               alignItems: "center",
@@ -7504,11 +7583,12 @@ export default function DashboardPage() {
 
         <div
           style={{
-            marginTop: 14,
+            marginTop: isPhone ? 10 : 14,
             ...innerCard(demandSurfaceChrome.leadBg),
             border: demandSurfaceChrome.leadBorder,
             boxShadow: demandSurfaceChrome.leadShadow,
-            padding: isCompact ? 14 : 16,
+            padding: isPhone ? 10 : isCompact ? 14 : 16,
+            borderRadius: isPhone ? 16 : 18,
           }}
         >
           <div
@@ -7524,8 +7604,8 @@ export default function DashboardPage() {
               style={{
                 color: "#0B1F33",
                 fontWeight: 900,
-                fontSize: 18,
-                lineHeight: 1.32,
+                fontSize: isPhone ? 15.5 : 18,
+                lineHeight: isPhone ? 1.22 : 1.32,
                 maxWidth: 760,
               }}
             >
@@ -7574,6 +7654,7 @@ export default function DashboardPage() {
             style={{
               marginTop: 6,
               ...helperText(),
+              ...dashboardPhoneHelper,
               maxWidth: 820,
               color: "#44617D",
             }}
@@ -7586,7 +7667,8 @@ export default function DashboardPage() {
               marginTop: 12,
               ...innerCard(demandSurfaceChrome.detailBg),
               border: demandSurfaceChrome.detailBorder,
-              padding: isCompact ? 12 : 14,
+              padding: isPhone ? 10 : isCompact ? 12 : 14,
+              borderRadius: isPhone ? 15 : 18,
               boxShadow:
                 "0 12px 28px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.84)",
               display: "grid",
@@ -7598,7 +7680,8 @@ export default function DashboardPage() {
                 style={{
                   ...softCard(demandSurfaceChrome.itemBg),
                   border: demandSurfaceChrome.itemBorder,
-                  padding: 12,
+                  padding: isPhone ? 10 : 12,
+                  borderRadius: isPhone ? 14 : 18,
                   boxShadow:
                     "inset 0 1px 0 rgba(255,255,255,0.84), 0 8px 18px rgba(10,24,49,0.05)",
                 }}
@@ -7616,7 +7699,8 @@ export default function DashboardPage() {
                     style={{
                       color: "#0B1F33",
                       fontWeight: 800,
-                      lineHeight: 1.3,
+                      fontSize: isPhone ? 15 : undefined,
+                      lineHeight: isPhone ? 1.24 : 1.3,
                       flex: "1 1 220px",
                     }}
                   >
@@ -7635,7 +7719,14 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                <div
+                  style={{
+                    marginTop: 6,
+                    ...helperText(),
+                    fontSize: isPhone ? 12.5 : 13,
+                    lineHeight: isPhone ? 1.46 : 1.75,
+                  }}
+                >
                   {safeStr(
                     currentDemandItem.description ||
                       "Open Demand Box to read the full request."
@@ -7679,7 +7770,8 @@ export default function DashboardPage() {
                 style={{
                   ...softCard(demandSurfaceChrome.itemBg),
                   border: demandSurfaceChrome.itemBorder,
-                  padding: 12,
+                  padding: isPhone ? 10 : 12,
+                  borderRadius: isPhone ? 14 : 18,
                   boxShadow:
                     "inset 0 1px 0 rgba(255,255,255,0.84), 0 8px 18px rgba(10,24,49,0.05)",
                 }}
@@ -7688,12 +7780,20 @@ export default function DashboardPage() {
                   style={{
                     color: "#0B1F33",
                     fontWeight: 800,
-                    lineHeight: 1.3,
+                    fontSize: isPhone ? 15 : undefined,
+                    lineHeight: isPhone ? 1.24 : 1.3,
                   }}
                 >
                   No open demand is waiting.
                 </div>
-                <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                <div
+                  style={{
+                    marginTop: 6,
+                    ...helperText(),
+                    fontSize: isPhone ? 12.5 : 13,
+                    lineHeight: isPhone ? 1.46 : 1.75,
+                  }}
+                >
                   Create a demand when a member or seller needs the community to
                   respond.
                 </div>
@@ -7707,7 +7807,10 @@ export default function DashboardPage() {
                   openDashboardRoute(event, demandPrimaryActionTo)
                 }
                 onPointerDown={consumeDashboardPointerEvent}
-                style={dashboardFillButton(secondaryBtn(false))}
+                style={dashboardFillButton(
+                  secondaryBtn(false),
+                  dashboardPhoneButton
+                )}
               >
                 {demandPrimaryActionLabel}
               </button>
@@ -7716,23 +7819,42 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <section style={pageCard(DASHBOARD_BRAND.summaryPanel)}>
+      <section
+        style={{
+          ...pageCard(DASHBOARD_BRAND.summaryPanel),
+          padding: isPhone ? 14 : 20,
+          borderRadius: isPhone ? 22 : 26,
+        }}
+      >
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
-            gap: 12,
+            gap: isPhone ? 8 : 12,
             alignItems: "center",
             flexWrap: "wrap",
           }}
         >
           <div>
-            <div style={{ marginTop: 2, ...helperText(), maxWidth: 420 }}>
-              See which screen the latest notification is coming from.
+            <div
+              style={{
+                marginTop: 2,
+                ...helperText(),
+                ...dashboardPhoneHelper,
+                maxWidth: 420,
+              }}
+            >
+              See where the latest notification came from.
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: isPhone ? 6 : 10,
+              flexWrap: "wrap",
+            }}
+          >
             <span
               style={{
                 ...badge(false),
@@ -7750,9 +7872,11 @@ export default function DashboardPage() {
 
         <div
           style={{
-            marginTop: 16,
+            marginTop: isPhone ? 10 : 16,
             ...innerCard("linear-gradient(180deg, #F7FAFF 0%, #FFFFFF 100%)"),
             border: "1px solid rgba(11,99,209,0.10)",
+            padding: isPhone ? 10 : 16,
+            borderRadius: isPhone ? 16 : 18,
             boxShadow: "0 10px 24px rgba(11,99,209,0.05)",
           }}
         >
@@ -7769,15 +7893,23 @@ export default function DashboardPage() {
               style={{
                 color: "#0B1F33",
                 fontWeight: 900,
-                fontSize: 18,
-                lineHeight: 1.32,
+                fontSize: isPhone ? 15.5 : 18,
+                lineHeight: isPhone ? 1.24 : 1.32,
                 maxWidth: 760,
               }}
             >
-              {dashboardNoticeSummaryLine}
+              {isPhone
+                ? dashboardNoticePhoneSummaryLine
+                : dashboardNoticeSummaryLine}
             </div>
 
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: isPhone ? 6 : 8,
+                flexWrap: "wrap",
+              }}
+            >
               {dashboardNoticeSourceGroups.length > 0 ? (
                 <span style={badge(false)}>
                   {dashboardNoticeSourceGroups.length} screen
@@ -7822,7 +7954,8 @@ export default function DashboardPage() {
                 marginTop: 12,
                 ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
                 border: "1px solid rgba(11,99,209,0.12)",
-                padding: isCompact ? 12 : 14,
+                padding: isPhone ? 10 : isCompact ? 12 : 14,
+                borderRadius: isPhone ? 15 : 18,
                 boxShadow:
                   "0 12px 28px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.84)",
                 display: "grid",
@@ -7842,7 +7975,8 @@ export default function DashboardPage() {
                   style={{
                     color: "#0B1F33",
                     fontWeight: 800,
-                    lineHeight: 1.3,
+                    fontSize: isPhone ? 15 : undefined,
+                    lineHeight: isPhone ? 1.24 : 1.3,
                     flex: "1 1 240px",
                   }}
                 >
@@ -7874,12 +8008,24 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div style={{ ...helperText(), fontSize: 13 }}>
+              <div
+                style={{
+                  ...helperText(),
+                  fontSize: isPhone ? 12.5 : 13,
+                  lineHeight: isPhone ? 1.46 : 1.75,
+                }}
+              >
                 {dashboardNoticeLeadItem.detail}
               </div>
 
               {dashboardNoticeLeadGroup ? (
-                <div style={{ ...helperText(), fontSize: 12.5 }}>
+                <div
+                  style={{
+                    ...helperText(),
+                    fontSize: isPhone ? 12.25 : 12.5,
+                    lineHeight: isPhone ? 1.45 : 1.75,
+                  }}
+                >
                   {dashboardNoticeLeadGroup.detail}
                 </div>
               ) : null}
@@ -7891,7 +8037,10 @@ export default function DashboardPage() {
                     openDashboardRoute(event, dashboardNoticePrimaryActionTo)
                   }
                   onPointerDown={consumeDashboardPointerEvent}
-                  style={dashboardFillButton(secondaryBtn(false))}
+                  style={dashboardFillButton(
+                    secondaryBtn(false),
+                    dashboardPhoneButton
+                  )}
                 >
                   {dashboardNoticePrimaryActionLabel}
                 </button>
@@ -7901,7 +8050,10 @@ export default function DashboardPage() {
                     openDashboardRoute(event, DASHBOARD_TARGETS.WHAT_MATTERS_NOW)
                   }
                   onPointerDown={consumeDashboardPointerEvent}
-                  style={dashboardFillButton(subtleBtn(false))}
+                  style={dashboardFillButton(
+                    subtleBtn(false),
+                    dashboardPhoneButton
+                  )}
                 >
                   Open notifications
                 </button>
