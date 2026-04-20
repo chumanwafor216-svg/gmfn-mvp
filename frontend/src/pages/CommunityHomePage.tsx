@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import CommunityShopControlPanel from "../components/CommunityShopControlPanel";
 import DomainIntroToggle from "../components/DomainIntroToggle";
 import ExplainToggle from "../components/ExplainToggle";
+import GSNBrandMark from "../components/GSNBrandMark";
 import PageTopNav from "../components/PageTopNav";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { navigateWithOrigin } from "../lib/nav";
@@ -157,6 +158,17 @@ const SPOTLIGHT_ALLOWED_IMAGE_LABEL = "JPG, PNG, or WebP";
 const SPOTLIGHT_ALLOWED_VIDEO_LABEL = "MP4, WebM, or MOV";
 const SPOTLIGHT_MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const SPOTLIGHT_MAX_VIDEO_BYTES = 10 * 1024 * 1024;
+const COMMUNITY_BRAND = {
+  ink: "#071827",
+  navy: "#081E32",
+  deep: "#0B2942",
+  blue: "#0D5FA8",
+  lightBlue: "#EAF4FF",
+  gold: "#D9AC33",
+  goldSoft: "#FFF4C9",
+  panel: "rgba(255,255,255,0.94)",
+  border: "rgba(21,64,103,0.14)",
+};
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -398,42 +410,110 @@ function resolveMemberName(me: any): string {
   return email || "Member";
 }
 
+function communityShellStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    position: "relative",
+    maxWidth: 1180,
+    margin: "0 auto",
+    padding: isCompact ? 12 : 22,
+    paddingBottom: isCompact ? 28 : 44,
+    display: "grid",
+    gap: isCompact ? 14 : 18,
+    borderRadius: isCompact ? 24 : 34,
+    background:
+      "radial-gradient(circle at 12% 0%, rgba(217,172,51,0.22) 0%, rgba(217,172,51,0) 28%), radial-gradient(circle at 92% 10%, rgba(38,132,205,0.20) 0%, rgba(38,132,205,0) 30%), linear-gradient(180deg, #071827 0%, #0B2942 42%, #EAF4FF 42.1%, #F8FBFF 100%)",
+    boxShadow:
+      "0 28px 70px rgba(2,12,27,0.20), inset 0 1px 0 rgba(255,255,255,0.08)",
+    overflow: "hidden",
+  };
+}
+
+function communityWatermarkStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    position: "absolute",
+    right: isCompact ? -28 : 20,
+    top: isCompact ? 70 : 88,
+    opacity: isCompact ? 0.055 : 0.08,
+    pointerEvents: "none",
+    filter: "drop-shadow(0 24px 38px rgba(0,0,0,0.24))",
+  };
+}
+
+function communityContentStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 1,
+    display: "grid",
+    gap: isCompact ? 14 : 18,
+  };
+}
+
+function communityHeroStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    borderRadius: isCompact ? 22 : 30,
+    border: "1px solid rgba(255,255,255,0.16)",
+    background:
+      "linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(238,247,255,0.92) 56%, rgba(255,244,201,0.92) 100%)",
+    padding: isCompact ? 14 : 20,
+    boxShadow:
+      "0 20px 48px rgba(2,12,27,0.18), inset 0 1px 0 rgba(255,255,255,0.82)",
+    overflow: "hidden",
+  };
+}
+
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
+  const resolvedBg =
+    bg === "#FFFFFF"
+      ? "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,251,255,0.96) 100%)"
+      : bg;
+
   return {
     borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: `1px solid ${COMMUNITY_BRAND.border}`,
+    background: resolvedBg,
     padding: 20,
     boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
+      "0 18px 44px rgba(7,24,39,0.10), 0 2px 8px rgba(15,23,42,0.03), inset 0 1px 0 rgba(255,255,255,0.74)",
     overflow: "hidden",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
+  const resolvedBg =
+    bg === "#F8FBFF"
+      ? "linear-gradient(180deg, #F8FBFF 0%, #EFF7FF 100%)"
+      : bg;
+
   return {
     borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: `1px solid ${COMMUNITY_BRAND.border}`,
+    background: resolvedBg,
     padding: 16,
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.72)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
+  const resolvedBg =
+    bg === "#FFFFFF"
+      ? "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"
+      : bg;
+
   return {
     borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: `1px solid ${COMMUNITY_BRAND.border}`,
+    background: resolvedBg,
     padding: 14,
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.72)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#5D7389",
+    color: "#244B72",
     fontWeight: 900,
-    letterSpacing: 0.35,
+    letterSpacing: 1.8,
     textTransform: "uppercase",
   };
 }
@@ -446,8 +526,11 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? "rgba(29,78,216,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#1D4ED8" : "#51657A",
+    background: primary ? COMMUNITY_BRAND.goldSoft : "rgba(13,95,168,0.08)",
+    color: primary ? "#6F4C00" : "#1E4063",
+    border: primary
+      ? "1px solid rgba(217,172,51,0.32)"
+      : "1px solid rgba(13,95,168,0.12)",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
@@ -460,14 +543,20 @@ function actionBtn(
 ): React.CSSProperties {
   if (kind === "primary") {
     return {
+      position: "relative",
+      zIndex: 1,
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
       minHeight: 42,
       padding: "10px 14px",
       borderRadius: 14,
-      border: "none",
-      background: disabled ? "#CBD5E1" : "#1D4ED8",
+      border: disabled
+        ? "1px solid rgba(148,163,184,0.26)"
+        : "1px solid rgba(255,255,255,0.22)",
+      background: disabled
+        ? "#CBD5E1"
+        : "linear-gradient(180deg, #0D5FA8 0%, #0A3D70 100%)",
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
@@ -476,19 +565,25 @@ function actionBtn(
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
+      boxShadow: disabled
+        ? "none"
+        : "0 12px 24px rgba(13,95,168,0.20), inset 0 1px 0 rgba(255,255,255,0.26)",
+      touchAction: "manipulation",
     };
   }
 
   if (kind === "soft") {
     return {
+      position: "relative",
+      zIndex: 1,
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
       minHeight: 38,
       padding: "8px 12px",
       borderRadius: 12,
-      border: "1px solid rgba(29,78,216,0.10)",
-      background: "#F5FAFF",
+      border: "1px solid rgba(13,95,168,0.12)",
+      background: "linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)",
       color: disabled ? "#94A3B8" : "#1E4063",
       fontWeight: 800,
       fontSize: 13,
@@ -497,18 +592,22 @@ function actionBtn(
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
+      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.82)",
+      touchAction: "manipulation",
     };
   }
 
   return {
+    position: "relative",
+    zIndex: 1,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     minHeight: 42,
     padding: "10px 14px",
     borderRadius: 14,
-    border: "1px solid rgba(11,99,209,0.12)",
-    background: "#FDFEFF",
+    border: "1px solid rgba(13,95,168,0.14)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F6FAFF 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
@@ -517,25 +616,31 @@ function actionBtn(
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
+    boxShadow: "0 8px 18px rgba(7,24,39,0.05), inset 0 1px 0 rgba(255,255,255,0.82)",
+    touchAction: "manipulation",
   };
 }
 
 function collapseToggle(): React.CSSProperties {
   return {
+    position: "relative",
+    zIndex: 1,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     minHeight: 38,
     padding: "8px 12px",
     borderRadius: 12,
-    border: "1px solid rgba(11,99,209,0.12)",
-    background: "#FDFEFF",
+    border: "1px solid rgba(13,95,168,0.14)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F5FAFF 100%)",
     color: "#1E4063",
     fontWeight: 800,
     fontSize: 13,
     cursor: "pointer",
     textAlign: "center",
     whiteSpace: "normal",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.82)",
+    touchAction: "manipulation",
   };
 }
 
@@ -1844,158 +1949,148 @@ export default function CommunityHomePage() {
 
   if (loading) {
     return (
-      <div
-        style={{
-          maxWidth: 1180,
-          margin: "0 auto",
-          paddingBottom: 40,
-          display: "grid",
-          gap: 18,
-        }}
-      >
-        <PageTopNav
-          sectionLabel="Community Home"
-          title="Community Home"
-          subtitle="Loading your current community..."
-          homeTo="/app/dashboard"
-          homeLabel="Dashboard"
-          backTo="/app/dashboard"
-          nextLinks={[
-            { label: "Marketplace", to: "/app/marketplace" },
-            { label: "Notifications", to: "/app/notifications" },
-          ]}
-        />
+      <div style={communityShellStyle(isCompact)}>
+        <div style={communityWatermarkStyle(isCompact)} aria-hidden="true">
+          <GSNBrandMark width={isCompact ? 180 : 260} height={isCompact ? 218 : 315} />
+        </div>
+        <div style={communityContentStyle(isCompact)}>
+          <PageTopNav
+            sectionLabel="Community Home"
+            title="Community Home"
+            subtitle="Loading your current community..."
+            homeTo="/app/dashboard"
+            homeLabel="Dashboard"
+            backTo="/app/dashboard"
+            nextLinks={[
+              { label: "Marketplace", to: "/app/marketplace" },
+              { label: "Notifications", to: "/app/notifications" },
+            ]}
+          />
 
-        <section style={pageCard("#FFFFFF")}>
-          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-            Loading your communities...
-          </div>
-        </section>
+          <section style={pageCard("#FFFFFF")}>
+            <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+              Loading your communities...
+            </div>
+          </section>
+        </div>
       </div>
     );
   }
 
   if (clans.length === 0) {
     return (
-      <div
-        style={{
-          maxWidth: 1180,
-          margin: "0 auto",
-          paddingBottom: 40,
-          display: "grid",
-          gap: 18,
-        }}
-      >
-        <PageTopNav
-          sectionLabel="Community Home"
-          title="Community Home"
-          subtitle="Choose a working community here, confirm where you are, and move into the right community route."
-          homeTo="/app/dashboard"
-          homeLabel="Dashboard"
-          backTo="/app/dashboard"
-          nextLinks={[
-            { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
-            { label: "Trust", to: "/app/trust" },
-          ]}
-        />
+      <div style={communityShellStyle(isCompact)}>
+        <div style={communityWatermarkStyle(isCompact)} aria-hidden="true">
+          <GSNBrandMark width={isCompact ? 180 : 260} height={isCompact ? 218 : 315} />
+        </div>
+        <div style={communityContentStyle(isCompact)}>
+          <PageTopNav
+            sectionLabel="Community Home"
+            title="Community Home"
+            subtitle="Choose a working community here, confirm where you are, and move into the right community route."
+            homeTo="/app/dashboard"
+            homeLabel="Dashboard"
+            backTo="/app/dashboard"
+            nextLinks={[
+              { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
+              { label: "Trust", to: "/app/trust" },
+            ]}
+          />
 
-        <DomainIntroToggle
-          title="Your Community Home"
-          eyebrow="Your guide"
-          body="This is where your groups will appear. Create or join a community, then choose it here when you want to work inside it."
-          bullets={[
-            "Create or join a community first.",
-            "Then choose the group you want to work in.",
-            "Finance, Trust Passport, and Shop Gallery become clearer after your first community is in place.",
-          ]}
-          note="Simple rule: your groups gather here before you open one for live work."
-          tone="blue"
-        />
+          <DomainIntroToggle
+            title="About Community Home"
+            eyebrow="Your guide"
+            body="This is where your communities will appear. Create or join one first, then come back here to choose the group you want to work in."
+            bullets={[
+              "Create or join a community first.",
+              "Then choose the group you want to work in.",
+              "Finance, Trust Passport, and Shop Gallery become clearer after your first community is in place.",
+            ]}
+            note="Simple rule: your groups gather here before you open one for live work."
+            tone="dark"
+          />
 
-        <section style={pageCard("#FFFFFF")}>
-          <div style={sectionLabel()}>No communities yet</div>
+          <section style={pageCard("#FFFFFF")}>
+            <div style={sectionLabel()}>No communities yet</div>
 
-          <div
-            style={{
-              marginTop: 12,
-              color: "#0B1F33",
-              fontSize: 28,
-              fontWeight: 900,
-              lineHeight: 1.15,
-              maxWidth: 760,
-            }}
-          >
-            You do not have any visible communities in Community Home yet.
-          </div>
-
-          <div
-            style={{
-              marginTop: 12,
-              color: "#5F7287",
-              fontSize: 15,
-              lineHeight: 1.8,
-              maxWidth: 860,
-            }}
-          >
-            Choose a working community here, confirm where you are, use invite
-            tools, grow your trusted circle, and move into the right community
-            route when one is available.
-          </div>
-
-          <div
-            style={{
-              marginTop: 18,
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            <button
-              type="button"
-              onPointerDown={consumeCommunityPointerEvent}
-              onClick={(event) => openCommunityRoute(event, "/app/clans")}
-              style={actionBtn("primary")}
+            <div
+              style={{
+                marginTop: 12,
+                color: "#0B1F33",
+                fontSize: 28,
+                fontWeight: 900,
+                lineHeight: 1.15,
+                maxWidth: 760,
+              }}
             >
-              Create New Community
-            </button>
-            <button
-              type="button"
-              onPointerDown={consumeCommunityPointerEvent}
-              onClick={(event) =>
-                openCommunityRoute(event, "/app/build-first-circle")
-              }
-              style={actionBtn("secondary")}
+              You do not have any visible communities in Community Home yet.
+            </div>
+
+            <div
+              style={{
+                marginTop: 12,
+                color: "#5F7287",
+                fontSize: 15,
+                lineHeight: 1.8,
+                maxWidth: 860,
+              }}
             >
-              Build Your First Circle
-            </button>
-            <button
-              type="button"
-              onPointerDown={consumeCommunityPointerEvent}
-              onClick={(event) => openCommunityRoute(event, "/app/dashboard")}
-              style={actionBtn("secondary")}
+              Create or join a community first. After that, Community Home will
+              show your groups in one place and let you open the right
+              marketplace when you need to work.
+            </div>
+
+            <div
+              style={{
+                marginTop: 18,
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+              }}
             >
-              Dashboard
-            </button>
-          </div>
-        </section>
+              <button
+                type="button"
+                onPointerDown={consumeCommunityPointerEvent}
+                onClick={(event) => openCommunityRoute(event, "/app/clans")}
+                style={actionBtn("primary")}
+              >
+                Create New Community
+              </button>
+              <button
+                type="button"
+                onPointerDown={consumeCommunityPointerEvent}
+                onClick={(event) =>
+                  openCommunityRoute(event, "/app/build-first-circle")
+                }
+                style={actionBtn("secondary")}
+              >
+                Build Your First Circle
+              </button>
+              <button
+                type="button"
+                onPointerDown={consumeCommunityPointerEvent}
+                onClick={(event) => openCommunityRoute(event, "/app/dashboard")}
+                style={actionBtn("secondary")}
+              >
+                Dashboard
+              </button>
+            </div>
+          </section>
+        </div>
       </div>
     );
   }
 
   return (
-    <div
-      style={{
-        maxWidth: 1180,
-        margin: "0 auto",
-        paddingBottom: 40,
-        display: "grid",
-        gap: 18,
-      }}
-    >
+    <div style={communityShellStyle(isCompact)}>
+      <div style={communityWatermarkStyle(isCompact)} aria-hidden="true">
+        <GSNBrandMark width={isCompact ? 180 : 260} height={isCompact ? 218 : 315} />
+      </div>
+      <div style={communityContentStyle(isCompact)}>
       <PageTopNav
         sectionLabel="Community Home"
         title="Community Home"
-        subtitle="See every community you belong to as a marketplace group, then open one selected community as the working marketplace."
+        subtitle="All your communities live here. Choose one, then open its Marketplace to work inside it."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
@@ -2009,8 +2104,165 @@ export default function CommunityHomePage() {
         ]}
       />
 
+      <section style={communityHeroStyle(isCompact)}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "auto minmax(0, 1fr)",
+            gap: isCompact ? 12 : 18,
+            alignItems: "center",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: isCompact ? "flex-start" : "center",
+              gap: 12,
+            }}
+          >
+            <div
+              style={{
+                width: isCompact ? 54 : 68,
+                height: isCompact ? 62 : 78,
+                display: "grid",
+                placeItems: "center",
+                borderRadius: 22,
+                background:
+                  "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(234,244,255,0.92) 100%)",
+                border: "1px solid rgba(217,172,51,0.24)",
+                boxShadow: "0 14px 28px rgba(7,24,39,0.14)",
+              }}
+            >
+              <GSNBrandMark
+                width={isCompact ? 38 : 48}
+                height={isCompact ? 46 : 58}
+              />
+            </div>
+            {isCompact ? (
+              <div style={{ minWidth: 0 }}>
+                <div style={sectionLabel()}>GSN Community Home</div>
+                <div
+                  style={{
+                    marginTop: 3,
+                    color: COMMUNITY_BRAND.ink,
+                    fontSize: 18,
+                    fontWeight: 900,
+                    lineHeight: 1.15,
+                  }}
+                >
+                  All communities. One identity.
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <div>
+            {!isCompact ? (
+              <>
+                <div style={sectionLabel()}>GSN Community Home</div>
+                <div
+                  style={{
+                    marginTop: 6,
+                    color: COMMUNITY_BRAND.ink,
+                    fontSize: 30,
+                    fontWeight: 900,
+                    lineHeight: 1.08,
+                    letterSpacing: -0.4,
+                  }}
+                >
+                  All communities. One identity.
+                </div>
+              </>
+            ) : null}
+
+            <div
+              style={{
+                marginTop: isCompact ? 10 : 12,
+                color: "#3A526A",
+                fontSize: 14,
+                lineHeight: 1.75,
+                maxWidth: 880,
+              }}
+            >
+              Community Home keeps every group you belong to in one calm place.
+              Pick the right community, then GSN opens that community as a
+              Marketplace for live work.
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "repeat(2, minmax(0, 1fr))"
+                  : "repeat(4, minmax(0, 1fr))",
+                gap: 8,
+              }}
+            >
+              <div style={innerCard("rgba(255,255,255,0.74)")}>
+                <div style={sectionLabel()}>Communities</div>
+                <div
+                  style={{
+                    marginTop: 6,
+                    color: COMMUNITY_BRAND.ink,
+                    fontSize: 24,
+                    fontWeight: 900,
+                  }}
+                >
+                  {clans.length}
+                </div>
+              </div>
+              <div style={innerCard("rgba(255,255,255,0.74)")}>
+                <div style={sectionLabel()}>Current</div>
+                <div
+                  style={{
+                    marginTop: 6,
+                    color: COMMUNITY_BRAND.ink,
+                    fontSize: 15,
+                    fontWeight: 900,
+                    lineHeight: 1.25,
+                  }}
+                >
+                  {selectedClanName}
+                </div>
+              </div>
+              <div style={innerCard("rgba(255,255,255,0.74)")}>
+                <div style={sectionLabel()}>Member ID</div>
+                <div
+                  style={{
+                    marginTop: 6,
+                    color: COMMUNITY_BRAND.ink,
+                    fontSize: 15,
+                    fontWeight: 900,
+                    lineHeight: 1.25,
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {memberGlobalId}
+                </div>
+              </div>
+              <div style={innerCard("rgba(255,255,255,0.74)")}>
+                <div style={sectionLabel()}>Rule</div>
+                <div
+                  style={{
+                    marginTop: 6,
+                    color: COMMUNITY_BRAND.ink,
+                    fontSize: 15,
+                    fontWeight: 900,
+                    lineHeight: 1.25,
+                  }}
+                >
+                  One ID. One shop.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <DomainIntroToggle
-        title="Your Community Home"
+        title="About Community Home"
         eyebrow="Your guide"
         body="This is where all your groups sit together. Choose one group here when you want to work inside that community."
         bullets={[
@@ -2019,15 +2271,7 @@ export default function CommunityHomePage() {
           "This page can show simple group signs like trust, money health, CCI (cross-community integrity), demand, and spotlight. Your full private records stay in Finance and Trust Passport.",
         ]}
         note="Simple rule: Community Home shows all your groups. Marketplace opens the one you choose."
-        tone="blue"
-      />
-
-      <ExplainToggle
-        label="What this screen does"
-        what="Community Home is the combined index of the communities you belong to. Each community appears here as one marketplace group before you open it for deeper work."
-        why="It keeps group-level finance, trust, CCI, demand, and spotlight signals separate from the private personal records that belong in Finance and Trust Passport."
-        next="Review the marketplace groups, set the right one as current, then open its Marketplace when you need to work inside that community."
-        tone="light"
+        tone="dark"
       />
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
@@ -3746,6 +3990,7 @@ export default function CommunityHomePage() {
           </div>
         ) : null}
       </section>
+      </div>
     </div>
   );
 }
