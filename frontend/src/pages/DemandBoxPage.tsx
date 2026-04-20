@@ -268,12 +268,28 @@ function demandBrandShell(): React.CSSProperties {
 function whiteActionBtn(disabled = false): React.CSSProperties {
   return {
     ...secondaryBtn(disabled),
+    minHeight: 44,
+    padding: "10px 14px",
     border: "1px solid rgba(11,99,209,0.14)",
     background: "linear-gradient(180deg, #FFFFFF 0%, #F4F8FC 100%)",
     color: disabled ? "#94A3B8" : "#123055",
     fontWeight: 900,
+    lineHeight: 1.22,
     boxShadow:
       "0 10px 20px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.86)",
+  };
+}
+
+function communityChoiceBtn(active: boolean, disabled = false): React.CSSProperties {
+  return {
+    ...(active ? whiteActionBtn(disabled) : secondaryBtn(disabled)),
+    width: "100%",
+    minHeight: 52,
+    justifyContent: "space-between",
+    textAlign: "left",
+    borderRadius: 16,
+    padding: "11px 13px",
+    lineHeight: 1.24,
   };
 }
 
@@ -696,7 +712,7 @@ export default function DemandBoxPage() {
         <PageTopNav
           sectionLabel="Demand Box"
           title="Demand Box"
-          subtitle="Choose the trusted room before posting your personal request."
+          subtitle="Choose the community before posting your personal request."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo={demandReturnTo}
@@ -731,8 +747,8 @@ export default function DemandBoxPage() {
               maxWidth: 860,
             }}
           >
-            Pick the trusted room first. That helps people know where your
-            request is coming from before they answer.
+            Pick the community first. That helps people know where your request
+            is coming from before they answer.
           </div>
 
           <div
@@ -753,12 +769,7 @@ export default function DemandBoxPage() {
                     type="button"
                     onClick={() => void handleChooseDemandCommunity(community)}
                     disabled={busy || !clanId}
-                    style={{
-                      ...whiteActionBtn(busy || !clanId),
-                      justifyContent: "space-between",
-                      textAlign: "left",
-                      width: "100%",
-                    }}
+                    style={communityChoiceBtn(false, busy || !clanId)}
                   >
                     <span>{communityName(community, clanId)}</span>
                     <span style={{ opacity: 0.76 }}>
@@ -801,8 +812,8 @@ export default function DemandBoxPage() {
       >
         <PageTopNav
           sectionLabel="Demand Box"
-          title="Choose community for this demand"
-          subtitle="Pick the trusted room this request should come from."
+          title="Choose community"
+          subtitle="Community Home holds all your communities. Pick the one this demand should come from."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo={demandReturnTo}
@@ -813,7 +824,7 @@ export default function DemandBoxPage() {
 
         <section style={demandBrandShell()}>
           <div style={{ ...sectionLabel(), color: "#C9D7E8" }}>
-            Step 1 of 3
+            Demand flow
           </div>
 
           <div
@@ -826,7 +837,7 @@ export default function DemandBoxPage() {
               maxWidth: 780,
             }}
           >
-            Which community should speak behind this demand?
+            Choose the community for this demand.
           </div>
 
           <div
@@ -837,9 +848,22 @@ export default function DemandBoxPage() {
               maxWidth: 860,
             }}
           >
-            Your request is personal, but the community gives it the right
-            trusted context. After you choose, GSN will open the create-demand
-            form for that community.
+            Your request is personal. The community gives it the right trusted
+            context. After you choose, GSN opens that community's marketplace
+            demand form.
+          </div>
+
+          <div
+            style={{
+              marginTop: 14,
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
+            <span style={badge(false)}>Step 1: choose community</span>
+            <span style={badge(false)}>Step 2: fill request</span>
+            <span style={badge(false)}>Step 3: post demand</span>
           </div>
 
           <div
@@ -863,15 +887,7 @@ export default function DemandBoxPage() {
                   type="button"
                   onClick={() => void handleChooseDemandCommunity(community)}
                   disabled={busy || !clanId}
-                  style={{
-                    ...(active
-                      ? whiteActionBtn(busy || !clanId)
-                      : secondaryBtn(busy || !clanId)),
-                    width: "100%",
-                    justifyContent: "space-between",
-                    textAlign: "left",
-                    minHeight: 54,
-                  }}
+                  style={communityChoiceBtn(active, busy || !clanId)}
                 >
                   <span>{communityName(community, clanId)}</span>
                   <span style={{ opacity: 0.82 }}>
@@ -905,7 +921,7 @@ export default function DemandBoxPage() {
         }
         subtitle={
           isCreateMode
-            ? "Create your demand from this community."
+            ? `You are posting from the ${currentCommunityName} marketplace.`
             : "Ask for what you need, from the right community, with trust attached."
         }
         homeTo="/app/dashboard"
@@ -955,7 +971,7 @@ export default function DemandBoxPage() {
             >
               Demand Box is for a real personal need: a service, goods,
               support, or help. Choose the right community first so people know
-              the trusted room your request is coming from.
+              the community your request is coming from.
             </div>
 
             <div
@@ -1091,7 +1107,14 @@ export default function DemandBoxPage() {
       </section>
       ) : null}
 
-      <section id="demand-box-create" style={pageCard("#FFFFFF")}>
+      <section
+        id="demand-box-create"
+        style={pageCard(
+          isCreateMode
+            ? "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"
+            : "#FFFFFF"
+        )}
+      >
         <div
           style={{
             display: "flex",
@@ -1103,7 +1126,7 @@ export default function DemandBoxPage() {
         >
           <div>
             <div style={sectionLabel()}>
-              {isCreateMode ? currentCommunityName : "Create demand"}
+              {isCreateMode ? "Marketplace demand form" : "Create demand"}
             </div>
             <div
               style={{
@@ -1115,7 +1138,7 @@ export default function DemandBoxPage() {
               }}
             >
               {isCreateMode
-                ? "Create your demand."
+                ? `Create demand from ${currentCommunityName}.`
                 : "Tell your community what you need."}
             </div>
             <div
@@ -1126,7 +1149,7 @@ export default function DemandBoxPage() {
               }}
             >
               {isCreateMode
-                ? `You are posting from ${currentCommunityName}. Fill in the need, contact, area, and proof expectation, then send it.`
+                ? "Fill in the need, contact, area, and proof expectation. GSN keeps the community context attached."
                 : "Keep it simple: what you need, where it is needed, how people can reach you, and what proof or payment should be clear first."}
             </div>
           </div>
@@ -1154,7 +1177,8 @@ export default function DemandBoxPage() {
               alignItems: "center",
             }}
           >
-            <span style={badge(true)}>From {currentCommunityName}</span>
+            <span style={badge(true)}>Community: {currentCommunityName}</span>
+            <span style={badge(false)}>Marketplace context active</span>
             <span style={badge(false)}>Step 2: fill the request</span>
             <span style={badge(false)}>Step 3: post demand</span>
           </div>
@@ -1177,7 +1201,7 @@ export default function DemandBoxPage() {
             }}
           >
             Your need is personal, but the community gives it trusted context.
-            Choose the room where people should see and answer it.
+            Choose where people should see and answer it.
           </div>
 
           <div
@@ -1201,12 +1225,7 @@ export default function DemandBoxPage() {
                     type="button"
                     onClick={() => void handleChooseDemandCommunity(community)}
                     disabled={busy || !clanId}
-                    style={{
-                      ...(active ? primaryBtn(busy || !clanId) : secondaryBtn(busy || !clanId)),
-                      width: "100%",
-                      justifyContent: "space-between",
-                      textAlign: "left",
-                    }}
+                    style={communityChoiceBtn(active, busy || !clanId)}
                   >
                     <span>{communityName(community, clanId)}</span>
                     <span style={{ opacity: 0.82 }}>
@@ -1371,17 +1390,34 @@ export default function DemandBoxPage() {
               <span style={badge(false)}>From {currentCommunityName}</span>
             </div>
 
-            <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <div
+              style={{
+                marginTop: 14,
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : "repeat(2, minmax(160px, 220px))",
+                gap: 10,
+                alignItems: "stretch",
+              }}
+            >
               <button
                 type="button"
                 onClick={() => void handleCreateDemand()}
                 disabled={creating || !safeStr(title)}
-                style={primaryBtn(creating || !safeStr(title))}
+                style={{
+                  ...primaryBtn(creating || !safeStr(title)),
+                  width: "100%",
+                  minHeight: 46,
+                }}
               >
                 {creating ? "Posting..." : "Post demand"}
               </button>
 
-              <OriginLink to="/app/notifications" style={secondaryBtn(false)}>
+              <OriginLink
+                to="/app/notifications"
+                style={{ ...whiteActionBtn(false), width: "100%" }}
+              >
                 Open notifications
               </OriginLink>
             </div>
