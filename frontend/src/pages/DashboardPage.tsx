@@ -5856,13 +5856,13 @@ export default function DashboardPage() {
           maxWidth: 1180,
           margin: "0 auto",
           display: "grid",
-          gap: 18,
+          gap: isPhone ? 8 : 18,
         }}
       >
         <details
           style={{
-            borderRadius: isPhone ? 17 : 22,
-            padding: isPhone ? "8px 10px" : 12,
+            borderRadius: isPhone ? 14 : 22,
+            padding: isPhone ? "5px 8px" : 12,
             background: "linear-gradient(180deg, #FFFFFF 0%, #F4F8FE 100%)",
             border: "1px solid rgba(11,99,209,0.12)",
             boxShadow: "0 14px 30px rgba(11,99,209,0.06)",
@@ -5874,7 +5874,7 @@ export default function DashboardPage() {
               display: "grid",
               gridTemplateColumns: "minmax(0, 1fr) auto",
               alignItems: "center",
-              gap: isPhone ? 8 : 10,
+              gap: isPhone ? 6 : 10,
               listStyle: "none",
               cursor: "pointer",
               touchAction: "manipulation",
@@ -5883,7 +5883,7 @@ export default function DashboardPage() {
             <span style={{ minWidth: 0 }}>
               <span
                 style={{
-                  display: "block",
+                  display: isPhone ? "none" : "block",
                   color: "#0B63D1",
                   fontSize: isPhone ? 9.8 : 11,
                   fontWeight: 900,
@@ -5896,14 +5896,14 @@ export default function DashboardPage() {
               <span
                 style={{
                   display: "block",
-                  marginTop: isPhone ? 1 : 3,
+                  marginTop: isPhone ? 0 : 3,
                   color: "#102A43",
-                  fontSize: isPhone ? 14.5 : 16,
+                  fontSize: isPhone ? 12.8 : 16,
                   fontWeight: 900,
-                  lineHeight: 1.15,
+                  lineHeight: isPhone ? 1.05 : 1.15,
                 }}
               >
-                Your Dashboard
+                {isPhone ? "Dashboard guide" : "Your Dashboard"}
               </span>
             </span>
             <span
@@ -5911,15 +5911,15 @@ export default function DashboardPage() {
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                minHeight: isPhone ? 30 : 38,
-                minWidth: isPhone ? 62 : 82,
-                padding: isPhone ? "5px 10px" : "8px 13px",
+                minHeight: isPhone ? 24 : 38,
+                minWidth: isPhone ? 48 : 82,
+                padding: isPhone ? "3px 8px" : "8px 13px",
                 borderRadius: 999,
                 background: "#FFFFFF",
                 border: "1px solid rgba(11,99,209,0.16)",
                 color: "#14324C",
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)",
-                fontSize: isPhone ? 11.5 : 13,
+                fontSize: isPhone ? 10.5 : 13,
                 fontWeight: 900,
               }}
             >
@@ -5929,14 +5929,14 @@ export default function DashboardPage() {
 
           <div
             style={{
-              marginTop: isPhone ? 8 : 12,
+              marginTop: isPhone ? 6 : 12,
               borderRadius: isPhone ? 14 : 18,
-              padding: isPhone ? 10 : 14,
+              padding: isPhone ? 8 : 14,
               background: "rgba(255,255,255,0.72)",
               border: "1px solid rgba(11,99,209,0.10)",
               color: "#35516B",
-              fontSize: isPhone ? 12.5 : 14,
-              lineHeight: isPhone ? 1.48 : 1.75,
+              fontSize: isPhone ? 12 : 14,
+              lineHeight: isPhone ? 1.38 : 1.75,
             }}
           >
             Dashboard is your quick first look. It shows what needs attention
@@ -6374,9 +6374,11 @@ export default function DashboardPage() {
                         justifyItems: "center",
                         alignItems: "center",
                         width: isPhone ? "100%" : "fit-content",
-                        gap: isPhone ? 2 : 3,
-                        minHeight: isPhone ? 42 : 30,
-                        padding: isPhone ? "6px 10px" : "4px 10px",
+                        maxWidth: "100%",
+                        boxSizing: "border-box",
+                        gap: isPhone ? 4 : 3,
+                        minHeight: isPhone ? 58 : 46,
+                        padding: isPhone ? "7px 10px" : "6px 12px",
                         borderRadius: isPhone ? 11 : 9,
                         background:
                           "linear-gradient(180deg, rgba(255,248,220,0.98) 0%, rgba(243,220,152,0.96) 48%, rgba(229,196,102,0.94) 100%)",
@@ -6391,76 +6393,58 @@ export default function DashboardPage() {
                         textAlign: "center",
                       }}
                     >
-                      <span style={{ opacity: 0.88 }}>GSN ID</span>
                       <span
                         style={{
+                          display: "inline-flex",
+                          alignItems: "baseline",
+                          justifyContent: "center",
+                          gap: 6,
                           color: "#4F2F00",
-                          fontSize: isPhone ? 14 : 13,
+                          fontSize: isPhone ? 13.5 : 13,
                           lineHeight: 1,
+                        }}
+                      >
+                        <span
+                          style={{
+                            opacity: 0.72,
+                            fontSize: isPhone ? 9.2 : 10,
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          Holder
+                        </span>
+                        <span>{greetingName}</span>
+                      </span>
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "baseline",
+                          justifyContent: "center",
+                          gap: 6,
+                          color: "#4F2F00",
+                          fontSize: isPhone ? 13.5 : 13,
+                          lineHeight: 1.05,
                           letterSpacing: isPhone ? 0.8 : 0.04,
+                          maxWidth: "100%",
+                          whiteSpace: "normal",
+                          overflowWrap: "anywhere",
+                          wordBreak: "break-word",
                         }}
                       >
-                        {visibleGsnId}
+                        <span
+                          style={{
+                            opacity: 0.72,
+                            fontSize: isPhone ? 9.2 : 10,
+                            letterSpacing: 0.04,
+                            textTransform: "uppercase",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          GSN ID
+                        </span>
+                        <span>{visibleGsnId}</span>
                       </span>
                     </span>
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: isPhone ? 9 : 6,
-                      display: "grid",
-                      gridTemplateColumns: isPhone
-                        ? "1fr"
-                        : "minmax(0, 1fr) auto",
-                      alignItems: "center",
-                      gap: isPhone ? 6 : 8,
-                    }}
-                  >
-                    <span
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: isPhone ? "center" : "flex-start",
-                        gap: isPhone ? 8 : 6,
-                        minHeight: isPhone ? 32 : 28,
-                        padding: isPhone ? "6px 10px" : "4px 10px",
-                        borderRadius: 999,
-                        background:
-                          "linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.08) 100%)",
-                        border: "1px solid rgba(255,255,255,0.16)",
-                        color: "#F8FBFF",
-                        boxShadow:
-                          "0 8px 16px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.12)",
-                        fontWeight: 900,
-                        fontSize: isPhone ? 10 : 11,
-                        letterSpacing: 0.04,
-                        whiteSpace: "nowrap",
-                        width: isPhone ? "100%" : undefined,
-                      }}
-                    >
-                      <span style={{ opacity: 0.72 }}>Holder</span>
-                      <span
-                        style={{
-                          fontSize: isPhone ? 12 : 13,
-                          color: "#FFFFFF",
-                        }}
-                      >
-                        {greetingName}
-                      </span>
-                    </span>
-
-                    {!isPhone ? (
-                      <span
-                        style={{
-                          color: "rgba(226,232,240,0.74)",
-                          fontSize: 11.5,
-                          fontWeight: 800,
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        Visible GSN profile
-                      </span>
-                    ) : null}
                   </div>
 
                   <div
