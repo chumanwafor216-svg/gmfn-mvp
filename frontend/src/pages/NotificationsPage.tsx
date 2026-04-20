@@ -48,6 +48,26 @@ const DEFAULT_SETTINGS: SettingsState = {
 
 const NOTIFICATIONS_UI_STORAGE_KEY = "gmfn.notifications.ui.v1";
 
+const GSN_ACTION_BRAND = {
+  ink: "#0B1F33",
+  muted: "#557089",
+  label: "#2D587F",
+  blue: "#174A78",
+  blueSoft: "#EAF3FA",
+  gold: "#A9791F",
+  goldSoft: "#F8EDD0",
+  cardBorder: "rgba(22, 66, 102, 0.16)",
+  cardBorderStrong: "rgba(13, 47, 78, 0.28)",
+  hero:
+    "linear-gradient(145deg, #071F35 0%, #103657 46%, #1D5B86 100%)",
+  heroPanel:
+    "linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.07) 100%)",
+  whiteButton:
+    "linear-gradient(180deg, #FFFFFF 0%, #F5F9FC 58%, #EDF4F9 100%)",
+  primaryButton:
+    "linear-gradient(180deg, #103A60 0%, #1C5A8A 55%, #2D72A8 100%)",
+};
+
 const BUCKET_ORDER: GuidanceInboxBucketKey[] = [
   "actNow",
   "dueSoon",
@@ -223,40 +243,42 @@ function firstTruthy(...values: any[]): string {
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
+    borderRadius: 28,
+    border: `1px solid ${GSN_ACTION_BRAND.cardBorder}`,
     background: bg,
     padding: 20,
     boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
+      "0 18px 42px rgba(12,35,58,0.075), 0 2px 10px rgba(12,35,58,0.035)",
     overflow: "hidden",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
-    borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
+    borderRadius: 22,
+    border: `1px solid ${GSN_ACTION_BRAND.cardBorder}`,
     background: bg,
     padding: 16,
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.82)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
+    borderRadius: 20,
+    border: `1px solid ${GSN_ACTION_BRAND.cardBorder}`,
     background: bg,
     padding: 14,
+    boxShadow: "0 8px 20px rgba(12,35,58,0.035)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#5D7389",
+    color: GSN_ACTION_BRAND.label,
     fontWeight: 900,
-    letterSpacing: 0.35,
+    letterSpacing: 1.7,
     textTransform: "uppercase",
   };
 }
@@ -269,8 +291,11 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? "rgba(29,78,216,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#1D4ED8" : "#51657A",
+    border: primary
+      ? "1px solid rgba(169,121,31,0.24)"
+      : `1px solid ${GSN_ACTION_BRAND.cardBorder}`,
+    background: primary ? GSN_ACTION_BRAND.goldSoft : GSN_ACTION_BRAND.blueSoft,
+    color: primary ? "#735315" : GSN_ACTION_BRAND.blue,
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
@@ -281,65 +306,58 @@ function actionBtn(
   kind: "primary" | "secondary" | "soft" = "secondary",
   disabled = false
 ): React.CSSProperties {
+  const base: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: kind === "soft" ? 44 : 46,
+    minWidth: 112,
+    maxWidth: "100%",
+    padding: kind === "soft" ? "9px 14px" : "11px 18px",
+    borderRadius: kind === "soft" ? 16 : 18,
+    fontWeight: 900,
+    fontSize: kind === "soft" ? 13 : 14,
+    lineHeight: 1.15,
+    letterSpacing: 0.15,
+    textAlign: "center",
+    textDecoration: "none",
+    cursor: disabled ? "not-allowed" : "pointer",
+    whiteSpace: "normal",
+    overflowWrap: "anywhere",
+    userSelect: "none",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    opacity: disabled ? 0.78 : 1,
+  };
+
   if (kind === "primary") {
     return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 42,
-      padding: "10px 14px",
-      borderRadius: 14,
-      border: "none",
-      background: disabled ? "#CBD5E1" : "#1D4ED8",
+      ...base,
+      border: "1px solid rgba(255,255,255,0.22)",
+      background: disabled ? "#CBD5E1" : GSN_ACTION_BRAND.primaryButton,
       color: "#FFFFFF",
-      fontWeight: 900,
-      fontSize: 14,
-      textAlign: "center",
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      opacity: disabled ? 0.86 : 1,
+      boxShadow:
+        "0 10px 22px rgba(16,58,96,0.20), inset 0 1px 0 rgba(255,255,255,0.22)",
     };
   }
 
   if (kind === "soft") {
     return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 38,
-      padding: "8px 12px",
-      borderRadius: 12,
-      border: "1px solid rgba(11,31,51,0.08)",
+      ...base,
+      border: `1px solid ${GSN_ACTION_BRAND.cardBorder}`,
       background: "#F8FBFF",
-      color: disabled ? "#94A3B8" : "#24415C",
-      fontWeight: 800,
-      fontSize: 13,
-      textAlign: "center",
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      opacity: disabled ? 0.86 : 1,
+      color: disabled ? "#94A3B8" : GSN_ACTION_BRAND.blue,
+      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.84)",
     };
   }
 
   return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
-    borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
-    color: disabled ? "#94A3B8" : "#0B1F33",
-    fontWeight: 800,
-    fontSize: 14,
-    textAlign: "center",
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    opacity: disabled ? 0.86 : 1,
+    ...base,
+    border: `1px solid ${GSN_ACTION_BRAND.cardBorderStrong}`,
+    background: GSN_ACTION_BRAND.whiteButton,
+    color: disabled ? "#94A3B8" : GSN_ACTION_BRAND.ink,
+    boxShadow:
+      "0 8px 18px rgba(12,35,58,0.055), inset 0 1px 0 rgba(255,255,255,0.9)",
   };
 }
 
@@ -348,35 +366,59 @@ function collapseToggle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 38,
-    padding: "8px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
-    color: "#24415C",
-    fontWeight: 800,
+    minHeight: 44,
+    minWidth: 108,
+    padding: "10px 16px",
+    borderRadius: 18,
+    border: `1px solid ${GSN_ACTION_BRAND.cardBorderStrong}`,
+    background: GSN_ACTION_BRAND.whiteButton,
+    color: GSN_ACTION_BRAND.blue,
+    fontWeight: 900,
     fontSize: 13,
+    letterSpacing: 0.15,
     textAlign: "center",
     cursor: "pointer",
     whiteSpace: "normal",
+    userSelect: "none",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    boxShadow:
+      "0 8px 18px rgba(12,35,58,0.055), inset 0 1px 0 rgba(255,255,255,0.9)",
   };
 }
 
 function statTile(): React.CSSProperties {
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: "#FFFFFF",
+    borderRadius: 20,
+    border: `1px solid ${GSN_ACTION_BRAND.cardBorder}`,
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F6FAFD 100%)",
     padding: 14,
+    boxShadow: "0 10px 20px rgba(12,35,58,0.045)",
   };
 }
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#5F7287",
+    color: GSN_ACTION_BRAND.muted,
     fontSize: 14,
     lineHeight: 1.75,
   };
+}
+
+function actionRow(isPhone = false): React.CSSProperties {
+  return isPhone
+    ? {
+        display: "grid",
+        gridTemplateColumns: "1fr",
+        gap: 10,
+        alignItems: "stretch",
+      }
+    : {
+        display: "flex",
+        gap: 10,
+        flexWrap: "wrap",
+        alignItems: "stretch",
+      };
 }
 
 function containsAny(text: string, tokens: string[]): boolean {
@@ -832,6 +874,10 @@ export default function NotificationsPage() {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 980;
   });
+  const [isPhone, setIsPhone] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 640;
+  });
 
   const [settings, setSettings] = useState<SettingsState>(DEFAULT_SETTINGS);
   const [guidanceSnapshot, setGuidanceSnapshot] = useState<GuidanceSnapshot | null>(
@@ -855,6 +901,7 @@ export default function NotificationsPage() {
 
     function handleResize() {
       setIsCompact(window.innerWidth <= 980);
+      setIsPhone(window.innerWidth <= 640);
     }
 
     handleResize();
@@ -1022,13 +1069,13 @@ export default function NotificationsPage() {
         margin: "0 auto",
         paddingBottom: 40,
         display: "grid",
-        gap: 18,
+        gap: isPhone ? 14 : 18,
       }}
     >
       <PageTopNav
         sectionLabel="Notifications"
         title="Action Inbox"
-        subtitle="Follow the same guidance language as the dashboard here: act now, due soon, watch and wait, then general updates."
+        subtitle="See what needs action now, what is due soon, what can wait, and where each update came from."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
@@ -1053,15 +1100,27 @@ export default function NotificationsPage() {
       />
 
       <section
-        style={pageCard("linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)")}
+        style={{
+          ...pageCard(GSN_ACTION_BRAND.hero),
+          border: "1px solid rgba(255,255,255,0.18)",
+          boxShadow:
+            "0 22px 52px rgba(7,31,53,0.22), inset 0 1px 0 rgba(255,255,255,0.14)",
+        }}
       >
-        <div style={sectionLabel()}>Action inbox summary</div>
+        <div
+          style={{
+            ...sectionLabel(),
+            color: "#DCEBFA",
+          }}
+        >
+          Action inbox summary
+        </div>
 
         <div
           style={{
-            marginTop: 12,
+            marginTop: 10,
             color: "#F8FBFF",
-            fontSize: isCompact ? 28 : 34,
+            fontSize: isPhone ? 24 : isCompact ? 28 : 34,
             fontWeight: 900,
             lineHeight: 1.08,
             maxWidth: 860,
@@ -1094,7 +1153,9 @@ export default function NotificationsPage() {
           style={{
             marginTop: 16,
             display: "grid",
-            gridTemplateColumns: isCompact
+            gridTemplateColumns: isPhone
+              ? "1fr 1fr"
+              : isCompact
               ? "1fr 1fr"
               : "repeat(4, minmax(0, 1fr))",
             gap: 12,
@@ -1176,14 +1237,7 @@ export default function NotificationsPage() {
           </span>
         </div>
 
-        <div
-          style={{
-            marginTop: 16,
-            display: "flex",
-            gap: 10,
-            flexWrap: "wrap",
-          }}
-        >
+        <div style={{ marginTop: 16, ...actionRow(isPhone) }}>
           <button
             type="button"
             onClick={() =>
@@ -1254,14 +1308,7 @@ export default function NotificationsPage() {
             ))}
           </div>
 
-          <div
-            style={{
-              marginTop: 16,
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
+          <div style={{ marginTop: 16, ...actionRow(isPhone) }}>
             <OriginLink to="/app/trust" style={actionBtn("primary")}>
               Review Trust
             </OriginLink>
@@ -1359,14 +1406,7 @@ export default function NotificationsPage() {
                   {operationalFocus.detail}
                 </div>
 
-                <div
-                  style={{
-                    marginTop: 16,
-                    display: "flex",
-                    gap: 10,
-                    flexWrap: "wrap",
-                  }}
-                >
+                <div style={{ marginTop: 16, ...actionRow(isPhone) }}>
                   <button
                     type="button"
                     onClick={() => void handlePrimaryNoticeAction(operationalFocus)}
@@ -1455,14 +1495,7 @@ export default function NotificationsPage() {
                 {selectedNotice.detail}
               </div>
 
-              <div
-                style={{
-                  marginTop: 16,
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
-                }}
-              >
+              <div style={{ marginTop: 16, ...actionRow(isPhone) }}>
                 <OriginLink to={selectedNotice.ctaTo} style={actionBtn("primary")}>
                   {selectedNotice.ctaLabel}
                 </OriginLink>
@@ -1608,14 +1641,7 @@ export default function NotificationsPage() {
                                 : truncateText(notice.detail, 150)}
                             </div>
 
-                            <div
-                              style={{
-                                marginTop: 12,
-                                display: "flex",
-                                gap: 10,
-                                flexWrap: "wrap",
-                              }}
-                            >
+                            <div style={{ marginTop: 12, ...actionRow(isPhone) }}>
                               <button
                                 type="button"
                                 onClick={() => void handlePrimaryNoticeAction(notice)}
