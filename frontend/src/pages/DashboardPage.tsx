@@ -9146,19 +9146,6 @@ export default function DashboardPage() {
                 >
                   {activeMarketWisdomSignal.text}
                 </div>
-
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: DASHBOARD_BRAND.helper,
-                    fontSize: 11.8,
-                    lineHeight: 1.55,
-                  }}
-                >
-                  Dashboard keeps one live reading here. The wider wisdom set
-                  now rotates quietly instead of opening into a larger dashboard
-                  control block.
-                </div>
               </div>
             </div>
           ) : null}
