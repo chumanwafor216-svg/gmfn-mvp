@@ -25,6 +25,11 @@ It is the working architecture basis for:
 - trust and finance interpretation
 - future implementation and review work
 
+For the innovation-case, investor, policy, development-finance, TrustSlip, and
+merchant-verification meaning of this architecture, also read:
+
+- `docs/INNOVATION_POLICY_LOGIC_2026-04-20.md`
+
 ## Core identity rules
 
 ### 1. Community identity
@@ -308,6 +313,40 @@ marketplace.
 
 It helps other communities see the member in a truer carried-forward form,
 rather than only as a brand-new stranger.
+
+TrustSlip should be understood as the portable current proof, not the full trust
+story.
+
+The fuller trust story belongs in Trust Passport.
+
+TrustSlip is the smaller verified view that can travel outward for a specific
+decision, such as merchant confidence, controlled access, or a time-bound
+verification moment.
+
+## Merchant verification
+Merchant verification is a marketplace-linked outward confidence tool.
+
+It is used when a person needs to trade, receive goods, or be checked by someone
+outside the immediate circle where they are already known.
+
+The relationship is:
+
+- Trust Passport = full accumulated trust story
+- TrustSlip = portable current proof
+- Merchant verification = the process of checking that proof before a trading
+  or release decision
+
+Merchant verification should not expose the whole Trust Passport by default.
+
+It should show only the permitted TrustSlip view, with the right visibility
+level, evidence reference, expiry, and disclaimer.
+
+Important rule:
+
+- TrustSlip and merchant verification may support confidence
+- they are not a bank guarantee
+- they do not imply auto-debit
+- they need consent, auditability, and plain-language explanation
 
 ## Spotlight and Demand Box
 

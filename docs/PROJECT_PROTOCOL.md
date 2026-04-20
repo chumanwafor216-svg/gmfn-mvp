@@ -25,7 +25,12 @@ For Marketplace page-composition work specifically, also read:
 
 - `docs/MARKETPLACE_PAGE_BLUEPRINT_2026-04-20.md`
 
-That document is the current authoritative skeleton for:
+For innovation-case, investor, policy, TrustSlip, merchant-verification, or
+development-finance explanation work, also read:
+
+- `docs/INNOVATION_POLICY_LOGIC_2026-04-20.md`
+
+The canonical system skeleton is the current authoritative skeleton for:
 
 - Community Home
 - Marketplace

@@ -13,6 +13,10 @@ It is the current authoritative skeleton for how Community Home, Marketplace,
 Shop Gallery, Finance, Trust Passport, TrustSlip, CCI, Dashboard, and Admin fit
 together.
 
+For innovation-case, investor, policy, TrustSlip, merchant-verification, or
+development-finance explanation work, also read
+`docs/INNOVATION_POLICY_LOGIC_2026-04-20.md`.
+
 ## Backend
 
 The backend is built with **FastAPI**, **SQLAlchemy**, and **Alembic**.

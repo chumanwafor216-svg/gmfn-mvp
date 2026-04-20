@@ -16,6 +16,9 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
   leaving the next session to reconstruct intent from git history alone.
 - For the current canonical product skeleton, also read
   `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`.
+- For innovation-case, investor, policy, TrustSlip, merchant-verification, and
+  development-finance logic, also read
+  `docs/INNOVATION_POLICY_LOGIC_2026-04-20.md`.
 - For the current senior-engineer recovery brief, also read
   `docs/SENIOR_ENGINEERING_HANDOVER_2026-04-19.md`.
 - For the proposed production route and page ownership model, also read
@@ -38,6 +41,69 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ## Current checkpoint
 
 ### Latest update
+
+#### Date
+2026-04-20
+
+#### Workstream
+Innovation and policy logic documented so the architecture can be explained as
+community-anchored economic infrastructure, not just app screens.
+
+#### Routes/screens affected
+- architecture guidance for:
+  - `/app/community`
+  - `/app/marketplace`
+  - `/app/finance`
+  - `/app/trust`
+  - `/app/trust-slip`
+  - `/app/trust-slip/verify`
+  - merchant verification redirects
+
+#### Backend routes/endpoints involved
+- confirmed supporting code references only:
+  - `gmfn_backend/app/services/liquidity_engine_service.py`
+  - `gmfn_backend/app/services/loan_readiness_service.py`
+  - `gmfn_backend/app/services/loan_decision_intelligence_service.py`
+  - `gmfn_backend/app/services/trust_slips_services.py`
+  - `gmfn_backend/app/api/routes/merchant_verify.py`
+  - `gmfn_backend/app/services/merchant_verify_service.py`
+
+#### Files in play
+- `docs/INNOVATION_POLICY_LOGIC_2026-04-20.md`
+- `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`
+- `docs/PROJECT_PROTOCOL.md`
+- `docs/HANDOFF_NOTES.md`
+- `README.md`
+
+#### Confirmed facts
+- A new innovation/policy logic document now explains:
+  - Finance as both local marketplace finance and cumulative
+    cross-community financial reading.
+  - Trust Passport as the full accumulated trust story.
+  - TrustSlip as portable current proof, not the full trust story.
+  - Merchant verification as the process of checking TrustSlip outside the
+    immediate community circle before goods/trade/confidence decisions.
+  - The policy/investor value of comparing behaviour across community contexts
+    only after responsible data collection.
+- Backend code already has partial support for liquidity, exposure, loan
+  readiness, CCI/trust graph, TrustSlip payloads, merchant verification links,
+  Pack IDs, and append-only merchant verification events.
+
+#### Open risks or unknowns
+- Community type classification is not yet fully modeled, so claims about
+  religious, age-grade, professional, school, or market communities remain
+  future/pilot-analysis claims, not confirmed measured outcomes.
+- Any policy or investor presentation must separate confirmed capability from
+  measured evidence and future inference.
+- Privacy, consent, bias prevention, and plain-language explanation remain
+  required guardrails before the policy layer is production-grade.
+
+#### Next recommended step
+- Use the new policy logic document when shaping Finance, Trust Passport,
+  TrustSlip, Merchant Verification, and investor/innovation-case presentation
+  material.
+
+### Previous update
 
 #### Date
 2026-04-20
