@@ -799,6 +799,7 @@ function navItem(active = false, disabled = false): React.CSSProperties {
       ? "1px solid rgba(255,255,255,0.14)"
       : "1px solid rgba(255,255,255,0.06)",
     pointerEvents: disabled ? "none" : "auto",
+    touchAction: "manipulation",
     opacity: disabled ? 0.7 : 1,
   };
 }
@@ -822,10 +823,10 @@ function mobileTopBar(): React.CSSProperties {
     top: 0,
     zIndex: 20,
     display: "grid",
-    gridTemplateColumns: "42px minmax(0, 1fr) 42px",
+    gridTemplateColumns: "58px minmax(0, 1fr) 58px",
     alignItems: "center",
-    gap: 12,
-    padding: "12px 14px",
+    gap: 8,
+    padding: "10px 12px",
     background: "rgba(255,255,255,0.97)",
     backdropFilter: "blur(10px)",
     borderBottom: "1px solid rgba(11,31,51,0.08)",
@@ -834,15 +835,16 @@ function mobileTopBar(): React.CSSProperties {
 
 function mobileIconButton(): React.CSSProperties {
   return {
-    width: 42,
-    height: 42,
+    width: "100%",
+    minHeight: 38,
     borderRadius: 12,
     border: "1px solid rgba(11,31,51,0.10)",
     background: "#FFFFFF",
     color: "#0B1F33",
-    fontSize: 20,
-    fontWeight: 800,
+    fontSize: 12,
+    fontWeight: 900,
     cursor: "pointer",
+    touchAction: "manipulation",
   };
 }
 
@@ -956,6 +958,7 @@ function drawerLink(active = false, disabled = false): React.CSSProperties {
       ? "1px solid rgba(255,255,255,0.14)"
       : "1px solid rgba(255,255,255,0.08)",
     pointerEvents: disabled ? "none" : "auto",
+    touchAction: "manipulation",
     opacity: disabled ? 0.7 : 1,
   };
 }
@@ -1005,14 +1008,14 @@ function actionsLink(active = false, disabled = false): React.CSSProperties {
       ? "1px solid rgba(11,99,209,0.14)"
       : "1px solid rgba(11,31,51,0.08)",
     pointerEvents: disabled ? "none" : "auto",
+    touchAction: "manipulation",
     opacity: disabled ? 0.7 : 1,
   };
 }
 
 function bottomNav(): React.CSSProperties {
   return {
-    position: "sticky",
-    bottom: 0,
+    position: "static",
     zIndex: 18,
     display: "flex",
     gap: 8,
@@ -1047,6 +1050,7 @@ function bottomNavItem(active = false, disabled = false): React.CSSProperties {
       : "1px solid rgba(11,31,51,0.08)",
     whiteSpace: "nowrap",
     pointerEvents: disabled ? "none" : "auto",
+    touchAction: "manipulation",
     opacity: disabled ? 0.7 : 1,
   };
 }
@@ -1603,7 +1607,7 @@ export default function AppLayout() {
               aria-label="Open navigation"
               style={mobileIconButton()}
             >
-              ?
+              Menu
             </button>
 
             <div style={mobileTopMeta()}>
@@ -1617,7 +1621,7 @@ export default function AppLayout() {
               aria-label="Open page actions"
               style={mobileIconButton()}
             >
-              ?
+              Tools
             </button>
           </header>
 
@@ -1665,6 +1669,7 @@ export default function AppLayout() {
                     <Link
                       key={`${group.title}-${item.label}-${item.to}`}
                       to={item.to}
+                      onClick={closeDrawer}
                       style={drawerLink(
                         isItemActive(item, location.pathname, location.search),
                         !!item.disabled
@@ -1755,6 +1760,7 @@ export default function AppLayout() {
                 <Link
                   key={`page-action-${item.label}-${item.to}`}
                   to={item.to}
+                  onClick={closeActions}
                   style={actionsLink(
                     isItemActive(item, location.pathname, location.search),
                     !!item.disabled

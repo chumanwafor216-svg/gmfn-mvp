@@ -60,12 +60,17 @@ export default function OriginLink(props: OriginLinkProps) {
 
   const location = useLocation();
   const rawTo = String(to || "").trim();
+  const stableStyle =
+    rest.style && typeof rest.style === "object"
+      ? ({ touchAction: "manipulation", ...rest.style } as React.CSSProperties)
+      : ({ touchAction: "manipulation" } as React.CSSProperties);
 
   if (isExternalTarget(rawTo)) {
     return (
       <a
         href={rawTo}
         {...(rest as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
+        style={stableStyle}
       >
         {children}
       </a>
@@ -92,7 +97,7 @@ export default function OriginLink(props: OriginLinkProps) {
         };
 
   return (
-    <Link {...rest} to={nextTo} state={nextState}>
+    <Link {...rest} to={nextTo} state={nextState} style={stableStyle}>
       {children}
     </Link>
   );

@@ -2881,6 +2881,24 @@ GSN-branded invite composer and invite-entry continuity.
     to reduce double-tap/compatibility-click behaviour on mobile
   - this is intentionally a small shared interaction fix, not a page redesign
     and not a route-contract change
+- A second narrow-phone shell pass then tightened the shared mobile navigation
+  surfaces after phone testing showed the wide/tablet layout was acceptable but
+  narrow phone still felt bulky and jumpy.
+  - updated files:
+    - `frontend/src/layout/AppLayout.tsx`
+    - `frontend/src/components/PageTopNav.tsx`
+    - `frontend/src/components/OriginLink.tsx`
+  - the mobile top bar now uses clear `Menu` and `Tools` labels instead of
+    icon-like placeholders
+  - the shared page top navigation becomes a compact horizontal chip rail on
+    very narrow screens instead of wrapping into tall button blocks
+  - the mobile bottom route strip is now static instead of sticky, so it no
+    longer behaves like a bottom overlay near route content
+  - drawer and page-tool links now close their panels after navigation
+  - all shared route links touched in this pass use `touch-action:
+    manipulation` to reduce delayed/duplicate mobile tap behavior
+  - intent: make narrow-phone navigation feel deliberately mobile-first while
+    preserving the existing desktop/tablet route structure
 
 ### Intent
 

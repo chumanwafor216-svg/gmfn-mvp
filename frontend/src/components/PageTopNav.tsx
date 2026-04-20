@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import OriginLink from "./OriginLink";
 
@@ -20,14 +20,15 @@ type PageTopNavProps = {
   utilityLinks?: NavItem[];
 };
 
-function wrapCard(bg = "#FFFFFF"): React.CSSProperties {
+function wrapCard(bg = "#FFFFFF", compact = false): React.CSSProperties {
   return {
-    borderRadius: 24,
+    borderRadius: compact ? 18 : 24,
     border: "1px solid rgba(148,163,184,0.16)",
     background: bg,
-    padding: 20,
-    boxShadow:
-      "0 18px 40px rgba(2,6,23,0.28), 0 4px 12px rgba(2,6,23,0.18)",
+    padding: compact ? 14 : 20,
+    boxShadow: compact
+      ? "0 10px 24px rgba(2,6,23,0.18)"
+      : "0 18px 40px rgba(2,6,23,0.28), 0 4px 12px rgba(2,6,23,0.18)",
     overflow: "hidden",
   };
 }
@@ -42,18 +43,33 @@ function topLabel(): React.CSSProperties {
   };
 }
 
-function helperText(): React.CSSProperties {
+function helperText(compact = false): React.CSSProperties {
   return {
     color: "#C7D4E5",
-    fontSize: 14,
-    lineHeight: 1.75,
+    fontSize: compact ? 13 : 14,
+    lineHeight: compact ? 1.55 : 1.75,
   };
 }
 
 function actionBtn(
   kind: "primary" | "secondary" | "soft" = "secondary",
-  disabled = false
+  disabled = false,
+  compact = false
 ): React.CSSProperties {
+  const compactAction: React.CSSProperties = compact
+    ? {
+        flex: "0 0 auto",
+        minHeight: kind === "soft" ? 34 : 36,
+        padding: kind === "soft" ? "7px 10px" : "8px 11px",
+        borderRadius: 999,
+        fontSize: kind === "soft" ? 12 : 12.5,
+        whiteSpace: "nowrap",
+        touchAction: "manipulation",
+      }
+    : {
+        touchAction: "manipulation",
+      };
+
   if (kind === "primary") {
     return {
       display: "inline-flex",
@@ -72,6 +88,7 @@ function actionBtn(
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
+      ...compactAction,
     };
   }
 
@@ -93,6 +110,7 @@ function actionBtn(
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
+      ...compactAction,
     };
   }
 
@@ -113,12 +131,14 @@ function actionBtn(
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
+    ...compactAction,
   };
 }
 
 function renderNavRow(
   items: NavItem[] | undefined,
-  kind: "primary" | "secondary" | "soft"
+  kind: "primary" | "secondary" | "soft",
+  compact = false
 ) {
   if (!items || items.length === 0) return null;
 
@@ -126,20 +146,23 @@ function renderNavRow(
     <div
       style={{
         display: "flex",
-        gap: 10,
-        flexWrap: "wrap",
+        gap: compact ? 8 : 10,
+        flexWrap: compact ? "nowrap" : "wrap",
+        overflowX: compact ? "auto" : undefined,
+        paddingBottom: compact ? 2 : undefined,
+        WebkitOverflowScrolling: compact ? "touch" : undefined,
       }}
     >
       {items.map((item, index) =>
         item.disabled ? (
-          <span key={`${item.label}-${index}`} style={actionBtn(kind, true)}>
+          <span key={`${item.label}-${index}`} style={actionBtn(kind, true, compact)}>
             {item.label}
           </span>
         ) : (
           <OriginLink
             key={`${item.label}-${index}`}
             to={item.to}
-            style={actionBtn(kind, false)}
+            style={actionBtn(kind, false, compact)}
           >
             {item.label}
           </OriginLink>
@@ -151,6 +174,10 @@ function renderNavRow(
 
 export default function PageTopNav(props: PageTopNavProps) {
   const location = useLocation();
+  const [isPhone, setIsPhone] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 560;
+  });
   const {
     sectionLabel,
     title,
@@ -174,6 +201,19 @@ export default function PageTopNav(props: PageTopNavProps) {
   const resolvedBackTo =
     originPath && originPath !== currentPath ? originPath : backTo || "";
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    function handleResize() {
+      setIsPhone(window.innerWidth <= 560);
+    }
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const topLinks: NavItem[] = [
     homeTo && homeLabel ? { label: homeLabel, to: homeTo } : null,
     resolvedBackTo && backLabel ? { label: backLabel, to: resolvedBackTo } : null,
@@ -191,7 +231,8 @@ export default function PageTopNav(props: PageTopNavProps) {
   return (
     <section
       style={wrapCard(
-        "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+        "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)",
+        isPhone
       )}
     >
       <div style={topLabel()}>{sectionLabel}</div>
@@ -200,9 +241,9 @@ export default function PageTopNav(props: PageTopNavProps) {
         style={{
           marginTop: 10,
           color: "#F8FBFF",
-          fontSize: 34,
+          fontSize: isPhone ? 24 : 34,
           fontWeight: 900,
-          lineHeight: 1.08,
+          lineHeight: isPhone ? 1.12 : 1.08,
           maxWidth: 920,
         }}
       >
@@ -210,21 +251,21 @@ export default function PageTopNav(props: PageTopNavProps) {
       </div>
 
       {subtitle ? (
-        <div style={{ marginTop: 12, ...helperText(), maxWidth: 980 }}>
+        <div style={{ marginTop: isPhone ? 8 : 12, ...helperText(isPhone), maxWidth: 980 }}>
           {subtitle}
         </div>
       ) : null}
 
       <div
         style={{
-          marginTop: 18,
+          marginTop: isPhone ? 12 : 18,
           display: "grid",
-          gap: 10,
+          gap: isPhone ? 8 : 10,
         }}
       >
-        {renderNavRow(topLinks, "secondary")}
-        {renderNavRow(nextLinks, "primary")}
-        {renderNavRow(utilityLinks, "soft")}
+        {renderNavRow(topLinks, "secondary", isPhone)}
+        {renderNavRow(nextLinks, "primary", isPhone)}
+        {renderNavRow(utilityLinks, "soft", isPhone)}
       </div>
     </section>
   );
