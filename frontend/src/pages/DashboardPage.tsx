@@ -2803,6 +2803,10 @@ export default function DashboardPage() {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 980;
   });
+  const [isPhone, setIsPhone] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 560;
+  });
 
   const [uiState, setUiState] = useState<DashboardUIState>(() =>
     normalizeDashboardUIState(
@@ -2880,6 +2884,7 @@ export default function DashboardPage() {
 
     function handleResize() {
       setIsCompact(window.innerWidth <= 980);
+      setIsPhone(window.innerWidth <= 560);
     }
 
     handleResize();
@@ -5797,7 +5802,7 @@ export default function DashboardPage() {
       <section
         style={{
           ...pageCard(DASHBOARD_BRAND.heroField),
-          padding: isCompact ? 16 : 18,
+          padding: isPhone ? 10 : isCompact ? 16 : 18,
           border: "1px solid rgba(255,255,255,0.14)",
           boxShadow:
             "0 28px 60px rgba(7,16,28,0.14), inset 0 1px 0 rgba(255,255,255,0.08)",
@@ -5811,8 +5816,8 @@ export default function DashboardPage() {
             border: "1px solid rgba(255,255,255,0.14)",
             boxShadow:
               "0 20px 42px rgba(7,16,28,0.16), inset 0 1px 0 rgba(255,255,255,0.12)",
-            padding: isCompact ? 14 : 16,
-            borderRadius: 28,
+            padding: isPhone ? 9 : isCompact ? 14 : 16,
+            borderRadius: isPhone ? 20 : 28,
             backdropFilter: "blur(14px)",
           }}
         >
@@ -5825,18 +5830,20 @@ export default function DashboardPage() {
               boxShadow:
                 "0 18px 38px rgba(5,16,38,0.18), inset 0 1px 0 rgba(255,255,255,0.78)",
               color: DASHBOARD_BRAND.ink,
-              padding: isCompact ? 14 : 16,
-              borderRadius: 24,
+              padding: isPhone ? 10 : isCompact ? 14 : 16,
+              borderRadius: isPhone ? 18 : 24,
             }}
           >
             <div
               style={{
                 position: "relative",
                 display: "grid",
-                gap: 8,
-                justifyItems: "center",
-                marginBottom: 6,
-                minHeight: isCompact ? 56 : 60,
+                gridTemplateColumns: isPhone ? "36px minmax(0, 1fr)" : undefined,
+                gap: isPhone ? 7 : 8,
+                alignItems: isPhone ? "center" : undefined,
+                justifyItems: isPhone ? "stretch" : "center",
+                marginBottom: isPhone ? 2 : 6,
+                minHeight: isPhone ? "auto" : isCompact ? 56 : 60,
               }}
             >
               <button
@@ -5845,14 +5852,14 @@ export default function DashboardPage() {
                 onPointerDown={consumeDashboardPointerEvent}
                 aria-label="Back"
                 style={{
-                  position: "absolute",
-                  left: 0,
-                  top: 0,
+                  position: isPhone ? "static" : "absolute",
+                  left: isPhone ? undefined : 0,
+                  top: isPhone ? undefined : 0,
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  minHeight: isCompact ? 40 : 42,
-                  minWidth: isCompact ? 40 : 42,
+                  minHeight: isPhone ? 34 : isCompact ? 40 : 42,
+                  minWidth: isPhone ? 34 : isCompact ? 40 : 42,
                   padding: 0,
                   borderRadius: 999,
                   border: "1px solid rgba(16,37,59,0.10)",
@@ -5872,7 +5879,7 @@ export default function DashboardPage() {
                     height: 24,
                     borderRadius: 999,
                     color: "#F8FBFF",
-                    fontSize: 14,
+                    fontSize: isPhone ? 12 : 14,
                     fontWeight: 900,
                   lineHeight: 1,
                 }}
@@ -5883,12 +5890,16 @@ export default function DashboardPage() {
 
               <div
                 style={{
-                  textAlign: "center",
-                  fontSize: isCompact ? 24 : 31,
+                  textAlign: isPhone ? "left" : "center",
+                  fontSize: isPhone ? 20 : isCompact ? 24 : 31,
                   fontWeight: 900,
-                  lineHeight: 1.04,
-                  padding: "0 44px",
+                  lineHeight: isPhone ? 1.08 : 1.04,
+                  padding: isPhone ? 0 : "0 44px",
                   color: DASHBOARD_BRAND.ink,
+                  overflowWrap: "normal",
+                  wordBreak: "normal",
+                  hyphens: "none",
+                  textWrap: "balance",
                 }}
               >
                 Trust is the first currency.
@@ -5896,12 +5907,13 @@ export default function DashboardPage() {
 
               <div
                 style={{
-                  textAlign: "center",
-                  fontSize: isCompact ? 13 : 14.5,
-                  lineHeight: 1.68,
+                  gridColumn: isPhone ? "1 / -1" : undefined,
+                  textAlign: isPhone ? "left" : "center",
+                  fontSize: isPhone ? 12.5 : isCompact ? 13 : 14.5,
+                  lineHeight: isPhone ? 1.45 : 1.68,
                   color: "rgba(16,37,59,0.88)",
                   maxWidth: 760,
-                  padding: "0 18px",
+                  padding: isPhone ? "0 2px" : "0 18px",
                 }}
               >
                 GSN makes it visible, portable, and usable before trade,
@@ -5910,12 +5922,13 @@ export default function DashboardPage() {
 
               <div
                 style={{
+                  gridColumn: isPhone ? "1 / -1" : undefined,
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
                   justifySelf: "center",
-                  minHeight: isCompact ? 40 : 44,
-                  padding: isCompact ? "0 18px" : "0 22px",
+                  minHeight: isPhone ? 30 : isCompact ? 40 : 44,
+                  padding: isPhone ? "0 14px" : isCompact ? "0 18px" : "0 22px",
                   borderRadius: 999,
                   background:
                     "linear-gradient(180deg, rgba(255,255,255,0.50) 0%, rgba(233,240,250,0.18) 100%)",
@@ -5923,9 +5936,9 @@ export default function DashboardPage() {
                   boxShadow:
                     "0 18px 36px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.78)",
                   color: DASHBOARD_BRAND.goldText,
-                  fontSize: isCompact ? 18 : 20,
+                  fontSize: isPhone ? 14 : isCompact ? 18 : 20,
                   fontWeight: 1000,
-                  letterSpacing: 4.2,
+                  letterSpacing: isPhone ? 1.2 : 4.2,
                   textTransform: "uppercase",
                 }}
               >
@@ -5936,12 +5949,12 @@ export default function DashboardPage() {
 
           <div
             style={{
-              marginTop: 18,
+              marginTop: isPhone ? 10 : 18,
               display: "grid",
               gridTemplateColumns: isCompact
                 ? "1fr"
                 : "220px minmax(0, 1fr)",
-              gap: 16,
+              gap: isPhone ? 10 : 16,
               alignItems: "start",
             }}
           >
@@ -5953,16 +5966,16 @@ export default function DashboardPage() {
                 border: "1px solid rgba(255,255,255,0.12)",
                 boxShadow:
                   "0 18px 34px rgba(2,12,27,0.14), inset 0 1px 0 rgba(255,255,255,0.08)",
-                padding: isCompact ? 12 : 14,
+                padding: isPhone ? 8 : isCompact ? 12 : 14,
               }}
             >
               <div
                 style={{
                   width: "100%",
-                  maxWidth: isCompact ? 300 : 320,
+                  maxWidth: isPhone ? 248 : isCompact ? 300 : 320,
                   margin: "0 auto",
-                  borderRadius: 28,
-                  padding: 8,
+                  borderRadius: isPhone ? 20 : 28,
+                  padding: isPhone ? 6 : 8,
                   border: "1px solid rgba(255,255,255,0.12)",
                   background:
                     "linear-gradient(180deg, #0A1625 0%, #10263C 48%, #153756 100%)",
@@ -5972,8 +5985,8 @@ export default function DashboardPage() {
               >
                 <div
                   style={{
-                    height: isCompact ? 170 : 196,
-                    borderRadius: 20,
+                    height: isPhone ? 104 : isCompact ? 170 : 196,
+                    borderRadius: isPhone ? 15 : 20,
                     overflow: "hidden",
                     border: "1px solid rgba(212,175,55,0.16)",
                     background:
@@ -5999,8 +6012,8 @@ export default function DashboardPage() {
                   ) : (
                     <div
                       style={{
-                        width: 92,
-                        height: 92,
+                        width: isPhone ? 62 : 92,
+                        height: isPhone ? 62 : 92,
                         borderRadius: 999,
                         border: "1px solid rgba(212,175,55,0.28)",
                         background:
@@ -6009,7 +6022,7 @@ export default function DashboardPage() {
                           "0 18px 40px rgba(3,10,22,0.28), inset 0 1px 0 rgba(255,255,255,0.08)",
                         color: "#F8FBFF",
                         fontWeight: 900,
-                        fontSize: 32,
+                        fontSize: isPhone ? 24 : 32,
                         letterSpacing: 1.4,
                         display: "flex",
                         alignItems: "center",
@@ -6032,7 +6045,7 @@ export default function DashboardPage() {
 
               <div
                 style={{
-                  marginTop: 10,
+                  marginTop: isPhone ? 8 : 10,
                   display: "grid",
                   gridTemplateColumns: avatarSrc
                     ? "repeat(2, minmax(0, 1fr))"
