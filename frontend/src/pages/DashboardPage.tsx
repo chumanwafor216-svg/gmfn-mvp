@@ -4849,20 +4849,6 @@ export default function DashboardPage() {
     reader.readAsDataURL(file);
   }
 
-  function removeAvatar() {
-    try {
-      localStorage.removeItem(DASHBOARD_AVATAR_STORAGE_KEY);
-    } catch {
-      // ignore
-    }
-
-    setAvatarSrc("");
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  }
-
   function resetFocusDraft() {
     setFocusDraft(defaultFocusCommitmentDraft());
   }
@@ -5836,7 +5822,7 @@ export default function DashboardPage() {
                 position: "relative",
                 display: "grid",
                 gridTemplateColumns: isPhone
-                  ? "32px minmax(0, 1fr) auto"
+                  ? "32px minmax(0, 1fr) 32px"
                   : undefined,
                 gap: isPhone ? 6 : 8,
                 alignItems: isPhone ? "center" : undefined,
@@ -5889,7 +5875,7 @@ export default function DashboardPage() {
 
               <div
                 style={{
-                  textAlign: isPhone ? "left" : "center",
+                  textAlign: "center",
                   fontSize: isPhone ? 16 : isCompact ? 24 : 31,
                   fontWeight: 900,
                   lineHeight: isPhone ? 1.05 : 1.04,
@@ -5902,14 +5888,46 @@ export default function DashboardPage() {
                 }}
               >
                 {isPhone ? (
-                  <span style={{ display: "grid", gap: 1 }}>
+                  <span
+                    style={{
+                      display: "grid",
+                      gap: 2,
+                      justifyItems: "center",
+                    }}
+                  >
                     <span
                       style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 7,
                         color: DASHBOARD_BRAND.ink,
                         letterSpacing: 0.1,
                       }}
                     >
-                      Trust is
+                      <span>Trust is</span>
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: 39,
+                          height: 25,
+                          borderRadius: 999,
+                          background:
+                            "linear-gradient(180deg, rgba(255,255,255,0.66) 0%, rgba(233,240,250,0.32) 100%)",
+                          border: "1px solid rgba(255,255,255,0.46)",
+                          boxShadow:
+                            "0 10px 20px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.82)",
+                          color: DASHBOARD_BRAND.goldText,
+                          fontSize: 10.5,
+                          fontWeight: 1000,
+                          letterSpacing: 0.6,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        GSN
+                      </span>
                     </span>
                     <span
                       style={{
@@ -5917,8 +5935,7 @@ export default function DashboardPage() {
                         width: "fit-content",
                         color: DASHBOARD_BRAND.goldText,
                         fontSize: 15,
-                        borderBottom: "2px solid rgba(138,101,30,0.34)",
-                        paddingBottom: 1,
+                        paddingBottom: 0,
                       }}
                     >
                       the first currency
@@ -5949,7 +5966,7 @@ export default function DashboardPage() {
                 style={{
                   gridColumn: isPhone ? "3" : undefined,
                   gridRow: isPhone ? "1" : undefined,
-                  display: "inline-flex",
+                  display: isPhone ? "none" : "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
                   justifySelf: isPhone ? "end" : "center",
@@ -6081,9 +6098,7 @@ export default function DashboardPage() {
                 style={{
                   marginTop: isPhone ? 8 : 10,
                   display: "grid",
-                  gridTemplateColumns: avatarSrc
-                    ? "repeat(2, minmax(0, 1fr))"
-                    : "minmax(0, 1fr)",
+                  gridTemplateColumns: "minmax(0, 1fr)",
                   gap: 8,
                 }}
               >
@@ -6102,24 +6117,6 @@ export default function DashboardPage() {
                 >
                   {avatarSrc ? "Change photo" : "Upload photo"}
                 </label>
-
-                {avatarSrc ? (
-                  <button
-                    type="button"
-                    onClick={(event) =>
-                      runDashboardUiMutation(event, removeAvatar, 260)
-                    }
-                    onPointerDown={consumeDashboardPointerEvent}
-                    style={{
-                      ...dashboardFillButton(subtleBtn(false), {
-                        minHeight: isPhone ? 38 : 34,
-                        opacity: 0.9,
-                      }),
-                    }}
-                  >
-                    Remove
-                  </button>
-                ) : null}
               </div>
             </div>
 
