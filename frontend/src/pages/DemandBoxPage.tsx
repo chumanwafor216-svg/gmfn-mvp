@@ -8,7 +8,9 @@ import {
   getCurrentClan,
   getMe,
   getSelectedClanId,
+  listMyClans,
   listMarketplaceRequests,
+  selectClan,
   updateMarketplaceRequestStatus,
 } from "../lib/api";
 
@@ -308,7 +310,9 @@ function isMineRow(row: DemandRow, me: any): boolean {
 
 export default function DemandBoxPage() {
   const location = useLocation();
-  const selectedClanId = Number(getSelectedClanId() || 0);
+  const [selectedClanId, setSelectedClanIdState] = useState<number>(() =>
+    Number(getSelectedClanId() || 0)
+  );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -322,6 +326,7 @@ export default function DemandBoxPage() {
 
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
+  const [communities, setCommunities] = useState<any[]>([]);
   const [myOpenRows, setMyOpenRows] = useState<DemandRow[]>([]);
   const [visibleRows, setVisibleRows] = useState<DemandRow[]>([]);
 
@@ -336,6 +341,7 @@ export default function DemandBoxPage() {
   const [allowTrustCredit, setAllowTrustCredit] = useState(false);
 
   const [creating, setCreating] = useState(false);
+  const [selectingClanId, setSelectingClanId] = useState<number>(0);
   const [updatingDemandId, setUpdatingDemandId] = useState<number>(0);
 
   useEffect(() => {
@@ -361,27 +367,33 @@ export default function DemandBoxPage() {
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  async function loadPage() {
+  async function loadPage(clanId = selectedClanId) {
     setLoading(true);
 
     try {
-      const [meRes, currentClanRes, myRes, visibleRes] = await Promise.all([
+      const [meRes, currentClanRes, clansRes, myRes, visibleRes] = await Promise.all([
         getMe().catch(() => null),
         getCurrentClan().catch(() => null),
+        listMyClans().catch(() => []),
         listMarketplaceRequests({
-          clan_id: selectedClanId || undefined,
+          clan_id: clanId || undefined,
           mine_only: true,
           status: "open",
           limit: 50,
         }).catch(() => []),
         listMarketplaceRequests({
-          clan_id: selectedClanId || undefined,
+          clan_id: clanId || undefined,
           mine_only: false,
           status: "open",
           limit: 50,
         }).catch(() => []),
       ]);
 
+      const communityRows = rowsOf<any>(clansRes);
+      const selectedCommunity =
+        communityRows.find(
+          (row) => Number(row?.id || row?.clan_id || 0) === Number(clanId)
+        ) || currentClanRes || null;
       const myRows = rowsOf<DemandRow>(myRes);
       const visibleAll = rowsOf<DemandRow>(visibleRes);
 
@@ -390,7 +402,8 @@ export default function DemandBoxPage() {
       );
 
       setMe(meRes || null);
-      setCurrentClan(currentClanRes || null);
+      setCurrentClan(selectedCommunity);
+      setCommunities(communityRows);
       setMyOpenRows(myRows);
       setVisibleRows(filteredVisible);
     } finally {
@@ -399,11 +412,38 @@ export default function DemandBoxPage() {
   }
 
   useEffect(() => {
-    void loadPage();
+    void loadPage(selectedClanId);
   }, [selectedClanId]);
 
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });
+  }
+
+  async function handleChooseDemandCommunity(community: any) {
+    const clanId = Number(community?.id || community?.clan_id || 0);
+    if (!clanId) {
+      showNotice("error", "This community cannot be selected yet.");
+      return;
+    }
+
+    setSelectingClanId(clanId);
+
+    try {
+      await selectClan(clanId);
+      setSelectedClanIdState(clanId);
+      setCurrentClan(community);
+      showNotice(
+        "success",
+        `${communityName(community, clanId)} selected for this demand.`
+      );
+    } catch (err: any) {
+      showNotice(
+        "error",
+        safeStr(err?.message) || "Could not select that community."
+      );
+    } finally {
+      setSelectingClanId(0);
+    }
   }
 
   async function handleCreateDemand() {
@@ -619,17 +659,50 @@ export default function DemandBoxPage() {
           <div
             style={{
               marginTop: 18,
-              display: "flex",
+              display: "grid",
               gap: 10,
-              flexWrap: "wrap",
             }}
           >
-            <OriginLink to="/app/community" style={primaryBtn(false)}>
-              Open Community Home
-            </OriginLink>
-            <OriginLink to="/app/dashboard" style={secondaryBtn(false)}>
-              Dashboard
-            </OriginLink>
+            {communities.length > 0 ? (
+              communities.map((community, index) => {
+                const clanId = Number(community?.id || community?.clan_id || 0);
+                const busy = selectingClanId === clanId;
+
+                return (
+                  <button
+                    key={`${clanId || index}`}
+                    type="button"
+                    onClick={() => void handleChooseDemandCommunity(community)}
+                    disabled={busy || !clanId}
+                    style={{
+                      ...secondaryBtn(busy || !clanId),
+                      justifyContent: "space-between",
+                      textAlign: "left",
+                      width: "100%",
+                    }}
+                  >
+                    <span>{communityName(community, clanId)}</span>
+                    <span style={{ opacity: 0.76 }}>
+                      {busy ? "Selecting..." : "Choose"}
+                    </span>
+                  </button>
+                );
+              })
+            ) : (
+              <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+                No community is available yet. Create or join a community first,
+                then return to Demand Box.
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <OriginLink to="/app/community" style={secondaryBtn(false)}>
+                Open Community Home
+              </OriginLink>
+              <OriginLink to="/app/dashboard" style={secondaryBtn(false)}>
+                Dashboard
+              </OriginLink>
+            </div>
           </div>
         </section>
       </div>
@@ -812,6 +885,69 @@ export default function DemandBoxPage() {
           }}
         >
           Start with the simple fields first. Add more detail only when needed.
+        </div>
+
+        <div
+          style={{
+            marginTop: 14,
+            ...innerCard("#F8FBFF"),
+            display: "grid",
+            gap: 12,
+          }}
+        >
+          <div style={sectionLabel()}>Step 1 - choose the community</div>
+          <div
+            style={{
+              ...helperText(),
+              maxWidth: 820,
+            }}
+          >
+            Pick the community this demand is coming from. GSN will attach your
+            personal ID to the request, but the community tells people where the
+            need belongs.
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "1fr"
+                : "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 10,
+            }}
+          >
+            {communities.length > 0 ? (
+              communities.map((community, index) => {
+                const clanId = Number(community?.id || community?.clan_id || 0);
+                const active = clanId > 0 && clanId === selectedClanId;
+                const busy = selectingClanId === clanId;
+
+                return (
+                  <button
+                    key={`${clanId || index}`}
+                    type="button"
+                    onClick={() => void handleChooseDemandCommunity(community)}
+                    disabled={busy || !clanId}
+                    style={{
+                      ...(active ? primaryBtn(busy || !clanId) : secondaryBtn(busy || !clanId)),
+                      width: "100%",
+                      justifyContent: "space-between",
+                      textAlign: "left",
+                    }}
+                  >
+                    <span>{communityName(community, clanId)}</span>
+                    <span style={{ opacity: 0.82 }}>
+                      {active ? "Selected" : busy ? "Selecting..." : "Choose"}
+                    </span>
+                  </button>
+                );
+              })
+            ) : (
+              <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+                No community is available yet. Create or join one first.
+              </div>
+            )}
+          </div>
         </div>
 
         <ExplainToggle

@@ -8170,6 +8170,19 @@ export default function DashboardPage() {
               alignItems: "center",
             }}
           >
+            <button
+              type="button"
+              onClick={toggleDemandGuide}
+              onPointerDown={consumeDashboardPointerEvent}
+              style={spotlightWhiteButton({
+                width: "auto",
+                minWidth: isPhone ? 136 : 150,
+                minHeight: isPhone ? 38 : 40,
+                padding: isPhone ? "8px 12px" : "8px 14px",
+              })}
+            >
+              {demandGuideOpen ? "Close guide" : "About Demand Box"}
+            </button>
             <span
               style={{
                 ...badge(false),
@@ -8195,6 +8208,44 @@ export default function DashboardPage() {
             </span>
           </div>
         </div>
+
+        {demandGuideOpen ? (
+          <div
+            style={{
+              marginTop: isPhone ? 9 : 12,
+              borderRadius: isPhone ? 15 : 18,
+              border: "1px solid rgba(11,99,209,0.12)",
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(242,247,253,0.95) 100%)",
+              padding: isPhone ? "10px 11px" : "12px 14px",
+              color: "#123055",
+              boxShadow:
+                "inset 0 1px 0 rgba(255,255,255,0.84), 0 10px 22px rgba(10,24,49,0.05)",
+            }}
+            onPointerDown={consumeDashboardPointerEvent}
+          >
+            <div
+              style={{
+                fontWeight: 900,
+                fontSize: isPhone ? 13.5 : 15,
+                lineHeight: 1.28,
+              }}
+            >
+              {demandGuideTitle}
+            </div>
+            <div
+              style={{
+                marginTop: 6,
+                fontSize: isPhone ? 12.2 : 13,
+                lineHeight: isPhone ? 1.45 : 1.6,
+                fontWeight: 700,
+                color: "#49647E",
+              }}
+            >
+              {demandGuideBody}
+            </div>
+          </div>
+        ) : null}
 
         <div
           style={{
@@ -8275,63 +8326,6 @@ export default function DashboardPage() {
             }}
           >
             {demandSummarySubline}
-          </div>
-
-          <div
-            style={{
-              marginTop: isPhone ? 9 : 12,
-              display: "grid",
-              gap: isPhone ? 7 : 9,
-            }}
-            onPointerDown={consumeDashboardPointerEvent}
-          >
-            <button
-              type="button"
-              onClick={toggleDemandGuide}
-              onPointerDown={consumeDashboardPointerEvent}
-              style={spotlightWhiteButton({
-                minHeight: isPhone ? 42 : 40,
-                padding: isPhone ? "8px 12px" : "8px 14px",
-              })}
-            >
-              {demandGuideOpen ? "Close Demand Box guide" : "About Demand Box"}
-            </button>
-
-            {demandGuideOpen ? (
-              <div
-                style={{
-                  borderRadius: isPhone ? 15 : 18,
-                  border: "1px solid rgba(11,99,209,0.12)",
-                  background:
-                    "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(242,247,253,0.95) 100%)",
-                  padding: isPhone ? "10px 11px" : "12px 14px",
-                  color: "#123055",
-                  boxShadow:
-                    "inset 0 1px 0 rgba(255,255,255,0.84), 0 10px 22px rgba(10,24,49,0.05)",
-                }}
-              >
-                <div
-                  style={{
-                    fontWeight: 900,
-                    fontSize: isPhone ? 13.5 : 15,
-                    lineHeight: 1.28,
-                  }}
-                >
-                  {demandGuideTitle}
-                </div>
-                <div
-                  style={{
-                    marginTop: 6,
-                    fontSize: isPhone ? 12.2 : 13,
-                    lineHeight: isPhone ? 1.45 : 1.6,
-                    fontWeight: 700,
-                    color: "#49647E",
-                  }}
-                >
-                  {demandGuideBody}
-                </div>
-              </div>
-            ) : null}
           </div>
 
           <div
