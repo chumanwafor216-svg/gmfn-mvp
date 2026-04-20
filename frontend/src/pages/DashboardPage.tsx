@@ -3912,10 +3912,10 @@ export default function DashboardPage() {
     return `${dashboardNoticeTotalCount} notification${
       dashboardNoticeTotalCount === 1 ? "" : "s"
     } waiting${
-      firstSource ? `, first from ${firstSource}` : ""
+      firstSource ? `. First: ${firstSource}` : ""
     }${
       otherScreens > 0
-        ? ` and ${otherScreens} more screen${otherScreens === 1 ? "" : "s"}`
+        ? ` + ${otherScreens} screen${otherScreens === 1 ? "" : "s"}`
         : ""
     }.`;
   }, [dashboardNoticeSourceGroups, dashboardNoticeTotalCount]);
@@ -3933,6 +3933,52 @@ export default function DashboardPage() {
     dashboardNoticeLeadItem?.ctaTo || DASHBOARD_TARGETS.WHAT_MATTERS_NOW;
   const dashboardNoticePrimaryActionLabel =
     dashboardNoticeLeadItem?.ctaLabel || "Open notifications";
+  const notificationSurfaceChrome = useMemo(() => {
+    if (dashboardNoticeSummary.counts.actNow > 0) {
+      return {
+        shellBg:
+          "radial-gradient(circle at top left, rgba(245,158,11,0.12) 0%, rgba(245,158,11,0.00) 28%), linear-gradient(180deg, #F8FBFF 0%, #EEF5FD 54%, #DCEBFA 100%)",
+        shellBorder: "1px solid rgba(11,99,209,0.14)",
+        accent:
+          "linear-gradient(90deg, #1B4B78 0%, #2B6599 58%, #D4AF37 100%)",
+        leadBg:
+          "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,251,255,0.97) 52%, rgba(234,243,253,0.95) 100%)",
+        leadBorder: "1px solid rgba(11,99,209,0.12)",
+        leadShadow:
+          "0 14px 30px rgba(11,99,209,0.06), inset 0 1px 0 rgba(255,255,255,0.84)",
+        statusBg: "rgba(245,158,11,0.14)",
+        statusText: "#8A651E",
+        chipBg:
+          "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,252,0.96) 100%)",
+        chipBorder: "1px solid rgba(11,99,209,0.12)",
+        chipSelectedBorder: "1px solid rgba(212,175,55,0.24)",
+        itemBg:
+          "linear-gradient(180deg, rgba(252,254,255,0.98) 0%, rgba(244,249,255,0.96) 100%)",
+        itemBorder: "1px solid rgba(11,99,209,0.12)",
+      };
+    }
+
+    return {
+      shellBg:
+        "radial-gradient(circle at top left, rgba(11,99,209,0.10) 0%, rgba(11,99,209,0.00) 28%), linear-gradient(180deg, #F8FBFF 0%, #EEF5FD 54%, #DCEBFA 100%)",
+      shellBorder: "1px solid rgba(11,99,209,0.14)",
+      accent: "linear-gradient(90deg, #1B4B78 0%, #2B6599 58%, #D4AF37 100%)",
+      leadBg:
+        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,251,255,0.97) 52%, rgba(234,243,253,0.95) 100%)",
+      leadBorder: "1px solid rgba(11,99,209,0.12)",
+      leadShadow:
+        "0 14px 30px rgba(11,99,209,0.06), inset 0 1px 0 rgba(255,255,255,0.84)",
+      statusBg: "rgba(11,99,209,0.10)",
+      statusText: "#123055",
+      chipBg:
+        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,252,0.96) 100%)",
+      chipBorder: "1px solid rgba(11,99,209,0.12)",
+      chipSelectedBorder: "1px solid rgba(11,99,209,0.20)",
+      itemBg:
+        "linear-gradient(180deg, rgba(252,254,255,0.98) 0%, rgba(244,249,255,0.96) 100%)",
+      itemBorder: "1px solid rgba(11,99,209,0.12)",
+    };
+  }, [dashboardNoticeSummary.counts.actNow]);
 
   useEffect(() => {
     if (!noticeSourceOpenKey) return;
@@ -8549,11 +8595,21 @@ export default function DashboardPage() {
 
       <section
         style={{
-          ...pageCard(DASHBOARD_BRAND.summaryPanel),
-          padding: isPhone ? 14 : 20,
+          ...pageCard(notificationSurfaceChrome.shellBg),
+          border: notificationSurfaceChrome.shellBorder,
+          padding: isPhone ? 13 : 20,
           borderRadius: isPhone ? 22 : 26,
         }}
       >
+        <div
+          style={{
+            height: 3,
+            margin: isPhone ? "-2px 0 10px" : "-3px 0 14px",
+            borderRadius: 999,
+            background: notificationSurfaceChrome.accent,
+            opacity: 0.88,
+          }}
+        />
         <div
           style={{
             display: "flex",
@@ -8564,6 +8620,7 @@ export default function DashboardPage() {
           }}
         >
           <div>
+            <div style={sectionLabel()}>Notifications</div>
             <div
               style={{
                 marginTop: 2,
@@ -8581,31 +8638,71 @@ export default function DashboardPage() {
               display: "flex",
               gap: isPhone ? 6 : 10,
               flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: isPhone ? "stretch" : "flex-end",
+              flex: isPhone ? "1 1 100%" : undefined,
             }}
           >
             <span
               style={{
                 ...badge(false),
-                background: "rgba(15,59,116,0.08)",
-                color: "#0F3B74",
+                minHeight: isPhone ? 42 : 40,
+                minWidth: isPhone ? 0 : 126,
+                justifyContent: "center",
+                padding: isPhone ? "8px 12px" : "8px 14px",
+                background: notificationSurfaceChrome.chipBg,
+                border: notificationSurfaceChrome.chipBorder,
+                color: "#123055",
+                flex: isPhone ? "1 1 0" : "0 0 auto",
               }}
             >
               Notifications
             </span>
-            {dashboardNoticeTotalCount > 0 ? (
-              <span style={badge(true)}>{dashboardNoticeTotalCount}</span>
-            ) : null}
+            <span
+              style={{
+                ...badge(false),
+                minHeight: isPhone ? 42 : 40,
+                minWidth: isPhone ? 52 : 56,
+                justifyContent: "center",
+                padding: isPhone ? "8px 12px" : "8px 14px",
+                background: notificationSurfaceChrome.statusBg,
+                border: notificationSurfaceChrome.chipSelectedBorder,
+                color: notificationSurfaceChrome.statusText,
+              }}
+            >
+              {dashboardNoticeTotalCount}
+            </span>
+            <span
+              style={{
+                ...badge(false),
+                minHeight: isPhone ? 42 : 40,
+                minWidth: isPhone ? 90 : 104,
+                justifyContent: "center",
+                padding: isPhone ? "8px 12px" : "8px 14px",
+                background: notificationSurfaceChrome.statusBg,
+                border: notificationSurfaceChrome.chipSelectedBorder,
+                color: notificationSurfaceChrome.statusText,
+              }}
+            >
+              {dashboardNoticeSummary.counts.actNow > 0
+                ? `Act now ${dashboardNoticeSummary.counts.actNow}`
+                : dashboardNoticeSummary.counts.unread > 0
+                ? `Unread ${dashboardNoticeSummary.counts.unread}`
+                : dashboardNoticeTotalCount > 0
+                ? "Waiting"
+                : "Clear"}
+            </span>
           </div>
         </div>
 
         <div
           style={{
             marginTop: isPhone ? 10 : 16,
-            ...innerCard("linear-gradient(180deg, #F7FAFF 0%, #FFFFFF 100%)"),
-            border: "1px solid rgba(11,99,209,0.10)",
-            padding: isPhone ? 10 : 16,
+            ...innerCard(notificationSurfaceChrome.leadBg),
+            border: notificationSurfaceChrome.leadBorder,
+            padding: isPhone ? 9 : 16,
             borderRadius: isPhone ? 16 : 18,
-            boxShadow: "0 10px 24px rgba(11,99,209,0.05)",
+            boxShadow: notificationSurfaceChrome.leadShadow,
           }}
         >
           <div
@@ -8621,7 +8718,7 @@ export default function DashboardPage() {
               style={{
                 color: "#0B1F33",
                 fontWeight: 900,
-                fontSize: isPhone ? 15.5 : 18,
+                fontSize: isPhone ? 15 : 18,
                 lineHeight: isPhone ? 1.24 : 1.32,
                 maxWidth: 760,
               }}
@@ -8636,21 +8733,41 @@ export default function DashboardPage() {
                 display: "flex",
                 gap: isPhone ? 6 : 8,
                 flexWrap: "wrap",
+                alignItems: "center",
               }}
             >
               {dashboardNoticeSourceGroups.length > 0 ? (
-                <span style={badge(false)}>
+                <span
+                  style={{
+                    ...badge(false),
+                    background: notificationSurfaceChrome.chipBg,
+                    border: notificationSurfaceChrome.chipBorder,
+                  }}
+                >
                   {dashboardNoticeSourceGroups.length} screen
                   {dashboardNoticeSourceGroups.length === 1 ? "" : "s"}
                 </span>
               ) : null}
               {dashboardNoticeSummary.counts.actNow > 0 ? (
-                <span style={badge(true)}>
+                <span
+                  style={{
+                    ...badge(true),
+                    background: notificationSurfaceChrome.statusBg,
+                    border: notificationSurfaceChrome.chipSelectedBorder,
+                    color: notificationSurfaceChrome.statusText,
+                  }}
+                >
                   Act now {dashboardNoticeSummary.counts.actNow}
                 </span>
               ) : null}
               {dashboardNoticeSummary.counts.unread > 0 ? (
-                <span style={badge(false)}>
+                <span
+                  style={{
+                    ...badge(false),
+                    background: notificationSurfaceChrome.chipBg,
+                    border: notificationSurfaceChrome.chipBorder,
+                  }}
+                >
                   Unread {dashboardNoticeSummary.counts.unread}
                 </span>
               ) : null}
@@ -8680,14 +8797,14 @@ export default function DashboardPage() {
             <div
               style={{
                 marginTop: 12,
-                ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
-                border: "1px solid rgba(11,99,209,0.12)",
-                padding: isPhone ? 10 : isCompact ? 12 : 14,
+                ...innerCard(notificationSurfaceChrome.itemBg),
+                border: notificationSurfaceChrome.itemBorder,
+                padding: isPhone ? 9 : isCompact ? 12 : 14,
                 borderRadius: isPhone ? 15 : 18,
                 boxShadow:
                   "0 12px 28px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.84)",
                 display: "grid",
-                gap: 10,
+                gap: isPhone ? 8 : 10,
               }}
             >
               <div
@@ -8703,7 +8820,7 @@ export default function DashboardPage() {
                   style={{
                     color: "#0B1F33",
                     fontWeight: 800,
-                    fontSize: isPhone ? 15 : undefined,
+                    fontSize: isPhone ? 14.5 : undefined,
                     lineHeight: isPhone ? 1.24 : 1.3,
                     flex: "1 1 240px",
                   }}
@@ -8711,11 +8828,23 @@ export default function DashboardPage() {
                   {dashboardNoticeLeadItem.title}
                 </div>
 
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   <span
-                    style={badge(
-                      dashboardNoticeLeadItem.bucket === "actNow"
-                    )}
+                    style={{
+                      ...badge(dashboardNoticeLeadItem.bucket === "actNow"),
+                      background:
+                        dashboardNoticeLeadItem.bucket === "actNow"
+                          ? notificationSurfaceChrome.statusBg
+                          : notificationSurfaceChrome.chipBg,
+                      border:
+                        dashboardNoticeLeadItem.bucket === "actNow"
+                          ? notificationSurfaceChrome.chipSelectedBorder
+                          : notificationSurfaceChrome.chipBorder,
+                      color:
+                        dashboardNoticeLeadItem.bucket === "actNow"
+                          ? notificationSurfaceChrome.statusText
+                          : undefined,
+                    }}
                   >
                     {dashboardNoticeLeadItem.bucket === "actNow"
                       ? "Act now"
@@ -8724,12 +8853,24 @@ export default function DashboardPage() {
                       : "Open"}
                   </span>
                   {dashboardNoticeLeadGroup ? (
-                    <span style={badge(false)}>
+                    <span
+                      style={{
+                        ...badge(false),
+                        background: notificationSurfaceChrome.chipBg,
+                        border: notificationSurfaceChrome.chipBorder,
+                      }}
+                    >
                       {dashboardNoticeLeadGroup.title}
                     </span>
                   ) : null}
                   {dashboardNoticeTotalCount > 1 ? (
-                    <span style={badge(false)}>
+                    <span
+                      style={{
+                        ...badge(false),
+                        background: notificationSurfaceChrome.chipBg,
+                        border: notificationSurfaceChrome.chipBorder,
+                      }}
+                    >
                       {dashboardNoticeTotalCount - 1} more waiting
                     </span>
                   ) : null}
@@ -8739,8 +8880,8 @@ export default function DashboardPage() {
               <div
                 style={{
                   ...helperText(),
-                  fontSize: isPhone ? 12.5 : 13,
-                  lineHeight: isPhone ? 1.46 : 1.75,
+                  fontSize: isPhone ? 12.2 : 13,
+                  lineHeight: isPhone ? 1.42 : 1.75,
                 }}
               >
                 {dashboardNoticeLeadItem.detail}
@@ -8750,8 +8891,8 @@ export default function DashboardPage() {
                 <div
                   style={{
                     ...helperText(),
-                    fontSize: isPhone ? 12.25 : 12.5,
-                    lineHeight: isPhone ? 1.45 : 1.75,
+                    fontSize: isPhone ? 12 : 12.5,
+                    lineHeight: isPhone ? 1.38 : 1.75,
                   }}
                 >
                   {dashboardNoticeLeadGroup.detail}
@@ -8765,10 +8906,7 @@ export default function DashboardPage() {
                     openDashboardRoute(event, dashboardNoticePrimaryActionTo)
                   }
                   onPointerDown={consumeDashboardPointerEvent}
-                  style={dashboardFillButton(
-                    secondaryBtn(false),
-                    dashboardPhoneButton
-                  )}
+                  style={spotlightWhiteButton(dashboardPhoneButton)}
                 >
                   {dashboardNoticePrimaryActionLabel}
                 </button>
@@ -8778,10 +8916,7 @@ export default function DashboardPage() {
                     openDashboardRoute(event, DASHBOARD_TARGETS.WHAT_MATTERS_NOW)
                   }
                   onPointerDown={consumeDashboardPointerEvent}
-                  style={dashboardFillButton(
-                    subtleBtn(false),
-                    dashboardPhoneButton
-                  )}
+                  style={spotlightWhiteButton(dashboardPhoneButton)}
                 >
                   Open notifications
                 </button>
