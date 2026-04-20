@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import CommunityShopControlPanel from "../components/CommunityShopControlPanel";
+import DomainIntroToggle from "../components/DomainIntroToggle";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
@@ -1898,6 +1899,19 @@ export default function CommunityHomePage() {
           ]}
         />
 
+        <DomainIntroToggle
+          title="About Community Home"
+          eyebrow="Domain guide"
+          body="Community Home is your full community circle. When communities are available, each one appears here as a marketplace group under one member identity."
+          bullets={[
+            "Create or join a community first so it can become a marketplace group.",
+            "After that, use Community Home to choose the current group and open it as Marketplace.",
+            "Finance, Trust Passport, and Shop Gallery will make more sense after the first community exists.",
+          ]}
+          note="Plain rule: Community Home is where your communities gather before one opens for live work."
+          tone="blue"
+        />
+
         <section style={pageCard("#FFFFFF")}>
           <div style={sectionLabel()}>No communities yet</div>
 
@@ -1993,6 +2007,19 @@ export default function CommunityHomePage() {
           { label: "Trust", to: "/app/trust" },
           { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
         ]}
+      />
+
+      <DomainIntroToggle
+        title="About Community Home"
+        eyebrow="Domain guide"
+        body="Community Home is your full community circle. It lists every community you belong to as a marketplace group under one member identity."
+        bullets={[
+          "Use it to choose which community is current before opening that community as Marketplace.",
+          "This page may show group-level finance, trust, CCI, demand, and spotlight signals.",
+          "Private personal money history belongs in Finance, and the full personal trust story belongs in Trust Passport.",
+        ]}
+        note="Plain rule: Community Home shows all your communities together. Marketplace opens one of them for live work."
+        tone="blue"
       />
 
       <ExplainToggle

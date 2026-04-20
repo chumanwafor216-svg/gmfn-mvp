@@ -46,6 +46,60 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-20
 
 #### Workstream
+One-per-domain intro guide added to key user-facing domains so explanatory
+help is available without returning to scattered `What this does` blocks.
+
+#### Routes/screens affected
+- `/app/dashboard`
+- `/app/community`
+- `/app/marketplace`
+- shop gallery / public shop surface
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+
+#### Files in play
+- `frontend/src/components/DomainIntroToggle.tsx`
+- `frontend/src/pages/DashboardPage.tsx`
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `frontend/src/pages/MarketplacePage.tsx`
+- `frontend/src/pages/ShopGalleryPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Added a new compact `DomainIntroToggle` component that is closed by default
+  and intended for one top-level guide per domain.
+- Dashboard now has `About Dashboard`, explaining that Dashboard is a reflector
+  and next-step surface, not the deep work owner.
+- Community Home now has `About Community Home`, explaining the combined
+  community/marketplace-group index and the split from private Finance and
+  Trust Passport records.
+- Marketplace now has `About Marketplace`, explaining that Marketplace is one
+  selected community in action.
+- Shop Gallery now has `About Shop Gallery`, explaining the shop as the
+  storefront/reception door with community-governed exposure and locked Vault
+  access.
+- Existing scattered `ExplainToggle` surfaces remain globally disabled and were
+  not re-enabled.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- Finance and Trust Passport have not yet received the same domain intro in
+  this checkpoint; they should be handled in a follow-up pass with careful
+  wording around personal cumulative records versus group rollups.
+- A live mobile review is still needed to confirm the button placement feels
+  small, helpful, and not noisy.
+
+#### Next recommended step
+- Add the same one-per-domain intro to Finance and Trust Passport, then live
+  review all domain-guide buttons on mobile.
+
+### Previous update
+
+#### Date
+2026-04-20
+
+#### Workstream
 Community Home route visually aligned with the canonical marketplace-group
 rollup model.
 

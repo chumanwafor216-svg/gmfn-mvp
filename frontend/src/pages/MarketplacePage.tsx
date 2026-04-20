@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import DomainIntroToggle from "../components/DomainIntroToggle";
 import ExplainToggle from "../components/ExplainToggle";
 import { navigateWithOrigin } from "../lib/nav";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -2193,6 +2194,19 @@ export default function MarketplacePage() {
       >
         {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
+        <DomainIntroToggle
+          title="About Marketplace"
+          eyebrow="Domain guide"
+          body="Marketplace opens one selected community for live work. Choose a community in Community Home first so this page knows which marketplace to show."
+          bullets={[
+            "Marketplace is not the combined Community Home view.",
+            "It should show one community's members, shops, links, demand, local finance signal, and local trust context.",
+            "After selecting a community, return here to work inside that specific marketplace.",
+          ]}
+          note="Plain rule: select a community first, then Marketplace becomes that community in action."
+          tone="dark"
+        />
+
         <section
           style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
         >
@@ -2305,6 +2319,20 @@ export default function MarketplacePage() {
       }}
     >
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
+
+      <DomainIntroToggle
+        title="About Marketplace"
+        eyebrow="Domain guide"
+        body="Marketplace is one selected community in action. It is where that community's members, shops, links, local finance signal, demand, support, and trust activity become usable."
+        bullets={[
+          "Use the official billboard first to confirm which marketplace you are inside.",
+          "Marketplace owns local tools such as members, shops, invite links, Demand Box, support, and local money rails.",
+          "Finance and Trust Passport can still show the bigger cross-community story, but Marketplace shows what is happening here.",
+        ]}
+        note="Plain rule: Marketplace is the live working room for one community."
+        tone="dark"
+        style={{ order: 0 }}
+      />
 
       <section
         style={{

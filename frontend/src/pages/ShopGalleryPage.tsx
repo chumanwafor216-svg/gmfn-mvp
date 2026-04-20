@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
+import DomainIntroToggle from "../components/DomainIntroToggle";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
@@ -1014,6 +1015,19 @@ export default function ShopGalleryPage() {
     >
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
       {error ? <div style={noticeCard("error")}>{error}</div> : null}
+
+      <DomainIntroToggle
+        title="About Shop Gallery"
+        eyebrow="Domain guide"
+        body="Shop Gallery is the storefront. It lets community members and approved outside viewers see the shop identity, products, spotlight, and permitted private-access options."
+        bullets={[
+          "One member has one shop, and that shop can appear through the communities the member belongs to.",
+          "Community membership controls normal shop exposure. Wider exposure should come through approved links, reposts, or invite paths.",
+          "Vault content is locked and should only be viewed through the right permission or access link.",
+        ]}
+        note="Plain rule: Shop Gallery is the reception door between the shop owner, the community, and approved outsiders."
+        tone="dark"
+      />
 
       <ExplainToggle
         label="What this screen does"

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import DomainIntroToggle from "../components/DomainIntroToggle";
 import ExplainToggle from "../components/ExplainToggle";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import SystemPictureFrame from "../components/SystemPictureFrame";
@@ -5780,6 +5781,19 @@ export default function DashboardPage() {
           gap: 18,
         }}
       >
+        <DomainIntroToggle
+          title="About Dashboard"
+          eyebrow="Domain guide"
+          body="Dashboard is your reflector. It gives you a compact view of what needs attention now, then sends you to the right working domain."
+          bullets={[
+            "Use it to read urgent signals, spotlight, notices, demand, trust, and next actions quickly.",
+            "Dashboard should not hold the full work. Community Home, Marketplace, Finance, Trust Passport, Demand Box, and Shop hold the deeper records.",
+            "If something needs action, open the correct route instead of trying to solve everything from Dashboard.",
+          ]}
+          note="Plain rule: Dashboard tells you what is happening now and where to go next."
+          tone="blue"
+        />
+
       <section
         style={{
           ...pageCard(DASHBOARD_BRAND.heroField),
