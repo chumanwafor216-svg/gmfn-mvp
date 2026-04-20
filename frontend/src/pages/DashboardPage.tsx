@@ -3995,7 +3995,7 @@ export default function DashboardPage() {
     return `${currentCommunityName(
       currentClan,
       selectedClanId
-    )}. Open Demand Box when you want to create or review demand.`;
+    )}. Ready for your next request.`;
   }, [currentClan, currentDemandItem, selectedClanId]);
   const currentDemandIsUrgent =
     safeStr(currentDemandItem?.urgency).toLowerCase() === "high";
@@ -4021,7 +4021,7 @@ export default function DashboardPage() {
     ? "A person's request is live in your community."
     : "Create demand when you personally need help.";
   const demandGuideBody =
-    "Demand Box is personal: you say what you need, and your GSN trust signal shows who is asking. The community name shows the trusted room you are sending it from. Payment terms and TrustSlip expectations help both sides agree before work starts.";
+    "Demand Box is personal: you say what you need, and your GSN trust signal shows who is asking. The community name shows where you are sending it from. Payment terms and TrustSlip expectations help both sides agree before work starts.";
 
   const demandSurfaceChrome = useMemo(() => {
     if (urgentDemandItems.length > 0) {
@@ -4084,29 +4084,29 @@ export default function DashboardPage() {
 
     return {
       shellBg:
-        "radial-gradient(circle at top left, rgba(148,163,184,0.10) 0%, rgba(148,163,184,0.00) 26%), linear-gradient(180deg, #F8FBFF 0%, #F4F8FD 52%, #EEF4FB 100%)",
-      shellBorder: "1px solid rgba(148,163,184,0.14)",
+        "radial-gradient(circle at top left, rgba(11,99,209,0.12) 0%, rgba(11,99,209,0.00) 28%), linear-gradient(180deg, #F8FBFF 0%, #EEF5FD 54%, #DCEBFA 100%)",
+      shellBorder: "1px solid rgba(11,99,209,0.14)",
       accent:
-        "linear-gradient(90deg, #64748B 0%, #94A3B8 58%, #CBD5E1 100%)",
+        "linear-gradient(90deg, #1B4B78 0%, #2B6599 58%, #D4AF37 100%)",
       leadBg:
-        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.97) 52%, rgba(237,242,247,0.95) 100%)",
-      leadBorder: "1px solid rgba(148,163,184,0.14)",
+        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,251,255,0.97) 52%, rgba(234,243,253,0.95) 100%)",
+      leadBorder: "1px solid rgba(11,99,209,0.12)",
       leadShadow:
-        "0 14px 30px rgba(10,24,49,0.05), inset 0 1px 0 rgba(255,255,255,0.84)",
-      statusBg: "rgba(148,163,184,0.14)",
-      statusText: "#475569",
+        "0 14px 30px rgba(11,99,209,0.06), inset 0 1px 0 rgba(255,255,255,0.84)",
+      statusBg: "rgba(11,99,209,0.10)",
+      statusText: "#123055",
       chipBg:
-        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.96) 100%)",
-      chipBorder: "1px solid rgba(148,163,184,0.14)",
+        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,252,0.96) 100%)",
+      chipBorder: "1px solid rgba(11,99,209,0.12)",
       chipSelectedBg:
-        "linear-gradient(180deg, rgba(237,242,247,0.98) 0%, rgba(226,232,240,0.96) 100%)",
-      chipSelectedBorder: "1px solid rgba(148,163,184,0.20)",
+        "linear-gradient(180deg, rgba(236,244,255,0.98) 0%, rgba(218,233,250,0.96) 100%)",
+      chipSelectedBorder: "1px solid rgba(11,99,209,0.20)",
       detailBg:
-        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(249,250,251,0.96) 100%)",
-      detailBorder: "1px solid rgba(148,163,184,0.14)",
+        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,251,255,0.96) 100%)",
+      detailBorder: "1px solid rgba(11,99,209,0.12)",
       itemBg:
-        "linear-gradient(180deg, rgba(252,253,255,0.98) 0%, rgba(246,248,251,0.96) 100%)",
-      itemBorder: "1px solid rgba(148,163,184,0.14)",
+        "linear-gradient(180deg, rgba(252,254,255,0.98) 0%, rgba(244,249,255,0.96) 100%)",
+      itemBorder: "1px solid rgba(11,99,209,0.12)",
     };
   }, [demandItems.length, urgentDemandItems.length]);
 
@@ -8134,11 +8134,21 @@ export default function DashboardPage() {
 
       <section
         style={{
-          ...pageCard(DASHBOARD_BRAND.summaryPanel),
-          padding: isPhone ? 14 : 20,
+          ...pageCard(demandSurfaceChrome.shellBg),
+          border: demandSurfaceChrome.shellBorder,
+          padding: isPhone ? 13 : 20,
           borderRadius: isPhone ? 22 : 26,
         }}
       >
+        <div
+          style={{
+            height: 3,
+            margin: isPhone ? "-2px 0 10px" : "-3px 0 14px",
+            borderRadius: 999,
+            background: demandSurfaceChrome.accent,
+            opacity: 0.88,
+          }}
+        />
         <div
           style={{
             display: "flex",
@@ -8168,6 +8178,7 @@ export default function DashboardPage() {
               flexWrap: "wrap",
               justifyContent: "flex-end",
               alignItems: "center",
+              flex: isPhone ? "1 1 100%" : undefined,
             }}
           >
             <button
@@ -8176,9 +8187,10 @@ export default function DashboardPage() {
               onPointerDown={consumeDashboardPointerEvent}
               style={spotlightWhiteButton({
                 width: "auto",
-                minWidth: isPhone ? 136 : 150,
-                minHeight: isPhone ? 38 : 40,
-                padding: isPhone ? "8px 12px" : "8px 14px",
+                minWidth: isPhone ? 0 : 150,
+                minHeight: isPhone ? 42 : 40,
+                padding: isPhone ? "8px 10px" : "8px 14px",
+                flex: isPhone ? "1 1 0" : "0 0 auto",
               })}
             >
               {demandGuideOpen ? "Close guide" : "About Demand Box"}
@@ -8186,8 +8198,13 @@ export default function DashboardPage() {
             <span
               style={{
                 ...badge(false),
-                background: "rgba(15,59,116,0.08)",
-                color: "#0F3B74",
+                minHeight: isPhone ? 42 : 40,
+                minWidth: isPhone ? 52 : 56,
+                justifyContent: "center",
+                padding: isPhone ? "8px 12px" : "8px 14px",
+                background: demandSurfaceChrome.chipBg,
+                border: demandSurfaceChrome.chipBorder,
+                color: "#123055",
               }}
             >
               {demandItems.length}
@@ -8195,9 +8212,13 @@ export default function DashboardPage() {
             <span
               style={{
                 ...badge(false),
+                minHeight: isPhone ? 42 : 40,
+                minWidth: isPhone ? 90 : 104,
+                justifyContent: "center",
+                padding: isPhone ? "8px 12px" : "8px 14px",
                 background: demandSurfaceChrome.statusBg,
                 color: demandSurfaceChrome.statusText,
-                border: "none",
+                border: demandSurfaceChrome.chipSelectedBorder,
               }}
             >
               {urgentDemandItems.length > 0
@@ -8253,7 +8274,7 @@ export default function DashboardPage() {
             ...innerCard(demandSurfaceChrome.leadBg),
             border: demandSurfaceChrome.leadBorder,
             boxShadow: demandSurfaceChrome.leadShadow,
-            padding: isPhone ? 10 : isCompact ? 14 : 16,
+            padding: isPhone ? 9 : isCompact ? 14 : 16,
             borderRadius: isPhone ? 16 : 18,
           }}
         >
@@ -8270,7 +8291,7 @@ export default function DashboardPage() {
               style={{
                 color: "#0B1F33",
                 fontWeight: 900,
-                fontSize: isPhone ? 15.5 : 18,
+                fontSize: isPhone ? 15 : 18,
                 lineHeight: isPhone ? 1.22 : 1.32,
                 maxWidth: 760,
               }}
@@ -8333,12 +8354,12 @@ export default function DashboardPage() {
               marginTop: 12,
               ...innerCard(demandSurfaceChrome.detailBg),
               border: demandSurfaceChrome.detailBorder,
-              padding: isPhone ? 10 : isCompact ? 12 : 14,
+              padding: isPhone ? 8 : isCompact ? 12 : 14,
               borderRadius: isPhone ? 15 : 18,
               boxShadow:
                 "0 12px 28px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.84)",
               display: "grid",
-              gap: 10,
+              gap: isPhone ? 8 : 10,
             }}
           >
             {currentDemandItem ? (
@@ -8470,19 +8491,18 @@ export default function DashboardPage() {
                 </div>
                 <div
                   style={{
-                    marginTop: 6,
+                    marginTop: 5,
                     ...helperText(),
-                    fontSize: isPhone ? 12.5 : 13,
-                    lineHeight: isPhone ? 1.46 : 1.75,
+                    fontSize: isPhone ? 12.2 : 13,
+                    lineHeight: isPhone ? 1.42 : 1.75,
                   }}
                 >
                   Create demand when you need goods, service, support, or
-                  follow-up from people in the right community. Your GSN ID
-                  stays attached so people know who is asking.
+                  follow-up. Your GSN ID stays attached.
                 </div>
                 <div
                   style={{
-                    marginTop: 8,
+                    marginTop: 7,
                     display: "flex",
                     gap: 8,
                     flexWrap: "wrap",
@@ -8504,7 +8524,7 @@ export default function DashboardPage() {
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                padding: isPhone ? "4px 0" : "2px 0",
+                padding: isPhone ? "3px 0 0" : "2px 0",
               }}
             >
               <button
