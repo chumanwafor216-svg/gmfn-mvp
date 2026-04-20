@@ -108,6 +108,77 @@ It is where the member should be able to see:
 Community Home should not open the full working internals of every community on
 the same surface.
 
+### Community Home page composition rule
+Community Home should open by answering one plain question:
+
+- Community Home of who?
+
+The first block should therefore be the member-owner identity block. It should
+show the owner of this Community Home, including:
+
+- the member's visible name or holder name
+- the one global member ID
+- the one shop attached to that global member ID
+- the member's current spotlight exposure entitlement/status
+- the member's cumulative pool position across all communities where available
+
+The cumulative pool number on this first block is only a summary signal. The
+full finance breakdown belongs in Finance.
+
+Important identity correction:
+
+- one global member ID owns one shop
+- Community Home is the place where that member identity is gathered and
+  operated from across communities
+- the shop is not multiplied by the number of marketplaces the member belongs to
+
+After the owner identity block, Community Home should show a compact list of the
+communities/marketplaces the member belongs to. This list should be simple and
+direct, not a long explanatory surface.
+
+Each community row should show:
+
+- row number or clear entry position
+- community or marketplace name
+- global community ID
+- shop / marketplace entry point
+
+Selecting a row should carry that selected community context and open the
+working Marketplace for that community. The deeper member list, demand work,
+finance detail, invite-link work, and marketplace activity should happen after
+that move, not inside the Community Home list itself.
+
+After the community list, Community Home should provide owner-level summary and
+control blocks in this order where possible:
+
+- cumulative finance summary
+- cumulative trust / Trust Passport summary
+- shop control and outward links
+- create new community / first-circle continuation
+- spotlight apparatus and exposure controls
+
+The cumulative finance summary should point to Finance. It should summarize the
+member's overall finance position across communities, such as total pool
+position, money locked because of guarantees, earnings from guarantees, support
+given, support received, and total exposure where available. Individual
+marketplace finance records still belong inside the relevant marketplace or the
+deeper Finance workspace.
+
+The cumulative trust summary should point to Trust Passport. It should summarize
+the member's carried trust story across communities, while each marketplace
+still keeps its own local trust truth.
+
+Shop control belongs on Community Home because the shop follows the one global
+member ID. Shop control may include shop media, shop-facing links, Vault links,
+spotlight links or controls, and other outward viewing tools. Marketplace still
+governs where that shop is visible, but Community Home is the owner-side place
+to manage the one shop.
+
+Creating a new community can be started from Community Home even for an existing
+member. After creating a new community, the next natural step is first-circle
+work: invite the first trusted people and build the starting circle for that new
+community.
+
 ### Community Home marketplace rollup rule
 Community Home is where each marketplace/community the member belongs to can be
 seen as one line, card, or command entry.
@@ -548,11 +619,16 @@ Dashboard
   -> sends the member to the right place
 
 Community Home
+  -> first answers "Community Home of who?"
+  -> shows the member-owner identity and one global member ID
+  -> anchors the one shop attached to that member ID
+  -> shows the member's cumulative pool/finance signal where available
   -> lists all communities the member belongs to
-  -> carries cross-community records and aggregate spotlight/demand view
-  -> shows each marketplace/community as a group-level line or card
+  -> shows each community as a compact line with community ID and entry point
+  -> opens the chosen community as Marketplace
+  -> carries cross-community summary records and aggregate spotlight/demand view
   -> may summarize marketplace finance/trust/CCI as group dynamics
-  -> member selects one community
+  -> holds owner-side shop control, outward links, spotlight apparatus, create-community, and first-circle continuation
 
 Selected community
   -> opens as Marketplace
