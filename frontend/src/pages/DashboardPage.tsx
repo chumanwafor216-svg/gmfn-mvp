@@ -5830,19 +5830,21 @@ export default function DashboardPage() {
               boxShadow:
                 "0 18px 38px rgba(5,16,38,0.18), inset 0 1px 0 rgba(255,255,255,0.78)",
               color: DASHBOARD_BRAND.ink,
-              padding: isPhone ? 10 : isCompact ? 14 : 16,
-              borderRadius: isPhone ? 18 : 24,
+              padding: isPhone ? 7 : isCompact ? 14 : 16,
+              borderRadius: isPhone ? 14 : 24,
             }}
           >
             <div
               style={{
                 position: "relative",
                 display: "grid",
-                gridTemplateColumns: isPhone ? "36px minmax(0, 1fr)" : undefined,
-                gap: isPhone ? 7 : 8,
+                gridTemplateColumns: isPhone
+                  ? "32px minmax(0, 1fr) auto"
+                  : undefined,
+                gap: isPhone ? 6 : 8,
                 alignItems: isPhone ? "center" : undefined,
                 justifyItems: isPhone ? "stretch" : "center",
-                marginBottom: isPhone ? 2 : 6,
+                marginBottom: isPhone ? 0 : 6,
                 minHeight: isPhone ? "auto" : isCompact ? 56 : 60,
               }}
             >
@@ -5858,8 +5860,8 @@ export default function DashboardPage() {
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  minHeight: isPhone ? 34 : isCompact ? 40 : 42,
-                  minWidth: isPhone ? 34 : isCompact ? 40 : 42,
+                  minHeight: isPhone ? 30 : isCompact ? 40 : 42,
+                  minWidth: isPhone ? 30 : isCompact ? 40 : 42,
                   padding: 0,
                   borderRadius: 999,
                   border: "1px solid rgba(16,37,59,0.10)",
@@ -5875,8 +5877,8 @@ export default function DashboardPage() {
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    width: 24,
-                    height: 24,
+                    width: isPhone ? 20 : 24,
+                    height: isPhone ? 20 : 24,
                     borderRadius: 999,
                     color: "#F8FBFF",
                     fontSize: isPhone ? 12 : 14,
@@ -5891,9 +5893,9 @@ export default function DashboardPage() {
               <div
                 style={{
                   textAlign: isPhone ? "left" : "center",
-                  fontSize: isPhone ? 20 : isCompact ? 24 : 31,
+                  fontSize: isPhone ? 16.5 : isCompact ? 24 : 31,
                   fontWeight: 900,
-                  lineHeight: isPhone ? 1.08 : 1.04,
+                  lineHeight: isPhone ? 1.05 : 1.04,
                   padding: isPhone ? 0 : "0 44px",
                   color: DASHBOARD_BRAND.ink,
                   overflowWrap: "normal",
@@ -5908,6 +5910,7 @@ export default function DashboardPage() {
               <div
                 style={{
                   gridColumn: isPhone ? "1 / -1" : undefined,
+                  display: isPhone ? "none" : undefined,
                   textAlign: isPhone ? "left" : "center",
                   fontSize: isPhone ? 12.5 : isCompact ? 13 : 14.5,
                   lineHeight: isPhone ? 1.45 : 1.68,
@@ -5922,13 +5925,14 @@ export default function DashboardPage() {
 
               <div
                 style={{
-                  gridColumn: isPhone ? "1 / -1" : undefined,
+                  gridColumn: isPhone ? "3" : undefined,
+                  gridRow: isPhone ? "1" : undefined,
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  justifySelf: "center",
-                  minHeight: isPhone ? 30 : isCompact ? 40 : 44,
-                  padding: isPhone ? "0 14px" : isCompact ? "0 18px" : "0 22px",
+                  justifySelf: isPhone ? "end" : "center",
+                  minHeight: isPhone ? 24 : isCompact ? 40 : 44,
+                  padding: isPhone ? "0 10px" : isCompact ? "0 18px" : "0 22px",
                   borderRadius: 999,
                   background:
                     "linear-gradient(180deg, rgba(255,255,255,0.50) 0%, rgba(233,240,250,0.18) 100%)",
@@ -5936,9 +5940,9 @@ export default function DashboardPage() {
                   boxShadow:
                     "0 18px 36px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.78)",
                   color: DASHBOARD_BRAND.goldText,
-                  fontSize: isPhone ? 14 : isCompact ? 18 : 20,
+                  fontSize: isPhone ? 11 : isCompact ? 18 : 20,
                   fontWeight: 1000,
-                  letterSpacing: isPhone ? 1.2 : 4.2,
+                  letterSpacing: isPhone ? 0.8 : 4.2,
                   textTransform: "uppercase",
                 }}
               >
@@ -5949,7 +5953,7 @@ export default function DashboardPage() {
 
           <div
             style={{
-              marginTop: isPhone ? 10 : 18,
+              marginTop: isPhone ? 8 : 18,
               display: "grid",
               gridTemplateColumns: isCompact
                 ? "1fr"
@@ -5972,7 +5976,7 @@ export default function DashboardPage() {
               <div
                 style={{
                   width: "100%",
-                  maxWidth: isPhone ? 248 : isCompact ? 300 : 320,
+                  maxWidth: isPhone ? 268 : isCompact ? 300 : 320,
                   margin: "0 auto",
                   borderRadius: isPhone ? 20 : 28,
                   padding: isPhone ? 6 : 8,
@@ -5985,7 +5989,7 @@ export default function DashboardPage() {
               >
                 <div
                   style={{
-                    height: isPhone ? 104 : isCompact ? 170 : 196,
+                    height: isPhone ? 132 : isCompact ? 170 : 196,
                     borderRadius: isPhone ? 15 : 20,
                     overflow: "hidden",
                     border: "1px solid rgba(212,175,55,0.16)",
@@ -6012,8 +6016,8 @@ export default function DashboardPage() {
                   ) : (
                     <div
                       style={{
-                        width: isPhone ? 62 : 92,
-                        height: isPhone ? 62 : 92,
+                        width: isPhone ? 72 : 92,
+                        height: isPhone ? 72 : 92,
                         borderRadius: 999,
                         border: "1px solid rgba(212,175,55,0.28)",
                         background:
