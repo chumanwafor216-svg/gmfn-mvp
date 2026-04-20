@@ -297,6 +297,7 @@ const DASHBOARD_FOCUS_COMMITMENTS_STORAGE_KEY =
   "gmfn.dashboard.focus-commitments.v1";
 const DASHBOARD_FOCUS_EVENTS_STORAGE_KEY =
   "gmfn.dashboard.focus-events.v1";
+const MARKET_WISDOM_ROTATION_MS = 45000;
 
 const PUBLIC_ROUTE_PREFIXES = [
   "cover",
@@ -3149,7 +3150,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const timer = window.setInterval(() => {
       setMarketWisdomIndex((prev) => prev + 1);
-    }, 60000);
+    }, MARKET_WISDOM_ROTATION_MS);
 
     return () => window.clearInterval(timer);
   }, []);
@@ -4480,7 +4481,7 @@ export default function DashboardPage() {
 
     const timer = window.setInterval(() => {
       setMarketWisdomSignalIndex((prev) => (prev + 1) % marketWisdomSignals.length);
-    }, 7000);
+    }, MARKET_WISDOM_ROTATION_MS);
 
     return () => window.clearInterval(timer);
   }, [marketWisdomSignals.length]);
