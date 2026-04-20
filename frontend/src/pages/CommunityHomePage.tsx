@@ -123,7 +123,7 @@ type ExpectedPaymentRecord = {
   confirmed_at?: string | null;
 };
 
-const COMMUNITY_HOME_COLLAPSE_KEY = "gmfn.communityHome.sections.v2";
+const COMMUNITY_HOME_COLLAPSE_KEY = "gmfn.communityHome.sections.v3";
 const SPOTLIGHT_DRAFT_PREFIX = "gmfn.communityHome.spotlightDraft.";
 const SPOTLIGHT_ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
@@ -740,6 +740,19 @@ function formatMoneySignal(amount: string, currency: string): string {
   return `${cleanAmount} ${cleanCurrency}`;
 }
 
+function userFinanceSyncText(issue: string, cumulative = false): string {
+  const raw = safeStr(issue);
+  if (!raw) return "";
+  if (/not\s*found|404/i.test(raw)) {
+    return cumulative
+      ? "The full finance summary is still being prepared. The selected community signal can still be used for now."
+      : "This selected community finance signal is still being prepared.";
+  }
+  return cumulative
+    ? "The full finance summary could not refresh just now. Try again after a short moment."
+    : "This selected community finance signal could not refresh just now.";
+}
+
 function getInviteUrl(payload: any): string {
   return firstTruthy(
     payload?.url,
@@ -832,9 +845,9 @@ function spotlightDraftStorageKey(clanId: number): string {
 
 function defaultCollapseState(): CollapseState {
   return {
-    selected: false,
+    selected: true,
     tools: true,
-    circle: false,
+    circle: true,
     spotlight: true,
     communities: false,
   };
@@ -1432,6 +1445,8 @@ export default function CommunityHomePage() {
     cumulativePendingOut,
     poolSummaryIssue,
   ]);
+  const cumulativeFinanceSyncText = userFinanceSyncText(poolSummaryIssue, true);
+  const selectedFinanceSyncText = userFinanceSyncText(financeSyncIssue, false);
 
   const firstCircleProgress = useMemo(
     () => getFirstCircleProgress(firstCircleDraft),
@@ -2171,23 +2186,6 @@ export default function CommunityHomePage() {
         <GSNBrandMark width={isCompact ? 180 : 260} height={isCompact ? 218 : 315} />
       </div>
       <div style={communityContentStyle(isCompact)}>
-      <PageTopNav
-        sectionLabel="Community Home"
-        title="Community Home"
-        subtitle="All your communities live here. Choose one, then open its Marketplace to work inside it."
-        homeTo="/app/dashboard"
-        homeLabel="Dashboard"
-        backTo="/app/dashboard"
-        nextLinks={[
-          { label: "Marketplace", to: "/app/marketplace" },
-          { label: "Notifications", to: "/app/notifications" },
-        ]}
-        utilityLinks={[
-          { label: "Trust", to: "/app/trust" },
-          { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
-        ]}
-      />
-
       <section style={communityHeroStyle(isCompact)}>
         <div
           style={{
@@ -2262,10 +2260,10 @@ export default function CommunityHomePage() {
 
             <div
               style={{
-                marginTop: isCompact ? 10 : 12,
+                marginTop: isCompact ? 8 : 12,
                 color: "#3A526A",
-                fontSize: 14,
-                lineHeight: 1.75,
+                fontSize: isCompact ? 12 : 14,
+                lineHeight: isCompact ? 1.55 : 1.75,
                 maxWidth: 880,
               }}
             >
@@ -2279,7 +2277,9 @@ export default function CommunityHomePage() {
               style={{
                 marginTop: 14,
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(142px, 1fr))",
+                gridTemplateColumns: isCompact
+                  ? "repeat(2, minmax(0, 1fr))"
+                  : "repeat(auto-fit, minmax(142px, 1fr))",
                 gap: 8,
               }}
             >
@@ -2863,15 +2863,21 @@ export default function CommunityHomePage() {
               {cumulativeFinanceNextAction.detail}
             </div>
 
-            {poolSummaryIssue ? (
-              <div style={{ marginTop: 12, ...noticeCard("error") }}>
-                {poolSummaryIssue}
+            {cumulativeFinanceSyncText ? (
+              <div style={{ marginTop: 12, ...innerCard("#FFF8E1") }}>
+                <div style={sectionLabel()}>Finance refresh note</div>
+                <div style={{ marginTop: 8, color: "#6F4C00", fontWeight: 800 }}>
+                  {cumulativeFinanceSyncText}
+                </div>
               </div>
             ) : null}
 
-            {financeSyncIssue ? (
-              <div style={{ marginTop: 12, ...noticeCard("error") }}>
-                {financeSyncIssue}
+            {selectedFinanceSyncText ? (
+              <div style={{ marginTop: 12, ...innerCard("#FFF8E1") }}>
+                <div style={sectionLabel()}>Selected community note</div>
+                <div style={{ marginTop: 8, color: "#6F4C00", fontWeight: 800 }}>
+                  {selectedFinanceSyncText}
+                </div>
               </div>
             ) : null}
 
@@ -2916,9 +2922,8 @@ export default function CommunityHomePage() {
             </div>
 
             <div style={{ marginTop: 10, color: "#5F7287", fontSize: 13, lineHeight: 1.78 }}>
-              Money In, Money Out, Payment Rails, and Payout Details now sit
-              inside the fuller Finance workspace instead of owning space on
-              Community Home.
+              Use Finance when you want the full money record. Use this page
+              only for the quick cross-community and selected-community signal.
             </div>
           </div>
 
@@ -4248,16 +4253,6 @@ export default function CommunityHomePage() {
                         <span style={badge(active)}>
                           {active ? "Selected" : "Available"}
                         </span>
-                        <span style={badge(false)}>
-                          Trust: {getClanTrust(clan)}
-                        </span>
-                        <span style={badge(false)}>
-                          Finance: {getClanFinanceHealth(clan)}
-                        </span>
-                        <span style={badge(false)}>CCI: {getClanCci(clan)}</span>
-                        <span style={badge(false)}>
-                          Members: {getClanMemberCount(clan)}
-                        </span>
                         {getClanRole(clan) ? (
                           <span style={badge(false)}>Role: {getClanRole(clan)}</span>
                         ) : null}
@@ -4272,8 +4267,8 @@ export default function CommunityHomePage() {
                       }}
                     >
                       {active
-                        ? "This community is selected. Its live work opens in Marketplace."
-                        : "Set this community first, then open its Marketplace."}
+                        ? "Selected now. Open Marketplace to work inside it."
+                        : "Choose it here, then GSN opens its Marketplace."}
                     </div>
 
                     <div
@@ -4284,17 +4279,21 @@ export default function CommunityHomePage() {
                         flexWrap: "wrap",
                       }}
                     >
-                      <button
-                        type="button"
-                        onClick={() => void handleSelectCommunity(clan, false)}
-                        disabled={working}
-                        style={actionBtn("secondary", working)}
-                      >
-                        {active ? "Current" : working ? "Selecting..." : "Set Current"}
-                      </button>
+                      {!active ? (
+                        <button
+                          type="button"
+                          onPointerDown={consumeCommunityPointerEvent}
+                          onClick={() => void handleSelectCommunity(clan, false)}
+                          disabled={working}
+                          style={actionBtn("secondary", working)}
+                        >
+                          {working ? "Selecting..." : "Set Current"}
+                        </button>
+                      ) : null}
 
                       <button
                         type="button"
+                        onPointerDown={consumeCommunityPointerEvent}
                         onClick={() => void handleSelectCommunity(clan, true)}
                         disabled={working}
                         style={actionBtn("primary", working)}
