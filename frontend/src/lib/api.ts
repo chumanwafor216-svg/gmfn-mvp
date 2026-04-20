@@ -2850,6 +2850,10 @@ export async function voteOnJoinRequest(
 
 export type MarketplaceRequestItem = {
   id: number;
+  clan_id?: number | null;
+  community_code?: string | null;
+  clan_name?: string | null;
+  marketplace_name?: string | null;
   user_id: number;
   title: string;
   description?: string | null;

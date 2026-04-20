@@ -4,11 +4,12 @@ from datetime import datetime, timedelta, timezone
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.db.database import get_db
-from app.db.models import ClanMembership, MarketplaceRequest, User
+from app.db.models import Clan, ClanMembership, MarketplaceRequest, User
 from app.schemas.marketplace_requests import (
     MarketplaceRequestCreate,
     MarketplaceRequestOut,
@@ -67,6 +68,62 @@ def _active_request_count(db: Session, user_id: int) -> int:
     )
 
 
+def _community_code(clan: Clan | None) -> str | None:
+    if not clan:
+        return None
+    saved = str(getattr(clan, "community_code", "") or "").strip()
+    if saved:
+        return saved
+    return f"GMFN-C-{int(clan.id):06d}"
+
+
+def _active_clan_ids_for_user(db: Session, user_id: int) -> list[int]:
+    rows = (
+        db.query(ClanMembership.clan_id)
+        .filter(
+            ClanMembership.user_id == int(user_id),
+            ClanMembership.left_at.is_(None),
+        )
+        .distinct()
+        .all()
+    )
+    return [int(row[0]) for row in rows]
+
+
+def _require_request_clan(
+    db: Session,
+    *,
+    current_user_id: int,
+    requested_clan_id: int | None,
+) -> int:
+    active_clan_ids = _active_clan_ids_for_user(db, int(current_user_id))
+
+    if requested_clan_id is None:
+        if len(active_clan_ids) == 1:
+            return int(active_clan_ids[0])
+        if len(active_clan_ids) > 1:
+            raise HTTPException(
+                status_code=400,
+                detail="Choose the community this demand should come from.",
+            )
+        raise HTTPException(
+            status_code=400,
+            detail="Join or create a community before posting a demand.",
+        )
+
+    clan = db.get(Clan, int(requested_clan_id))
+    if not clan:
+        raise HTTPException(status_code=404, detail="Community not found")
+
+    if int(requested_clan_id) not in active_clan_ids:
+        raise HTTPException(
+            status_code=403,
+            detail="You must belong to this community before posting a demand from it.",
+        )
+
+    return int(requested_clan_id)
+
+
 def _visible_user_ids_for_marketplace_requests(
     db: Session,
     current_user_id: int,
@@ -87,6 +144,7 @@ def _visible_user_ids_for_marketplace_requests(
             .filter(
                 ClanMembership.user_id == current_user_id,
                 ClanMembership.clan_id == clan_id,
+                ClanMembership.left_at.is_(None),
             )
             .first()
         )
@@ -95,7 +153,10 @@ def _visible_user_ids_for_marketplace_requests(
 
         rows = (
             db.query(ClanMembership.user_id)
-            .filter(ClanMembership.clan_id == clan_id)
+            .filter(
+                ClanMembership.clan_id == clan_id,
+                ClanMembership.left_at.is_(None),
+            )
             .distinct()
             .all()
         )
@@ -103,7 +164,10 @@ def _visible_user_ids_for_marketplace_requests(
 
     my_clan_rows = (
         db.query(ClanMembership.clan_id)
-        .filter(ClanMembership.user_id == current_user_id)
+        .filter(
+            ClanMembership.user_id == current_user_id,
+            ClanMembership.left_at.is_(None),
+        )
         .distinct()
         .all()
     )
@@ -113,7 +177,10 @@ def _visible_user_ids_for_marketplace_requests(
 
     rows = (
         db.query(ClanMembership.user_id)
-        .filter(ClanMembership.clan_id.in_(my_clan_ids))
+        .filter(
+            ClanMembership.clan_id.in_(my_clan_ids),
+            ClanMembership.left_at.is_(None),
+        )
         .distinct()
         .all()
     )
@@ -124,13 +191,19 @@ def _visible_user_ids_for_marketplace_requests(
 
 
 def _to_out(
+    db: Session,
     row: MarketplaceRequest,
     user: User | None = None,
 ) -> MarketplaceRequestOut:
     owner = user or row.user
+    clan = db.get(Clan, int(row.clan_id)) if getattr(row, "clan_id", None) else None
     return MarketplaceRequestOut(
         id=row.id,
+        clan_id=getattr(row, "clan_id", None),
         user_id=row.user_id,
+        community_code=_community_code(clan),
+        clan_name=getattr(clan, "name", None) if clan else None,
+        marketplace_name=getattr(clan, "marketplace_name", None) if clan else None,
         title=row.title,
         description=row.description,
         category=row.category,
@@ -174,8 +247,14 @@ def create_marketplace_request(
 
     expires_in_hours = payload.expires_in_hours or DEFAULT_EXPIRY_HOURS
     urgency = _normalize_urgency(payload.urgency)
+    request_clan_id = _require_request_clan(
+        db,
+        current_user_id=int(current_user.id),
+        requested_clan_id=payload.clan_id,
+    )
 
     row = MarketplaceRequest(
+        clan_id=request_clan_id,
         user_id=current_user.id,
         title=payload.title.strip(),
         description=(payload.description or "").strip() or None,
@@ -197,7 +276,7 @@ def create_marketplace_request(
     visible_user_ids = _visible_user_ids_for_marketplace_requests(
         db=db,
         current_user_id=current_user.id,
-        clan_id=None,
+        clan_id=request_clan_id,
     )
 
     for uid in visible_user_ids:
@@ -213,7 +292,8 @@ def create_marketplace_request(
             action_url="/app/demand-box",
             action_label="View request",
         )
-        create_notification(
+
+    create_notification(
         db,
         user_id=current_user.id,
         kind="demand_posted",
@@ -222,7 +302,8 @@ def create_marketplace_request(
         action_url="/app/demand-box",
         action_label="View your post",
     )
-    return _to_out(row, current_user)
+
+    return _to_out(db, row, current_user)
 
 
 @router.get("", response_model=List[MarketplaceRequestOut])
@@ -243,15 +324,41 @@ def list_marketplace_requests(
 
     if mine_only:
         q = q.filter(MarketplaceRequest.user_id == current_user.id)
+        if clan_id is not None:
+            q = q.filter(MarketplaceRequest.clan_id == int(clan_id))
     else:
-        visible_user_ids = _visible_user_ids_for_marketplace_requests(
-            db=db,
-            current_user_id=current_user.id,
-            clan_id=clan_id,
-        )
-        if not visible_user_ids:
-            return []
-        q = q.filter(MarketplaceRequest.user_id.in_(visible_user_ids))
+        if clan_id is not None:
+            visible_user_ids = _visible_user_ids_for_marketplace_requests(
+                db=db,
+                current_user_id=current_user.id,
+                clan_id=clan_id,
+            )
+            if not visible_user_ids:
+                return []
+            q = q.filter(
+                MarketplaceRequest.clan_id == int(clan_id),
+                MarketplaceRequest.user_id.in_(visible_user_ids),
+            )
+        else:
+            visible_clan_ids = _active_clan_ids_for_user(db, int(current_user.id))
+            visible_user_ids = _visible_user_ids_for_marketplace_requests(
+                db=db,
+                current_user_id=current_user.id,
+                clan_id=None,
+            )
+            visibility_filters = [MarketplaceRequest.user_id == current_user.id]
+            if visible_clan_ids:
+                visibility_filters.append(
+                    MarketplaceRequest.clan_id.in_(visible_clan_ids)
+                )
+            if visible_user_ids:
+                visibility_filters.append(
+                    and_(
+                        MarketplaceRequest.clan_id.is_(None),
+                        MarketplaceRequest.user_id.in_(visible_user_ids),
+                    )
+                )
+            q = q.filter(or_(*visibility_filters))
 
     status_raw = str(status or "open").strip().lower()
     if status_raw == "open":
@@ -274,7 +381,7 @@ def list_marketplace_requests(
 
     rows = q.order_by(MarketplaceRequest.created_at.desc()).limit(limit).all()
 
-    return [_to_out(row) for row in rows]
+    return [_to_out(db, row) for row in rows]
 
 
 @router.get("/{request_id}", response_model=MarketplaceRequestOut)
@@ -286,27 +393,44 @@ def get_marketplace_request(
 ):
     _cleanup_expired_requests(db)
 
-    visible_user_ids = _visible_user_ids_for_marketplace_requests(
-        db=db,
-        current_user_id=current_user.id,
-        clan_id=clan_id,
-    )
-    if not visible_user_ids:
-        raise HTTPException(status_code=404, detail="Request not found")
+    q = db.query(MarketplaceRequest).join(User, User.id == MarketplaceRequest.user_id)
 
-    row = (
-        db.query(MarketplaceRequest)
-        .join(User, User.id == MarketplaceRequest.user_id)
-        .filter(
-            MarketplaceRequest.id == request_id,
+    if clan_id is not None:
+        visible_user_ids = _visible_user_ids_for_marketplace_requests(
+            db=db,
+            current_user_id=current_user.id,
+            clan_id=clan_id,
+        )
+        if not visible_user_ids:
+            raise HTTPException(status_code=404, detail="Request not found")
+        q = q.filter(
+            MarketplaceRequest.clan_id == int(clan_id),
             MarketplaceRequest.user_id.in_(visible_user_ids),
         )
-        .first()
-    )
+    else:
+        visible_clan_ids = _active_clan_ids_for_user(db, int(current_user.id))
+        visible_user_ids = _visible_user_ids_for_marketplace_requests(
+            db=db,
+            current_user_id=current_user.id,
+            clan_id=None,
+        )
+        visibility_filters = [MarketplaceRequest.user_id == current_user.id]
+        if visible_clan_ids:
+            visibility_filters.append(MarketplaceRequest.clan_id.in_(visible_clan_ids))
+        if visible_user_ids:
+            visibility_filters.append(
+                and_(
+                    MarketplaceRequest.clan_id.is_(None),
+                    MarketplaceRequest.user_id.in_(visible_user_ids),
+                )
+            )
+        q = q.filter(or_(*visibility_filters))
+
+    row = q.filter(MarketplaceRequest.id == request_id).first()
     if not row:
         raise HTTPException(status_code=404, detail="Request not found")
 
-    return _to_out(row)
+    return _to_out(db, row)
 
 
 @router.post("/{request_id}/status", response_model=MarketplaceRequestOut)
@@ -339,4 +463,4 @@ def update_marketplace_request_status(
     row.status = new_status
     db.commit()
     db.refresh(row)
-    return _to_out(row, current_user)
+    return _to_out(db, row, current_user)

@@ -1423,6 +1423,11 @@ class MarketplaceRequest(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
 
+    clan_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("clans.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
@@ -1470,6 +1475,7 @@ class MarketplaceRequest(Base):
         index=True,
     )
 
+    clan = relationship("Clan")
     user = relationship("User")
 
 

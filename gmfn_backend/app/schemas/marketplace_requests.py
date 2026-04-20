@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class MarketplaceRequestCreate(BaseModel):
+    clan_id: Optional[int] = None
     title: str = Field(..., min_length=3, max_length=180)
     description: Optional[str] = Field(default=None, max_length=1500)
     category: Optional[str] = Field(default=None, max_length=80)
@@ -24,7 +25,11 @@ class MarketplaceRequestUpdateStatus(BaseModel):
 
 class MarketplaceRequestOut(BaseModel):
     id: int
+    clan_id: Optional[int] = None
     user_id: int
+    community_code: Optional[str] = None
+    clan_name: Optional[str] = None
+    marketplace_name: Optional[str] = None
 
     title: str
     description: Optional[str] = None
