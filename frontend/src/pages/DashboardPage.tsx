@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import ExplainToggle from "../components/ExplainToggle";
 import GSNBrandMark from "../components/GSNBrandMark";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import SystemPictureFrame from "../components/SystemPictureFrame";
@@ -118,17 +117,6 @@ type ReadingState = {
   tone: "green" | "yellow" | "red" | "neutral";
   statusText: string;
   whyText: string;
-};
-
-type GuidancePulse = {
-  severity: "normal" | "important" | "urgent";
-  title: string;
-  body: string;
-  nowLine: string;
-  nextLine: string;
-  wisdomLine: string;
-  ctaTo: string;
-  ctaLabel: string;
 };
 
 type DashboardUIState = {
@@ -267,28 +255,6 @@ type FocusCommitmentSummary = {
   nextReviewLabel: string;
   disciplineLine: string;
 };
-
-type TrustJourneyModel = {
-  tone: ReadingState["tone"];
-  posture:
-    | "strongPortable"
-    | "stableProtected"
-    | "drifting"
-    | "repair"
-    | "unverified";
-  postureTitle: string;
-  postureDetail: string;
-  primaryRoute: IntelligentRoute;
-  secondaryRoute: IntelligentRoute;
-  helps: string[];
-  weakens: string[];
-  commitmentLine: string;
-};
-
-type DashboardRouteActionHandler = (
-  event: React.SyntheticEvent<HTMLElement> | undefined,
-  to: string
-) => void;
 
 const DASHBOARD_UI_STORAGE_KEY = "gmfn.dashboard.ui.v4";
 const DASHBOARD_AVATAR_STORAGE_KEY = "gmfn.member.avatar";
@@ -520,27 +486,6 @@ function statTile(
     padding: 14,
     boxShadow:
       "inset 0 1px 0 rgba(255,255,255,0.72), 0 8px 18px rgba(10,24,49,0.04)",
-  };
-}
-
-function routeTile(primary = false): React.CSSProperties {
-  return {
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-    minHeight: 88,
-    borderRadius: 16,
-    border: primary
-      ? "1px solid rgba(29,78,216,0.18)"
-      : `1px solid ${DASHBOARD_BRAND.cardBorder}`,
-    background: primary
-      ? DASHBOARD_BRAND.summaryPanel
-      : DASHBOARD_BRAND.raisedPanel,
-    padding: 14,
-    textDecoration: "none",
-    boxShadow: primary
-      ? "0 12px 24px rgba(29,78,216,0.07), inset 0 1px 0 rgba(255,255,255,0.78)"
-      : "0 10px 22px rgba(10,24,49,0.04), inset 0 1px 0 rgba(255,255,255,0.82)",
   };
 }
 
@@ -845,10 +790,6 @@ function resolveUserName(me: any): string {
   }
 
   return email || "Member";
-}
-
-function resolveUserSecondary(me: any): string {
-  return safeStr(me?.email || me?.phone_e164 || "");
 }
 
 function currentCommunityName(currentClan: any, selectedClanId: number): string {
@@ -1448,38 +1389,6 @@ function getOpenTrustState(
   };
 }
 
-function toneStyles(tone: "green" | "yellow" | "red" | "neutral") {
-  if (tone === "green") {
-    return {
-      bg: "#F3FBF5",
-      border: "1px solid rgba(34,197,94,0.16)",
-      text: "#166534",
-    };
-  }
-
-  if (tone === "yellow") {
-    return {
-      bg: "#FFFBEF",
-      border: "1px solid rgba(245,158,11,0.16)",
-      text: "#92400E",
-    };
-  }
-
-  if (tone === "red") {
-    return {
-      bg: "#FFF5F5",
-      border: "1px solid rgba(239,68,68,0.16)",
-      text: "#991B1B",
-    };
-  }
-
-  return {
-    bg: "#F8FAFC",
-    border: "1px solid rgba(148,163,184,0.16)",
-    text: "#334155",
-  };
-}
-
 function textContainsAny(text: string, tokens: string[]): boolean {
   const lower = safeStr(text).toLowerCase();
   return tokens.some((token) => lower.includes(token));
@@ -1642,54 +1551,6 @@ function dashboardNoticeScore(
   return bucketScore + unreadScore + sourceScore;
 }
 
-function dashboardNoticePreviewToneStyles(
-  tone: DashboardNoticePreviewTone
-): {
-  bg: string;
-  border: string;
-  text: string;
-  badgeBg: string;
-  badgeText: string;
-} {
-  if (tone === "red") {
-    return {
-      bg: "#FFF7F7",
-      border: "1px solid rgba(239,68,68,0.14)",
-      text: "#991B1B",
-      badgeBg: "rgba(239,68,68,0.10)",
-      badgeText: "#991B1B",
-    };
-  }
-
-  if (tone === "yellow") {
-    return {
-      bg: "#FFFBEF",
-      border: "1px solid rgba(245,158,11,0.14)",
-      text: "#92400E",
-      badgeBg: "rgba(245,158,11,0.14)",
-      badgeText: "#92400E",
-    };
-  }
-
-  if (tone === "blue") {
-    return {
-      bg: "#F7FAFF",
-      border: "1px solid rgba(11,99,209,0.12)",
-      text: "#0B63D1",
-      badgeBg: "rgba(11,99,209,0.10)",
-      badgeText: "#0B63D1",
-    };
-  }
-
-  return {
-    bg: "#F8FAFC",
-    border: "1px solid rgba(148,163,184,0.16)",
-    text: "#334155",
-    badgeBg: "rgba(148,163,184,0.12)",
-    badgeText: "#334155",
-  };
-}
-
 function dashboardNoticeSourceKey(source: string): string {
   return (
     safeStr(source)
@@ -1708,214 +1569,6 @@ function sortDashboardNoticeItems(rows: DashboardNoticeItem[]): DashboardNoticeI
     }
     return safeStr(a.title).localeCompare(safeStr(b.title));
   });
-}
-
-function renderDashboardNoticeCard(
-  item: DashboardNoticeItem,
-  onOpenRoute: DashboardRouteActionHandler
-) {
-  const bucketLabel =
-    item.bucket === "actNow"
-      ? "Act now"
-      : item.bucket === "dueSoon"
-      ? "Due soon"
-      : "Watch";
-  const bucketTone =
-    item.bucket === "actNow"
-      ? { bg: "rgba(239,68,68,0.10)", text: "#991B1B" }
-      : item.bucket === "dueSoon"
-      ? { bg: "rgba(245,158,11,0.14)", text: "#92400E" }
-      : { bg: "rgba(11,99,209,0.10)", text: "#0B63D1" };
-
-  return (
-    <div
-      key={item.id}
-      style={{
-        ...softCard("#FFFFFF"),
-        padding: 12,
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 10,
-          alignItems: "center",
-          flexWrap: "wrap",
-        }}
-      >
-        <div
-          style={{
-            color: "#0B1F33",
-            fontWeight: 800,
-            lineHeight: 1.32,
-            flex: "1 1 220px",
-          }}
-        >
-          {item.title}
-        </div>
-
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <span
-            style={{
-              ...badge(false),
-              background: bucketTone.bg,
-              color: bucketTone.text,
-              border: "none",
-            }}
-          >
-            {bucketLabel}
-          </span>
-          {item.unread ? <span style={badge(true)}>Unread</span> : null}
-        </div>
-      </div>
-
-      <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
-        {item.detail}
-      </div>
-
-      <div style={{ marginTop: 10 }}>
-        <button
-          type="button"
-          onClick={(event) => onOpenRoute(event, item.ctaTo)}
-          onPointerDown={stopDashboardPointerEvent}
-          style={{
-            ...subtleBtn(false),
-            minHeight: 34,
-            padding: "7px 11px",
-            fontSize: 12.5,
-          }}
-        >
-          {item.ctaLabel}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function renderDashboardNoticeSourceGroup(
-  item: DashboardNoticeSourceGroup,
-  expanded: boolean,
-  onToggle: (key: string) => void,
-  onOpenRoute: DashboardRouteActionHandler
-) {
-  const tone = dashboardNoticePreviewToneStyles(item.tone);
-  const visibleRows = item.rows.slice(0, 2);
-  const hiddenCount = Math.max(item.rows.length - visibleRows.length, 0);
-
-  return (
-    <div
-      key={item.key}
-      style={{
-        ...innerCard(tone.bg),
-        border: tone.border,
-        padding: 12,
-        boxShadow: "0 10px 22px rgba(10,24,49,0.04)",
-      }}
-    >
-      <button
-        type="button"
-        onClick={() => onToggle(item.key)}
-        onPointerDown={stopDashboardPointerEvent}
-        style={{
-          width: "100%",
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 10,
-          alignItems: "flex-start",
-          flexWrap: "wrap",
-          background: "transparent",
-          border: "none",
-          padding: 0,
-          cursor: "pointer",
-          textAlign: "left",
-        }}
-      >
-        <div
-          style={{
-            minWidth: 0,
-            flex: "1 1 220px",
-          }}
-        >
-          <div
-            style={{
-              color: tone.text,
-              fontWeight: 900,
-              fontSize: 15,
-              lineHeight: 1.25,
-            }}
-          >
-            {item.title}
-          </div>
-
-          <div
-            style={{
-              marginTop: 6,
-              color: "#4A6580",
-              fontSize: 12.5,
-              lineHeight: 1.58,
-              whiteSpace: expanded ? "normal" : "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            {item.detail}
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            flexWrap: "wrap",
-            justifyContent: "flex-end",
-            alignItems: "center",
-          }}
-        >
-          <span
-            style={{
-              ...badge(false),
-              background: tone.badgeBg,
-              color: tone.badgeText,
-              border: "none",
-              minWidth: 30,
-              justifyContent: "center",
-            }}
-          >
-            {item.count}
-          </span>
-          <span style={badge(false)}>{expanded ? "Close" : "Open"}</span>
-        </div>
-      </button>
-
-      {expanded ? (
-        <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button
-              type="button"
-              onClick={(event) => onOpenRoute(event, item.to)}
-              onPointerDown={stopDashboardPointerEvent}
-              style={{
-                ...secondaryBtn(false),
-                minHeight: 36,
-                padding: "8px 12px",
-                fontSize: 12.5,
-              }}
-            >
-              {item.ctaLabel}
-            </button>
-            {hiddenCount > 0 ? (
-              <span style={badge(false)}>
-                {hiddenCount} more on this screen
-              </span>
-            ) : null}
-          </div>
-
-          {visibleRows.map((row) => renderDashboardNoticeCard(row, onOpenRoute))}
-        </div>
-      ) : null}
-    </div>
-  );
 }
 
 function spotlightMarketplaceTo(item: SpotlightItem | null): string {
@@ -2216,30 +1869,6 @@ function buildMostUsedAppFallback(params: {
         ];
 
   return order.map((key) => catalog[key]).filter(Boolean);
-}
-
-function buildMostUsedAppRows(
-  usage: AppUseRecord[],
-  fallback: AppUseRecord[]
-): AppUseRecord[] {
-  const result: AppUseRecord[] = [];
-  const seen = new Set<string>();
-
-  for (const row of sortAppUsageRows(usage)) {
-    if (seen.has(row.key)) continue;
-    seen.add(row.key);
-    result.push(row);
-    if (result.length >= 8) return result;
-  }
-
-  for (const row of fallback) {
-    if (seen.has(row.key)) continue;
-    seen.add(row.key);
-    result.push(row);
-    if (result.length >= 8) return result;
-  }
-
-  return result.slice(0, 8);
 }
 
 function getUserOperationalClass(params: {
@@ -2616,188 +2245,6 @@ function summarizeFocusCommitments(
   };
 }
 
-function buildTrustJourneyModel(params: {
-  openTrust: ReadingState;
-  cci: ReadingState;
-  trustSlipCode: string;
-  trustExplainer: any;
-  focusSummary: FocusCommitmentSummary;
-}): TrustJourneyModel {
-  const helps = [...(params.trustExplainer?.helps || [])]
-    .slice(0, 2)
-    .map((item: string) => safeStr(item))
-    .filter(Boolean);
-
-  const weakens = [...(params.trustExplainer?.weakens || [])]
-    .slice(0, 2)
-    .map((item: string) => safeStr(item))
-    .filter(Boolean);
-
-  if (!safeStr(params.trustSlipCode)) {
-    return {
-      tone: "neutral",
-      posture: "unverified",
-      postureTitle: "Finish your trust record first",
-      postureDetail:
-        "Your verification is still not complete. Finish it before you expect stronger trust.",
-      primaryRoute: {
-        key: "trust-slip",
-        label: "Open TrustSlip",
-        detail: "Finish the missing verification step.",
-        to: DASHBOARD_TARGETS.TRUST_SLIP,
-      },
-      secondaryRoute: {
-        key: "trust",
-        label: "Open Trust Passport",
-        detail: "See the trust path in a simpler view.",
-        to: DASHBOARD_TARGETS.TRUST,
-      },
-      helps,
-      weakens,
-      commitmentLine: params.focusSummary.disciplineLine,
-    };
-  }
-
-  if (params.openTrust.tone === "red" || params.cci.tone === "red") {
-    return {
-      tone: "red",
-      posture: "repair",
-      postureTitle: "Fix this trust issue now",
-      postureDetail:
-        "Something is hurting trust right now. Fix it before you grow, ask for support, or open up to more people.",
-      primaryRoute:
-        params.openTrust.tone === "red"
-          ? {
-              key: "trust",
-              label: "Open Trust",
-              detail: "See what is hurting trust in your community.",
-              to: DASHBOARD_TARGETS.TRUST,
-            }
-          : {
-              key: "cci",
-              label: "Open CCI",
-              detail: "See what is hurting trust outside your community.",
-              to: DASHBOARD_TARGETS.CCI,
-            },
-      secondaryRoute: {
-        key: "notifications",
-        label: "Open What Matters Now",
-        detail: "Check the next item waiting for your action.",
-        to: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
-      },
-      helps,
-      weakens: [
-        ...weakens,
-        params.focusSummary.behindCount > 0
-          ? `${params.focusSummary.behindCount} focus commitment${
-              params.focusSummary.behindCount === 1 ? "" : "s"
-            } behind`
-          : "",
-      ].filter(Boolean),
-      commitmentLine: params.focusSummary.disciplineLine,
-    };
-  }
-
-  if (
-    params.openTrust.tone === "yellow" ||
-    params.cci.tone === "yellow" ||
-    params.focusSummary.behindCount > 0
-  ) {
-    return {
-      tone: "yellow",
-      posture: "drifting",
-      postureTitle: "Trust is starting to slip",
-      postureDetail:
-        "You can still fix this early. Do not leave it until it becomes a bigger problem.",
-      primaryRoute: {
-        key: "trust",
-        label: "Review Trust",
-        detail: "See what is starting to weaken trust.",
-        to: DASHBOARD_TARGETS.TRUST,
-      },
-      secondaryRoute: {
-        key: "cci",
-        label: "Review CCI",
-        detail: "Check the wider trust picture.",
-        to: DASHBOARD_TARGETS.CCI,
-      },
-      helps,
-      weakens: [
-        ...weakens,
-        params.focusSummary.behindCount > 0
-          ? `${params.focusSummary.behindCount} focus commitment${
-              params.focusSummary.behindCount === 1 ? "" : "s"
-            } need visible correction`
-          : "",
-      ].filter(Boolean),
-      commitmentLine: params.focusSummary.disciplineLine,
-    };
-  }
-
-  if (
-    params.focusSummary.onTrackCount > 0 ||
-    params.focusSummary.completedCount > 0
-  ) {
-    return {
-      tone: "green",
-      posture: "strongPortable",
-      postureTitle: "Trust is working well",
-      postureDetail:
-        "People can see your steady follow-through. Keep it that way.",
-      primaryRoute: {
-        key: "trust-slip",
-        label: "Use TrustSlip",
-        detail: "Keep your trust record ready to show.",
-        to: DASHBOARD_TARGETS.TRUST_SLIP,
-      },
-      secondaryRoute: {
-        key: "trust",
-        label: "Open Trust",
-        detail: "See what is helping trust.",
-        to: DASHBOARD_TARGETS.TRUST,
-      },
-      helps: [
-        ...helps,
-        params.focusSummary.onTrackCount > 0
-          ? `${params.focusSummary.onTrackCount} focus commitment${
-              params.focusSummary.onTrackCount === 1 ? "" : "s"
-            } on track`
-          : "",
-        params.focusSummary.completedCount > 0
-          ? `${params.focusSummary.completedCount} commitment${
-              params.focusSummary.completedCount === 1 ? "" : "s"
-            } completed`
-          : "",
-      ].filter(Boolean),
-      weakens,
-      commitmentLine: params.focusSummary.disciplineLine,
-    };
-  }
-
-  return {
-    tone: "green",
-    posture: "stableProtected",
-    postureTitle: "Trust is steady",
-    postureDetail:
-      "Nothing serious is wrong now. Keep answering people and keeping your word.",
-    primaryRoute: {
-      key: "trust",
-      label: "Open Trust",
-      detail: "Check your current trust path.",
-      to: DASHBOARD_TARGETS.TRUST,
-    },
-    secondaryRoute: {
-      key: "notifications",
-      label: "Open What Matters Now",
-      detail: "Check your organised list before branching out.",
-      to: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
-    },
-    helps,
-    weakens,
-    commitmentLine: params.focusSummary.disciplineLine,
-  };
-}
-
 export default function DashboardPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -3166,9 +2613,6 @@ export default function DashboardPage() {
     [me, trustSlip, selectedClanId]
   );
 
-  const cciTone = useMemo(() => toneStyles(cci.tone), [cci.tone]);
-  const openTrustTone = useMemo(() => toneStyles(openTrust.tone), [openTrust.tone]);
-
   useEffect(() => {
     const hour = new Date().getHours();
 
@@ -3193,7 +2637,6 @@ export default function DashboardPage() {
   ]);
 
   const greetingName = useMemo(() => resolveUserName(me), [me]);
-  const profileSecondary = useMemo(() => resolveUserSecondary(me), [me]);
   const profileInitials = useMemo(
     () => initialsFromName(resolveUserName(me)),
     [me]
@@ -3327,12 +2770,7 @@ export default function DashboardPage() {
     [notices]
   );
 
-  const nextBestStep = (guidance as any)?.nextBestStep || null;
-  const todayTomorrow = (guidance as any)?.todayTomorrow || null;
-  const trustJourney = (guidance as any)?.trustJourneySummary || null;
   const trustExplainer = (guidance as any)?.trustChangeExplainer || null;
-  const weeklyFocus = (guidance as any)?.weeklyFocus || null;
-  const recoveryPath = (guidance as any)?.recoveryPath || null;
   const actionInbox = (guidance as any)?.actionInboxSummary || null;
 
   const focusSummary = useMemo(
@@ -3711,8 +3149,9 @@ export default function DashboardPage() {
     demandItems,
     activeSpotlight,
     spotlightIndex,
-    openTrust.tone,
-    cci.tone,
+    openTrust,
+    cci,
+    trustExplainer,
     trustSlipCode,
     selectedClanId,
     focusSummary,
@@ -3999,13 +3438,6 @@ export default function DashboardPage() {
       setNoticeSourceOpenKey("");
     }
   }, [dashboardNoticePanels, noticeSourceOpenKey]);
-
-  const dashboardNoticeSelectedPanel = useMemo(
-    () =>
-      dashboardNoticePanels.find((group) => group.key === noticeSourceOpenKey) ||
-      null,
-    [dashboardNoticePanels, noticeSourceOpenKey]
-  );
 
   const dashboardNoticeSourceTitles = useMemo(
     () => dashboardNoticeSourceGroups.map((group) => safeStr(group.title)).filter(Boolean),
@@ -4490,84 +3922,6 @@ export default function DashboardPage() {
     setMarketWisdomSignalIndex(0);
   }, [activeWisdom?.id, marketWisdomNowLine]);
 
-  const guidancePulse = useMemo<GuidancePulse | null>(() => {
-    if (!guidance && !nextBestStep && !todayTomorrow && !weeklyFocus) return null;
-
-    const severity = (
-      safeStr(
-        nextBestStep?.severity ||
-          recoveryPath?.severity ||
-          (((actionInbox as any)?.actNow?.length || 0) > 0 ? "important" : "normal")
-      ).toLowerCase() || "normal"
-    ) as GuidancePulse["severity"];
-
-    const title = safeStr(
-      nextBestStep?.title ||
-        weeklyFocus?.title ||
-        recoveryPath?.title ||
-        "Keep your path steady"
-    );
-
-    const body = safeStr(
-      nextBestStep?.detail ||
-        recoveryPath?.detail ||
-        weeklyFocus?.detail ||
-        "Review your current position and continue from the right page."
-    );
-
-    const nowLine = safeStr(
-      todayTomorrow?.today || body || "Complete the next right step now."
-    );
-
-    const nextLine = safeStr(
-      todayTomorrow?.tomorrow ||
-        weeklyFocus?.detail ||
-        weeklyFocus?.title ||
-        "Keep tomorrow lighter by finishing the current step well."
-    );
-
-    const wisdomLine = safeStr(
-      (activeWisdom as any)?.proverb ||
-        (guidance as any)?.marketWisdomCard?.text ||
-        signalText
-    );
-
-    const ctaTo = normalizeActionTargetPath(
-      nextBestStep?.ctaTo ||
-        recoveryPath?.ctaTo ||
-        weeklyFocus?.ctaTo ||
-        DASHBOARD_TARGETS.COMMUNITY
-    );
-
-    const ctaLabel = safeStr(
-      nextBestStep?.ctaLabel ||
-        recoveryPath?.ctaLabel ||
-        weeklyFocus?.ctaLabel ||
-        "Open important step"
-    );
-
-    return {
-      severity:
-        severity === "urgent" || severity === "important" ? severity : "normal",
-      title,
-      body,
-      nowLine,
-      nextLine,
-      wisdomLine,
-      ctaTo,
-      ctaLabel,
-    };
-  }, [
-    guidance,
-    nextBestStep,
-    todayTomorrow,
-    weeklyFocus,
-    recoveryPath,
-    actionInbox,
-    activeWisdom,
-    signalText,
-  ]);
-
   const activeFocusCount = useMemo(
     () =>
       focusCommitments.filter((item) => !item.archived && !item.completedAt)
@@ -4909,18 +4263,6 @@ export default function DashboardPage() {
     });
   }
 
-  function openSellerIdentityDock(
-    event?: React.SyntheticEvent<HTMLButtonElement>
-  ) {
-    runDashboardUiMutation(event, () => setSellerIdentityDockOpen(true));
-  }
-
-  function closeSellerIdentityDock(
-    event?: React.SyntheticEvent<HTMLButtonElement>
-  ) {
-    runDashboardUiMutation(event, () => setSellerIdentityDockOpen(false));
-  }
-
   function openSpotlightPanel(event?: React.SyntheticEvent<HTMLElement>) {
     runDashboardUiMutation(event, () =>
       updateUiState({ spotlightMinimized: false })
@@ -4961,8 +4303,16 @@ export default function DashboardPage() {
     openDashboardRoute(event, spotlightMarketplaceTo(activeSpotlight));
   }
 
-  function openTrackedRoute(route: IntelligentRoute) {
-    navigateWithOrigin(navigate, route.to, location);
+  function openSellerIdentityDock(
+    event?: React.SyntheticEvent<HTMLButtonElement>
+  ) {
+    runDashboardUiMutation(event, () => setSellerIdentityDockOpen(true));
+  }
+
+  function closeSellerIdentityDock(
+    event?: React.SyntheticEvent<HTMLButtonElement>
+  ) {
+    runDashboardUiMutation(event, () => setSellerIdentityDockOpen(false));
   }
 
   function openTrackedApp(app: AppUseRecord) {
@@ -5370,13 +4720,14 @@ export default function DashboardPage() {
       ? "#FCD34D"
       : "#93C5FD";
 
-  const profileName = greetingName;
   const showSpotlight = !uiState.spotlightMinimized;
+  const showLegacySpotlightDock = Boolean(
+    (globalThis as any).__GSN_LEGACY_SPOTLIGHT_DOCK
+  );
   const dashboardSpotlightMinHeight = isCompact ? 80 : 106;
   const dashboardSpotlightRadius = isCompact ? 20 : 24;
   const dashboardSpotlightTopInset = isCompact ? 6 : 8;
   const dashboardSpotlightBottomInset = isCompact ? 6 : 8;
-  const dashboardSpotlightThumbSize = isCompact ? 84 : 112;
   const dashboardSpotlightScreenHeight = isPhone
     ? spotlightGuideOpen
       ? 302
@@ -7057,56 +6408,6 @@ export default function DashboardPage() {
                     "0 18px 34px rgba(2,12,27,0.24), inset 0 0 0 1px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.16)",
                 }}
               >
-                {false ? (
-                  <SpotlightMediaFrame
-                    imageCandidates={spotlightImageCandidates}
-                    videoUrl={spotlightVideoCandidate}
-                    videoPoster={spotlightImageCandidates[0] || ""}
-                    alt={safeStr(
-                      activeSpotlight?.title ||
-                        activeSpotlight?.message ||
-                        "Spotlight"
-                    )}
-                    frameStyle={{
-                      width: dashboardSpotlightThumbSize,
-                      height: dashboardSpotlightThumbSize,
-                      borderRadius: 18,
-                      overflow: "hidden",
-                      border: "1px solid rgba(184,137,45,0.24)",
-                      background:
-                        "linear-gradient(180deg, #0D2742 0%, #0F3B74 62%, #0B63D1 100%)",
-                      boxShadow:
-                        "0 16px 30px rgba(15,59,116,0.14), inset 0 1px 0 rgba(255,255,255,0.12)",
-                    }}
-                    mediaStyle={{
-                      width: "100%",
-                      height: "100%",
-                    }}
-                    contentPadding={10}
-                    showVideoControls={false}
-                    autoPlayVideo={Boolean(spotlightVideoCandidate)}
-                    mutedVideo={Boolean(spotlightVideoCandidate)}
-                    loopVideo={Boolean(spotlightVideoCandidate)}
-                    fallback={
-                      <div
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: "#F8FBFF",
-                          fontWeight: 900,
-                          letterSpacing: 0.8,
-                          fontSize: 18,
-                        }}
-                      >
-                        GSN
-                      </div>
-                    }
-                  />
-                ) : null}
-
                 <SpotlightMediaFrame
                   imageCandidates={spotlightImageCandidates}
                   videoUrl={spotlightVideoCandidate}
@@ -7539,7 +6840,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {false ? ((activeSpotlight: SpotlightItem) => (
+            {showLegacySpotlightDock ? ((activeSpotlight: SpotlightItem) => (
           <div
             style={{
               marginTop: 16,
