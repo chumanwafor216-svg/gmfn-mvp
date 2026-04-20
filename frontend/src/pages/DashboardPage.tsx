@@ -6289,7 +6289,7 @@ export default function DashboardPage() {
                       style={{
                         display: isPhone ? "grid" : "flex",
                         gridTemplateColumns: isPhone
-                          ? "repeat(3, minmax(0, 1fr))"
+                          ? "1fr"
                           : undefined,
                         gap: isPhone ? 6 : 8,
                         flexWrap: isPhone ? undefined : "wrap",
@@ -6299,24 +6299,24 @@ export default function DashboardPage() {
                       <span
                         style={{
                           ...badge(true),
-                          justifyContent: "center",
-                          minHeight: isPhone ? 28 : 30,
-                          padding: isPhone ? "5px 6px" : "6px 10px",
-                          fontSize: isPhone ? 10.5 : 12,
-                          textAlign: "center",
+                          justifyContent: isPhone ? "space-between" : "center",
+                          minHeight: isPhone ? 32 : 30,
+                          padding: isPhone ? "6px 10px" : "6px 10px",
+                          fontSize: isPhone ? 11.5 : 12,
+                          textAlign: isPhone ? "left" : "center",
                           width: "100%",
                         }}
                       >
-                        Open Trust {openTrust.classText}
+                        Trust {openTrust.classText}
                       </span>
                       <span
                         style={{
                           ...badge(false),
-                          justifyContent: "center",
-                          minHeight: isPhone ? 28 : 30,
-                          padding: isPhone ? "5px 6px" : "6px 10px",
-                          fontSize: isPhone ? 10.5 : 12,
-                          textAlign: "center",
+                          justifyContent: isPhone ? "space-between" : "center",
+                          minHeight: isPhone ? 32 : 30,
+                          padding: isPhone ? "6px 10px" : "6px 10px",
+                          fontSize: isPhone ? 11.5 : 12,
+                          textAlign: isPhone ? "left" : "center",
                           width: "100%",
                         }}
                       >
@@ -6325,12 +6325,14 @@ export default function DashboardPage() {
                       <span
                         style={{
                           ...badge(false),
-                          justifyContent: "center",
-                          minHeight: isPhone ? 28 : 30,
-                          padding: isPhone ? "5px 6px" : "6px 10px",
-                          fontSize: isPhone ? 10.5 : 12,
-                          textAlign: "center",
+                          justifyContent: isPhone ? "space-between" : "center",
+                          minHeight: isPhone ? 32 : 30,
+                          padding: isPhone ? "6px 10px" : "6px 10px",
+                          fontSize: isPhone ? 11.2 : 12,
+                          textAlign: isPhone ? "left" : "center",
                           width: "100%",
+                          overflowWrap: "anywhere",
+                          wordBreak: "break-word",
                         }}
                       >
                         TrustSlip {trustSlipCode || "Pending"}
@@ -6346,7 +6348,7 @@ export default function DashboardPage() {
                       }}
                     >
                       Dashboard keeps the trust signal here. The deeper trust,
-                      TrustSlip, QR, and verification detail now belongs in
+                      TrustSlip, QR, and verification detail now belong in
                       Trust Passport and related trust pages.
                     </div>
 
