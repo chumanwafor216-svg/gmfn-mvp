@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
@@ -253,6 +252,39 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
   };
 }
 
+function demandBrandShell(): React.CSSProperties {
+  return {
+    borderRadius: 26,
+    border: "1px solid rgba(148,163,184,0.18)",
+    background:
+      "radial-gradient(circle at top left, rgba(11,99,209,0.35) 0%, rgba(11,99,209,0.00) 30%), linear-gradient(180deg, #08111F 0%, #0B1F33 54%, #102A43 100%)",
+    padding: 20,
+    boxShadow:
+      "0 22px 48px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.10)",
+    overflow: "hidden",
+  };
+}
+
+function whiteActionBtn(disabled = false): React.CSSProperties {
+  return {
+    ...secondaryBtn(disabled),
+    border: "1px solid rgba(11,99,209,0.14)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F4F8FC 100%)",
+    color: disabled ? "#94A3B8" : "#123055",
+    fontWeight: 900,
+    boxShadow:
+      "0 10px 20px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.86)",
+  };
+}
+
+function recordCard(): React.CSSProperties {
+  return {
+    ...innerCard("#FCFEFF"),
+    border: "1px solid rgba(11,99,209,0.08)",
+    boxShadow: "0 10px 22px rgba(15,23,42,0.035)",
+  };
+}
+
 function helperText(): React.CSSProperties {
   return {
     color: "#5F7287",
@@ -450,6 +482,15 @@ export default function DemandBoxPage() {
     setNotice({ tone, text });
   }
 
+  function scrollToDemandCreate() {
+    if (typeof document === "undefined") return;
+
+    document.getElementById("demand-box-create")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
   async function handleChooseDemandCommunity(community: any) {
     const clanId = Number(community?.id || community?.clan_id || 0);
     if (!clanId) {
@@ -577,6 +618,17 @@ export default function DemandBoxPage() {
   const memberCciLabel = cciLabel(me);
 
   const visiblePreview = useMemo(() => visibleRows.slice(0, 6), [visibleRows]);
+  const currentPath = `${location.pathname}${location.search}${location.hash}`;
+  const originPath = useMemo(() => {
+    if (!location.state || typeof location.state !== "object") return "";
+    return safeStr(
+      (location.state as any).originPath || (location.state as any).from || ""
+    );
+  }, [location.state]);
+  const demandReturnTo =
+    originPath && originPath !== currentPath ? originPath : "/app/marketplace";
+  const demandReturnLabel =
+    originPath && originPath !== currentPath ? "Back to source" : "Marketplace";
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -610,16 +662,8 @@ export default function DemandBoxPage() {
           subtitle="Loading Demand Box..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
-          backTo="/app/marketplace"
-          backLabel="Marketplace"
-          nextLinks={[
-            { label: "Community Home", to: "/app/community" },
-            { label: "Notifications", to: "/app/notifications" },
-          ]}
-          utilityLinks={[
-            { label: "Trust", to: "/app/trust" },
-            { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
-          ]}
+          backTo={demandReturnTo}
+          backLabel={demandReturnLabel}
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -645,30 +689,24 @@ export default function DemandBoxPage() {
         <PageTopNav
           sectionLabel="Demand Box"
           title="Demand Box"
-          subtitle="Demand stays identity-based and works in your current community."
+          subtitle="Choose the trusted room before posting your personal request."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
-          backTo="/app/community"
-          backLabel="Community Home"
-          nextLinks={[
-            { label: "Community Home", to: "/app/community" },
-            { label: "Marketplace", to: "/app/marketplace" },
-          ]}
-          utilityLinks={[
-            { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
-            { label: "Settings", to: "/app/my-gmfn-and-i?tab=settings" },
-          ]}
+          backTo={demandReturnTo}
+          backLabel={demandReturnLabel}
         />
 
         {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
-        <section style={pageCard("#FFFFFF")}>
-          <div style={sectionLabel()}>No current community</div>
+        <section style={demandBrandShell()}>
+          <div style={{ ...sectionLabel(), color: "#C9D7E8" }}>
+            Choose community first
+          </div>
 
           <div
             style={{
               marginTop: 12,
-              color: "#0B1F33",
+              color: "#F8FBFF",
               fontSize: 28,
               fontWeight: 900,
               lineHeight: 1.15,
@@ -682,11 +720,12 @@ export default function DemandBoxPage() {
             style={{
               marginTop: 12,
               ...helperText(),
+              color: "#D7E3F1",
               maxWidth: 860,
             }}
           >
-            Demand should remain attached to identity and your current community,
-            not float around without a chosen community.
+            Pick the trusted room first. That helps people know where your
+            request is coming from before they answer.
           </div>
 
           <div
@@ -708,7 +747,7 @@ export default function DemandBoxPage() {
                     onClick={() => void handleChooseDemandCommunity(community)}
                     disabled={busy || !clanId}
                     style={{
-                      ...secondaryBtn(busy || !clanId),
+                      ...whiteActionBtn(busy || !clanId),
                       justifyContent: "space-between",
                       textAlign: "left",
                       width: "100%",
@@ -722,17 +761,17 @@ export default function DemandBoxPage() {
                 );
               })
             ) : (
-              <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+              <div style={{ color: "#D7E3F1", lineHeight: 1.8 }}>
                 No community is available yet. Create or join a community first,
                 then return to Demand Box.
               </div>
             )}
 
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <OriginLink to="/app/community" style={secondaryBtn(false)}>
+              <OriginLink to="/app/community" style={whiteActionBtn(false)}>
                 Open Community Home
               </OriginLink>
-              <OriginLink to="/app/dashboard" style={secondaryBtn(false)}>
+              <OriginLink to="/app/dashboard" style={whiteActionBtn(false)}>
                 Dashboard
               </OriginLink>
             </div>
@@ -755,38 +794,16 @@ export default function DemandBoxPage() {
       <PageTopNav
         sectionLabel="Demand Box"
         title="Demand Box"
-        subtitle="Demand stays identity-based. Keep this page for real needs, clean follow-up, and proper closure."
+        subtitle="Ask for what you need, from the right community, with trust attached."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
-        backTo="/app/marketplace"
-        backLabel="Marketplace"
-        nextLinks={[
-          { label: "Community Home", to: "/app/community" },
-          { label: "Notifications", to: "/app/notifications" },
-          { label: "Shop Control", to: "/app/shop-control" },
-        ]}
-        utilityLinks={[
-          { label: "Trust", to: "/app/trust" },
-          { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
-          { label: "Settings", to: "/app/my-gmfn-and-i?tab=settings" },
-        ]}
-      />
-
-      <ExplainToggle
-        label="What this screen does"
-        what="Demand Box is where a real person raises a real need inside one community."
-        why="Your GSN ID shows who is asking. The community name shows where the need belongs. Trust and payment terms help people decide whether to respond."
-        next="Choose the community, say what you need, add how people should contact you, and say what proof you expect before work starts."
-        tone="blue"
+        backTo={demandReturnTo}
+        backLabel={demandReturnLabel}
       />
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
-      <section
-        style={pageCard(
-          "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
-        )}
-      >
+      <section style={demandBrandShell()}>
         <div
           style={{
             display: "grid",
@@ -798,7 +815,9 @@ export default function DemandBoxPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Current demand context</div>
+            <div style={{ ...sectionLabel(), color: "#C9D7E8" }}>
+              Trusted request
+            </div>
 
             <div
               style={{
@@ -809,7 +828,7 @@ export default function DemandBoxPage() {
                 lineHeight: 1.12,
               }}
             >
-              Real needs, real people, real follow-up
+              Ask clearly. Let your trust speak before people answer.
             </div>
 
             <div
@@ -820,8 +839,9 @@ export default function DemandBoxPage() {
                 maxWidth: 840,
               }}
             >
-              Demand belongs to the person asking, but it also carries the
-              community context where the request is being sent.
+              Demand Box is for a real personal need: a service, goods,
+              support, or help. Choose the right community first so people know
+              the trusted room your request is coming from.
             </div>
 
             <div
@@ -843,6 +863,29 @@ export default function DemandBoxPage() {
               <span style={badge(false)}>My open needs: {myOpenRows.length}</span>
               <span style={badge(false)}>Visible needs: {visibleRows.length}</span>
             </div>
+
+            <div
+              style={{
+                marginTop: 18,
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+              }}
+            >
+              <button
+                type="button"
+                onClick={scrollToDemandCreate}
+                style={whiteActionBtn(false)}
+              >
+                Create demand
+              </button>
+              <OriginLink to={demandReturnTo} style={whiteActionBtn(false)}>
+                {demandReturnLabel}
+              </OriginLink>
+              <OriginLink to="/app/dashboard" style={secondaryBtn(false)}>
+                Dashboard
+              </OriginLink>
+            </div>
           </div>
 
           <div
@@ -852,18 +895,27 @@ export default function DemandBoxPage() {
               boxShadow: "0 18px 38px rgba(2,12,27,0.16)",
             }}
           >
-            <div style={sectionLabel()}>Step order</div>
+            <div style={sectionLabel()}>About Demand Box</div>
 
-            <ExplainToggle
-              label="How demand should flow"
-              what="A demand is your own request for help, goods, service, or response from people who can assist."
-              why="Your GSN ID and trust signal travel with the request. The responder should also be ready to show their own GSN or TrustSlip when the work needs trust."
-              next="Choose the right community, post the need clearly, agree proof and payment before work starts, then close the demand when it is settled."
-              tone="light"
-              style={{ marginTop: 12 }}
-            />
+            <div
+              style={{
+                marginTop: 10,
+                color: "#123055",
+                fontWeight: 900,
+                lineHeight: 1.45,
+              }}
+            >
+              GSN keeps the request guided from start to finish.
+            </div>
 
-            <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+            <div
+              style={{
+                marginTop: 12,
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 10,
+              }}
+            >
               <div style={statTile()}>
                 <div style={sectionLabel()}>1</div>
                 <div
@@ -874,7 +926,7 @@ export default function DemandBoxPage() {
                     lineHeight: 1.35,
                   }}
                 >
-                  State the need clearly
+                  Choose community
                 </div>
               </div>
 
@@ -888,7 +940,7 @@ export default function DemandBoxPage() {
                     lineHeight: 1.35,
                   }}
                 >
-                  Wait for response and keep the request current
+                  Say need and contact
                 </div>
               </div>
 
@@ -902,7 +954,21 @@ export default function DemandBoxPage() {
                     lineHeight: 1.35,
                   }}
                 >
-                  Mark it fulfilled or cancel it cleanly
+                  Agree proof and pay
+                </div>
+              </div>
+
+              <div style={statTile()}>
+                <div style={sectionLabel()}>4</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  Close it when settled
                 </div>
               </div>
             </div>
@@ -911,16 +977,48 @@ export default function DemandBoxPage() {
       </section>
 
       <section id="demand-box-create" style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>Post a new need</div>
-
         <div
           style={{
-            marginTop: 10,
-            ...helperText(),
-            maxWidth: 860,
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+            alignItems: "flex-start",
           }}
         >
-          Start with the simple fields first. Add more detail only when needed.
+          <div>
+            <div style={sectionLabel()}>Create demand</div>
+            <div
+              style={{
+                marginTop: 8,
+                color: "#0B1F33",
+                fontSize: isCompact ? 24 : 30,
+                fontWeight: 900,
+                lineHeight: 1.12,
+              }}
+            >
+              Tell your community what you need.
+            </div>
+            <div
+              style={{
+                marginTop: 8,
+                ...helperText(),
+                maxWidth: 760,
+              }}
+            >
+              Keep it simple: what you need, where it is needed, how people can
+              reach you, and what proof or payment should be clear first.
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <OriginLink to={demandReturnTo} style={whiteActionBtn(false)}>
+              {demandReturnLabel}
+            </OriginLink>
+            <OriginLink to="/app/dashboard" style={whiteActionBtn(false)}>
+              Dashboard
+            </OriginLink>
+          </div>
         </div>
 
         <div
@@ -931,16 +1029,15 @@ export default function DemandBoxPage() {
             gap: 12,
           }}
         >
-          <div style={sectionLabel()}>Step 1 - choose the community</div>
+          <div style={sectionLabel()}>Step 1: choose community</div>
           <div
             style={{
               ...helperText(),
               maxWidth: 820,
             }}
           >
-            Pick the community this demand is coming from. GSN will attach your
-            personal ID and trust signal to the request, but the community tells
-            people where you are sending it from.
+            Your need is personal, but the community gives it trusted context.
+            Choose the room where people should see and answer it.
           </div>
 
           <div
@@ -986,14 +1083,20 @@ export default function DemandBoxPage() {
           </div>
         </div>
 
-        <ExplainToggle
-          label="What this does"
-          what="This form posts your own current need so people in the chosen community can understand it and respond."
-          why="It keeps demand clear and specific instead of turning it into a vague note. People can see what is needed, how to reach you, and what proof or payment terms apply."
-          next="Write the need in simple direct language, add contact and proof expectations, then post it into the chosen community."
-          tone="light"
-          style={{ marginTop: 14 }}
-        />
+        <div
+          style={{
+            marginTop: 14,
+            ...innerCard("#FCFEFF"),
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}
+        >
+          <span style={badge(false)}>Your GSN trust signal travels with it</span>
+          <span style={badge(false)}>Community gives context</span>
+          <span style={badge(false)}>Proof and payment stay visible</span>
+        </div>
 
         <div
           style={{
@@ -1084,7 +1187,7 @@ export default function DemandBoxPage() {
               </div>
 
               <div>
-                <div style={sectionLabel()}>Responder proof</div>
+                <div style={sectionLabel()}>Proof from responder</div>
                 <select
                   value={responseProof}
                   onChange={(e) => setResponseProof(e.target.value)}
@@ -1134,11 +1237,11 @@ export default function DemandBoxPage() {
                 disabled={creating || !safeStr(title)}
                 style={primaryBtn(creating || !safeStr(title))}
               >
-                {creating ? "Posting..." : "Post Demand"}
+                {creating ? "Posting..." : "Post demand"}
               </button>
 
               <OriginLink to="/app/notifications" style={secondaryBtn(false)}>
-                Open Action Inbox
+                Open notifications
               </OriginLink>
             </div>
           </div>
@@ -1207,7 +1310,7 @@ export default function DemandBoxPage() {
         }}
       >
         <section style={pageCard("#FFFFFF")}>
-          <div style={sectionLabel()}>My open needs</div>
+          <div style={sectionLabel()}>My live demand</div>
 
           <div
             style={{
@@ -1216,14 +1319,20 @@ export default function DemandBoxPage() {
               maxWidth: 760,
             }}
           >
-            Keep only live requests open. When the need is met or no longer relevant,
-            close it cleanly.
+            Keep only real needs open. When people have helped, or the need no
+            longer matters, close it cleanly.
           </div>
 
           <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
             {myOpenRows.length === 0 ? (
-              <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                You do not have any open demand right now.
+              <div style={recordCard()}>
+                <div style={{ color: "#0B1F33", fontWeight: 900 }}>
+                  No open demand right now.
+                </div>
+                <div style={{ marginTop: 8, ...helperText() }}>
+                  When you need goods, service, support, or help, create one
+                  clear demand from the right community.
+                </div>
               </div>
             ) : (
               myOpenRows.map((row, index) => {
@@ -1231,7 +1340,7 @@ export default function DemandBoxPage() {
                 const busy = updatingDemandId === rowId;
 
                 return (
-                  <div key={`${row?.id || index}`} style={innerCard("#FCFEFF")}>
+                  <div key={`${row?.id || index}`} style={recordCard()}>
                     <div
                       style={{
                         display: "flex",
@@ -1303,7 +1412,7 @@ export default function DemandBoxPage() {
                         disabled={busy}
                         style={secondaryBtn(busy)}
                       >
-                        {busy ? "Updating..." : "Mark Fulfilled"}
+                        {busy ? "Updating..." : "Mark fulfilled"}
                       </button>
 
                       <button
@@ -1312,7 +1421,7 @@ export default function DemandBoxPage() {
                         disabled={busy}
                         style={subtleBtn(busy)}
                       >
-                        {busy ? "Updating..." : "Cancel"}
+                        {busy ? "Updating..." : "Cancel demand"}
                       </button>
                     </div>
                   </div>
@@ -1323,7 +1432,7 @@ export default function DemandBoxPage() {
         </section>
 
         <section style={pageCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Visible personal requests</div>
+          <div style={sectionLabel()}>Requests I can answer</div>
 
           <div
             style={{
@@ -1332,17 +1441,24 @@ export default function DemandBoxPage() {
               maxWidth: 760,
             }}
           >
-            These are open requests from people in your current community.
+            These are open needs from people in your current community. Read the
+            trust signs before you decide how to respond.
           </div>
 
           <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
             {visiblePreview.length === 0 ? (
-              <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                No visible personal demand is open right now.
+              <div style={recordCard()}>
+                <div style={{ color: "#0B1F33", fontWeight: 900 }}>
+                  No visible demand is waiting right now.
+                </div>
+                <div style={{ marginTop: 8, ...helperText() }}>
+                  When someone in this community asks for help, their request
+                  will appear here with the identity and trust signs available.
+                </div>
               </div>
             ) : (
               visiblePreview.map((row, index) => (
-                <div key={`${row?.id || index}`} style={innerCard("#FCFEFF")}>
+                <div key={`${row?.id || index}`} style={recordCard()}>
                   <div
                     style={{
                       display: "flex",
@@ -1390,6 +1506,11 @@ export default function DemandBoxPage() {
                         GSN ID {safeStr(row?.requester_gmfn_id)}
                       </span>
                     ) : null}
+                    {safeStr(row?.whatsapp_number) ? (
+                      <span style={badge(false)}>
+                        Contact: {safeStr(row?.whatsapp_number)}
+                      </span>
+                    ) : null}
                     {safeStr(row?.area) ? (
                       <span style={badge(false)}>Area: {safeStr(row?.area)}</span>
                     ) : null}
@@ -1408,11 +1529,11 @@ export default function DemandBoxPage() {
           </div>
 
           <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <OriginLink to="/app/marketplace" style={secondaryBtn(false)}>
-              Marketplace
+            <OriginLink to={demandReturnTo} style={secondaryBtn(false)}>
+              {demandReturnLabel}
             </OriginLink>
-            <OriginLink to="/app/notifications" style={secondaryBtn(false)}>
-              Action Inbox
+            <OriginLink to="/app/dashboard" style={secondaryBtn(false)}>
+              Dashboard
             </OriginLink>
           </div>
         </section>
