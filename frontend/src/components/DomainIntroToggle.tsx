@@ -89,6 +89,7 @@ function toneStyles(tone: DomainIntroTone): {
 export default function DomainIntroToggle(props: DomainIntroToggleProps) {
   const [open, setOpen] = useState(Boolean(props.defaultOpen));
   const tone = toneStyles(props.tone || "light");
+  const buttonLabel = open ? "Close" : "Open";
 
   return (
     <section
@@ -136,22 +137,32 @@ export default function DomainIntroToggle(props: DomainIntroToggleProps) {
         <button
           type="button"
           aria-expanded={open}
-          onClick={() => setOpen((prev) => !prev)}
+          aria-label={`${buttonLabel} ${props.title}`}
+          onPointerDown={(event) => {
+            event.stopPropagation();
+          }}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            setOpen((prev) => !prev);
+          }}
           style={{
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
             minHeight: 38,
+            minWidth: 82,
             padding: "8px 13px",
             borderRadius: 999,
             fontSize: 13,
             fontWeight: 900,
             cursor: "pointer",
+            textAlign: "center",
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)",
             ...tone.button,
           }}
         >
-          {open ? "Close" : props.title}
+          {buttonLabel}
         </button>
       </div>
 

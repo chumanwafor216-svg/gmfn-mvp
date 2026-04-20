@@ -46,6 +46,46 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-20
 
 #### Workstream
+Domain intro button interaction tightened after live Community Home review
+showed the guide control was jumpy and not clearly opening.
+
+#### Routes/screens affected
+- `/app/dashboard`
+- `/app/community`
+- `/app/marketplace`
+- `/app/finance`
+- `/app/trust`
+- shop gallery / public shop surface
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+
+#### Files in play
+- `frontend/src/components/DomainIntroToggle.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The shared domain intro button now uses stable `Open` / `Close` wording
+  instead of replacing the button label with the full domain title.
+- The button has a stable minimum width to reduce visual jumping on mobile.
+- The button now stops pointer and click propagation before toggling, reducing
+  the chance that surrounding route controls or shell layers steal the tap.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- This was build-verified after the product-owner report, but still needs live
+  mobile re-test on Community Home.
+
+#### Next recommended step
+- Re-test `About Community Home` on mobile. If it still fails to open, inspect
+  the app shell/touch layer rather than the route-local guide component.
+
+### Previous update
+
+#### Date
+2026-04-20
+
+#### Workstream
 Finance and Trust Passport now have the same one-per-domain intro guide pattern
 as Dashboard, Community Home, Marketplace, and Shop Gallery.
 
