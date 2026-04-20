@@ -3906,7 +3906,14 @@ export default function DashboardPage() {
       return "No new notification is waiting right now.";
     }
 
-    const firstSource = safeStr(dashboardNoticeSourceGroups[0]?.title || "");
+    const firstSource = safeStr(
+      dashboardNoticeSummary.actNow[0]?.source ||
+        dashboardNoticeSummary.dueSoon[0]?.source ||
+        dashboardNoticeSummary.unread[0]?.source ||
+        dashboardNoticeSummary.allRows[0]?.source ||
+        dashboardNoticeSourceGroups[0]?.title ||
+        ""
+    );
     const otherScreens = Math.max(dashboardNoticeSourceGroups.length - 1, 0);
 
     return `${dashboardNoticeTotalCount} notification${
@@ -3918,7 +3925,7 @@ export default function DashboardPage() {
         ? ` + ${otherScreens} screen${otherScreens === 1 ? "" : "s"}`
         : ""
     }.`;
-  }, [dashboardNoticeSourceGroups, dashboardNoticeTotalCount]);
+  }, [dashboardNoticeSourceGroups, dashboardNoticeSummary, dashboardNoticeTotalCount]);
   const dashboardNoticeLeadItem = useMemo(
     () =>
       dashboardNoticeSummary.actNow[0] ||
@@ -8899,14 +8906,23 @@ export default function DashboardPage() {
                 </div>
               ) : null}
 
-              <div style={{ ...dashboardActionGrid(isCompact ? 132 : 156) }}>
+              <div
+                onClick={consumeDashboardButtonEvent}
+                onPointerDown={consumeDashboardPointerEvent}
+                style={{ ...dashboardActionGrid(isCompact ? 132 : 156) }}
+              >
                 <button
                   type="button"
                   onClick={(event) =>
                     openDashboardRoute(event, dashboardNoticePrimaryActionTo)
                   }
                   onPointerDown={consumeDashboardPointerEvent}
-                  style={spotlightWhiteButton(dashboardPhoneButton)}
+                  style={spotlightWhiteButton({
+                    minHeight: isPhone ? 46 : 40,
+                    padding: isPhone ? "10px 12px" : "8px 14px",
+                    borderRadius: isPhone ? 15 : 15,
+                    width: "100%",
+                  })}
                 >
                   {dashboardNoticePrimaryActionLabel}
                 </button>
@@ -8916,7 +8932,12 @@ export default function DashboardPage() {
                     openDashboardRoute(event, DASHBOARD_TARGETS.WHAT_MATTERS_NOW)
                   }
                   onPointerDown={consumeDashboardPointerEvent}
-                  style={spotlightWhiteButton(dashboardPhoneButton)}
+                  style={spotlightWhiteButton({
+                    minHeight: isPhone ? 46 : 40,
+                    padding: isPhone ? "10px 12px" : "8px 14px",
+                    borderRadius: isPhone ? 15 : 15,
+                    width: "100%",
+                  })}
                 >
                   Open notifications
                 </button>
