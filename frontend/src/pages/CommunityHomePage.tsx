@@ -73,7 +73,6 @@ type ClanItem = {
 
 type NoticeTone = "success" | "error";
 type CollapseKey =
-  | "selected"
   | "tools"
   | "circle"
   | "spotlight"
@@ -310,15 +309,6 @@ function getClanName(clan: ClanItem | null | undefined): string {
     clan?.clan_name,
     clan?.marketplace_name,
     "Community"
-  );
-}
-
-function getClanDescription(clan: ClanItem | null | undefined): string {
-  return firstTruthy(
-    clan?.description,
-    clan?.clan_description,
-    clan?.marketplace_description,
-    "This community is available from your private Community Home."
   );
 }
 
@@ -845,7 +835,6 @@ function spotlightDraftStorageKey(clanId: number): string {
 
 function defaultCollapseState(): CollapseState {
   return {
-    selected: true,
     tools: true,
     circle: true,
     spotlight: true,
@@ -857,7 +846,6 @@ function normalizeCollapseState(raw: any): CollapseState {
   const base = defaultCollapseState();
 
   return {
-    selected: Boolean(raw?.selected ?? base.selected),
     tools: Boolean(raw?.tools ?? base.tools),
     circle: Boolean(raw?.circle ?? base.circle),
     spotlight: Boolean(raw?.spotlight ?? base.spotlight),
@@ -1272,13 +1260,8 @@ export default function CommunityHomePage() {
   }, [selectedClan, spotlightDescription, spotlightTagNumber, spotlightExpiry]);
 
   const selectedClanName = getClanName(selectedClan);
-  const selectedClanDescription = getClanDescription(selectedClan);
-  const selectedClanGlobalId = getClanGlobalId(selectedClan);
   const selectedClanTrust = getClanTrust(selectedClan);
-  const selectedClanFinanceHealth = getClanFinanceHealth(selectedClan);
   const selectedClanCci = getClanCci(selectedClan);
-  const selectedClanMemberCount = getClanMemberCount(selectedClan);
-  const selectedClanRole = getClanRole(selectedClan);
   const selectedClanId = getClanId(selectedClan);
   const memberGlobalId = firstTruthy(
     me?.gmfn_id,
@@ -1674,16 +1657,6 @@ export default function CommunityHomePage() {
 
     safeCopy(inviteLink);
     showNotice("success", "Invite link copied.");
-  }
-
-  function copyCommunityId() {
-    if (!selectedClanGlobalId) {
-      showNotice("error", "Community ID is not ready yet.");
-      return;
-    }
-
-    safeCopy(selectedClanGlobalId);
-    showNotice("success", "Community ID copied.");
   }
 
   function consumeCommunityPointerEvent(
@@ -2388,250 +2361,6 @@ export default function CommunityHomePage() {
       />
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
-
-      <section
-        style={{
-          ...pageCard(
-            "linear-gradient(180deg, #10243A 0%, #163552 52%, #244B72 100%)"
-          ),
-          order: 30,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={{ ...sectionLabel(), color: "#D7E3F1" }}>
-              Active marketplace entry
-            </div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#C7D4E5",
-                fontSize: 14,
-                lineHeight: 1.75,
-              }}
-            >
-              This is the community currently selected from your Community Home
-              circle. Open it as Marketplace when you need the live working
-              tools.
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onPointerDown={consumeCommunityPointerEvent}
-            onClick={() => toggleSection("selected")}
-            style={collapseToggle()}
-          >
-            {collapsed.selected ? "Open" : "Collapse"}
-          </button>
-        </div>
-
-        {!collapsed.selected ? (
-          <div
-            style={{
-              marginTop: 16,
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr"
-                : "minmax(0, 1.12fr) minmax(320px, 0.88fr)",
-              gap: 16,
-              alignItems: "stretch",
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontSize: isCompact ? 28 : 34,
-                  fontWeight: 900,
-                  lineHeight: 1.08,
-                }}
-              >
-                {selectedClanName}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 12,
-                  color: "#D7E3F1",
-                  fontSize: 15,
-                  lineHeight: 1.85,
-                  maxWidth: 760,
-                }}
-              >
-                {selectedClanDescription}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 14,
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                }}
-              >
-                <span
-                  style={{
-                    ...badge(true),
-                    background: "rgba(255,255,255,0.16)",
-                    color: "#FFFFFF",
-                    border: "1px solid rgba(255,255,255,0.10)",
-                  }}
-                >
-                  Community ID: {selectedClanGlobalId}
-                </span>
-                <span
-                  style={{
-                    ...badge(false),
-                    background: "rgba(255,255,255,0.12)",
-                    color: "#F8FBFF",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                  }}
-                >
-                  Member ID: {memberGlobalId}
-                </span>
-                <span
-                  style={{
-                    ...badge(false),
-                    background: "rgba(255,255,255,0.12)",
-                    color: "#F8FBFF",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                  }}
-                >
-                  Trust: {selectedClanTrust}
-                </span>
-                <span
-                  style={{
-                    ...badge(false),
-                    background: "rgba(255,255,255,0.12)",
-                    color: "#F8FBFF",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                  }}
-                >
-                  Finance: {selectedClanFinanceHealth}
-                </span>
-                <span
-                  style={{
-                    ...badge(false),
-                    background: "rgba(255,255,255,0.12)",
-                    color: "#F8FBFF",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                  }}
-                >
-                  CCI: {selectedClanCci}
-                </span>
-                <span
-                  style={{
-                    ...badge(false),
-                    background: "rgba(255,255,255,0.12)",
-                    color: "#F8FBFF",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                  }}
-                >
-                  Members: {selectedClanMemberCount}
-                </span>
-                <span
-                  style={{
-                    ...badge(false),
-                    background: "rgba(255,255,255,0.12)",
-                    color: "#F8FBFF",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                  }}
-                >
-                  Opens as Marketplace
-                </span>
-                {selectedClanRole ? (
-                  <span
-                    style={{
-                      ...badge(false),
-                      background: "rgba(255,255,255,0.12)",
-                      color: "#F8FBFF",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                    }}
-                  >
-                    Role: {selectedClanRole}
-                  </span>
-                ) : null}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 16,
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
-                }}
-              >
-                <button
-                  type="button"
-                  onPointerDown={consumeCommunityPointerEvent}
-                  onClick={() => void openSelectedMarketplace()}
-                  disabled={!selectedClanId || changingClanId === selectedClanId}
-                  style={actionBtn(
-                    "primary",
-                    !selectedClanId || changingClanId === selectedClanId
-                  )}
-                >
-                  {changingClanId === selectedClanId
-                    ? "Opening..."
-                    : "Open Marketplace"}
-                </button>
-
-                <button
-                  type="button"
-                  onPointerDown={consumeCommunityPointerEvent}
-                  onClick={copyCommunityId}
-                  style={actionBtn("secondary")}
-                >
-                  Copy Community ID
-                </button>
-              </div>
-            </div>
-
-            <div
-              style={{
-                ...softCard("rgba(255,255,255,0.94)"),
-                border: "1px solid rgba(148,163,184,0.16)",
-              }}
-            >
-              <div style={sectionLabel()}>Your pool position</div>
-
-              <div
-                style={{
-                  marginTop: 10,
-                  color: "#0B1F33",
-                  fontSize: 24,
-                  fontWeight: 900,
-                  lineHeight: 1.2,
-                }}
-              >
-                {poolAmount} {poolCurrency}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#5F7287",
-                  fontSize: 14,
-                  lineHeight: 1.8,
-                }}
-              >
-                This shows only your own visible pool position in your current
-                community. Open Finance for the cumulative money picture across
-                all communities.
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </section>
 
       <section style={{ ...pageCard("#FFFFFF"), order: 65 }}>
         <div
