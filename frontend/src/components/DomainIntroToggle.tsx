@@ -158,6 +158,7 @@ export default function DomainIntroToggle(props: DomainIntroToggleProps) {
             fontWeight: 900,
             cursor: "pointer",
             textAlign: "center",
+            touchAction: "manipulation",
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)",
             ...tone.button,
           }}

@@ -2864,6 +2864,23 @@ GSN-branded invite composer and invite-entry continuity.
   - known remaining issue: on mobile, some guide/open buttons can still jump to
     the wrong route, especially around `Community Home`; the next recovery pass
     should audit the shared touch/navigation layer before adding more styling
+- A first shared mobile tap-stability fix was then added in
+  `frontend/src/layout/AppLayout.tsx` and
+  `frontend/src/components/DomainIntroToggle.tsx`.
+  - confirmed from code: the mobile shell already guarded the bottom navigation
+    and page-actions panel during route-content taps, but route content itself
+    could still move underneath a finger after an open/collapse click
+  - likely contributing cause: after a layout-changing click, a delayed/tail
+    mobile tap can land on the route button that moved into the old tap
+    position, which explains why a guide/open control could appear to jump into
+    `Demand Box`, `Marketplace`, or another nearby route
+  - change made: after a mobile click inside the route content, the app shell
+    now shows a transparent post-click shield for a very short window so the
+    same tap cannot fall through into newly shifted controls
+  - change made: the domain guide button now uses `touch-action: manipulation`
+    to reduce double-tap/compatibility-click behaviour on mobile
+  - this is intentionally a small shared interaction fix, not a page redesign
+    and not a route-contract change
 
 ### Intent
 

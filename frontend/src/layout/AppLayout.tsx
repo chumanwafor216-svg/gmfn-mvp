@@ -1051,6 +1051,17 @@ function bottomNavItem(active = false, disabled = false): React.CSSProperties {
   };
 }
 
+function mobilePostClickShield(): React.CSSProperties {
+  return {
+    position: "fixed",
+    inset: 0,
+    zIndex: 60,
+    background: "transparent",
+    pointerEvents: "auto",
+    touchAction: "none",
+  };
+}
+
 export default function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -1064,10 +1075,14 @@ export default function AppLayout() {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [mobileShellRouteGuardActive, setMobileShellRouteGuardActive] =
     useState(false);
+  const [mobilePostClickShieldActive, setMobilePostClickShieldActive] =
+    useState(false);
   const [myGmfnId, setMyGmfnId] = useState<string>("");
   const [myRole, setMyRole] = useState<string>(() => readRole());
   const [myClanRole, setMyClanRole] = useState<string>("");
   const mobileShellRouteGuardTimerRef = React.useRef<number | null>(null);
+  const mobilePostClickShieldDelayRef = React.useRef<number | null>(null);
+  const mobilePostClickShieldTimerRef = React.useRef<number | null>(null);
 
   const isAdmin = useMemo(() => {
     const role = String(myRole || "").trim().toLowerCase();
@@ -1146,6 +1161,20 @@ export default function AppLayout() {
         mobileShellRouteGuardTimerRef.current !== null
       ) {
         window.clearTimeout(mobileShellRouteGuardTimerRef.current);
+      }
+
+      if (
+        typeof window !== "undefined" &&
+        mobilePostClickShieldDelayRef.current !== null
+      ) {
+        window.clearTimeout(mobilePostClickShieldDelayRef.current);
+      }
+
+      if (
+        typeof window !== "undefined" &&
+        mobilePostClickShieldTimerRef.current !== null
+      ) {
+        window.clearTimeout(mobilePostClickShieldTimerRef.current);
       }
     };
   }, []);
@@ -1355,6 +1384,28 @@ export default function AppLayout() {
       setMobileShellRouteGuardActive(false);
       mobileShellRouteGuardTimerRef.current = null;
     }, durationMs);
+  }
+
+  function armMobilePostClickShield(durationMs = 420) {
+    if (typeof window === "undefined" || !isMobile) return;
+
+    if (mobilePostClickShieldDelayRef.current !== null) {
+      window.clearTimeout(mobilePostClickShieldDelayRef.current);
+    }
+
+    if (mobilePostClickShieldTimerRef.current !== null) {
+      window.clearTimeout(mobilePostClickShieldTimerRef.current);
+    }
+
+    mobilePostClickShieldDelayRef.current = window.setTimeout(() => {
+      mobilePostClickShieldDelayRef.current = null;
+      setMobilePostClickShieldActive(true);
+
+      mobilePostClickShieldTimerRef.current = window.setTimeout(() => {
+        setMobilePostClickShieldActive(false);
+        mobilePostClickShieldTimerRef.current = null;
+      }, durationMs);
+    }, 0);
   }
 
   const routeMeta = findCurrentRouteMeta(
@@ -1729,11 +1780,16 @@ export default function AppLayout() {
         onPointerDownCapture={() => armMobileShellRouteGuard()}
         onTouchStartCapture={() => armMobileShellRouteGuard()}
         onMouseDownCapture={() => armMobileShellRouteGuard()}
+        onClickCapture={() => armMobilePostClickShield()}
       >
         <WorkspaceCompanionBridge />
         <WorkspaceSettingsBridge />
         <Outlet />
       </main>
+
+      {isMobile && mobilePostClickShieldActive ? (
+        <div aria-hidden="true" style={mobilePostClickShield()} />
+      ) : null}
 
       {isMobile && !taskMode ? (
         <nav
