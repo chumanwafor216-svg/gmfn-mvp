@@ -141,6 +141,8 @@ function primaryBtn(disabled = false): React.CSSProperties {
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
+    touchAction: "manipulation",
+    userSelect: "none",
   };
 }
 
@@ -162,6 +164,8 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
+    touchAction: "manipulation",
+    userSelect: "none",
   };
 }
 
@@ -182,6 +186,8 @@ function subtleBtn(disabled = false): React.CSSProperties {
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
+    touchAction: "manipulation",
+    userSelect: "none",
   };
 }
 
@@ -281,6 +287,30 @@ function communityName(currentClan: any, selectedClanId: number): string {
   );
 }
 
+function cciLabel(me: any): string {
+  return firstTruthy(
+    me?.cci_class,
+    me?.cci_band,
+    me?.cross_community_integrity_class,
+    me?.cross_community_integrity_band
+  );
+}
+
+function buildDemandDescription(
+  description: string,
+  responseProof: string
+): string | undefined {
+  const body = safeStr(description);
+  const proof = safeStr(responseProof);
+  const parts = body ? [body] : [];
+
+  if (proof) {
+    parts.push(`Response proof expected: ${proof}.`);
+  }
+
+  return parts.join("\n\n") || undefined;
+}
+
 function requesterName(row: DemandRow): string {
   return (
     firstTruthy(
@@ -338,6 +368,7 @@ export default function DemandBoxPage() {
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [expiresInHours, setExpiresInHours] = useState("72");
   const [paymentMode, setPaymentMode] = useState("");
+  const [responseProof, setResponseProof] = useState("");
   const [allowTrustCredit, setAllowTrustCredit] = useState(false);
 
   const [creating, setCreating] = useState(false);
@@ -462,7 +493,7 @@ export default function DemandBoxPage() {
     try {
       await createMarketplaceRequest({
         title: safeStr(title),
-        description: safeStr(description) || undefined,
+        description: buildDemandDescription(description, responseProof),
         category: safeStr(category) || undefined,
         urgency: safeStr(urgency) || undefined,
         area: safeStr(area) || undefined,
@@ -481,6 +512,7 @@ export default function DemandBoxPage() {
       setWhatsappNumber("");
       setExpiresInHours("72");
       setPaymentMode("");
+      setResponseProof("");
       setAllowTrustCredit(false);
 
       await loadPage();
@@ -542,6 +574,7 @@ export default function DemandBoxPage() {
       ) || "Member"
     );
   }, [me]);
+  const memberCciLabel = cciLabel(me);
 
   const visiblePreview = useMemo(() => visibleRows.slice(0, 6), [visibleRows]);
 
@@ -743,7 +776,7 @@ export default function DemandBoxPage() {
         label="What this screen does"
         what="Demand Box is where a real person raises a real need inside one community."
         why="Your GSN ID shows who is asking. The community name shows where the need belongs. Trust and payment terms help people decide whether to respond."
-        next="Post only clear live needs, include the payment or trust-credit terms, then close the demand when it is fulfilled or no longer needed."
+        next="Choose the community, say what you need, add how people should contact you, and say what proof you expect before work starts."
         tone="blue"
       />
 
@@ -788,7 +821,7 @@ export default function DemandBoxPage() {
               }}
             >
               Demand belongs to the person asking, but it also carries the
-              community context where the need is being raised.
+              community context where the request is being sent.
             </div>
 
             <div
@@ -802,6 +835,9 @@ export default function DemandBoxPage() {
               <span style={badge(true)}>Member: {memberName}</span>
               {safeStr(me?.gmfn_id) ? (
                 <span style={badge(false)}>GSN ID: {safeStr(me?.gmfn_id)}</span>
+              ) : null}
+              {memberCciLabel ? (
+                <span style={badge(false)}>CCI: {memberCciLabel}</span>
               ) : null}
               <span style={badge(false)}>Context: {currentCommunityName}</span>
               <span style={badge(false)}>My open needs: {myOpenRows.length}</span>
@@ -820,9 +856,9 @@ export default function DemandBoxPage() {
 
             <ExplainToggle
               label="How demand should flow"
-              what="This step order shows the clean path for a demand: state the need, keep it current, then close it when the need changes or is met."
-              why="It keeps Demand Box focused on real follow-up instead of leaving old requests hanging without a clear outcome."
-              next="Use the posting form with this step order in mind, then return to update or close the request when the situation changes."
+              what="A demand is your own request for help, goods, service, or response from people who can assist."
+              why="Your GSN ID and trust signal travel with the request. The responder should also be ready to show their own GSN or TrustSlip when the work needs trust."
+              next="Choose the right community, post the need clearly, agree proof and payment before work starts, then close the demand when it is settled."
               tone="light"
               style={{ marginTop: 12 }}
             />
@@ -903,8 +939,8 @@ export default function DemandBoxPage() {
             }}
           >
             Pick the community this demand is coming from. GSN will attach your
-            personal ID to the request, but the community tells people where the
-            need belongs.
+            personal ID and trust signal to the request, but the community tells
+            people where you are sending it from.
           </div>
 
           <div
@@ -952,9 +988,9 @@ export default function DemandBoxPage() {
 
         <ExplainToggle
           label="What this does"
-          what="This form posts a real current need into your community so other people can understand it and respond."
-          why="It keeps demand clear and specific instead of turning it into a vague note. People can see what is needed, where it belongs, and what terms apply."
-          next="Write the need in simple direct language, add the payment or trust-credit terms if they matter, and then post it into the community."
+          what="This form posts your own current need so people in the chosen community can understand it and respond."
+          why="It keeps demand clear and specific instead of turning it into a vague note. People can see what is needed, how to reach you, and what proof or payment terms apply."
+          next="Write the need in simple direct language, add contact and proof expectations, then post it into the chosen community."
           tone="light"
           style={{ marginTop: 14 }}
         />
@@ -998,6 +1034,16 @@ export default function DemandBoxPage() {
                 />
               </div>
 
+              <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
+                <div style={sectionLabel()}>How should people contact you?</div>
+                <input
+                  value={whatsappNumber}
+                  onChange={(e) => setWhatsappNumber(e.target.value)}
+                  placeholder="Phone, WhatsApp, or short contact instruction"
+                  style={{ ...inputStyle(), marginTop: 8 }}
+                />
+              </div>
+
               <div>
                 <div style={sectionLabel()}>Urgency</div>
                 <select
@@ -1020,6 +1066,65 @@ export default function DemandBoxPage() {
                   style={{ ...inputStyle(), marginTop: 8 }}
                 />
               </div>
+
+              <div>
+                <div style={sectionLabel()}>Payment terms</div>
+                <select
+                  value={paymentMode}
+                  onChange={(e) => setPaymentMode(e.target.value)}
+                  style={{ ...inputStyle(), marginTop: 8 }}
+                >
+                  <option value="">Choose if needed</option>
+                  <option value="Pay now">Pay now</option>
+                  <option value="Pay later">Pay later</option>
+                  <option value="Trust credit">Trust credit</option>
+                  <option value="Negotiable">Negotiable</option>
+                  <option value="Support / no payment">Support / no payment</option>
+                </select>
+              </div>
+
+              <div>
+                <div style={sectionLabel()}>Responder proof</div>
+                <select
+                  value={responseProof}
+                  onChange={(e) => setResponseProof(e.target.value)}
+                  style={{ ...inputStyle(), marginTop: 8 }}
+                >
+                  <option value="">Choose if needed</option>
+                  <option value="Please share your GSN ID before work starts">
+                    Share GSN ID first
+                  </option>
+                  <option value="Please share your TrustSlip before work starts">
+                    Share TrustSlip first
+                  </option>
+                  <option value="Please confirm GSN ID and TrustSlip before work starts">
+                    GSN ID and TrustSlip
+                  </option>
+                  <option value="No extra proof needed before response">
+                    No extra proof
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div
+              style={{
+                marginTop: 12,
+                ...innerCard("#F8FBFF"),
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
+              <span style={badge(false)}>Sent by {memberName}</span>
+              {safeStr(me?.gmfn_id) ? (
+                <span style={badge(false)}>GSN ID {safeStr(me?.gmfn_id)}</span>
+              ) : null}
+              {memberCciLabel ? (
+                <span style={badge(false)}>CCI {memberCciLabel}</span>
+              ) : null}
+              <span style={badge(false)}>From {currentCommunityName}</span>
             </div>
 
             <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -1057,16 +1162,6 @@ export default function DemandBoxPage() {
                 </div>
 
                 <div>
-                  <div style={sectionLabel()}>WhatsApp number</div>
-                  <input
-                    value={whatsappNumber}
-                    onChange={(e) => setWhatsappNumber(e.target.value)}
-                    placeholder="Optional WhatsApp contact"
-                    style={{ ...inputStyle(), marginTop: 8 }}
-                  />
-                </div>
-
-                <div>
                   <div style={sectionLabel()}>Expiry in hours</div>
                   <input
                     type="number"
@@ -1076,22 +1171,6 @@ export default function DemandBoxPage() {
                     placeholder="72"
                     style={{ ...inputStyle(), marginTop: 8 }}
                   />
-                </div>
-
-                <div>
-                  <div style={sectionLabel()}>Payment terms</div>
-                  <select
-                    value={paymentMode}
-                    onChange={(e) => setPaymentMode(e.target.value)}
-                    style={{ ...inputStyle(), marginTop: 8 }}
-                  >
-                    <option value="">Choose if needed</option>
-                    <option value="Pay now">Pay now</option>
-                    <option value="Pay later">Pay later</option>
-                    <option value="Trust credit">Trust credit</option>
-                    <option value="Negotiable">Negotiable</option>
-                    <option value="Support / no payment">Support / no payment</option>
-                  </select>
                 </div>
 
                 <div style={innerCard("#F8FBFF")}>
@@ -1244,7 +1323,7 @@ export default function DemandBoxPage() {
         </section>
 
         <section style={pageCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Visible community needs</div>
+          <div style={sectionLabel()}>Visible personal requests</div>
 
           <div
             style={{
@@ -1253,13 +1332,13 @@ export default function DemandBoxPage() {
               maxWidth: 760,
             }}
           >
-            These are open visible requests from other people in your current community.
+            These are open requests from people in your current community.
           </div>
 
           <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
             {visiblePreview.length === 0 ? (
               <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                No visible community demand is open right now.
+                No visible personal demand is open right now.
               </div>
             ) : (
               visiblePreview.map((row, index) => (
@@ -1287,7 +1366,7 @@ export default function DemandBoxPage() {
                       <span style={badge(true)}>{urgencyLabel(row?.urgency)}</span>
                       {safeStr(row?.requester_trust_band) ? (
                         <span style={badge(false)}>
-                          {safeStr(row?.requester_trust_band)}
+                          Trust {safeStr(row?.requester_trust_band)}
                         </span>
                       ) : null}
                     </div>

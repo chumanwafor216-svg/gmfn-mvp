@@ -4018,10 +4018,10 @@ export default function DashboardPage() {
   const demandPaymentMode = safeStr(currentDemandItem?.payment_mode || "");
   const demandArea = safeStr(currentDemandItem?.area || "");
   const demandGuideTitle = demandItems.length
-    ? "This demand is live in your community."
-    : "Create a demand when this community needs help.";
+    ? "A person's request is live in your community."
+    : "Create demand when you personally need help.";
   const demandGuideBody =
-    "Your GSN ID shows who is asking. The community name shows where the need belongs. Trust, TrustSlip, payment terms, and trust credit help both sides decide whether to respond safely.";
+    "Demand Box is personal: you say what you need, and your GSN trust signal shows who is asking. The community name shows the trusted room you are sending it from. Payment terms and TrustSlip expectations help both sides agree before work starts.";
 
   const demandSurfaceChrome = useMemo(() => {
     if (urgentDemandItems.length > 0) {
@@ -8476,9 +8476,9 @@ export default function DashboardPage() {
                     lineHeight: isPhone ? 1.46 : 1.75,
                   }}
                 >
-                  Create a demand when this community needs goods, service,
-                  support, or follow-up. Your GSN ID stays attached so people
-                  know who is asking.
+                  Create demand when you need goods, service, support, or
+                  follow-up from people in the right community. Your GSN ID
+                  stays attached so people know who is asking.
                 </div>
                 <div
                   style={{
