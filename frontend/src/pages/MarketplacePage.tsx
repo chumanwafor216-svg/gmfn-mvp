@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
-import SystemPictureFrame from "../components/SystemPictureFrame";
 import { navigateWithOrigin } from "../lib/nav";
 import { useLocation, useNavigate } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
@@ -144,7 +143,6 @@ type SuggestedSupporter = {
 type NoticeTone = "success" | "error";
 
 type SectionState = {
-  profile: boolean;
   money: boolean;
   tools: boolean;
   members: boolean;
@@ -182,7 +180,6 @@ const IMAGE_FIELD_NAMES = [
 ];
 
 const DEFAULT_SECTION_STATE: SectionState = {
-  profile: false,
   money: false,
   tools: true,
   members: true,
@@ -1061,15 +1058,6 @@ function textAreaStyle(): React.CSSProperties {
   };
 }
 
-function statTile(): React.CSSProperties {
-  return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: "#FFFFFF",
-    padding: 14,
-  };
-}
-
 function noticeCard(tone: NoticeTone): React.CSSProperties {
   return {
     ...softCard(tone === "success" ? "#F3FBF5" : "#FEF2F2"),
@@ -1666,6 +1654,27 @@ export default function MarketplacePage() {
 
   const gmfnId = useMemo(() => {
     return firstTruthy(me?.gmfn_id, "Pending");
+  }, [me]);
+
+  const cciLabel = useMemo(() => {
+    const rawScore = firstTruthy(
+      me?.cross_community_integrity_score,
+      me?.cross_clan_integrity_score,
+      me?.cross_client_integrity_score,
+      me?.cci_score
+    );
+    const rawBand = firstTruthy(
+      me?.cross_community_integrity_class,
+      me?.cross_clan_integrity_class,
+      me?.cross_client_integrity_class,
+      me?.cross_community_integrity_band,
+      me?.cross_clan_integrity_band,
+      me?.cross_client_integrity_band,
+      me?.cci_band
+    );
+
+    if (rawBand && rawScore) return `${rawBand} / ${rawScore}`;
+    return rawBand || rawScore || "Preparing";
   }, [me]);
 
   const poolAmount = getPoolAmountText(poolInfo);
@@ -2302,33 +2311,19 @@ export default function MarketplacePage() {
           ...pageCard(
             "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
           ),
+          minHeight: isCompact ? 430 : 390,
           order: 1,
+          position: "relative",
         }}
       >
-        <div style={{ ...sectionLabel(), color: "#A8C7E8" }}>
-          Marketplace profile and member standing
-        </div>
-
-        <div
-          style={{
-            marginTop: 14,
-            display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "300px minmax(0, 1fr)",
-            gap: 18,
-            alignItems: "stretch",
-          }}
-        >
-          <SystemPictureFrame
-            outerStyle={{
-              minHeight: isCompact ? 190 : 220,
-              borderRadius: 28,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 10,
-            }}
-            innerStyle={{
-              minHeight: isCompact ? 170 : 200,
+        {hasCommunityPicture ? (
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 0,
+              opacity: 0.44,
             }}
           >
             <AuthResolvedImage
@@ -2338,106 +2333,152 @@ export default function MarketplacePage() {
               refreshSeed={communityPictureRefreshSeed}
               style={{
                 width: "100%",
-                height: isCompact ? 190 : 220,
-                borderRadius: 18,
-                border: "1px solid rgba(212,175,55,0.18)",
+                height: "100%",
                 objectFit: "cover",
                 objectPosition: "center 18%",
                 display: "block",
               }}
-              fallback={
-                <div
+              fallback={null}
+            />
+          </div>
+        ) : null}
+
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 0,
+            background:
+              "linear-gradient(90deg, rgba(8,17,31,0.96) 0%, rgba(8,17,31,0.86) 42%, rgba(8,17,31,0.58) 100%), radial-gradient(circle at 88% 16%, rgba(212,175,55,0.26) 0%, rgba(212,175,55,0.04) 34%, transparent 60%)",
+          }}
+        />
+
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <div style={{ ...sectionLabel(), color: "#A8C7E8" }}>
+            Official marketplace billboard
+          </div>
+
+          <div
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "1fr"
+                : "minmax(0, 1.15fr) minmax(320px, 0.85fr)",
+              gap: 18,
+              alignItems: "start",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  color: "#F8FBFF",
+                  fontSize: isCompact ? 32 : 46,
+                  fontWeight: 900,
+                  lineHeight: 1.04,
+                  maxWidth: 780,
+                }}
+              >
+                {communityName(selectedCommunity)}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 12,
+                  ...helperText(),
+                  color: "#D7E3F1",
+                  maxWidth: 760,
+                }}
+              >
+                {communityDescription(selectedCommunity)}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 16,
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                }}
+              >
+                <span style={badge(true)}>One official board</span>
+                <span style={badge(false)}>
+                  Backdrop: {hasCommunityPicture ? "Custom picture" : "GSN default"}
+                </span>
+                <span style={badge(false)}>Local marketplace standing</span>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 16,
+                  display: "flex",
+                  gap: 10,
+                  flexWrap: "wrap",
+                }}
+              >
+                <label
+                  onPointerDown={consumeMarketplacePointerEvent}
                   style={{
-                    minHeight: isCompact ? 190 : 220,
-                    padding: 18,
-                    textAlign: "center",
+                    ...actionBtn("soft", uploadingCommunityPicture),
+                    background: "rgba(255,255,255,0.12)",
+                    border: "1px solid rgba(255,255,255,0.16)",
                     color: "#F8FBFF",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 14,
+                    cursor: uploadingCommunityPicture ? "not-allowed" : "pointer",
                   }}
                 >
-                  <div
-                    style={{
-                      width: 82,
-                      height: 82,
-                      borderRadius: 999,
-                      border: "1px solid rgba(212,175,55,0.24)",
-                      background:
-                        "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18) 0%, rgba(212,175,55,0.14) 28%, rgba(11,31,51,0.18) 100%)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: 900,
-                      fontSize: 26,
-                      letterSpacing: 1,
-                    }}
-                  >
-                    {communityName(selectedCommunity)
-                      .split(/\s+/)
-                      .filter(Boolean)
-                      .slice(0, 2)
-                      .map((part) => part.slice(0, 1).toUpperCase())
-                      .join("") || "GS"}
-                  </div>
-                  <div
-                    style={{
-                      maxWidth: 220,
-                      color: "#D7E3F1",
-                      fontWeight: 900,
-                      fontSize: 18,
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    Marketplace billboard pending
-                  </div>
-                </div>
-              }
-            />
-          </SystemPictureFrame>
+                  {uploadingCommunityPicture
+                    ? "Updating backdrop..."
+                    : hasCommunityPicture
+                      ? "Change backdrop"
+                      : "Add backdrop"}
+                  <input
+                    key={communityPictureFileInputKey}
+                    type="file"
+                    accept="image/*"
+                    disabled={uploadingCommunityPicture}
+                    onChange={(event) =>
+                      void handleUploadCommunityPicture(event.target.files?.[0] || null)
+                    }
+                    style={{ display: "none" }}
+                  />
+                </label>
 
-          <div>
-            <div
-              style={{
-                color: "#F8FBFF",
-                fontSize: isCompact ? 30 : 40,
-                fontWeight: 900,
-                lineHeight: 1.08,
-                maxWidth: 820,
-              }}
-            >
-              {communityName(selectedCommunity)}
+                {hasCommunityPicture ? (
+                  <button
+                    type="button"
+                    onPointerDown={consumeMarketplacePointerEvent}
+                    onClick={() => void handleRemoveCommunityPicture()}
+                    disabled={removingCommunityPicture}
+                    style={{
+                      ...actionBtn("soft", removingCommunityPicture),
+                      background: "rgba(255,255,255,0.10)",
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      color: "#F8FBFF",
+                    }}
+                  >
+                    {removingCommunityPicture ? "Removing..." : "Use GSN default"}
+                  </button>
+                ) : null}
+              </div>
             </div>
 
             <div
               style={{
-                marginTop: 12,
-                ...helperText(),
-                color: "#D7E3F1",
-                maxWidth: 900,
-              }}
-            >
-              {communityDescription(selectedCommunity)}
-            </div>
-
-            <div
-              style={{
-                marginTop: 14,
                 display: "grid",
                 gridTemplateColumns: isCompact
                   ? "1fr 1fr"
-                  : "repeat(4, minmax(0, 1fr))",
+                  : "repeat(2, minmax(0, 1fr))",
                 gap: 10,
               }}
             >
               {[
                 ["Community ID", communityIdentity(selectedCommunity)],
-                ["Marketplace trust", communityTrustLabel(selectedCommunity)],
+                ["Personal ID", gmfnId],
                 ["Current member", memberName],
-                ["Member ID", gmfnId],
                 ["Role here", communityRole(selectedCommunity) || "Member"],
+                ["Trust record", communityTrustLabel(selectedCommunity)],
+                ["CCI record", cciLabel],
                 ["Local pool", `${visiblePoolAmount} ${visiblePoolCurrency}`],
                 [
                   "Money In rail",
@@ -2480,21 +2521,6 @@ export default function MarketplacePage() {
                   </div>
                 </div>
               ))}
-            </div>
-
-            <div
-              style={{
-                marginTop: 14,
-                display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
-              }}
-            >
-              <span style={badge(true)}>One community in action</span>
-              <span style={badge(false)}>Shop exposure is community-governed</span>
-              <span style={badge(false)}>
-                Private Vault Shops stay controlled
-              </span>
             </div>
           </div>
         </div>
@@ -2662,353 +2688,6 @@ export default function MarketplacePage() {
         tone="dark"
         style={{ order: 9 }}
       />
-
-      <section style={{ ...pageCard("#FFFFFF"), order: 7 }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>Optional marketplace detail</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Kept below the main marketplace blocks. Open this only when you
-              need the fuller picture, story, and profile controls.
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => toggleSection("profile")}
-            style={actionBtn("soft")}
-          >
-            {sectionsOpen.profile ? "Collapse" : "Open"}
-          </button>
-        </div>
-
-        <ExplainToggle
-          label="What this detail does"
-          what="This opens the fuller profile for the selected marketplace, including the picture, story, trust position, and profile controls."
-          why="The first block already gives the quick standing. This detail is kept separate so the page stays lighter while still preserving the deeper profile view."
-          next="Open it when you need to update or inspect the full marketplace profile; otherwise continue through shortcuts, members, links, demand, or support."
-          tone="light"
-          style={{ marginTop: 12 }}
-        />
-
-        {sectionsOpen.profile ? (
-          <div
-            style={{
-              marginTop: 14,
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr"
-                : "280px minmax(0, 1fr)",
-              gap: 18,
-              alignItems: "start",
-            }}
-          >
-            <div>
-              <SystemPictureFrame
-                outerStyle={{
-                  minHeight: 230,
-                  borderRadius: 28,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: 10,
-                }}
-                innerStyle={{
-                  minHeight: 210,
-                }}
-              >
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 14,
-                      right: 14,
-                      zIndex: 2,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      minHeight: 30,
-                      padding: "6px 10px",
-                      borderRadius: 999,
-                      background: "rgba(7,16,28,0.72)",
-                      border: "1px solid rgba(212,175,55,0.22)",
-                      color: "#F6D77A",
-                      fontSize: 11,
-                      fontWeight: 900,
-                      letterSpacing: 0.24,
-                      textTransform: "uppercase",
-                      backdropFilter: "blur(8px)",
-                    }}
-                  >
-                    Community identity
-                  </div>
-                  <AuthResolvedImage
-                    candidates={communityImageCandidates}
-                    alt={communityName(selectedCommunity)}
-                    clanId={activeCommunityId}
-                    refreshSeed={communityPictureRefreshSeed}
-                    style={{
-                      width: "100%",
-                      height: 230,
-                      borderRadius: 18,
-                      border: "1px solid rgba(212,175,55,0.14)",
-                      objectFit: "cover",
-                      objectPosition: "center 18%",
-                      display: "block",
-                    }}
-                    fallback={
-                      <div
-                        style={{
-                          minHeight: 230,
-                          padding: 18,
-                          textAlign: "center",
-                          color: "#F8FBFF",
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 14,
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: 88,
-                            height: 88,
-                            borderRadius: 999,
-                            border: "1px solid rgba(212,175,55,0.24)",
-                            background:
-                              "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18) 0%, rgba(212,175,55,0.14) 28%, rgba(11,31,51,0.18) 100%)",
-                            boxShadow:
-                              "0 16px 34px rgba(2,12,27,0.22), inset 0 1px 0 rgba(255,255,255,0.06)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontWeight: 900,
-                            fontSize: 28,
-                            letterSpacing: 1,
-                          }}
-                        >
-                          {communityName(selectedCommunity)
-                            .split(/\s+/)
-                            .filter(Boolean)
-                            .slice(0, 2)
-                            .map((part) => part.slice(0, 1).toUpperCase())
-                            .join("") || "GC"}
-                        </div>
-
-                        <div
-                          style={{
-                            maxWidth: 220,
-                            color: "#D7E3F1",
-                            fontWeight: 900,
-                            fontSize: 22,
-                            lineHeight: 1.3,
-                          }}
-                        >
-                          {communityName(selectedCommunity)}
-                        </div>
-                        <div
-                          style={{
-                            maxWidth: 240,
-                            color: "#D7E3F1",
-                            fontSize: 13,
-                            lineHeight: 1.7,
-                          }}
-                        >
-                          This executive frame will hold the visible community identity picture once
-                          it is released.
-                        </div>
-                      </div>
-                    }
-                  />
-              </SystemPictureFrame>
-            </div>
-
-            <div>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: isCompact ? 28 : 34,
-                  lineHeight: 1.12,
-                }}
-              >
-                {communityName(selectedCommunity)}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 12,
-                  ...helperText(),
-                  maxWidth: 820,
-                }}
-              >
-                {communityDescription(selectedCommunity)}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 14,
-                  display: "grid",
-                  gridTemplateColumns: isCompact
-                    ? "1fr 1fr"
-                    : "repeat(4, minmax(0, 1fr))",
-                  gap: 10,
-                }}
-              >
-                <div style={statTile()}>
-                  <div style={sectionLabel()}>Community ID</div>
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "#0B1F33",
-                      fontWeight: 900,
-                      fontSize: 15,
-                      lineHeight: 1.3,
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {communityIdentity(selectedCommunity)}
-                  </div>
-                </div>
-
-                <div style={statTile()}>
-                  <div style={sectionLabel()}>Community trust</div>
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "#0B1F33",
-                      fontWeight: 900,
-                      fontSize: 15,
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    {communityTrustLabel(selectedCommunity)}
-                  </div>
-                </div>
-
-                <div style={statTile()}>
-                  <div style={sectionLabel()}>Members</div>
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "#0B1F33",
-                      fontWeight: 900,
-                      fontSize: 20,
-                    }}
-                  >
-                    {members.length}
-                  </div>
-                </div>
-
-                <div style={statTile()}>
-                  <div style={sectionLabel()}>Pool</div>
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "#0B1F33",
-                      fontWeight: 900,
-                      fontSize: 15,
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    {visiblePoolAmount} {visiblePoolCurrency}
-                  </div>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  marginTop: 14,
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                }}
-              >
-                <span style={badge(true)}>Current member: {memberName}</span>
-                <span style={badge(false)}>GMFN ID: {gmfnId}</span>
-                {communityRole(selectedCommunity) ? (
-                  <span style={badge(false)}>
-                    Role: {communityRole(selectedCommunity)}
-                  </span>
-                ) : null}
-                <span style={badge(false)}>
-                  Invite: {inviteLink ? "Ready" : "Not ready"}
-                </span>
-              </div>
-
-              <div
-                style={{
-                  marginTop: 16,
-                  display: "grid",
-                  gap: 10,
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 10,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={openFinance}
-                    style={{
-                      ...actionBtn("primary"),
-                      position: "relative",
-                      zIndex: 4,
-                    }}
-                  >
-                    Finance
-                  </button>
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 10,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <button
-                    type="button"
-                    onPointerDown={consumeMarketplacePointerEvent}
-                    onClick={(event) => openMarketplaceRoute(event, "/app/trust")}
-                    style={actionBtn("secondary")}
-                  >
-                    Trust Passport
-                  </button>
-
-                  <button
-                    type="button"
-                    onPointerDown={consumeMarketplacePointerEvent}
-                    onClick={(event) => openMarketplaceRoute(event, "/app/identity")}
-                    style={actionBtn("secondary")}
-                  >
-                    CCI
-                  </button>
-
-                  <button
-                    type="button"
-                    onPointerDown={consumeMarketplacePointerEvent}
-                    onClick={(event) => openMarketplaceRoute(event, "/app/trust-slip")}
-                    style={actionBtn("secondary")}
-                  >
-                    TrustSlip
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </section>
 
       <section style={{ ...pageCard("#FFFFFF"), order: 8 }}>
         <div

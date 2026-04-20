@@ -46,6 +46,50 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-20
 
 #### Workstream
+Marketplace consolidated to one official billboard/backdrop so the selected
+marketplace no longer has two competing profile boards.
+
+#### Routes/screens affected
+- `/app/marketplace`
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+
+#### Files in play
+- `frontend/src/pages/MarketplacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The top Marketplace block is now the official marketplace billboard.
+- The billboard uses the selected community/marketplace picture as an optional
+  backdrop and keeps the GSN default visual treatment when no picture is set.
+- The board carries the selected marketplace name, community ID, current
+  member, personal ID, role in that marketplace, trust record, CCI record,
+  local pool, Money In rail readiness, and Money Out rail readiness.
+- Community picture upload/remove controls now live in the same billboard
+  instead of requiring a second visible profile block.
+- The duplicate lower Marketplace detail/profile board was removed from the
+  visible page.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- This pass did not change backend data contracts; CCI may still show
+  `Preparing` until the relevant score or band fields are available in `me`.
+- Backdrop upload/remove and mobile tap behaviour still need live browser
+  review.
+- Collapsible controls were intentionally not added yet; product owner wants
+  the page arranged first, then collapses added later.
+
+#### Next recommended step
+- Live-review `/app/marketplace` on mobile, especially the backdrop controls,
+  shortcuts, member shop links, Demand Box, and Money In/Out context.
+
+### Previous update
+
+#### Date
+2026-04-20
+
+#### Workstream
 Marketplace runtime order now visually follows the canonical Marketplace
 blueprint before optional detail sections.
 
