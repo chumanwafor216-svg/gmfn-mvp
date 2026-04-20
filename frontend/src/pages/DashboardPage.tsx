@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import DomainIntroToggle from "../components/DomainIntroToggle";
 import ExplainToggle from "../components/ExplainToggle";
 import GSNBrandMark from "../components/GSNBrandMark";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
@@ -3195,6 +3194,8 @@ export default function DashboardPage() {
   );
 
   const gmfnId = safeStr(me?.gmfn_id || "Pending");
+  const visibleGsnId =
+    gmfnId === "Pending" ? gmfnId : gmfnId.replace(/^GMF[MN]/i, "GSN");
   const trustSlipCode = safeStr(trustSlip?.code || "");
   const avatarInputId = "dashboard-avatar-upload-input";
 
@@ -5858,18 +5859,90 @@ export default function DashboardPage() {
           gap: 18,
         }}
       >
-        <DomainIntroToggle
-          title="Your Dashboard"
-          eyebrow="Your guide"
-          body="Use Dashboard as your quick first look. It shows what needs your attention now and points you to the right place to handle it."
-          bullets={[
-            "Check here first when you want to know what is happening now.",
-            "If something needs action, open the page it points to.",
-            "The full work stays in Community Home, Marketplace, Finance, Trust Passport, Demand Box, and Shop.",
-          ]}
-          note="Simple rule: check Dashboard first, then follow it to the right page."
-          tone="blue"
-        />
+        <details
+          style={{
+            borderRadius: isPhone ? 17 : 22,
+            padding: isPhone ? "8px 10px" : 12,
+            background: "linear-gradient(180deg, #FFFFFF 0%, #F4F8FE 100%)",
+            border: "1px solid rgba(11,99,209,0.12)",
+            boxShadow: "0 14px 30px rgba(11,99,209,0.06)",
+          }}
+        >
+          <summary
+            onPointerDown={(event) => event.stopPropagation()}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "minmax(0, 1fr) auto",
+              alignItems: "center",
+              gap: isPhone ? 8 : 10,
+              listStyle: "none",
+              cursor: "pointer",
+              touchAction: "manipulation",
+            }}
+          >
+            <span style={{ minWidth: 0 }}>
+              <span
+                style={{
+                  display: "block",
+                  color: "#0B63D1",
+                  fontSize: isPhone ? 9.8 : 11,
+                  fontWeight: 900,
+                  letterSpacing: 0.32,
+                  textTransform: "uppercase",
+                }}
+              >
+                Your guide
+              </span>
+              <span
+                style={{
+                  display: "block",
+                  marginTop: isPhone ? 1 : 3,
+                  color: "#102A43",
+                  fontSize: isPhone ? 14.5 : 16,
+                  fontWeight: 900,
+                  lineHeight: 1.15,
+                }}
+              >
+                Your Dashboard
+              </span>
+            </span>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: isPhone ? 30 : 38,
+                minWidth: isPhone ? 62 : 82,
+                padding: isPhone ? "5px 10px" : "8px 13px",
+                borderRadius: 999,
+                background: "#FFFFFF",
+                border: "1px solid rgba(11,99,209,0.16)",
+                color: "#14324C",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)",
+                fontSize: isPhone ? 11.5 : 13,
+                fontWeight: 900,
+              }}
+            >
+              Open
+            </span>
+          </summary>
+
+          <div
+            style={{
+              marginTop: isPhone ? 8 : 12,
+              borderRadius: isPhone ? 14 : 18,
+              padding: isPhone ? 10 : 14,
+              background: "rgba(255,255,255,0.72)",
+              border: "1px solid rgba(11,99,209,0.10)",
+              color: "#35516B",
+              fontSize: isPhone ? 12.5 : 14,
+              lineHeight: isPhone ? 1.48 : 1.75,
+            }}
+          >
+            Dashboard is your quick first look. It shows what needs attention
+            now and points you to the right page to handle it.
+          </div>
+        </details>
 
       <section
         style={{
@@ -5911,7 +5984,7 @@ export default function DashboardPage() {
                 position: "relative",
                 display: "grid",
                 gridTemplateColumns: isPhone
-                  ? "32px minmax(0, 1fr) 32px"
+                  ? "32px minmax(0, 1fr) 38px"
                   : undefined,
                 gap: isPhone ? 6 : 8,
                 alignItems: isPhone ? "center" : undefined,
@@ -6075,8 +6148,8 @@ export default function DashboardPage() {
                   justifyContent: "center",
                   justifySelf: isPhone ? "end" : "center",
                   alignSelf: "center",
-                  minHeight: isPhone ? 28 : isCompact ? 40 : 44,
-                  minWidth: isPhone ? 28 : undefined,
+                  minHeight: isPhone ? 36 : isCompact ? 40 : 44,
+                  minWidth: isPhone ? 36 : undefined,
                   padding: isPhone ? 0 : isCompact ? "0 18px" : "0 22px",
                   borderRadius: 999,
                   background:
@@ -6095,7 +6168,7 @@ export default function DashboardPage() {
                   textTransform: "uppercase",
                 }}
               >
-                {isPhone ? <GSNBrandMark width={18} height={22} /> : "GSN"}
+                {isPhone ? <GSNBrandMark width={25} height={30} /> : "GSN"}
               </div>
             </div>
           </div>
@@ -6267,25 +6340,27 @@ export default function DashboardPage() {
                     style={{
                       display: isPhone ? "grid" : "flex",
                       gridTemplateColumns: isPhone ? "1fr" : undefined,
-                      justifyContent: isPhone ? "stretch" : "space-between",
+                      justifyContent: isPhone ? "center" : "space-between",
                       alignItems: "center",
                       flexWrap: isPhone ? undefined : "wrap",
-                      gap: isPhone ? 7 : 6,
+                      gap: isPhone ? 8 : 6,
                     }}
                   >
                     <div
                       style={{
                         display: "inline-flex",
                         alignItems: "center",
+                        justifyContent: "center",
                         gap: 6,
                         minWidth: 0,
+                        width: isPhone ? "100%" : undefined,
                       }}
                     >
                       <div
                         style={{
                           ...sectionLabel(),
                           color: "rgba(226,232,240,0.82)",
-                          textAlign: "left",
+                          textAlign: isPhone ? "center" : "left",
                           fontSize: isPhone ? 11 : 12,
                         }}
                       >
@@ -6295,13 +6370,14 @@ export default function DashboardPage() {
 
                     <span
                       style={{
-                        display: "inline-flex",
+                        display: "grid",
+                        justifyItems: "center",
                         alignItems: "center",
                         width: isPhone ? "100%" : "fit-content",
-                        gap: 3,
-                        minHeight: isPhone ? 28 : 26,
-                        padding: isPhone ? "3px 9px" : "2px 5px",
-                        borderRadius: 9,
+                        gap: isPhone ? 2 : 3,
+                        minHeight: isPhone ? 42 : 30,
+                        padding: isPhone ? "6px 10px" : "4px 10px",
+                        borderRadius: isPhone ? 11 : 9,
                         background:
                           "linear-gradient(180deg, rgba(255,248,220,0.98) 0%, rgba(243,220,152,0.96) 48%, rgba(229,196,102,0.94) 100%)",
                         color: "#6B4300",
@@ -6312,42 +6388,42 @@ export default function DashboardPage() {
                         fontSize: isPhone ? 9.5 : 10,
                         letterSpacing: 0.04,
                         whiteSpace: "nowrap",
-                        justifyContent: isPhone ? "space-between" : "center",
+                        textAlign: "center",
                       }}
                     >
                       <span style={{ opacity: 0.88 }}>GSN ID</span>
                       <span
                         style={{
                           color: "#4F2F00",
-                          fontSize: isPhone ? 11.5 : 13,
+                          fontSize: isPhone ? 14 : 13,
                           lineHeight: 1,
+                          letterSpacing: isPhone ? 0.8 : 0.04,
                         }}
                       >
-                        {gmfnId}
+                        {visibleGsnId}
                       </span>
                     </span>
                   </div>
 
                   <div
                     style={{
-                      marginTop: isPhone ? 8 : 6,
-                      display: isPhone ? "grid" : "flex",
+                      marginTop: isPhone ? 9 : 6,
+                      display: "grid",
                       gridTemplateColumns: isPhone
-                        ? "minmax(0, 1fr) auto"
-                        : undefined,
+                        ? "1fr"
+                        : "minmax(0, 1fr) auto",
                       alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: isPhone ? 7 : 8,
-                      flexWrap: isPhone ? undefined : "wrap",
+                      gap: isPhone ? 6 : 8,
                     }}
                   >
                     <span
                       style={{
                         display: "inline-flex",
                         alignItems: "center",
-                        gap: 6,
-                        minHeight: isPhone ? 27 : 28,
-                        padding: isPhone ? "4px 8px" : "4px 10px",
+                        justifyContent: isPhone ? "center" : "flex-start",
+                        gap: isPhone ? 8 : 6,
+                        minHeight: isPhone ? 32 : 28,
+                        padding: isPhone ? "6px 10px" : "4px 10px",
                         borderRadius: 999,
                         background:
                           "linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.08) 100%)",
@@ -6359,9 +6435,10 @@ export default function DashboardPage() {
                         fontSize: isPhone ? 10 : 11,
                         letterSpacing: 0.04,
                         whiteSpace: "nowrap",
+                        width: isPhone ? "100%" : undefined,
                       }}
                     >
-                      <span style={{ opacity: 0.8 }}>Name</span>
+                      <span style={{ opacity: 0.72 }}>Holder</span>
                       <span
                         style={{
                           fontSize: isPhone ? 12 : 13,
@@ -6372,16 +6449,18 @@ export default function DashboardPage() {
                       </span>
                     </span>
 
-                    <span
-                      style={{
-                        color: "rgba(226,232,240,0.74)",
-                        fontSize: isPhone ? 10.5 : 11.5,
-                        fontWeight: 800,
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      Verification holder
-                    </span>
+                    {!isPhone ? (
+                      <span
+                        style={{
+                          color: "rgba(226,232,240,0.74)",
+                          fontSize: 11.5,
+                          fontWeight: 800,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Visible GSN profile
+                      </span>
+                    ) : null}
                   </div>
 
                   <div
