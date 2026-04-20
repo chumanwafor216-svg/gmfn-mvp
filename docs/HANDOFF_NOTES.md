@@ -43,6 +43,74 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-20
 
 #### Workstream
+Marketplace runtime page composition now begins with the selected marketplace
+profile and current member standing instead of opening as a generic launcher.
+
+#### Routes/screens affected
+- `/app/marketplace`
+- launcher movement from Marketplace to:
+  - `/app/finance`
+  - `/app/payment/pool`
+  - `/app/withdrawal-instructions`
+  - `/app/trust`
+  - `/app/identity`
+  - `/app/trust-slip`
+  - `/app/demand-box`
+  - `/app/notifications`
+  - `/app/community`
+  - `/app/dashboard`
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+- frontend still composes the first Marketplace block from existing:
+  - selected community data
+  - current member data
+  - community-money surface
+  - marketplace invite/link state
+
+#### Files in play
+- `frontend/src/pages/MarketplacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Marketplace now starts with a dark institutional profile block showing:
+  - active marketplace/community picture or fallback
+  - community ID
+  - marketplace trust label
+  - current member
+  - member ID
+  - role in the selected marketplace
+  - local pool position
+  - Money In rail readiness
+  - Money Out rail readiness
+- Marketplace shortcuts are now a separate second block.
+- Marketplace-owned outward links are no longer mixed with the shortcut deck.
+- Member rows and outward links now open by default under a new localStorage
+  section-state key so stale saved Marketplace toggles do not hide the new
+  composition.
+- A dedicated Demand Box block now appears before Loans & Support.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- This was build-verified, not browser-click verified in a live mobile viewport.
+- The live order still keeps the optional Marketplace detail and Money routes
+  blocks before the member/link/demand/support surfaces; a later cleanup pass
+  may tighten the final visual order further if product review says it is still
+  too long.
+- Shortcut destination pages still need separate audits to ensure they display
+  the incoming marketplace context clearly.
+
+#### Next recommended step
+- Live-review `/app/marketplace` on mobile and confirm that the first view now
+  reads as one selected marketplace in action before doing another broader page
+  or navigation pass.
+
+### Previous update
+
+#### Date
+2026-04-20
+
+#### Workstream
 Canonical architecture refined so shop exposure is community-governed and the
 stronger combined truth for Finance and Trust Passport is anchored from the
 cross-community layer rather than treated as only a loose marketplace sum.

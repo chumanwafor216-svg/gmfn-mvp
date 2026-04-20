@@ -182,10 +182,10 @@ const IMAGE_FIELD_NAMES = [
 ];
 
 const DEFAULT_SECTION_STATE: SectionState = {
-  profile: true,
-  money: true,
-  tools: false,
-  members: false,
+  profile: false,
+  money: false,
+  tools: true,
+  members: true,
   support: false,
 };
 
@@ -1142,7 +1142,7 @@ function communityPictureStorageKey(communityId: number): string {
 }
 
 function communitySectionsStorageKey(communityId: number): string {
-  return `gmfn.marketplace.sections.${communityId}`;
+  return `gmfn.marketplace.sections.v2.${communityId}`;
 }
 
 function withdrawalTaskStorageKey(clanId: number, gmfnId: string): string {
@@ -2302,103 +2302,222 @@ export default function MarketplacePage() {
           "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
         )}
       >
-        <div style={sectionLabel()}>Marketplace</div>
-
-        <div
-          style={{
-            marginTop: 10,
-            color: "#F8FBFF",
-            fontSize: isCompact ? 30 : 40,
-            fontWeight: 900,
-            lineHeight: 1.08,
-            maxWidth: 820,
-          }}
-        >
-          Selected community marketplace
-        </div>
-
-        <div
-          style={{
-            marginTop: 12,
-            ...helperText(),
-            color: "#D7E3F1",
-            maxWidth: 920,
-          }}
-        >
-          This marketplace is one community in action. Use it to review the
-          community profile, open money tools, open your Shop, browse
-          community-visible shop links, and continue into support when needed.
-          Private Vault Shops do not appear in ordinary browsing here. Once a
-          money or support route starts, that route should take over and guide
-          you to a clear conclusion.
+        <div style={{ ...sectionLabel(), color: "#A8C7E8" }}>
+          Marketplace profile and member standing
         </div>
 
         <div
           style={{
             marginTop: 14,
-            display: "flex",
-            gap: 8,
-            flexWrap: "wrap",
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "300px minmax(0, 1fr)",
+            gap: 18,
+            alignItems: "stretch",
           }}
         >
-          <span style={badge(true)}>{communityName(selectedCommunity)}</span>
-          <span style={badge(false)}>
-            Pool: {visiblePoolAmount} {visiblePoolCurrency}
-          </span>
-          <span style={badge(false)}>
-            Community account: {communitySettlementReady ? "Ready" : "Awaiting issue"}
-          </span>
-          <span style={badge(false)}>
-            Payout account: {payoutReady ? "Ready" : "Awaiting issue"}
-          </span>
-          <span style={badge(false)}>Current page: Marketplace</span>
-          <span style={badge(false)}>Current step: One community in action</span>
+          <SystemPictureFrame
+            outerStyle={{
+              minHeight: isCompact ? 190 : 220,
+              borderRadius: 28,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 10,
+            }}
+            innerStyle={{
+              minHeight: isCompact ? 170 : 200,
+            }}
+          >
+            <AuthResolvedImage
+              candidates={communityImageCandidates}
+              alt={communityName(selectedCommunity)}
+              clanId={activeCommunityId}
+              refreshSeed={communityPictureRefreshSeed}
+              style={{
+                width: "100%",
+                height: isCompact ? 190 : 220,
+                borderRadius: 18,
+                border: "1px solid rgba(212,175,55,0.18)",
+                objectFit: "cover",
+                objectPosition: "center 18%",
+                display: "block",
+              }}
+              fallback={
+                <div
+                  style={{
+                    minHeight: isCompact ? 190 : 220,
+                    padding: 18,
+                    textAlign: "center",
+                    color: "#F8FBFF",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 14,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 82,
+                      height: 82,
+                      borderRadius: 999,
+                      border: "1px solid rgba(212,175,55,0.24)",
+                      background:
+                        "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18) 0%, rgba(212,175,55,0.14) 28%, rgba(11,31,51,0.18) 100%)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 900,
+                      fontSize: 26,
+                      letterSpacing: 1,
+                    }}
+                  >
+                    {communityName(selectedCommunity)
+                      .split(/\s+/)
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .map((part) => part.slice(0, 1).toUpperCase())
+                      .join("") || "GS"}
+                  </div>
+                  <div
+                    style={{
+                      maxWidth: 220,
+                      color: "#D7E3F1",
+                      fontWeight: 900,
+                      fontSize: 18,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    Marketplace billboard pending
+                  </div>
+                </div>
+              }
+            />
+          </SystemPictureFrame>
+
+          <div>
+            <div
+              style={{
+                color: "#F8FBFF",
+                fontSize: isCompact ? 30 : 40,
+                fontWeight: 900,
+                lineHeight: 1.08,
+                maxWidth: 820,
+              }}
+            >
+              {communityName(selectedCommunity)}
+            </div>
+
+            <div
+              style={{
+                marginTop: 12,
+                ...helperText(),
+                color: "#D7E3F1",
+                maxWidth: 900,
+              }}
+            >
+              {communityDescription(selectedCommunity)}
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr 1fr"
+                  : "repeat(4, minmax(0, 1fr))",
+                gap: 10,
+              }}
+            >
+              {[
+                ["Community ID", communityIdentity(selectedCommunity)],
+                ["Marketplace trust", communityTrustLabel(selectedCommunity)],
+                ["Current member", memberName],
+                ["Member ID", gmfnId],
+                ["Role here", communityRole(selectedCommunity) || "Member"],
+                ["Local pool", `${visiblePoolAmount} ${visiblePoolCurrency}`],
+                [
+                  "Money In rail",
+                  communitySettlementReady ? "Ready" : "Awaiting issue",
+                ],
+                ["Money Out rail", payoutReady ? "Ready" : "Awaiting issue"],
+              ].map(([label, value]) => (
+                <div
+                  key={label}
+                  style={{
+                    borderRadius: 16,
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    background: "rgba(255,255,255,0.07)",
+                    padding: 14,
+                    minHeight: 82,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: "#A8C7E8",
+                      fontWeight: 900,
+                      letterSpacing: 0.28,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {label}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#F8FBFF",
+                      fontWeight: 900,
+                      fontSize: 15,
+                      lineHeight: 1.35,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {value}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
+              <span style={badge(true)}>One community in action</span>
+              <span style={badge(false)}>Shop exposure is community-governed</span>
+              <span style={badge(false)}>
+                Private Vault Shops stay controlled
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div style={sectionLabel()}>Marketplace shortcuts</div>
+
+        <div
+          style={{
+            marginTop: 8,
+            ...helperText(),
+            maxWidth: 880,
+          }}
+        >
+          Use these launchers only after confirming the active marketplace above.
+          Each action should continue with this selected community context.
         </div>
 
         <div
           style={{
-            marginTop: 18,
+            marginTop: 16,
             display: "grid",
             gap: 10,
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            <button
-              type="button"
-              onPointerDown={consumeMarketplacePointerEvent}
-              onClick={(event) => openMarketplaceRoute(event, "/app/community")}
-              style={actionBtn("secondary")}
-            >
-              Community Home
-            </button>
-
-            <button
-              type="button"
-              onPointerDown={consumeMarketplacePointerEvent}
-              onClick={(event) => openMarketplaceRoute(event, "/app/dashboard")}
-              style={actionBtn("secondary")}
-            >
-              Dashboard
-            </button>
-
-            {myShopTo ? (
-              <button
-                type="button"
-                onPointerDown={consumeMarketplacePointerEvent}
-                onClick={(event) => openMarketplaceRoute(event, myShopTo)}
-                style={actionBtn("secondary")}
-              >
-                Shop
-              </button>
-            ) : null}
-          </div>
-
           <div
             style={{
               display: "flex",
@@ -2473,6 +2592,61 @@ export default function MarketplacePage() {
             >
               TrustSlip
             </button>
+
+            <button
+              type="button"
+              onPointerDown={consumeMarketplacePointerEvent}
+              onClick={(event) => openMarketplaceRoute(event, "/app/demand-box")}
+              style={actionBtn("soft")}
+            >
+              Demand Box
+            </button>
+
+            <button
+              type="button"
+              onPointerDown={consumeMarketplacePointerEvent}
+              onClick={(event) => openMarketplaceRoute(event, "/app/notifications")}
+              style={actionBtn("soft")}
+            >
+              Notifications
+            </button>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            {myShopTo ? (
+              <button
+                type="button"
+                onPointerDown={consumeMarketplacePointerEvent}
+                onClick={(event) => openMarketplaceRoute(event, myShopTo)}
+                style={actionBtn("secondary")}
+              >
+                Shop Gallery
+              </button>
+            ) : null}
+
+            <button
+              type="button"
+              onPointerDown={consumeMarketplacePointerEvent}
+              onClick={(event) => openMarketplaceRoute(event, "/app/community")}
+              style={actionBtn("secondary")}
+            >
+              Community Home
+            </button>
+
+            <button
+              type="button"
+              onPointerDown={consumeMarketplacePointerEvent}
+              onClick={(event) => openMarketplaceRoute(event, "/app/dashboard")}
+              style={actionBtn("secondary")}
+            >
+              Dashboard
+            </button>
           </div>
         </div>
       </section>
@@ -2496,9 +2670,10 @@ export default function MarketplacePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Community profile</div>
+            <div style={sectionLabel()}>Marketplace detail</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-               See the identity and current picture of this community first.
+              Open this only when you need the fuller marketplace picture,
+              story, and profile controls.
             </div>
           </div>
 
@@ -2512,10 +2687,10 @@ export default function MarketplacePage() {
         </div>
 
         <ExplainToggle
-          label="What this profile does"
-          what="This profile anchors the marketplace in the current community by showing the identity, visible image, trust position, and shared pool context first."
-          why="People need to understand who they are trading inside before opening member activity, money routes, or support work."
-          next="Read the community identity first, then use the details below to confirm trust, membership size, and pool position before moving deeper into commerce or support."
+          label="What this detail does"
+          what="This opens the fuller profile for the selected marketplace, including the picture, story, trust position, and profile controls."
+          why="The first block already gives the quick standing. This detail is kept separate so the page stays lighter while still preserving the deeper profile view."
+          next="Open it when you need to update or inspect the full marketplace profile; otherwise continue through shortcuts, members, links, demand, or support."
           tone="light"
           style={{ marginTop: 12 }}
         />
@@ -3118,10 +3293,10 @@ export default function MarketplacePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Marketplace links & shortcuts</div>
+            <div style={sectionLabel()}>Marketplace-owned outward links</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              This marketplace owns the outward links for this one community,
-              then keeps only a few crossover shortcuts beside them.
+              This marketplace owns the outward links for this one community.
+              They must carry this community identity when they leave the app.
             </div>
           </div>
 
@@ -3135,10 +3310,10 @@ export default function MarketplacePage() {
         </div>
 
         <ExplainToggle
-          label="What these shortcuts do"
-          what="This area keeps the marketplace-owned outward links for this one community together with only a few crossover shortcuts."
-          why="Invite links, shop-facing links, and other outward paths should stay localized to this marketplace, while the wider command tools remain in Community Home."
-          next="Use the join, marketplace-view, or shop-view links from here when something must leave this community, then use the shortcuts below only when the next move belongs back inside the app."
+          label="What these links do"
+          what="This area keeps the outward links that belong to the selected marketplace, including join, marketplace-view, shop-view, and controlled Vault-style access."
+          why="Invite links, shop-facing links, and other outward paths should stay localized to this marketplace instead of becoming loose dashboard links."
+          next="Use the join, marketplace-view, or shop-view links when something must leave this community and still return to the same marketplace context."
           tone="light"
           style={{ marginTop: 12 }}
         />
@@ -3367,63 +3542,6 @@ export default function MarketplacePage() {
               </div>
             </div>
 
-            <div
-              style={{
-                borderRadius: 16,
-                border: "1px solid rgba(11,31,51,0.08)",
-                background: "#F8FBFF",
-                padding: 16,
-                display: "grid",
-                gap: 14,
-              }}
-            >
-              <div>
-                <div style={sectionLabel()}>Use Community Home for the fuller tool set</div>
-                <div style={{ marginTop: 8, ...helperText() }}>
-                  Community Home remains the place for picture updates, invite
-                  preparation, spotlight control, first-circle work, and the
-                  wider community command work. Marketplace keeps only the
-                  shortcuts that help the current trade or support move.
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: isCompact
-                    ? "1fr"
-                    : "repeat(auto-fit, minmax(180px, 1fr))",
-                  gap: 10,
-                }}
-              >
-                <button
-                  type="button"
-                  onPointerDown={consumeMarketplacePointerEvent}
-                  onClick={(event) => openMarketplaceRoute(event, "/app/community")}
-                  style={actionBtn("primary")}
-                >
-                  Community Home
-                </button>
-
-                <button
-                  type="button"
-                  onPointerDown={consumeMarketplacePointerEvent}
-                  onClick={(event) => openMarketplaceRoute(event, "/app/demand-box")}
-                  style={actionBtn("secondary")}
-                >
-                  Demand Box
-                </button>
-
-                <button
-                  type="button"
-                  onPointerDown={consumeMarketplacePointerEvent}
-                  onClick={(event) => openMarketplaceRoute(event, "/app/notifications")}
-                  style={actionBtn("secondary")}
-                >
-                  Notifications
-                </button>
-              </div>
-            </div>
           </div>
         ) : null}
       </section>
@@ -3578,6 +3696,63 @@ export default function MarketplacePage() {
             )}
           </div>
         ) : null}
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div style={sectionLabel()}>Demand Box</div>
+
+        <div
+          style={{
+            marginTop: 8,
+            ...helperText(),
+            maxWidth: 860,
+          }}
+        >
+          Demand starts from marketplace life: a member needs something, and the
+          community looks for who can answer it. The broader demand reading may
+          combine upward, but this button should open the demand work from the
+          current marketplace context.
+        </div>
+
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "1fr auto",
+            gap: 12,
+            alignItems: "center",
+          }}
+        >
+          <div style={innerCard("#FCFEFF")}>
+            <div style={sectionLabel()}>Current context</div>
+            <div
+              style={{
+                marginTop: 8,
+                color: "#0B1F33",
+                fontWeight: 900,
+                fontSize: 16,
+                lineHeight: 1.4,
+              }}
+            >
+              {communityName(selectedCommunity)}
+            </div>
+            <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <span style={badge(false)}>
+                Community ID: {communityIdentity(selectedCommunity)}
+              </span>
+              <span style={badge(false)}>Member: {memberName}</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onPointerDown={consumeMarketplacePointerEvent}
+            onClick={(event) => openMarketplaceRoute(event, "/app/demand-box")}
+            style={actionBtn("primary")}
+          >
+            Open Demand Box
+          </button>
+        </div>
       </section>
 
       <section
