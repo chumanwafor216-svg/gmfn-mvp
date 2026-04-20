@@ -1120,15 +1120,15 @@ export default function FinancePage() {
       />
 
       <DomainIntroToggle
-        title="About Finance"
-        eyebrow="About this place"
-        body="Finance is where your money record is gathered. It shows what you have, what is locked, what is due, and where money should go next."
+        title="Your Finance"
+        eyebrow="Your guide"
+        body="Use Finance to see your money record in one place. It shows what you have, what is locked, what is due, and where money should go next."
         bullets={[
           "Marketplace shows the money picture for one community.",
           "Finance shows your fuller money picture across the communities you belong to.",
           "Use this page for your pool, borrowing, support you gave others, expected payments, money in, money out, and recent money movement.",
         ]}
-        note="Simple rule: Marketplace shows local money. Finance shows your fuller money picture."
+        note="Simple rule: check local money in Marketplace; check your fuller money picture here."
         tone="blue"
       />
 

@@ -1017,15 +1017,15 @@ export default function ShopGalleryPage() {
       {error ? <div style={noticeCard("error")}>{error}</div> : null}
 
       <DomainIntroToggle
-        title="About Shop Gallery"
-        eyebrow="About this place"
-        body="Shop Gallery is the public face of a shop. People in the community, and approved outside viewers, can see what the shop is showing."
+        title="Your Shop Gallery"
+        eyebrow="Your guide"
+        body="Use Shop Gallery as the public door to a shop. People in the community, and approved outside viewers, can see what the shop is showing."
         bullets={[
           "One person has one shop, and that shop can appear in the communities they belong to.",
           "A shop normally shows through its communities. Wider sharing should use the right link or repost path.",
           "Vault items are locked. They should only open with the right permission or access link.",
         ]}
-        note="Simple rule: Shop Gallery is the shop door for the owner, the community, and approved outsiders."
+        note="Simple rule: Shop Gallery is where people come to view the shop."
         tone="dark"
       />
 

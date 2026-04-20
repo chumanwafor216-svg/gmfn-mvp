@@ -5782,15 +5782,15 @@ export default function DashboardPage() {
         }}
       >
         <DomainIntroToggle
-          title="About Dashboard"
-          eyebrow="About this place"
-          body="Dashboard is your quick first look. It shows what needs attention now and points you to the right place to handle it."
+          title="Your Dashboard"
+          eyebrow="Your guide"
+          body="Use Dashboard as your quick first look. It shows what needs your attention now and points you to the right place to handle it."
           bullets={[
             "Check here first when you want to know what is happening now.",
             "If something needs action, open the page it points to.",
             "The full work stays in Community Home, Marketplace, Finance, Trust Passport, Demand Box, and Shop.",
           ]}
-          note="Simple rule: Dashboard shows the quick picture and sends you to the right place."
+          note="Simple rule: check Dashboard first, then follow it to the right page."
           tone="blue"
         />
 

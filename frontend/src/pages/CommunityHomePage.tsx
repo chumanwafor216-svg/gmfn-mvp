@@ -1900,15 +1900,15 @@ export default function CommunityHomePage() {
         />
 
         <DomainIntroToggle
-          title="About Community Home"
-          eyebrow="About this place"
-          body="Community Home is where all your groups will appear. After you create or join a group, it shows here and can open as a Marketplace."
+          title="Your Community Home"
+          eyebrow="Your guide"
+          body="This is where your groups will appear. Create or join a community, then choose it here when you want to work inside it."
           bullets={[
             "Create or join a community first.",
             "Then choose the group you want to work in.",
             "Finance, Trust Passport, and Shop Gallery become clearer after your first community is in place.",
           ]}
-          note="Simple rule: Community Home gathers your groups before one opens for live work."
+          note="Simple rule: your groups gather here before you open one for live work."
           tone="blue"
         />
 
@@ -2010,15 +2010,15 @@ export default function CommunityHomePage() {
       />
 
       <DomainIntroToggle
-        title="About Community Home"
-        eyebrow="About this place"
-        body="Community Home is where all your groups sit together. Each group appears as one Marketplace line, and you choose which one you want to work in."
+        title="Your Community Home"
+        eyebrow="Your guide"
+        body="This is where all your groups sit together. Choose one group here when you want to work inside that community."
         bullets={[
           "Use it to see all the communities you belong to.",
           "Choose one community, then open it as Marketplace to work inside it.",
           "This page can show simple group signs like trust, money health, CCI (cross-community integrity), demand, and spotlight. Your full private records stay in Finance and Trust Passport.",
         ]}
-        note="Simple rule: Community Home shows all your groups. Marketplace opens one group for live work."
+        note="Simple rule: Community Home shows all your groups. Marketplace opens the one you choose."
         tone="blue"
       />
 

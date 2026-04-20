@@ -2195,15 +2195,15 @@ export default function MarketplacePage() {
         {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
         <DomainIntroToggle
-          title="About Marketplace"
-          eyebrow="About this place"
-          body="Marketplace opens one community at a time. Choose a community in Community Home first, then this page knows which group to show."
+          title="Your Marketplace"
+          eyebrow="Your guide"
+          body="Marketplace needs you to choose one community first. Go to Community Home, pick a group, then come back here to work inside it."
           bullets={[
             "This is not the page for all your groups together.",
             "It shows one group's members, shops, links, demand, money signs, and trust signs.",
             "After choosing a community, come here to work inside that group.",
           ]}
-          note="Simple rule: choose a group first, then Marketplace becomes that group in action."
+          note="Simple rule: choose your group first, then work inside it here."
           tone="dark"
         />
 
@@ -2321,15 +2321,15 @@ export default function MarketplacePage() {
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <DomainIntroToggle
-        title="About Marketplace"
-        eyebrow="About this place"
-        body="Marketplace is the working room for one community. This is where that group's people, shops, links, money signs, demand, support, and trust activity are used."
+        title="Your Marketplace"
+        eyebrow="Your guide"
+        body="You are in the working room for one community. Use this place for that group's people, shops, invite links, demand, support, trust, and money movement."
         bullets={[
           "Check the top board first so you know which community you are inside.",
           "Use this place for members, shops, invite links, Demand Box, support, money in, and money out.",
           "Finance and Trust Passport show the bigger story, but Marketplace shows what is happening here.",
         ]}
-        note="Simple rule: Marketplace is the live working room for one community."
+        note="Simple rule: use Marketplace to work inside one community at a time."
         tone="dark"
         style={{ order: 0 }}
       />

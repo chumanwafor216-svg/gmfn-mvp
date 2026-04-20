@@ -2116,15 +2116,15 @@ export default function TrustScorePage() {
         />
 
         <DomainIntroToggle
-          title="About Trust Passport"
-          eyebrow="About this place"
-          body="Trust Passport is your full trust story. It shows how trust is looking now, why it changed, and what proof supports it."
+          title="Your Trust Passport"
+          eyebrow="Your guide"
+          body="Use Trust Passport to understand your trust story. It shows how your trust is looking now, why it changed, and what proof supports it."
           bullets={[
             "Marketplace trust shows how one community sees your behaviour there.",
             "Trust Passport brings your trust story together across your communities.",
             "TrustSlip is a smaller proof you can show for one decision. It is not the whole Passport.",
           ]}
-          note="Simple rule: Trust Passport tells the full trust story. TrustSlip shows a smaller proof when needed."
+          note="Simple rule: use Trust Passport for the full story; use TrustSlip when you need smaller proof."
           tone="blue"
         />
       </div>

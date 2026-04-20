@@ -2846,7 +2846,7 @@ GSN-branded invite composer and invite-entry continuity.
     stays quiet unless that same issue becomes long-persistent
   - intent: keep the guidance value while removing repeated popup disruption
 - A compact domain-intro guide pass then replaced scattered help text with one
-  small `About this place` guide near the top of the main domains.
+  small `Your guide` explainer near the top of the main domains.
   - updated routes/screens: `/app/dashboard`, `/app/community`,
     `/app/marketplace`, `/app/shop-gallery`, `/app/finance`, and
     `/app/trust`
@@ -2855,6 +2855,10 @@ GSN-branded invite composer and invite-entry continuity.
     `Marketplace` opens one group for live work, `Shop Gallery` is the shop
     door, `Finance` gathers money records, and `Trust Passport` tells the trust
     story
+  - the guide voice was then tightened again to speak directly to the app user,
+    using `you` / `your` instructions such as `Use Finance`, `Choose your
+    group`, and `Use Trust Passport`, instead of sounding like an architecture
+    note for the builders
   - this was a language/clarity pass only; it did not change backend rules,
     route contracts, or data ownership
   - known remaining issue: on mobile, some guide/open buttons can still jump to
