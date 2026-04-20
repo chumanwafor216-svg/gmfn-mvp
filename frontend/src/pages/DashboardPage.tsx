@@ -5466,6 +5466,36 @@ export default function DashboardPage() {
       },
       overrides
     );
+  const focusCommitmentButton = (
+    overrides: React.CSSProperties = {}
+  ): React.CSSProperties =>
+    dashboardFillButton(
+      {
+        ...secondaryBtn(false),
+        minHeight: isPhone ? 44 : 40,
+        padding: isPhone ? "9px 10px" : "8px 12px",
+        borderRadius: isPhone ? 15 : 14,
+        background: "linear-gradient(180deg, #FFFFFF 0%, #F3F7FC 100%)",
+        border: "1px solid rgba(11,99,209,0.14)",
+        color: DASHBOARD_BRAND.accentDeep,
+        fontWeight: 900,
+        fontSize: isPhone ? 12.5 : 13,
+        lineHeight: 1.08,
+        whiteSpace: "nowrap",
+        userSelect: "none",
+        touchAction: "manipulation",
+        boxShadow:
+          "0 10px 20px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.88)",
+      },
+      overrides
+    );
+  const focusMetricLabelStyle: React.CSSProperties = {
+    ...sectionLabel(),
+    fontSize: isPhone ? 10.5 : 12,
+    letterSpacing: isPhone ? 0.12 : 0.35,
+    lineHeight: 1.05,
+    whiteSpace: "nowrap",
+  };
   const attentionConnectionText = isPhone
     ? "Focus shows follow-through. Trust is how your community reads it. CCI is how outsiders may read it. TrustSlip keeps later proof. The waiting request is the issue now."
     : trustAttentionCore.connectionText;
@@ -9296,10 +9326,11 @@ export default function DashboardPage() {
 
       <section
         style={{
-          marginTop: 14,
+          marginTop: isPhone ? 10 : 14,
           ...pageCard(DASHBOARD_BRAND.raisedPanel),
+          padding: isPhone ? 12 : 20,
           display: "grid",
-          gap: 14,
+          gap: isPhone ? 10 : 14,
         }}
       >
           <div
@@ -9307,6 +9338,7 @@ export default function DashboardPage() {
             style={{
               position: "relative",
               ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)"),
+              padding: isPhone ? 14 : 16,
               border: "1px solid rgba(11,99,209,0.14)",
               boxShadow: "0 16px 34px rgba(11,99,209,0.06)",
               overflow: "hidden",
@@ -9328,14 +9360,22 @@ export default function DashboardPage() {
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                gap: 12,
+                gap: isPhone ? 8 : 12,
                 alignItems: "center",
                 flexWrap: "wrap",
               }}
             >
               <div style={sectionLabel()}>Focus Commitments</div>
 
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div
+                style={{
+                  display: isPhone ? "grid" : "flex",
+                  gridTemplateColumns: isPhone ? "1fr 1.25fr" : undefined,
+                  gap: isPhone ? 7 : 8,
+                  flexWrap: "wrap",
+                  width: isPhone ? "100%" : undefined,
+                }}
+              >
                 {focusSummary.nextReviewLabel ? (
                   <span style={badge(false)}>{focusSummary.nextReviewLabel}</span>
                 ) : null}
@@ -9348,7 +9388,16 @@ export default function DashboardPage() {
                     )
                   }
                   onPointerDown={consumeDashboardPointerEvent}
-                  style={secondaryBtn(activeFocusCount >= 2)}
+                  style={focusCommitmentButton(
+                    activeFocusCount >= 2
+                      ? {
+                          opacity: 0.7,
+                          cursor: "not-allowed",
+                          background:
+                            "linear-gradient(180deg, #F8FAFC 0%, #E2E8F0 100%)",
+                        }
+                      : {}
+                  )}
                   disabled={activeFocusCount >= 2}
                 >
                   {focusComposerOpen ? "Close composer" : "Add commitment"}
@@ -9358,16 +9407,16 @@ export default function DashboardPage() {
 
             <div
               style={{
-                marginTop: 14,
+                marginTop: isPhone ? 10 : 14,
                 display: "grid",
-                gap: 10,
+                gap: isPhone ? 8 : 10,
               }}
             >
               <div
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-                  gap: 8,
+                  gap: isPhone ? 6 : 8,
                 }}
               >
                 <div
@@ -9376,16 +9425,16 @@ export default function DashboardPage() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    gap: 8,
-                    padding: "8px 10px",
+                    gap: isPhone ? 5 : 8,
+                    padding: isPhone ? "7px 8px" : "8px 10px",
                   }}
                 >
-                  <div style={sectionLabel()}>On track</div>
+                  <div style={focusMetricLabelStyle}>On track</div>
                   <div
                     style={{
                       color: "#166534",
                       fontWeight: 900,
-                      fontSize: 17,
+                      fontSize: isPhone ? 16 : 17,
                       lineHeight: 1,
                     }}
                   >
@@ -9399,16 +9448,16 @@ export default function DashboardPage() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    gap: 8,
-                    padding: "8px 10px",
+                    gap: isPhone ? 5 : 8,
+                    padding: isPhone ? "7px 8px" : "8px 10px",
                   }}
                 >
-                  <div style={sectionLabel()}>Watch</div>
+                  <div style={focusMetricLabelStyle}>Watch</div>
                   <div
                     style={{
                       color: "#92400E",
                       fontWeight: 900,
-                      fontSize: 17,
+                      fontSize: isPhone ? 16 : 17,
                       lineHeight: 1,
                     }}
                   >
@@ -9422,16 +9471,16 @@ export default function DashboardPage() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    gap: 8,
-                    padding: "8px 10px",
+                    gap: isPhone ? 5 : 8,
+                    padding: isPhone ? "7px 8px" : "8px 10px",
                   }}
                 >
-                  <div style={sectionLabel()}>Behind</div>
+                  <div style={focusMetricLabelStyle}>Behind</div>
                   <div
                     style={{
                       color: "#991B1B",
                       fontWeight: 900,
-                      fontSize: 17,
+                      fontSize: isPhone ? 16 : 17,
                       lineHeight: 1,
                     }}
                   >
@@ -9474,25 +9523,37 @@ export default function DashboardPage() {
                   <div style={dashboardActionGrid(isCompact ? 96 : 120)}>
                     <button
                       type="button"
-                      onClick={() => prefillFocusDraft("savings")}
+                      onClick={(event) =>
+                        runDashboardUiMutation(event, () =>
+                          prefillFocusDraft("savings")
+                        )
+                      }
                       onPointerDown={consumeDashboardPointerEvent}
-                      style={dashboardFillButton(subtleBtn(false))}
+                      style={focusCommitmentButton()}
                     >
                       Savings idea
                     </button>
                     <button
                       type="button"
-                      onClick={() => prefillFocusDraft("business")}
+                      onClick={(event) =>
+                        runDashboardUiMutation(event, () =>
+                          prefillFocusDraft("business")
+                        )
+                      }
                       onPointerDown={consumeDashboardPointerEvent}
-                      style={dashboardFillButton(subtleBtn(false))}
+                      style={focusCommitmentButton()}
                     >
                       Business idea
                     </button>
                     <button
                       type="button"
-                      onClick={() => prefillFocusDraft("repayment")}
+                      onClick={(event) =>
+                        runDashboardUiMutation(event, () =>
+                          prefillFocusDraft("repayment")
+                        )
+                      }
                       onPointerDown={consumeDashboardPointerEvent}
-                      style={dashboardFillButton(subtleBtn(false))}
+                      style={focusCommitmentButton()}
                     >
                       Repayment idea
                     </button>
@@ -9635,22 +9696,36 @@ export default function DashboardPage() {
                   <div style={dashboardActionGrid(isCompact ? 118 : 136)}>
                     <button
                       type="button"
-                      onClick={() => {
-                        resetFocusDraft();
-                        setFocusComposerOpen(false);
-                      }}
+                      onClick={(event) =>
+                        runDashboardUiMutation(event, () => {
+                          resetFocusDraft();
+                          setFocusComposerOpen(false);
+                        })
+                      }
                       onPointerDown={consumeDashboardPointerEvent}
-                      style={dashboardFillButton(secondaryBtn(false))}
+                      style={focusCommitmentButton()}
                     >
                       Cancel
                     </button>
 
                     <button
                       type="button"
-                      onClick={saveFocusCommitment}
+                      onClick={(event) =>
+                        runDashboardUiMutation(event, saveFocusCommitment)
+                      }
                       onPointerDown={consumeDashboardPointerEvent}
-                      style={dashboardFillButton(
-                        primaryBtn(!safeStr(focusDraft.title) || activeFocusCount >= 2)
+                      style={focusCommitmentButton(
+                        !safeStr(focusDraft.title) || activeFocusCount >= 2
+                          ? {
+                              opacity: 0.7,
+                              cursor: "not-allowed",
+                              background:
+                                "linear-gradient(180deg, #F8FAFC 0%, #E2E8F0 100%)",
+                            }
+                          : {
+                              background:
+                                "linear-gradient(180deg, #FFFFFF 0%, #F3F7FC 100%)",
+                            }
                       )}
                       disabled={!safeStr(focusDraft.title) || activeFocusCount >= 2}
                     >
@@ -9855,27 +9930,39 @@ export default function DashboardPage() {
 
                         <button
                           type="button"
-                          onClick={() => submitFocusCheckIn(item.id)}
+                          onClick={(event) =>
+                            runDashboardUiMutation(event, () =>
+                              submitFocusCheckIn(item.id)
+                            )
+                          }
                           onPointerDown={consumeDashboardPointerEvent}
-                          style={dashboardFillButton(secondaryBtn(false))}
+                          style={focusCommitmentButton()}
                         >
                           Check in
                         </button>
 
                         <button
                           type="button"
-                          onClick={() => replanFocusCommitment(item.id)}
+                          onClick={(event) =>
+                            runDashboardUiMutation(event, () =>
+                              replanFocusCommitment(item.id)
+                            )
+                          }
                           onPointerDown={consumeDashboardPointerEvent}
-                          style={dashboardFillButton(subtleBtn(false))}
+                          style={focusCommitmentButton()}
                         >
                           Replan
                         </button>
 
                         <button
                           type="button"
-                          onClick={() => completeFocusCommitment(item.id)}
+                          onClick={(event) =>
+                            runDashboardUiMutation(event, () =>
+                              completeFocusCommitment(item.id)
+                            )
+                          }
                           onPointerDown={consumeDashboardPointerEvent}
-                          style={dashboardFillButton(primaryBtn(false))}
+                          style={focusCommitmentButton()}
                         >
                           Complete
                         </button>
@@ -9886,16 +9973,21 @@ export default function DashboardPage() {
               ) : (
                   <div
                     style={{
-                      ...innerCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
-                      border: "1px solid rgba(212,175,55,0.24)",
+                      ...innerCard(
+                        "radial-gradient(circle at top right, rgba(96,165,250,0.16) 0%, rgba(96,165,250,0) 34%), linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+                      ),
+                      padding: isPhone ? 14 : 16,
+                      border: "1px solid rgba(96,165,250,0.18)",
+                      boxShadow:
+                        "0 16px 34px rgba(10,24,49,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
                     }}
                   >
                     <div
                       style={{
                         color: "#F8FBFF",
                         fontWeight: 900,
-                        fontSize: 18,
-                        lineHeight: 1.3,
+                        fontSize: isPhone ? 17 : 18,
+                        lineHeight: 1.22,
                     }}
                   >
                     No active commitment yet.
@@ -9903,9 +9995,11 @@ export default function DashboardPage() {
 
                   <div
                     style={{
-                      marginTop: 8,
+                      marginTop: isPhone ? 6 : 8,
                       ...helperText(),
                       color: "#F8FBFF",
+                      fontSize: isPhone ? 13 : 14,
+                      lineHeight: isPhone ? 1.45 : 1.75,
                       maxWidth: 640,
                     }}
                   >
@@ -9914,58 +10008,61 @@ export default function DashboardPage() {
 
                   <div
                     style={{
-                      marginTop: 14,
+                      marginTop: isPhone ? 12 : 14,
                       display: "grid",
                       gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-                      gap: 8,
+                      gap: isPhone ? 7 : 8,
                     }}
                   >
                     <button
                       type="button"
-                      onClick={() => prefillFocusDraft("savings")}
+                      onClick={(event) =>
+                        runDashboardUiMutation(event, () =>
+                          prefillFocusDraft("savings")
+                        )
+                      }
                       onPointerDown={consumeDashboardPointerEvent}
-                      style={{
-                        ...dashboardFillButton(secondaryBtn(false)),
-                        width: "100%",
-                        minHeight: 36,
-                        padding: "7px 9px",
-                        whiteSpace: "normal",
-                        textAlign: "center",
-                      }}
+                      style={focusCommitmentButton({
+                        minHeight: isPhone ? 42 : 40,
+                        padding: isPhone ? "8px 7px" : "8px 12px",
+                        fontSize: isPhone ? 12 : 13,
+                      })}
                     >
-                      Start savings target
+                      Savings
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => prefillFocusDraft("business")}
+                      onClick={(event) =>
+                        runDashboardUiMutation(event, () =>
+                          prefillFocusDraft("business")
+                        )
+                      }
                       onPointerDown={consumeDashboardPointerEvent}
-                      style={{
-                        ...dashboardFillButton(secondaryBtn(false)),
-                        width: "100%",
-                        minHeight: 36,
-                        padding: "7px 9px",
-                        whiteSpace: "normal",
-                        textAlign: "center",
-                      }}
+                      style={focusCommitmentButton({
+                        minHeight: isPhone ? 42 : 40,
+                        padding: isPhone ? "8px 7px" : "8px 12px",
+                        fontSize: isPhone ? 12 : 13,
+                      })}
                     >
-                      Start business target
+                      Business
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => prefillFocusDraft("repayment")}
+                      onClick={(event) =>
+                        runDashboardUiMutation(event, () =>
+                          prefillFocusDraft("repayment")
+                        )
+                      }
                       onPointerDown={consumeDashboardPointerEvent}
-                      style={{
-                        ...dashboardFillButton(secondaryBtn(false)),
-                        width: "100%",
-                        minHeight: 36,
-                        padding: "7px 9px",
-                        whiteSpace: "normal",
-                        textAlign: "center",
-                      }}
+                      style={focusCommitmentButton({
+                        minHeight: isPhone ? 42 : 40,
+                        padding: isPhone ? "8px 7px" : "8px 12px",
+                        fontSize: isPhone ? 12 : 13,
+                      })}
                     >
-                      Start repayment target
+                      Repayment
                     </button>
                   </div>
                 </div>
