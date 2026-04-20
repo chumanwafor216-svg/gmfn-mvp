@@ -46,6 +46,50 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-20
 
 #### Workstream
+Finance and Trust Passport now have the same one-per-domain intro guide pattern
+as Dashboard, Community Home, Marketplace, and Shop Gallery.
+
+#### Routes/screens affected
+- `/app/finance`
+- `/app/trust`
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+
+#### Files in play
+- `frontend/src/pages/FinancePage.tsx`
+- `frontend/src/pages/TrustScorePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Finance now has `About Finance`, explaining that Finance is the fuller
+  personal money record across marketplaces tied to one member ID.
+- The Finance guide explicitly separates local Marketplace finance from the
+  broader cumulative Finance domain.
+- Trust Passport now has `About Trust Passport`, explaining that it is the
+  fuller personal trust record across communities and marketplaces.
+- The Trust Passport guide explicitly separates Marketplace trust, Trust
+  Passport, and TrustSlip.
+- Existing scattered `ExplainToggle` surfaces remain globally disabled and were
+  not re-enabled.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- A live mobile review is still needed to confirm all domain-guide buttons feel
+  compact and do not crowd the first screen.
+- Trust Passport print output should be checked later; the domain guide is
+  placed inside the print-nav wrapper, which is already hidden in print CSS.
+
+#### Next recommended step
+- Live-review the domain intro buttons across Dashboard, Community Home,
+  Marketplace, Finance, Trust Passport, and Shop Gallery on mobile.
+
+### Previous update
+
+#### Date
+2026-04-20
+
+#### Workstream
 One-per-domain intro guide added to key user-facing domains so explanatory
 help is available without returning to scattered `What this does` blocks.
 

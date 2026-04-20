@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import DomainIntroToggle from "../components/DomainIntroToggle";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
@@ -1116,6 +1117,19 @@ export default function FinancePage() {
           { label: "Loans", to: "/app/loans" },
           { label: "Notifications", to: "/app/notifications" },
         ]}
+      />
+
+      <DomainIntroToggle
+        title="About Finance"
+        eyebrow="Domain guide"
+        body="Finance is your full money record across the communities and marketplaces you belong to. It helps you see what is available, what is locked, what is due, and where money should move next."
+        bullets={[
+          "Marketplace finance shows what is happening inside one selected community.",
+          "Finance combines your personal money story across all marketplaces tied to your one member ID.",
+          "Use this page for pool position, borrower obligations, guarantor exposure, expected payments, rails, and recent money events.",
+        ]}
+        note="Plain rule: Marketplace shows local money context; Finance shows your fuller money picture."
+        tone="blue"
       />
 
       <ExplainToggle

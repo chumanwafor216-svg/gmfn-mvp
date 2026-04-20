@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import DomainIntroToggle from "../components/DomainIntroToggle";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
@@ -2112,6 +2113,19 @@ export default function TrustScorePage() {
             { label: "Marketplace", to: "/app/marketplace" },
           ]}
           utilityLinks={[{ label: "My GSN and I", to: "/app/my-gmfn-and-i" }]}
+        />
+
+        <DomainIntroToggle
+          title="About Trust Passport"
+          eyebrow="Domain guide"
+          body="Trust Passport is your fuller trust record across the communities and marketplaces you belong to. It explains your current trust position, why it changed, and what evidence supports it."
+          bullets={[
+            "Marketplace trust shows how one community is reading behaviour in that place.",
+            "Trust Passport combines your personal trust story across communities, including evidence, repair paths, CCI, and portability.",
+            "TrustSlip is the smaller proof you can show for a specific decision; it is not the whole Passport.",
+          ]}
+          note="Plain rule: Trust Passport tells the full trust story; TrustSlip carries a smaller proof when needed."
+          tone="blue"
         />
       </div>
 
