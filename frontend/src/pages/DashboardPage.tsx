@@ -3195,6 +3195,7 @@ export default function DashboardPage() {
 
   const gmfnId = safeStr(me?.gmfn_id || "Pending");
   const trustSlipCode = safeStr(trustSlip?.code || "");
+  const avatarInputId = "dashboard-avatar-upload-input";
 
   function trustGoldBtn(minHeight = 34, fontSize = 13): React.CSSProperties {
     return {
@@ -4826,10 +4827,6 @@ export default function DashboardPage() {
     openDashboardRoute(event, `/app/trust-slip${query}`);
   }
 
-  function openAvatarPicker() {
-    fileInputRef.current?.click();
-  }
-
   function onAvatarSelected(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -5893,7 +5890,7 @@ export default function DashboardPage() {
               <div
                 style={{
                   textAlign: isPhone ? "left" : "center",
-                  fontSize: isPhone ? 16.5 : isCompact ? 24 : 31,
+                  fontSize: isPhone ? 16 : isCompact ? 24 : 31,
                   fontWeight: 900,
                   lineHeight: isPhone ? 1.05 : 1.04,
                   padding: isPhone ? 0 : "0 44px",
@@ -5904,7 +5901,32 @@ export default function DashboardPage() {
                   textWrap: "balance",
                 }}
               >
-                Trust is the first currency.
+                {isPhone ? (
+                  <span style={{ display: "grid", gap: 1 }}>
+                    <span
+                      style={{
+                        color: DASHBOARD_BRAND.ink,
+                        letterSpacing: 0.1,
+                      }}
+                    >
+                      Trust is
+                    </span>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        width: "fit-content",
+                        color: DASHBOARD_BRAND.goldText,
+                        fontSize: 15,
+                        borderBottom: "2px solid rgba(138,101,30,0.34)",
+                        paddingBottom: 1,
+                      }}
+                    >
+                      the first currency
+                    </span>
+                  </span>
+                ) : (
+                  "Trust is the first currency."
+                )}
               </div>
 
               <div
@@ -5976,7 +5998,7 @@ export default function DashboardPage() {
               <div
                 style={{
                   width: "100%",
-                  maxWidth: isPhone ? 268 : isCompact ? 300 : 320,
+                  maxWidth: isPhone ? "100%" : isCompact ? 300 : 320,
                   margin: "0 auto",
                   borderRadius: isPhone ? 20 : 28,
                   padding: isPhone ? 6 : 8,
@@ -5989,7 +6011,7 @@ export default function DashboardPage() {
               >
                 <div
                   style={{
-                    height: isPhone ? 132 : isCompact ? 170 : 196,
+                    height: isPhone ? 146 : isCompact ? 170 : 196,
                     borderRadius: isPhone ? 15 : 20,
                     overflow: "hidden",
                     border: "1px solid rgba(212,175,55,0.16)",
@@ -6040,11 +6062,19 @@ export default function DashboardPage() {
               </div>
 
               <input
+                id={avatarInputId}
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 onChange={onAvatarSelected}
-                style={{ display: "none" }}
+                style={{
+                  position: "absolute",
+                  width: 1,
+                  height: 1,
+                  opacity: 0,
+                  overflow: "hidden",
+                  pointerEvents: "none",
+                }}
               />
 
               <div
@@ -6057,14 +6087,21 @@ export default function DashboardPage() {
                   gap: 8,
                 }}
               >
-                <button
-                  type="button"
-                  onClick={openAvatarPicker}
+                <label
+                  htmlFor={avatarInputId}
+                  onClick={(event) => event.stopPropagation()}
                   onPointerDown={consumeDashboardPointerEvent}
-                  style={{ ...dashboardFillButton(subtleBtn(false)) }}
+                  style={{
+                    ...dashboardFillButton(subtleBtn(false), {
+                      minHeight: isPhone ? 44 : 38,
+                      alignItems: "center",
+                      cursor: "pointer",
+                      touchAction: "manipulation",
+                    }),
+                  }}
                 >
                   {avatarSrc ? "Change photo" : "Upload photo"}
-                </button>
+                </label>
 
                 {avatarSrc ? (
                   <button
@@ -6073,7 +6110,12 @@ export default function DashboardPage() {
                       runDashboardUiMutation(event, removeAvatar, 260)
                     }
                     onPointerDown={consumeDashboardPointerEvent}
-                    style={{ ...dashboardFillButton(subtleBtn(false)) }}
+                    style={{
+                      ...dashboardFillButton(subtleBtn(false), {
+                        minHeight: isPhone ? 38 : 34,
+                        opacity: 0.9,
+                      }),
+                    }}
                   >
                     Remove
                   </button>
@@ -6101,13 +6143,13 @@ export default function DashboardPage() {
                 >
                   <div
                     style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                      gap: 6,
-                    }}
-                  >
+                    display: "flex",
+                    justifyContent: isPhone ? "stretch" : "space-between",
+                    alignItems: "center",
+                    flexWrap: isPhone ? "nowrap" : "wrap",
+                    gap: isPhone ? 8 : 6,
+                  }}
+                >
                     <div
                       style={{
                         display: "inline-flex",
@@ -6121,6 +6163,7 @@ export default function DashboardPage() {
                           ...sectionLabel(),
                           color: "rgba(226,232,240,0.82)",
                           textAlign: "left",
+                          fontSize: isPhone ? 11 : 12,
                         }}
                       >
                         Trust and verification
@@ -6131,11 +6174,11 @@ export default function DashboardPage() {
                       style={{
                         display: "inline-flex",
                         alignItems: "center",
-                        justifyContent: "flex-start",
-                        width: "fit-content",
+                        justifyContent: "center",
+                        width: isPhone ? "auto" : "fit-content",
                         gap: 3,
-                        minHeight: 26,
-                        padding: "2px 5px",
+                        minHeight: isPhone ? 24 : 26,
+                        padding: isPhone ? "2px 7px" : "2px 5px",
                         borderRadius: 9,
                         background:
                           "linear-gradient(180deg, rgba(255,248,220,0.98) 0%, rgba(243,220,152,0.96) 48%, rgba(229,196,102,0.94) 100%)",
@@ -6144,7 +6187,7 @@ export default function DashboardPage() {
                         boxShadow:
                           "inset 0 1px 0 rgba(255,255,255,0.94), inset 0 -2px 0 rgba(145,103,19,0.12), 0 10px 20px rgba(15,23,42,0.16)",
                         fontWeight: 900,
-                        fontSize: 10,
+                        fontSize: isPhone ? 9.5 : 10,
                         letterSpacing: 0.04,
                         whiteSpace: "nowrap",
                       }}
@@ -6153,7 +6196,7 @@ export default function DashboardPage() {
                       <span
                         style={{
                           color: "#4F2F00",
-                          fontSize: 13,
+                          fontSize: isPhone ? 11.5 : 13,
                           lineHeight: 1,
                         }}
                       >
@@ -6164,12 +6207,15 @@ export default function DashboardPage() {
 
                   <div
                     style={{
-                      marginTop: 6,
-                      display: "flex",
+                      marginTop: isPhone ? 8 : 6,
+                      display: isPhone ? "grid" : "flex",
+                      gridTemplateColumns: isPhone
+                        ? "minmax(0, 1fr) auto"
+                        : undefined,
                       alignItems: "center",
                       justifyContent: "space-between",
-                      gap: 8,
-                      flexWrap: "wrap",
+                      gap: isPhone ? 7 : 8,
+                      flexWrap: isPhone ? undefined : "wrap",
                     }}
                   >
                     <span
@@ -6177,8 +6223,8 @@ export default function DashboardPage() {
                         display: "inline-flex",
                         alignItems: "center",
                         gap: 6,
-                        minHeight: 28,
-                        padding: "4px 10px",
+                        minHeight: isPhone ? 27 : 28,
+                        padding: isPhone ? "4px 8px" : "4px 10px",
                         borderRadius: 999,
                         background:
                           "linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.08) 100%)",
@@ -6187,7 +6233,7 @@ export default function DashboardPage() {
                         boxShadow:
                           "0 8px 16px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.12)",
                         fontWeight: 900,
-                        fontSize: 11,
+                        fontSize: isPhone ? 10 : 11,
                         letterSpacing: 0.04,
                         whiteSpace: "nowrap",
                       }}
@@ -6195,7 +6241,7 @@ export default function DashboardPage() {
                       <span style={{ opacity: 0.8 }}>Name</span>
                       <span
                         style={{
-                          fontSize: 13,
+                          fontSize: isPhone ? 12 : 13,
                           color: "#FFFFFF",
                         }}
                       >
@@ -6206,8 +6252,9 @@ export default function DashboardPage() {
                     <span
                       style={{
                         color: "rgba(226,232,240,0.74)",
-                        fontSize: 11.5,
+                        fontSize: isPhone ? 10.5 : 11.5,
                         fontWeight: 800,
+                        whiteSpace: "nowrap",
                       }}
                     >
                       Verification holder
@@ -6216,15 +6263,15 @@ export default function DashboardPage() {
 
                   <div
                     style={{
-                      marginTop: 4,
+                      marginTop: isPhone ? 7 : 4,
                       color: "rgba(226,232,240,0.86)",
-                      fontSize: 12,
-                      lineHeight: 1.45,
+                      fontSize: isPhone ? 11.5 : 12,
+                      lineHeight: isPhone ? 1.38 : 1.45,
                       maxWidth: 560,
                     }}
                   >
-                    Keep your verification record visible, readable, and ready
-                    to share.
+                    This is the short record people can check before they trust,
+                    trade, or support you.
                   </div>
 
                   <div
@@ -6238,27 +6285,69 @@ export default function DashboardPage() {
                         "inset 0 1px 0 rgba(255,255,255,0.05), 0 10px 20px rgba(2,12,27,0.08)",
                       padding: 12,
                       display: "grid",
-                      gap: 10,
+                      gap: isPhone ? 8 : 10,
                     }}
                   >
                     <div
                       style={{
-                        display: "flex",
-                        gap: 8,
-                        flexWrap: "wrap",
+                        display: isPhone ? "grid" : "flex",
+                        gridTemplateColumns: isPhone
+                          ? "repeat(3, minmax(0, 1fr))"
+                          : undefined,
+                        gap: isPhone ? 6 : 8,
+                        flexWrap: isPhone ? undefined : "wrap",
                         alignItems: "center",
                       }}
                     >
-                      <span style={badge(true)}>
+                      <span
+                        style={{
+                          ...badge(true),
+                          justifyContent: "center",
+                          minHeight: isPhone ? 28 : 30,
+                          padding: isPhone ? "5px 6px" : "6px 10px",
+                          fontSize: isPhone ? 10.5 : 12,
+                          textAlign: "center",
+                          width: "100%",
+                        }}
+                      >
                         Open Trust {openTrust.classText}
                       </span>
-                      <span style={badge(false)}>CCI {cci.classText}</span>
-                      <span style={badge(false)}>
+                      <span
+                        style={{
+                          ...badge(false),
+                          justifyContent: "center",
+                          minHeight: isPhone ? 28 : 30,
+                          padding: isPhone ? "5px 6px" : "6px 10px",
+                          fontSize: isPhone ? 10.5 : 12,
+                          textAlign: "center",
+                          width: "100%",
+                        }}
+                      >
+                        CCI {cci.classText}
+                      </span>
+                      <span
+                        style={{
+                          ...badge(false),
+                          justifyContent: "center",
+                          minHeight: isPhone ? 28 : 30,
+                          padding: isPhone ? "5px 6px" : "6px 10px",
+                          fontSize: isPhone ? 10.5 : 12,
+                          textAlign: "center",
+                          width: "100%",
+                        }}
+                      >
                         TrustSlip {trustSlipCode || "Pending"}
                       </span>
                     </div>
 
-                    <div style={{ ...helperText(), color: "rgba(226,232,240,0.86)" }}>
+                    <div
+                      style={{
+                        ...helperText(),
+                        color: "rgba(226,232,240,0.86)",
+                        fontSize: isPhone ? 12.2 : 14,
+                        lineHeight: isPhone ? 1.48 : 1.75,
+                      }}
+                    >
                       Dashboard keeps the trust signal here. The deeper trust,
                       TrustSlip, QR, and verification detail now belongs in
                       Trust Passport and related trust pages.
@@ -6273,7 +6362,9 @@ export default function DashboardPage() {
                         type="button"
                         onClick={(event) => openDashboardRoute(event, "/app/trust")}
                         onPointerDown={consumeDashboardPointerEvent}
-                        style={dashboardFillButton(trustGoldBtn(30, 11))}
+                        style={dashboardFillButton(
+                          trustGoldBtn(isPhone ? 44 : 30, isPhone ? 12 : 11)
+                        )}
                       >
                         Open Trust Passport
                       </button>
@@ -6282,7 +6373,9 @@ export default function DashboardPage() {
                         type="button"
                         onClick={(event) => openDashboardRoute(event, "/app/identity")}
                         onPointerDown={consumeDashboardPointerEvent}
-                        style={dashboardFillButton(trustGoldBtn(30, 11))}
+                        style={dashboardFillButton(
+                          trustGoldBtn(isPhone ? 44 : 30, isPhone ? 12 : 11)
+                        )}
                       >
                         Open Identity & Integrity
                       </button>
@@ -6292,7 +6385,9 @@ export default function DashboardPage() {
                           type="button"
                           onClick={openTrustSlipPage}
                           onPointerDown={consumeDashboardPointerEvent}
-                          style={dashboardFillButton(trustGoldBtn(30, 11))}
+                          style={dashboardFillButton(
+                            trustGoldBtn(isPhone ? 44 : 30, isPhone ? 12 : 11)
+                          )}
                         >
                           Open TrustSlip
                         </button>
