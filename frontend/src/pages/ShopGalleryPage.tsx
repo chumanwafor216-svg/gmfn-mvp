@@ -1018,14 +1018,14 @@ export default function ShopGalleryPage() {
 
       <DomainIntroToggle
         title="About Shop Gallery"
-        eyebrow="Domain guide"
-        body="Shop Gallery is the storefront. It lets community members and approved outside viewers see the shop identity, products, spotlight, and permitted private-access options."
+        eyebrow="About this place"
+        body="Shop Gallery is the public face of a shop. People in the community, and approved outside viewers, can see what the shop is showing."
         bullets={[
-          "One member has one shop, and that shop can appear through the communities the member belongs to.",
-          "Community membership controls normal shop exposure. Wider exposure should come through approved links, reposts, or invite paths.",
-          "Vault content is locked and should only be viewed through the right permission or access link.",
+          "One person has one shop, and that shop can appear in the communities they belong to.",
+          "A shop normally shows through its communities. Wider sharing should use the right link or repost path.",
+          "Vault items are locked. They should only open with the right permission or access link.",
         ]}
-        note="Plain rule: Shop Gallery is the reception door between the shop owner, the community, and approved outsiders."
+        note="Simple rule: Shop Gallery is the shop door for the owner, the community, and approved outsiders."
         tone="dark"
       />
 

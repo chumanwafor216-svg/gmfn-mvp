@@ -1901,14 +1901,14 @@ export default function CommunityHomePage() {
 
         <DomainIntroToggle
           title="About Community Home"
-          eyebrow="Domain guide"
-          body="Community Home is your full community circle. When communities are available, each one appears here as a marketplace group under one member identity."
+          eyebrow="About this place"
+          body="Community Home is where all your groups will appear. After you create or join a group, it shows here and can open as a Marketplace."
           bullets={[
-            "Create or join a community first so it can become a marketplace group.",
-            "After that, use Community Home to choose the current group and open it as Marketplace.",
-            "Finance, Trust Passport, and Shop Gallery will make more sense after the first community exists.",
+            "Create or join a community first.",
+            "Then choose the group you want to work in.",
+            "Finance, Trust Passport, and Shop Gallery become clearer after your first community is in place.",
           ]}
-          note="Plain rule: Community Home is where your communities gather before one opens for live work."
+          note="Simple rule: Community Home gathers your groups before one opens for live work."
           tone="blue"
         />
 
@@ -2011,14 +2011,14 @@ export default function CommunityHomePage() {
 
       <DomainIntroToggle
         title="About Community Home"
-        eyebrow="Domain guide"
-        body="Community Home is your full community circle. It lists every community you belong to as a marketplace group under one member identity."
+        eyebrow="About this place"
+        body="Community Home is where all your groups sit together. Each group appears as one Marketplace line, and you choose which one you want to work in."
         bullets={[
-          "Use it to choose which community is current before opening that community as Marketplace.",
-          "This page may show group-level finance, trust, CCI, demand, and spotlight signals.",
-          "Private personal money history belongs in Finance, and the full personal trust story belongs in Trust Passport.",
+          "Use it to see all the communities you belong to.",
+          "Choose one community, then open it as Marketplace to work inside it.",
+          "This page can show simple group signs like trust, money health, CCI (cross-community integrity), demand, and spotlight. Your full private records stay in Finance and Trust Passport.",
         ]}
-        note="Plain rule: Community Home shows all your communities together. Marketplace opens one of them for live work."
+        note="Simple rule: Community Home shows all your groups. Marketplace opens one group for live work."
         tone="blue"
       />
 

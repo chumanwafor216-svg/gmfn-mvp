@@ -2196,14 +2196,14 @@ export default function MarketplacePage() {
 
         <DomainIntroToggle
           title="About Marketplace"
-          eyebrow="Domain guide"
-          body="Marketplace opens one selected community for live work. Choose a community in Community Home first so this page knows which marketplace to show."
+          eyebrow="About this place"
+          body="Marketplace opens one community at a time. Choose a community in Community Home first, then this page knows which group to show."
           bullets={[
-            "Marketplace is not the combined Community Home view.",
-            "It should show one community's members, shops, links, demand, local finance signal, and local trust context.",
-            "After selecting a community, return here to work inside that specific marketplace.",
+            "This is not the page for all your groups together.",
+            "It shows one group's members, shops, links, demand, money signs, and trust signs.",
+            "After choosing a community, come here to work inside that group.",
           ]}
-          note="Plain rule: select a community first, then Marketplace becomes that community in action."
+          note="Simple rule: choose a group first, then Marketplace becomes that group in action."
           tone="dark"
         />
 
@@ -2322,14 +2322,14 @@ export default function MarketplacePage() {
 
       <DomainIntroToggle
         title="About Marketplace"
-        eyebrow="Domain guide"
-        body="Marketplace is one selected community in action. It is where that community's members, shops, links, local finance signal, demand, support, and trust activity become usable."
+        eyebrow="About this place"
+        body="Marketplace is the working room for one community. This is where that group's people, shops, links, money signs, demand, support, and trust activity are used."
         bullets={[
-          "Use the official billboard first to confirm which marketplace you are inside.",
-          "Marketplace owns local tools such as members, shops, invite links, Demand Box, support, and local money rails.",
-          "Finance and Trust Passport can still show the bigger cross-community story, but Marketplace shows what is happening here.",
+          "Check the top board first so you know which community you are inside.",
+          "Use this place for members, shops, invite links, Demand Box, support, money in, and money out.",
+          "Finance and Trust Passport show the bigger story, but Marketplace shows what is happening here.",
         ]}
-        note="Plain rule: Marketplace is the live working room for one community."
+        note="Simple rule: Marketplace is the live working room for one community."
         tone="dark"
         style={{ order: 0 }}
       />

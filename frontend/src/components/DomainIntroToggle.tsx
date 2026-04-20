@@ -119,7 +119,7 @@ export default function DomainIntroToggle(props: DomainIntroToggleProps) {
               textTransform: "uppercase",
             }}
           >
-            {props.eyebrow || "Domain guide"}
+            {props.eyebrow || "About this place"}
           </div>
           <div
             style={{

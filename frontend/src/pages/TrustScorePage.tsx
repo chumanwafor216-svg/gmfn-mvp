@@ -2117,14 +2117,14 @@ export default function TrustScorePage() {
 
         <DomainIntroToggle
           title="About Trust Passport"
-          eyebrow="Domain guide"
-          body="Trust Passport is your fuller trust record across the communities and marketplaces you belong to. It explains your current trust position, why it changed, and what evidence supports it."
+          eyebrow="About this place"
+          body="Trust Passport is your full trust story. It shows how trust is looking now, why it changed, and what proof supports it."
           bullets={[
-            "Marketplace trust shows how one community is reading behaviour in that place.",
-            "Trust Passport combines your personal trust story across communities, including evidence, repair paths, CCI, and portability.",
-            "TrustSlip is the smaller proof you can show for a specific decision; it is not the whole Passport.",
+            "Marketplace trust shows how one community sees your behaviour there.",
+            "Trust Passport brings your trust story together across your communities.",
+            "TrustSlip is a smaller proof you can show for one decision. It is not the whole Passport.",
           ]}
-          note="Plain rule: Trust Passport tells the full trust story; TrustSlip carries a smaller proof when needed."
+          note="Simple rule: Trust Passport tells the full trust story. TrustSlip shows a smaller proof when needed."
           tone="blue"
         />
       </div>

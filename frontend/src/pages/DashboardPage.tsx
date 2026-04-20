@@ -5783,14 +5783,14 @@ export default function DashboardPage() {
       >
         <DomainIntroToggle
           title="About Dashboard"
-          eyebrow="Domain guide"
-          body="Dashboard is your reflector. It gives you a compact view of what needs attention now, then sends you to the right working domain."
+          eyebrow="About this place"
+          body="Dashboard is your quick first look. It shows what needs attention now and points you to the right place to handle it."
           bullets={[
-            "Use it to read urgent signals, spotlight, notices, demand, trust, and next actions quickly.",
-            "Dashboard should not hold the full work. Community Home, Marketplace, Finance, Trust Passport, Demand Box, and Shop hold the deeper records.",
-            "If something needs action, open the correct route instead of trying to solve everything from Dashboard.",
+            "Check here first when you want to know what is happening now.",
+            "If something needs action, open the page it points to.",
+            "The full work stays in Community Home, Marketplace, Finance, Trust Passport, Demand Box, and Shop.",
           ]}
-          note="Plain rule: Dashboard tells you what is happening now and where to go next."
+          note="Simple rule: Dashboard shows the quick picture and sends you to the right place."
           tone="blue"
         />
 
