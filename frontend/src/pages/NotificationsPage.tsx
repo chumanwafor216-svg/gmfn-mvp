@@ -668,11 +668,11 @@ function onboardingProofBadges(detail: string): string[] {
   const badges: string[] = [];
 
   if (text.includes("phone")) badges.push("Verified phone");
-  if (text.includes("bank")) badges.push("Recorded bank destination");
+  if (text.includes("bank")) badges.push("Bank destination saved");
   if (text.includes("licence") || text.includes("license")) {
     badges.push("Driver's licence");
   }
-  if (text.includes("region")) badges.push("Region consistency");
+  if (text.includes("region")) badges.push("Region checked");
 
   return badges;
 }
@@ -701,15 +701,15 @@ function bucketTitle(bucket: GuidanceInboxBucketKey): string {
 
 function bucketDescription(bucket: GuidanceInboxBucketKey): string {
   if (bucket === "actNow") {
-    return "These are the live steps that need immediate decision or visible response.";
+    return "Someone may be waiting for your answer. Open these first.";
   }
   if (bucket === "dueSoon") {
-    return "These are not urgent yet, but they should be handled before they drift further.";
+    return "These are not urgent yet, but it is better to handle them soon.";
   }
   if (bucket === "watchAndWait") {
-    return "These items are already moving. Keep an eye on them without overreacting.";
+    return "These are already moving. Check them, but you may not need to act now.";
   }
-  return "These are general updates that do not currently block movement.";
+  return "These are useful updates. Read them when you have time.";
 }
 
 function bucketTone(
@@ -1000,7 +1000,7 @@ export default function NotificationsPage() {
         title: safeStr(onboardingTrustNotice.title) || "Starter trust has been established",
         detail:
           safeStr(onboardingTrustNotice.detail) ||
-          "Your onboarding proofs were recorded and your starter trust has been updated.",
+          "Your starter trust record was saved and your trust page is ready to review.",
         ctaLabel: safeStr(onboardingTrustNotice.ctaLabel) || "Review Trust",
         ctaTo: safeStr(onboardingTrustNotice.ctaTo) || NOTIFICATION_TARGETS.TRUST,
         bucket: "actNow" as GuidanceInboxBucketKey,
@@ -1075,7 +1075,7 @@ export default function NotificationsPage() {
       <PageTopNav
         sectionLabel="Notifications"
         title="Action Inbox"
-        subtitle="See what needs action now, what is due soon, what can wait, and where each update came from."
+        subtitle="Check what is waiting for you, then open the right page to answer it."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
@@ -1092,10 +1092,10 @@ export default function NotificationsPage() {
       />
 
       <ExplainToggle
-        label="What this screen does"
-        what="Action Inbox organizes your updates by urgency and next move instead of showing a raw notification stream."
-        why="It helps you tell the difference between something that needs action now, something that is due soon, and something you can simply watch."
-        next="Start with the action inbox summary, then open the review panel or linked page for the item that needs your response first."
+        label="About Action Inbox"
+        what="Action Inbox shows the messages and requests that may need your answer."
+        why="It helps you start with the item that matters most instead of searching through every update."
+        next="Start with Act now. If nothing needs your answer, you can return to Dashboard."
         tone="blue"
       />
 
@@ -1126,7 +1126,7 @@ export default function NotificationsPage() {
             maxWidth: 860,
           }}
         >
-          See what needs response now, what is due soon, and what can simply be watched.
+          Check what needs your answer now.
         </div>
 
         <div
@@ -1137,14 +1137,14 @@ export default function NotificationsPage() {
             maxWidth: 880,
           }}
         >
-          This view is calmer than a raw notification stream. It groups updates by urgency and next action so the dashboard, companion reminders, and inbox all speak the same language.
+          Start with Act now. If nothing is waiting, you can mark items as read or return to Dashboard.
         </div>
 
         <ExplainToggle
-          label="What this does"
-          what="This summary turns the inbox into a quick decision view by separating what needs action now, what is due soon, and what can wait."
-          why="It helps you decide where to start before opening the review panel or jumping into another page."
-          next="Read the counts first, then begin with the act-now bucket or the strongest current focus shown below."
+          label="About this summary"
+          what="This summary shows how many items are unread, urgent, due soon, or safe to watch."
+          why="It helps you know where to begin without guessing."
+          next="Open the urgent items first. If there are none, check due soon or go back to Dashboard."
           tone="dark"
           style={{ marginTop: 14 }}
         />
@@ -1218,25 +1218,6 @@ export default function NotificationsPage() {
           </div>
         </div>
 
-        <div
-          style={{
-            marginTop: 16,
-            display: "flex",
-            gap: 10,
-            flexWrap: "wrap",
-          }}
-        >
-          <span style={badge(true)}>
-            Mode: {settings.notificationsMode === "detailed" ? "Detailed" : "Summary"}
-          </span>
-          <span style={badge(false)}>
-            Order: {settings.unreadFirst ? "Unread first" : "Latest first"}
-          </span>
-          <span style={badge(false)}>
-            Primary action: {settings.openActionsDirectly ? "Open directly" : "Review first"}
-          </span>
-        </div>
-
         <div style={{ marginTop: 16, ...actionRow(isPhone) }}>
           <button
             type="button"
@@ -1249,7 +1230,7 @@ export default function NotificationsPage() {
             }
             style={actionBtn("primary")}
           >
-            Open act-now items
+            Show urgent items
           </button>
         </div>
       </section>
@@ -1266,7 +1247,7 @@ export default function NotificationsPage() {
             }}
           >
             <div>
-              <div style={sectionLabel()}>Starter trust update</div>
+              <div style={sectionLabel()}>Trust update</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1289,7 +1270,7 @@ export default function NotificationsPage() {
               ) : (
                 <span style={badge(false)}>Reviewed</span>
               )}
-              <span style={badge(false)}>Onboarding proof</span>
+              <span style={badge(false)}>Trust record</span>
             </div>
           </div>
 
@@ -1313,8 +1294,8 @@ export default function NotificationsPage() {
               Review Trust
             </OriginLink>
 
-            <OriginLink to="/app/notifications" style={actionBtn("secondary")}>
-              Stay in Notifications
+            <OriginLink to="/app/dashboard" style={actionBtn("secondary")}>
+              Return to Dashboard
             </OriginLink>
 
             {onboardingTrustNotice.unread && /^\d+$/.test(safeStr(onboardingTrustNotice.id)) ? (
@@ -1341,9 +1322,9 @@ export default function NotificationsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Current operational focus</div>
+            <div style={sectionLabel()}>Start here</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Keep the most important step near the top.
+              This is the first item to check.
             </div>
           </div>
 
@@ -1377,7 +1358,7 @@ export default function NotificationsPage() {
                     flexWrap: "wrap",
                   }}
                 >
-                  <span style={badge(true)}>What matters now</span>
+                  <span style={badge(true)}>Needs your attention</span>
                   {operationalFocus.unread ? (
                     <span style={badge(false)}>Unread</span>
                   ) : (
@@ -1412,7 +1393,7 @@ export default function NotificationsPage() {
                     onClick={() => void handlePrimaryNoticeAction(operationalFocus)}
                     style={actionBtn("primary")}
                   >
-                    {settings.openActionsDirectly ? operationalFocus.ctaLabel : "Review here"}
+                    {settings.openActionsDirectly ? operationalFocus.ctaLabel : "Review first"}
                   </button>
 
                   <OriginLink to={operationalFocus.ctaTo} style={actionBtn("secondary")}>
@@ -1422,22 +1403,22 @@ export default function NotificationsPage() {
               </div>
 
               <div style={softCard("#F8FBFF")}>
-                <div style={sectionLabel()}>How this page behaves</div>
+                <div style={sectionLabel()}>What to do</div>
 
                 <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                   <div style={helperText()}>
-                    The companion system uses the same action buckets you see here, so the dashboard, reminder prompts, and action inbox now reinforce the same guidance instead of competing with each other.
+                    Open the first item if it needs your answer. Use Mark as read when you have already handled it.
                   </div>
 
                   <div style={helperText()}>
-                    When "Open directly" is enabled, the primary button takes you straight to the page you need. When it is off, the same action first opens a local review panel here.
+                    If you only came to check messages, use Dashboard or Menu to return when you are done.
                   </div>
                 </div>
               </div>
             </div>
           ) : (
             <div style={{ marginTop: 12, color: "#64748B", lineHeight: 1.8 }}>
-              No operational focus is currently shown.
+              Nothing needs your attention first right now.
             </div>
           )
         ) : null}
@@ -1445,7 +1426,7 @@ export default function NotificationsPage() {
 
       {selectedNotice ? (
         <section style={pageCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Review panel</div>
+          <div style={sectionLabel()}>Review this item</div>
 
           <div
             style={{
@@ -1534,9 +1515,9 @@ export default function NotificationsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Structured buckets</div>
+            <div style={sectionLabel()}>All waiting items</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Read by urgency and next action, not by noise.
+              Handle the most important group first.
             </div>
           </div>
 
@@ -1552,7 +1533,7 @@ export default function NotificationsPage() {
         {!collapsed.buckets ? (
           guidanceLoading ? (
             <div style={{ marginTop: 14, color: "#64748B", lineHeight: 1.8 }}>
-              Loading your action inbox...
+              Loading your waiting items...
             </div>
           ) : (
             <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
@@ -1601,7 +1582,7 @@ export default function NotificationsPage() {
                       {rows.length === 0 ? (
                         <div style={innerCard("#FFFFFF")}>
                           <div style={helperText()}>
-                            Nothing is currently sitting in this bucket.
+                            Nothing is waiting here right now.
                           </div>
                         </div>
                       ) : (
@@ -1647,7 +1628,7 @@ export default function NotificationsPage() {
                                 onClick={() => void handlePrimaryNoticeAction(notice)}
                                 style={actionBtn("primary")}
                               >
-                                {settings.openActionsDirectly ? notice.ctaLabel : "Review here"}
+                                {settings.openActionsDirectly ? notice.ctaLabel : "Review first"}
                               </button>
 
                               <OriginLink to={notice.ctaTo} style={actionBtn("secondary")}>
@@ -1697,14 +1678,14 @@ export default function NotificationsPage() {
             }}
           >
             <div>
-              <div style={sectionLabel()}>Recent system feed</div>
+              <div style={sectionLabel()}>Recent notifications</div>
               <div
                 style={{
                   marginTop: 8,
                   ...helperText(),
                 }}
               >
-                See the full chronological stream here when you want the ungrouped feed.
+                See the latest messages in time order.
               </div>
             </div>
 
@@ -1726,7 +1707,7 @@ export default function NotificationsPage() {
               ) : rawFeed.length === 0 ? (
                 <div style={innerCard("#FCFEFF")}>
                   <div style={helperText()}>
-                    No recent system notification is currently shown.
+                    No recent notification is shown right now.
                   </div>
                 </div>
               ) : (
@@ -1795,9 +1776,9 @@ export default function NotificationsPage() {
             }}
           >
             <div>
-              <div style={sectionLabel()}>Operational reading</div>
+              <div style={sectionLabel()}>What the labels mean</div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                A calmer explanation of how to read the inbox.
+                Use this if you are not sure where to start.
               </div>
             </div>
 
@@ -1823,7 +1804,7 @@ export default function NotificationsPage() {
                   Act now
                 </div>
                 <div style={{ marginTop: 8, ...helperText() }}>
-                  Someone is waiting directly on your response or decision.
+                  Open this first. Someone may be waiting for you.
                 </div>
               </div>
 
@@ -1838,7 +1819,7 @@ export default function NotificationsPage() {
                   Due soon
                 </div>
                 <div style={{ marginTop: 8, ...helperText() }}>
-                  This is not urgent yet, but early action may help prevent drift and extra repair later.
+                  Not urgent yet, but better to handle soon.
                 </div>
               </div>
 
@@ -1853,7 +1834,7 @@ export default function NotificationsPage() {
                   Watch and wait
                 </div>
                 <div style={{ marginTop: 8, ...helperText() }}>
-                  The step is already moving. Stay aware without overworking it.
+                  Keep an eye on it. You may not need to do anything now.
                 </div>
               </div>
 
@@ -1868,7 +1849,7 @@ export default function NotificationsPage() {
                   General updates
                 </div>
                 <div style={{ marginTop: 8, ...helperText() }}>
-                  These are useful updates, but they do not currently block movement.
+                  Useful information. It is not blocking you.
                 </div>
               </div>
             </div>
