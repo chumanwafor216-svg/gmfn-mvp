@@ -46,6 +46,62 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-20
 
 #### Workstream
+Canonical architecture clarified for Community Home marketplace rollups,
+group-dynamics readings, and Spotlight visibility boundaries.
+
+#### Routes/screens affected
+- architecture guidance for:
+  - `/app/community`
+  - `/app/marketplace`
+  - `/app/finance`
+  - `/app/trust`
+  - `/app/dashboard`
+  - `/shop/:gmfnId`
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+
+#### Files in play
+- `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`
+- `docs/INNOVATION_POLICY_LOGIC_2026-04-20.md`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Community Home is now explicitly documented as the cross-community layer
+  where each marketplace/community can appear as one group-level line, card, or
+  command entry.
+- Community Home may show marketplace/group finance, trust, and CCI summaries,
+  but those summaries must not expose private member-level finance or trust
+  records.
+- Finance now has a documented distinction between personal cumulative finance
+  and marketplace/group finance rollups.
+- Trust Passport now has a documented distinction between personal cumulative
+  trust evidence and marketplace/group trust rollups.
+- Spotlight is now documented as bounded by the Community Home circle in normal
+  visibility, with outward movement only through approved repost/link/invite
+  paths such as shop or vault links.
+- The innovation/policy logic now records the value of separating individual
+  behaviour, group behaviour, and future community-type analysis.
+
+#### Open risks or unknowns
+- This is documentation alignment only; no frontend or backend behaviour was
+  changed in this checkpoint.
+- Future UI changes must still inspect live code before applying the model to
+  Community Home, Finance, Trust Passport, Dashboard, or public shop surfaces.
+- Community-type policy analysis remains future/pilot work until enough
+  responsibly collected data and classification exist.
+
+#### Next recommended step
+- Use this clarified model before changing Community Home: Community Home should
+  show all marketplaces as group-level entries, while Marketplace remains the
+  working surface for one selected community.
+
+### Previous update
+
+#### Date
+2026-04-20
+
+#### Workstream
 Marketplace consolidated to one official billboard/backdrop so the selected
 marketplace no longer has two competing profile boards.
 

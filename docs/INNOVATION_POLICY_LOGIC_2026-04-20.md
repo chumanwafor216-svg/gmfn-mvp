@@ -132,6 +132,44 @@ That classification would be needed before making responsible policy claims
 about which community types produce stronger repayment, trade, or support
 behaviour.
 
+## Community Home as a group-dynamics reader
+Community Home is not only a list of links.
+
+It is the cross-community layer where each marketplace/community the member
+belongs to can be viewed as one group unit.
+
+This creates a second kind of reading:
+
+- personal reading: what one global member ID is doing across communities
+- group reading: how each marketplace/community is behaving as a group
+
+The group reading matters because it can help future pilots ask questions such
+as:
+
+- which marketplace/community has healthier finance flow?
+- which marketplace/community has stronger repayment and support behaviour?
+- which marketplace/community is showing trust stress?
+- which marketplace/community is building stronger internal reliability?
+- which community type may be safer for a bank, investor, NGO, or development
+  partner to support?
+
+This must be handled carefully.
+
+Community Home may show marketplace/group summaries.
+Finance may show the member's personal cumulative finance story.
+Trust Passport may show the member's personal cumulative trust story.
+
+Those are related, but they are not the same thing.
+
+The product must not expose private member-level financial or trust records as
+if they were ordinary group dashboard data.
+
+The policy value is strongest when GSN can separate:
+
+- individual behaviour across many communities
+- group behaviour inside each marketplace/community
+- community-type patterns after enough responsible data exists
+
 ## Trust Passport, TrustSlip, and merchant verification
 Trust has three related but different surfaces.
 
@@ -263,6 +301,7 @@ Required guardrails include:
 - clear user consent for what travels outside the community
 - visibility levels for TrustSlip and merchant verification
 - privacy-first evidence packs
+- clear separation between personal records and marketplace/group rollups
 - plain-language explanations for ordinary users
 - auditability for institutions
 - clear disclaimers that TrustSlip is not a bank guarantee
@@ -294,4 +333,3 @@ That is why the architecture matters.
 The value is not just a button or page.
 
 The value is a readable bridge between community trust and economic decision.
-

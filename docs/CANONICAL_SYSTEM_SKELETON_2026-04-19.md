@@ -108,6 +108,30 @@ It is where the member should be able to see:
 Community Home should not open the full working internals of every community on
 the same surface.
 
+### Community Home marketplace rollup rule
+Community Home is where each marketplace/community the member belongs to can be
+seen as one line, card, or command entry.
+
+At this level, the system may show marketplace-level standing such as:
+
+- marketplace/community identity
+- marketplace/community finance health
+- marketplace/community trust standing
+- marketplace/community CCI or group-integrity reading
+- entry into that one marketplace
+
+This is group-dynamics information.
+It is not the same thing as exposing every member's private financial record or
+full personal Trust Passport.
+
+Important privacy and route rule:
+
+- Community Home can compare or summarize marketplaces as groups
+- Finance can show the member's own cumulative finance story
+- Trust Passport can show the member's own cumulative trust story
+- Marketplace can show the local standing needed inside one selected community
+- private member-level records must not be exposed as group rollup data
+
 ### Marketplace
 Marketplace is the operational nucleus of one specific community.
 
@@ -269,6 +293,29 @@ Important architectural anchor:
 - Community Home is therefore the clearer anchor from which the broader Finance
   reading is understood
 
+### Finance group-dynamics distinction
+Finance has a personal cumulative meaning and a marketplace/group rollup
+meaning. These must not be collapsed into one unclear screen.
+
+Personal cumulative Finance answers:
+
+- what this one global member ID has done financially across marketplaces
+- whether this member is becoming overexposed
+- how this member has borrowed, supported, repaid, guaranteed, or moved money
+  across communities
+
+Marketplace/group finance rollup answers:
+
+- how one marketplace/community is doing financially as a group
+- whether that marketplace has healthy support flow, exposure, repayment, and
+  money movement
+- how one marketplace compares with another marketplace in the member's
+  Community Home
+
+Community Home may show marketplace/group finance summaries.
+The Finance domain should remain the deeper finance workspace for the member's
+own cumulative money story and any permitted marketplace finance details.
+
 ## Trust, CCI, Trust Passport, and TrustSlip
 
 ### Trust
@@ -306,6 +353,26 @@ Important architectural anchor:
 - but its stronger combined meaning belongs to the cross-community layer
 - Community Home is therefore the clearer anchor from which one member's trust
   position across many communities is understood
+
+### Trust group-dynamics distinction
+Trust also has two readings that must stay clear.
+
+Personal Trust Passport answers:
+
+- who this one global member ID has been across communities
+- what trust evidence, repair path, support behaviour, repayment behaviour, and
+  carried-forward meaning belongs to that person
+
+Marketplace/group trust rollup answers:
+
+- how one marketplace/community behaves as a group
+- whether members in that marketplace are supporting each other responsibly
+- whether the group is becoming stronger or weaker in trust terms
+- how one marketplace compares with another marketplace in the member's
+  Community Home
+
+Community Home may show marketplace/group trust summaries.
+Trust Passport should remain the deeper personal trust and evidence workspace.
 
 ### TrustSlip
 TrustSlip exists so that a member does not need to start from zero in every new
@@ -364,6 +431,11 @@ Important consequences:
 - spotlight may appear as a smaller screen or reflection elsewhere, including on
   Dashboard or Shop-related surfaces
 - the actual ownership of the spotlight feed belongs above one marketplace
+- normal spotlight visibility is bounded by the communities and marketplaces
+  inside the member's Community Home circle
+- visibility beyond that boundary must move through approved outward paths such
+  as repost logic, shop links, vault links, or other authorized invite/share
+  links
 
 ### Demand Box
 Demand Box is the opposite-side counterpart to Spotlight.
@@ -478,6 +550,8 @@ Dashboard
 Community Home
   -> lists all communities the member belongs to
   -> carries cross-community records and aggregate spotlight/demand view
+  -> shows each marketplace/community as a group-level line or card
+  -> may summarize marketplace finance/trust/CCI as group dynamics
   -> member selects one community
 
 Selected community
@@ -493,10 +567,12 @@ Marketplace
   -> contains Vault
 
 Finance
-  -> combines finance across marketplaces
+  -> combines the member's finance across marketplaces
+  -> can also support permitted marketplace/group finance detail
 
 Trust Passport / TrustSlip / CCI
   -> interpret and carry identity/trust across marketplaces and communities
+  -> keep personal trust evidence separate from marketplace/group trust rollups
 ```
 
 ## Working rule for future assistants
