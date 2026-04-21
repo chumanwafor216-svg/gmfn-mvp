@@ -1,11 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import DomainIntroToggle from "../components/DomainIntroToggle";
-import ExplainToggle from "../components/ExplainToggle";
 import NextActionGuide, {
   type NextActionGuideItem,
 } from "../components/NextActionGuide";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
 import {
@@ -22,7 +20,6 @@ type CollapseState = {
   explainability: boolean;
   breakdown: boolean;
   evidence: boolean;
-  routes: boolean;
 };
 
 type TrustReadingState = {
@@ -821,7 +818,6 @@ function defaultCollapseState(): CollapseState {
     explainability: false,
     breakdown: false,
     evidence: false,
-    routes: false,
   };
 }
 
@@ -833,7 +829,6 @@ function normalizeCollapseState(raw: any): CollapseState {
     explainability: Boolean(raw?.explainability ?? base.explainability),
     breakdown: Boolean(raw?.breakdown ?? base.breakdown),
     evidence: Boolean(raw?.evidence ?? base.evidence),
-    routes: Boolean(raw?.routes ?? base.routes),
   };
 }
 
@@ -2490,11 +2485,11 @@ export default function TrustScorePage() {
         >
           <div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span style={badge(true)}>Issued trust passport</span>
-              <span style={badge(false)}>Explanatory trust record</span>
+              <span style={badge(true)}>Personal GSN trust record</span>
+              <span style={badge(false)}>Community reading kept separate</span>
             </div>
 
-            <div style={sectionLabel()}>Trust passport overview</div>
+            <div style={sectionLabel()}>Personal trust document</div>
 
             <div
               style={{
@@ -2617,15 +2612,6 @@ export default function TrustScorePage() {
             }}
           >
             <div style={sectionLabel()}>Current trust posture</div>
-
-            <ExplainToggle
-              label="What this posture means"
-              what="This is the main trust reading for the current moment: your band, score, and the immediate trust meaning."
-              why="It turns the passport into one clear trust posture before you read the deeper document details."
-              next="Read the posture first, then check the document reference, issue window, and evidence sections if you need more support for the reading."
-              tone="light"
-              style={{ marginTop: 12 }}
-            />
 
             <div
               style={{
@@ -3238,14 +3224,6 @@ export default function TrustScorePage() {
 
         {!collapsed.overview ? (
           <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
-            <ExplainToggle
-              label="What this does"
-              what="This summary gathers the core trust metrics that describe your current trust state in one place."
-              why="It helps you read the main trust picture before moving into the event explanation or evidence sections."
-              next="Start with the band, score, CCI, graph score, trust limit, and event count here, then open the deeper sections if you need to understand why the reading looks this way."
-              tone="light"
-            />
-
             <div
               style={{
                 display: "grid",
@@ -3804,81 +3782,6 @@ export default function TrustScorePage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>Next routes</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Move from this trust reading into the next page you need.
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onPointerDown={stopTrustTap}
-            onMouseDown={stopTrustTap}
-            onTouchStart={stopTrustTap}
-            onClick={(event) => handleCollapseTap("routes", event)}
-            style={collapseToggle()}
-          >
-            {collapsed.routes ? "Open" : "Collapse"}
-          </button>
-        </div>
-
-        {!collapsed.routes ? (
-          <div
-            style={{
-              marginTop: 16,
-              display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
-              gap: 12,
-            }}
-          >
-            <OriginLink to="/app/trust-slip" style={actionBtn("primary")}>
-              Open TrustSlip
-            </OriginLink>
-
-            {verifyUrl ? (
-              <a
-                href={verifyUrl}
-                target="_blank"
-                rel="noreferrer"
-                style={actionBtn("secondary")}
-              >
-                Open TrustSlip Verify
-              </a>
-            ) : (
-              <button type="button" style={actionBtn("secondary", true)} disabled>
-                Open TrustSlip Verify
-              </button>
-            )}
-
-            <OriginLink to={nextStep.ctaTo} style={actionBtn("secondary")}>
-              {nextStep.ctaLabel}
-            </OriginLink>
-
-            <OriginLink to="/app/notifications" style={actionBtn("secondary")}>
-              Action Inbox
-            </OriginLink>
-
-            <OriginLink to="/app/marketplace" style={actionBtn("secondary")}>
-              Marketplace
-            </OriginLink>
-
-            <OriginLink to="/app/my-gmfn-and-i" style={actionBtn("secondary")}>
-              My GSN and I
-            </OriginLink>
-          </div>
-        ) : null}
-      </section>
     </div>
   );
 }

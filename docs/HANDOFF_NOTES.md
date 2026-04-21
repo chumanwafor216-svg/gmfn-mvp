@@ -5588,3 +5588,24 @@ GSN-branded invite composer and invite-entry continuity.
   partner, innovation, or immigration/institutional documentation.
 - No backend scoring, auth, schema, payment, ledger, environment config,
   global shell, route guard, or Dashboard Market Wisdom behavior changed.
+
+### Trust Passport repetition cleanup addendum
+
+- Re-audited `frontend/src/pages/TrustScorePage.tsx` after the first Trust
+  Passport blueprint pass because the page still had repeated explanation
+  layers and route buttons.
+- Removed duplicate route-local explanation blocks:
+  - the `What this posture means` explainer inside the current posture card
+  - the `What this does` explainer inside the trust summary card
+- Removed the duplicate `Next routes` section because `PageTopNav` and
+  `NextActionGuide` already provide the movement layer.
+- Removing `Next routes` also removed the disabled `Open TrustSlip Verify`
+  button state from the bottom of the page.
+- Retained the useful top TrustSlip verify link when an actual verification URL
+  exists, plus the main `Refresh`, `Copy GMFN ID`, and `Print Trust Passport`
+  actions.
+- Renamed the document badges to separate the two trust truths more clearly:
+  personal GSN trust record and community reading kept separate.
+- This cleanup is route-local to `/app/trust`; no backend, scoring, auth,
+  schema, payment, ledger, global shell, route guard, or Dashboard Market
+  Wisdom behavior changed.
