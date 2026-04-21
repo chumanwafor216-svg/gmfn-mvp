@@ -372,14 +372,27 @@ function normalizeProduct(raw: any, slotNumber: number): ShopProduct | null {
   };
 }
 
+const SHOP_GALLERY_PAGE_BACKGROUND =
+  "radial-gradient(circle at 8% 0%, rgba(11,99,209,0.12) 0%, transparent 28%), radial-gradient(circle at 92% 8%, rgba(244,114,182,0.06) 0%, transparent 24%), radial-gradient(circle at 82% 52%, rgba(212,175,55,0.07) 0%, transparent 28%), linear-gradient(180deg, rgba(248,252,255,0.98) 0%, rgba(237,246,252,0.97) 52%, rgba(250,252,254,0.99) 100%)";
+
+const SHOP_GALLERY_SURFACE =
+  "radial-gradient(circle at 10% 0%, rgba(11,99,209,0.055) 0%, transparent 30%), radial-gradient(circle at 94% 4%, rgba(244,114,182,0.035) 0%, transparent 26%), linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(243,249,253,0.95) 100%)";
+
+const SHOP_GALLERY_INNER_SURFACE =
+  "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(239,247,253,0.92) 100%)";
+
+function calmSurface(bg: string): string {
+  return bg === "#FFFFFF" ? SHOP_GALLERY_SURFACE : bg;
+}
+
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 28,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: "1px solid rgba(13,95,168,0.13)",
+    background: calmSurface(bg),
     padding: 20,
     boxShadow:
-      "0 18px 44px rgba(15,23,42,0.05), 0 3px 10px rgba(15,23,42,0.02)",
+      "0 20px 48px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.72)",
     overflow: "hidden",
   };
 }
@@ -387,9 +400,10 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 22,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: "1px solid rgba(13,95,168,0.12)",
+    background: bg === "#FFFFFF" ? SHOP_GALLERY_INNER_SURFACE : bg,
     padding: 16,
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)",
   };
 }
 
@@ -415,14 +429,21 @@ function badge(primary = false): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
+    justifyContent: "center",
     minHeight: 30,
     padding: "6px 10px",
     borderRadius: 999,
-    background: primary ? "rgba(29,78,216,0.08)" : "rgba(100,116,139,0.10)",
+    border: primary
+      ? "1px solid rgba(29,78,216,0.12)"
+      : "1px solid rgba(13,95,168,0.09)",
+    background: primary
+      ? "linear-gradient(180deg, rgba(235,244,255,0.98) 0%, rgba(218,233,249,0.88) 100%)"
+      : "linear-gradient(180deg, rgba(248,251,254,0.96) 0%, rgba(232,239,247,0.86) 100%)",
     color: primary ? "#1D4ED8" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.74)",
   };
 }
 
@@ -434,14 +455,24 @@ function primaryBtn(disabled = false): React.CSSProperties {
     minHeight: 42,
     padding: "10px 14px",
     borderRadius: 14,
-    border: "none",
-    background: disabled ? "#CBD5E1" : "#1D4ED8",
+    border: disabled
+      ? "1px solid rgba(148,163,184,0.28)"
+      : "1px solid rgba(13,64,123,0.24)",
+    background: disabled
+      ? "linear-gradient(180deg, #E2E8F0 0%, #CBD5E1 100%)"
+      : "linear-gradient(180deg, #1F5FB7 0%, #174C91 100%)",
     color: "#FFFFFF",
     fontWeight: 900,
     fontSize: 14,
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.86 : 1,
     whiteSpace: "normal",
+    textAlign: "center",
+    boxShadow: disabled
+      ? "none"
+      : "0 10px 20px rgba(14,73,138,0.18), inset 0 1px 0 rgba(255,255,255,0.26)",
+    WebkitTapHighlightColor: "transparent",
+    touchAction: "manipulation",
   };
 }
 
@@ -453,14 +484,20 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     minHeight: 40,
     padding: "9px 12px",
     borderRadius: 14,
-    border: "1px solid rgba(11,99,209,0.12)",
-    background: "#FDFEFF",
+    border: "1px solid rgba(13,95,168,0.16)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(237,244,251,0.94) 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.86 : 1,
     whiteSpace: "normal",
+    textAlign: "center",
+    boxShadow:
+      "0 8px 18px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
+    WebkitTapHighlightColor: "transparent",
+    touchAction: "manipulation",
   };
 }
 
@@ -1033,9 +1070,15 @@ export default function ShopGalleryPage() {
       style={{
         maxWidth: 1240,
         margin: "0 auto",
-        paddingBottom: 36,
+        padding: isCompact ? "14px 10px 42px" : "20px 18px 46px",
         display: "grid",
         gap: 18,
+        borderRadius: isCompact ? 0 : 34,
+        border: isCompact ? "none" : "1px solid rgba(13,95,168,0.10)",
+        background: SHOP_GALLERY_PAGE_BACKGROUND,
+        boxShadow: isCompact
+          ? "none"
+          : "0 28px 70px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.76)",
       }}
     >
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
@@ -1912,12 +1955,14 @@ export default function ShopGalleryPage() {
                   key={`shop-product-${product.id || slotNumber}`}
                   id={product.id ? `product-${product.id}` : undefined}
                   style={{
-                    ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"),
+                    ...innerCard(
+                      "radial-gradient(circle at 12% 0%, rgba(11,99,209,0.075) 0%, transparent 30%), linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(239,247,253,0.94) 100%)"
+                    ),
                     padding: 0,
                     overflow: "hidden",
-                    border: "1px solid rgba(11,31,51,0.10)",
+                    border: "1px solid rgba(13,95,168,0.16)",
                     boxShadow:
-                      "0 24px 48px rgba(2,12,27,0.08), 0 8px 18px rgba(2,12,27,0.04)",
+                      "0 26px 54px rgba(8,38,67,0.12), 0 8px 20px rgba(8,38,67,0.06), inset 0 1px 0 rgba(255,255,255,0.72)",
                     minHeight: 430,
                     display: "flex",
                     flexDirection: "column",
@@ -2023,12 +2068,24 @@ export default function ShopGalleryPage() {
 
                   <div
                     style={{
-                      padding: 12,
+                      padding: 14,
                       display: "grid",
-                      gap: 8,
+                      gap: 10,
+                      flex: 1,
+                      background:
+                        "radial-gradient(circle at 0% 0%, rgba(11,99,209,0.055) 0%, transparent 34%), radial-gradient(circle at 100% 0%, rgba(212,175,55,0.05) 0%, transparent 30%), linear-gradient(180deg, rgba(249,252,255,0.98) 0%, rgba(234,243,251,0.94) 100%)",
+                      borderTop: "1px solid rgba(13,95,168,0.12)",
+                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.88)",
                     }}
                   >
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 8,
+                        flexWrap: "wrap",
+                        justifyContent: "center",
+                      }}
+                    >
                       <span style={badge(false)}>Storefront block</span>
                       <span style={badge(false)}>Community-visible</span>
                     </div>
@@ -2040,9 +2097,10 @@ export default function ShopGalleryPage() {
                         fontSize: 17,
                         lineHeight: 1.28,
                         display: "-webkit-box",
-                        WebkitLineClamp: 1,
+                        WebkitLineClamp: 2,
                         WebkitBoxOrient: "vertical" as any,
                         overflow: "hidden",
+                        textAlign: "center",
                       }}
                     >
                       {product.name}
@@ -2050,14 +2108,21 @@ export default function ShopGalleryPage() {
 
                     <div
                       style={{
-                        color: "#4D657D",
-                        fontSize: 12,
-                        lineHeight: 1.5,
-                        minHeight: 18,
+                        color: "#4B6178",
+                        fontSize: 12.5,
+                        lineHeight: 1.55,
+                        minHeight: 42,
+                        padding: "10px 11px",
+                        borderRadius: 16,
+                        border: "1px solid rgba(13,95,168,0.10)",
+                        background:
+                          "linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(244,249,253,0.64) 100%)",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.82)",
                         display: "-webkit-box",
-                        WebkitLineClamp: 1,
+                        WebkitLineClamp: 2,
                         WebkitBoxOrient: "vertical" as any,
                         overflow: "hidden",
+                        textAlign: "center",
                       }}
                     >
                       {safeStr(
@@ -2068,7 +2133,7 @@ export default function ShopGalleryPage() {
                     <div
                       style={{
                         display: "flex",
-                        justifyContent: "space-between",
+                        justifyContent: "center",
                         gap: 10,
                         alignItems: "center",
                         flexWrap: "wrap",

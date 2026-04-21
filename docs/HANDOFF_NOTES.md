@@ -4831,3 +4831,28 @@ GSN-branded invite composer and invite-entry continuity.
 ### Verification after shop frame addendum
 
 - `npm run build` passed in `frontend`.
+
+### Shop Gallery institutional polish addendum
+
+- Updated `frontend/src/pages/ShopGalleryPage.tsx` only.
+- Preserved the restored product-loading logic and public shop route behavior.
+- Replaced bare white Shop Gallery surfaces with the accepted calm
+  institutional page wash: soft blue base, light pink/gold accents, and raised
+  white-blue cards.
+- Upgraded public product cards so the lower product information area no longer
+  sits on a plain white strip:
+  - product card shells now have stronger but calm institutional depth
+  - product names are centered and can wrap to two lines
+  - product descriptions now sit inside a contained raised description panel
+  - price/share controls sit centered in the card footer
+- Updated route-local badges and buttons to the same calm raised 3D language
+  used in the recent Community Home / Marketplace polish, without changing
+  global button behavior.
+- No backend, auth, schema, payment, environment config, or Dashboard Market
+  Wisdom behavior changed.
+
+### Verification after Shop Gallery polish
+
+- `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
+  the normal Windows line-ending warning.
+- `npm run build` passed in `frontend`.
