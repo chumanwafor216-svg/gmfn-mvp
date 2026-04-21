@@ -5547,3 +5547,44 @@ GSN-branded invite composer and invite-entry continuity.
 - This change is UI/tap-safety only. It does not change finance calculations,
   backend calls, auth, schema, payment, ledger, route guards, global shell, or
   Dashboard Market Wisdom behavior.
+
+### Trust Passport blueprint and explanation addendum
+
+- Updated `frontend/src/pages/TrustScorePage.tsx` only for the Trust route
+  surface at `/app/trust`.
+- Product-owner direction: Trust should develop like Finance, with one personal
+  trust record for the member across communities and a separate smaller
+  community-specific trust reading for the selected group.
+- Consulted frontend and backend trust audits before changing the page:
+  - frontend audit confirmed `/app/trust` is the correct Trust Passport target
+    and `TrustScorePage.tsx` is the safest route-local place to clarify the
+    model
+  - backend audit confirmed the current services already support personal
+    trust evidence, TrustSlip summaries, CCI, graph context, timelines, and
+    community-scoped readings without needing schema or scoring changes
+- Rewrote the Trust page explanation around benefits:
+  - Trust Passport is not a permanent label or judgement
+  - one member keeps one personal GSN trust record across communities
+  - each selected community can still show its own smaller Open Trust reading
+  - completed finance promises, responsible guarantees, clean identity
+    continuity, and good participation strengthen the trust story
+  - missed promises, defaults, overexposure, unresolved actions, or identity
+    shifts create pressure and repair paths
+  - TrustSlip remains the smaller portable proof, not the whole Passport
+- Added a new route-local "Trust record model" section that separates:
+  - personal trust record
+  - selected community reading
+  - what strengthens trust
+  - what creates pressure
+  - what can safely travel outside as proof
+- Tightened Trust page open/collapse and action buttons with the same
+  tap-safety pattern used on Finance:
+  - larger tap targets
+  - mobile tap highlight removed
+  - event propagation stopped before toggling
+  - Trust Journey action buttons isolated from surrounding cards
+- Added `docs/BENEFIT_LED_PAGE_EXPLANATIONS_2026-04-21.md` as the working
+  source bank for page explanations that can later be polished into school,
+  partner, innovation, or immigration/institutional documentation.
+- No backend scoring, auth, schema, payment, ledger, environment config,
+  global shell, route guard, or Dashboard Market Wisdom behavior changed.

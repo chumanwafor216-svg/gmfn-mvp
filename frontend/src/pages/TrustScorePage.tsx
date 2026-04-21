@@ -611,11 +611,12 @@ function actionBtn(
 ): React.CSSProperties {
   if (kind === "primary") {
     return {
+      ...tapSafeButtonBase(),
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 42,
-      padding: "10px 14px",
+      minHeight: 46,
+      padding: "11px 15px",
       borderRadius: 14,
       border: "none",
       background: disabled ? "#CBD5E1" : "#0B63D1",
@@ -632,11 +633,12 @@ function actionBtn(
 
   if (kind === "soft") {
     return {
+      ...tapSafeButtonBase(),
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 38,
-      padding: "8px 12px",
+      minHeight: 44,
+      padding: "10px 13px",
       borderRadius: 12,
       border: "1px solid rgba(11,31,51,0.08)",
       background: "#F8FBFF",
@@ -652,11 +654,12 @@ function actionBtn(
   }
 
   return {
+    ...tapSafeButtonBase(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
+    minHeight: 46,
+    padding: "11px 15px",
     borderRadius: 14,
     border: "1px solid rgba(11,31,51,0.10)",
     background: "#FFFFFF",
@@ -673,21 +676,44 @@ function actionBtn(
 
 function collapseToggle(): React.CSSProperties {
   return {
+    ...tapSafeButtonBase(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 38,
-    padding: "8px 12px",
+    minHeight: 46,
+    minWidth: 106,
+    padding: "10px 16px",
     borderRadius: 12,
     border: "1px solid rgba(11,31,51,0.10)",
     background: "#FFFFFF",
     color: "#24415C",
-    fontWeight: 800,
-    fontSize: 13,
+    fontWeight: 900,
+    fontSize: 13.5,
     textAlign: "center",
     cursor: "pointer",
     whiteSpace: "normal",
+    boxShadow:
+      "0 9px 18px rgba(10,24,49,0.075), inset 0 1px 0 rgba(255,255,255,0.78)",
   };
+}
+
+function tapSafeButtonBase(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 2,
+    boxSizing: "border-box",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    appearance: "none",
+    WebkitAppearance: "none",
+    isolation: "isolate",
+    transform: "translateZ(0)",
+  };
+}
+
+function stopTrustTap(event: React.SyntheticEvent<HTMLElement>) {
+  event.stopPropagation();
 }
 
 function helperText(): React.CSSProperties {
@@ -2177,6 +2203,21 @@ export default function TrustScorePage() {
     }));
   }
 
+  function handleCollapseTap(
+    key: keyof CollapseState,
+    event: React.MouseEvent<HTMLButtonElement>
+  ) {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleSection(key);
+  }
+
+  function handleTrustJourneyTap(event: React.MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    setTrustJourneyExpanded((prev) => !prev);
+  }
+
   function handleCopy(text: string, successText: string, emptyText: string) {
     const value = safeStr(text);
     if (!value) {
@@ -2263,7 +2304,7 @@ export default function TrustScorePage() {
         <PageTopNav
           sectionLabel="Trust Passport"
           title="Trust Passport"
-          subtitle="Trust Passport shows the current trust reading, why it changed, what evidence supports it, and what this unlocks next."
+          subtitle="Trust Passport turns trust behaviour into a personal proof story while keeping the selected community reading separate."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/dashboard"
@@ -2276,15 +2317,17 @@ export default function TrustScorePage() {
         />
 
         <DomainIntroToggle
-          title="Your Trust Passport"
-          eyebrow="Your guide"
-          body="Use Trust Passport to understand your trust story. It shows how your trust is looking now, why it changed, and what proof supports it."
+          title="How Trust Passport Helps You"
+          eyebrow="What this can do for you"
+          body="Trust Passport is not here to label a person forever. It helps a member carry proof of reliable behaviour across communities: promises kept, support given responsibly, identity continuity protected, and repair steps completed when something goes wrong."
           bullets={[
-            "Marketplace trust shows how one community sees your behaviour there.",
-            "Trust Passport brings your trust story together across your communities.",
-            "TrustSlip is a smaller proof you can show for one decision. It is not the whole Passport.",
+            "One member keeps one personal GSN trust record across every community they belong to.",
+            "Each selected community can still show its own smaller Open Trust reading, because one group may see strength or pressure before another group does.",
+            "Completed finance promises, clean support, verified identity continuity, and good community participation become evidence that can travel with the member.",
+            "If trust weakens, the Passport should show what happened, why it matters, and the first repair step instead of leaving the member confused or judged.",
+            "TrustSlip is the smaller proof for one outside decision. Trust Passport is the fuller story that explains the person over time.",
           ]}
-          note="Simple rule: use Trust Passport for the full story; use TrustSlip when you need smaller proof."
+          note="Simple rule: personal Trust Passport carries the full member story; community trust shows the local reading for the selected group."
           tone="blue"
         />
       </div>
@@ -2297,13 +2340,127 @@ export default function TrustScorePage() {
         intro="Say what you want in normal words, like trust score, why changed, repair, proof, verify, CCI, or marketplace. GSN will point you to the closest trust path."
       />
 
-      <ExplainToggle
-        label="What this screen does"
-        what="Trust Passport is the fuller trust reading for your account. It explains the current score, band, recent trust events, and the evidence behind them."
-        why="It helps you understand not just the current trust position, but why it changed and what that position means for the next move."
-        next="Start with the current trust posture, then open the evidence and institutional context sections if you need the deeper explanation."
-        tone="blue"
-      />
+      <section style={pageCard("linear-gradient(135deg, #F8FBFF 0%, #FFFFFF 54%, #FFF8E7 100%)")}>
+        <div style={sectionLabel()}>Trust record model</div>
+        <div
+          style={{
+            marginTop: 8,
+            color: "#0B1F33",
+            fontSize: isCompact ? 23 : 28,
+            fontWeight: 900,
+            lineHeight: 1.12,
+          }}
+        >
+          One person, one Trust Passport
+        </div>
+        <div style={{ marginTop: 10, ...helperText(), maxWidth: 900 }}>
+          This page should help a member see the trust story they can carry,
+          not feel judged by one number. The personal Passport gathers what is
+          known across communities, while the selected community still keeps its
+          own smaller reading.
+        </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+            gap: 12,
+          }}
+        >
+          <div style={innerCard("#FFFFFF")}>
+            <div style={sectionLabel()}>Personal trust record</div>
+            <div
+              style={{
+                marginTop: 8,
+                color: "#0B1F33",
+                fontWeight: 900,
+                fontSize: 18,
+                lineHeight: 1.25,
+              }}
+            >
+              {memberName}'s carried trust story
+            </div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              This is the record that follows the member across communities. It
+              gathers completed promises, support behaviour, CCI, TrustSlip
+              status, and evidence into one explainable story.
+            </div>
+            <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <span style={badge(true)}>GSN ID: {gmfnId}</span>
+              <span style={badge(false)}>Band: {currentBand}</span>
+              <span style={badge(false)}>Score: {currentScore}</span>
+              <span style={badge(false)}>
+                TrustSlip: {trustSlipCode ? "Ready" : "Pending"}
+              </span>
+            </div>
+          </div>
+
+          <div style={innerCard("#FFFFFF")}>
+            <div style={sectionLabel()}>Selected community reading</div>
+            <div
+              style={{
+                marginTop: 8,
+                color: "#0B1F33",
+                fontWeight: 900,
+                fontSize: 18,
+                lineHeight: 1.25,
+              }}
+            >
+              {communityName}
+            </div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              This smaller reading belongs to the current community. It helps
+              show whether this group currently sees the member as strong,
+              steady, watch, or pressure.
+            </div>
+            <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <span style={badge(true)}>Community ID: {communityCode}</span>
+              <span style={badge(false)}>Open Trust: {openTrust.classText}</span>
+              <span style={badge(false)}>CCI: {cci.classText}</span>
+              <span style={badge(false)}>
+                Active communities: {safeStr(trustSlipSummary?.active_clan_count ?? "0")}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: 12,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+            gap: 12,
+          }}
+        >
+          <div style={innerCard("#F8FBFF")}>
+            <div style={sectionLabel()}>What strengthens trust</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Completed repayments, responsible guarantees, clean identity
+              continuity, helpful participation, and promises that are closed
+              properly.
+            </div>
+          </div>
+
+          <div style={innerCard("#FFFBEF")}>
+            <div style={sectionLabel()}>What creates pressure</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Missed promises, defaults, overexposure, unresolved actions, or
+              identity shifts that need a simple review before sensitive work
+              continues.
+            </div>
+          </div>
+
+          <div style={innerCard("#F3FBF5")}>
+            <div style={sectionLabel()}>What can travel</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              TrustSlip, evidence packs, trust timeline, and verified
+              explanations can help a member prove reliability without exposing
+              their full private Passport.
+            </div>
+          </div>
+        </div>
+      </section>
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
@@ -2359,7 +2516,9 @@ export default function TrustScorePage() {
                 maxWidth: 860,
               }}
             >
-              This shows the current trust reading, what changed it, the recent events behind it, and the evidence context around exposure and capacity.
+              This is the fuller personal trust record for {memberName}. It
+              explains what is helping, what needs care, what evidence supports
+              the reading, and what can be safely shown outside as a TrustSlip.
             </div>
 
             <div
@@ -2374,7 +2533,7 @@ export default function TrustScorePage() {
               <span style={badge(false)}>Community: {communityName}</span>
               <span style={badge(false)}>Community ID: {communityCode}</span>
               <span style={badge(false)}>Current page: Trust Passport</span>
-              <span style={badge(false)}>Current step: Review full trust reading</span>
+              <span style={badge(false)}>Current step: Personal record</span>
             </div>
 
             <div
@@ -2387,7 +2546,14 @@ export default function TrustScorePage() {
             >
               <button
                 type="button"
-                onClick={() => void handleRefreshTrust()}
+                onPointerDown={stopTrustTap}
+                onMouseDown={stopTrustTap}
+                onTouchStart={stopTrustTap}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  void handleRefreshTrust();
+                }}
                 disabled={refreshing}
                 style={actionBtn("primary", refreshing)}
               >
@@ -2396,13 +2562,18 @@ export default function TrustScorePage() {
 
               <button
                 type="button"
-                onClick={() =>
+                onPointerDown={stopTrustTap}
+                onMouseDown={stopTrustTap}
+                onTouchStart={stopTrustTap}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
                   handleCopy(
                     gmfnId,
                     "GMFN ID copied.",
                     "GMFN ID is not available yet."
-                  )
-                }
+                  );
+                }}
                 style={actionBtn("secondary", !gmfnId || gmfnId === "Awaiting issue")}
                 disabled={!gmfnId || gmfnId === "Awaiting issue"}
               >
@@ -2411,7 +2582,12 @@ export default function TrustScorePage() {
 
               <button
                 type="button"
-                onClick={() => {
+                onPointerDown={stopTrustTap}
+                onMouseDown={stopTrustTap}
+                onTouchStart={stopTrustTap}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
                   if (typeof window !== "undefined" && typeof window.print === "function") {
                     window.print();
                   }
@@ -2628,7 +2804,10 @@ export default function TrustScorePage() {
 
             <button
               type="button"
-              onClick={() => setTrustJourneyExpanded((prev) => !prev)}
+              onPointerDown={stopTrustTap}
+              onMouseDown={stopTrustTap}
+              onTouchStart={stopTrustTap}
+              onClick={handleTrustJourneyTap}
               style={collapseToggle()}
             >
               {trustJourneyExpanded ? "Collapse" : "Open"}
@@ -2825,7 +3004,14 @@ export default function TrustScorePage() {
               >
                 <button
                   type="button"
-                  onClick={() => openTrustJourneyRoute(trustJourneyModel.primaryRoute)}
+                  onPointerDown={stopTrustTap}
+                  onMouseDown={stopTrustTap}
+                  onTouchStart={stopTrustTap}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    openTrustJourneyRoute(trustJourneyModel.primaryRoute);
+                  }}
                   style={actionBtn("primary")}
                 >
                   {safeStr(trustJourneyModel.primaryRoute.to) === "/app/trust"
@@ -2836,7 +3022,14 @@ export default function TrustScorePage() {
                 {trustJourneyExpanded ? (
                   <button
                     type="button"
-                    onClick={() => openTrustJourneyRoute(trustJourneyModel.secondaryRoute)}
+                    onPointerDown={stopTrustTap}
+                    onMouseDown={stopTrustTap}
+                    onTouchStart={stopTrustTap}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      openTrustJourneyRoute(trustJourneyModel.secondaryRoute);
+                    }}
                     style={actionBtn("secondary")}
                   >
                     {trustJourneyModel.secondaryRoute.label}
@@ -2982,7 +3175,14 @@ export default function TrustScorePage() {
 
                   <button
                     type="button"
-                    onClick={() => openTrustJourneyRoute(trustJourneyModel.secondaryRoute)}
+                    onPointerDown={stopTrustTap}
+                    onMouseDown={stopTrustTap}
+                    onTouchStart={stopTrustTap}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      openTrustJourneyRoute(trustJourneyModel.secondaryRoute);
+                    }}
                     style={actionBtn("secondary")}
                   >
                     {trustJourneyModel.secondaryRoute.label}
@@ -3026,7 +3226,10 @@ export default function TrustScorePage() {
 
           <button
             type="button"
-            onClick={() => toggleSection("overview")}
+            onPointerDown={stopTrustTap}
+            onMouseDown={stopTrustTap}
+            onTouchStart={stopTrustTap}
+            onClick={(event) => handleCollapseTap("overview", event)}
             style={collapseToggle()}
           >
             {collapsed.overview ? "Open" : "Collapse"}
@@ -3246,7 +3449,10 @@ export default function TrustScorePage() {
 
           <button
             type="button"
-            onClick={() => toggleSection("explainability")}
+            onPointerDown={stopTrustTap}
+            onMouseDown={stopTrustTap}
+            onTouchStart={stopTrustTap}
+            onClick={(event) => handleCollapseTap("explainability", event)}
             style={collapseToggle()}
           >
             {collapsed.explainability ? "Open" : "Collapse"}
@@ -3369,7 +3575,10 @@ export default function TrustScorePage() {
 
           <button
             type="button"
-            onClick={() => toggleSection("breakdown")}
+            onPointerDown={stopTrustTap}
+            onMouseDown={stopTrustTap}
+            onTouchStart={stopTrustTap}
+            onClick={(event) => handleCollapseTap("breakdown", event)}
             style={collapseToggle()}
           >
             {collapsed.breakdown ? "Open" : "Collapse"}
@@ -3480,7 +3689,10 @@ export default function TrustScorePage() {
 
           <button
             type="button"
-            onClick={() => toggleSection("evidence")}
+            onPointerDown={stopTrustTap}
+            onMouseDown={stopTrustTap}
+            onTouchStart={stopTrustTap}
+            onClick={(event) => handleCollapseTap("evidence", event)}
             style={collapseToggle()}
           >
             {collapsed.evidence ? "Open" : "Collapse"}
@@ -3611,7 +3823,10 @@ export default function TrustScorePage() {
 
           <button
             type="button"
-            onClick={() => toggleSection("routes")}
+            onPointerDown={stopTrustTap}
+            onMouseDown={stopTrustTap}
+            onTouchStart={stopTrustTap}
+            onClick={(event) => handleCollapseTap("routes", event)}
             style={collapseToggle()}
           >
             {collapsed.routes ? "Open" : "Collapse"}
