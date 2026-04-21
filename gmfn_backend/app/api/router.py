@@ -58,6 +58,7 @@ from app.api.routes.public_config import router as public_config_router
 from app.api.routes.merchant_risk import router as merchant_risk_router
 from app.api.routes.marketplace import router as marketplace_router
 from app.api.routes.marketplace_media import router as marketplace_media_router
+from app.api.routes.vault_access import router as vault_access_router
 
 # =========================
 # Admin
@@ -152,6 +153,7 @@ api_router.include_router(public_config_router)
 api_router.include_router(merchant_risk_router)
 api_router.include_router(marketplace_media_router)
 api_router.include_router(marketplace_router)
+api_router.include_router(vault_access_router)
 
 # ADMIN
 api_router.include_router(admin_router)
