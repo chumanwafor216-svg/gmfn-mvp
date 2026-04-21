@@ -5856,3 +5856,23 @@ GSN-branded invite composer and invite-entry continuity.
   shop gallery so visitors see the shop surface directly.
 - This is frontend copy/layout cleanup only. No backend routes, auth,
   permissions, schema, payment, ledger, or deployment settings changed.
+
+### Internal page tap-stability foundation addendum
+
+- Product-owner testing moved into broader page-to-page checking and requested
+  inside pages be tightened without changing their meaning.
+- Applied a shared UI/tap-stability polish pass rather than rewriting each
+  route-local page:
+  - `frontend/src/index.css` now sharpens font rendering and hardens tap
+    behavior for buttons, links, summaries, and role-button surfaces.
+  - `frontend/src/components/PageTopNav.tsx` now gives phone top-nav actions
+    larger tap targets and stronger pointer isolation.
+  - `frontend/src/components/EntryControls.tsx`,
+    `frontend/src/components/uiKit.tsx`, and
+    `frontend/src/styles/gmfnBrand.ts` now apply the same touch-safe,
+    no-highlight, isolated action-button foundation.
+- This pass is intended to benefit internal pages that share the app shell,
+  top nav, entry controls, branded buttons, or plain native buttons while
+  preserving route contracts and page content.
+- No backend, auth, permissions, schemas, payment, ledger, route guard,
+  deployment configuration, or Dashboard Market Wisdom presentation changed.

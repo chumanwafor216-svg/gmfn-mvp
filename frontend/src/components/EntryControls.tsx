@@ -24,6 +24,17 @@ export function EntryActionButton({
     whiteSpace: "normal",
     cursor: "pointer",
     textDecoration: "none",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    pointerEvents: "auto",
+    position: "relative",
+    zIndex: 1,
+    isolation: "isolate",
+    transform: "translateZ(0)",
+    appearance: "none",
+    WebkitAppearance: "none",
+    outlineOffset: 4,
   };
 
   const variantStyle: React.CSSProperties =
@@ -71,6 +82,15 @@ export function EntryBackLink({ to }: { to: string }) {
           "0 10px 24px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.12)",
         textDecoration: "none",
         fontSize: 0,
+        touchAction: "manipulation",
+        WebkitTapHighlightColor: "transparent",
+        userSelect: "none",
+        pointerEvents: "auto",
+        position: "relative",
+        zIndex: 1,
+        isolation: "isolate",
+        transform: "translateZ(0)",
+        outlineOffset: 4,
       }}
     >
       <span
@@ -134,6 +154,17 @@ export function EntryGuideLauncher({
           textAlign: "center",
           whiteSpace: "nowrap",
           cursor: "pointer",
+          touchAction: "manipulation",
+          WebkitTapHighlightColor: "transparent",
+          userSelect: "none",
+          pointerEvents: "auto",
+          position: "relative",
+          zIndex: 1,
+          isolation: "isolate",
+          transform: "translateZ(0)",
+          appearance: "none",
+          WebkitAppearance: "none",
+          outlineOffset: 4,
         }}
       >
         {text}
@@ -173,6 +204,17 @@ export function EntryGuideLauncher({
           textAlign: "center",
           textTransform: "uppercase",
           cursor: "pointer",
+          touchAction: "manipulation",
+          WebkitTapHighlightColor: "transparent",
+          userSelect: "none",
+          pointerEvents: "auto",
+          position: "relative",
+          zIndex: 1,
+          isolation: "isolate",
+          transform: "translateZ(0)",
+          appearance: "none",
+          WebkitAppearance: "none",
+          outlineOffset: 4,
         }}
       >
         {label}

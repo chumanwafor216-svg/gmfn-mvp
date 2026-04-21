@@ -59,8 +59,9 @@ function actionBtn(
   const compactAction: React.CSSProperties = compact
     ? {
         flex: "0 0 auto",
-        minHeight: kind === "soft" ? 34 : 36,
-        padding: kind === "soft" ? "7px 10px" : "8px 11px",
+        minHeight: kind === "soft" ? 42 : 44,
+        minWidth: kind === "soft" ? 84 : 96,
+        padding: kind === "soft" ? "9px 12px" : "10px 13px",
         borderRadius: 999,
         fontSize: kind === "soft" ? 12 : 12.5,
         whiteSpace: "nowrap",
@@ -88,6 +89,14 @@ function actionBtn(
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
+      WebkitTapHighlightColor: "transparent",
+      userSelect: "none",
+      pointerEvents: "auto",
+      position: "relative",
+      zIndex: 2,
+      isolation: "isolate",
+      transform: "translateZ(0)",
+      outlineOffset: 4,
       ...compactAction,
     };
   }
@@ -110,6 +119,14 @@ function actionBtn(
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
+      WebkitTapHighlightColor: "transparent",
+      userSelect: "none",
+      pointerEvents: "auto",
+      position: "relative",
+      zIndex: 2,
+      isolation: "isolate",
+      transform: "translateZ(0)",
+      outlineOffset: 4,
       ...compactAction,
     };
   }
@@ -131,6 +148,14 @@ function actionBtn(
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    pointerEvents: "auto",
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
     ...compactAction,
   };
 }
