@@ -32,6 +32,27 @@ html, body {
   min-height: 100vh;
 }
 
+* {
+  box-sizing: border-box;
+}
+
+:where(a, button, [role="button"], summary, input, select, textarea) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:where(a, button, [role="button"], summary, input[type="button"], input[type="submit"]) {
+  touch-action: manipulation;
+}
+
+:where(a, button, [role="button"], summary):focus:not(:focus-visible) {
+  outline: none;
+}
+
+:where(a, button, [role="button"], summary):focus-visible {
+  outline: 3px solid rgba(11, 99, 209, 0.42);
+  outline-offset: 3px;
+}
+
 /* ---- Watermark layer ----
    very faint repeating GSN text.
    User can only change tint (via --gmfn-tint).

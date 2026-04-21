@@ -516,6 +516,9 @@ function primaryBtn(disabled = false): React.CSSProperties {
     boxShadow: disabled
       ? "none"
       : "0 16px 30px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.16)",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
   };
 }
 
@@ -545,6 +548,9 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     boxShadow: disabled
       ? "none"
       : "0 10px 22px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
   };
 }
 
@@ -573,6 +579,9 @@ function subtleBtn(disabled = false): React.CSSProperties {
     boxShadow: disabled
       ? "none"
       : "0 8px 18px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.82)",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
   };
 }
 

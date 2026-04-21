@@ -20,6 +20,12 @@ type ContinuityBlock = {
   action: string;
 };
 
+// Temporary pilot-testing switch. Backend identity continuity remains intact,
+// but the frontend route-block screen is disabled while mobile tap behavior is
+// being audited. Re-enable after the UI is stable.
+const IDENTITY_CONTINUITY_ROUTE_BLOCK_ENABLED = false;
+const IDENTITY_CONTINUITY_OBSERVATION_ENABLED = false;
+
 const CONTINUITY_PROTECTED_PREFIXES = [
   "/app/finance",
   "/app/finances",
@@ -219,8 +225,12 @@ export default function RequireAuth({ children, requireRole }: Props) {
           return;
         }
 
-        const riskSummary = await getMyIdentityRisk().catch(() => null);
-        const blockingContinuity = extractContinuityBlock(riskSummary);
+        const riskSummary = IDENTITY_CONTINUITY_ROUTE_BLOCK_ENABLED
+          ? await getMyIdentityRisk().catch(() => null)
+          : null;
+        const blockingContinuity = IDENTITY_CONTINUITY_ROUTE_BLOCK_ENABLED
+          ? extractContinuityBlock(riskSummary)
+          : null;
 
         if (requireRole === "admin" && !hasAdminAccess(me)) {
           finish(false, true);
@@ -247,13 +257,15 @@ export default function RequireAuth({ children, requireRole }: Props) {
 
         finish(true);
 
-        try {
-          const fp = computeClientFingerprint();
-          void observeIdentityRisk(fp).catch((error) => {
+        if (IDENTITY_CONTINUITY_OBSERVATION_ENABLED) {
+          try {
+            const fp = computeClientFingerprint();
+            void observeIdentityRisk(fp).catch((error) => {
+              console.warn("Identity observation skipped:", error);
+            });
+          } catch (error) {
             console.warn("Identity observation skipped:", error);
-          });
-        } catch (error) {
-          console.warn("Identity observation skipped:", error);
+          }
         }
       } catch {
         finish(false);

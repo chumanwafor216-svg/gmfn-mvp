@@ -62,8 +62,17 @@ export default function OriginLink(props: OriginLinkProps) {
   const rawTo = String(to || "").trim();
   const stableStyle =
     rest.style && typeof rest.style === "object"
-      ? ({ touchAction: "manipulation", ...rest.style } as React.CSSProperties)
-      : ({ touchAction: "manipulation" } as React.CSSProperties);
+      ? ({
+          WebkitTapHighlightColor: "transparent",
+          touchAction: "manipulation",
+          userSelect: "none",
+          ...rest.style,
+        } as React.CSSProperties)
+      : ({
+          WebkitTapHighlightColor: "transparent",
+          touchAction: "manipulation",
+          userSelect: "none",
+        } as React.CSSProperties);
 
   if (isExternalTarget(rawTo)) {
     return (

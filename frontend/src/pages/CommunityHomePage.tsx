@@ -145,8 +145,8 @@ const COMMUNITY_BRAND = {
   deep: "#0B2942",
   blue: "#0D5FA8",
   lightBlue: "#EAF4FF",
-  gold: "#D9AC33",
-  goldSoft: "#FFF4C9",
+  gold: "#C9A13A",
+  goldSoft: "rgba(212,175,55,0.12)",
   panel: "rgba(255,255,255,0.94)",
   border: "rgba(21,64,103,0.14)",
 };
@@ -389,10 +389,11 @@ function communityShellStyle(isCompact: boolean): React.CSSProperties {
     display: "grid",
     gap: isCompact ? 14 : 18,
     borderRadius: isCompact ? 24 : 34,
+    border: "1px solid rgba(16,37,59,0.10)",
     background:
-      "radial-gradient(circle at 12% 0%, rgba(217,172,51,0.22) 0%, rgba(217,172,51,0) 28%), radial-gradient(circle at 92% 10%, rgba(38,132,205,0.20) 0%, rgba(38,132,205,0) 30%), linear-gradient(180deg, #071827 0%, #0B2942 42%, #EAF4FF 42.1%, #F8FBFF 100%)",
+      "radial-gradient(circle at 10% 0%, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0.00) 32%), radial-gradient(circle at 88% 7%, rgba(244,114,182,0.09) 0%, rgba(244,114,182,0.00) 24%), radial-gradient(circle at 92% 14%, rgba(243,208,106,0.09) 0%, rgba(243,208,106,0.00) 28%), linear-gradient(180deg, #F5FAFF 0%, #EEF5FD 42%, #F8FBFF 100%)",
     boxShadow:
-      "0 28px 70px rgba(2,12,27,0.20), inset 0 1px 0 rgba(255,255,255,0.08)",
+      "0 22px 52px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.72)",
     overflow: "hidden",
   };
 }
@@ -402,9 +403,9 @@ function communityWatermarkStyle(isCompact: boolean): React.CSSProperties {
     position: "absolute",
     right: isCompact ? -28 : 20,
     top: isCompact ? 70 : 88,
-    opacity: isCompact ? 0.055 : 0.08,
+    opacity: isCompact ? 0.045 : 0.065,
     pointerEvents: "none",
-    filter: "drop-shadow(0 24px 38px rgba(0,0,0,0.24))",
+    filter: "drop-shadow(0 18px 30px rgba(16,36,58,0.14))",
   };
 }
 
@@ -420,29 +421,65 @@ function communityContentStyle(isCompact: boolean): React.CSSProperties {
 function communityHeroStyle(isCompact: boolean): React.CSSProperties {
   return {
     borderRadius: isCompact ? 22 : 30,
-    border: "1px solid rgba(255,255,255,0.16)",
+    border: "1px solid rgba(16,37,59,0.14)",
     background:
-      "linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(238,247,255,0.92) 56%, rgba(255,244,201,0.92) 100%)",
+      "radial-gradient(circle at top left, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0.00) 38%), linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(230,239,252,0.96) 58%, rgba(212,226,246,0.92) 100%)",
     padding: isCompact ? 12 : 20,
     boxShadow:
-      "0 20px 48px rgba(2,12,27,0.18), inset 0 1px 0 rgba(255,255,255,0.82)",
+      "0 20px 44px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.72)",
     overflow: "hidden",
+  };
+}
+
+type CommunitySurfaceTone = "summary" | "blue" | "gold" | "raised" | "quiet";
+
+function communityBlockBackground(tone: CommunitySurfaceTone): string {
+  if (tone === "summary") {
+    return "radial-gradient(circle at top left, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0.00) 38%), linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(230,239,252,0.96) 58%, rgba(212,226,246,0.92) 100%)";
+  }
+
+  if (tone === "blue") {
+    return "radial-gradient(circle at top left, rgba(59,130,246,0.12) 0%, rgba(59,130,246,0.00) 28%), linear-gradient(180deg, #F8FBFF 0%, #F1F7FF 52%, #E7F0FB 100%)";
+  }
+
+  if (tone === "gold") {
+    return "radial-gradient(circle at top left, rgba(245,158,11,0.12) 0%, rgba(245,158,11,0.00) 28%), linear-gradient(180deg, #F8FBFF 0%, #EEF5FD 54%, #DCEBFA 100%)";
+  }
+
+  if (tone === "raised") {
+    return "linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)";
+  }
+
+  return "linear-gradient(180deg, #FFFFFF 0%, #FCFEFF 100%)";
+}
+
+function communityBlockCard(tone: CommunitySurfaceTone): React.CSSProperties {
+  const stronger = tone === "summary" || tone === "gold";
+
+  return {
+    ...pageCard(communityBlockBackground(tone)),
+    border: stronger
+      ? "1px solid rgba(11,99,209,0.14)"
+      : "1px solid rgba(16,37,59,0.12)",
+    boxShadow: stronger
+      ? "0 20px 44px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.78)"
+      : "0 16px 34px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.82)",
   };
 }
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   const resolvedBg =
     bg === "#FFFFFF"
-      ? "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,251,255,0.96) 100%)"
+      ? "radial-gradient(circle at top left, rgba(11,99,209,0.07) 0%, rgba(11,99,209,0.00) 38%), linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,249,255,0.96) 100%)"
       : bg;
 
   return {
     borderRadius: "clamp(18px, 4vw, 24px)",
-    border: `1px solid ${COMMUNITY_BRAND.border}`,
+    border: "1px solid rgba(16,37,59,0.14)",
     background: resolvedBg,
     padding: "clamp(12px, 3.6vw, 20px)",
     boxShadow:
-      "0 18px 44px rgba(7,24,39,0.10), 0 2px 8px rgba(15,23,42,0.03), inset 0 1px 0 rgba(255,255,255,0.74)",
+      "0 20px 44px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.72)",
     overflow: "hidden",
   };
 }
@@ -450,7 +487,7 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   const resolvedBg =
     bg === "#F8FBFF"
-      ? "linear-gradient(180deg, #F8FBFF 0%, #EFF7FF 100%)"
+      ? "linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%)"
       : bg;
 
   return {
@@ -458,32 +495,36 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
     border: `1px solid ${COMMUNITY_BRAND.border}`,
     background: resolvedBg,
     padding: "clamp(12px, 3vw, 16px)",
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.72)",
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.86), 0 12px 26px rgba(10,24,49,0.05)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   const resolvedBg =
     bg === "#FFFFFF"
-      ? "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"
+      ? "linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)"
       : bg;
 
   return {
     borderRadius: 16,
-    border: `1px solid ${COMMUNITY_BRAND.border}`,
+    border: "1px solid rgba(16,37,59,0.14)",
     background: resolvedBg,
     padding: "clamp(9px, 2.6vw, 12px)",
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.72)",
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.84), 0 14px 28px rgba(10,24,49,0.05)",
   };
 }
 
-function sectionLabel(): React.CSSProperties {
+function sectionLabel(align: "left" | "center" = "left"): React.CSSProperties {
   return {
     fontSize: 12,
     color: "#244B72",
     fontWeight: 900,
     letterSpacing: 1.8,
     textTransform: "uppercase",
+    textAlign: align,
+    width: align === "center" ? "100%" : undefined,
   };
 }
 
@@ -491,18 +532,30 @@ function badge(primary = false): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
+    justifyContent: "center",
     gap: 6,
     minHeight: 26,
     borderRadius: 999,
     padding: "5px 8px",
-    background: primary ? COMMUNITY_BRAND.goldSoft : "rgba(13,95,168,0.08)",
-    color: primary ? "#6F4C00" : "#1E4063",
+    background: primary ? "rgba(29,78,216,0.08)" : "rgba(13,95,168,0.08)",
+    color: primary ? "#173654" : "#1E4063",
     border: primary
-      ? "1px solid rgba(217,172,51,0.32)"
+      ? "1px solid rgba(29,78,216,0.14)"
       : "1px solid rgba(13,95,168,0.12)",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
+    textAlign: "center",
+  };
+}
+
+function heroStatCard(): React.CSSProperties {
+  return {
+    ...innerCard("rgba(255,255,255,0.74)"),
+    display: "grid",
+    alignContent: "center",
+    justifyItems: "center",
+    textAlign: "center",
   };
 }
 
@@ -514,10 +567,10 @@ function compactSignal(primary = false): React.CSSProperties {
     minHeight: 24,
     borderRadius: 999,
     padding: "4px 8px",
-    background: primary ? COMMUNITY_BRAND.goldSoft : "rgba(13,95,168,0.08)",
-    color: primary ? "#6F4C00" : "#1E4063",
+    background: primary ? "rgba(29,78,216,0.08)" : "rgba(13,95,168,0.08)",
+    color: primary ? "#173654" : "#1E4063",
     border: primary
-      ? "1px solid rgba(217,172,51,0.28)"
+      ? "1px solid rgba(29,78,216,0.14)"
       : "1px solid rgba(13,95,168,0.10)",
     fontSize: 11.5,
     fontWeight: 900,
@@ -525,7 +578,7 @@ function compactSignal(primary = false): React.CSSProperties {
     whiteSpace: "nowrap",
     textAlign: "center",
     boxShadow: primary
-      ? "0 6px 12px rgba(217,172,51,0.12), inset 0 1px 0 rgba(255,255,255,0.7)"
+      ? "0 6px 12px rgba(29,78,216,0.08), inset 0 1px 0 rgba(255,255,255,0.7)"
       : "inset 0 1px 0 rgba(255,255,255,0.72)",
   };
 }
@@ -559,7 +612,7 @@ function metricCard(bg: "blue" | "gold" | "white" = "white"): React.CSSPropertie
     blue:
       "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(234,244,255,0.98) 62%, rgba(220,235,250,0.98) 100%)",
     gold:
-      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,247,216,0.98) 62%, rgba(255,238,178,0.96) 100%)",
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(249,252,255,0.98) 62%, rgba(235,243,251,0.96) 100%)",
     white:
       "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 60%, #EEF6FF 100%)",
   };
@@ -569,7 +622,7 @@ function metricCard(bg: "blue" | "gold" | "white" = "white"): React.CSSPropertie
     borderRadius: 15,
     border:
       bg === "gold"
-        ? "1px solid rgba(217,172,51,0.30)"
+        ? "1px solid rgba(16,36,58,0.12)"
         : "1px solid rgba(13,95,168,0.16)",
     background: backgrounds[bg],
     padding: 8,
@@ -601,24 +654,27 @@ function actionBtn(
       borderRadius: 14,
       border: disabled
         ? "1px solid rgba(148,163,184,0.26)"
-        : "1px solid rgba(255,255,255,0.42)",
+        : "1px solid rgba(255,255,255,0.18)",
       background: disabled
         ? "#CBD5E1"
-        : "linear-gradient(180deg, #FFE9A8 0%, #D9AC33 54%, #9B7014 100%)",
-      color: disabled ? "#FFFFFF" : "#142033",
+        : "linear-gradient(180deg, #1B4B78 0%, #2B6599 56%, #3B78AE 100%)",
+      color: "#F8FBFF",
       fontWeight: 900,
       fontSize: 14,
       textAlign: "center",
       textDecoration: "none",
+      alignContent: "center",
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       overflowWrap: "anywhere",
       opacity: disabled ? 0.86 : 1,
       boxShadow: disabled
         ? "none"
-        : "0 12px 24px rgba(217,172,51,0.24), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -2px 0 rgba(83,56,0,0.18)",
+        : "0 5px 0 rgba(7,24,39,0.28), 0 16px 30px rgba(10,24,49,0.18), inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -10px 18px rgba(7,24,39,0.10)",
       touchAction: "manipulation",
-      lineHeight: 1.15,
+      lineHeight: 1.18,
+      WebkitTapHighlightColor: "transparent",
+      userSelect: "none",
     };
   }
 
@@ -636,19 +692,24 @@ function actionBtn(
       padding: "8px 12px",
       borderRadius: 12,
       border: "1px solid rgba(13,95,168,0.12)",
-      background: "linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)",
+      background:
+        "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(229,237,249,0.96) 100%)",
       color: disabled ? "#94A3B8" : "#1E4063",
       fontWeight: 800,
       fontSize: 13,
       textAlign: "center",
       textDecoration: "none",
+      alignContent: "center",
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       overflowWrap: "anywhere",
       opacity: disabled ? 0.86 : 1,
-      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.82)",
+      boxShadow:
+        "0 4px 0 rgba(79,97,120,0.14), 0 10px 20px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -8px 14px rgba(15,59,116,0.08)",
       touchAction: "manipulation",
-      lineHeight: 1.15,
+      lineHeight: 1.18,
+      WebkitTapHighlightColor: "transparent",
+      userSelect: "none",
     };
   }
 
@@ -664,56 +725,69 @@ function actionBtn(
     minHeight: 38,
     padding: "8px 12px",
     borderRadius: 14,
-    border: "1px solid rgba(13,95,168,0.14)",
-    background: "linear-gradient(180deg, #FFF7D8 0%, #E3B94B 58%, #B98318 100%)",
+    border: "1px solid rgba(16,37,59,0.14)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(229,237,249,0.96) 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
     textAlign: "center",
     textDecoration: "none",
+    alignContent: "center",
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     overflowWrap: "anywhere",
     opacity: disabled ? 0.86 : 1,
     boxShadow: disabled
       ? "none"
-      : "0 8px 18px rgba(217,172,51,0.16), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -2px 0 rgba(83,56,0,0.14)",
+      : "0 4px 0 rgba(79,97,120,0.16), 0 12px 24px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -8px 14px rgba(15,59,116,0.08)",
     touchAction: "manipulation",
-    lineHeight: 1.15,
+    lineHeight: 1.18,
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
   };
 }
 
 function collapseToggle(): React.CSSProperties {
   return {
     position: "relative",
-    zIndex: 1,
+    zIndex: 5,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     minWidth: 0,
     maxWidth: "100%",
     boxSizing: "border-box",
-    minHeight: 34,
-    padding: "7px 11px",
-    borderRadius: 12,
-    border: "1px solid rgba(13,95,168,0.14)",
-    background: "linear-gradient(180deg, #FFF7D8 0%, #E3B94B 58%, #B98318 100%)",
+    minHeight: 50,
+    padding: "12px 16px",
+    borderRadius: 16,
+    border: "1px solid rgba(16,37,59,0.14)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(229,237,249,0.96) 100%)",
     color: "#0B1F33",
     fontWeight: 800,
     fontSize: 13,
     cursor: "pointer",
     textAlign: "center",
+    alignContent: "center",
     whiteSpace: "normal",
     overflowWrap: "anywhere",
     boxShadow:
-      "0 8px 18px rgba(217,172,51,0.15), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -2px 0 rgba(83,56,0,0.14)",
+      "0 5px 0 rgba(79,97,120,0.16), 0 13px 26px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -9px 16px rgba(15,59,116,0.08)",
     touchAction: "manipulation",
-    lineHeight: 1.15,
+    lineHeight: 1.18,
+    outline: "none",
+    outlineOffset: 0,
+    appearance: "none",
+    WebkitAppearance: "none",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
   };
 }
 
 function collapseHeaderLayout(isCompact: boolean): React.CSSProperties {
   return {
+    position: "relative",
     display: "grid",
     gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
     gap: isCompact ? 10 : 12,
@@ -721,9 +795,28 @@ function collapseHeaderLayout(isCompact: boolean): React.CSSProperties {
   };
 }
 
-function collapseHeaderText(): React.CSSProperties {
+function communitiesCollapseHeaderLayout(
+  isCompact: boolean
+): React.CSSProperties {
+  return {
+    ...collapseHeaderLayout(isCompact),
+    zIndex: 30,
+    padding: isCompact ? "4px 0" : 0,
+    borderRadius: 20,
+    cursor: "pointer",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    isolation: "isolate",
+  };
+}
+
+function collapseHeaderText(align: "left" | "center" = "left"): React.CSSProperties {
   return {
     minWidth: 0,
+    textAlign: align,
+    justifySelf: align === "center" ? "center" : undefined,
+    width: "100%",
   };
 }
 
@@ -733,6 +826,21 @@ function collapseHeaderButton(isCompact: boolean): React.CSSProperties {
     justifySelf: isCompact ? "stretch" : "end",
     alignSelf: "start",
     width: isCompact ? "100%" : undefined,
+  };
+}
+
+function communitiesCollapseHeaderButton(
+  isCompact: boolean
+): React.CSSProperties {
+  return {
+    ...collapseHeaderButton(isCompact),
+    zIndex: 25,
+    width: "100%",
+    minHeight: isCompact ? 64 : 52,
+    padding: isCompact ? "16px 18px" : "13px 18px",
+    borderRadius: isCompact ? 18 : 16,
+    overflow: "hidden",
+    isolation: "isolate",
   };
 }
 
@@ -924,6 +1032,7 @@ export default function CommunityHomePage() {
       readLocalJSON(COMMUNITY_HOME_COLLAPSE_KEY, defaultCollapseState())
     )
   );
+  const collapseToggleTimersRef = useRef<number[]>([]);
   const [shopControlOpenSignal, setShopControlOpenSignal] = useState(0);
   const spotlightImagePrepJobRef = useRef(0);
   const spotlightVideoPrepJobRef = useRef(0);
@@ -944,6 +1053,15 @@ export default function CommunityHomePage() {
   useEffect(() => {
     writeLocalJSON(COMMUNITY_HOME_COLLAPSE_KEY, collapsed);
   }, [collapsed]);
+
+  useEffect(() => {
+    return () => {
+      collapseToggleTimersRef.current.forEach((timerId) => {
+        window.clearTimeout(timerId);
+      });
+      collapseToggleTimersRef.current = [];
+    };
+  }, []);
 
   useEffect(() => {
     if (!notice) return;
@@ -1323,6 +1441,34 @@ export default function CommunityHomePage() {
 
   function toggleSection(key: CollapseKey) {
     setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  function toggleSectionFromButton(
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    key: CollapseKey
+  ) {
+    consumeCommunityButtonEvent(event);
+
+    const timerId = window.setTimeout(() => {
+      collapseToggleTimersRef.current = collapseToggleTimersRef.current.filter(
+        (id) => id !== timerId
+      );
+      toggleSection(key);
+    }, 90);
+    collapseToggleTimersRef.current.push(timerId);
+  }
+
+  function toggleCommunitiesSectionFromHeader(
+    event: React.SyntheticEvent<HTMLElement> | undefined
+  ) {
+    toggleSectionFromButton(event, "communities");
+  }
+
+  function handleCommunitiesHeaderKeyDown(
+    event: React.KeyboardEvent<HTMLElement>
+  ) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    toggleCommunitiesSectionFromHeader(event);
   }
 
   function openCommunityHomeSection(
@@ -1790,7 +1936,7 @@ export default function CommunityHomePage() {
             ]}
           />
 
-          <section style={pageCard("#FFFFFF")}>
+          <section style={communityBlockCard("quiet")}>
             <div style={{ color: "#64748B", lineHeight: 1.8 }}>
               Loading your communities...
             </div>
@@ -1833,7 +1979,7 @@ export default function CommunityHomePage() {
             tone="dark"
           />
 
-          <section style={pageCard("#FFFFFF")}>
+          <section style={communityBlockCard("blue")}>
             <div style={sectionLabel()}>No communities yet</div>
 
             <div
@@ -1935,8 +2081,8 @@ export default function CommunityHomePage() {
                 borderRadius: isCompact ? 18 : 22,
                 background:
                   "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(234,244,255,0.92) 100%)",
-                border: "1px solid rgba(217,172,51,0.24)",
-                boxShadow: "0 14px 28px rgba(7,24,39,0.14)",
+                border: "1px solid rgba(16,36,58,0.12)",
+                boxShadow: "0 12px 24px rgba(7,24,39,0.10)",
               }}
             >
               <GSNBrandMark
@@ -2004,8 +2150,8 @@ export default function CommunityHomePage() {
                 gap: isCompact ? 6 : 8,
               }}
             >
-              <div style={innerCard("rgba(255,255,255,0.74)")}>
-                <div style={sectionLabel()}>Holder</div>
+              <div style={heroStatCard()}>
+                <div style={sectionLabel("center")}>Holder</div>
                 <div
                   style={{
                     marginTop: 4,
@@ -2019,8 +2165,8 @@ export default function CommunityHomePage() {
                   {communityHomeOwnerName}
                 </div>
               </div>
-              <div style={innerCard("rgba(255,255,255,0.74)")}>
-                <div style={sectionLabel()}>GSN ID</div>
+              <div style={heroStatCard()}>
+                <div style={sectionLabel("center")}>GSN ID</div>
                 <div
                   style={{
                     marginTop: 4,
@@ -2034,8 +2180,8 @@ export default function CommunityHomePage() {
                   {memberGlobalId}
                 </div>
               </div>
-              <div style={innerCard("rgba(255,255,255,0.74)")}>
-                <div style={sectionLabel()}>Communities</div>
+              <div style={heroStatCard()}>
+                <div style={sectionLabel("center")}>Communities</div>
                 <div
                   style={{
                     marginTop: 2,
@@ -2047,8 +2193,8 @@ export default function CommunityHomePage() {
                   {communityCountFromSummary}
                 </div>
               </div>
-              <div style={innerCard("rgba(255,255,255,0.74)")}>
-                <div style={sectionLabel()}>Money across communities</div>
+              <div style={heroStatCard()}>
+                <div style={sectionLabel("center")}>Money across communities</div>
                 <div
                   style={{
                     marginTop: 4,
@@ -2069,18 +2215,19 @@ export default function CommunityHomePage() {
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
-      <section style={{ ...pageCard("#FFFFFF"), order: 55 }}>
+      <section style={{ ...communityBlockCard("blue"), order: 55 }}>
         <div
           style={collapseHeaderLayout(isCompact)}
         >
-          <div style={collapseHeaderText()}>
-            <div style={sectionLabel()}>Your main actions</div>
+          <div style={collapseHeaderText("center")}>
+            <div style={sectionLabel("center")}>Your main actions</div>
             <div
               style={{
                 marginTop: 8,
                 color: "#5F7287",
                 fontSize: isCompact ? 12.5 : 14,
                 lineHeight: isCompact ? 1.5 : 1.75,
+                textAlign: "center",
               }}
             >
               Create a community, invite trusted people, manage your shop, or open Marketplace.
@@ -2089,10 +2236,8 @@ export default function CommunityHomePage() {
 
           <button
             type="button"
-            onClick={(event) => {
-              consumeCommunityButtonEvent(event);
-              toggleSection("tools");
-            }}
+            onPointerDown={consumeCommunityButtonEvent}
+            onClick={(event) => toggleSectionFromButton(event, "tools")}
             style={collapseHeaderButton(isCompact)}
           >
             {collapsed.tools ? "Open" : "Collapse"}
@@ -2194,19 +2339,20 @@ export default function CommunityHomePage() {
 
       <section
         id="community-home-grow-your-circle"
-        style={{ ...pageCard("#FFFFFF"), order: 70 }}
+        style={{ ...communityBlockCard("gold"), order: 70 }}
       >
         <div
           style={collapseHeaderLayout(isCompact)}
         >
-          <div style={collapseHeaderText()}>
-            <div style={sectionLabel()}>Grow your trusted circle</div>
+          <div style={collapseHeaderText("center")}>
+            <div style={sectionLabel("center")}>Grow your trusted circle</div>
             <div
               style={{
                 marginTop: 8,
                 color: "#5F7287",
                 fontSize: isCompact ? 12.5 : 14,
                 lineHeight: isCompact ? 1.5 : 1.75,
+                textAlign: "center",
               }}
             >
               Invite trusted real-life people.
@@ -2215,10 +2361,8 @@ export default function CommunityHomePage() {
 
           <button
             type="button"
-            onClick={(event) => {
-              consumeCommunityButtonEvent(event);
-              toggleSection("circle");
-            }}
+            onPointerDown={consumeCommunityButtonEvent}
+            onClick={(event) => toggleSectionFromButton(event, "circle")}
             style={collapseHeaderButton(isCompact)}
           >
             {collapsed.circle ? "Open" : "Collapse"}
@@ -2395,19 +2539,20 @@ export default function CommunityHomePage() {
 
       <section
         id="community-home-spotlight-gears"
-        style={{ ...pageCard("#FFFFFF"), order: 80 }}
+        style={{ ...communityBlockCard("summary"), order: 80 }}
       >
         <div
           style={collapseHeaderLayout(isCompact)}
         >
-          <div style={collapseHeaderText()}>
-            <div style={sectionLabel()}>Spotlight management</div>
+          <div style={collapseHeaderText("center")}>
+            <div style={sectionLabel("center")}>Spotlight management</div>
             <div
               style={{
                 marginTop: 8,
                 color: "#5F7287",
                 fontSize: isCompact ? 12.5 : 14,
                 lineHeight: isCompact ? 1.5 : 1.75,
+                textAlign: "center",
               }}
             >
               Prepare one image or short video before publishing.
@@ -2416,10 +2561,8 @@ export default function CommunityHomePage() {
 
           <button
             type="button"
-            onClick={(event) => {
-              consumeCommunityButtonEvent(event);
-              toggleSection("spotlight");
-            }}
+            onPointerDown={consumeCommunityButtonEvent}
+            onClick={(event) => toggleSectionFromButton(event, "spotlight")}
             style={collapseHeaderButton(isCompact)}
           >
             {collapsed.spotlight ? "Open" : "Collapse"}
@@ -2835,18 +2978,33 @@ export default function CommunityHomePage() {
         ) : null}
       </section>
 
-      <section style={{ ...pageCard("#FFFFFF"), order: 20 }}>
+      <section
+        style={{
+          ...communityBlockCard("raised"),
+          order: 20,
+          position: "relative",
+          zIndex: 30,
+        }}
+      >
         <div
-          style={collapseHeaderLayout(isCompact)}
+          role="button"
+          tabIndex={0}
+          aria-expanded={!collapsed.communities}
+          aria-controls="community-home-communities-panel"
+          onPointerDown={consumeCommunityButtonEvent}
+          onClick={toggleCommunitiesSectionFromHeader}
+          onKeyDown={handleCommunitiesHeaderKeyDown}
+          style={communitiesCollapseHeaderLayout(isCompact)}
         >
-          <div style={{ minWidth: 0 }}>
-            <div style={sectionLabel()}>Your communities</div>
+          <div style={{ minWidth: 0, width: "100%", textAlign: "center" }}>
+            <div style={sectionLabel("center")}>Your communities</div>
             <div
               style={{
                 marginTop: 8,
                 color: "#5F7287",
                 fontSize: isCompact ? 12.5 : 14,
                 lineHeight: isCompact ? 1.5 : 1.75,
+                textAlign: "center",
               }}
             >
               Choose a community. GSN opens its Marketplace.
@@ -2858,6 +3016,7 @@ export default function CommunityHomePage() {
                 display: "flex",
                 gap: 6,
                 flexWrap: "wrap",
+                justifyContent: "center",
               }}
             >
               <span style={badge(false)}>{sortedClans.length} communities</span>
@@ -2865,20 +3024,19 @@ export default function CommunityHomePage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={(event) => {
-              consumeCommunityButtonEvent(event);
-              toggleSection("communities");
-            }}
-            style={collapseHeaderButton(isCompact)}
+          <span
+            aria-hidden="true"
+            style={communitiesCollapseHeaderButton(isCompact)}
           >
             {collapsed.communities ? "Open" : "Collapse"}
-          </button>
+          </span>
         </div>
 
         {!collapsed.communities ? (
-          <div style={{ marginTop: isCompact ? 10 : 16, display: "grid", gap: 10 }}>
+          <div
+            id="community-home-communities-panel"
+            style={{ marginTop: isCompact ? 10 : 16, display: "grid", gap: 10 }}
+          >
             {sortedClans.map((clan, index) => {
               const clanId = getClanId(clan);
               const active = clanId > 0 && clanId === getClanId(selectedClan);
@@ -2901,14 +3059,14 @@ export default function CommunityHomePage() {
                   style={{
                     ...innerCard(
                       active
-                        ? "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 58%, #FFF7D8 100%)"
+                        ? "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 58%, #EAF4FF 100%)"
                         : "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 62%, #EFF7FF 100%)"
                     ),
                     border: active
-                      ? "1px solid rgba(217,172,51,0.30)"
+                      ? "1px solid rgba(13,95,168,0.20)"
                       : "1px solid rgba(13,95,168,0.13)",
                     boxShadow: active
-                      ? "0 14px 30px rgba(217,172,51,0.12), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -2px 0 rgba(83,56,0,0.05)"
+                      ? "0 14px 30px rgba(13,95,168,0.10), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -2px 0 rgba(8,40,72,0.04)"
                       : "0 12px 26px rgba(7,24,39,0.07), inset 0 1px 0 rgba(255,255,255,0.86), inset 0 -2px 0 rgba(8,40,72,0.04)",
                   }}
                 >
@@ -2932,12 +3090,12 @@ export default function CommunityHomePage() {
                           alignItems: "center",
                           justifyContent: "center",
                           background: active
-                            ? "linear-gradient(180deg, #FFE9A8 0%, #D9AC33 100%)"
+                            ? "linear-gradient(180deg, #10243A 0%, #26527C 100%)"
                             : "#EEF6FF",
-                          color: "#0B1F33",
+                          color: active ? "#F8FBFF" : "#0B1F33",
                           fontWeight: 950,
                           boxShadow: active
-                            ? "0 8px 18px rgba(217,172,51,0.28)"
+                            ? "0 8px 18px rgba(16,36,58,0.18)"
                             : "none",
                         }}
                       >

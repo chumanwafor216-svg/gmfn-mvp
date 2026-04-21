@@ -991,6 +991,9 @@ function actionBtn(
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
+      touchAction: "manipulation",
+      WebkitTapHighlightColor: "transparent",
+      userSelect: "none",
     };
   }
 
@@ -1012,6 +1015,9 @@ function actionBtn(
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
+      touchAction: "manipulation",
+      WebkitTapHighlightColor: "transparent",
+      userSelect: "none",
     };
   }
 
@@ -1032,6 +1038,9 @@ function actionBtn(
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
   };
 }
 
@@ -1331,6 +1340,7 @@ export default function MarketplacePage() {
 
   const supportSectionRef = useRef<HTMLElement | null>(null);
   const withdrawalHandoffAppliedRef = useRef("");
+  const sectionToggleTimersRef = useRef<number[]>([]);
 
   const selectedClanId = Number(getSelectedClanId() || 0);
   const currentGmfnId = safeStr(me?.gmfn_id || "");
@@ -1396,6 +1406,21 @@ export default function MarketplacePage() {
       ...prev,
       [key]: !prev[key],
     }));
+  }
+
+  function toggleSectionFromButton(
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    key: keyof SectionState
+  ) {
+    consumeMarketplaceButtonEvent(event);
+
+    const timerId = window.setTimeout(() => {
+      sectionToggleTimersRef.current = sectionToggleTimersRef.current.filter(
+        (id) => id !== timerId
+      );
+      toggleSection(key);
+    }, 90);
+    sectionToggleTimersRef.current.push(timerId);
   }
 
   function consumeMarketplacePointerEvent(
@@ -1584,6 +1609,15 @@ export default function MarketplacePage() {
     if (!activeCommunityId) return;
     writeLocalJSON(communitySectionsStorageKey(activeCommunityId), sectionsOpen);
   }, [sectionsOpen, activeCommunityId]);
+
+  useEffect(() => {
+    return () => {
+      sectionToggleTimersRef.current.forEach((timerId) => {
+        window.clearTimeout(timerId);
+      });
+      sectionToggleTimersRef.current = [];
+    };
+  }, []);
 
   useEffect(() => {
     if (!loanDraftId) return;
@@ -2726,7 +2760,8 @@ export default function MarketplacePage() {
 
           <button
             type="button"
-            onClick={() => toggleSection("money")}
+            onPointerDown={consumeMarketplaceButtonEvent}
+            onClick={(event) => toggleSectionFromButton(event, "money")}
             style={actionBtn("soft")}
           >
             {sectionsOpen.money ? "Collapse" : "Open"}
@@ -3002,7 +3037,8 @@ export default function MarketplacePage() {
 
           <button
             type="button"
-            onClick={() => toggleSection("tools")}
+            onPointerDown={consumeMarketplaceButtonEvent}
+            onClick={(event) => toggleSectionFromButton(event, "tools")}
             style={actionBtn("soft")}
           >
             {sectionsOpen.tools ? "Collapse" : "Open"}
@@ -3266,7 +3302,8 @@ export default function MarketplacePage() {
 
           <button
             type="button"
-            onClick={() => toggleSection("members")}
+            onPointerDown={consumeMarketplaceButtonEvent}
+            onClick={(event) => toggleSectionFromButton(event, "members")}
             style={actionBtn("soft")}
           >
             {sectionsOpen.members ? "Collapse" : "Open"}
@@ -3481,7 +3518,8 @@ export default function MarketplacePage() {
             <span style={badge(false)}>Active items: {activeLoanCount}</span>
             <button
               type="button"
-              onClick={() => toggleSection("support")}
+              onPointerDown={consumeMarketplaceButtonEvent}
+              onClick={(event) => toggleSectionFromButton(event, "support")}
               style={actionBtn("soft")}
             >
               {sectionsOpen.support ? "Collapse" : "Open"}

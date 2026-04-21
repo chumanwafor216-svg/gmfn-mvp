@@ -389,6 +389,9 @@ function actionBtn(
         ? "none"
         : "0 7px 0 rgba(92,64,18,0.34), 0 18px 32px rgba(11,31,51,0.20), inset 0 1px 0 rgba(255,255,255,0.72), inset 0 -2px 0 rgba(72,45,4,0.30)",
       lineHeight: 1.15,
+      touchAction: "manipulation",
+      WebkitTapHighlightColor: "transparent",
+      userSelect: "none",
     };
   }
 
@@ -415,6 +418,9 @@ function actionBtn(
       lineHeight: 1.15,
       boxShadow:
         "0 5px 0 rgba(92,64,18,0.20), 0 13px 24px rgba(7,24,39,0.11), inset 0 1px 0 rgba(255,255,255,0.90), inset 0 -2px 0 rgba(83,56,0,0.14)",
+      touchAction: "manipulation",
+      WebkitTapHighlightColor: "transparent",
+      userSelect: "none",
     };
   }
 
@@ -440,6 +446,9 @@ function actionBtn(
     lineHeight: 1.15,
     boxShadow:
       "0 5px 0 rgba(92,64,18,0.18), 0 13px 24px rgba(7,24,39,0.10), inset 0 1px 0 rgba(255,255,255,0.90), inset 0 -2px 0 rgba(83,56,0,0.12)",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
   };
 }
 
@@ -692,6 +701,7 @@ export default function ShopControlPage() {
   const lastAutoScrolledHashRef = useRef("");
   const hashScrollTimerRef = useRef<number | null>(null);
   const hashScrollRetryTimersRef = useRef<number[]>([]);
+  const spotlightCollapseTimerRef = useRef<number | null>(null);
 
   const selectedClanId = Number(getSelectedClanId() || 0);
   const shopActionsLocked = Boolean(continuityReview.blocked);
@@ -921,6 +931,10 @@ export default function ShopControlPage() {
 
   useEffect(() => {
     return () => {
+      if (spotlightCollapseTimerRef.current !== null) {
+        window.clearTimeout(spotlightCollapseTimerRef.current);
+        spotlightCollapseTimerRef.current = null;
+      }
       if (hashScrollTimerRef.current !== null) {
         window.clearTimeout(hashScrollTimerRef.current);
         hashScrollTimerRef.current = null;
@@ -1258,6 +1272,20 @@ export default function ShopControlPage() {
     window.setTimeout(() => {
       scrollToControlTarget("shop-control-spotlight");
     }, 80);
+  }
+
+  function collapseSpotlightTools(event?: React.SyntheticEvent<HTMLElement>) {
+    event?.preventDefault();
+    event?.stopPropagation();
+
+    if (spotlightCollapseTimerRef.current !== null) {
+      window.clearTimeout(spotlightCollapseTimerRef.current);
+    }
+
+    spotlightCollapseTimerRef.current = window.setTimeout(() => {
+      spotlightCollapseTimerRef.current = null;
+      setSpotlightOpen(false);
+    }, 90);
   }
 
   async function createVaultInstruction(quantityTotal: 1 | 6) {
@@ -2800,7 +2828,8 @@ export default function ShopControlPage() {
 
               <button
                 type="button"
-                onClick={() => setSpotlightOpen(false)}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={collapseSpotlightTools}
                 style={fullButton(actionBtn("secondary"))}
               >
                 Collapse Spotlight

@@ -3717,3 +3717,138 @@ GSN-branded invite composer and invite-entry continuity.
 - Reworded technical cumulative labels toward plain GSN language: money across communities, trust across communities, and main user actions.
 - No route, backend, auth, schema, payment, or frozen Dashboard Market Wisdom behavior changed.
 - Verification: `git diff --check` passed. Build was not run for this text-only close-out.
+
+## Mobile tap-safety recovery pass - 2026-04-21
+
+### Routes/screens affected
+
+- Protected app shell routes through `RequireAuth`
+- `/app/community`
+- `/app/marketplace`
+- `/app/shop-control`
+- `/app/dashboard`
+
+### Work completed
+
+- Hardened route-local button surfaces after phone testing showed edge taps could
+  fall onto nearby/underlying controls.
+- Community Home collapse controls now consume pointer/click events consistently
+  and delay their toggle slightly so layout changes do not steal the same tap.
+- The `Your communities` collapse control received an extra full-width,
+  taller, isolated tap slab because it was the remaining weak button during
+  phone testing.
+- After continued phone testing, the whole `Your communities` header row was
+  promoted to a controlled tap target with a higher stacking layer. This is meant
+  to catch imperfect edge taps on the first Community control instead of letting
+  them fall through to other layers.
+- A follow-up audit found the emergency Communities header patch had introduced
+  a nested interactive structure: a `role="button"` header containing a real
+  `<button>`. That was corrected by keeping the header as the single controlled
+  tap target and changing the yellow visual control into a non-interactive
+  `<span>`.
+- Added app-level tap-safety CSS in `frontend/src/index.css` for anchors,
+  buttons, role-buttons, summaries, and form controls:
+  native mobile tap highlight is suppressed, touch behavior is set to
+  manipulation, and keyboard focus remains visible through `:focus-visible`.
+- Updated shared `OriginLink` so route links inherit the same tap-safe defaults.
+- Shop Control, Marketplace, and Dashboard route-local button styles now suppress
+  native mobile tap highlights and use explicit manipulation touch behavior.
+- Temporarily disabled the frontend identity-continuity route-block screen in
+  `frontend/src/components/RequireAuth.tsx` while mobile tap behavior is being
+  audited. The backend identity logic was not deleted. Re-enable
+  `IDENTITY_CONTINUITY_ROUTE_BLOCK_ENABLED` and
+  `IDENTITY_CONTINUITY_OBSERVATION_ENABLED` after the pilot UI is stable.
+- No backend, schema, payment, environment, or Dashboard Market Wisdom behavior
+  was changed.
+
+### Verification
+
+- `npx eslint src/pages/CommunityHomePage.tsx src/pages/DashboardPage.tsx src/pages/MarketplacePage.tsx src/pages/ShopControlPage.tsx src/components/CommunityShopControlPanel.tsx src/components/OriginLink.tsx` passed with only existing Marketplace/ShopControl hook dependency warnings.
+- `npx eslint src/components/RequireAuth.tsx` passed.
+- `npm run build` passed in `frontend`.
+- `git diff --check` passed.
+- Local phone test URL remains reachable at `http://192.168.1.38:5173`.
+
+### Next suggested step
+
+- Phone-test `/app/community` again, starting with `Your communities`.
+- If the first collapse button no longer flashes a misaligned blue rectangle and
+  edge taps behave like center taps, commit and push the tap-safety recovery.
+
+## Community Home institutional visual calming pass - 2026-04-21
+
+### Routes/screens affected
+
+- `/app/community`
+
+### Work completed
+
+- Updated `frontend/src/pages/CommunityHomePage.tsx` only.
+- Removed the hard navy-to-light background split that made the dark blue frame
+  stop partway down the phone screen.
+- Replaced the large yellow Open/Collapse controls with calmer white and soft
+  blue controls.
+- Aligned the Community Home palette more closely with Dashboard:
+  pale blue page wash, soft radial blue glow, dashboard-style summary panels,
+  dashboard-style raised white-blue buttons, and controlled navy primary
+  actions.
+- Extended the Dashboard-style surface rhythm across the Community Home blocks:
+  main actions now use a soft blue surface, trusted circle uses a gold-soft
+  surface, spotlight management uses the dashboard summary surface, communities
+  uses a raised white-blue surface, and the embedded Shop Control panel now
+  follows the same blue/white/gold-soft button and card language.
+- Removed the dark institutional navy outer trail after phone review showed it
+  was too heavy. The Community Home outer background is back to the lighter
+  Dashboard-style wash, with only soft blue, pink, and gold radial accents so
+  the flashes harmonise without darkening the page.
+- Kept GSN institutional blue for primary actions and selected-state emphasis.
+- Reduced gold/yellow usage to avoid the page feeling flashy while keeping the
+  existing structure, route behavior, and tap-safety work intact.
+- No backend, auth, schema, payment, route contracts, or Dashboard Market
+  Wisdom behavior changed.
+
+### Verification
+
+- `npx eslint src/pages/CommunityHomePage.tsx` passed.
+- `git diff --check` passed.
+- `npm run build` passed in `frontend`.
+
+### Final polish addendum
+
+- Finished the accepted Community Home visual direction without changing the
+  background method.
+- Community Home and embedded Shop Control buttons now share the same raised
+  3D button language:
+  - stable tap-safe controls with no active movement
+  - centered wrapped button text
+  - softened top highlights so they do not read as harsh white lines
+  - deeper bottom shadows for a controlled institutional raised effect
+- This background/button method is the current accepted candidate to reuse on
+  later domain surfaces after Community Home is signed off.
+- No route, backend, auth, schema, payment, or Dashboard Market Wisdom behavior
+  changed in this finishing pass.
+
+### Verification after final polish
+
+- `npx eslint src/pages/CommunityHomePage.tsx src/components/CommunityShopControlPanel.tsx` passed.
+- `git diff --check -- frontend/src/pages/CommunityHomePage.tsx frontend/src/components/CommunityShopControlPanel.tsx` passed with only normal Windows line-ending warnings.
+- `npm run build` passed in `frontend`.
+
+### Centering close-out
+
+- Centered the visible Community Home summary headings after phone review:
+  `Your communities`, `Your main actions`, `Shop control`,
+  `Grow your trusted circle`, and `Spotlight management`.
+- Centered the Community Home hero stat tiles so `Holder`, `Communities`, and
+  the visible values such as `admin` and `3` sit in the middle of their cards.
+- Centered the communities count badge row under `Your communities`.
+- Kept form/task labels inside expanded tools left-aligned where that remains
+  more usable.
+- No route behavior, backend, schema, payment, auth, or Dashboard Market Wisdom
+  behavior changed.
+
+### Verification after centering close-out
+
+- `npx eslint src/pages/CommunityHomePage.tsx src/components/CommunityShopControlPanel.tsx` passed.
+- `git diff --check -- frontend/src/pages/CommunityHomePage.tsx frontend/src/components/CommunityShopControlPanel.tsx` passed with only normal Windows line-ending warnings.
+- `npm run build` passed in `frontend`.

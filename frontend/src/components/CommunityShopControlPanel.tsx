@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import * as api from "../lib/api";
 import { navigateWithOrigin } from "../lib/nav";
@@ -189,32 +189,55 @@ function normalizeShop(raw: any, fallbackGmfnId: string, currentClan: any): Shop
 }
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
+  const resolvedBg =
+    bg === "#FFFFFF"
+      ? "radial-gradient(circle at top left, rgba(11,99,209,0.12) 0%, rgba(11,99,209,0.00) 30%), radial-gradient(circle at 92% 12%, rgba(245,158,11,0.08) 0%, rgba(245,158,11,0.00) 28%), linear-gradient(180deg, #F8FBFF 0%, #EEF5FD 54%, #DCEBFA 100%)"
+      : bg;
+
   return {
     borderRadius: "clamp(18px, 4vw, 24px)",
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: "1px solid rgba(16,37,59,0.14)",
+    background: resolvedBg,
     padding: "clamp(12px, 3.6vw, 18px)",
     boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
+      "0 20px 44px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.72)",
     overflow: "hidden",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
+  const resolvedBg =
+    bg === "#F8FBFF"
+      ? "linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%)"
+      : bg;
+
   return {
     borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: "1px solid rgba(16,37,59,0.10)",
+    background: resolvedBg,
     padding: 16,
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.86), 0 12px 26px rgba(10,24,49,0.05)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
+  const resolvedBg =
+    bg === "#FFFFFF"
+      ? "linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)"
+      : bg === "#FCFEFF"
+      ? "linear-gradient(180deg, #FCFEFF 0%, #F4F9FF 100%)"
+      : bg === "#FFF9E7"
+      ? "radial-gradient(circle at top left, rgba(245,158,11,0.12) 0%, rgba(245,158,11,0.00) 28%), linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 52%, #EEF5FD 100%)"
+      : bg;
+
   return {
     borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: "1px solid rgba(16,37,59,0.12)",
+    background: resolvedBg,
     padding: 14,
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.84), 0 14px 28px rgba(10,24,49,0.05)",
   };
 }
 
@@ -229,11 +252,20 @@ function gearCard(bg = "#FFFFFF"): React.CSSProperties {
 }
 
 function statTile(bg = "#FFFFFF", border = "1px solid rgba(11,31,51,0.08)"): React.CSSProperties {
+  const resolvedBg =
+    bg === "#FFFFFF"
+      ? "linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)"
+      : bg === "#F8FBFF"
+      ? "linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%)"
+      : bg;
+
   return {
     borderRadius: 16,
     border,
-    background: bg,
+    background: resolvedBg,
     padding: 14,
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.84), 0 10px 22px rgba(10,24,49,0.04)",
   };
 }
 
@@ -251,13 +283,15 @@ function mediaBox(minHeight = 220): React.CSSProperties {
   };
 }
 
-function sectionLabel(): React.CSSProperties {
+function sectionLabel(align: "left" | "center" = "left"): React.CSSProperties {
   return {
     fontSize: 12,
     color: "#5D7389",
     fontWeight: 900,
     letterSpacing: 0.35,
     textTransform: "uppercase",
+    textAlign: align,
+    width: align === "center" ? "100%" : undefined,
   };
 }
 
@@ -291,6 +325,8 @@ function actionBtn(
 ): React.CSSProperties {
   if (kind === "primary") {
     return {
+      position: "relative",
+      zIndex: 1,
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
@@ -300,28 +336,35 @@ function actionBtn(
       minHeight: 42,
       padding: "10px 14px",
       borderRadius: 14,
-      border: disabled ? "1px solid rgba(148,163,184,0.45)" : "1px solid rgba(146,94,18,0.45)",
+      border: disabled
+        ? "1px solid rgba(148,163,184,0.45)"
+        : "1px solid rgba(16,37,59,0.14)",
       background: disabled
         ? "#CBD5E1"
-        : "linear-gradient(180deg, #FFE9A8 0%, #DFAE3F 52%, #9D6B12 100%)",
-      color: disabled ? "#FFFFFF" : "#172033",
+        : "linear-gradient(180deg, #1B4B78 0%, #2B6599 56%, #3B78AE 100%)",
+      color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
       textAlign: "center",
       textDecoration: "none",
+      alignContent: "center",
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       overflowWrap: "anywhere",
       opacity: disabled ? 0.86 : 1,
       touchAction: "manipulation",
+      WebkitTapHighlightColor: "transparent",
+      userSelect: "none",
       boxShadow: disabled
         ? "none"
-        : "0 8px 0 rgba(92,64,18,0.24), 0 14px 26px rgba(11,31,51,0.14)",
-      lineHeight: 1.15,
+        : "0 5px 0 rgba(7,24,39,0.28), 0 16px 30px rgba(10,24,49,0.18), inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -10px 18px rgba(7,24,39,0.10)",
+      lineHeight: 1.18,
     };
   }
 
   return {
+    position: "relative",
+    zIndex: 1,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -332,50 +375,69 @@ function actionBtn(
     padding: "10px 14px",
     borderRadius: 14,
     border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(229,237,249,0.96) 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
     textAlign: "center",
     textDecoration: "none",
+    alignContent: "center",
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     overflowWrap: "anywhere",
     opacity: disabled ? 0.86 : 1,
     touchAction: "manipulation",
-    lineHeight: 1.15,
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    lineHeight: 1.18,
+    boxShadow: disabled
+      ? "none"
+      : "0 4px 0 rgba(79,97,120,0.16), 0 12px 24px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -8px 14px rgba(15,59,116,0.08)",
   };
 }
 
 function collapseToggle(): React.CSSProperties {
   return {
+    position: "relative",
+    zIndex: 5,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     minWidth: 0,
     maxWidth: "100%",
     boxSizing: "border-box",
-    minHeight: 34,
-    padding: "7px 11px",
-    borderRadius: 12,
-    border: "1px solid rgba(13,95,168,0.14)",
-    background: "linear-gradient(180deg, #FFF7D8 0%, #E3B94B 58%, #B98318 100%)",
+    minHeight: 50,
+    padding: "12px 16px",
+    borderRadius: 16,
+    border: "1px solid rgba(16,37,59,0.14)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(229,237,249,0.96) 100%)",
     color: "#0B1F33",
     fontWeight: 800,
     fontSize: 13,
     textAlign: "center",
+    alignContent: "center",
     cursor: "pointer",
     whiteSpace: "normal",
+    overflowWrap: "anywhere",
     flex: "0 0 auto",
     touchAction: "manipulation",
-    lineHeight: 1.15,
+    lineHeight: 1.18,
     boxShadow:
-      "0 8px 18px rgba(217,172,51,0.15), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -2px 0 rgba(83,56,0,0.14)",
+      "0 5px 0 rgba(79,97,120,0.16), 0 13px 26px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -9px 16px rgba(15,59,116,0.08)",
+    outline: "none",
+    outlineOffset: 0,
+    appearance: "none",
+    WebkitAppearance: "none",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
   };
 }
 
 function collapseHeaderLayout(isCompact: boolean): React.CSSProperties {
   return {
+    position: "relative",
     display: "grid",
     gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
     gap: isCompact ? 10 : 12,
@@ -383,9 +445,12 @@ function collapseHeaderLayout(isCompact: boolean): React.CSSProperties {
   };
 }
 
-function collapseHeaderText(): React.CSSProperties {
+function collapseHeaderText(align: "left" | "center" = "left"): React.CSSProperties {
   return {
     minWidth: 0,
+    textAlign: align,
+    justifySelf: align === "center" ? "center" : undefined,
+    width: "100%",
   };
 }
 
@@ -442,6 +507,7 @@ export default function CommunityShopControlPanel({
   const [notice, setNotice] = useState<{ tone: NoticeTone; text: string } | null>(
     null
   );
+  const collapseToggleTimerRef = useRef<number | null>(null);
   const [shop, setShop] = useState<ShopSummary | null>(null);
   const [communityLabel, setCommunityLabel] = useState<string>("");
 
@@ -466,6 +532,15 @@ export default function CommunityShopControlPanel({
       // ignore
     }
   }, [open]);
+
+  useEffect(() => {
+    return () => {
+      if (collapseToggleTimerRef.current !== null) {
+        window.clearTimeout(collapseToggleTimerRef.current);
+        collapseToggleTimerRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (forceOpenSignal <= 0) return;
@@ -597,8 +672,22 @@ export default function CommunityShopControlPanel({
     navigateWithOrigin(navigate, to, location);
   }
 
+  function togglePanelFromButton(event: React.SyntheticEvent<HTMLElement>) {
+    event.preventDefault();
+    stopPanelTap(event);
+
+    if (collapseToggleTimerRef.current !== null) {
+      window.clearTimeout(collapseToggleTimerRef.current);
+    }
+
+    collapseToggleTimerRef.current = window.setTimeout(() => {
+      collapseToggleTimerRef.current = null;
+      setOpen((prev) => !prev);
+    }, 90);
+  }
+
   return (
-    <section style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
+    <section style={pageCard("#FFFFFF")}>
       {notice ? (
         <div style={{ marginBottom: 14, ...noticeCard(notice.tone) }}>{notice.text}</div>
       ) : null}
@@ -606,19 +695,26 @@ export default function CommunityShopControlPanel({
       <div
         style={collapseHeaderLayout(isCompact)}
       >
-        <div style={collapseHeaderText()}>
-          <div style={sectionLabel()}>Shop control</div>
-          <div style={{ marginTop: 8, ...helperText(), maxWidth: 820 }}>
+        <div style={collapseHeaderText("center")}>
+          <div style={sectionLabel("center")}>Shop control</div>
+          <div
+            style={{
+              marginTop: 8,
+              ...helperText(),
+              maxWidth: 820,
+              marginLeft: "auto",
+              marginRight: "auto",
+              textAlign: "center",
+            }}
+          >
             Manage shop tools. Keep the public gallery clean.
           </div>
         </div>
 
         <button
           type="button"
-          onClick={(event) => {
-            stopPanelTap(event);
-            setOpen((prev) => !prev);
-          }}
+          onPointerDown={stopPanelTap}
+          onClick={togglePanelFromButton}
           style={collapseHeaderButton(isCompact)}
         >
           {open ? "Collapse" : "Open"}
