@@ -46,7 +46,7 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
-Marketplace collapsible intent guide.
+Marketplace button authority polish.
 
 #### Routes/screens affected
 - `/app/marketplace`
@@ -59,6 +59,21 @@ Marketplace collapsible intent guide.
 - `docs/HANDOFF_NOTES.md`
 
 #### Confirmed facts
+- Marketplace route-local controls were tightened for a calmer institutional
+  feel without changing any backend contract or navigation target.
+- The billboard `Picture` pill is smaller, less glossy, and uses a firmer
+  navy/slate treatment.
+- The picture tool panel and its `Add picture` / `Change picture`, `Remove
+  picture`, and `Close` controls were tightened so the control area feels less
+  visually loose on phone.
+- The billboard `Open details` / `Close details` controls were narrowed and
+  restyled to match the picture control.
+- The route-local `actionBtn` helper now gives Marketplace buttons a more
+  muted bank-standard surface, with lower shine, smaller height, centered text,
+  border-box sizing, and transparent tap highlight.
+- The intent guide and intent action cards now inherit the calmer button
+  treatment while preserving the previously accepted `What do you want to do
+  next?` open/collapse behavior.
 - The second Marketplace block was changed from a route-name shortcut deck into
   a plain-language `What do you want to do next?` intent guide.
 - The guide is now collapsed by default so the Marketplace page stays short on
@@ -88,13 +103,14 @@ Marketplace collapsible intent guide.
 - `npm run build` passed in `frontend`.
 
 #### Open risks or unknowns
-- Phone visual review is needed to confirm the collapsed guide feels small
-  enough and that the `Open` / `Collapse` control is obvious for first-time
-  users.
+- Phone visual review is needed to confirm the new button tone feels
+  authoritative without becoming too dull, and that the `Picture` and `Open
+  details` pills are still easy to tap.
 
 #### Next recommended step
-- Deploy/retest `/app/marketplace` on phone, especially the compact collapsed
-  title, `Open` / `Collapse` behavior, typed guide, and everyday-action cards.
+- Deploy/retest `/app/marketplace` on phone, especially `Picture`, the picture
+  tool panel, `Open details`, the compact intent guide, and the main action
+  buttons.
 
 ### Previous update
 

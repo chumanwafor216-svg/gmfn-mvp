@@ -1246,11 +1246,11 @@ function marketplacePictureFrameOuterStyle(
     margin: "0 auto",
     padding: isCompact ? 7 : 8,
     borderRadius: isCompact ? 24 : 28,
-    border: "1px solid rgba(184,137,45,0.24)",
+    border: "1px solid rgba(16,37,59,0.16)",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(232,243,255,0.86) 46%, rgba(211,226,242,0.92) 100%)",
+      "linear-gradient(180deg, rgba(249,252,255,0.96) 0%, rgba(235,243,250,0.88) 48%, rgba(221,232,241,0.92) 100%)",
     boxShadow:
-      "0 24px 44px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.92)",
+      "0 20px 36px rgba(10,24,49,0.13), inset 0 1px 0 rgba(255,255,255,0.88)",
   };
 }
 
@@ -1262,7 +1262,7 @@ function marketplacePictureFrameInnerStyle(
     borderRadius: isCompact ? 18 : 22,
     border: "1px solid rgba(16,37,59,0.13)",
     background:
-      "radial-gradient(circle at 18% 10%, rgba(11,99,209,0.22) 0%, rgba(11,99,209,0.00) 42%), radial-gradient(circle at 86% 18%, rgba(244,114,182,0.12) 0%, rgba(244,114,182,0.00) 30%), linear-gradient(180deg, #F9FCFF 0%, #EAF3FC 100%)",
+      "radial-gradient(circle at 18% 10%, rgba(34,82,120,0.13) 0%, rgba(34,82,120,0.00) 42%), radial-gradient(circle at 86% 18%, rgba(157,89,123,0.08) 0%, rgba(157,89,123,0.00) 30%), linear-gradient(180deg, #F8FBFE 0%, #E8F1F8 100%)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1285,7 +1285,7 @@ function marketplacePicturePlaceholderStyle(
     textAlign: "center",
     color: "#12324F",
     background:
-      "radial-gradient(circle at 50% 18%, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0.00) 34%), linear-gradient(180deg, rgba(255,255,255,0.42) 0%, rgba(234,243,252,0.36) 100%)",
+      "radial-gradient(circle at 50% 18%, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.00) 34%), linear-gradient(180deg, rgba(248,251,254,0.46) 0%, rgba(231,240,248,0.42) 100%)",
   };
 }
 
@@ -1296,7 +1296,7 @@ function marketplaceIdentityPanelStyle(
     borderRadius: isCompact ? 18 : 22,
     border: "1px solid rgba(16,37,59,0.10)",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(247,251,255,0.90) 56%, rgba(238,246,255,0.88) 100%)",
+      "linear-gradient(180deg, rgba(252,254,255,0.94) 0%, rgba(246,250,253,0.90) 56%, rgba(237,245,251,0.88) 100%)",
     padding: isCompact ? 12 : 16,
     boxShadow:
       "0 14px 26px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.92)",
@@ -1316,19 +1316,21 @@ function marketplacePictureHandleStyle(
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 34,
+    minHeight: 32,
+    minWidth: side === "full" ? undefined : 96,
     maxWidth: side === "full" ? "calc(100% - 24px)" : "calc(50% - 16px)",
-    padding: "7px 12px",
+    padding: "7px 11px",
     borderRadius: 999,
-    border: "1px solid rgba(255,255,255,0.78)",
+    border: "1px solid rgba(255,255,255,0.62)",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(238,246,255,0.92) 100%)",
+      "linear-gradient(180deg, rgba(249,252,254,0.94) 0%, rgba(226,235,243,0.92) 100%)",
     color: disabled ? "#94A3B8" : "#12324F",
     boxShadow:
-      "0 14px 24px rgba(10,24,49,0.18), inset 0 1px 0 rgba(255,255,255,0.96)",
-    fontSize: 12,
+      "0 10px 18px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.72)",
+    boxSizing: "border-box",
+    fontSize: 11,
     fontWeight: 900,
-    lineHeight: 1,
+    lineHeight: 1.05,
     textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
@@ -1337,6 +1339,7 @@ function marketplacePictureHandleStyle(
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
     opacity: disabled ? 0.78 : 1,
+    appearance: "none",
   };
 }
 
@@ -1348,16 +1351,16 @@ function marketplacePictureToolsPanelStyle(
     top: 54,
     right: 12,
     zIndex: 4,
-    width: isCompact ? "min(232px, calc(100% - 24px))" : 244,
+    width: isCompact ? "min(214px, calc(100% - 24px))" : 224,
     display: "grid",
-    gap: 8,
-    padding: 10,
-    borderRadius: 18,
-    border: "1px solid rgba(255,255,255,0.78)",
+    gap: 7,
+    padding: 9,
+    borderRadius: 16,
+    border: "1px solid rgba(255,255,255,0.66)",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(239,247,255,0.95) 100%)",
+      "linear-gradient(180deg, rgba(251,253,255,0.98) 0%, rgba(232,240,248,0.95) 100%)",
     boxShadow:
-      "0 20px 36px rgba(3,10,22,0.24), inset 0 1px 0 rgba(255,255,255,0.96)",
+      "0 18px 30px rgba(3,10,22,0.22), inset 0 1px 0 rgba(255,255,255,0.78)",
   };
 }
 
@@ -1367,9 +1370,9 @@ function marketplacePictureToolButtonStyle(
   return {
     ...actionBtn("soft", disabled),
     width: "100%",
-    minHeight: 38,
-    padding: "9px 12px",
-    borderRadius: 14,
+    minHeight: 36,
+    padding: "8px 11px",
+    borderRadius: 12,
     fontSize: 12,
     justifyContent: "center",
   };
@@ -1404,11 +1407,16 @@ function marketplaceDetailsToggleStyle(isCompact: boolean): React.CSSProperties 
   return {
     ...actionBtn("soft"),
     justifySelf: "center",
-    minHeight: 36,
-    minWidth: isCompact ? 148 : 168,
-    padding: "8px 14px",
+    minHeight: 34,
+    minWidth: isCompact ? 132 : 150,
+    padding: "7px 13px",
     borderRadius: 999,
     fontSize: 12,
+    background:
+      "linear-gradient(180deg, rgba(249,252,254,0.94) 0%, rgba(226,235,243,0.92) 100%)",
+    border: "1px solid rgba(255,255,255,0.58)",
+    boxShadow:
+      "0 10px 18px rgba(10,24,49,0.15), inset 0 1px 0 rgba(255,255,255,0.70)",
   };
 }
 
@@ -1587,26 +1595,29 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 42,
-      padding: "10px 14px",
-      borderRadius: 14,
-      border: "1px solid rgba(11,99,209,0.18)",
+      minHeight: 40,
+      padding: "9px 13px",
+      borderRadius: 13,
+      border: "1px solid rgba(16,37,59,0.24)",
       background: disabled
         ? "#E2E8F0"
-        : "linear-gradient(180deg, #FFFFFF 0%, #EDF6FF 58%, #DDEBFA 100%)",
-      color: disabled ? "#64748B" : "#10324F",
+        : "linear-gradient(180deg, #F9FBFC 0%, #E6EEF5 100%)",
+      color: disabled ? "#64748B" : "#0D253B",
       fontWeight: 900,
-      fontSize: 14,
+      fontSize: 13,
+      lineHeight: 1.15,
       textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
       boxShadow:
-        "0 12px 22px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.82)",
+        "0 8px 16px rgba(10,24,49,0.11), inset 0 1px 0 rgba(255,255,255,0.70)",
       touchAction: "manipulation",
       WebkitTapHighlightColor: "transparent",
       userSelect: "none",
+      boxSizing: "border-box",
+      appearance: "none",
     };
   }
 
@@ -1615,25 +1626,28 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 38,
-      padding: "8px 12px",
+      minHeight: 36,
+      padding: "8px 11px",
       borderRadius: 12,
-      border: "1px solid rgba(16,37,59,0.10)",
+      border: "1px solid rgba(16,37,59,0.13)",
       background:
-        "linear-gradient(180deg, #FFFFFF 0%, #F6FAFF 68%, #EEF5FD 100%)",
-      color: disabled ? "#94A3B8" : "#24415C",
+        "linear-gradient(180deg, #FCFDFE 0%, #EFF4F8 100%)",
+      color: disabled ? "#94A3B8" : "#213D56",
       fontWeight: 800,
-      fontSize: 13,
+      fontSize: 12,
+      lineHeight: 1.15,
       textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
       boxShadow:
-        "0 10px 18px rgba(10,24,49,0.065), inset 0 1px 0 rgba(255,255,255,0.82)",
+        "0 7px 14px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.72)",
       touchAction: "manipulation",
       WebkitTapHighlightColor: "transparent",
       userSelect: "none",
+      boxSizing: "border-box",
+      appearance: "none",
     };
   }
 
@@ -1641,25 +1655,28 @@ function actionBtn(
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
-    borderRadius: 14,
-    border: "1px solid rgba(16,37,59,0.12)",
+    minHeight: 40,
+    padding: "9px 13px",
+    borderRadius: 13,
+    border: "1px solid rgba(16,37,59,0.16)",
     background:
-      "linear-gradient(180deg, #FFFFFF 0%, #F9FCFF 65%, #EDF3FA 100%)",
+      "linear-gradient(180deg, #FCFDFE 0%, #F3F6F9 58%, #E8EEF4 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
-    fontSize: 14,
+    fontSize: 13,
+    lineHeight: 1.15,
     textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
     boxShadow:
-      "0 10px 18px rgba(10,24,49,0.075), inset 0 1px 0 rgba(255,255,255,0.84)",
+      "0 8px 16px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.72)",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
+    boxSizing: "border-box",
+    appearance: "none",
   };
 }
 
@@ -1669,10 +1686,10 @@ function intentGuideCardStyle(): React.CSSProperties {
     borderRadius: 20,
     border: "1px solid rgba(16,37,59,0.10)",
     background:
-      "radial-gradient(circle at 12% 8%, rgba(11,99,209,0.10) 0%, rgba(11,99,209,0.00) 36%), linear-gradient(180deg, #FFFFFF 0%, #F5FAFF 100%)",
+      "radial-gradient(circle at 12% 8%, rgba(34,82,120,0.08) 0%, rgba(34,82,120,0.00) 36%), linear-gradient(180deg, #FFFFFF 0%, #F4F8FB 100%)",
     padding: 14,
     boxShadow:
-      "0 14px 26px rgba(10,24,49,0.065), inset 0 1px 0 rgba(255,255,255,0.82)",
+      "0 12px 22px rgba(10,24,49,0.055), inset 0 1px 0 rgba(255,255,255,0.76)",
   };
 }
 
@@ -1681,11 +1698,11 @@ function intentChoiceStyle(
 ): React.CSSProperties {
   return {
     ...actionBtn(tone),
-    minHeight: 72,
+    minHeight: 68,
     alignItems: "flex-start",
     flexDirection: "column",
     gap: 5,
-    padding: "12px 13px",
+    padding: "11px 12px",
     textAlign: "left",
   };
 }
