@@ -51,38 +51,55 @@ real behaviour, not from wealth alone.
 
 ## Marketplace / Shop Gallery
 
-Marketplace helps trusted relationships become real opportunities.
+Before GSN, my shop only moved as far as people knew me.
 
-It is where one selected community can turn trust into shop visibility, private
-Vault access, spotlight exposure, repostable links, demand, and support routes
-without pretending that strangers already know each other.
+If somebody trusted me, business was easier. If somebody knew my family, my
+group, my church, my market people, or someone who could speak for me, I had a
+chance. But once I moved outside that circle, I had to start explaining myself
+again.
 
-Shop Gallery gives a member's shop a clean public face inside the trusted
-circle. People can see what the seller offers, understand who owns the shop, and
-open that shop from the marketplace that already carries the community context.
+GSN changes that.
 
-Vault protects the things that should not be shown to everybody. Some stock,
-offers, or private selling conversations may need permission first. A serious
-buyer can ask for access, and the seller can decide what should be viewed
-privately.
+Now my shop is not just a name in one place. My shop can carry my community
+identity, my GSN ID, and my trust record with it.
 
-Spotlight and paid spotlight help value travel further. A good product, service,
-or trusted seller should not depend only on accidental discovery. Spotlight lets
-the marketplace lift something useful into view.
+When I show my Shop Gallery, people can see what I sell and where I belong.
+They are not just seeing pictures. They are seeing a shop connected to a real
+person, a real community, and a trust record that can be checked.
 
-Demand Box works from the other side. If a member needs something, that need can
-become visible so the marketplace can answer it with goods, services, support,
-or trusted people.
+If I want to show something openly, I can use my shop.
 
-Repost links help the marketplace travel outward safely. A shop, marketplace
-view, Vault-style access, or approved spotlight can move beyond the first circle
-while still carrying the correct community identity back with it.
+If I want to show something privately, I can use Vault. That means I do not
+have to expose everything to everybody. A serious buyer can ask for access, and
+I can decide what to show.
 
-The deeper trust layer is still TrustSlip. Before goods are released on credit,
-before a buyer or seller accepts risk, or before support moves, TrustSlip can
-help prove who the person is and what trust evidence follows them.
+If I want more people to notice my goods or services, Spotlight can help. Paid
+Spotlight can push the right product further, especially when I need attention
+beyond ordinary browsing.
 
-A good name opens doors, but GSN gives that good name proof.
+If people are looking for something, Demand Box helps the need come to the
+surface. Instead of waiting and hoping, the marketplace can show what people are
+asking for and who may be able to answer.
+
+If I want my shop to travel outside my first circle, repost links can help. The
+link can move, but it still carries the right shop and marketplace identity
+back with it.
+
+The most important part is trust.
+
+In normal life, people buy on credit or release goods because someone says, "I
+know this person." But that person may not always be there to speak for me.
+With GSN, my TrustSlip can speak with me.
+
+Before someone releases goods, gives support, or accepts risk, they can check my
+TrustSlip. They can see that I am not just a stranger talking. I have a record.
+I have a community. I have proof that follows me.
+
+So Marketplace is not only for displaying goods.
+
+It helps my shop travel with trust.
+
+It helps people see me, check me, and deal with me with more confidence.
 
 Innovation wedge: GSN turns informal community vouching into portable,
 verifiable trust evidence, especially for people who are normally invisible to

@@ -5681,3 +5681,29 @@ GSN-branded invite composer and invite-entry continuity.
 - This is copy/system-explanation work only. No backend, auth, schema, payment,
   ledger, route guard, deployment config, public Shop Gallery, or Dashboard
   Market Wisdom behavior changed.
+
+### Marketplace lived-in explanation rewrite addendum
+
+- Updated the active Marketplace `How Marketplace Helps Your Shop Travel`
+  guide in `frontend/src/pages/MarketplacePage.tsx` again after product-owner
+  review.
+- The new version deliberately sounds like a member already using GSN, not like
+  an academic or product brochure:
+  - before GSN, the shop only travelled as far as people knew the seller
+  - GSN lets the shop carry community identity, GSN ID, and trust record
+  - Shop Gallery shows goods with a real person/community/trust context
+  - Vault supports private viewing when not everything should be public
+  - Spotlight and paid Spotlight help trusted value travel further
+  - Demand Box surfaces what people are asking for
+  - repost links let the shop move outward while preserving marketplace context
+  - TrustSlip can speak for the member when the usual human voucher is not
+    physically present
+- Kept the same innovation wedge as the closing note:
+  `GSN turns informal community vouching into portable, verifiable trust
+  evidence, especially for people who are normally invisible to formal credit
+  systems.`
+- Updated `docs/BENEFIT_LED_PAGE_EXPLANATIONS_2026-04-21.md` with the same
+  lived-in Marketplace / Shop Gallery wording.
+- This remains copy/system-explanation work only. No backend, auth, schema,
+  payment, ledger, route guard, deployment config, public Shop Gallery, or
+  Dashboard Market Wisdom behavior changed.
