@@ -46,6 +46,66 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
+Install reusable “What do you want to do next?” guide on Community Home and
+Dashboard.
+
+#### Routes/screens affected
+- `/app/community`
+- `/app/dashboard`
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+
+#### Files in play
+- `frontend/src/components/NextActionGuide.tsx`
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `frontend/src/pages/DashboardPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Product owner asked to bring the Marketplace-style “What do you want to do
+  next?” helper into Community Home and Dashboard.
+- Added a shared route-neutral `NextActionGuide` component with collapsed/open
+  state, simple keyword matching, search input, quick choices, and tap-event
+  containment.
+- Installed the guide on Community Home in both the normal state and the
+  no-community state. Community actions reuse existing Community Home handlers
+  for choosing communities, opening Marketplace, creating/joining communities,
+  growing the trusted circle, shop control, spotlight, finance, loans/support,
+  trust, and notifications.
+- Installed the guide on Dashboard immediately after the hero/identity block
+  and before Spotlight, so the frozen Market Wisdom section remains untouched.
+- Dashboard guide uses the existing Dashboard priority-route intelligence plus
+  stable core routes for Community Home, Marketplace, Money In, Money Out,
+  Loans/Support, Finance, Trust Passport, CCI, TrustSlip, Demand Box,
+  Notifications, and Shop.
+- Tightened Dashboard's route-local pointer guard from a no-op to
+  `stopPropagation()` so Dashboard buttons are less likely to leak edge taps.
+- No backend, auth, schema, payment, deployment configuration, Marketplace
+  business logic, or Dashboard Market Wisdom behavior changed.
+
+#### Verification
+- `npm exec -- eslint src/components/NextActionGuide.tsx src/pages/CommunityHomePage.tsx src/pages/DashboardPage.tsx` passed.
+- `git diff --check -- frontend/src/components/NextActionGuide.tsx frontend/src/pages/CommunityHomePage.tsx frontend/src/pages/DashboardPage.tsx` passed with only normal Windows line-ending warnings.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- Phone review is needed after deploy to confirm the guide placement feels
+  helpful without crowding the top of Community Home or Dashboard.
+- The guide currently uses simple keyword matching, not AI language
+  understanding; this is intentional for stability at this stage.
+
+#### Next recommended step
+- Deploy/retest `/app/community` and `/app/dashboard` on phone. Open/collapse
+  the guide, try terms like `loan`, `deposit`, `withdraw`, `shop`, `invite`,
+  `trust`, `community`, and `marketplace`, and confirm buttons do not jump.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
 Marketplace block-surface polish and tap-stability hardening.
 
 #### Routes/screens affected

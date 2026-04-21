@@ -1,5 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import GSNBrandMark from "../components/GSNBrandMark";
+import NextActionGuide, {
+  type NextActionGuideItem,
+} from "../components/NextActionGuide";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import SystemPictureFrame from "../components/SystemPictureFrame";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -651,7 +654,7 @@ function fieldTextareaStyle(): React.CSSProperties {
 function stopDashboardPointerEvent(
   event?: React.SyntheticEvent<HTMLElement>
 ) {
-  void event;
+  event?.stopPropagation();
 }
 
 function safeStr(x: unknown): string {
@@ -3971,6 +3974,155 @@ export default function DashboardPage() {
     ]
   );
 
+  const dashboardNextActionItems = useMemo<NextActionGuideItem[]>(() => {
+    const routeItems: NextActionGuideItem[] = [
+      {
+        id: `priority-${priorityRoutes.primaryRoute.key}`,
+        label: routeSurfaceLabel(priorityRoutes.primaryRoute),
+        detail:
+          priorityRoutes.primaryRoute.reason ||
+          priorityRoutes.primaryRoute.detail ||
+          priorityRoutes.detail,
+        technical: priorityRoutes.title,
+        to: priorityRoutes.primaryRoute.to,
+        keywords: [
+          priorityRoutes.primaryRoute.key,
+          priorityRoutes.primaryRoute.label,
+          priorityRoutes.title,
+          priorityRoutes.detail,
+          "recommended",
+          "next",
+        ],
+        tone: "primary",
+      },
+      ...priorityRoutes.supportingRoutes.map((route) => ({
+        id: `support-${route.key}`,
+        label: routeSurfaceLabel(route),
+        detail: route.detail,
+        technical: route.label,
+        to: route.to,
+        keywords: [route.key, route.label, route.detail],
+        tone: "secondary" as const,
+      })),
+      {
+        id: "community",
+        label: "Community Home",
+        detail: "Choose your community and open the right working marketplace.",
+        technical: "Community Home",
+        to: DASHBOARD_TARGETS.COMMUNITY,
+        keywords: ["community", "group", "choose", "home", "marketplace"],
+        tone: "secondary",
+      },
+      {
+        id: "marketplace",
+        label: "Marketplace",
+        detail: "Open one selected community for live marketplace work.",
+        technical: "Marketplace",
+        to: DASHBOARD_TARGETS.MARKETPLACE,
+        keywords: ["marketplace", "market", "trade", "buy", "sell", "shop"],
+        tone: "secondary",
+      },
+      {
+        id: "money-in",
+        label: "Money In",
+        detail: "Open the pay-in path for deposits and pool funding.",
+        technical: "Payment pool",
+        to: DASHBOARD_TARGETS.MONEY_IN,
+        keywords: ["money in", "deposit", "pay in", "pool", "fund", "payment"],
+        tone: "soft",
+      },
+      {
+        id: "money-out",
+        label: "Money Out",
+        detail: "Open the withdrawal and payout instruction path.",
+        technical: "Withdrawal",
+        to: DASHBOARD_TARGETS.MONEY_OUT,
+        keywords: ["money out", "withdraw", "payout", "cash out"],
+        tone: "soft",
+      },
+      {
+        id: "support",
+        label: "Borrow or support",
+        detail: "Open loans, guarantor, borrowing, lending, and support work.",
+        technical: "Loans and support",
+        to: DASHBOARD_TARGETS.LOANS,
+        keywords: ["loan", "borrow", "lend", "support", "guarantor"],
+        tone: "secondary",
+      },
+      {
+        id: "finance",
+        label: "Finance",
+        detail: "Review pool position, locks, support, and money movement.",
+        technical: "Finance",
+        to: DASHBOARD_TARGETS.FINANCE,
+        keywords: ["finance", "money", "balance", "pool", "earnings"],
+        tone: "secondary",
+      },
+      {
+        id: "trust",
+        label: "Trust Passport",
+        detail: "Read trust, repair pressure, and carried trust story.",
+        technical: "Trust",
+        to: DASHBOARD_TARGETS.TRUST,
+        keywords: ["trust", "passport", "repair", "score", "reading"],
+        tone: "secondary",
+      },
+      {
+        id: "identity",
+        label: "CCI",
+        detail: "Review identity continuity and cross-community integrity.",
+        technical: "Identity integrity",
+        to: DASHBOARD_TARGETS.CCI,
+        keywords: ["identity", "cci", "integrity", "continuity", "review"],
+        tone: "soft",
+      },
+      {
+        id: "trust-slip",
+        label: "TrustSlip",
+        detail: "Open the portable verification and merchant trust record.",
+        technical: "TrustSlip",
+        to: DASHBOARD_TARGETS.TRUST_SLIP,
+        keywords: ["trustslip", "verify", "verification", "merchant", "qr"],
+        tone: "soft",
+      },
+      {
+        id: "demand-box",
+        label: "Demand Box",
+        detail: "Open visible needs, requests, and demand signals.",
+        technical: "Demand Box",
+        to: DASHBOARD_TARGETS.DEMAND_BOX,
+        keywords: ["demand", "need", "request", "opportunity", "supply"],
+        tone: "soft",
+      },
+      {
+        id: "notifications",
+        label: "What Matters Now",
+        detail: "Open the action queue and items needing attention.",
+        technical: "Notifications",
+        to: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
+        keywords: ["notice", "notification", "inbox", "alert", "queue"],
+        tone: "soft",
+      },
+      {
+        id: "shop",
+        label: "Shop",
+        detail: "Open your shop and seller-facing tools.",
+        technical: "Shop",
+        to: myShopLink,
+        keywords: ["shop", "seller", "goods", "service", "store"],
+        tone: "soft",
+      },
+    ];
+
+    const seen = new Set<string>();
+    return routeItems.filter((item) => {
+      const key = item.label.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [myShopLink, priorityRoutes]);
+
   const urgentDemandCount = useMemo(
     () =>
       demandItems.filter((item) => safeStr(item.urgency).toLowerCase() === "high")
@@ -4188,6 +4340,18 @@ export default function DashboardPage() {
   ) {
     consumeDashboardButtonEvent(event);
     navigateWithOrigin(navigate, to, location);
+  }
+
+  function handleDashboardNextAction(
+    item: NextActionGuideItem,
+    event?: React.SyntheticEvent<HTMLElement>
+  ) {
+    if (!item.to) {
+      consumeDashboardButtonEvent(event);
+      return;
+    }
+
+    openDashboardRoute(event, item.to);
   }
 
   function runDashboardUiMutation(
@@ -6166,6 +6330,15 @@ export default function DashboardPage() {
           </div>
         </div>
       </section>
+
+      <NextActionGuide
+        storageKey="gmfn.dashboard.nextActionGuide.v1"
+        compact={isPhone || isCompact}
+        items={dashboardNextActionItems}
+        onSelect={handleDashboardNextAction}
+        eyebrow="Your guide"
+        intro="Say what you want in normal words, like loan, deposit, withdraw, shop, trust, community, or marketplace. GSN will point you to the closest route."
+      />
 
       <section
         style={{

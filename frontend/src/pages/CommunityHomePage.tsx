@@ -3,6 +3,9 @@ import { useLocation, useNavigate } from "react-router-dom";
 import CommunityShopControlPanel from "../components/CommunityShopControlPanel";
 import DomainIntroToggle from "../components/DomainIntroToggle";
 import GSNBrandMark from "../components/GSNBrandMark";
+import NextActionGuide, {
+  type NextActionGuideItem,
+} from "../components/NextActionGuide";
 import PageTopNav from "../components/PageTopNav";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { navigateWithOrigin } from "../lib/nav";
@@ -1348,6 +1351,94 @@ export default function CommunityHomePage() {
     return [...clans].sort((a, b) => getClanName(a).localeCompare(getClanName(b)));
   }, [clans]);
 
+  const communityNextActionItems = useMemo<NextActionGuideItem[]>(
+    () => [
+      {
+        id: "choose-community",
+        label: "Choose community",
+        detail: "Open the community list and pick where you want to work.",
+        technical: "Community list",
+        keywords: ["community", "communities", "group", "select", "choose", "work"],
+        tone: "primary",
+      },
+      {
+        id: "marketplace",
+        label: "Open marketplace",
+        detail: selectedClanId
+          ? `Open ${selectedClanName || "the selected community"} for live work.`
+          : "Select a community first, then open its marketplace.",
+        technical: "Selected marketplace",
+        keywords: ["marketplace", "market", "trade", "work", "open community"],
+        disabled: !selectedClanId,
+        disabledReason: "Select one community first, then Marketplace can open.",
+      },
+      {
+        id: "create-community",
+        label: "Create community",
+        detail: "Start a new community and build its first circle.",
+        technical: "Create community",
+        keywords: ["create", "new community", "start group", "founder"],
+      },
+      {
+        id: "join-community",
+        label: "Join community",
+        detail: "Enter an existing community path or use an invite.",
+        technical: "Join existing community",
+        keywords: ["join", "existing", "invite", "enter community"],
+      },
+      {
+        id: "circle",
+        label: "Grow circle",
+        detail: "Invite trusted real-life people into the first circle.",
+        technical: "Trusted circle",
+        keywords: ["invite", "circle", "people", "trusted", "grow"],
+      },
+      {
+        id: "shop-control",
+        label: "Manage shop",
+        detail: "Open shop control for your one GSN shop identity.",
+        technical: "Shop control",
+        keywords: ["shop", "seller", "gallery", "control", "products"],
+      },
+      {
+        id: "spotlight",
+        label: "Prepare spotlight",
+        detail: "Create or review the community-facing spotlight.",
+        technical: "Spotlight",
+        keywords: ["spotlight", "picture", "video", "advert", "visibility"],
+      },
+      {
+        id: "finance",
+        label: "Open finance",
+        detail: "Review money, pool position, and finance readiness.",
+        technical: "Finance",
+        keywords: ["finance", "money", "deposit", "withdraw", "pool", "pay"],
+      },
+      {
+        id: "support",
+        label: "Borrow or support",
+        detail: "Open loans, borrowing, lending, and support paths.",
+        technical: "Loans and support",
+        keywords: ["loan", "borrow", "lend", "support", "guarantor"],
+      },
+      {
+        id: "trust",
+        label: "Review trust",
+        detail: "Open Trust Passport and check the trust story.",
+        technical: "Trust Passport",
+        keywords: ["trust", "passport", "integrity", "cci", "identity"],
+      },
+      {
+        id: "notifications",
+        label: "Check notices",
+        detail: "Open the action queue and see what needs attention.",
+        technical: "Notifications",
+        keywords: ["notifications", "notice", "alert", "queue", "what matters"],
+      },
+    ],
+    [selectedClanId, selectedClanName]
+  );
+
   const firstCircleProgress = useMemo(
     () => getFirstCircleProgress(firstCircleDraft),
     [firstCircleDraft]
@@ -1630,6 +1721,50 @@ export default function CommunityHomePage() {
   ) {
     consumeCommunityButtonEvent(event);
     navigateWithOrigin(navigate, to, location);
+  }
+
+  function handleCommunityNextAction(
+    item: NextActionGuideItem,
+    event?: React.SyntheticEvent<HTMLElement>
+  ) {
+    switch (item.id) {
+      case "choose-community":
+        openCommunityHomeSection(event, "community-home-community-list", "communities");
+        break;
+      case "marketplace":
+        void openSelectedMarketplace(event);
+        break;
+      case "create-community":
+        openCommunityRoute(event, "/app/clans");
+        break;
+      case "join-community":
+        openCommunityRoute(event, "/join");
+        break;
+      case "circle":
+        openCommunityHomeSection(event, "community-home-grow-your-circle", "circle");
+        break;
+      case "shop-control":
+        openCommunityShopControl(event);
+        break;
+      case "spotlight":
+        openCommunityHomeSection(event, "community-home-spotlight-gears", "spotlight");
+        break;
+      case "finance":
+        openCommunityRoute(event, "/app/finance");
+        break;
+      case "support":
+        openCommunityRoute(event, "/app/loans");
+        break;
+      case "trust":
+        openCommunityRoute(event, "/app/trust");
+        break;
+      case "notifications":
+        openCommunityRoute(event, "/app/notifications");
+        break;
+      default:
+        consumeCommunityButtonEvent(event);
+        break;
+    }
   }
 
   async function openSelectedMarketplace(
@@ -2036,6 +2171,14 @@ export default function CommunityHomePage() {
             tone="dark"
           />
 
+          <NextActionGuide
+            storageKey="gmfn.communityHome.nextActionGuide.v1"
+            compact={isCompact}
+            items={communityNextActionItems}
+            onSelect={handleCommunityNextAction}
+            intro="Say what you want in normal words, like join, create, invite, shop, trust, loan, or marketplace. GSN will point you to the closest path."
+          />
+
           <section style={communityBlockCard("blue")}>
             <div style={sectionLabel()}>No communities yet</div>
 
@@ -2269,6 +2412,14 @@ export default function CommunityHomePage() {
       </section>
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
+
+      <NextActionGuide
+        storageKey="gmfn.communityHome.nextActionGuide.v1"
+        compact={isCompact}
+        items={communityNextActionItems}
+        onSelect={handleCommunityNextAction}
+        intro="Say what you want in normal words, like community, marketplace, invite, shop, spotlight, loan, money, or trust. GSN will point you to the closest path."
+      />
 
       <section style={{ ...communityBlockCard("blue"), order: 55 }}>
         <div
@@ -3034,6 +3185,7 @@ export default function CommunityHomePage() {
       </section>
 
       <section
+        id="community-home-community-list"
         style={{
           ...communityBlockCard("raised"),
           order: 20,
