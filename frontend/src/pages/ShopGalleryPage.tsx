@@ -1140,7 +1140,6 @@ export default function ShopGalleryPage() {
 
       <DomainIntroToggle
         title="Your Shop Gallery"
-        eyebrow="What this can do for you"
         body="Use Shop Gallery as the public door to a shop. People in the community, and approved outside viewers, can see what the shop is showing."
         bullets={[
           "One person has one shop, and that shop can appear in the communities they belong to.",

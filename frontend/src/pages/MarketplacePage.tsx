@@ -3128,7 +3128,6 @@ export default function MarketplacePage() {
 
       <DomainIntroToggle
         title="How Marketplace Helps Your Shop Travel"
-        eyebrow="What this can do for you"
         body={MARKETPLACE_HELP_BODY}
         bullets={MARKETPLACE_HELP_BULLETS}
         note={MARKETPLACE_HELP_NOTE}
