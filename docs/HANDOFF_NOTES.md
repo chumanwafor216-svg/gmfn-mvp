@@ -5239,3 +5239,24 @@ GSN-branded invite composer and invite-entry continuity.
   counts until a real backend event/analytics contract exists.
 - No backend, auth, schema, payment, environment config, or Dashboard Market
   Wisdom behavior changed.
+
+### Shop Gallery signpost institutional polish addendum
+
+- Updated `frontend/src/pages/ShopGalleryPage.tsx` only.
+- Reworked the public shop signpost into a stronger world-facing trust plaque:
+  - added a richer white-blue outer surface with controlled navy, gold, blue,
+    and pink brand patches
+  - moved the shop initials and shop name onto a darker institutional identity
+    plate so the signpost reads less empty and more deliberate
+  - kept the existing shop identity, contact, Trust, community, Vault, share,
+    and copy-link behavior unchanged
+  - grouped the badges into a calmer glass rail beneath the identity plate
+- This is a route-local visual polish only. No backend, auth, schema, payment,
+  environment config, or Dashboard Market Wisdom behavior changed.
+
+### Verification after signpost institutional polish
+
+- `npm exec -- eslint src/pages/ShopGalleryPage.tsx` passed in `frontend`.
+- `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
+  the normal Windows line-ending warning.
+- `npm run build` passed in `frontend`.

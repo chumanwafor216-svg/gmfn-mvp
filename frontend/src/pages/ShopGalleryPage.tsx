@@ -1286,17 +1286,70 @@ export default function ShopGalleryPage() {
             <div
               style={{
                 ...innerCard(
-                  "radial-gradient(circle at 8% 0%, rgba(11,99,209,0.085) 0%, transparent 32%), radial-gradient(circle at 94% 4%, rgba(244,114,182,0.045) 0%, transparent 24%), linear-gradient(180deg, rgba(255,255,255,0.975) 0%, rgba(238,247,253,0.95) 100%)"
+                  "radial-gradient(circle at 6% 0%, rgba(11,99,209,0.20) 0%, transparent 34%), radial-gradient(circle at 94% 8%, rgba(244,114,182,0.12) 0%, transparent 28%), radial-gradient(circle at 72% 92%, rgba(212,175,55,0.13) 0%, transparent 30%), linear-gradient(180deg, rgba(253,255,255,0.98) 0%, rgba(231,243,251,0.96) 100%)"
                 ),
-                border: "1px solid rgba(13,95,168,0.14)",
+                position: "relative",
+                border: "1px solid rgba(13,95,168,0.20)",
                 backdropFilter: "blur(8px)",
                 boxShadow:
-                  "0 18px 38px rgba(11,31,51,0.12), inset 0 1px 0 rgba(255,255,255,0.78)",
-                padding: isCompact ? 12 : 18,
+                  "0 24px 48px rgba(8,38,67,0.15), inset 0 1px 0 rgba(255,255,255,0.86)",
+                padding: isCompact ? 11 : 18,
+                overflow: "hidden",
               }}
             >
-              <div style={{ ...sectionLabel(), textAlign: isCompact ? "center" : "left" }}>
-                Shop signpost
+              <div
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background:
+                    "linear-gradient(90deg, rgba(11,31,51,0.06) 0%, transparent 18%, transparent 82%, rgba(11,99,209,0.08) 100%)",
+                  pointerEvents: "none",
+                }}
+              />
+              <div
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  top: -46,
+                  right: -42,
+                  width: 132,
+                  height: 132,
+                  borderRadius: "50%",
+                  background:
+                    "radial-gradient(circle, rgba(212,175,55,0.20) 0%, rgba(244,114,182,0.11) 44%, transparent 68%)",
+                  pointerEvents: "none",
+                }}
+              />
+              <div
+                style={{
+                  position: "relative",
+                  display: "flex",
+                  justifyContent: isCompact ? "center" : "space-between",
+                  alignItems: "center",
+                  gap: 10,
+                }}
+              >
+                <div
+                  style={{
+                    ...sectionLabel(),
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: 30,
+                    padding: "6px 12px",
+                    borderRadius: 999,
+                    color: "#FFFFFF",
+                    background:
+                      "linear-gradient(135deg, rgba(11,31,51,0.96) 0%, rgba(18,67,106,0.94) 100%)",
+                    border: "1px solid rgba(212,175,55,0.22)",
+                    boxShadow:
+                      "0 10px 22px rgba(8,38,67,0.16), inset 0 1px 0 rgba(255,255,255,0.16)",
+                    textAlign: "center",
+                  }}
+                >
+                  Shop signpost
+                </div>
               </div>
 
               {!isCompact ? (
@@ -1312,85 +1365,122 @@ export default function ShopGalleryPage() {
 
               <div
                 style={{
-                  marginTop: isCompact ? 8 : 12,
-                  display: "grid",
-                  gridTemplateColumns: isCompact ? "1fr" : "72px minmax(0, 1fr)",
-                  gap: isCompact ? 9 : 12,
-                  alignItems: "center",
-                  justifyItems: isCompact ? "center" : "start",
-                  textAlign: isCompact ? "center" : "left",
+                  position: "relative",
+                  marginTop: isCompact ? 10 : 14,
+                  padding: isCompact ? "14px 12px" : "16px",
+                  borderRadius: isCompact ? 24 : 26,
+                  border: "1px solid rgba(212,175,55,0.18)",
+                  background:
+                    "radial-gradient(circle at 0% 0%, rgba(11,99,209,0.26) 0%, transparent 36%), radial-gradient(circle at 98% 0%, rgba(244,114,182,0.14) 0%, transparent 30%), radial-gradient(circle at 80% 100%, rgba(212,175,55,0.16) 0%, transparent 34%), linear-gradient(135deg, rgba(8,31,53,0.98) 0%, rgba(13,58,95,0.96) 50%, rgba(8,38,67,0.98) 100%)",
+                  boxShadow:
+                    "0 18px 38px rgba(8,38,67,0.20), inset 0 1px 0 rgba(255,255,255,0.16)",
+                  overflow: "hidden",
                 }}
               >
                 <div
+                  aria-hidden="true"
                   style={{
-                    width: isCompact ? 52 : 72,
-                    height: isCompact ? 52 : 72,
-                    borderRadius: isCompact ? 16 : 18,
-                    border: "1px solid rgba(11,31,51,0.10)",
+                    position: "absolute",
+                    left: 0,
+                    right: 0,
+                    top: 0,
+                    height: 3,
                     background:
-                      "linear-gradient(180deg, #F8FBFF 0%, #E7F0FF 100%)",
-                    display: "flex",
+                      "linear-gradient(90deg, rgba(212,175,55,0.74) 0%, rgba(11,99,209,0.68) 48%, rgba(244,114,182,0.48) 100%)",
+                  }}
+                />
+                <div
+                  style={{
+                    position: "relative",
+                    display: "grid",
+                    gridTemplateColumns: isCompact ? "1fr" : "76px minmax(0, 1fr)",
+                    gap: isCompact ? 10 : 14,
                     alignItems: "center",
-                    justifyContent: "center",
-                    color: "#1D4ED8",
-                    fontWeight: 900,
-                    fontSize: isCompact ? 19 : 24,
-                    boxShadow:
-                      "0 12px 24px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.9)",
+                    justifyItems: isCompact ? "center" : "start",
+                    textAlign: isCompact ? "center" : "left",
                   }}
                 >
-                  {initialsOf(
-                    safeStr(
-                      shopNameText ||
-                        shopOwnerText ||
-                        "Shop"
-                    )
-                  )}
-                </div>
-
-                <div>
                   <div
                     style={{
-                      color: "#0B1F33",
-                      fontWeight: 900,
-                      fontSize: isCompact ? 18 : 19,
-                      lineHeight: 1.25,
-                      display: "-webkit-box",
-                      WebkitLineClamp: isCompact ? 2 : 2,
-                      WebkitBoxOrient: "vertical" as any,
-                      overflow: "hidden",
+                      width: isCompact ? 58 : 76,
+                      height: isCompact ? 58 : 76,
+                      borderRadius: isCompact ? 18 : 20,
+                      border: "1px solid rgba(255,255,255,0.32)",
+                      background:
+                        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(224,238,249,0.94) 100%)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#1857AD",
+                      fontWeight: 950,
+                      fontSize: isCompact ? 20 : 25,
+                      boxShadow:
+                        "0 14px 28px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.95)",
                     }}
                   >
-                    {shopNameText}
+                    {initialsOf(
+                      safeStr(
+                        shopNameText ||
+                          shopOwnerText ||
+                          "Shop"
+                      )
+                    )}
                   </div>
 
-                  <div
-                    style={{
-                      marginTop: isCompact ? 4 : 6,
-                      ...helperText(),
-                      fontSize: isCompact ? 11.5 : 13,
-                      lineHeight: isCompact ? 1.35 : 1.75,
-                      maxWidth: isCompact ? 260 : undefined,
-                    }}
-                  >
-                    {isCompact
-                      ? hasShopContact
-                        ? "Contact the shop, share the link, or ask for Vault viewing."
-                        : "Share this verified shop page or ask for Vault viewing."
-                      : hasShopContact
-                        ? "Contact this shop directly, or share the clean public shop link outside the community."
-                        : "Share this shop outside the community with a clean public shop link."}
+                  <div>
+                    <div
+                      style={{
+                        color: "#FFFFFF",
+                        fontWeight: 950,
+                        fontSize: isCompact ? 20 : 22,
+                        lineHeight: 1.18,
+                        display: "-webkit-box",
+                        WebkitLineClamp: isCompact ? 2 : 2,
+                        WebkitBoxOrient: "vertical" as any,
+                        overflow: "hidden",
+                        letterSpacing: 0.2,
+                        textShadow: "0 2px 14px rgba(0,0,0,0.25)",
+                      }}
+                    >
+                      {shopNameText}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: isCompact ? 7 : 8,
+                        color: "rgba(235,245,255,0.84)",
+                        fontSize: isCompact ? 12 : 13,
+                        lineHeight: isCompact ? 1.38 : 1.58,
+                        maxWidth: isCompact ? 280 : 520,
+                      }}
+                    >
+                      {isCompact
+                        ? hasShopContact
+                          ? "Contact the shop, share the link, or ask for Vault viewing."
+                          : "Share this verified shop page or ask for Vault viewing."
+                        : hasShopContact
+                          ? "Contact this shop directly, or share the clean public shop link outside the community."
+                          : "Share this shop outside the community with a clean public shop link."}
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div
                 style={{
-                  marginTop: isCompact ? 9 : 14,
+                  position: "relative",
+                  marginTop: isCompact ? 10 : 14,
+                  padding: isCompact ? "10px 9px" : "12px",
+                  borderRadius: 22,
+                  border: "1px solid rgba(13,95,168,0.13)",
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(239,247,253,0.66) 100%)",
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.74), 0 10px 22px rgba(8,38,67,0.055)",
                   display: "flex",
                   gap: isCompact ? 6 : 8,
                   flexWrap: "wrap",
-                  justifyContent: isCompact ? "center" : "flex-start",
+                  justifyContent: "center",
                 }}
               >
                 {shopGmfnText ? (
