@@ -98,6 +98,9 @@ function matchGuideItem(
 
 function cardStyle(): React.CSSProperties {
   return {
+    position: "relative",
+    zIndex: 1,
+    isolation: "isolate",
     borderRadius: 24,
     border: "1px solid rgba(16,37,59,0.12)",
     background:
@@ -107,6 +110,8 @@ function cardStyle(): React.CSSProperties {
       "0 18px 38px rgba(10,24,49,0.075), inset 0 1px 0 rgba(255,255,255,0.74)",
     overflow: "hidden",
     backdropFilter: "blur(8px)",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
   };
 }
 
@@ -171,6 +176,7 @@ function guideButtonStyle(
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
+    overflow: "hidden",
     overflowWrap: "anywhere",
     boxSizing: "border-box",
     boxShadow: disabled
@@ -182,7 +188,10 @@ function guideButtonStyle(
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
     appearance: "none",
+    WebkitAppearance: "none",
+    isolation: "isolate",
     transform: "translateZ(0)",
+    willChange: "box-shadow",
   };
 }
 
@@ -201,6 +210,8 @@ function inputStyle(): React.CSSProperties {
     outline: "none",
     boxSizing: "border-box",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.84)",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
   };
 }
 
@@ -263,7 +274,13 @@ export default function NextActionGuide({
   }
 
   return (
-    <section style={cardStyle()}>
+    <section
+      onPointerDown={stopGuideEvent}
+      onMouseDown={stopGuideEvent}
+      onTouchStart={stopGuideEvent}
+      onClick={stopGuideEvent}
+      style={cardStyle()}
+    >
       <div style={headerStyle(compact)}>
         <div style={{ minWidth: 0 }}>
           <div style={labelStyle()}>{eyebrow}</div>
@@ -285,6 +302,8 @@ export default function NextActionGuide({
           type="button"
           aria-expanded={open}
           onPointerDown={(event) => stopGuideEvent(event)}
+          onMouseDown={(event) => stopGuideEvent(event)}
+          onTouchStart={(event) => stopGuideEvent(event)}
           onClick={(event) => {
             stopGuideEvent(event, true);
             setOpen((value) => !value);
@@ -319,6 +338,9 @@ export default function NextActionGuide({
           >
             <input
               value={query}
+              onPointerDown={(event) => stopGuideEvent(event)}
+              onMouseDown={(event) => stopGuideEvent(event)}
+              onTouchStart={(event) => stopGuideEvent(event)}
               onChange={(event) => {
                 setQuery(event.target.value);
                 setNotice("");
@@ -331,6 +353,8 @@ export default function NextActionGuide({
             <button
               type="submit"
               onPointerDown={(event) => stopGuideEvent(event)}
+              onMouseDown={(event) => stopGuideEvent(event)}
+              onTouchStart={(event) => stopGuideEvent(event)}
               style={guideButtonStyle("primary")}
             >
               {matchedItem ? `Open ${matchedItem.label}` : "Find action"}
@@ -368,6 +392,8 @@ export default function NextActionGuide({
                 type="button"
                 disabled={item.disabled}
                 onPointerDown={(event) => stopGuideEvent(event)}
+                onMouseDown={(event) => stopGuideEvent(event)}
+                onTouchStart={(event) => stopGuideEvent(event)}
                 onClick={(event) => chooseItem(item, event)}
                 style={{
                   ...guideButtonStyle(item.tone || "secondary", item.disabled),

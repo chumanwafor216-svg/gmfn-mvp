@@ -46,6 +46,65 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
+Dashboard attention surface and shared next-action guide tap containment.
+
+#### Routes/screens affected
+- `/app/dashboard`
+- `/app/community` through the shared `NextActionGuide`
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+
+#### Files in play
+- `frontend/src/components/NextActionGuide.tsx`
+- `frontend/src/pages/DashboardPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Product owner reported the Dashboard `Attention Guide` button appears
+  frequently and may be involved in the same mobile button-jumping problem.
+- Confirmed in code that the Dashboard attention popup and minimized fixed
+  `Attention Guide` pill are frontend notification/focus surfaces, not backend
+  route changes.
+- Tightened the Dashboard attention popup shell so pointer, mouse, touch, and
+  click events stop at the fixed attention surface instead of bubbling into the
+  Dashboard content behind it.
+- Tightened the minimized Dashboard `Attention Guide` pill with the same mobile
+  tap-safe handling, transparent tap highlight, isolated stacking, and native
+  appearance reset.
+- Strengthened the shared `NextActionGuide` card so the entire card is a
+  protected tap island, not only the visible buttons. This protects the new
+  `What do you want to do next?` guide on Dashboard and Community Home.
+- Did not disable the attention system or change its notification/focus
+  decision logic. This pass only prevents tap leakage and native mobile
+  highlight/ghost-click behavior.
+- No Dashboard Market Wisdom, backend, auth, schema, payment, deployment
+  configuration, or route contracts changed.
+
+#### Verification
+- `npm exec -- eslint src/components/NextActionGuide.tsx src/pages/DashboardPage.tsx` passed.
+- `git diff --check -- frontend/src/components/NextActionGuide.tsx frontend/src/pages/DashboardPage.tsx` passed with only normal Windows line-ending warnings.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- Phone review is needed after deploy to confirm the Dashboard attention pill
+  and shared guide buttons no longer flash/jump on edge taps.
+- If the `Attention Guide` still feels too frequent after tap leakage is fixed,
+  the next pass should tune `frontend/src/lib/dashboardAttentionEngine.ts`
+  separately as a product-behavior decision.
+
+#### Next recommended step
+- Build, deploy, then phone-test `/app/dashboard` and `/app/community`. On
+  Dashboard, tap the minimized `Attention Guide`, close/dismiss the popup, and
+  test the `What do you want to do next?` open/collapse buttons from center and
+  edge taps.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
 Install reusable “What do you want to do next?” guide on Community Home and
 Dashboard.
 

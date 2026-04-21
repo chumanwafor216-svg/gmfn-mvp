@@ -5051,6 +5051,10 @@ export default function DashboardPage() {
 
           {attentionPopupVisible ? (
             <div
+              onPointerDown={consumeDashboardPointerEvent}
+              onMouseDown={consumeDashboardPointerEvent}
+              onTouchStart={consumeDashboardPointerEvent}
+              onClick={consumeDashboardPointerEvent}
               style={{
                 position: "fixed",
                 top: isPhone ? 8 : isCompact ? 12 : 18,
@@ -5067,6 +5071,11 @@ export default function DashboardPage() {
                 backdropFilter: "blur(14px)",
                 maxHeight: isPhone ? "calc(100dvh - 16px)" : undefined,
                 overflowY: isPhone ? "auto" : undefined,
+                pointerEvents: "auto",
+                isolation: "isolate",
+                touchAction: "manipulation",
+                WebkitTapHighlightColor: "transparent",
+                overscrollBehavior: isPhone ? "contain" : undefined,
               }}
             >
               <div
@@ -5510,6 +5519,8 @@ export default function DashboardPage() {
                 runDashboardUiMutation(event, () => setAttentionPopupVisible(true), 260)
               }
               onPointerDown={consumeDashboardPointerEvent}
+              onMouseDown={consumeDashboardPointerEvent}
+              onTouchStart={consumeDashboardPointerEvent}
               style={{
                 position: "fixed",
                 top: isCompact ? 12 : 18,
@@ -5532,6 +5543,13 @@ export default function DashboardPage() {
                     ? "dashboardAttentionPillPulse 1.8s ease-in-out infinite"
                     : undefined,
                 backdropFilter: "blur(12px)",
+                pointerEvents: "auto",
+                touchAction: "manipulation",
+                WebkitTapHighlightColor: "transparent",
+                appearance: "none",
+                WebkitAppearance: "none",
+                isolation: "isolate",
+                overflow: "hidden",
               }}
             >
               <span
