@@ -5655,3 +5655,29 @@ GSN-branded invite composer and invite-entry continuity.
 - This is copy/system-explanation work only. No backend scoring, auth, schemas,
   payment, ledger, deployment config, route guards, or Dashboard Market Wisdom
   presentation logic changed.
+
+### Marketplace shop-gallery benefit-led explanation addendum
+
+- Updated `frontend/src/pages/MarketplacePage.tsx` so the active Marketplace
+  `DomainIntroToggle` is now a benefit-led story titled
+  `How Marketplace Helps Your Shop Travel`.
+- The story intentionally stays inside `/app/marketplace`, not the public Shop
+  Gallery, because Marketplace owns the selected-community context and the
+  outward-control tools.
+- The new story explains:
+  - Shop Gallery as the clean public face of the one global shop inside a
+    trusted marketplace context
+  - Vault as permission-based private viewing for stock/offers that should not
+    be shown to everyone
+  - Spotlight and paid spotlight as routes for lifting trusted value into view
+  - Demand Box as the buyer/need side of the same marketplace opportunity
+  - repost/outward links as controlled ways for shop, marketplace, Vault-style,
+    or approved spotlight access to travel beyond the first circle
+  - TrustSlip as the deeper proof layer before goods are released on credit,
+    risk is accepted, or support moves
+- Added the same Marketplace / Shop Gallery source language to
+  `docs/BENEFIT_LED_PAGE_EXPLANATIONS_2026-04-21.md` for later institutional
+  documentation.
+- This is copy/system-explanation work only. No backend, auth, schema, payment,
+  ledger, route guard, deployment config, public Shop Gallery, or Dashboard
+  Market Wisdom behavior changed.

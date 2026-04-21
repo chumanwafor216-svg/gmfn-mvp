@@ -49,6 +49,45 @@ community is Helping, Watch, or Pressure.
 The human benefit is that a person who is underbanked can prove reliability from
 real behaviour, not from wealth alone.
 
+## Marketplace / Shop Gallery
+
+Marketplace helps trusted relationships become real opportunities.
+
+It is where one selected community can turn trust into shop visibility, private
+Vault access, spotlight exposure, repostable links, demand, and support routes
+without pretending that strangers already know each other.
+
+Shop Gallery gives a member's shop a clean public face inside the trusted
+circle. People can see what the seller offers, understand who owns the shop, and
+open that shop from the marketplace that already carries the community context.
+
+Vault protects the things that should not be shown to everybody. Some stock,
+offers, or private selling conversations may need permission first. A serious
+buyer can ask for access, and the seller can decide what should be viewed
+privately.
+
+Spotlight and paid spotlight help value travel further. A good product, service,
+or trusted seller should not depend only on accidental discovery. Spotlight lets
+the marketplace lift something useful into view.
+
+Demand Box works from the other side. If a member needs something, that need can
+become visible so the marketplace can answer it with goods, services, support,
+or trusted people.
+
+Repost links help the marketplace travel outward safely. A shop, marketplace
+view, Vault-style access, or approved spotlight can move beyond the first circle
+while still carrying the correct community identity back with it.
+
+The deeper trust layer is still TrustSlip. Before goods are released on credit,
+before a buyer or seller accepts risk, or before support moves, TrustSlip can
+help prove who the person is and what trust evidence follows them.
+
+A good name opens doors, but GSN gives that good name proof.
+
+Innovation wedge: GSN turns informal community vouching into portable,
+verifiable trust evidence, especially for people who are normally invisible to
+formal credit systems.
+
 ## Trust Passport
 
 Trust Passport helps your good name travel with you.
