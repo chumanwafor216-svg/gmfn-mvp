@@ -86,6 +86,14 @@ function toneStyles(tone: DomainIntroTone): {
   };
 }
 
+function stopIntroTap(
+  event: React.SyntheticEvent<HTMLElement>,
+  preventDefault = false
+) {
+  if (preventDefault) event.preventDefault();
+  event.stopPropagation();
+}
+
 export default function DomainIntroToggle(props: DomainIntroToggleProps) {
   const [open, setOpen] = useState(Boolean(props.defaultOpen));
   const tone = toneStyles(props.tone || "light");
@@ -93,9 +101,18 @@ export default function DomainIntroToggle(props: DomainIntroToggleProps) {
 
   return (
     <section
+      onPointerDown={(event) => stopIntroTap(event)}
+      onMouseDown={(event) => stopIntroTap(event)}
+      onTouchStart={(event) => stopIntroTap(event)}
+      onClick={(event) => stopIntroTap(event)}
       style={{
+        position: "relative",
+        zIndex: 1,
+        isolation: "isolate",
         borderRadius: 22,
         padding: 12,
+        touchAction: "manipulation",
+        WebkitTapHighlightColor: "transparent",
         ...tone.shell,
         ...(props.style || {}),
       }}
@@ -139,26 +156,40 @@ export default function DomainIntroToggle(props: DomainIntroToggleProps) {
           aria-expanded={open}
           aria-label={`${buttonLabel} ${props.title}`}
           onPointerDown={(event) => {
-            event.stopPropagation();
+            stopIntroTap(event);
+          }}
+          onMouseDown={(event) => {
+            stopIntroTap(event);
+          }}
+          onTouchStart={(event) => {
+            stopIntroTap(event);
           }}
           onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
+            stopIntroTap(event, true);
             setOpen((prev) => !prev);
           }}
           style={{
+            position: "relative",
+            zIndex: 2,
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
-            minHeight: 38,
-            minWidth: 82,
-            padding: "8px 13px",
+            minHeight: 46,
+            minWidth: 102,
+            padding: "10px 16px",
             borderRadius: 999,
             fontSize: 13,
             fontWeight: 900,
             cursor: "pointer",
             textAlign: "center",
             touchAction: "manipulation",
+            WebkitTapHighlightColor: "transparent",
+            userSelect: "none",
+            appearance: "none",
+            WebkitAppearance: "none",
+            boxSizing: "border-box",
+            isolation: "isolate",
+            transform: "translateZ(0)",
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)",
             ...tone.button,
           }}

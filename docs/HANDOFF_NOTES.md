@@ -5526,3 +5526,24 @@ GSN-branded invite composer and invite-entry continuity.
   before explaining page controls.
 - No backend, auth, schema, payment, ledger, environment config, global shell,
   or Dashboard Market Wisdom behavior changed.
+
+### Finance button tap-stability addendum
+
+- Updated `frontend/src/pages/FinancePage.tsx` and
+  `frontend/src/components/DomainIntroToggle.tsx`.
+- Product-owner phone test found Finance buttons still felt jumpy, with some
+  open/collapse taps succeeding only after repeated careful attempts.
+- Tightened the Finance route-local collapse buttons:
+  - larger minimum tap area
+  - stronger button isolation and z-index
+  - disabled mobile blue tap highlight
+  - stopped pointer/mouse/touch/click propagation before toggling sections
+- Tightened the shared `DomainIntroToggle` open/close button because Finance,
+  Marketplace, Community Home, Shop Gallery, and Trust pages use it for page
+  explanations:
+  - larger open/close tap target
+  - touch-safe styling
+  - tap event isolation on the section and button
+- This change is UI/tap-safety only. It does not change finance calculations,
+  backend calls, auth, schema, payment, ledger, route guards, global shell, or
+  Dashboard Market Wisdom behavior.

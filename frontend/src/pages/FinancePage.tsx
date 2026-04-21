@@ -494,17 +494,33 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
+function tapSafeButtonBase(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 2,
+    boxSizing: "border-box",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    appearance: "none",
+    WebkitAppearance: "none",
+    isolation: "isolate",
+    transform: "translateZ(0)",
+  };
+}
+
 function actionBtn(
   kind: "primary" | "secondary" | "soft" = "secondary",
   disabled = false
 ): React.CSSProperties {
   if (kind === "primary") {
     return {
+      ...tapSafeButtonBase(),
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 42,
-      padding: "10px 14px",
+      minHeight: 46,
+      padding: "11px 15px",
       borderRadius: 14,
       border: "none",
       background: disabled ? "#CBD5E1" : "#1D4ED8",
@@ -521,11 +537,12 @@ function actionBtn(
 
   if (kind === "soft") {
     return {
+      ...tapSafeButtonBase(),
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 38,
-      padding: "8px 12px",
+      minHeight: 44,
+      padding: "10px 13px",
       borderRadius: 12,
       border: "1px solid rgba(29,78,216,0.10)",
       background: "#F5FAFF",
@@ -541,11 +558,12 @@ function actionBtn(
   }
 
   return {
+    ...tapSafeButtonBase(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
+    minHeight: 46,
+    padding: "11px 15px",
     borderRadius: 14,
     border: "1px solid rgba(29,78,216,0.12)",
     background: "#FDFEFF",
@@ -562,21 +580,29 @@ function actionBtn(
 
 function collapseToggle(): React.CSSProperties {
   return {
+    ...tapSafeButtonBase(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 38,
-    padding: "8px 12px",
-    borderRadius: 12,
+    minHeight: 46,
+    minWidth: 106,
+    padding: "10px 16px",
+    borderRadius: 14,
     border: "1px solid rgba(29,78,216,0.12)",
     background: "#FDFEFF",
     color: "#1E4063",
-    fontWeight: 800,
-    fontSize: 13,
+    fontWeight: 900,
+    fontSize: 13.5,
     cursor: "pointer",
     textAlign: "center",
     whiteSpace: "normal",
+    boxShadow:
+      "0 9px 18px rgba(10,24,49,0.075), inset 0 1px 0 rgba(255,255,255,0.78)",
   };
+}
+
+function stopFinanceTap(event: React.SyntheticEvent<HTMLElement>) {
+  event.stopPropagation();
 }
 
 function helperText(): React.CSSProperties {
@@ -1426,6 +1452,15 @@ export default function FinancePage() {
     }));
   }
 
+  function handleCollapseTap(
+    key: keyof CollapseState,
+    event: React.MouseEvent<HTMLButtonElement>
+  ) {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleSection(key);
+  }
+
   function openFinanceRoute(to: string) {
     navigateWithOrigin(navigate, to, location);
   }
@@ -1923,7 +1958,10 @@ export default function FinancePage() {
 
           <button
             type="button"
-            onClick={() => toggleSection("overview")}
+            onPointerDown={stopFinanceTap}
+            onMouseDown={stopFinanceTap}
+            onTouchStart={stopFinanceTap}
+            onClick={(event) => handleCollapseTap("overview", event)}
             style={collapseToggle()}
           >
             {collapsed.overview ? "Open" : "Collapse"}
@@ -1986,7 +2024,10 @@ export default function FinancePage() {
 
           <button
             type="button"
-            onClick={() => toggleSection("reconciliation")}
+            onPointerDown={stopFinanceTap}
+            onMouseDown={stopFinanceTap}
+            onTouchStart={stopFinanceTap}
+            onClick={(event) => handleCollapseTap("reconciliation", event)}
             style={collapseToggle()}
           >
             {collapsed.reconciliation ? "Open" : "Collapse"}
@@ -2084,7 +2125,10 @@ export default function FinancePage() {
 
           <button
             type="button"
-            onClick={() => toggleSection("borrower")}
+            onPointerDown={stopFinanceTap}
+            onMouseDown={stopFinanceTap}
+            onTouchStart={stopFinanceTap}
+            onClick={(event) => handleCollapseTap("borrower", event)}
             style={collapseToggle()}
           >
             {collapsed.borrower ? "Open" : "Collapse"}
@@ -2289,7 +2333,10 @@ export default function FinancePage() {
 
           <button
             type="button"
-            onClick={() => toggleSection("events")}
+            onPointerDown={stopFinanceTap}
+            onMouseDown={stopFinanceTap}
+            onTouchStart={stopFinanceTap}
+            onClick={(event) => handleCollapseTap("events", event)}
             style={collapseToggle()}
           >
             {collapsed.events ? "Open" : "Collapse"}
