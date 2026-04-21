@@ -1999,9 +1999,9 @@ export default function ShopGalleryPage() {
                   <div
                     style={{
                       position: "relative",
-                      height: isCompact ? "48svh" : 360,
-                      minHeight: isCompact ? 330 : undefined,
-                      maxHeight: isCompact ? 430 : undefined,
+                      height: isCompact ? "61svh" : 360,
+                      minHeight: isCompact ? 430 : undefined,
+                      maxHeight: isCompact ? 560 : undefined,
                       background:
                         "linear-gradient(180deg, #14314C 0%, #21496C 52%, #2B5E88 100%)",
                       borderBottom: "1px solid rgba(11,31,51,0.08)",
@@ -2099,16 +2099,16 @@ export default function ShopGalleryPage() {
                   <div
                     style={{
                       position: "relative",
-                      padding: isCompact ? "18px 16px 20px" : 14,
+                      padding: isCompact ? "14px 16px 16px" : 14,
                       display: "grid",
-                      gap: isCompact ? 13 : 10,
+                      gap: isCompact ? 9 : 10,
                       flex: 1,
                       background:
                         "radial-gradient(circle at 0% 0%, rgba(11,99,209,0.075) 0%, transparent 34%), radial-gradient(circle at 100% 0%, rgba(212,175,55,0.06) 0%, transparent 30%), radial-gradient(circle at 100% 100%, rgba(244,114,182,0.035) 0%, transparent 30%), linear-gradient(180deg, rgba(251,253,255,0.99) 0%, rgba(236,246,252,0.96) 100%)",
                       borderTop: "1px solid rgba(13,95,168,0.12)",
                       boxShadow:
                         "inset 0 1px 0 rgba(255,255,255,0.88), inset 0 12px 24px rgba(255,255,255,0.42)",
-                      alignContent: isCompact ? "space-evenly" : undefined,
+                      alignContent: isCompact ? "center" : undefined,
                     }}
                   >
                     <div
@@ -2157,9 +2157,9 @@ export default function ShopGalleryPage() {
                       style={{
                         color: "#4B6178",
                         fontSize: isCompact ? 13.5 : 12.5,
-                        lineHeight: isCompact ? 1.62 : 1.55,
-                        minHeight: isCompact ? 62 : 42,
-                        padding: isCompact ? "13px 14px" : "10px 11px",
+                        lineHeight: isCompact ? 1.52 : 1.55,
+                        minHeight: isCompact ? 48 : 42,
+                        padding: isCompact ? "11px 14px" : "10px 11px",
                         borderRadius: 16,
                         border: "1px solid rgba(13,95,168,0.10)",
                         background:
@@ -2167,7 +2167,7 @@ export default function ShopGalleryPage() {
                         boxShadow:
                           "0 10px 22px rgba(8,38,67,0.055), inset 0 1px 0 rgba(255,255,255,0.88)",
                         display: "-webkit-box",
-                        WebkitLineClamp: isCompact ? 3 : 2,
+                        WebkitLineClamp: isCompact ? 2 : 2,
                         WebkitBoxOrient: "vertical" as any,
                         overflow: "hidden",
                         textAlign: "center",

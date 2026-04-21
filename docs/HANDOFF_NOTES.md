@@ -4994,3 +4994,23 @@ GSN-branded invite composer and invite-entry continuity.
 - `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
   the normal Windows line-ending warning.
 - `npm run build` passed in `frontend`.
+
+### Shop Gallery mobile product image ratio addendum
+
+- Updated `frontend/src/pages/ShopGalleryPage.tsx` only.
+- Increased compact/mobile product image frame height from `48svh` to `61svh`
+  with larger safe min/max bounds so the photo carries more of the phone-screen
+  product panel.
+- Tightened the lower product information area:
+  - reduced compact padding and gaps
+  - centered details instead of spreading them through empty white space
+  - reduced compact description height/line clamp so the lower area is useful
+    but less dominant than the picture
+- No backend, auth, schema, payment, environment config, or Dashboard Market
+  Wisdom behavior changed.
+
+### Verification after mobile product image ratio update
+
+- `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
+  the normal Windows line-ending warning.
+- `npm run build` passed in `frontend`.
