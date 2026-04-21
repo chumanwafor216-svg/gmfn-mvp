@@ -25,10 +25,50 @@ def _has_index(bind, table_name: str, index_name: str) -> bool:
     return any(idx["name"] == index_name for idx in inspector.get_indexes(table_name))
 
 
+def _has_foreign_key(
+    bind,
+    table_name: str,
+    constraint_name: str,
+    constrained_columns: list[str],
+    referred_table: str,
+) -> bool:
+    inspector = sa.inspect(bind)
+    for fk in inspector.get_foreign_keys(table_name):
+        if fk.get("name") == constraint_name:
+            return True
+        if (
+            fk.get("referred_table") == referred_table
+            and list(fk.get("constrained_columns") or []) == constrained_columns
+        ):
+            return True
+    return False
+
+
 def upgrade() -> None:
     bind = op.get_bind()
+    has_marketplace_shops = _has_table(bind, "marketplace_shops")
 
     if not _has_table(bind, "vault_access_links"):
+        constraints = [
+            sa.ForeignKeyConstraint(
+                ["owner_user_id"],
+                ["users.id"],
+                ondelete="CASCADE",
+                name="fk_vault_access_links_owner_user_id_users",
+            ),
+            sa.PrimaryKeyConstraint("id"),
+            sa.UniqueConstraint("token", name="uq_vault_access_links_token"),
+        ]
+        if has_marketplace_shops:
+            constraints.append(
+                sa.ForeignKeyConstraint(
+                    ["shop_id"],
+                    ["marketplace_shops.id"],
+                    ondelete="CASCADE",
+                    name="fk_vault_access_links_shop_id_marketplace_shops",
+                )
+            )
+
         op.create_table(
             "vault_access_links",
             sa.Column("id", sa.Integer(), nullable=False),
@@ -56,10 +96,22 @@ def upgrade() -> None:
                 nullable=False,
                 server_default=sa.text("CURRENT_TIMESTAMP"),
             ),
-            sa.ForeignKeyConstraint(["owner_user_id"], ["users.id"], ondelete="CASCADE"),
-            sa.ForeignKeyConstraint(["shop_id"], ["marketplace_shops.id"], ondelete="CASCADE"),
-            sa.PrimaryKeyConstraint("id"),
-            sa.UniqueConstraint("token", name="uq_vault_access_links_token"),
+            *constraints,
+        )
+    elif has_marketplace_shops and not _has_foreign_key(
+        bind,
+        "vault_access_links",
+        "fk_vault_access_links_shop_id_marketplace_shops",
+        ["shop_id"],
+        "marketplace_shops",
+    ):
+        op.create_foreign_key(
+            "fk_vault_access_links_shop_id_marketplace_shops",
+            "vault_access_links",
+            "marketplace_shops",
+            ["shop_id"],
+            ["id"],
+            ondelete="CASCADE",
         )
 
     wanted_indexes = {
