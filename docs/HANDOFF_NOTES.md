@@ -5182,3 +5182,40 @@ GSN-branded invite composer and invite-entry continuity.
 - `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
   the normal Windows line-ending warning.
 - `npm run build` passed in `frontend`.
+
+### Shop Gallery smart buyer rail addendum
+
+- Updated `frontend/src/pages/ShopGalleryPage.tsx` only.
+- Consulted two code-review agents before changing the public product cards:
+  - UX recommendation: make the lower product block a compact buyer decision
+    rail instead of a system-label panel.
+  - Engineering recommendation: keep this route-local and use existing product
+    payload fields only; defer backend/schema intelligence work.
+- Normalized additional backend product fields already emitted by
+  `/marketplace/products`:
+  - `video_url`
+  - `created_at`
+  - `origin_shop_name`
+  - `reposts_used`
+  - `distribution_slots_remaining`
+- Reworked compact/mobile product cards so the lower overlay is smaller and
+  more buyer-facing:
+  - `Storefront block` / `Community-visible` became dynamic signals such as
+    `Public offer`, `Video story`, `Fresh this week`, or `Community shop`.
+  - numeric/code-like product names now give way to the useful description as
+    the visible buyer title, while the code becomes supporting cue text.
+  - the description panel became a single-line buyer cue instead of a large
+    white box over the image.
+  - price and share remain the primary actions.
+- Added passive support for product `video_url`; cards render a controlled
+  video frame when a product provides a video, otherwise they keep the image
+  path.
+- No backend, auth, schema, payment, environment config, or Dashboard Market
+  Wisdom behavior changed.
+
+### Verification after smart buyer rail update
+
+- `npm exec -- eslint src/pages/ShopGalleryPage.tsx` passed in `frontend`.
+- `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
+  the normal Windows line-ending warning.
+- `npm run build` passed in `frontend`.

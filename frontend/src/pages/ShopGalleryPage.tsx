@@ -36,7 +36,12 @@ type ShopProduct = {
   priceText: string;
   currency: string;
   imageUrl: string;
+  videoUrl: string;
   visibilityMode: string;
+  createdAt: string;
+  originShopName: string;
+  repostsUsed: number;
+  distributionSlotsRemaining: number;
 };
 
 type ShopBroadcast = {
@@ -123,6 +128,60 @@ function formatWhen(value?: string | null): string {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function daysSince(value?: string | null): number | null {
+  if (!value) return null;
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) return null;
+  return Math.floor((Date.now() - timestamp) / 86400000);
+}
+
+function productFreshnessLabel(value?: string | null): string {
+  const days = daysSince(value);
+  if (days === null || days < 0) return "";
+  if (days <= 1) return "New today";
+  if (days <= 7) return "Fresh this week";
+  if (days <= 30) return "Recently added";
+  return "";
+}
+
+function productVisibilityLabel(value: string): string {
+  const mode = safeStr(value).toLowerCase();
+  if (mode.includes("vault")) return "Vault viewing by trust link";
+  return "Public offer";
+}
+
+function isCodeLikeProductName(value: string): boolean {
+  const text = safeStr(value);
+  return /^\d{1,6}$/.test(text) || /^slot\s*\d{1,3}$/i.test(text);
+}
+
+function productDisplayTitle(product: ShopProduct): string {
+  const name = firstMeaningful(product.name);
+  const description = firstMeaningful(product.description);
+
+  if (description && (!name || isCodeLikeProductName(name))) {
+    return description;
+  }
+
+  return firstMeaningful(name, description, `Product ${product.slotNumber}`);
+}
+
+function productBuyerCue(product: ShopProduct, shopName: string): string {
+  const displayTitle = productDisplayTitle(product);
+  const name = firstMeaningful(product.name);
+  const description = firstMeaningful(product.description);
+
+  if (description && description !== displayTitle) return description;
+  if (name && name !== displayTitle && isCodeLikeProductName(name)) {
+    return `Product code ${name}. Ask the shop for details.`;
+  }
+  if (product.priceText.toLowerCase() === "price on request") {
+    return "Ask the shop for today's price and availability.";
+  }
+  if (shopName) return `Available from ${shopName}.`;
+  return "Ask, share, or save this offer for later.";
 }
 
 function apiBase(): string {
@@ -366,9 +425,16 @@ function normalizeProduct(raw: any, slotNumber: number): ShopProduct | null {
     ),
     currency: firstMeaningful(src?.currency, src?.currency_code, "NGN") || "NGN",
     imageUrl,
+    videoUrl: resolveImageSrc(src?.video_url),
     visibilityMode:
       firstMeaningful(src?.visibility_mode, "community_visible") ||
       "community_visible",
+    createdAt: firstMeaningful(src?.created_at),
+    originShopName: firstMeaningful(src?.origin_shop_name, src?.source_shop_name),
+    repostsUsed: positiveNumber(src?.reposts_used),
+    distributionSlotsRemaining: positiveNumber(
+      src?.distribution_slots_remaining || src?.remaining_distribution_slots
+    ),
   };
 }
 
@@ -967,10 +1033,16 @@ export default function ShopGalleryPage() {
       typeof window === "undefined"
         ? `${location.pathname}${hash}`
         : `${window.location.origin}${location.pathname}${hash}`;
+    const title = productDisplayTitle(product);
+    const text = firstMeaningful(
+      productBuyerCue(product, ""),
+      product.description,
+      "Shop product"
+    );
 
     void shareOrCopy({
-      title: product.name,
-      text: `${product.description || "Shop product"} - ${product.priceText}`,
+      title,
+      text: `${text} - ${product.priceText}`,
       url: productUrl,
       successText: "Product share ready.",
     });
@@ -1907,16 +1979,29 @@ export default function ShopGalleryPage() {
           >
             {visibleProducts.map((product, index) => {
               const slotNumber = String(index + 1).padStart(2, "0");
+              const hasVideoStory = Boolean(safeStr(product.videoUrl));
+              const sourceShopName = firstMeaningful(
+                product.originShopName,
+                effectiveShop?.shopName,
+                effectiveShop?.ownerName
+              );
+              const freshnessLabel = productFreshnessLabel(product.createdAt);
+              const primarySignal = productVisibilityLabel(product.visibilityMode);
+              const secondarySignal = hasVideoStory
+                ? "Video story"
+                : firstMeaningful(freshnessLabel, "Community shop");
+              const displayTitle = productDisplayTitle(product);
+              const buyerCue = productBuyerCue(product, sourceShopName);
               const dockBadgeStyle: React.CSSProperties = isCompact
                 ? {
                     ...badge(false),
-                    minHeight: 24,
-                    padding: "4px 8px",
+                    minHeight: 22,
+                    padding: "3px 8px",
                     border: "1px solid rgba(13,95,168,0.13)",
                     background:
                       "linear-gradient(180deg, rgba(249,252,255,0.92) 0%, rgba(231,241,249,0.84) 100%)",
                     color: "#315A7C",
-                    fontSize: 10.5,
+                    fontSize: 10,
                     boxShadow:
                       "0 6px 14px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.78)",
                   }
@@ -1924,13 +2009,13 @@ export default function ShopGalleryPage() {
               const dockPriceStyle: React.CSSProperties = isCompact
                 ? {
                     ...badge(true),
-                    minHeight: 34,
-                    padding: "7px 12px",
+                    minHeight: 32,
+                    padding: "6px 11px",
                     border: "1px solid rgba(29,78,216,0.18)",
                     background:
                       "linear-gradient(180deg, rgba(239,247,255,0.98) 0%, rgba(214,231,249,0.92) 100%)",
                     color: "#1D4ED8",
-                    fontSize: 12.5,
+                    fontSize: 12,
                     boxShadow:
                       "0 8px 18px rgba(11,99,209,0.13), inset 0 1px 0 rgba(255,255,255,0.86)",
                   }
@@ -1938,8 +2023,8 @@ export default function ShopGalleryPage() {
               const dockShareButtonStyle: React.CSSProperties = isCompact
                 ? {
                     ...secondaryBtn(false),
-                    minHeight: 38,
-                    padding: "8px 14px",
+                    minHeight: 36,
+                    padding: "7px 14px",
                     border: "1px solid rgba(13,64,123,0.25)",
                     background:
                       "linear-gradient(180deg, #1F5FB7 0%, #174C91 100%)",
@@ -2016,12 +2101,15 @@ export default function ShopGalleryPage() {
                         backdropFilter: "blur(8px)",
                       }}
                     >
-                      Product frame
+                      {hasVideoStory ? "Product story" : "Product frame"}
                     </div>
-                    {safeStr(product.imageUrl) ? (
-                      <img
-                        src={product.imageUrl}
-                        alt={product.name}
+                    {hasVideoStory ? (
+                      <video
+                        src={product.videoUrl}
+                        poster={safeStr(product.imageUrl) || undefined}
+                        controls
+                        playsInline
+                        preload="metadata"
                         style={{
                           width: "100%",
                           height: "100%",
@@ -2033,7 +2121,27 @@ export default function ShopGalleryPage() {
                             ? "0 16px 34px rgba(8,38,67,0.12)"
                             : undefined,
                           objectFit: "cover",
-                          objectPosition: "center",
+                          objectPosition: isCompact ? "center top" : "center",
+                          display: "block",
+                          background: "#0B1F33",
+                        }}
+                      />
+                    ) : safeStr(product.imageUrl) ? (
+                      <img
+                        src={product.imageUrl}
+                        alt={displayTitle}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          borderRadius: 18,
+                          border: isCompact
+                            ? "1px solid rgba(13,95,168,0.16)"
+                            : "1px solid rgba(212,175,55,0.14)",
+                          boxShadow: isCompact
+                            ? "0 16px 34px rgba(8,38,67,0.12)"
+                            : undefined,
+                          objectFit: "cover",
+                          objectPosition: isCompact ? "center top" : "center",
                           display: "block",
                         }}
                       />
@@ -2096,13 +2204,13 @@ export default function ShopGalleryPage() {
                   <div
                     style={{
                       position: isCompact ? "absolute" : "relative",
-                      left: isCompact ? 16 : undefined,
-                      right: isCompact ? 16 : undefined,
-                      bottom: isCompact ? 16 : undefined,
+                      left: isCompact ? 14 : undefined,
+                      right: isCompact ? 14 : undefined,
+                      bottom: isCompact ? 14 : undefined,
                       zIndex: isCompact ? 4 : undefined,
-                      padding: isCompact ? "12px 12px 13px" : 14,
+                      padding: isCompact ? "10px 10px 11px" : 14,
                       display: "grid",
-                      gap: isCompact ? 8 : 10,
+                      gap: isCompact ? 6 : 10,
                       flex: isCompact ? undefined : 1,
                       background:
                         isCompact
@@ -2117,7 +2225,7 @@ export default function ShopGalleryPage() {
                       borderRadius: isCompact ? 22 : undefined,
                       boxShadow:
                         isCompact
-                          ? "0 18px 38px rgba(8,38,67,0.18), inset 0 1px 0 rgba(255,255,255,0.86)"
+                          ? "0 16px 34px rgba(8,38,67,0.16), inset 0 1px 0 rgba(255,255,255,0.86)"
                           : "inset 0 1px 0 rgba(255,255,255,0.88), inset 0 12px 24px rgba(255,255,255,0.42)",
                       alignContent: undefined,
                     }}
@@ -2142,49 +2250,50 @@ export default function ShopGalleryPage() {
                         display: "flex",
                         gap: 8,
                         flexWrap: "wrap",
-                        justifyContent: "center",
+                        justifyContent: isCompact ? "space-between" : "center",
+                        alignItems: "center",
                       }}
                     >
-                      <span style={dockBadgeStyle}>Storefront block</span>
-                      <span style={dockBadgeStyle}>Community-visible</span>
+                      <span style={dockBadgeStyle}>{primarySignal}</span>
+                      <span style={dockBadgeStyle}>{secondarySignal}</span>
                     </div>
 
                     <div
                       style={{
                         color: isCompact ? "#0B1F33" : "#0B1F33",
                         fontWeight: 900,
-                        fontSize: isCompact ? 18 : 17,
-                        lineHeight: 1.28,
+                        fontSize: isCompact ? 16.5 : 17,
+                        lineHeight: 1.22,
                         display: "-webkit-box",
-                        WebkitLineClamp: 2,
+                        WebkitLineClamp: isCompact ? 1 : 2,
                         WebkitBoxOrient: "vertical" as any,
                         overflow: "hidden",
                         textAlign: "center",
-                        letterSpacing: isCompact ? 0.6 : undefined,
+                        letterSpacing: isCompact ? 0.35 : undefined,
                         textShadow: undefined,
                       }}
                     >
-                      {product.name}
+                      {displayTitle}
                     </div>
 
                     <div
                       style={{
                         color: isCompact ? "#42627E" : "#4B6178",
-                        fontSize: isCompact ? 13.5 : 12.5,
-                        lineHeight: isCompact ? 1.42 : 1.55,
+                        fontSize: isCompact ? 12.5 : 12.5,
+                        lineHeight: isCompact ? 1.35 : 1.55,
                         minHeight: isCompact ? 0 : 42,
-                        padding: isCompact ? "8px 10px" : "10px 11px",
-                        borderRadius: 16,
+                        padding: isCompact ? "0 3px" : "10px 11px",
+                        borderRadius: isCompact ? 0 : 16,
                         border: isCompact
-                          ? "1px solid rgba(13,95,168,0.10)"
+                          ? "0"
                           : "1px solid rgba(13,95,168,0.10)",
                         background:
                           isCompact
-                            ? "rgba(255,255,255,0.58)"
+                            ? "transparent"
                             : "linear-gradient(180deg, rgba(255,255,255,0.86) 0%, rgba(244,249,253,0.72) 100%)",
                         boxShadow:
                           isCompact
-                            ? "inset 0 1px 0 rgba(255,255,255,0.62)"
+                            ? "none"
                             : "0 10px 22px rgba(8,38,67,0.055), inset 0 1px 0 rgba(255,255,255,0.88)",
                         display: "-webkit-box",
                         WebkitLineClamp: isCompact ? 1 : 2,
@@ -2193,18 +2302,17 @@ export default function ShopGalleryPage() {
                         textAlign: "center",
                       }}
                     >
-                      {safeStr(
-                        product.description || "No product description is available yet."
-                      )}
+                      {safeStr(buyerCue)}
                     </div>
 
                     <div
                       style={{
-                        display: "flex",
-                        justifyContent: "center",
-                        gap: 10,
+                        display: isCompact ? "grid" : "flex",
+                        gridTemplateColumns: isCompact ? "minmax(0, 1fr) auto" : undefined,
+                        justifyContent: isCompact ? undefined : "center",
+                        gap: isCompact ? 8 : 10,
                         alignItems: "center",
-                        flexWrap: "wrap",
+                        flexWrap: isCompact ? undefined : "wrap",
                         paddingTop: isCompact ? 2 : undefined,
                       }}
                     >
@@ -2213,6 +2321,7 @@ export default function ShopGalleryPage() {
                       <button
                         type="button"
                         onClick={() => shareProduct(product)}
+                        aria-label={`Share ${displayTitle}`}
                         style={dockShareButtonStyle}
                       >
                         Share
