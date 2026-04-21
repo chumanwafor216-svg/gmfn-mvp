@@ -46,6 +46,76 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
+Local pilot data cleanup: keep only Aberdeen as the active test community.
+
+#### Routes/screens affected
+- `/app/community`
+- `/app/marketplace`
+- `/app/shop`
+- `/app/finance`
+- `/app/trust`
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+- local SQLite data only: `gmfn_backend/gmfn.db`
+
+#### Files in play
+- `gmfn_backend/gmfn.db` local ignored database, not tracked by git
+- `gmfn_backend/gmfn_backup_before_keep_aberdeen_20260421_122755.db`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Local dev mode is enabled through `GMFN_DEV_MODE=1`, so the active local
+  backend database is `gmfn_backend/gmfn.db`.
+- Before cleanup, the local database had three active communities:
+  `Golden boys`, `Default Clan`, and `Aberdeen city ICA`.
+- The requested surviving community is `Aberdeen city ICA`, with marketplace
+  name `Aberdeen city marketplace` and community code `GMFN-C-000003`.
+- A timestamped backup was created before mutation:
+  `gmfn_backend/gmfn_backup_before_keep_aberdeen_20260421_122755.db`.
+- The first transaction attempted to null old invite codes and safely rolled
+  back because the local schema requires `clans.invite_code`.
+- The successful cleanup moved the one local shop row,
+  `CHUMA INTERNATIONAL SHOP`, from `Golden boys` to `Aberdeen city ICA`.
+- The shop's marketplace products, active feature entitlement/subscription row,
+  and current TrustSlip were moved to `Aberdeen city ICA`.
+- `Golden boys` and `Default Clan` were marked `closed`, their active
+  memberships were ended with `left_at`, and disabled placeholder invite codes
+  were set so the schema remains valid.
+- After cleanup, active memberships exist only for `Aberdeen city ICA`; this
+  should make Community Home show one active community in local testing.
+- No code, schema, migration, Render database, production configuration, auth,
+  or payment logic changed.
+
+#### Verification
+- Read-only post-cleanup query showed:
+  `Aberdeen city ICA` active with 3 active members, 1 shop, 14 products, 1
+  feature entitlement, and 1 TrustSlip.
+- Read-only post-cleanup query showed `Golden boys` and `Default Clan` closed
+  with 0 active members, 0 shops, 0 products, 0 entitlements, and 0 TrustSlips.
+
+#### Open risks or unknowns
+- Browser/phone localStorage may still contain an old selected community id
+  from before cleanup. If pages act confused, select Aberdeen once from
+  Community Home or clear the selected community storage.
+- Historical audit records such as trust events, expected payments, bank
+  events, and loans were preserved under their original closed community IDs
+  rather than deleted or merged. This was intentional to avoid destroying
+  finance/trust audit history.
+- This cleanup was local only and is not automatically reflected in Render
+  production/staging databases.
+
+#### Next recommended step
+- Restart/refresh the local backend and phone browser, open `/app/community`,
+  select Aberdeen once if needed, then verify Marketplace, Shop, Finance, and
+  Trust surfaces now behave as a single-community pilot.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
 Install reusable "What do you want to do next?" guide on Loans & Support.
 
 #### Routes/screens affected
