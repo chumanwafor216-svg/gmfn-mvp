@@ -46,6 +46,62 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
+Marketplace block-surface polish and tap-stability hardening.
+
+#### Routes/screens affected
+- `/app/marketplace`
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+
+#### Files in play
+- `frontend/src/pages/MarketplacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Phone review confirmed the Marketplace landmark/aura background returned, but
+  several blocks still read too white/plain against that background.
+- Phone review also showed Marketplace buttons could feel unstable again,
+  especially open/collapse and member/action buttons.
+- Confirmed in code that `consumeMarketplacePointerEvent` was still a no-op
+  while many Marketplace controls depended on it to stop tap leakage.
+- Added a route-local Marketplace surface resolver so `pageCard`, `softCard`,
+  and `innerCard` now render as soft blue/gold institutional surfaces instead
+  of mostly flat white panels.
+- Strengthened the shared Marketplace `actionBtn` styles with firmer borders,
+  subtle 3D inset/shadow treatment, stable `translateZ(0)`, and hidden tap
+  overflow without changing route behavior.
+- Changed the Marketplace pointer guard to stop propagation and routed the
+  remaining direct click buttons through the same button event guard, including
+  picture removal, link actions, member/support selection, and support-draft
+  controls.
+- No Dashboard, Dashboard Market Wisdom, Community Home, backend, auth, schema,
+  payment, or deployment configuration was changed.
+
+#### Verification
+- `npm exec -- eslint src/pages/MarketplacePage.tsx` passed with no errors.
+  Existing warnings remain for hook dependencies already present in
+  `MarketplacePage.tsx`.
+- `git diff --check -- frontend/src/pages/MarketplacePage.tsx` passed with only
+  normal Windows line-ending warnings.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- Phone review is needed after deploy to confirm the block surfaces have enough
+  depth without becoming flashy and that Marketplace buttons no longer jump on
+  edge taps.
+
+#### Next recommended step
+- Deploy/retest `/app/marketplace` on phone from top to bottom, focusing first
+  on `What do you want to do next?`, `Members and shops`, picture tools,
+  Marketplace-owned links, and support/guarantor controls.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
 Marketplace full-height landmark/aura coverage.
 
 #### Routes/screens affected

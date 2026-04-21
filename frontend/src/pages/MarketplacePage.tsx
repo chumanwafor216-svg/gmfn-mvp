@@ -1190,14 +1190,31 @@ function safeDateTime(x: any): string {
   return d.toLocaleString();
 }
 
+function marketplaceSurface(bg: string): string {
+  if (bg === "#FFFFFF") {
+    return "radial-gradient(circle at 12% 0%, rgba(11,99,209,0.055) 0%, rgba(11,99,209,0.00) 34%), radial-gradient(circle at 92% 8%, rgba(243,208,106,0.038) 0%, rgba(243,208,106,0.00) 30%), linear-gradient(180deg, rgba(255,255,255,0.93) 0%, rgba(246,251,254,0.89) 56%, rgba(238,247,252,0.86) 100%)";
+  }
+
+  if (bg === "#FCFEFF") {
+    return "radial-gradient(circle at 10% 0%, rgba(11,99,209,0.042) 0%, rgba(11,99,209,0.00) 32%), linear-gradient(180deg, rgba(252,254,255,0.92) 0%, rgba(241,248,253,0.87) 100%)";
+  }
+
+  if (bg === "#F8FBFF") {
+    return "radial-gradient(circle at 88% 4%, rgba(243,208,106,0.035) 0%, rgba(243,208,106,0.00) 28%), linear-gradient(180deg, rgba(248,251,255,0.91) 0%, rgba(235,244,251,0.86) 100%)";
+  }
+
+  return bg;
+}
+
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 22,
-    border: "1px solid rgba(16,37,59,0.075)",
-    background: bg,
+    border: "1px solid rgba(16,37,59,0.105)",
+    background: marketplaceSurface(bg),
     padding: 18,
     boxShadow:
-      "0 12px 28px rgba(10,24,49,0.052), inset 0 1px 0 rgba(255,255,255,0.64)",
+      "0 16px 34px rgba(10,24,49,0.075), inset 0 1px 0 rgba(255,255,255,0.72)",
+    backdropFilter: "blur(8px)",
     overflow: "hidden",
   };
 }
@@ -1537,20 +1554,24 @@ function MarketplaceShell({
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     borderRadius: 17,
-    border: "1px solid rgba(16,37,59,0.07)",
-    background: bg,
+    border: "1px solid rgba(16,37,59,0.095)",
+    background: marketplaceSurface(bg),
     padding: 15,
-    boxShadow: "0 8px 18px rgba(10,24,49,0.028)",
+    boxShadow:
+      "0 10px 22px rgba(10,24,49,0.045), inset 0 1px 0 rgba(255,255,255,0.66)",
+    backdropFilter: "blur(6px)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 15,
-    border: "1px solid rgba(16,37,59,0.07)",
-    background: bg,
+    border: "1px solid rgba(16,37,59,0.09)",
+    background: marketplaceSurface(bg),
     padding: 13,
-    boxShadow: "0 8px 18px rgba(10,24,49,0.026)",
+    boxShadow:
+      "0 9px 20px rgba(10,24,49,0.04), inset 0 1px 0 rgba(255,255,255,0.68)",
+    backdropFilter: "blur(5px)",
   };
 }
 
@@ -1609,7 +1630,7 @@ function actionBtn(
       border: "1px solid rgba(16,37,59,0.24)",
       background: disabled
         ? "#E2E8F0"
-        : "linear-gradient(180deg, #F9FBFC 0%, #E6EEF5 100%)",
+        : "linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(231,240,248,0.95) 58%, rgba(214,228,239,0.93) 100%)",
       color: disabled ? "#64748B" : "#0D253B",
       fontWeight: 900,
       fontSize: 13,
@@ -1620,12 +1641,16 @@ function actionBtn(
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
       boxShadow:
-        "0 8px 16px rgba(10,24,49,0.11), inset 0 1px 0 rgba(255,255,255,0.70)",
+        "0 10px 18px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.78), inset 0 -2px 0 rgba(16,37,59,0.045)",
       touchAction: "manipulation",
       WebkitTapHighlightColor: "transparent",
       userSelect: "none",
       boxSizing: "border-box",
       appearance: "none",
+      position: "relative",
+      overflow: "hidden",
+      transform: "translateZ(0)",
+      transition: "box-shadow 120ms ease, border-color 120ms ease",
     };
   }
 
@@ -1639,7 +1664,7 @@ function actionBtn(
       borderRadius: 12,
       border: "1px solid rgba(16,37,59,0.13)",
       background:
-        "linear-gradient(180deg, #FCFDFE 0%, #EFF4F8 100%)",
+        "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(241,247,252,0.94) 58%, rgba(228,237,246,0.92) 100%)",
       color: disabled ? "#94A3B8" : "#213D56",
       fontWeight: 800,
       fontSize: 12,
@@ -1650,12 +1675,16 @@ function actionBtn(
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
       boxShadow:
-        "0 7px 14px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.72)",
+        "0 8px 16px rgba(10,24,49,0.085), inset 0 1px 0 rgba(255,255,255,0.76), inset 0 -2px 0 rgba(16,37,59,0.035)",
       touchAction: "manipulation",
       WebkitTapHighlightColor: "transparent",
       userSelect: "none",
       boxSizing: "border-box",
       appearance: "none",
+      position: "relative",
+      overflow: "hidden",
+      transform: "translateZ(0)",
+      transition: "box-shadow 120ms ease, border-color 120ms ease",
     };
   }
 
@@ -1668,7 +1697,7 @@ function actionBtn(
     borderRadius: 13,
     border: "1px solid rgba(16,37,59,0.16)",
     background:
-      "linear-gradient(180deg, #FCFDFE 0%, #F3F6F9 58%, #E8EEF4 100%)",
+      "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(243,247,251,0.94) 56%, rgba(226,236,245,0.92) 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 13,
@@ -1679,12 +1708,16 @@ function actionBtn(
     whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
     boxShadow:
-      "0 8px 16px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.72)",
+      "0 9px 17px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.76), inset 0 -2px 0 rgba(16,37,59,0.035)",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
     boxSizing: "border-box",
     appearance: "none",
+    position: "relative",
+    overflow: "hidden",
+    transform: "translateZ(0)",
+    transition: "box-shadow 120ms ease, border-color 120ms ease",
   };
 }
 
@@ -2113,7 +2146,7 @@ export default function MarketplacePage() {
   function consumeMarketplacePointerEvent(
     event?: React.SyntheticEvent<HTMLElement>
   ) {
-    void event;
+    event?.stopPropagation();
   }
 
   function consumeMarketplaceButtonEvent(
@@ -3215,8 +3248,11 @@ export default function MarketplacePage() {
                 {hasCommunityPicture ? (
                   <button
                     type="button"
-                    onPointerDown={consumeMarketplacePointerEvent}
-                    onClick={() => void handleRemoveCommunityPicture()}
+                    onPointerDown={consumeMarketplaceButtonEvent}
+                    onClick={(event) => {
+                      consumeMarketplaceButtonEvent(event);
+                      void handleRemoveCommunityPicture();
+                    }}
                     disabled={removingCommunityPicture}
                     style={marketplacePictureToolButtonStyle(
                       removingCommunityPicture
@@ -3909,8 +3945,11 @@ export default function MarketplacePage() {
                   <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
                     <button
                       type="button"
-                      onPointerDown={consumeMarketplacePointerEvent}
-                      onClick={() => void handleCreateInviteLink()}
+                      onPointerDown={consumeMarketplaceButtonEvent}
+                      onClick={(event) => {
+                        consumeMarketplaceButtonEvent(event);
+                        void handleCreateInviteLink();
+                      }}
                       style={actionBtn("primary", creatingInviteLink)}
                       disabled={creatingInviteLink}
                     >
@@ -3918,14 +3957,15 @@ export default function MarketplacePage() {
                     </button>
                     <button
                       type="button"
-                      onPointerDown={consumeMarketplacePointerEvent}
-                      onClick={() =>
+                      onPointerDown={consumeMarketplaceButtonEvent}
+                      onClick={(event) => {
+                        consumeMarketplaceButtonEvent(event);
                         copyMarketplaceLink(
                           inviteLink,
                           "Join invite link copied.",
                           "Join invite link is not ready yet."
-                        )
-                      }
+                        );
+                      }}
                       style={actionBtn("secondary", !inviteLink)}
                       disabled={!inviteLink}
                     >
@@ -3933,8 +3973,11 @@ export default function MarketplacePage() {
                     </button>
                     <button
                       type="button"
-                      onPointerDown={consumeMarketplacePointerEvent}
-                      onClick={handleOpenJoinLink}
+                      onPointerDown={consumeMarketplaceButtonEvent}
+                      onClick={(event) => {
+                        consumeMarketplaceButtonEvent(event);
+                        handleOpenJoinLink();
+                      }}
                       style={actionBtn("secondary", !inviteLink)}
                       disabled={!inviteLink}
                     >
@@ -3962,14 +4005,15 @@ export default function MarketplacePage() {
                   <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
                     <button
                       type="button"
-                      onPointerDown={consumeMarketplacePointerEvent}
-                      onClick={() =>
+                      onPointerDown={consumeMarketplaceButtonEvent}
+                      onClick={(event) => {
+                        consumeMarketplaceButtonEvent(event);
                         copyMarketplaceLink(
                           publicCommunityWorkspaceLink,
                           "Marketplace view link copied.",
                           "Marketplace view link is not ready yet."
-                        )
-                      }
+                        );
+                      }}
                       style={actionBtn("secondary", !publicCommunityWorkspaceLink)}
                       disabled={!publicCommunityWorkspaceLink}
                     >
@@ -3977,13 +4021,14 @@ export default function MarketplacePage() {
                     </button>
                     <button
                       type="button"
-                      onPointerDown={consumeMarketplacePointerEvent}
-                      onClick={() =>
+                      onPointerDown={consumeMarketplaceButtonEvent}
+                      onClick={(event) => {
+                        consumeMarketplaceButtonEvent(event);
                         openMarketplaceExternalLink(
                           publicCommunityWorkspaceLink,
                           "Marketplace view link is not ready yet."
-                        )
-                      }
+                        );
+                      }}
                       style={actionBtn("secondary", !publicCommunityWorkspaceLink)}
                       disabled={!publicCommunityWorkspaceLink}
                     >
@@ -4007,14 +4052,15 @@ export default function MarketplacePage() {
                   <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
                     <button
                       type="button"
-                      onPointerDown={consumeMarketplacePointerEvent}
-                      onClick={() =>
+                      onPointerDown={consumeMarketplaceButtonEvent}
+                      onClick={(event) => {
+                        consumeMarketplaceButtonEvent(event);
                         copyMarketplaceLink(
                           publicShopViewLink,
                           "Shop view link copied.",
                           "Shop view link is not ready yet."
-                        )
-                      }
+                        );
+                      }}
                       style={actionBtn("secondary", !publicShopViewLink)}
                       disabled={!publicShopViewLink}
                     >
@@ -4022,13 +4068,14 @@ export default function MarketplacePage() {
                     </button>
                     <button
                       type="button"
-                      onPointerDown={consumeMarketplacePointerEvent}
-                      onClick={() =>
+                      onPointerDown={consumeMarketplaceButtonEvent}
+                      onClick={(event) => {
+                        consumeMarketplaceButtonEvent(event);
                         openMarketplaceExternalLink(
                           publicShopViewLink,
                           "Shop view link is not ready yet."
-                        )
-                      }
+                        );
+                      }}
                       style={actionBtn("secondary", !publicShopViewLink)}
                       disabled={!publicShopViewLink}
                     >
@@ -4242,8 +4289,11 @@ export default function MarketplacePage() {
                           {fitSuggestion ? (
                             <button
                               type="button"
-                              onPointerDown={consumeMarketplacePointerEvent}
-                              onClick={() => toggleMemberAsSupporter(row)}
+                              onPointerDown={consumeMarketplaceButtonEvent}
+                              onClick={(event) => {
+                                consumeMarketplaceButtonEvent(event);
+                                toggleMemberAsSupporter(row);
+                              }}
                               style={
                                 selected ? actionBtn("primary") : actionBtn("soft")
                               }
@@ -4444,7 +4494,11 @@ export default function MarketplacePage() {
               >
                 <button
                   type="button"
-                  onClick={() => void handleStartLoanDraft()}
+                  onPointerDown={consumeMarketplaceButtonEvent}
+                  onClick={(event) => {
+                    consumeMarketplaceButtonEvent(event);
+                    void handleStartLoanDraft();
+                  }}
                   disabled={startingLoanDraft}
                   style={actionBtn("primary", startingLoanDraft)}
                 >
@@ -4454,7 +4508,11 @@ export default function MarketplacePage() {
                 {loanDraftId ? (
                   <button
                     type="button"
-                    onClick={() => void handleRefreshSuggestions()}
+                    onPointerDown={consumeMarketplaceButtonEvent}
+                    onClick={(event) => {
+                      consumeMarketplaceButtonEvent(event);
+                      void handleRefreshSuggestions();
+                    }}
                     disabled={loadingSuggestions}
                     style={actionBtn("secondary", loadingSuggestions)}
                   >
@@ -4465,7 +4523,11 @@ export default function MarketplacePage() {
                 {loanDraftId ? (
                   <button
                     type="button"
-                    onClick={() => void handleCancelLoanDraft()}
+                    onPointerDown={consumeMarketplaceButtonEvent}
+                    onClick={(event) => {
+                      consumeMarketplaceButtonEvent(event);
+                      void handleCancelLoanDraft();
+                    }}
                     disabled={cancellingLoanDraft}
                     style={actionBtn("secondary", cancellingLoanDraft)}
                   >
@@ -4642,7 +4704,11 @@ export default function MarketplacePage() {
 
                                   <button
                                     type="button"
-                                    onClick={() => toggleSuggestedSupporter(item)}
+                                    onPointerDown={consumeMarketplaceButtonEvent}
+                                    onClick={(event) => {
+                                      consumeMarketplaceButtonEvent(event);
+                                      toggleSuggestedSupporter(item);
+                                    }}
                                     style={
                                       selected
                                         ? actionBtn("primary")
@@ -4683,7 +4749,11 @@ export default function MarketplacePage() {
                               <button
                                 key={item.key}
                                 type="button"
-                                onClick={() => toggleSuggestedSupporter(item)}
+                                onPointerDown={consumeMarketplaceButtonEvent}
+                                onClick={(event) => {
+                                  consumeMarketplaceButtonEvent(event);
+                                  toggleSuggestedSupporter(item);
+                                }}
                                 style={actionBtn("soft")}
                               >
                                 {item.name} ×
@@ -4712,7 +4782,11 @@ export default function MarketplacePage() {
                       >
                         <button
                           type="button"
-                          onClick={() => void handleSendGuarantorRequests()}
+                          onPointerDown={consumeMarketplaceButtonEvent}
+                          onClick={(event) => {
+                            consumeMarketplaceButtonEvent(event);
+                            void handleSendGuarantorRequests();
+                          }}
                           disabled={
                             sendingGuarantorRequests ||
                             requiredGuarantorCount <= 0 ||
