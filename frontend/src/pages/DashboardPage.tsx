@@ -270,15 +270,16 @@ const DASHBOARD_FOCUS_EVENTS_STORAGE_KEY =
 const MARKET_WISDOM_ROTATION_MS = 45000;
 
 const DASHBOARD_HELP_BODY =
-  "Dashboard helps me notice what matters before I get lost inside the whole app. It is not the command centre. It is the place that reads the day for me: wisdom, commitments, events, demand, spotlight, and trust signals.";
+  "Dashboard helps me keep my market life, community duties, shop chances, and trust record in one first look. In real life, I may not know what my friends have in their shops unless I travel there. I may forget a promise unless somebody reminds me. I may miss a need, a payment, or an act of kindness because life is busy. Dashboard brings those signals back before they disappear.";
 
 const DASHBOARD_HELP_BULLETS = [
-  "Market Wisdom gives me the first reading. It turns what is happening around my activity into a plain signal before I start moving from page to page.",
-  "Focus Commitment keeps my promises in front of me. If I said I will repay, save, build stock, finish a task, or follow up on a goal, Dashboard keeps that promise visible until I act.",
-  "Notifications are not just messages. They are event signals: payment movement, trust changes, join requests, demand updates, spotlight movement, and unfinished things that need attention.",
-  "Demand Box shows when someone has a need or request that may become trade, support, or responsibility. Dashboard helps me see that pressure early instead of missing it.",
-  "Spotlight shows what is currently visible in the marketplace. It helps me notice what the community is presenting, what may need attention, and what trust context sits behind it.",
-  "TrustSlip is the proof layer behind the story. When the events show that I follow through, repay, respond, and support honestly, my TrustSlip has stronger evidence to carry.",
+  "Market Wisdom reads the day for me. It turns the movement around my money, trust, community, shop, and attention into a plain signal before I start opening many pages.",
+  "Spotlight is not just a display. It lets me see, from home, office, shop, or abroad, what trusted people in my community are showing, selling, or promoting. I can buy, support, or help resell without first walking to their shop.",
+  "Focus Commitment keeps my promises beside me. Instead of depending only on memory, a spouse, or a friend to remind me, I can set a target, check in, adjust honestly, and let the app record the follow-through.",
+  "Demand Box means opportunity can come from what people are asking for, not only what I already displayed. A need can become trade, supply, service, support, or a new responsibility I can answer.",
+  "Notifications are event memory. They keep payment movement, requests, kindness, approvals, demand, spotlight, repayment, and unfinished duties from disappearing inside a busy day.",
+  "If I borrow, lend, repay, support someone, or make a contribution from another city or country, Dashboard helps keep the evidence together. The record can later show what actually happened, not only what somebody remembers.",
+  "TrustSlip is the proof layer behind the story. When these events show that I follow through, repay, respond, and support honestly, my TrustSlip has stronger evidence to carry when someone needs to trust me.",
 ];
 
 const DASHBOARD_HELP_NOTE =

@@ -25,36 +25,61 @@ Good page explanations should:
 
 ## Dashboard
 
-Dashboard helps a member notice what matters before they get lost inside the
-whole app.
+Dashboard should feel like the member's first look at real life, not a manual.
 
-Dashboard is not the command centre. It is the reflector: the place that reads
-the day for the member through wisdom, commitments, events, demand, spotlight,
-and trust signals.
+In ordinary life, a person may belong to a group, know people with shops, and
+still not know what those people have today unless they walk to the shop, call
+around, or hear it from somebody else. A member may also have promises they
+intend to keep, but life is busy. They may depend on a wife, husband, friend,
+chairman, secretary, or meeting reminder to remember a payment, contribution,
+stock target, or follow-up.
 
-Market Wisdom gives the first reading. It turns what is happening around the
-member's activity into a plain signal before they start moving from page to
-page.
+Dashboard is the place where GSN brings those signals back to the member before
+they disappear.
 
-Focus Commitment keeps promises visible. If the member said they will repay,
-save, build stock, finish a task, or follow up on a goal, Dashboard keeps that
-promise in front of them until they act.
+Market Wisdom reads the day first. It turns movement around money, trust,
+community, shop, and attention into a plain signal before the member starts
+opening many pages.
 
-Notifications should be understood as events, not just messages. They can carry
-payment movement, trust changes, join requests, demand updates, spotlight
-movement, and unfinished things that need attention.
+Spotlight is not just a display. It lets a member see, from home, office, shop,
+or abroad, what trusted people in their community are showing, selling, or
+promoting. The member may buy, support, repost, or help resell without first
+travelling to the physical shop. This matters in a busy city, a market
+community, a diaspora relationship, or a village/town-union contribution where
+people are connected but not physically together.
 
-Demand Box shows when someone has a need or request that may become trade,
-support, or responsibility. Dashboard helps the member see that pressure early
-instead of missing it.
+Focus Commitment keeps promises beside the member. Instead of depending only on
+memory or another person to remind them, the member can set a target, check in,
+adjust honestly, and let the app record the follow-through. This can be about
+repayment, savings, stock-building, sales, contribution, support, or another
+real target.
 
-Spotlight shows what is currently visible in the marketplace. It helps the
-member notice what the community is presenting, what may need attention, and
-what trust context sits behind it.
+Demand Box means opportunity can also come from what people are asking for, not
+only from what the member already displayed. A request can reveal trade, supply,
+service, support, or responsibility that someone in the community is able to
+answer.
+
+Notifications should be understood as event memory. They keep payment movement,
+requests, kindness, approvals, demand, spotlight, repayment, and unfinished
+duties from disappearing inside a busy day. The point is not just to disturb
+the member. The point is to keep the member aware: this happened, this is still
+waiting, this needs attention.
+
+For someone in Lagos, Abuja, Onitsha, Accra, Nairobi, London, or any other
+place trying to support people elsewhere, Dashboard can help keep the record
+visible. If the person contributes, lends, borrows, repays, supports, responds
+to demand, or helps another member, the system can keep the evidence together.
+
+That is where Dashboard connects back to trust.
+
+GSN is not inventing trust from nothing. It is making complete and visible what
+already happens in community life: promises, support, contribution, lending,
+borrowing, repayment, and people standing behind one another. Dashboard helps
+those events stay visible instead of becoming only memory or hearsay.
 
 TrustSlip is the proof layer behind the Dashboard story. When events show that
 the member follows through, repays, responds, and supports honestly, TrustSlip
-has stronger evidence to carry.
+has stronger evidence to carry when someone needs to trust them.
 
 Innovation wedge: GSN turns informal community vouching into portable,
 verifiable trust evidence, especially for people who are normally invisible to
