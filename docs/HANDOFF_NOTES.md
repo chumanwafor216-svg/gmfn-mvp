@@ -5876,3 +5876,21 @@ GSN-branded invite composer and invite-entry continuity.
   preserving route contracts and page content.
 - No backend, auth, permissions, schemas, payment, ledger, route guard,
   deployment configuration, or Dashboard Market Wisdom presentation changed.
+
+### Pilot test flow definition addendum
+
+- Product-owner testing has started and the next phase needs a clear
+  beginning-to-end correction map rather than route-by-route improvisation.
+- Added `docs/PILOT_TEST_FLOW_2026-04-21.md` as the pilot source-of-truth for:
+  - live and local test URLs
+  - tester roles
+  - public entry, create-community, invite/join, activation, login, dashboard,
+    community, marketplace, shop, Vault, demand, finance, trust, notifications,
+    identity, settings, and admin test paths
+  - practical definition of when a route is actually corrected
+  - tester feedback format
+  - correction priority order
+  - boundaries that should not be disturbed during pilot testing
+- This is documentation/control-layer work only. No frontend route behavior,
+  backend routes, auth, permissions, schemas, payment, ledger, migrations,
+  deployment config, or Dashboard Market Wisdom presentation changed.
