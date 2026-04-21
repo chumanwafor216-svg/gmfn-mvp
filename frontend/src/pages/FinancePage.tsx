@@ -1624,15 +1624,17 @@ export default function FinancePage() {
       />
 
       <DomainIntroToggle
-        title="Your Finance"
-        eyebrow="Your guide"
-        body="Use Finance to see your money record in one place. It shows what you have, what is locked, what is due, and where money should go next."
+        title="Finance Page Explanation"
+        eyebrow="Plain guide"
+        body="Finance is the evidence room for money behaviour in GSN. It does not judge trust by how rich someone is. It shows how a member handles money promises across the communities they belong to."
         bullets={[
-          "Marketplace shows the money picture for one community.",
-          "Finance shows your fuller money picture across the communities you belong to.",
-          "Use this page for your pool, borrowing, support you gave others, expected payments, money in, money out, and recent money movement.",
+          "If you belong to five communities, this page should read them as one GSN finance file, with each community kept as its own finance unit inside the full picture.",
+          "It gathers your pool, borrowing, repayment, guarantor support, expected payments, money in, money out, and recent money movement in one place.",
+          "Trust grows from completed money behaviour: repaid loans, confirmed repayments, responsible support for others, and clear payment records.",
+          "Missed payments, defaults, unresolved expected payments, or too much locked support become watch signals so the member can correct them early.",
+          "Finance shows the money facts. Trust Passport explains what those facts mean for trust.",
         ]}
-        note="Simple rule: check local money in Marketplace; check your fuller money picture here."
+        note="Simple rule: Finance proves the money behaviour. Trust Passport explains the trust meaning."
         tone="blue"
       />
 

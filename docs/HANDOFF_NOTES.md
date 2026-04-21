@@ -5403,3 +5403,30 @@ GSN-branded invite composer and invite-entry continuity.
 - `git diff --check -- frontend/src/pages/FinancePage.tsx` passed with only
   the normal Windows line-ending warning.
 - `npm run build` passed in `frontend`.
+
+### Finance page explanation addendum
+
+- Updated `frontend/src/pages/FinancePage.tsx` only.
+- Expanded the existing open/close `DomainIntroToggle` into a plain-language
+  Finance Page Explanation.
+- The copy now explains Finance as the GSN money-behaviour evidence room:
+  - it does not judge trust by wealth
+  - it reads one member's finance activity across every community they belong
+    to
+  - each community remains its own finance unit inside the wider GSN finance
+    file
+  - completed repayments, confirmed payments, responsible support, and clear
+    records strengthen trust evidence
+  - missed payments, defaults, unresolved expected payments, or over-locked
+    support become early watch signals
+  - Finance shows the money facts while Trust Passport explains the trust
+    meaning
+- No backend, auth, schema, payment, ledger, environment config, or Dashboard
+  Market Wisdom behavior changed.
+
+### Verification after Finance page explanation
+
+- `npm exec -- eslint src/pages/FinancePage.tsx` passed in `frontend`.
+- `git diff --check -- frontend/src/pages/FinancePage.tsx docs/HANDOFF_NOTES.md`
+  passed with only the normal Windows line-ending warning.
+- `npm run build` passed in `frontend`.
