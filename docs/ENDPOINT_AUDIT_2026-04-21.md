@@ -111,7 +111,7 @@ cleaned during admin/backend stabilization.
 
 ### 4. Several APIRouter files are not included in the central router
 
-Unmounted route files include:
+Unmounted route files included at audit time:
 
 - `admin_disputes`
 - `admin_repayment_reversals`
@@ -131,7 +131,6 @@ Unmounted route files include:
 - `share`
 - `shipment`
 - `shipment_events`
-- `system_diagnostics`
 - `trust_evidence_pack`
 - `trust_score`
 - `trust_slip_evidence`
@@ -141,6 +140,15 @@ Unmounted route files include:
 Not every unmounted file is automatically a bug. Some are older, duplicated, or
 superseded by mounted routes. The important audit point is that they are not
 currently live API endpoints unless mounted in `app/api/router.py`.
+
+Post-audit classification:
+
+- `system_diagnostics` has now been mounted locally and is no longer dormant in
+  current code.
+- `docs/DORMANT_ROUTE_CLASSIFICATION_2026-04-21.md` records the safer
+  classification for the remaining dormant files.
+- The highest-priority safe candidate is `trust_timeline.py`, because the active
+  Trust Timeline frontend calls `/trust/me/timeline?limit=200`.
 
 ### 5. Dormant frontend files still contain old direct `/api` calls
 

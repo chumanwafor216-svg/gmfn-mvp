@@ -98,6 +98,21 @@ Definition of done:
 
 Goal: make admin oversight reliable before broader external testing.
 
+Safe classification note:
+
+- `docs/DORMANT_ROUTE_CLASSIFICATION_2026-04-21.md` now separates dormant
+  route files into:
+  - likely duplicate/superseded files
+  - active frontend gap candidates
+  - sensitive product routes that should not be mounted blindly
+  - utility/future surfaces
+- The safest next code candidate identified by that classification is
+  `trust_timeline.py`, because `frontend/src/pages/TrustTimelinePage.tsx`
+  actively calls `/trust/me/timeline`.
+- Repayment, dispute, courier/shipment, merchant release, merchant verify, and
+  bulk guarantor routes should stay deliberate product work, not automatic
+  router mounts.
+
 Known cleanup targets:
 
 - Duplicate route registrations:
@@ -111,6 +126,8 @@ Known cleanup targets:
   - mount if still needed
   - retire if superseded
   - document if deliberately dormant
+  - current classification is recorded in
+    `docs/DORMANT_ROUTE_CLASSIFICATION_2026-04-21.md`
 
 Admin-domain screens to verify:
 

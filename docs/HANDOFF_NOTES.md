@@ -5943,3 +5943,31 @@ GSN-branded invite composer and invite-entry continuity.
   - final freeze before wider testing
 - This correction does not change auth rules, schemas, migrations, payments,
   ledger behavior, environment config, or user-facing route layout.
+
+### Dormant route classification addendum
+
+- Product-owner asked to start with the safest item among the remaining backend
+  corrections.
+- Added `docs/DORMANT_ROUTE_CLASSIFICATION_2026-04-21.md` as a docs-only safety
+  classification for unmounted backend route files.
+- No dormant routes were mounted and no route files were deleted in this pass.
+- Confirmed `system_diagnostics.py` is already corrected locally and should not
+  be treated as dormant after that backend deploy.
+- Classified likely duplicate/superseded route files:
+  - `health.py`
+  - `public.py`
+  - `loan_summary.py`
+  - `repayments.py`
+  - `trust_evidence_pack.py`
+  - `exposure_admin.py`
+  - `trust_score.py`
+- Marked `trust_timeline.py` as the next safest code candidate because
+  `frontend/src/pages/TrustTimelinePage.tsx` actively calls
+  `/trust/me/timeline?limit=200`, while the JSON timeline route lives in that
+  currently unmounted file.
+- Marked `merchant_verify.py` as a medium-risk candidate because
+  `frontend/src/lib/merchantChannel.ts` calls `/trust-slips/me/merchant-link`,
+  but merchant verification overlaps with public TrustSlip verification rules.
+- Marked repayment/admin repayment, dispute, shipment/courier, merchant release,
+  merchant view, and bulk guarantor routes as real product work that should not
+  be mounted blindly.
