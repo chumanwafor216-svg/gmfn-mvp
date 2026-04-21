@@ -55,6 +55,26 @@ function getToken(): string | null {
   return localStorage.getItem("access_token");
 }
 
+function apiBase(): string {
+  const raw =
+    (typeof import.meta !== "undefined" &&
+      (import.meta as any)?.env &&
+      (import.meta as any).env.VITE_API_BASE_URL) ||
+    "/api";
+
+  return String(raw || "").trim().replace(/\/+$/, "");
+}
+
+function apiUrl(path: string): string {
+  const raw = String(path || "").trim();
+  if (/^https?:\/\//i.test(raw)) return raw;
+
+  let cleanPath = raw.startsWith("/") ? raw : `/${raw}`;
+  if (cleanPath.startsWith("/api/")) cleanPath = cleanPath.slice(4);
+
+  return `${apiBase()}${cleanPath}`;
+}
+
 async function parseError(res: Response): Promise<string> {
   const text = await res.text();
   try {
@@ -81,7 +101,7 @@ async function authedJson<T>(path: string, method: "GET" | "POST" = "GET", body?
     init.body = JSON.stringify(body);
   }
 
-  const res = await fetch(path, init);
+  const res = await fetch(apiUrl(path), init);
   if (!res.ok) throw new Error(await parseError(res));
   return (await res.json()) as T;
 }
@@ -90,7 +110,7 @@ async function authedBlob(path: string): Promise<Blob> {
   const tok = getToken();
   if (!tok) throw new Error("You are logged out. Please log in again.");
 
-  const res = await fetch(path, {
+  const res = await fetch(apiUrl(path), {
     method: "GET",
     headers: {
       Authorization: `Bearer ${tok}`,
