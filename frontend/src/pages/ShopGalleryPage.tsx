@@ -373,13 +373,13 @@ function normalizeProduct(raw: any, slotNumber: number): ShopProduct | null {
 }
 
 const SHOP_GALLERY_PAGE_BACKGROUND =
-  "radial-gradient(circle at 8% 0%, rgba(11,99,209,0.12) 0%, transparent 28%), radial-gradient(circle at 92% 8%, rgba(244,114,182,0.06) 0%, transparent 24%), radial-gradient(circle at 82% 52%, rgba(212,175,55,0.07) 0%, transparent 28%), linear-gradient(180deg, rgba(248,252,255,0.98) 0%, rgba(237,246,252,0.97) 52%, rgba(250,252,254,0.99) 100%)";
+  "radial-gradient(circle at 9% 0%, rgba(11,99,209,0.14) 0%, transparent 30%), radial-gradient(circle at 92% 10%, rgba(244,114,182,0.065) 0%, transparent 26%), radial-gradient(circle at 74% 58%, rgba(212,175,55,0.065) 0%, transparent 30%), linear-gradient(180deg, rgba(239,248,253,0.99) 0%, rgba(247,251,253,0.98) 46%, rgba(234,244,250,0.98) 100%)";
 
 const SHOP_GALLERY_SURFACE =
-  "radial-gradient(circle at 10% 0%, rgba(11,99,209,0.055) 0%, transparent 30%), radial-gradient(circle at 94% 4%, rgba(244,114,182,0.035) 0%, transparent 26%), linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(243,249,253,0.95) 100%)";
+  "radial-gradient(circle at 10% 0%, rgba(11,99,209,0.075) 0%, transparent 30%), radial-gradient(circle at 94% 4%, rgba(244,114,182,0.045) 0%, transparent 26%), linear-gradient(180deg, rgba(255,255,255,0.975) 0%, rgba(240,248,253,0.955) 100%)";
 
 const SHOP_GALLERY_INNER_SURFACE =
-  "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(239,247,253,0.92) 100%)";
+  "radial-gradient(circle at 0% 0%, rgba(11,99,209,0.055) 0%, transparent 32%), linear-gradient(180deg, rgba(255,255,255,0.955) 0%, rgba(239,247,253,0.94) 100%)";
 
 function calmSurface(bg: string): string {
   return bg === "#FFFFFF" ? SHOP_GALLERY_SURFACE : bg;
@@ -958,7 +958,7 @@ export default function ShopGalleryPage() {
   const shopNameText = safeStr(effectiveShop?.shopName || "Shop");
   const shopDescriptionText = safeStr(
     effectiveShop?.description ||
-      "Public shop page for trusted products. Selected offers can open by private viewing link."
+      "Public shop page for trusted products. Selected offers can open by Vault viewing link."
   );
   const shopGmfnText = safeStr(effectiveShop?.gmfnId);
   const shopOwnerText = safeStr(effectiveShop?.ownerName);
@@ -1051,7 +1051,7 @@ export default function ShopGalleryPage() {
       "this shop"
     );
 
-    const requestText = `Hello, I would like to request a private viewing link for ${shopTitle}. Please share any selected offers you do not show on the public page.`;
+    const requestText = `Hello, I would like to request a private Vault viewing link for ${shopTitle}. Please share any selected offers you do not show on the public page.`;
 
     const whatsapp = safeStr(effectiveShop?.whatsapp).replace(/[^\d+]/g, "");
     if (whatsapp && typeof window !== "undefined") {
@@ -1072,7 +1072,7 @@ export default function ShopGalleryPage() {
       );
       setNotice({
         tone: "success",
-        text: "Telegram opened. Ask the owner for a private viewing link there.",
+        text: "Telegram opened. Ask the owner for a Vault viewing link there.",
       });
       return;
     }
@@ -1080,7 +1080,7 @@ export default function ShopGalleryPage() {
     safeCopy(`${requestText}\n${absoluteShopLink}`);
     setNotice({
       tone: "success",
-      text: "Private viewing request copied. Send it to the shop owner.",
+      text: "Vault viewing request copied. Send it to the shop owner.",
     });
   }
 
@@ -1110,7 +1110,7 @@ export default function ShopGalleryPage() {
         bullets={[
           "One person has one shop, and that shop can appear in the communities they belong to.",
           "A shop normally shows through its communities. Wider sharing should use the right link or repost path.",
-          "Some selected offers only open through a private viewing link from the owner.",
+          "Vault is the private-viewing path for selected offers shared by trust link.",
         ]}
         note="Simple rule: Shop Gallery is where people come to view the shop."
         tone="dark"
@@ -1118,19 +1118,15 @@ export default function ShopGalleryPage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="This screen is the public shop gallery, showing the shop identity, live spotlight, products, and private viewing options when available."
+        what="This screen is the public shop gallery, showing the shop identity, live spotlight, products, and Vault private-viewing options when available."
         why="It helps visitors understand what this shop offers and how to move into the right next action without needing the full owner workspace."
-        next="Start with the shop identity and live spotlight, then browse products or ask the owner for a private viewing link if you want to see selected offers."
+        next="Start with the shop identity and live spotlight, then browse products or ask the owner for a Vault viewing link if you want to see selected offers."
         tone="light"
       />
 
       <section
         style={{
-          ...pageCard(
-            heroImage
-              ? "linear-gradient(180deg, rgba(16,36,58,0.82) 0%, rgba(23,54,84,0.92) 52%, rgba(35,79,118,0.98) 100%)"
-              : "linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)"
-          ),
+          ...pageCard(),
           padding: isCompact ? 10 : 20,
         }}
       >
@@ -1283,22 +1279,25 @@ export default function ShopGalleryPage() {
             <div
               style={{
                 ...innerCard(
-                  "radial-gradient(circle at 0% 0%, rgba(11,99,209,0.07) 0%, transparent 34%), linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(239,247,253,0.92) 100%)"
+                  "radial-gradient(circle at 8% 0%, rgba(11,99,209,0.085) 0%, transparent 32%), radial-gradient(circle at 94% 4%, rgba(244,114,182,0.045) 0%, transparent 24%), linear-gradient(180deg, rgba(255,255,255,0.975) 0%, rgba(238,247,253,0.95) 100%)"
                 ),
-                border: "1px solid rgba(255,255,255,0.28)",
+                border: "1px solid rgba(13,95,168,0.14)",
                 backdropFilter: "blur(8px)",
-                boxShadow: "0 18px 38px rgba(11,31,51,0.16)",
+                boxShadow:
+                  "0 18px 38px rgba(11,31,51,0.12), inset 0 1px 0 rgba(255,255,255,0.78)",
                 padding: isCompact ? 12 : 18,
               }}
             >
-              <div style={sectionLabel()}>Shop signpost</div>
+              <div style={{ ...sectionLabel(), textAlign: isCompact ? "center" : "left" }}>
+                Shop signpost
+              </div>
 
               {!isCompact ? (
                 <ExplainToggle
                   label="What this does"
-                  what="This signpost block gives visitors the main identity of the shop before they browse products or ask for private access."
+                  what="This signpost block gives visitors the main identity of the shop before they browse products or ask for Vault viewing."
                   why="It helps the shop feel grounded in a real owner and community context rather than as an isolated product wall."
-                  next="Read the shop signpost first, then continue into products, spotlight, or private viewing depending on what you need."
+                  next="Read the shop signpost first, then continue into products, spotlight, or Vault viewing depending on what you need."
                   tone="light"
                   style={{ marginTop: 12, marginBottom: 12 }}
                 />
@@ -1308,9 +1307,11 @@ export default function ShopGalleryPage() {
                 style={{
                   marginTop: isCompact ? 8 : 12,
                   display: "grid",
-                  gridTemplateColumns: isCompact ? "52px minmax(0, 1fr)" : "72px minmax(0, 1fr)",
+                  gridTemplateColumns: isCompact ? "1fr" : "72px minmax(0, 1fr)",
                   gap: isCompact ? 9 : 12,
                   alignItems: "center",
+                  justifyItems: isCompact ? "center" : "start",
+                  textAlign: isCompact ? "center" : "left",
                 }}
               >
                 <div
@@ -1327,6 +1328,8 @@ export default function ShopGalleryPage() {
                     color: "#1D4ED8",
                     fontWeight: 900,
                     fontSize: isCompact ? 19 : 24,
+                    boxShadow:
+                      "0 12px 24px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.9)",
                   }}
                 >
                   {initialsOf(
@@ -1343,15 +1346,15 @@ export default function ShopGalleryPage() {
                     style={{
                       color: "#0B1F33",
                       fontWeight: 900,
-                      fontSize: isCompact ? 15.5 : 19,
+                      fontSize: isCompact ? 18 : 19,
                       lineHeight: 1.25,
                       display: "-webkit-box",
-                      WebkitLineClamp: isCompact ? 1 : 2,
+                      WebkitLineClamp: isCompact ? 2 : 2,
                       WebkitBoxOrient: "vertical" as any,
                       overflow: "hidden",
                     }}
                   >
-                    {isCompact ? "Public shop link" : shopNameText}
+                    {shopNameText}
                   </div>
 
                   <div
@@ -1360,10 +1363,11 @@ export default function ShopGalleryPage() {
                       ...helperText(),
                       fontSize: isCompact ? 11.5 : 13,
                       lineHeight: isCompact ? 1.35 : 1.75,
+                      maxWidth: isCompact ? 260 : undefined,
                     }}
                   >
                     {isCompact
-                      ? "Share this verified shop page."
+                      ? "Share this verified shop page with a clean public link."
                       : "Share this shop outside the community with a clean public shop link."}
                   </div>
                 </div>
@@ -1375,6 +1379,7 @@ export default function ShopGalleryPage() {
                   display: "flex",
                   gap: isCompact ? 6 : 8,
                   flexWrap: "wrap",
+                  justifyContent: isCompact ? "center" : "flex-start",
                 }}
               >
                 {shopGmfnText ? (
@@ -1419,9 +1424,18 @@ export default function ShopGalleryPage() {
                   </span>
                 ) : null}
 
-                {!isCompact ? <span style={badge(false)}>Vault</span> : null}
+                <span
+                  style={{
+                    ...badge(false),
+                    minHeight: isCompact ? 24 : 30,
+                    padding: isCompact ? "4px 8px" : "6px 10px",
+                    fontSize: isCompact ? 10.5 : 12,
+                  }}
+                >
+                  Vault
+                </span>
                 {!isCompact ? (
-                  <span style={badge(false)}>Private access by permission</span>
+                  <span style={badge(false)}>Vault viewing by trust link</span>
                 ) : null}
 
                 {!isCompact && safeStr(effectiveShop?.whatsapp) ? (
@@ -1477,11 +1491,7 @@ export default function ShopGalleryPage() {
         </div>
       </section>
 
-      <section
-        style={pageCard(
-          "linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)"
-        )}
-      >
+      <section style={pageCard()}>
         <div
           style={{
             display: "grid",
@@ -1498,7 +1508,7 @@ export default function ShopGalleryPage() {
               padding: 9,
             }}
           >
-            <div style={{ ...sectionLabel(), color: "#5D7389" }}>Private viewing</div>
+            <div style={{ ...sectionLabel(), color: "#5D7389" }}>Vault</div>
             <div
               style={{
                 marginTop: 4,
@@ -1508,16 +1518,19 @@ export default function ShopGalleryPage() {
                 lineHeight: 1.2,
               }}
             >
-              Selected offers can open by trust link.
+              Vault: private viewing by trust link.
             </div>
             <div style={{ marginTop: 4, ...helperText(), fontSize: 11.5, lineHeight: 1.45 }}>
-              The public shop shows what everyone can see. The owner may also share extra offers privately.
+              The public shop shows what everyone can see. Vault is where the owner can share selected offers privately.
             </div>
             <div style={{ marginTop: 2, ...helperText(), fontSize: 11.5, lineHeight: 1.45 }}>
-              Ask for a viewing link when you want to see more before you decide.
+              Ask for a Vault viewing link when you want to see more before you decide.
             </div>
             <div style={{ marginTop: 4, display: "flex", gap: 4, flexWrap: "wrap" }}>
               <span style={{ ...badge(true), minHeight: 26, padding: "4px 8px", fontSize: 11 }}>
+                Vault
+              </span>
+              <span style={{ ...badge(false), minHeight: 24, padding: "3px 8px", fontSize: 10.5 }}>
                 Private viewing
               </span>
               <span style={{ ...badge(false), minHeight: 24, padding: "3px 8px", fontSize: 10.5 }}>
@@ -1525,9 +1538,6 @@ export default function ShopGalleryPage() {
               </span>
               <span style={{ ...badge(false), minHeight: 24, padding: "3px 8px", fontSize: 10.5 }}>
                 Owner approval
-              </span>
-              <span style={{ ...badge(false), minHeight: 24, padding: "3px 8px", fontSize: 10.5 }}>
-                Selected offers
               </span>
             </div>
           </div>
@@ -1548,7 +1558,7 @@ export default function ShopGalleryPage() {
                 padding: 9,
               }}
             >
-              <div style={{ ...sectionLabel(), color: "#D7E3F1" }}>Private viewing</div>
+              <div style={{ ...sectionLabel(), color: "#D7E3F1" }}>Vault request</div>
               <div
                 style={{
                   marginTop: 4,
@@ -1558,10 +1568,10 @@ export default function ShopGalleryPage() {
                   lineHeight: 1.24,
                 }}
               >
-                Ask to view selected offers
+                Ask for a Vault viewing link
               </div>
               <div style={{ marginTop: 3, ...helperText(), color: "#E2E8F0", fontSize: 11, lineHeight: 1.38 }}>
-                Some sellers keep special items for trusted buyers. Ask for a private viewing link and the owner can show what is not on the public page.
+                Some sellers keep selected offers for trusted buyers. Ask for a Vault link and the owner can show what is not on the public page.
               </div>
               <div style={{ marginTop: 4, display: "flex", gap: 5, flexWrap: "wrap" }}>
                 <button
@@ -1569,7 +1579,7 @@ export default function ShopGalleryPage() {
                   onClick={askForVaultAccess}
                   style={{ ...primaryBtn(false), minHeight: 34, padding: "6px 10px", fontSize: 12 }}
                 >
-                  Ask for private view
+                  Ask for Vault view
                 </button>
                 <button
                   type="button"
@@ -1946,7 +1956,7 @@ export default function ShopGalleryPage() {
           <div>
             <div style={sectionLabel()}>Product blocks</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Public products appear here. Private-viewing offers stay separate, so selected items
+              Public products appear here. Vault offers stay separate, so selected items
               are not mixed into the public gallery.
             </div>
           </div>
@@ -1977,7 +1987,7 @@ export default function ShopGalleryPage() {
             </div>
             <div style={{ marginTop: 10, ...helperText(), maxWidth: 760 }}>
               Check back later for public offers. If you want to see selected items, use the
-              private-viewing card above to ask the owner for a link.
+              Vault card above to ask the owner for a link.
             </div>
           </div>
         ) : (

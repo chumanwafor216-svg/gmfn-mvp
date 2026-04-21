@@ -4926,3 +4926,26 @@ GSN-branded invite composer and invite-entry continuity.
 - `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
   the normal Windows line-ending warning.
 - `npm run build` passed in `frontend`.
+
+### Shop Gallery Vault branding and signpost polish addendum
+
+- Updated `frontend/src/pages/ShopGalleryPage.tsx` only.
+- Preserved `Vault` as the main memorable user-facing tag after owner review,
+  while keeping the plain-language explanation as private viewing by trust link.
+- Tightened the customer-facing shop signpost on compact/mobile screens:
+  - the real shop name stays visible instead of a generic `Public shop link`
+    heading
+  - the signpost icon, title, helper copy, badges, and buttons are centered
+    into one calmer stacked flow
+  - `Vault` remains visible as a compact tag instead of being desktop-only
+- Made the Shop Gallery outer sections use one calmer branded white-blue
+  surface so the page reads less like separate joined blocks; the darker
+  billboard moments now sit inside the shared surface rather than replacing it.
+- No backend, auth, schema, payment, environment config, or Dashboard Market
+  Wisdom behavior changed.
+
+### Verification after Vault branding/signpost polish
+
+- `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
+  the normal Windows line-ending warning.
+- `npm run build` passed in `frontend`.
