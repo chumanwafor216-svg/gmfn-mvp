@@ -97,6 +97,25 @@ Safe recovery branch for Community Home / Shop Control mobile tap recovery.
 - Independent assistant review found no high or medium remaining findings in
   the Community Home embedded Shop Control buttons, Dashboard/Marketplace
   pointer helpers, or `/app/shop-control` hash-scroll behavior after this pass.
+- The recovery branch was pushed to GitHub and then used to fast-forward the
+  Render-connected branch `feature/vault-shops`.
+- Before updating `feature/vault-shops`, the previous remote branch was saved
+  as `backup/feature-vault-shops-before-safe-recovery-2026-04-21`.
+- Live frontend deploy changed from the old asset `index-C5P6PzFZ.js` to
+  `index-BsH5i7JA.js`, and the live bundle references the updated chunks:
+  `CommunityHomePage-D7Imuuh3.js`, `DashboardPage-DKa0caQY.js`,
+  `MarketplacePage-DUcwiOcn.js`, and `ShopControlPage-CH1TIFxS.js`.
+- Live API health is available at `https://gmfn-api.onrender.com/health` and
+  returns `{"ok":true,"dev_mode":false}`.
+- Live static deep links currently return 404 for `/app/community`,
+  `/app/dashboard`, `/app/marketplace`, `/app/shop-control`, and `/app/login`.
+  Root `/` works. This is a Render static-site rewrite configuration issue,
+  not a React build failure.
+- The repo has the correct Blueprint rule in `render.yaml`:
+  `routes: [{ type: rewrite, source: /*, destination: /index.html }]`, but the
+  live manually created Render static site appears not to be applying Blueprint
+  routes. Add the same rule in the Render dashboard:
+  Source `/*`, Destination `/index.html`, Action `Rewrite`.
 
 #### Verification
 - `git diff --check` passed.
@@ -116,12 +135,15 @@ Safe recovery branch for Community Home / Shop Control mobile tap recovery.
   because the Marketplace blueprint says those are required marketplace
   shortcuts. If phone testing shows those buttons still steal taps, address
   layout/tap-target spacing there rather than silently removing the routes.
+- Phone users should open `https://gmfn-frontend.onrender.com` until the Render
+  rewrite rule is added. Direct links such as
+  `https://gmfn-frontend.onrender.com/app/community` will keep failing with 404
+  until that dashboard rewrite exists.
 
 #### Next recommended step
-- Commit and push `recovery/mobile-tap-safe-frontend-2026-04-21`, then deploy
-  that branch to the frontend test service only. Do not use the full checkpoint
-  branch as the deploy candidate unless backend/auth risk is explicitly
-  accepted.
+- Add the Render Static Site rewrite rule in the Render dashboard:
+  Source `/*`, Destination `/index.html`, Action `Rewrite`. Then retest direct
+  URLs and start the phone smoke test from `https://gmfn-frontend.onrender.com`.
 
 ### Previous update
 
