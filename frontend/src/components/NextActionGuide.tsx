@@ -151,15 +151,15 @@ function guideButtonStyle(
 
   return {
     position: "relative",
-    zIndex: 1,
+    zIndex: 4,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: soft ? 38 : 42,
-    minWidth: 0,
+    minHeight: soft ? 48 : 50,
+    minWidth: soft ? 112 : 126,
     maxWidth: "100%",
-    padding: soft ? "8px 12px" : "10px 14px",
-    borderRadius: primary ? 14 : 13,
+    padding: soft ? "11px 15px" : "12px 16px",
+    borderRadius: primary ? 16 : 15,
     border: primary
       ? "1px solid rgba(16,37,59,0.22)"
       : "1px solid rgba(16,37,59,0.14)",
@@ -187,11 +187,13 @@ function guideButtonStyle(
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
+    pointerEvents: "auto",
     appearance: "none",
     WebkitAppearance: "none",
     isolation: "isolate",
     transform: "translateZ(0)",
     willChange: "box-shadow",
+    outlineOffset: 4,
   };
 }
 

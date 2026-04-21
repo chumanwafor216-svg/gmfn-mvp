@@ -5609,3 +5609,23 @@ GSN-branded invite composer and invite-entry continuity.
 - This cleanup is route-local to `/app/trust`; no backend, scoring, auth,
   schema, payment, ledger, global shell, route guard, or Dashboard Market
   Wisdom behavior changed.
+
+### Trust Passport tap and polish hardening addendum
+
+- Updated `frontend/src/pages/TrustScorePage.tsx` to harden the remaining
+  Trust route actions before phone verification:
+  - added route-local CSS for all Trust buttons and links to remove mobile tap
+    highlight and enforce touch manipulation
+  - raised button z-index and pointer isolation
+  - increased primary, secondary, soft, and collapse button tap areas
+  - gave Trust cards and stat tiles a more institutional layered surface
+  - converted the top TrustSlip verify link into a tap-safe button so it uses
+    the same event isolation as the other Trust actions
+- Updated `frontend/src/components/NextActionGuide.tsx` with UI-only tap
+  hardening because the "What do you want to do next?" guide is now shared by
+  Trust, Finance, Community Home, Dashboard, and Loans:
+  - larger minimum button areas
+  - stronger button isolation and z-index
+  - pointer events kept explicitly on the button surface
+- No backend scoring, auth, schemas, payment, ledger, deployment config,
+  environment config, route guards, or Dashboard Market Wisdom behavior changed.

@@ -535,32 +535,47 @@ function normalizeTrustSlipSummary(raw: any): TrustSlipSummary | null {
 }
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
+  const resolvedBg =
+    bg === "#FFFFFF"
+      ? "linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(247,251,255,0.95) 62%, rgba(239,247,253,0.92) 100%)"
+      : bg;
+
   return {
-    borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 20,
+    borderRadius: 28,
+    border: "1px solid rgba(37,78,119,0.13)",
+    background: resolvedBg,
+    padding: "clamp(16px, 4vw, 22px)",
     boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
+      "0 20px 44px rgba(10,24,49,0.075), 0 3px 10px rgba(10,24,49,0.025), inset 0 1px 0 rgba(255,255,255,0.82)",
     overflow: "hidden",
+    backdropFilter: "blur(7px)",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
-    borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
+    borderRadius: 20,
+    border: "1px solid rgba(37,78,119,0.12)",
     background: bg,
     padding: 16,
+    boxShadow:
+      "0 12px 28px rgba(10,24,49,0.055), inset 0 1px 0 rgba(255,255,255,0.76)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
+  const resolvedBg =
+    bg === "#FFFFFF"
+      ? "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,251,254,0.94) 100%)"
+      : bg;
+
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 14,
+    borderRadius: 18,
+    border: "1px solid rgba(37,78,119,0.12)",
+    background: resolvedBg,
+    padding: 15,
+    boxShadow:
+      "0 12px 24px rgba(10,24,49,0.045), inset 0 1px 0 rgba(255,255,255,0.78)",
   };
 }
 
@@ -568,11 +583,21 @@ function statTile(
   bg = "#FFFFFF",
   border = "1px solid rgba(11,31,51,0.08)"
 ): React.CSSProperties {
+  const resolvedBg =
+    bg === "#FFFFFF"
+      ? "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,251,254,0.95) 100%)"
+      : bg;
+
   return {
-    borderRadius: 16,
-    border,
-    background: bg,
+    borderRadius: 18,
+    border:
+      border === "1px solid rgba(11,31,51,0.08)"
+        ? "1px solid rgba(37,78,119,0.12)"
+        : border,
+    background: resolvedBg,
     padding: 14,
+    boxShadow:
+      "0 10px 22px rgba(10,24,49,0.04), inset 0 1px 0 rgba(255,255,255,0.76)",
   };
 }
 
@@ -612,11 +637,14 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 46,
-      padding: "11px 15px",
-      borderRadius: 14,
-      border: "none",
-      background: disabled ? "#CBD5E1" : "#0B63D1",
+      minHeight: 50,
+      minWidth: 126,
+      padding: "12px 17px",
+      borderRadius: 16,
+      border: disabled ? "1px solid rgba(148,163,184,0.22)" : "1px solid rgba(11,49,92,0.22)",
+      background: disabled
+        ? "linear-gradient(180deg, #CBD5E1 0%, #B8C4D2 100%)"
+        : "linear-gradient(180deg, #0B63D1 0%, #1A5FA4 58%, #0D3C6C 100%)",
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
@@ -625,6 +653,9 @@ function actionBtn(
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
+      boxShadow: disabled
+        ? "none"
+        : "0 14px 26px rgba(10,24,49,0.18), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -3px 0 rgba(4,22,42,0.18)",
     };
   }
 
@@ -634,11 +665,13 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 44,
-      padding: "10px 13px",
-      borderRadius: 12,
-      border: "1px solid rgba(11,31,51,0.08)",
-      background: "#F8FBFF",
+      minHeight: 48,
+      minWidth: 118,
+      padding: "11px 15px",
+      borderRadius: 15,
+      border: "1px solid rgba(37,78,119,0.14)",
+      background:
+        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(240,247,253,0.95) 60%, rgba(225,237,247,0.92) 100%)",
       color: disabled ? "#94A3B8" : "#24415C",
       fontWeight: 800,
       fontSize: 13,
@@ -647,6 +680,9 @@ function actionBtn(
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
+      boxShadow: disabled
+        ? "none"
+        : "0 11px 22px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.82), inset 0 -2px 0 rgba(16,37,59,0.04)",
     };
   }
 
@@ -655,11 +691,13 @@ function actionBtn(
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 46,
-    padding: "11px 15px",
-    borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    minHeight: 50,
+    minWidth: 126,
+    padding: "12px 17px",
+    borderRadius: 16,
+    border: "1px solid rgba(37,78,119,0.14)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(246,251,255,0.96) 58%, rgba(233,243,251,0.94) 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
@@ -668,6 +706,9 @@ function actionBtn(
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
+    boxShadow: disabled
+      ? "none"
+      : "0 12px 24px rgba(10,24,49,0.095), inset 0 1px 0 rgba(255,255,255,0.86), inset 0 -2px 0 rgba(16,37,59,0.05)",
   };
 }
 
@@ -677,12 +718,13 @@ function collapseToggle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 46,
-    minWidth: 106,
-    padding: "10px 16px",
-    borderRadius: 12,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    minHeight: 50,
+    minWidth: 122,
+    padding: "12px 18px",
+    borderRadius: 16,
+    border: "1px solid rgba(37,78,119,0.14)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(245,250,254,0.95) 64%, rgba(231,241,249,0.92) 100%)",
     color: "#24415C",
     fontWeight: 900,
     fontSize: 13.5,
@@ -690,15 +732,16 @@ function collapseToggle(): React.CSSProperties {
     cursor: "pointer",
     whiteSpace: "normal",
     boxShadow:
-      "0 9px 18px rgba(10,24,49,0.075), inset 0 1px 0 rgba(255,255,255,0.78)",
+      "0 12px 24px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.86), inset 0 -2px 0 rgba(16,37,59,0.05)",
   };
 }
 
 function tapSafeButtonBase(): React.CSSProperties {
   return {
     position: "relative",
-    zIndex: 2,
+    zIndex: 8,
     boxSizing: "border-box",
+    pointerEvents: "auto",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
@@ -706,6 +749,7 @@ function tapSafeButtonBase(): React.CSSProperties {
     WebkitAppearance: "none",
     isolation: "isolate",
     transform: "translateZ(0)",
+    outlineOffset: 4,
   };
 }
 
@@ -2261,6 +2305,7 @@ export default function TrustScorePage() {
 
   return (
     <div
+      className="trust-passport-root"
       style={{
         maxWidth: 1180,
         margin: "0 auto",
@@ -2271,6 +2316,19 @@ export default function TrustScorePage() {
     >
       <style>{`
         @page { margin: 14mm; }
+        .trust-passport-root button,
+        .trust-passport-root a {
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
+        }
+        .trust-passport-root button {
+          font-family: inherit;
+        }
+        .trust-passport-root button:focus-visible,
+        .trust-passport-root a:focus-visible {
+          outline: 3px solid rgba(11,99,209,0.32);
+          outline-offset: 4px;
+        }
         @media print {
           body { background: #ffffff !important; }
           a[href]:after { content: "" !important; }
@@ -2593,14 +2651,22 @@ export default function TrustScorePage() {
               </button>
 
               {verifyUrl ? (
-                <a
-                  href={verifyUrl}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  type="button"
+                  onPointerDown={stopTrustTap}
+                  onMouseDown={stopTrustTap}
+                  onTouchStart={stopTrustTap}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    if (typeof window !== "undefined") {
+                      window.open(verifyUrl, "_blank", "noopener,noreferrer");
+                    }
+                  }}
                   style={actionBtn("secondary")}
                 >
                   Open TrustSlip Verify
-                </a>
+                </button>
               ) : null}
             </div>
           </div>
