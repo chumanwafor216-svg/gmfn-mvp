@@ -46,6 +46,61 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
+Shop Gallery quality extension across Vault, Spotlight, and Product Shelf.
+
+#### Routes/screens affected
+- `/shop/:gmfnId`
+- `/app/shop/:gmfnId` through the existing redirect/public shop route
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+- no product loading, visibility, share, Vault, auth, payment, or schema logic changed
+
+#### Files in play
+- `frontend/src/pages/ShopGalleryPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Product owner asked to extend the new signpost quality to the remaining Shop
+  Gallery blocks, especially the "vote" block, interpreted from previous
+  context as the Vault/private-viewing block.
+- Extended the accepted GSN public-shop visual language route-locally:
+  - strengthened shared Shop Gallery surfaces with more controlled blue, gold,
+    and pink brand patching
+  - upgraded the Vault block into a dark GSN trust panel with private-viewing
+    copy, gold trust accents, and a clearer owner-approval rail
+  - refined Mini Spotlight into a premium media stage with the same institutional
+    accent line and softened glass shell
+  - upgraded the Product Blocks header into a `Public product shelf` surface
+    rather than a plain white section
+  - kept existing buttons, handlers, product fetching, Vault request behavior,
+    and public-route behavior unchanged
+- No Dashboard, Dashboard Market Wisdom, Community Home, Marketplace, backend,
+  auth, schema, payment, or deployment configuration changed.
+
+#### Verification
+- `npm exec -- eslint src/pages/ShopGalleryPage.tsx` passed in `frontend`.
+- `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
+  the normal Windows line-ending warning.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- Phone review is needed to confirm the Vault panel feels premium and enticing,
+  not too dark or heavy.
+- The product cards themselves were not structurally changed in this pass; this
+  was primarily a quality/unification pass across the remaining blocks.
+
+#### Next recommended step
+- Deploy/retest the public shop page on phone from top to bottom. Confirm the
+  signpost, Vault block, Mini Spotlight, and Product Shelf now feel like one
+  coherent GSN public shop experience.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
 Shop Gallery world-facing signpost upgrade.
 
 #### Routes/screens affected

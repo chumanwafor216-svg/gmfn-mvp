@@ -442,10 +442,10 @@ const SHOP_GALLERY_PAGE_BACKGROUND =
   "radial-gradient(circle at 9% 0%, rgba(11,99,209,0.14) 0%, transparent 30%), radial-gradient(circle at 92% 10%, rgba(244,114,182,0.065) 0%, transparent 26%), radial-gradient(circle at 74% 58%, rgba(212,175,55,0.065) 0%, transparent 30%), linear-gradient(180deg, rgba(239,248,253,0.99) 0%, rgba(247,251,253,0.98) 46%, rgba(234,244,250,0.98) 100%)";
 
 const SHOP_GALLERY_SURFACE =
-  "radial-gradient(circle at 10% 0%, rgba(11,99,209,0.075) 0%, transparent 30%), radial-gradient(circle at 94% 4%, rgba(244,114,182,0.045) 0%, transparent 26%), linear-gradient(180deg, rgba(255,255,255,0.975) 0%, rgba(240,248,253,0.955) 100%)";
+  "radial-gradient(circle at 9% 0%, rgba(11,99,209,0.12) 0%, transparent 30%), radial-gradient(circle at 94% 5%, rgba(244,114,182,0.07) 0%, transparent 26%), radial-gradient(circle at 72% 94%, rgba(212,175,55,0.07) 0%, transparent 30%), linear-gradient(180deg, rgba(255,255,255,0.985) 0%, rgba(239,248,253,0.965) 100%)";
 
 const SHOP_GALLERY_INNER_SURFACE =
-  "radial-gradient(circle at 0% 0%, rgba(11,99,209,0.055) 0%, transparent 32%), linear-gradient(180deg, rgba(255,255,255,0.955) 0%, rgba(239,247,253,0.94) 100%)";
+  "radial-gradient(circle at 0% 0%, rgba(11,99,209,0.075) 0%, transparent 32%), radial-gradient(circle at 100% 0%, rgba(212,175,55,0.045) 0%, transparent 28%), linear-gradient(180deg, rgba(255,255,255,0.965) 0%, rgba(238,247,253,0.945) 100%)";
 
 function calmSurface(bg: string): string {
   return bg === "#FFFFFF" ? SHOP_GALLERY_SURFACE : bg;
@@ -454,11 +454,11 @@ function calmSurface(bg: string): string {
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 28,
-    border: "1px solid rgba(13,95,168,0.13)",
+    border: "1px solid rgba(13,95,168,0.16)",
     background: calmSurface(bg),
     padding: 20,
     boxShadow:
-      "0 20px 48px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.72)",
+      "0 22px 52px rgba(8,38,67,0.09), inset 0 1px 0 rgba(255,255,255,0.78)",
     overflow: "hidden",
   };
 }
@@ -1626,7 +1626,17 @@ export default function ShopGalleryPage() {
         </div>
       </section>
 
-      <section style={pageCard()}>
+      <section
+        style={{
+          ...pageCard(),
+          position: "relative",
+          border: "1px solid rgba(13,95,168,0.18)",
+          background:
+            "radial-gradient(circle at 6% 0%, rgba(11,99,209,0.16) 0%, transparent 32%), radial-gradient(circle at 92% 8%, rgba(244,114,182,0.08) 0%, transparent 28%), radial-gradient(circle at 84% 92%, rgba(212,175,55,0.08) 0%, transparent 30%), linear-gradient(180deg, rgba(255,255,255,0.985) 0%, rgba(235,247,253,0.96) 100%)",
+          boxShadow:
+            "0 26px 62px rgba(8,38,67,0.11), inset 0 1px 0 rgba(255,255,255,0.82)",
+        }}
+      >
         <div
           style={{
             display: "grid",
@@ -1637,55 +1647,189 @@ export default function ShopGalleryPage() {
         >
           <div
             style={{
-              ...innerCard("rgba(255,255,255,0.96)"),
-              border: "1px solid rgba(212,175,55,0.14)",
-              boxShadow: "0 18px 38px rgba(2,12,27,0.18)",
-              padding: isCompact ? 12 : 14,
+              ...innerCard(
+                "radial-gradient(circle at 0% 0%, rgba(77,160,255,0.24) 0%, transparent 34%), radial-gradient(circle at 100% 6%, rgba(244,114,182,0.13) 0%, transparent 28%), radial-gradient(circle at 80% 100%, rgba(212,175,55,0.17) 0%, transparent 32%), linear-gradient(145deg, rgba(6,24,43,0.98) 0%, rgba(16,73,116,0.96) 52%, rgba(7,34,62,0.98) 100%)"
+              ),
+              position: "relative",
+              border: "1px solid rgba(212,175,55,0.26)",
+              boxShadow:
+                "0 22px 48px rgba(2,12,27,0.21), inset 0 1px 0 rgba(255,255,255,0.17)",
+              padding: isCompact ? 14 : 16,
               display: "grid",
               alignContent: "center",
+              overflow: "hidden",
             }}
           >
-            <div style={{ ...sectionLabel(), color: "#5D7389" }}>Vault</div>
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                inset: 0,
+                background:
+                  "repeating-linear-gradient(90deg, transparent 0 26px, rgba(255,255,255,0.035) 26px 27px), repeating-linear-gradient(0deg, transparent 0 30px, rgba(255,255,255,0.026) 30px 31px)",
+                maskImage:
+                  "radial-gradient(circle at 36% 22%, rgba(0,0,0,0.68) 0%, transparent 66%)",
+                WebkitMaskImage:
+                  "radial-gradient(circle at 36% 22%, rgba(0,0,0,0.68) 0%, transparent 66%)",
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                right: -28,
+                top: -28,
+                width: 124,
+                height: 124,
+                borderRadius: "50%",
+                border: "1px solid rgba(255,255,255,0.14)",
+                background:
+                  "radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(212,175,55,0.08) 42%, transparent 72%)",
+                pointerEvents: "none",
+              }}
+            />
             <div
               style={{
-                marginTop: 6,
-                color: "#0B1F33",
-                fontSize: isCompact ? 18 : 20,
-                fontWeight: 900,
-                lineHeight: 1.18,
+                position: "relative",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "fit-content",
+                minHeight: 28,
+                padding: "5px 11px",
+                borderRadius: 999,
+                border: "1px solid rgba(212,175,55,0.30)",
+                background:
+                  "linear-gradient(135deg, rgba(11,31,51,0.72) 0%, rgba(25,82,129,0.58) 100%)",
+                color: "#F6D77A",
+                fontSize: 11,
+                fontWeight: 950,
+                letterSpacing: 0.65,
+                textTransform: "uppercase",
               }}
             >
-              Private viewing for selected offers
+              Vault
             </div>
-            <div style={{ marginTop: 8, ...helperText(), fontSize: isCompact ? 12.5 : 13.5, lineHeight: 1.55 }}>
-              The public shop shows what everyone can see. Vault is the trust-link path for selected offers the owner shares privately.
+            <div
+              style={{
+                position: "relative",
+                marginTop: 6,
+                color: "#FFFFFF",
+                fontSize: isCompact ? 19 : 22,
+                fontWeight: 950,
+                lineHeight: 1.18,
+                letterSpacing: 0.1,
+                textShadow: "0 2px 14px rgba(0,0,0,0.24)",
+              }}
+            >
+              Private viewing by trust link
             </div>
-            <div style={{ marginTop: 5, ...helperText(), fontSize: isCompact ? 12.5 : 13.5, lineHeight: 1.55 }}>
-              If you want to see more, ask for a Vault viewing link. The owner decides what to share and with whom.
+            <div
+              style={{
+                position: "relative",
+                marginTop: 9,
+                color: "rgba(235,245,255,0.88)",
+                fontSize: isCompact ? 12.5 : 13.5,
+                lineHeight: 1.56,
+              }}
+            >
+              The public shop shows what everyone can see. Vault is where selected
+              offers can be viewed privately after the owner approves the trust link.
             </div>
-            <div style={{ marginTop: 9, display: "flex", gap: 5, flexWrap: "wrap" }}>
-              <span style={{ ...badge(true), minHeight: 27, padding: "4px 9px", fontSize: 11 }}>
+            <div
+              style={{
+                position: "relative",
+                marginTop: 5,
+                color: "rgba(235,245,255,0.78)",
+                fontSize: isCompact ? 12.5 : 13.5,
+                lineHeight: 1.56,
+              }}
+            >
+              Ask for a Vault view when you want to see private stock, special
+              offers, or items the shop does not put in the open gallery.
+            </div>
+            <div
+              style={{
+                position: "relative",
+                marginTop: 11,
+                display: "grid",
+                gridTemplateColumns: isCompact ? "repeat(3, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))",
+                gap: 6,
+              }}
+            >
+              <span
+                style={{
+                  ...badge(true),
+                  minHeight: 34,
+                  padding: "5px 8px",
+                  fontSize: 10.5,
+                  border: "1px solid rgba(255,255,255,0.24)",
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(220,235,250,0.86) 100%)",
+                }}
+              >
                 Vault
               </span>
-              <span style={{ ...badge(false), minHeight: 27, padding: "4px 9px", fontSize: 11 }}>
+              <span
+                style={{
+                  ...badge(false),
+                  minHeight: 34,
+                  padding: "5px 8px",
+                  fontSize: 10.5,
+                  border: "1px solid rgba(255,255,255,0.20)",
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.88) 0%, rgba(232,242,249,0.74) 100%)",
+                }}
+              >
                 Trust link
               </span>
-              <span style={{ ...badge(false), minHeight: 27, padding: "4px 9px", fontSize: 11 }}>
+              <span
+                style={{
+                  ...badge(false),
+                  minHeight: 34,
+                  padding: "5px 8px",
+                  fontSize: 10.5,
+                  border: "1px solid rgba(255,255,255,0.20)",
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.88) 0%, rgba(232,242,249,0.74) 100%)",
+                }}
+              >
                 Owner approval
               </span>
             </div>
-            <div style={{ marginTop: 11, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div
+              style={{
+                position: "relative",
+                marginTop: 12,
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
               <button
                 type="button"
                 onClick={askForVaultAccess}
-                style={{ ...primaryBtn(false), minHeight: 36, padding: "7px 11px", fontSize: 12.5 }}
+                style={{
+                  ...primaryBtn(false),
+                  minHeight: 38,
+                  padding: "8px 12px",
+                  fontSize: 12.5,
+                  flex: isCompact ? "1 1 132px" : undefined,
+                }}
               >
                 Ask for Vault view
               </button>
               <button
                 type="button"
                 onClick={copyShopLink}
-                style={{ ...secondaryBtn(false), minHeight: 36, padding: "7px 11px", fontSize: 12.5 }}
+                style={{
+                  ...secondaryBtn(false),
+                  minHeight: 38,
+                  padding: "8px 12px",
+                  fontSize: 12.5,
+                  flex: isCompact ? "1 1 132px" : undefined,
+                }}
               >
                 Copy shop link
               </button>
@@ -1701,13 +1845,16 @@ export default function ShopGalleryPage() {
             <div
               style={{
                 position: "relative",
-                ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"),
-                border: "1px solid rgba(11,99,209,0.14)",
-                boxShadow: "0 18px 38px rgba(29,78,216,0.10)",
-                padding: 8,
+                ...innerCard(
+                  "radial-gradient(circle at 4% 0%, rgba(11,99,209,0.18) 0%, transparent 33%), radial-gradient(circle at 100% 8%, rgba(212,175,55,0.10) 0%, transparent 28%), linear-gradient(180deg, rgba(255,255,255,0.985) 0%, rgba(235,247,253,0.96) 100%)"
+                ),
+                border: "1px solid rgba(13,95,168,0.18)",
+                boxShadow:
+                  "0 22px 46px rgba(8,38,67,0.12), inset 0 1px 0 rgba(255,255,255,0.86)",
+                padding: 9,
                 overflow: "hidden",
                 display: "grid",
-                gap: 4,
+                gap: 6,
               }}
             >
               <div
@@ -1718,7 +1865,7 @@ export default function ShopGalleryPage() {
                   right: 0,
                   height: 4,
                   background:
-                    "linear-gradient(90deg, #1D4ED8 0%, #3B82F6 52%, #93C5FD 100%)",
+                    "linear-gradient(90deg, rgba(212,175,55,0.78) 0%, rgba(29,78,216,0.72) 52%, rgba(244,114,182,0.44) 100%)",
                 }}
               />
 
@@ -1750,6 +1897,9 @@ export default function ShopGalleryPage() {
                     fontSize: 10,
                     whiteSpace: "nowrap",
                     flexShrink: 0,
+                    border: "1px solid rgba(29,78,216,0.16)",
+                    background:
+                      "linear-gradient(180deg, rgba(238,246,255,0.98) 0%, rgba(220,235,250,0.88) 100%)",
                   }}
                 >
                   Live promo
@@ -1775,9 +1925,11 @@ export default function ShopGalleryPage() {
                         minHeight: isCompact ? 284 : 310,
                         height: isCompact ? 284 : 310,
                         borderRadius: 16,
-                        border: "1px solid rgba(11,99,209,0.14)",
+                        border: "1px solid rgba(13,95,168,0.18)",
                         background:
-                          "linear-gradient(180deg, rgba(24,58,88,0.98) 0%, rgba(38,84,122,0.98) 100%)",
+                          "radial-gradient(circle at 0% 0%, rgba(77,160,255,0.24) 0%, transparent 36%), linear-gradient(180deg, rgba(10,35,58,0.99) 0%, rgba(26,76,116,0.98) 100%)",
+                        boxShadow:
+                          "0 16px 34px rgba(8,38,67,0.14), inset 0 1px 0 rgba(255,255,255,0.10)",
                       }}
                       mediaStyle={{
                         width: "100%",
@@ -2050,7 +2202,17 @@ export default function ShopGalleryPage() {
         </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section
+        style={{
+          ...pageCard("#FFFFFF"),
+          position: "relative",
+          border: "1px solid rgba(13,95,168,0.18)",
+          background:
+            "radial-gradient(circle at 8% 0%, rgba(11,99,209,0.13) 0%, transparent 30%), radial-gradient(circle at 92% 6%, rgba(244,114,182,0.06) 0%, transparent 26%), radial-gradient(circle at 80% 94%, rgba(212,175,55,0.07) 0%, transparent 31%), linear-gradient(180deg, rgba(255,255,255,0.988) 0%, rgba(236,248,253,0.962) 100%)",
+          boxShadow:
+            "0 26px 62px rgba(8,38,67,0.105), inset 0 1px 0 rgba(255,255,255,0.84)",
+        }}
+      >
         <div
           style={{
             display: "flex",
@@ -2061,8 +2223,26 @@ export default function ShopGalleryPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Product blocks</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
+            <div
+              style={{
+                ...sectionLabel(),
+                display: "inline-flex",
+                minHeight: 30,
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "6px 12px",
+                borderRadius: 999,
+                color: "#FFFFFF",
+                background:
+                  "linear-gradient(135deg, rgba(11,31,51,0.96) 0%, rgba(25,82,129,0.94) 100%)",
+                border: "1px solid rgba(212,175,55,0.26)",
+                boxShadow:
+                  "0 10px 22px rgba(8,38,67,0.15), inset 0 1px 0 rgba(255,255,255,0.17)",
+              }}
+            >
+              Public product shelf
+            </div>
+            <div style={{ marginTop: 10, ...helperText(), maxWidth: 760 }}>
               Public products appear here. Vault offers stay separate, so selected items
               are not mixed into the public gallery.
             </div>
@@ -2084,9 +2264,12 @@ export default function ShopGalleryPage() {
           <div
             style={{
               marginTop: 18,
-              ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"),
-              border: "1px solid rgba(11,31,51,0.10)",
-              boxShadow: "0 18px 40px rgba(2,12,27,0.08)",
+              ...innerCard(
+                "radial-gradient(circle at 0% 0%, rgba(11,99,209,0.12) 0%, transparent 34%), radial-gradient(circle at 100% 8%, rgba(212,175,55,0.08) 0%, transparent 30%), linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(238,247,253,0.96) 100%)"
+              ),
+              border: "1px solid rgba(13,95,168,0.16)",
+              boxShadow:
+                "0 18px 40px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
             }}
           >
             <div style={{ color: "#0B1F33", fontSize: 18, fontWeight: 900, lineHeight: 1.3 }}>
