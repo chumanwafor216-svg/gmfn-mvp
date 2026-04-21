@@ -2160,7 +2160,6 @@ export default function CommunityHomePage() {
 
           <DomainIntroToggle
             title="About Community Home"
-            eyebrow="What this can do for you"
             body="This is where your communities will appear. Create or join one first, then come back here to choose the group you want to work in."
             bullets={[
               "Create or join a community first.",

@@ -2386,7 +2386,6 @@ export default function TrustScorePage() {
 
         <DomainIntroToggle
           title="How Trust Passport Helps You"
-          eyebrow="What this can do for you"
           body={TRUST_PASSPORT_HELP_BODY}
           bullets={TRUST_PASSPORT_HELP_BULLETS}
           note={TRUST_PASSPORT_HELP_NOTE}

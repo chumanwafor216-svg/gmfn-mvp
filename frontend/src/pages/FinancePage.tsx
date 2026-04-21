@@ -1563,7 +1563,6 @@ export default function FinancePage() {
 
       <DomainIntroToggle
         title="How Finance Helps You"
-        eyebrow="What this can do for you"
         body="Finance is not here to judge trust by how much money someone already has. It helps a member build visible reliability from how they behave around money: borrowing honestly, repaying properly, supporting others responsibly, and avoiding pressure across too many communities."
         bullets={[
           "A member without formal bank history can still build proof through small completed repayments, confirmed payments, and responsible support.",

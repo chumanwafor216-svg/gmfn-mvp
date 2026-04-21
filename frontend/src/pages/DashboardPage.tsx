@@ -6376,7 +6376,6 @@ export default function DashboardPage() {
 
       <DomainIntroToggle
         title="How Dashboard Helps You"
-        eyebrow="What this can do for you"
         body={DASHBOARD_HELP_BODY}
         bullets={DASHBOARD_HELP_BULLETS}
         note={DASHBOARD_HELP_NOTE}
