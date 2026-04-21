@@ -46,6 +46,63 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
+Shop Gallery mobile product-card bank-standard polish.
+
+#### Routes/screens affected
+- `/shop/:gmfnId`
+- `/app/shop/:gmfnId` through the existing redirect/public shop route
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+- no product loading, visibility, share, Vault, auth, payment, or schema logic changed
+
+#### Files in play
+- `frontend/src/pages/ShopGalleryPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Product owner reported that the 12 public product cards still had too much
+  white/empty space and did not yet feel bank-standard or close enough to the
+  accepted GSN institutional direction.
+- A route-local audit confirmed the mobile white-space problem came from the
+  lower product information panel stretching below the image.
+- Consultant/audit feedback agreed the spare mobile height should belong to
+  the product image, not to a large lower text area.
+- Compact/mobile product cards now behave as one sealed poster-style product
+  frame: the product image fills the phone-panel area and the product name,
+  status chips, description, price, and Share action sit in a compact frosted
+  dock over the bottom of the image.
+- The product share handler, product IDs, API fetch flow, visibility filtering,
+  and recovered public product display logic were preserved.
+- Removed four unused route-local Shop Gallery executive-image helper functions
+  that were blocking a clean ESLint pass.
+- No Dashboard, Dashboard Market Wisdom, Community Home, Marketplace, backend,
+  auth, schema, payment, or deployment configuration changed.
+
+#### Verification
+- `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
+  the normal Windows line-ending warning.
+- `npm exec -- eslint src/pages/ShopGalleryPage.tsx` passed.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- Phone review is still needed to confirm the bottom information dock feels
+  readable on very bright or very dark product photos.
+- If the dock feels too dark on phone, the safe next adjustment is color/tint
+  only inside the compact product-card dock; do not change product loading or
+  share logic.
+
+#### Next recommended step
+- Deploy/retest `/shop/GMFN-U-9867079C` or the current public shop link on
+  phone. Scroll through slots 1-12 and confirm each product reads as one
+  premium frame, with less white space and steady Share taps.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
 Local pilot data cleanup: keep only Aberdeen as the active test community.
 
 #### Routes/screens affected

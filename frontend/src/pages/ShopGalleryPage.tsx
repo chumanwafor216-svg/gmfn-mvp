@@ -514,74 +514,6 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
   };
 }
 
-function executiveImageShellStyle(minHeight: number): React.CSSProperties {
-  return {
-    position: "relative",
-    minHeight,
-    borderRadius: 28,
-    padding: 10,
-    overflow: "hidden",
-    background:
-      "linear-gradient(180deg, rgba(16,36,58,0.98) 0%, rgba(23,54,84,0.96) 54%, rgba(38,82,124,0.96) 100%)",
-    border: "1px solid rgba(212,175,55,0.2)",
-    boxShadow:
-      "0 26px 56px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.05)",
-  };
-}
-
-function executiveImageInnerStyle(minHeight: number): React.CSSProperties {
-  return {
-    position: "relative",
-    minHeight,
-    borderRadius: 22,
-    overflow: "hidden",
-    border: "1px solid rgba(212,175,55,0.14)",
-    background:
-      "linear-gradient(180deg, rgba(24,58,88,0.98) 0%, rgba(38,84,122,0.98) 100%)",
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
-  };
-}
-
-function executiveFrameLabelStyle(): React.CSSProperties {
-  return {
-    position: "absolute",
-    top: 14,
-    right: 14,
-    zIndex: 2,
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 6,
-    minHeight: 30,
-    padding: "6px 10px",
-    borderRadius: 999,
-    background: "rgba(7,16,28,0.72)",
-    border: "1px solid rgba(212,175,55,0.22)",
-    color: "#F6D77A",
-    fontSize: 11,
-    fontWeight: 900,
-    letterSpacing: 0.24,
-    textTransform: "uppercase",
-    backdropFilter: "blur(8px)",
-    whiteSpace: "normal",
-  };
-}
-
-function executiveFallbackStyle(): React.CSSProperties {
-  return {
-    width: "100%",
-    height: "100%",
-    minHeight: "inherit",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    textAlign: "center",
-    padding: 20,
-    color: "#E2E8F0",
-  };
-}
-
 export default function ShopGalleryPage() {
   const { gmfnId } = useParams();
   const location = useLocation();
@@ -1975,6 +1907,44 @@ export default function ShopGalleryPage() {
           >
             {visibleProducts.map((product, index) => {
               const slotNumber = String(index + 1).padStart(2, "0");
+              const dockBadgeStyle: React.CSSProperties = isCompact
+                ? {
+                    ...badge(false),
+                    minHeight: 24,
+                    padding: "4px 8px",
+                    border: "1px solid rgba(255,255,255,0.16)",
+                    background: "rgba(255,255,255,0.13)",
+                    color: "#EAF4FF",
+                    fontSize: 10.5,
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.16)",
+                  }
+                : badge(false);
+              const dockPriceStyle: React.CSSProperties = isCompact
+                ? {
+                    ...badge(true),
+                    minHeight: 34,
+                    padding: "7px 12px",
+                    border: "1px solid rgba(255,255,255,0.32)",
+                    background:
+                      "linear-gradient(180deg, rgba(245,249,255,0.97) 0%, rgba(226,239,252,0.92) 100%)",
+                    color: "#1D4ED8",
+                    fontSize: 12.5,
+                    boxShadow:
+                      "0 8px 18px rgba(2,12,27,0.18), inset 0 1px 0 rgba(255,255,255,0.86)",
+                  }
+                : badge(true);
+              const dockShareButtonStyle: React.CSSProperties = isCompact
+                ? {
+                    ...secondaryBtn(false),
+                    minHeight: 38,
+                    padding: "8px 14px",
+                    border: "1px solid rgba(255,255,255,0.30)",
+                    background:
+                      "linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(235,243,250,0.93) 100%)",
+                    boxShadow:
+                      "0 10px 20px rgba(2,12,27,0.20), inset 0 1px 0 rgba(255,255,255,0.86)",
+                  }
+                : secondaryBtn(false);
 
               return (
                 <div
@@ -1984,11 +1954,19 @@ export default function ShopGalleryPage() {
                     ...innerCard(
                       "radial-gradient(circle at 12% 0%, rgba(11,99,209,0.075) 0%, transparent 30%), linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(239,247,253,0.94) 100%)"
                     ),
+                    position: "relative",
                     padding: 0,
                     overflow: "hidden",
-                    border: "1px solid rgba(13,95,168,0.16)",
+                    border: isCompact
+                      ? "1px solid rgba(13,95,168,0.22)"
+                      : "1px solid rgba(13,95,168,0.16)",
+                    background: isCompact
+                      ? "linear-gradient(180deg, rgba(10,27,45,0.98) 0%, rgba(17,48,75,0.98) 54%, rgba(31,78,116,0.97) 100%)"
+                      : undefined,
                     boxShadow:
-                      "0 26px 54px rgba(8,38,67,0.12), 0 8px 20px rgba(8,38,67,0.06), inset 0 1px 0 rgba(255,255,255,0.72)",
+                      isCompact
+                        ? "0 28px 60px rgba(8,38,67,0.20), 0 10px 22px rgba(8,38,67,0.10), inset 0 1px 0 rgba(255,255,255,0.08)"
+                        : "0 26px 54px rgba(8,38,67,0.12), 0 8px 20px rgba(8,38,67,0.06), inset 0 1px 0 rgba(255,255,255,0.72)",
                     minHeight: isCompact ? "calc(100svh - 18px)" : 430,
                     display: "flex",
                     flexDirection: "column",
@@ -1999,9 +1977,8 @@ export default function ShopGalleryPage() {
                   <div
                     style={{
                       position: "relative",
-                      height: isCompact ? "61svh" : 360,
-                      minHeight: isCompact ? 430 : undefined,
-                      maxHeight: isCompact ? 560 : undefined,
+                      height: isCompact ? "calc(100svh - 18px)" : 360,
+                      minHeight: isCompact ? "calc(100svh - 18px)" : undefined,
                       background:
                         "linear-gradient(180deg, #14314C 0%, #21496C 52%, #2B5E88 100%)",
                       borderBottom: "1px solid rgba(11,31,51,0.08)",
@@ -2073,6 +2050,21 @@ export default function ShopGalleryPage() {
                       </div>
                     )}
 
+                    {isCompact ? (
+                      <div
+                        aria-hidden="true"
+                        style={{
+                          position: "absolute",
+                          inset: 10,
+                          zIndex: 1,
+                          borderRadius: 18,
+                          background:
+                            "linear-gradient(180deg, rgba(3,10,18,0.04) 0%, rgba(3,10,18,0.12) 46%, rgba(3,10,18,0.70) 100%)",
+                          pointerEvents: "none",
+                        }}
+                      />
+                    ) : null}
+
                     <div
                       style={{
                         position: "absolute",
@@ -2098,17 +2090,32 @@ export default function ShopGalleryPage() {
 
                   <div
                     style={{
-                      position: "relative",
-                      padding: isCompact ? "14px 16px 16px" : 14,
+                      position: isCompact ? "absolute" : "relative",
+                      left: isCompact ? 16 : undefined,
+                      right: isCompact ? 16 : undefined,
+                      bottom: isCompact ? 16 : undefined,
+                      zIndex: isCompact ? 4 : undefined,
+                      padding: isCompact ? "12px 12px 13px" : 14,
                       display: "grid",
-                      gap: isCompact ? 9 : 10,
-                      flex: 1,
+                      gap: isCompact ? 8 : 10,
+                      flex: isCompact ? undefined : 1,
                       background:
-                        "radial-gradient(circle at 0% 0%, rgba(11,99,209,0.075) 0%, transparent 34%), radial-gradient(circle at 100% 0%, rgba(212,175,55,0.06) 0%, transparent 30%), radial-gradient(circle at 100% 100%, rgba(244,114,182,0.035) 0%, transparent 30%), linear-gradient(180deg, rgba(251,253,255,0.99) 0%, rgba(236,246,252,0.96) 100%)",
-                      borderTop: "1px solid rgba(13,95,168,0.12)",
+                        isCompact
+                          ? "radial-gradient(circle at 0% 0%, rgba(11,99,209,0.20) 0%, transparent 38%), radial-gradient(circle at 100% 0%, rgba(212,175,55,0.11) 0%, transparent 32%), linear-gradient(180deg, rgba(8,20,35,0.76) 0%, rgba(13,35,58,0.90) 100%)"
+                          : "radial-gradient(circle at 0% 0%, rgba(11,99,209,0.075) 0%, transparent 34%), radial-gradient(circle at 100% 0%, rgba(212,175,55,0.06) 0%, transparent 30%), radial-gradient(circle at 100% 100%, rgba(244,114,182,0.035) 0%, transparent 30%), linear-gradient(180deg, rgba(251,253,255,0.99) 0%, rgba(236,246,252,0.96) 100%)",
+                      border: isCompact
+                        ? "1px solid rgba(255,255,255,0.14)"
+                        : undefined,
+                      borderTop: isCompact
+                        ? "1px solid rgba(255,255,255,0.18)"
+                        : "1px solid rgba(13,95,168,0.12)",
+                      borderRadius: isCompact ? 22 : undefined,
                       boxShadow:
-                        "inset 0 1px 0 rgba(255,255,255,0.88), inset 0 12px 24px rgba(255,255,255,0.42)",
-                      alignContent: isCompact ? "center" : undefined,
+                        isCompact
+                          ? "0 20px 42px rgba(2,12,27,0.28), inset 0 1px 0 rgba(255,255,255,0.16)"
+                          : "inset 0 1px 0 rgba(255,255,255,0.88), inset 0 12px 24px rgba(255,255,255,0.42)",
+                      alignContent: undefined,
+                      backdropFilter: isCompact ? "blur(12px)" : undefined,
                     }}
                   >
                     <div
@@ -2121,7 +2128,9 @@ export default function ShopGalleryPage() {
                         height: 2,
                         borderRadius: 999,
                         background:
-                          "linear-gradient(90deg, transparent 0%, rgba(13,95,168,0.22) 18%, rgba(212,175,55,0.18) 52%, rgba(13,95,168,0.16) 84%, transparent 100%)",
+                          isCompact
+                            ? "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.28) 18%, rgba(212,175,55,0.28) 52%, rgba(255,255,255,0.22) 84%, transparent 100%)"
+                            : "linear-gradient(90deg, transparent 0%, rgba(13,95,168,0.22) 18%, rgba(212,175,55,0.18) 52%, rgba(13,95,168,0.16) 84%, transparent 100%)",
                       }}
                     />
                     <div
@@ -2132,13 +2141,13 @@ export default function ShopGalleryPage() {
                         justifyContent: "center",
                       }}
                     >
-                      <span style={badge(false)}>Storefront block</span>
-                      <span style={badge(false)}>Community-visible</span>
+                      <span style={dockBadgeStyle}>Storefront block</span>
+                      <span style={dockBadgeStyle}>Community-visible</span>
                     </div>
 
                     <div
                       style={{
-                        color: "#0B1F33",
+                        color: isCompact ? "#F8FBFF" : "#0B1F33",
                         fontWeight: 900,
                         fontSize: isCompact ? 18 : 17,
                         lineHeight: 1.28,
@@ -2148,6 +2157,9 @@ export default function ShopGalleryPage() {
                         overflow: "hidden",
                         textAlign: "center",
                         letterSpacing: isCompact ? 0.6 : undefined,
+                        textShadow: isCompact
+                          ? "0 2px 10px rgba(0,0,0,0.28)"
+                          : undefined,
                       }}
                     >
                       {product.name}
@@ -2155,19 +2167,25 @@ export default function ShopGalleryPage() {
 
                     <div
                       style={{
-                        color: "#4B6178",
+                        color: isCompact ? "#DCEAF8" : "#4B6178",
                         fontSize: isCompact ? 13.5 : 12.5,
-                        lineHeight: isCompact ? 1.52 : 1.55,
-                        minHeight: isCompact ? 48 : 42,
-                        padding: isCompact ? "11px 14px" : "10px 11px",
+                        lineHeight: isCompact ? 1.42 : 1.55,
+                        minHeight: isCompact ? 0 : 42,
+                        padding: isCompact ? "8px 10px" : "10px 11px",
                         borderRadius: 16,
-                        border: "1px solid rgba(13,95,168,0.10)",
+                        border: isCompact
+                          ? "1px solid rgba(255,255,255,0.13)"
+                          : "1px solid rgba(13,95,168,0.10)",
                         background:
-                          "linear-gradient(180deg, rgba(255,255,255,0.86) 0%, rgba(244,249,253,0.72) 100%)",
+                          isCompact
+                            ? "rgba(255,255,255,0.09)"
+                            : "linear-gradient(180deg, rgba(255,255,255,0.86) 0%, rgba(244,249,253,0.72) 100%)",
                         boxShadow:
-                          "0 10px 22px rgba(8,38,67,0.055), inset 0 1px 0 rgba(255,255,255,0.88)",
+                          isCompact
+                            ? "inset 0 1px 0 rgba(255,255,255,0.10)"
+                            : "0 10px 22px rgba(8,38,67,0.055), inset 0 1px 0 rgba(255,255,255,0.88)",
                         display: "-webkit-box",
-                        WebkitLineClamp: isCompact ? 2 : 2,
+                        WebkitLineClamp: isCompact ? 1 : 2,
                         WebkitBoxOrient: "vertical" as any,
                         overflow: "hidden",
                         textAlign: "center",
@@ -2188,12 +2206,12 @@ export default function ShopGalleryPage() {
                         paddingTop: isCompact ? 2 : undefined,
                       }}
                     >
-                      <span style={badge(true)}>{product.priceText}</span>
+                      <span style={dockPriceStyle}>{product.priceText}</span>
 
                       <button
                         type="button"
                         onClick={() => shareProduct(product)}
-                        style={secondaryBtn(false)}
+                        style={dockShareButtonStyle}
                       >
                         Share
                       </button>
