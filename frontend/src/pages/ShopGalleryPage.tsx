@@ -961,6 +961,9 @@ export default function ShopGalleryPage() {
   const shopGmfnText = safeStr(effectiveShop?.gmfnId);
   const shopOwnerText = safeStr(effectiveShop?.ownerName);
   const shopCommunityText = safeStr(effectiveShop?.communityName);
+  const shopWhatsAppText = safeStr(effectiveShop?.whatsapp);
+  const shopTelegramText = safeStr(effectiveShop?.telegram);
+  const hasShopContact = Boolean(shopWhatsAppText || shopTelegramText);
   const shopTrustText = firstMeaningful(
     effectiveShop?.trustBand,
     effectiveShop?.trustScore
@@ -1371,8 +1374,12 @@ export default function ShopGalleryPage() {
                     }}
                   >
                     {isCompact
-                      ? "Share this verified shop page with a clean public link."
-                      : "Share this shop outside the community with a clean public shop link."}
+                      ? hasShopContact
+                        ? "Contact the shop, share the link, or ask for Vault viewing."
+                        : "Share this verified shop page or ask for Vault viewing."
+                      : hasShopContact
+                        ? "Contact this shop directly, or share the clean public shop link outside the community."
+                        : "Share this shop outside the community with a clean public shop link."}
                   </div>
                 </div>
               </div>
@@ -1442,15 +1449,29 @@ export default function ShopGalleryPage() {
                   <span style={badge(false)}>Vault viewing by trust link</span>
                 ) : null}
 
-                {!isCompact && safeStr(effectiveShop?.whatsapp) ? (
-                  <span style={badge(false)}>
-                    WhatsApp: {safeStr(effectiveShop?.whatsapp)}
+                {shopWhatsAppText ? (
+                  <span
+                    style={{
+                      ...badge(false),
+                      minHeight: isCompact ? 24 : 30,
+                      padding: isCompact ? "4px 8px" : "6px 10px",
+                      fontSize: isCompact ? 10.5 : 12,
+                    }}
+                  >
+                    WhatsApp: {shopWhatsAppText}
                   </span>
                 ) : null}
 
-                {!isCompact && safeStr(effectiveShop?.telegram) ? (
-                  <span style={badge(false)}>
-                    Telegram: {safeStr(effectiveShop?.telegram)}
+                {shopTelegramText ? (
+                  <span
+                    style={{
+                      ...badge(false),
+                      minHeight: isCompact ? 24 : 30,
+                      padding: isCompact ? "4px 8px" : "6px 10px",
+                      fontSize: isCompact ? 10.5 : 12,
+                    }}
+                  >
+                    Telegram: {shopTelegramText}
                   </span>
                 ) : null}
               </div>

@@ -5219,3 +5219,23 @@ GSN-branded invite composer and invite-entry continuity.
 - `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
   the normal Windows line-ending warning.
 - `npm run build` passed in `frontend`.
+
+### Shop Gallery mobile signpost contact addendum
+
+- Updated `frontend/src/pages/ShopGalleryPage.tsx` only.
+- Confirmed the backend shop payload already returns `whatsapp_number` and
+  `telegram_handle`, and the frontend normalizes them into `effectiveShop`.
+- Fixed the public shop signpost so compact/mobile screens show the shop
+  WhatsApp and Telegram contact badges when those values exist. Previously
+  those badges were desktop-only.
+- Made the signpost helper sentence contact-aware:
+  - if contact exists, it tells visitors they can contact the shop, share the
+    clean link, or ask for Vault viewing
+  - if contact is absent, it keeps the link/Vault guidance
+- Confirmed public Shop Gallery page views are not currently counted by a
+  backend shop-view analytics contract. Existing real view tracking is limited
+  to controlled Vault access links (`views_used`, `max_views`,
+  `last_opened_at`) and invite analytics. Do not show public shop visitor
+  counts until a real backend event/analytics contract exists.
+- No backend, auth, schema, payment, environment config, or Dashboard Market
+  Wisdom behavior changed.
