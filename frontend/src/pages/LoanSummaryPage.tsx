@@ -355,7 +355,7 @@ function authHeaders(clanId?: number) {
 }
 
 async function fetchJson(path: string, clanId?: number): Promise<any> {
-  const res = await fetch(path, {
+  const res = await fetch(apiUrl(path), {
     method: "GET",
     headers: authHeaders(clanId),
     credentials: "include",
@@ -445,6 +445,16 @@ function apiBase(): string {
     "/api";
 
   return String(raw || "").trim().replace(/\/+$/, "");
+}
+
+function apiUrl(path: string): string {
+  const raw = safeStr(path);
+  if (/^https?:\/\//i.test(raw)) return raw;
+
+  let cleanPath = raw.startsWith("/") ? raw : `/${raw}`;
+  if (cleanPath.startsWith("/api/")) cleanPath = cleanPath.slice(4);
+
+  return `${apiBase()}${cleanPath}`;
 }
 
 function apiOrigin(): string {
