@@ -46,7 +46,7 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
-Marketplace intent guide pilot.
+Marketplace collapsible intent guide.
 
 #### Routes/screens affected
 - `/app/marketplace`
@@ -61,6 +61,11 @@ Marketplace intent guide pilot.
 #### Confirmed facts
 - The second Marketplace block was changed from a route-name shortcut deck into
   a plain-language `What do you want to do next?` intent guide.
+- The guide is now collapsed by default so the Marketplace page stays short on
+  phone; the collapsed state shows only the title and one `Open` button.
+- Opening the guide reveals the simple-word input, explanatory sentence, and
+  everyday action cards; the same button changes to `Collapse` and hides the
+  guide again.
 - The guide accepts typed everyday words such as `loan`, `deposit`,
   `withdraw`, `shop`, `invite`, `trust`, or `group` and maps them to the
   closest Marketplace route or local section.
@@ -83,12 +88,13 @@ Marketplace intent guide pilot.
 - `npm run build` passed in `frontend`.
 
 #### Open risks or unknowns
-- Phone visual review is needed to confirm the intent card grid does not feel
-  too large and that typed matching is understandable for first-time users.
+- Phone visual review is needed to confirm the collapsed guide feels small
+  enough and that the `Open` / `Collapse` control is obvious for first-time
+  users.
 
 #### Next recommended step
-- Deploy/retest `/app/marketplace` on phone, especially the typed guide and the
-  everyday-action cards.
+- Deploy/retest `/app/marketplace` on phone, especially the compact collapsed
+  title, `Open` / `Collapse` behavior, typed guide, and everyday-action cards.
 
 ### Previous update
 

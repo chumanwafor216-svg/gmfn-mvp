@@ -1986,6 +1986,7 @@ export default function MarketplacePage() {
   const [profileDetailsOpen, setProfileDetailsOpen] = useState(false);
   const [pictureToolsOpen, setPictureToolsOpen] = useState(false);
   const [intentQuery, setIntentQuery] = useState("");
+  const [intentGuideOpen, setIntentGuideOpen] = useState(false);
 
   const supportSectionRef = useRef<HTMLElement | null>(null);
   const withdrawalHandoffAppliedRef = useRef("");
@@ -2135,6 +2136,11 @@ export default function MarketplacePage() {
   function openFinance(event?: React.SyntheticEvent<HTMLElement>) {
     consumeMarketplaceButtonEvent(event);
     navigateWithOrigin(navigate, "/app/finance", location);
+  }
+
+  function toggleIntentGuide(event?: React.SyntheticEvent<HTMLElement>) {
+    consumeMarketplaceButtonEvent(event);
+    setIntentGuideOpen((prev) => !prev);
   }
 
   function scrollToMarketplaceSection(id: string) {
@@ -3367,116 +3373,139 @@ export default function MarketplacePage() {
       </section>
 
       <section style={{ ...pageCard("#FFFFFF"), order: 2 }}>
-        <div style={sectionLabel()}>What do you want to do next?</div>
-
         <div
           style={{
-            marginTop: 8,
-            ...helperText(),
-            maxWidth: 880,
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
           }}
         >
-          Type simple words like loan, deposit, withdraw, shop, invite, or
-          trust. GSN will point you to the right marketplace route.
+          <div style={sectionLabel()}>What do you want to do next?</div>
+
+          <button
+            type="button"
+            onPointerDown={consumeMarketplaceButtonEvent}
+            onClick={toggleIntentGuide}
+            aria-expanded={intentGuideOpen}
+            style={actionBtn("soft")}
+          >
+            {intentGuideOpen ? "Collapse" : "Open"}
+          </button>
         </div>
 
-        <div style={intentGuideCardStyle()}>
-          <form
-            onSubmit={handleIntentSubmit}
-            style={{
-              display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
-              gap: 10,
-              alignItems: "center",
-            }}
-          >
-            <input
-              value={intentQuery}
-              onChange={(event) => setIntentQuery(event.target.value)}
-              placeholder="Try: loan, deposit, withdraw, shop, invite..."
-              aria-label="Type what you want to do next"
+        {intentGuideOpen ? (
+          <div style={intentGuideCardStyle()}>
+            <div
               style={{
-                ...inputStyle(),
-                fontWeight: 800,
+                ...helperText(),
+                marginBottom: 12,
               }}
-            />
-
-            <button
-              type="submit"
-              onPointerDown={consumeMarketplacePointerEvent}
-              style={actionBtn("primary")}
             >
-              {matchedIntent ? `Open ${matchedIntent.label}` : "Find action"}
-            </button>
-          </form>
+              Say it simply, like loan, deposit, withdraw, shop, invite, or
+              trust. GSN will point you to the closest place.
+            </div>
 
-          <div
-            style={{
-              marginTop: 10,
-              ...helperText(),
-              fontSize: 13,
-            }}
-          >
-            {matchedIntent
-              ? `Best match: ${matchedIntent.label} - ${matchedIntent.technical}.`
-              : "If you already know the app words, use the smaller technical label on each card."}
-          </div>
+            <form
+              onSubmit={handleIntentSubmit}
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : "minmax(0, 1fr) auto",
+                gap: 10,
+                alignItems: "center",
+              }}
+            >
+              <input
+                value={intentQuery}
+                onChange={(event) => setIntentQuery(event.target.value)}
+                placeholder="Try: loan, deposit, withdraw, shop, invite..."
+                aria-label="Type what you want to do next"
+                style={{
+                  ...inputStyle(),
+                  fontWeight: 800,
+                }}
+              />
 
-          <div
-            style={{
-              marginTop: 12,
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr"
-                : "repeat(4, minmax(0, 1fr))",
-              gap: 10,
-            }}
-          >
-            {marketplaceIntentItems
-              .filter((item) => item.visible !== false)
-              .map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onPointerDown={consumeMarketplacePointerEvent}
-                  onClick={(event) => openMarketplaceIntent(event, item)}
-                  style={intentChoiceStyle(item.tone)}
-                >
-                  <span
-                    style={{
-                      color: "#0B1F33",
-                      fontSize: 15,
-                      fontWeight: 950,
-                      lineHeight: 1.2,
-                    }}
+              <button
+                type="submit"
+                onPointerDown={consumeMarketplacePointerEvent}
+                style={actionBtn("primary")}
+              >
+                {matchedIntent ? `Open ${matchedIntent.label}` : "Find action"}
+              </button>
+            </form>
+
+            <div
+              style={{
+                marginTop: 10,
+                ...helperText(),
+                fontSize: 13,
+              }}
+            >
+              {matchedIntent
+                ? `Best match: ${matchedIntent.label} - ${matchedIntent.technical}.`
+                : "If you already know the app words, use the smaller technical label on each card."}
+            </div>
+
+            <div
+              style={{
+                marginTop: 12,
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : "repeat(4, minmax(0, 1fr))",
+                gap: 10,
+              }}
+            >
+              {marketplaceIntentItems
+                .filter((item) => item.visible !== false)
+                .map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onPointerDown={consumeMarketplacePointerEvent}
+                    onClick={(event) => openMarketplaceIntent(event, item)}
+                    style={intentChoiceStyle(item.tone)}
                   >
-                    {item.label}
-                  </span>
-                  <span
-                    style={{
-                      color: "#52677C",
-                      fontSize: 12,
-                      fontWeight: 800,
-                      lineHeight: 1.35,
-                    }}
-                  >
-                    {item.detail}
-                  </span>
-                  <span
-                    style={{
-                      color: "#1D4ED8",
-                      fontSize: 11,
-                      fontWeight: 950,
-                      letterSpacing: 0.18,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {item.technical}
-                  </span>
-                </button>
-              ))}
+                    <span
+                      style={{
+                        color: "#0B1F33",
+                        fontSize: 15,
+                        fontWeight: 950,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {item.label}
+                    </span>
+                    <span
+                      style={{
+                        color: "#52677C",
+                        fontSize: 12,
+                        fontWeight: 800,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      {item.detail}
+                    </span>
+                    <span
+                      style={{
+                        color: "#1D4ED8",
+                        fontSize: 11,
+                        fontWeight: 950,
+                        letterSpacing: 0.18,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {item.technical}
+                    </span>
+                  </button>
+                ))}
+            </div>
           </div>
-        </div>
+        ) : null}
       </section>
 
       <ExplainToggle
