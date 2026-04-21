@@ -3852,3 +3852,18 @@ GSN-branded invite composer and invite-entry continuity.
 - `npx eslint src/pages/CommunityHomePage.tsx src/components/CommunityShopControlPanel.tsx` passed.
 - `git diff --check -- frontend/src/pages/CommunityHomePage.tsx frontend/src/components/CommunityShopControlPanel.tsx` passed with only normal Windows line-ending warnings.
 - `npm run build` passed in `frontend`.
+
+### Motion/aura freeze
+
+- Added a subtle Community Home aura layer behind all content to create the
+  gentle blue/pink/gold patch movement requested after phone review.
+- The aura is route-local, decorative only, `pointer-events: none`, below the
+  content layer, and respects `prefers-reduced-motion`.
+- No button/card position, tap target, route behavior, backend, auth, schema,
+  payment, or Dashboard Market Wisdom behavior changed.
+
+### Verification after motion/aura freeze
+
+- `npx eslint src/pages/CommunityHomePage.tsx` passed.
+- `git diff --check -- frontend/src/pages/CommunityHomePage.tsx` passed with only normal Windows line-ending warnings.
+- `npm run build` passed in `frontend`.

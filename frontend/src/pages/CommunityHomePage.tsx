@@ -390,6 +390,7 @@ function communityShellStyle(isCompact: boolean): React.CSSProperties {
     gap: isCompact ? 14 : 18,
     borderRadius: isCompact ? 24 : 34,
     border: "1px solid rgba(16,37,59,0.10)",
+    isolation: "isolate",
     background:
       "radial-gradient(circle at 10% 0%, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0.00) 32%), radial-gradient(circle at 88% 7%, rgba(244,114,182,0.09) 0%, rgba(244,114,182,0.00) 24%), radial-gradient(circle at 92% 14%, rgba(243,208,106,0.09) 0%, rgba(243,208,106,0.00) 28%), linear-gradient(180deg, #F5FAFF 0%, #EEF5FD 42%, #F8FBFF 100%)",
     boxShadow:
@@ -398,11 +399,28 @@ function communityShellStyle(isCompact: boolean): React.CSSProperties {
   };
 }
 
+function communityAuraStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    position: "absolute",
+    inset: isCompact ? "-12% -38% auto -38%" : "-16% -18% auto -18%",
+    height: isCompact ? "76%" : "68%",
+    zIndex: 0,
+    pointerEvents: "none",
+    opacity: isCompact ? 0.78 : 0.7,
+    background:
+      "radial-gradient(circle at 16% 20%, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0.00) 34%), radial-gradient(circle at 76% 24%, rgba(244,114,182,0.085) 0%, rgba(244,114,182,0.00) 28%), radial-gradient(circle at 58% 8%, rgba(243,208,106,0.08) 0%, rgba(243,208,106,0.00) 24%)",
+    transform: "translate3d(0,0,0)",
+    animation: "communityHomeAuraShift 20s ease-in-out infinite alternate",
+    willChange: "transform, opacity",
+  };
+}
+
 function communityWatermarkStyle(isCompact: boolean): React.CSSProperties {
   return {
     position: "absolute",
     right: isCompact ? -28 : 20,
     top: isCompact ? 70 : 88,
+    zIndex: 0,
     opacity: isCompact ? 0.045 : 0.065,
     pointerEvents: "none",
     filter: "drop-shadow(0 18px 30px rgba(16,36,58,0.14))",
@@ -416,6 +434,49 @@ function communityContentStyle(isCompact: boolean): React.CSSProperties {
     display: "grid",
     gap: isCompact ? 10 : 18,
   };
+}
+
+function CommunityShellLayers({ isCompact }: { isCompact: boolean }) {
+  return (
+    <>
+      <style>
+        {`
+          @keyframes communityHomeAuraShift {
+            0% {
+              transform: translate3d(-1.6%, -0.8%, 0) scale(1);
+              opacity: 0.68;
+            }
+            50% {
+              transform: translate3d(1.2%, 1.1%, 0) scale(1.035);
+              opacity: 0.82;
+            }
+            100% {
+              transform: translate3d(2.2%, -0.4%, 0) scale(1.02);
+              opacity: 0.74;
+            }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .community-home-aura-shift {
+              animation: none !important;
+              transform: none !important;
+            }
+          }
+        `}
+      </style>
+      <div
+        aria-hidden="true"
+        className="community-home-aura-shift"
+        style={communityAuraStyle(isCompact)}
+      />
+      <div style={communityWatermarkStyle(isCompact)} aria-hidden="true">
+        <GSNBrandMark
+          width={isCompact ? 180 : 260}
+          height={isCompact ? 218 : 315}
+        />
+      </div>
+    </>
+  );
 }
 
 function communityHeroStyle(isCompact: boolean): React.CSSProperties {
@@ -1919,9 +1980,7 @@ export default function CommunityHomePage() {
       <div
         style={communityShellStyle(isCompact)}
       >
-        <div style={communityWatermarkStyle(isCompact)} aria-hidden="true">
-          <GSNBrandMark width={isCompact ? 180 : 260} height={isCompact ? 218 : 315} />
-        </div>
+        <CommunityShellLayers isCompact={isCompact} />
         <div style={communityContentStyle(isCompact)}>
           <PageTopNav
             sectionLabel="Community Home"
@@ -1949,9 +2008,7 @@ export default function CommunityHomePage() {
   if (clans.length === 0) {
     return (
       <div style={communityShellStyle(isCompact)}>
-        <div style={communityWatermarkStyle(isCompact)} aria-hidden="true">
-          <GSNBrandMark width={isCompact ? 180 : 260} height={isCompact ? 218 : 315} />
-        </div>
+        <CommunityShellLayers isCompact={isCompact} />
         <div style={communityContentStyle(isCompact)}>
           <PageTopNav
             sectionLabel="Community Home"
@@ -2051,9 +2108,7 @@ export default function CommunityHomePage() {
     <div
       style={communityShellStyle(isCompact)}
     >
-      <div style={communityWatermarkStyle(isCompact)} aria-hidden="true">
-        <GSNBrandMark width={isCompact ? 180 : 260} height={isCompact ? 218 : 315} />
-      </div>
+      <CommunityShellLayers isCompact={isCompact} />
       <div style={communityContentStyle(isCompact)}>
       <section style={communityHeroStyle(isCompact)}>
         <div
