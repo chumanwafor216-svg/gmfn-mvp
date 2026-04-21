@@ -73,36 +73,39 @@ Safe action now:
 - do not delete yet
 - revisit only during duplicate route ownership cleanup
 
-## Category B - Active Frontend Gap Candidate
-
-These are not safe to ignore forever because a current frontend screen or shared
-frontend helper references the behavior.
+## Corrected After Classification
 
 ### `trust_timeline.py`
 
-Dormant routes:
+Status: corrected locally after this classification.
+
+Mounted routes:
 
 - `GET /trust/me/timeline`
 - `GET /trust/timeline/{user_id}`
 
-Frontend evidence:
+Frontend alignment:
 
-- `frontend/src/pages/TrustTimelinePage.tsx` calls
-  `/trust/me/timeline?limit=200`
-- the PDF route `/trust/me/timeline.pdf` is mounted separately, but the JSON
-  route appears to live in this dormant file
+- `frontend/src/pages/TrustTimelinePage.tsx` now sends timeline JSON and PDF
+  downloads through the configured backend API base instead of same-origin
+  frontend-host fetches.
 
-Recommended next safe code correction:
+Verification:
 
-- mount `trust_timeline_router` after one focused backend import/OpenAPI check
-- verify `/trust/me/timeline` appears in OpenAPI
-- verify the Trust Timeline screen can load JSON events and still download PDF
+- local OpenAPI includes `/trust/me/timeline`
+- local OpenAPI includes `/trust/timeline/{user_id}`
+- local OpenAPI still includes `/trust/me/timeline.pdf`
+- frontend build passes
 
-Risk:
+Remaining caution:
 
-- low-to-medium, because the route is authenticated and already implemented
-- still not zero, because it adds an admin route
-  `GET /trust/timeline/{user_id}` that must keep its admin guard
+- the admin timeline route must keep its admin guard
+- the route becomes live only after the backend deploy containing this change
+
+## Category B - Active Frontend Gap Candidate
+
+These are not safe to ignore forever because a current frontend screen or shared
+frontend helper references the behavior.
 
 ### `merchant_verify.py`
 
@@ -239,14 +242,10 @@ Safe action now:
 
 ## Recommended Safe Order From Here
 
-1. Mount and verify `trust_timeline.py` if the product owner wants the next
-   safe code correction, because an active Trust Timeline page calls its JSON
-   endpoint.
-2. Inspect `merchantChannel.ts` reachability before touching merchant verify
+1. Inspect `merchantChannel.ts` reachability before touching merchant verify
    routes.
-3. Leave repayment, dispute, shipment, courier, merchant release, and bulk
+2. Leave repayment, dispute, shipment, courier, merchant release, and bulk
    guarantor routes dormant until the business rules are deliberately reviewed.
-4. During admin cleanup, retire or archive true duplicates only after confirming
+3. During admin cleanup, retire or archive true duplicates only after confirming
    no frontend imports, service imports, tests, or documentation still depend on
    them.
-

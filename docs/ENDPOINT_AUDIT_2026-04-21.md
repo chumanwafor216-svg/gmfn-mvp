@@ -135,7 +135,6 @@ Unmounted route files included at audit time:
 - `trust_score`
 - `trust_slip_evidence`
 - `trust_slips_verify_ui`
-- `trust_timeline`
 
 Not every unmounted file is automatically a bug. Some are older, duplicated, or
 superseded by mounted routes. The important audit point is that they are not
@@ -147,8 +146,12 @@ Post-audit classification:
   current code.
 - `docs/DORMANT_ROUTE_CLASSIFICATION_2026-04-21.md` records the safer
   classification for the remaining dormant files.
-- The highest-priority safe candidate is `trust_timeline.py`, because the active
-  Trust Timeline frontend calls `/trust/me/timeline?limit=200`.
+- `trust_timeline.py` has now been mounted locally and the active Trust Timeline
+  frontend now routes JSON/PDF requests through the configured backend API base.
+- The next endpoint candidate to inspect is `merchant_verify.py`, because
+  `frontend/src/lib/merchantChannel.ts` references
+  `/trust-slips/me/merchant-link`, but merchant verification overlaps with
+  public TrustSlip verification rules and should not be mounted blindly.
 
 ### 5. Dormant frontend files still contain old direct `/api` calls
 
@@ -187,3 +190,5 @@ still intentionally reachable. Do not delete them only because they look unused.
 - Post-audit local verification:
   - `/system/diagnostics` is now present in local OpenAPI after mounting
     `system_diagnostics_router`.
+  - `/trust/me/timeline` and `/trust/timeline/{user_id}` are now present in
+    local OpenAPI after mounting `trust_timeline_router`.

@@ -5971,3 +5971,28 @@ GSN-branded invite composer and invite-entry continuity.
 - Marked repayment/admin repayment, dispute, shipment/courier, merchant release,
   merchant view, and bulk guarantor routes as real product work that should not
   be mounted blindly.
+
+### Trust Timeline endpoint correction addendum
+
+- Continued from the dormant-route safety classification by applying the next
+  safest code correction.
+- Mounted `trust_timeline.py` in `gmfn_backend/app/api/router.py`:
+  - `GET /trust/me/timeline`
+  - `GET /trust/timeline/{user_id}`
+- Updated `frontend/src/pages/TrustTimelinePage.tsx` so its authenticated JSON
+  and PDF requests use the configured backend API base instead of same-origin
+  static-site fetches.
+- This aligns the active Trust Timeline screen with the backend route that was
+  already implemented but not mounted.
+- Verification:
+  - `python -m compileall app\api\router.py app\api\routes\trust_timeline.py`
+    passed from `gmfn_backend`.
+  - local OpenAPI with `GMFN_DEV_MODE=1` includes `/trust/me/timeline`,
+    `/trust/timeline/{user_id}`, and `/trust/me/timeline.pdf`.
+  - `npm run build` passed in `frontend`.
+- Remaining OpenAPI warnings are the pre-existing duplicate operation IDs:
+  - `trust_why_user`
+  - `admin_recent_trust_events`
+  - `admin_trust_why`
+- No schemas, migrations, auth core, permissions core, payment, ledger, or
+  TrustEvent scoring logic changed.

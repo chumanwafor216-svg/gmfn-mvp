@@ -106,9 +106,12 @@ Safe classification note:
   - active frontend gap candidates
   - sensitive product routes that should not be mounted blindly
   - utility/future surfaces
-- The safest next code candidate identified by that classification is
-  `trust_timeline.py`, because `frontend/src/pages/TrustTimelinePage.tsx`
-  actively calls `/trust/me/timeline`.
+- The first code candidate identified by that classification,
+  `trust_timeline.py`, has now been mounted locally because
+  `frontend/src/pages/TrustTimelinePage.tsx` actively calls
+  `/trust/me/timeline`.
+- The Trust Timeline frontend now sends its JSON/PDF requests through the
+  configured backend API base instead of same-origin static-site fetches.
 - Repayment, dispute, courier/shipment, merchant release, merchant verify, and
   bulk guarantor routes should stay deliberate product work, not automatic
   router mounts.
