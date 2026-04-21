@@ -139,6 +139,17 @@ export function brandActionButton(
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
+      touchAction: "manipulation",
+      WebkitTapHighlightColor: "transparent",
+      userSelect: "none",
+      pointerEvents: "auto",
+      position: "relative",
+      zIndex: 1,
+      isolation: "isolate",
+      transform: "translateZ(0)",
+      appearance: "none",
+      WebkitAppearance: "none",
+      outlineOffset: 4,
     };
   }
 
@@ -160,6 +171,17 @@ export function brandActionButton(
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
+      touchAction: "manipulation",
+      WebkitTapHighlightColor: "transparent",
+      userSelect: "none",
+      pointerEvents: "auto",
+      position: "relative",
+      zIndex: 1,
+      isolation: "isolate",
+      transform: "translateZ(0)",
+      appearance: "none",
+      WebkitAppearance: "none",
+      outlineOffset: 4,
     };
   }
 
@@ -180,5 +202,16 @@ export function brandActionButton(
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    pointerEvents: "auto",
+    position: "relative",
+    zIndex: 1,
+    isolation: "isolate",
+    transform: "translateZ(0)",
+    appearance: "none",
+    WebkitAppearance: "none",
+    outlineOffset: 4,
   };
 }
