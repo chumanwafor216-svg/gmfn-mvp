@@ -4900,3 +4900,29 @@ GSN-branded invite composer and invite-entry continuity.
 - `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
   the normal Windows line-ending warning.
 - `npm run build` passed in `frontend`.
+
+### Shop Gallery share/repost and private viewing copy addendum
+
+- Updated `frontend/src/pages/ShopGalleryPage.tsx` only.
+- Confirmed backend truth before changing UI copy:
+  - `Share shop` is a browser/native share action for the public shop page.
+  - `Copy shop link` copies only the public shop URL.
+  - real `repost` logic exists as a product-level backend action through
+    `/marketplace/products/{product_id}/repost`; it is not the same as sharing
+    or copying a shop link, and no fake shop-level repost button was added.
+- Renamed route-local frontend handlers from `repostShop`/`repostProduct` to
+  `shareShop`/`shareProduct` so local code no longer calls ordinary sharing a
+  repost.
+- Rewrote Vault/public-shop language into user-facing private-viewing wording:
+  - removed `private stock` / `private warehouse` phrasing
+  - presents selected offers as owner-approved private viewing by trust link
+  - updates WhatsApp/Telegram/copy request text to ask for a private viewing
+    link rather than "Vault access"
+- No backend, auth, schema, payment, environment config, or Dashboard Market
+  Wisdom behavior changed.
+
+### Verification after private viewing copy update
+
+- `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
+  the normal Windows line-ending warning.
+- `npm run build` passed in `frontend`.

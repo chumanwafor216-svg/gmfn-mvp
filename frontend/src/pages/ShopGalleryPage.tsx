@@ -958,7 +958,7 @@ export default function ShopGalleryPage() {
   const shopNameText = safeStr(effectiveShop?.shopName || "Shop");
   const shopDescriptionText = safeStr(
     effectiveShop?.description ||
-      "Public shop page for trusted products. Private stock stays inside Vault."
+      "Public shop page for trusted products. Selected offers can open by private viewing link."
   );
   const shopGmfnText = safeStr(effectiveShop?.gmfnId);
   const shopOwnerText = safeStr(effectiveShop?.ownerName);
@@ -1006,7 +1006,7 @@ export default function ShopGalleryPage() {
     setNotice({ tone: "success", text: "Shop link copied." });
   }
 
-  function repostShop() {
+  function shareShop() {
     const shopTitle = firstMeaningful(
       effectiveShop?.shopName,
       effectiveShop?.ownerName,
@@ -1025,11 +1025,11 @@ export default function ShopGalleryPage() {
       title: shopTitle,
       text: shopText,
       url: absoluteShopLink,
-      successText: "Shop share opened.",
+      successText: "Shop share ready.",
     });
   }
 
-  function repostProduct(product: ShopProduct) {
+  function shareProduct(product: ShopProduct) {
     const hash = product.id ? `#product-${product.id}` : "";
     const productUrl =
       typeof window === "undefined"
@@ -1040,7 +1040,7 @@ export default function ShopGalleryPage() {
       title: product.name,
       text: `${product.description || "Shop product"} - ${product.priceText}`,
       url: productUrl,
-      successText: "Product share opened.",
+      successText: "Product share ready.",
     });
   }
 
@@ -1051,7 +1051,7 @@ export default function ShopGalleryPage() {
       "this shop"
     );
 
-    const requestText = `Hello, I would like to ask for Vault access for ${shopTitle}. Please let me know if private offers are available by permission.`;
+    const requestText = `Hello, I would like to request a private viewing link for ${shopTitle}. Please share any selected offers you do not show on the public page.`;
 
     const whatsapp = safeStr(effectiveShop?.whatsapp).replace(/[^\d+]/g, "");
     if (whatsapp && typeof window !== "undefined") {
@@ -1072,7 +1072,7 @@ export default function ShopGalleryPage() {
       );
       setNotice({
         tone: "success",
-        text: "Telegram opened. Ask for Vault access there.",
+        text: "Telegram opened. Ask the owner for a private viewing link there.",
       });
       return;
     }
@@ -1080,7 +1080,7 @@ export default function ShopGalleryPage() {
     safeCopy(`${requestText}\n${absoluteShopLink}`);
     setNotice({
       tone: "success",
-      text: "Vault access request copied. Send it to the shop owner.",
+      text: "Private viewing request copied. Send it to the shop owner.",
     });
   }
 
@@ -1110,7 +1110,7 @@ export default function ShopGalleryPage() {
         bullets={[
           "One person has one shop, and that shop can appear in the communities they belong to.",
           "A shop normally shows through its communities. Wider sharing should use the right link or repost path.",
-          "Vault items are locked. They should only open with the right permission or access link.",
+          "Some selected offers only open through a private viewing link from the owner.",
         ]}
         note="Simple rule: Shop Gallery is where people come to view the shop."
         tone="dark"
@@ -1118,9 +1118,9 @@ export default function ShopGalleryPage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="This screen is the public shop gallery, showing the shop identity, live spotlight, products, and private-access options when available."
+        what="This screen is the public shop gallery, showing the shop identity, live spotlight, products, and private viewing options when available."
         why="It helps visitors understand what this shop offers and how to move into the right next action without needing the full owner workspace."
-        next="Start with the shop identity and live spotlight, then browse products or request Vault access if private offers are relevant."
+        next="Start with the shop identity and live spotlight, then browse products or ask the owner for a private viewing link if you want to see selected offers."
         tone="light"
       />
 
@@ -1298,7 +1298,7 @@ export default function ShopGalleryPage() {
                   label="What this does"
                   what="This signpost block gives visitors the main identity of the shop before they browse products or ask for private access."
                   why="It helps the shop feel grounded in a real owner and community context rather than as an isolated product wall."
-                  next="Read the shop signpost first, then continue into products, spotlight, or vault access depending on what you need."
+                  next="Read the shop signpost first, then continue into products, spotlight, or private viewing depending on what you need."
                   tone="light"
                   style={{ marginTop: 12, marginBottom: 12 }}
                 />
@@ -1448,7 +1448,7 @@ export default function ShopGalleryPage() {
               >
                 <button
                   type="button"
-                  onClick={repostShop}
+                  onClick={shareShop}
                   style={{
                     ...primaryBtn(false),
                     minHeight: isCompact ? 38 : 42,
@@ -1498,7 +1498,7 @@ export default function ShopGalleryPage() {
               padding: 9,
             }}
           >
-            <div style={{ ...sectionLabel(), color: "#5D7389" }}>Vault</div>
+            <div style={{ ...sectionLabel(), color: "#5D7389" }}>Private viewing</div>
             <div
               style={{
                 marginTop: 4,
@@ -1508,26 +1508,26 @@ export default function ShopGalleryPage() {
                 lineHeight: 1.2,
               }}
             >
-              Vault: private stock by permission.
+              Selected offers can open by trust link.
             </div>
             <div style={{ marginTop: 4, ...helperText(), fontSize: 11.5, lineHeight: 1.45 }}>
-              Private stock may exist here, but it is not shown publicly.
+              The public shop shows what everyone can see. The owner may also share extra offers privately.
             </div>
             <div style={{ marginTop: 2, ...helperText(), fontSize: 11.5, lineHeight: 1.45 }}>
-              Access is owner-controlled and granted by permission only.
+              Ask for a viewing link when you want to see more before you decide.
             </div>
             <div style={{ marginTop: 4, display: "flex", gap: 4, flexWrap: "wrap" }}>
               <span style={{ ...badge(true), minHeight: 26, padding: "4px 8px", fontSize: 11 }}>
-                Vault
+                Private viewing
               </span>
               <span style={{ ...badge(false), minHeight: 24, padding: "3px 8px", fontSize: 10.5 }}>
-                Private warehouse
+                Trust link
               </span>
               <span style={{ ...badge(false), minHeight: 24, padding: "3px 8px", fontSize: 10.5 }}>
-                Controlled commerce
+                Owner approval
               </span>
               <span style={{ ...badge(false), minHeight: 24, padding: "3px 8px", fontSize: 10.5 }}>
-                Permission only
+                Selected offers
               </span>
             </div>
           </div>
@@ -1548,7 +1548,7 @@ export default function ShopGalleryPage() {
                 padding: 9,
               }}
             >
-              <div style={{ ...sectionLabel(), color: "#D7E3F1" }}>Private access</div>
+              <div style={{ ...sectionLabel(), color: "#D7E3F1" }}>Private viewing</div>
               <div
                 style={{
                   marginTop: 4,
@@ -1558,10 +1558,10 @@ export default function ShopGalleryPage() {
                   lineHeight: 1.24,
                 }}
               >
-                Ask for access to the private warehouse
+                Ask to view selected offers
               </div>
               <div style={{ marginTop: 3, ...helperText(), color: "#E2E8F0", fontSize: 11, lineHeight: 1.38 }}>
-                Ask if private offers are available for you. Nothing inside Vault is shown until access is granted.
+                Some sellers keep special items for trusted buyers. Ask for a private viewing link and the owner can show what is not on the public page.
               </div>
               <div style={{ marginTop: 4, display: "flex", gap: 5, flexWrap: "wrap" }}>
                 <button
@@ -1569,7 +1569,7 @@ export default function ShopGalleryPage() {
                   onClick={askForVaultAccess}
                   style={{ ...primaryBtn(false), minHeight: 34, padding: "6px 10px", fontSize: 12 }}
                 >
-                  Ask for access
+                  Ask for private view
                 </button>
                 <button
                   type="button"
@@ -1946,8 +1946,8 @@ export default function ShopGalleryPage() {
           <div>
             <div style={sectionLabel()}>Product blocks</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Public products appear here. Vault stays separate, so private offers are not mixed
-              into the public gallery.
+              Public products appear here. Private-viewing offers stay separate, so selected items
+              are not mixed into the public gallery.
             </div>
           </div>
 
@@ -1976,8 +1976,8 @@ export default function ShopGalleryPage() {
               No public products are showing yet.
             </div>
             <div style={{ marginTop: 10, ...helperText(), maxWidth: 760 }}>
-              Check back later for public offers. If you are looking for something private, use the
-              Vault card above to ask the owner for access.
+              Check back later for public offers. If you want to see selected items, use the
+              private-viewing card above to ask the owner for a link.
             </div>
           </div>
         ) : (
@@ -2187,7 +2187,7 @@ export default function ShopGalleryPage() {
 
                       <button
                         type="button"
-                        onClick={() => repostProduct(product)}
+                        onClick={() => shareProduct(product)}
                         style={secondaryBtn(false)}
                       >
                         Share
