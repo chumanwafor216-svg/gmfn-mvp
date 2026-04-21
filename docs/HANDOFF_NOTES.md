@@ -4949,3 +4949,24 @@ GSN-branded invite composer and invite-entry continuity.
 - `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
   the normal Windows line-ending warning.
 - `npm run build` passed in `frontend`.
+
+### Shop Gallery Vault repetition cleanup addendum
+
+- Updated `frontend/src/pages/ShopGalleryPage.tsx` only.
+- Merged the separate Vault explanation card and Vault request card into one
+  combined Vault block after phone review showed they repeated the same idea.
+- The single Vault block now explains:
+  - the public shop shows what everyone can see
+  - Vault is the trust-link path for selected offers shared privately
+  - the buyer can ask for a Vault viewing link and the owner decides what to
+    share
+- Kept the existing shop share/copy link behavior and product share behavior
+  unchanged.
+- No backend, auth, schema, payment, environment config, or Dashboard Market
+  Wisdom behavior changed.
+
+### Verification after Vault repetition cleanup
+
+- `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
+  the normal Windows line-ending warning.
+- `npm run build` passed in `frontend`.

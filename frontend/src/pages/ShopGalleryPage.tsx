@@ -1505,40 +1505,55 @@ export default function ShopGalleryPage() {
               ...innerCard("rgba(255,255,255,0.96)"),
               border: "1px solid rgba(212,175,55,0.14)",
               boxShadow: "0 18px 38px rgba(2,12,27,0.18)",
-              padding: 9,
+              padding: isCompact ? 12 : 14,
+              display: "grid",
+              alignContent: "center",
             }}
           >
             <div style={{ ...sectionLabel(), color: "#5D7389" }}>Vault</div>
             <div
               style={{
-                marginTop: 4,
+                marginTop: 6,
                 color: "#0B1F33",
-                fontSize: 17,
+                fontSize: isCompact ? 18 : 20,
                 fontWeight: 900,
-                lineHeight: 1.2,
+                lineHeight: 1.18,
               }}
             >
-              Vault: private viewing by trust link.
+              Private viewing for selected offers
             </div>
-            <div style={{ marginTop: 4, ...helperText(), fontSize: 11.5, lineHeight: 1.45 }}>
-              The public shop shows what everyone can see. Vault is where the owner can share selected offers privately.
+            <div style={{ marginTop: 8, ...helperText(), fontSize: isCompact ? 12.5 : 13.5, lineHeight: 1.55 }}>
+              The public shop shows what everyone can see. Vault is the trust-link path for selected offers the owner shares privately.
             </div>
-            <div style={{ marginTop: 2, ...helperText(), fontSize: 11.5, lineHeight: 1.45 }}>
-              Ask for a Vault viewing link when you want to see more before you decide.
+            <div style={{ marginTop: 5, ...helperText(), fontSize: isCompact ? 12.5 : 13.5, lineHeight: 1.55 }}>
+              If you want to see more, ask for a Vault viewing link. The owner decides what to share and with whom.
             </div>
-            <div style={{ marginTop: 4, display: "flex", gap: 4, flexWrap: "wrap" }}>
-              <span style={{ ...badge(true), minHeight: 26, padding: "4px 8px", fontSize: 11 }}>
+            <div style={{ marginTop: 9, display: "flex", gap: 5, flexWrap: "wrap" }}>
+              <span style={{ ...badge(true), minHeight: 27, padding: "4px 9px", fontSize: 11 }}>
                 Vault
               </span>
-              <span style={{ ...badge(false), minHeight: 24, padding: "3px 8px", fontSize: 10.5 }}>
-                Private viewing
-              </span>
-              <span style={{ ...badge(false), minHeight: 24, padding: "3px 8px", fontSize: 10.5 }}>
+              <span style={{ ...badge(false), minHeight: 27, padding: "4px 9px", fontSize: 11 }}>
                 Trust link
               </span>
-              <span style={{ ...badge(false), minHeight: 24, padding: "3px 8px", fontSize: 10.5 }}>
+              <span style={{ ...badge(false), minHeight: 27, padding: "4px 9px", fontSize: 11 }}>
                 Owner approval
               </span>
+            </div>
+            <div style={{ marginTop: 11, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={askForVaultAccess}
+                style={{ ...primaryBtn(false), minHeight: 36, padding: "7px 11px", fontSize: 12.5 }}
+              >
+                Ask for Vault view
+              </button>
+              <button
+                type="button"
+                onClick={copyShopLink}
+                style={{ ...secondaryBtn(false), minHeight: 36, padding: "7px 11px", fontSize: 12.5 }}
+              >
+                Copy shop link
+              </button>
             </div>
           </div>
 
@@ -1548,49 +1563,6 @@ export default function ShopGalleryPage() {
               gap: 8,
             }}
           >
-            <div
-              style={{
-                ...innerCard(
-                  "linear-gradient(180deg, #15314C 0%, #21496C 56%, #2B5E88 100%)"
-                ),
-                border: "1px solid rgba(212,175,55,0.16)",
-                boxShadow: "0 18px 40px rgba(2,12,27,0.24)",
-                padding: 9,
-              }}
-            >
-              <div style={{ ...sectionLabel(), color: "#D7E3F1" }}>Vault request</div>
-              <div
-                style={{
-                  marginTop: 4,
-                  color: "#F8FBFF",
-                  fontSize: 13.5,
-                  fontWeight: 900,
-                  lineHeight: 1.24,
-                }}
-              >
-                Ask for a Vault viewing link
-              </div>
-              <div style={{ marginTop: 3, ...helperText(), color: "#E2E8F0", fontSize: 11, lineHeight: 1.38 }}>
-                Some sellers keep selected offers for trusted buyers. Ask for a Vault link and the owner can show what is not on the public page.
-              </div>
-              <div style={{ marginTop: 4, display: "flex", gap: 5, flexWrap: "wrap" }}>
-                <button
-                  type="button"
-                  onClick={askForVaultAccess}
-                  style={{ ...primaryBtn(false), minHeight: 34, padding: "6px 10px", fontSize: 12 }}
-                >
-                  Ask for Vault view
-                </button>
-                <button
-                  type="button"
-                  onClick={copyShopLink}
-                  style={{ ...secondaryBtn(false), minHeight: 34, padding: "6px 10px", fontSize: 12 }}
-                >
-                  Copy shop link
-                </button>
-              </div>
-            </div>
-
             <div
               style={{
                 position: "relative",
