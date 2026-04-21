@@ -38,7 +38,7 @@ def upgrade() -> None:
             sa.Column("message", sa.Text(), nullable=False),
             sa.Column("action_url", sa.String(length=255), nullable=True),
             sa.Column("action_label", sa.String(length=100), nullable=True),
-            sa.Column("is_read", sa.Boolean(), nullable=False, server_default=sa.text("0")),
+            sa.Column("is_read", sa.Boolean(), nullable=False, server_default=sa.false()),
             sa.Column(
                 "created_at",
                 sa.DateTime(timezone=True),

@@ -5830,3 +5830,14 @@ GSN-branded invite composer and invite-entry continuity.
   not change table meaning, route logic, auth, permissions, payment, ledger, or
   frontend behavior.
 - Verified a fresh SQLite Alembic upgrade to head locally after the change.
+
+### Render notifications boolean default addendum
+
+- Render pre-deploy later reached
+  `20260418_add_notifications_table.py` and failed on PostgreSQL because the
+  `notifications.is_read` boolean column used `DEFAULT 0`.
+- PostgreSQL reported:
+  `column "is_read" is of type boolean but default expression is of type integer`.
+- Updated that migration to use SQLAlchemy's boolean default expression
+  `sa.false()`, which compiles safely for PostgreSQL while preserving the same
+  meaning: new notifications start unread.
