@@ -5430,3 +5430,28 @@ GSN-branded invite composer and invite-entry continuity.
 - `git diff --check -- frontend/src/pages/FinancePage.tsx docs/HANDOFF_NOTES.md`
   passed with only the normal Windows line-ending warning.
 - `npm run build` passed in `frontend`.
+
+### Page explanation rollout backlog
+
+- Product decision to carry forward: each major GSN domain should eventually
+  have a plain-language open/close page explanation that tells a newcomer what
+  that page can do for them before they start pressing action buttons.
+- The Finance page now has the first route-local version using
+  `DomainIntroToggle`.
+- Future version should likely become a shared system pattern, but only after
+  2-3 major pages prove the wording and behavior:
+  - optional first-visit prompt such as `Read what this page can do for you?`
+  - user can choose yes/no
+  - if user says no, avoid repeatedly popping it up on that page
+  - user can still manually open the explanation later
+  - keep copy simple, practical, and user-facing, not builder-facing
+- Candidate rollout order after Finance is stable:
+  - Marketplace
+  - Community Home
+  - Dashboard, while respecting the frozen Market Wisdom area
+  - Trust Passport / Trust Score
+  - Shop Gallery public view
+  - Admin Command Centre
+- Keep this pattern route-local until the mobile behavior is trusted. Avoid
+  changing shared navigation, auth, route guards, or global shell just to add
+  page explanations.
