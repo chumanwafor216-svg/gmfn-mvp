@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import CommunityShopControlPanel from "../components/CommunityShopControlPanel";
 import DomainIntroToggle from "../components/DomainIntroToggle";
-import ExplainToggle from "../components/ExplainToggle";
 import GSNBrandMark from "../components/GSNBrandMark";
 import PageTopNav from "../components/PageTopNav";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
@@ -13,21 +12,14 @@ import {
   getMarketplaceBroadcasts,
   getMarketplaceShopByGmfnId,
   getMe,
-  getPoolMe,
   getPoolMeSummary,
   getSelectedClanId,
-  listMarketplaceRequests,
   listMyClans,
-  listExpectedPayments,
   safeCopy,
   selectClan,
   uploadMarketplaceImageFile,
   uploadMarketplaceVideoFile,
 } from "../lib/api";
-import {
-  getCommunityMoneySurface,
-  type CommunityMoneySurface,
-} from "../lib/communityMoney";
 import {
   buildInviteBundle,
   getFirstCircleProgress,
@@ -54,11 +46,27 @@ type ClanItem = {
   community_global_id?: string | null;
   global_id?: string | null;
   gmfn_id?: string | null;
+  community_code?: string | null;
   clan_code?: string | null;
   code?: string | null;
   trust_band?: string | null;
   trust_class?: string | null;
   community_trust_band?: string | null;
+  community_finance_health?: string | null;
+  finance_health?: string | null;
+  finance_band?: string | null;
+  community_cci_score?: string | null;
+  community_cci_band?: string | null;
+  cci_score?: string | null;
+  cci_band?: string | null;
+  community_standing?: any;
+  community_strength?: string | null;
+  interaction_density?: string | null;
+  interaction_count?: number | null;
+  spotlight_subscription_count?: number | null;
+  spotlight_subscribers_count?: number | null;
+  vault_subscription_count?: number | null;
+  vault_subscribers_count?: number | null;
   member_count?: number | null;
   members_count?: number | null;
   role?: string | null;
@@ -93,33 +101,6 @@ type ActiveCommunitySpotlight = {
   videoUrl: string;
   expiresAt: string;
   createdAt: string;
-};
-
-type DemandRow = {
-  id?: number;
-  title?: string | null;
-  description?: string | null;
-  urgency?: string | null;
-  status?: string | null;
-  created_at?: string | null;
-  area?: string | null;
-  requester_gmfn_id?: string | null;
-  requester_email?: string | null;
-  is_mine?: boolean;
-  mine?: boolean;
-};
-
-type ExpectedPaymentRecord = {
-  id?: number | null;
-  expected_type?: string | null;
-  amount?: string | null;
-  currency?: string | null;
-  reference_display?: string | null;
-  status?: string | null;
-  status_reason?: string | null;
-  due_at?: string | null;
-  matched_bank_event_id?: number | null;
-  confirmed_at?: string | null;
 };
 
 const COMMUNITY_HOME_COLLAPSE_KEY = "gmfn.communityHome.sections.v3";
@@ -290,15 +271,6 @@ function firstTruthy(...values: any[]): string {
   return "";
 }
 
-function rowsOf<T = any>(input: any): T[] {
-  if (Array.isArray(input)) return input as T[];
-  if (Array.isArray(input?.items)) return input.items as T[];
-  if (Array.isArray(input?.data?.items)) return input.data.items as T[];
-  if (Array.isArray(input?.results)) return input.results as T[];
-  if (Array.isArray(input?.rows)) return input.rows as T[];
-  return [];
-}
-
 function getClanId(clan: ClanItem | null | undefined): number {
   return Number(clan?.id || clan?.clan_id || 0);
 }
@@ -317,21 +289,11 @@ function getClanGlobalId(clan: ClanItem | null | undefined): string {
     clan?.community_global_id,
     clan?.global_id,
     clan?.gmfn_id,
+    clan?.community_code,
     clan?.clan_code,
     clan?.code,
     getClanId(clan) ? `COMM-${getClanId(clan)}` : "",
     "Awaiting issue"
-  );
-}
-
-function getClanTrust(clan: ClanItem | null | undefined): string {
-  return firstTruthy(
-    clan?.community_trust_band,
-    clan?.trust_band,
-    clan?.trust_class,
-    clan?.community?.trust_band,
-    clan?.marketplace?.trust_band,
-    "Visible community"
   );
 }
 
@@ -350,40 +312,56 @@ function getClanFinanceHealth(clan: ClanItem | null | undefined): string {
   );
 }
 
-function getClanCci(clan: ClanItem | null | undefined): string {
+function getClanMemberCount(clan: ClanItem | null | undefined): number {
+  const count = Number(
+    clan?.member_count ??
+      clan?.members_count ??
+      (clan as any)?.community_standing?.member_count ??
+      0
+  );
+  return Number.isFinite(count) && count >= 0 ? count : 0;
+}
+
+function getClanStrength(clan: ClanItem | null | undefined): string {
+  const count = getClanMemberCount(clan);
   return firstTruthy(
-    (clan as any)?.community_cci_band,
-    (clan as any)?.community_cci_score,
-    (clan as any)?.cci_band,
-    (clan as any)?.cci_score,
-    (clan as any)?.community_integrity_band,
-    (clan as any)?.group_integrity_band,
-    clan?.community?.cci_band,
-    clan?.community?.cci_score,
-    clan?.marketplace?.cci_band,
-    clan?.marketplace?.cci_score,
+    (clan as any)?.community_strength,
+    (clan as any)?.community_standing?.community_strength,
+    count ? `${count} members` : "Preparing"
+  );
+}
+
+function getClanInteractionDensity(clan: ClanItem | null | undefined): string {
+  return firstTruthy(
+    (clan as any)?.interaction_density,
+    (clan as any)?.community_standing?.interaction_density,
     "Preparing"
   );
 }
 
-function getClanMemberCount(clan: ClanItem | null | undefined): number {
-  const count = Number(clan?.member_count ?? clan?.members_count ?? 0);
+function getClanSpotlightSubscriberCount(clan: ClanItem | null | undefined): number {
+  const count = Number(
+    (clan as any)?.spotlight_subscription_count ??
+      (clan as any)?.spotlight_subscribers_count ??
+      (clan as any)?.community_standing?.spotlight_subscription_count ??
+      0
+  );
   return Number.isFinite(count) && count >= 0 ? count : 0;
 }
 
-function getClanRole(clan: ClanItem | null | undefined): string {
-  return (
-    firstTruthy(
-      clan?.role,
-      clan?.member_role,
-      clan?.membership_role,
-      clan?.participant_role,
-      clan?.community?.role,
-      clan?.profile?.role,
-      clan?.marketplace?.role,
-      clan?.clan?.role
-    ) || ""
+function getClanVaultSubscriberCount(clan: ClanItem | null | undefined): number {
+  const count = Number(
+    (clan as any)?.vault_subscription_count ??
+      (clan as any)?.vault_subscribers_count ??
+      (clan as any)?.community_standing?.vault_subscription_count ??
+      0
   );
+  return Number.isFinite(count) && count >= 0 ? count : 0;
+}
+
+function displayPendingSignal(value: string): string {
+  const text = safeStr(value);
+  return text.toLowerCase() === "preparing" ? "Pending" : text || "Pending";
 }
 
 function resolveMemberName(me: any): string {
@@ -435,7 +413,7 @@ function communityContentStyle(isCompact: boolean): React.CSSProperties {
     position: "relative",
     zIndex: 1,
     display: "grid",
-    gap: isCompact ? 14 : 18,
+    gap: isCompact ? 10 : 18,
   };
 }
 
@@ -445,7 +423,7 @@ function communityHeroStyle(isCompact: boolean): React.CSSProperties {
     border: "1px solid rgba(255,255,255,0.16)",
     background:
       "linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(238,247,255,0.92) 56%, rgba(255,244,201,0.92) 100%)",
-    padding: isCompact ? 14 : 20,
+    padding: isCompact ? 12 : 20,
     boxShadow:
       "0 20px 48px rgba(2,12,27,0.18), inset 0 1px 0 rgba(255,255,255,0.82)",
     overflow: "hidden",
@@ -459,10 +437,10 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
       : bg;
 
   return {
-    borderRadius: 24,
+    borderRadius: "clamp(18px, 4vw, 24px)",
     border: `1px solid ${COMMUNITY_BRAND.border}`,
     background: resolvedBg,
-    padding: 20,
+    padding: "clamp(12px, 3.6vw, 20px)",
     boxShadow:
       "0 18px 44px rgba(7,24,39,0.10), 0 2px 8px rgba(15,23,42,0.03), inset 0 1px 0 rgba(255,255,255,0.74)",
     overflow: "hidden",
@@ -479,7 +457,7 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
     borderRadius: 18,
     border: `1px solid ${COMMUNITY_BRAND.border}`,
     background: resolvedBg,
-    padding: 16,
+    padding: "clamp(12px, 3vw, 16px)",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.72)",
   };
 }
@@ -494,7 +472,7 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
     borderRadius: 16,
     border: `1px solid ${COMMUNITY_BRAND.border}`,
     background: resolvedBg,
-    padding: 14,
+    padding: "clamp(9px, 2.6vw, 12px)",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.72)",
   };
 }
@@ -514,9 +492,9 @@ function badge(primary = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     gap: 6,
-    minHeight: 30,
+    minHeight: 26,
     borderRadius: 999,
-    padding: "6px 10px",
+    padding: "5px 8px",
     background: primary ? COMMUNITY_BRAND.goldSoft : "rgba(13,95,168,0.08)",
     color: primary ? "#6F4C00" : "#1E4063",
     border: primary
@@ -525,6 +503,82 @@ function badge(primary = false): React.CSSProperties {
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
+  };
+}
+
+function compactSignal(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 24,
+    borderRadius: 999,
+    padding: "4px 8px",
+    background: primary ? COMMUNITY_BRAND.goldSoft : "rgba(13,95,168,0.08)",
+    color: primary ? "#6F4C00" : "#1E4063",
+    border: primary
+      ? "1px solid rgba(217,172,51,0.28)"
+      : "1px solid rgba(13,95,168,0.10)",
+    fontSize: 11.5,
+    fontWeight: 900,
+    lineHeight: 1.15,
+    whiteSpace: "nowrap",
+    textAlign: "center",
+    boxShadow: primary
+      ? "0 6px 12px rgba(217,172,51,0.12), inset 0 1px 0 rgba(255,255,255,0.7)"
+      : "inset 0 1px 0 rgba(255,255,255,0.72)",
+  };
+}
+
+function metricLabel(): React.CSSProperties {
+  return {
+    color: "#315A80",
+    fontSize: 9.4,
+    fontWeight: 950,
+    letterSpacing: 0.72,
+    lineHeight: 1.08,
+    textTransform: "uppercase",
+    textAlign: "center",
+  };
+}
+
+function metricValue(): React.CSSProperties {
+  return {
+    marginTop: 4,
+    color: COMMUNITY_BRAND.ink,
+    fontSize: 13.5,
+    fontWeight: 950,
+    lineHeight: 1.2,
+    textAlign: "center",
+    wordBreak: "break-word",
+  };
+}
+
+function metricCard(bg: "blue" | "gold" | "white" = "white"): React.CSSProperties {
+  const backgrounds = {
+    blue:
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(234,244,255,0.98) 62%, rgba(220,235,250,0.98) 100%)",
+    gold:
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,247,216,0.98) 62%, rgba(255,238,178,0.96) 100%)",
+    white:
+      "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 60%, #EEF6FF 100%)",
+  };
+
+  return {
+    minHeight: 64,
+    borderRadius: 15,
+    border:
+      bg === "gold"
+        ? "1px solid rgba(217,172,51,0.30)"
+        : "1px solid rgba(13,95,168,0.16)",
+    background: backgrounds[bg],
+    padding: 8,
+    display: "grid",
+    alignContent: "center",
+    justifyItems: "center",
+    textAlign: "center",
+    boxShadow:
+      "0 8px 18px rgba(7,24,39,0.07), inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -2px 0 rgba(8,40,72,0.05)",
   };
 }
 
@@ -539,27 +593,32 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 42,
-      padding: "10px 14px",
+      minWidth: 0,
+      maxWidth: "100%",
+      boxSizing: "border-box",
+      minHeight: 40,
+      padding: "9px 13px",
       borderRadius: 14,
       border: disabled
         ? "1px solid rgba(148,163,184,0.26)"
-        : "1px solid rgba(255,255,255,0.22)",
+        : "1px solid rgba(255,255,255,0.42)",
       background: disabled
         ? "#CBD5E1"
-        : "linear-gradient(180deg, #0D5FA8 0%, #0A3D70 100%)",
-      color: "#FFFFFF",
+        : "linear-gradient(180deg, #FFE9A8 0%, #D9AC33 54%, #9B7014 100%)",
+      color: disabled ? "#FFFFFF" : "#142033",
       fontWeight: 900,
       fontSize: 14,
       textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
+      overflowWrap: "anywhere",
       opacity: disabled ? 0.86 : 1,
       boxShadow: disabled
         ? "none"
-        : "0 12px 24px rgba(13,95,168,0.20), inset 0 1px 0 rgba(255,255,255,0.26)",
+        : "0 12px 24px rgba(217,172,51,0.24), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -2px 0 rgba(83,56,0,0.18)",
       touchAction: "manipulation",
+      lineHeight: 1.15,
     };
   }
 
@@ -570,6 +629,9 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
+      minWidth: 0,
+      maxWidth: "100%",
+      boxSizing: "border-box",
       minHeight: 38,
       padding: "8px 12px",
       borderRadius: 12,
@@ -582,9 +644,11 @@ function actionBtn(
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
+      overflowWrap: "anywhere",
       opacity: disabled ? 0.86 : 1,
       boxShadow: "inset 0 1px 0 rgba(255,255,255,0.82)",
       touchAction: "manipulation",
+      lineHeight: 1.15,
     };
   }
 
@@ -594,11 +658,14 @@ function actionBtn(
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
+    minWidth: 0,
+    maxWidth: "100%",
+    boxSizing: "border-box",
+    minHeight: 38,
+    padding: "8px 12px",
     borderRadius: 14,
     border: "1px solid rgba(13,95,168,0.14)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #F6FAFF 100%)",
+    background: "linear-gradient(180deg, #FFF7D8 0%, #E3B94B 58%, #B98318 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
@@ -606,9 +673,13 @@ function actionBtn(
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
+    overflowWrap: "anywhere",
     opacity: disabled ? 0.86 : 1,
-    boxShadow: "0 8px 18px rgba(7,24,39,0.05), inset 0 1px 0 rgba(255,255,255,0.82)",
+    boxShadow: disabled
+      ? "none"
+      : "0 8px 18px rgba(217,172,51,0.16), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -2px 0 rgba(83,56,0,0.14)",
     touchAction: "manipulation",
+    lineHeight: 1.15,
   };
 }
 
@@ -619,19 +690,49 @@ function collapseToggle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 38,
-    padding: "8px 12px",
+    minWidth: 0,
+    maxWidth: "100%",
+    boxSizing: "border-box",
+    minHeight: 34,
+    padding: "7px 11px",
     borderRadius: 12,
     border: "1px solid rgba(13,95,168,0.14)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #F5FAFF 100%)",
-    color: "#1E4063",
+    background: "linear-gradient(180deg, #FFF7D8 0%, #E3B94B 58%, #B98318 100%)",
+    color: "#0B1F33",
     fontWeight: 800,
     fontSize: 13,
     cursor: "pointer",
     textAlign: "center",
     whiteSpace: "normal",
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.82)",
+    overflowWrap: "anywhere",
+    boxShadow:
+      "0 8px 18px rgba(217,172,51,0.15), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -2px 0 rgba(83,56,0,0.14)",
     touchAction: "manipulation",
+    lineHeight: 1.15,
+  };
+}
+
+function collapseHeaderLayout(isCompact: boolean): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+    gap: isCompact ? 10 : 12,
+    alignItems: "start",
+  };
+}
+
+function collapseHeaderText(): React.CSSProperties {
+  return {
+    minWidth: 0,
+  };
+}
+
+function collapseHeaderButton(isCompact: boolean): React.CSSProperties {
+  return {
+    ...collapseToggle(),
+    justifySelf: isCompact ? "stretch" : "end",
+    alignSelf: "start",
+    width: isCompact ? "100%" : undefined,
   };
 }
 
@@ -687,60 +788,18 @@ function previewMediaBox(): React.CSSProperties {
   };
 }
 
-function getPoolAmountText(payload: any): string {
-  const candidates = [
-    payload?.available_balance,
-    payload?.balance,
-    payload?.pool_balance,
-    payload?.summary?.available_balance,
-    payload?.summary?.balance,
-    payload?.totals?.available_balance,
-    payload?.totals?.balance,
-    payload?.wallet_balance,
-  ];
-
-  for (const candidate of candidates) {
-    const text = safeStr(candidate);
-    if (text) return text;
-  }
-
-  return "Not available yet";
-}
-
-function getPoolCurrency(payload: any): string {
-  return firstTruthy(
-    payload?.currency,
-    payload?.summary?.currency,
-    payload?.totals?.currency,
-    "NGN"
-  );
-}
-
 function getSummaryTotal(payload: any, key: string, fallback = "0.00"): string {
   return firstTruthy(payload?.totals?.[key], payload?.summary?.totals?.[key], fallback);
 }
 
-function getSummaryCurrency(payload: any): string {
-  return firstTruthy(payload?.currency, payload?.summary?.currency, "NGN");
+function moneyNumber(value: any): number {
+  const raw = safeStr(value).replace(/,/g, "");
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function formatMoneySignal(amount: string, currency: string): string {
-  const cleanAmount = safeStr(amount) || "0.00";
-  const cleanCurrency = safeStr(currency) || "NGN";
-  return `${cleanAmount} ${cleanCurrency}`;
-}
-
-function userFinanceSyncText(issue: string, cumulative = false): string {
-  const raw = safeStr(issue);
-  if (!raw) return "";
-  if (/not\s*found|404/i.test(raw)) {
-    return cumulative
-      ? "The full finance summary is still being prepared. The selected community signal can still be used for now."
-      : "This selected community finance signal is still being prepared.";
-  }
-  return cumulative
-    ? "The full finance summary could not refresh just now. Try again after a short moment."
-    : "This selected community finance signal could not refresh just now.";
+function standingLabel(amount: number): string {
+  return amount < 0 ? "Negative" : "Positive";
 }
 
 function getInviteUrl(payload: any): string {
@@ -750,54 +809,6 @@ function getInviteUrl(payload: any): string {
     payload?.link,
     payload?.invite_link
   );
-}
-
-function demandUrgencyLabel(value?: string | null): string {
-  const urgency = safeStr(value).toLowerCase();
-  if (urgency === "high") return "Urgent";
-  if (urgency === "low") return "Low pressure";
-  return "Normal";
-}
-
-function safeDateTime(value: any): string {
-  const raw = safeStr(value);
-  if (!raw) return "";
-  const d = new Date(raw);
-  if (!Number.isFinite(d.getTime())) return raw;
-  return d.toLocaleString();
-}
-
-function isMineDemandRow(row: DemandRow, me: any): boolean {
-  if (row?.is_mine === true || row?.mine === true) return true;
-
-  const myGmfnId = safeStr(me?.gmfn_id).toUpperCase();
-  const rowGmfnId = safeStr(row?.requester_gmfn_id).toUpperCase();
-  if (myGmfnId && rowGmfnId && myGmfnId === rowGmfnId) return true;
-
-  const myEmail = safeStr(me?.email).toLowerCase();
-  const rowEmail = safeStr(row?.requester_email).toLowerCase();
-  return Boolean(myEmail && rowEmail && myEmail === rowEmail);
-}
-
-function expectedPaymentState(item: ExpectedPaymentRecord): string {
-  if (safeStr(item.confirmed_at)) return "Confirmed";
-  if (item.matched_bank_event_id) return "Matched";
-  if (safeStr(item.reference_display)) return "Awaiting reconciliation";
-  return "Awaiting issue";
-}
-
-function expectedPaymentNextAction(item: ExpectedPaymentRecord): string {
-  const state = expectedPaymentState(item);
-  if (state === "Confirmed") {
-    return "Use the unlocked money route or dependent feature.";
-  }
-  if (state === "Matched") {
-    return "Wait for reconciliation to finish and confirmation to post.";
-  }
-  if (state === "Awaiting reconciliation") {
-    return "Pay with the exact reference, then wait for the bank match.";
-  }
-  return "Generate or refresh the instruction so a usable reference can be issued.";
 }
 
 function readLocalJSON<T>(key: string, fallback: T): T {
@@ -865,9 +876,7 @@ export default function CommunityHomePage() {
   const [me, setMe] = useState<any>(null);
   const [clans, setClans] = useState<ClanItem[]>([]);
   const [selectedClan, setSelectedClan] = useState<ClanItem | null>(null);
-  const [poolInfo, setPoolInfo] = useState<any>(null);
   const [poolSummary, setPoolSummary] = useState<any>(null);
-  const [poolSummaryIssue, setPoolSummaryIssue] = useState("");
   const [inviteLink, setInviteLink] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [changingClanId, setChangingClanId] = useState<number>(0);
@@ -905,14 +914,6 @@ export default function CommunityHomePage() {
   const [activeCommunitySpotlightSyncIssue, setActiveCommunitySpotlightSyncIssue] =
     useState("");
   const [publishingSpotlight, setPublishingSpotlight] = useState(false);
-  const [moneySurface, setMoneySurface] = useState<CommunityMoneySurface | null>(null);
-  const [expectedPayments, setExpectedPayments] = useState<ExpectedPaymentRecord[]>([]);
-  const [financeLoading, setFinanceLoading] = useState(false);
-  const [financeSyncIssue, setFinanceSyncIssue] = useState("");
-  const [myOpenDemands, setMyOpenDemands] = useState<DemandRow[]>([]);
-  const [visibleDemands, setVisibleDemands] = useState<DemandRow[]>([]);
-  const [demandLoading, setDemandLoading] = useState(false);
-  const [demandSyncIssue, setDemandSyncIssue] = useState("");
 
   const [firstCircleDraft, setFirstCircleDraft] = useState(() =>
     loadFirstCircleDraft()
@@ -923,6 +924,7 @@ export default function CommunityHomePage() {
       readLocalJSON(COMMUNITY_HOME_COLLAPSE_KEY, defaultCollapseState())
     )
   );
+  const [shopControlOpenSignal, setShopControlOpenSignal] = useState(0);
   const spotlightImagePrepJobRef = useRef(0);
   const spotlightVideoPrepJobRef = useRef(0);
 
@@ -1056,19 +1058,16 @@ export default function CommunityHomePage() {
     const clanId = getClanId(selectedClan);
 
     if (!clanId) {
-      setPoolInfo(null);
       setPoolSummary(null);
-      setPoolSummaryIssue("");
       setInviteLink("");
       return;
     }
 
     (async () => {
-      const [poolRes, summaryRes, inviteRes] = await Promise.all([
-        getPoolMe("NGN", 20).catch(() => null),
+      const [summaryRes, inviteRes] = await Promise.all([
         getPoolMeSummary("NGN").catch((err) => ({
           __failed: String(
-            err?.message || err || "Cumulative finance summary is not ready."
+            err?.message || err || "Your full finance summary is not ready yet."
           ),
         })),
         getClanInviteLink(clanId).catch(() => null),
@@ -1076,11 +1075,9 @@ export default function CommunityHomePage() {
 
       if (!alive) return;
 
-      setPoolInfo(poolRes);
       setPoolSummary(
         summaryRes && !(summaryRes as any).__failed ? summaryRes : null
       );
-      setPoolSummaryIssue(safeStr((summaryRes as any)?.__failed || ""));
       setInviteLink(getInviteUrl(inviteRes));
     })();
 
@@ -1088,136 +1085,6 @@ export default function CommunityHomePage() {
       alive = false;
     };
   }, [selectedClan]);
-
-  useEffect(() => {
-    let alive = true;
-
-    const clanId = getClanId(selectedClan);
-
-    if (!clanId) {
-      setMyOpenDemands([]);
-      setVisibleDemands([]);
-      setDemandSyncIssue("");
-      setDemandLoading(false);
-      return;
-    }
-
-    (async () => {
-      setDemandLoading(true);
-
-      try {
-        const [myRes, visibleRes] = await Promise.all([
-          listMarketplaceRequests({
-            clan_id: clanId,
-            mine_only: true,
-            status: "open",
-            limit: 20,
-          }).catch((err) => ({
-            items: [],
-            __failed: String(err?.message || err || "My demand refresh failed."),
-          })),
-          listMarketplaceRequests({
-            clan_id: clanId,
-            mine_only: false,
-            status: "open",
-            limit: 20,
-          }).catch((err) => ({
-            items: [],
-            __failed: String(
-              err?.message || err || "Visible demand refresh failed."
-            ),
-          })),
-        ]);
-
-        if (!alive) return;
-
-        const myRows = rowsOf<DemandRow>(myRes).sort((a, b) =>
-          safeStr(b?.created_at).localeCompare(safeStr(a?.created_at))
-        );
-        const visibleRows = rowsOf<DemandRow>(visibleRes)
-          .filter((row) => !isMineDemandRow(row, me))
-          .sort((a, b) =>
-            safeStr(b?.created_at).localeCompare(safeStr(a?.created_at))
-          );
-
-        setMyOpenDemands(myRows);
-        setVisibleDemands(visibleRows);
-        setDemandSyncIssue(
-          [safeStr((myRes as any)?.__failed), safeStr((visibleRes as any)?.__failed)]
-            .filter(Boolean)
-            .join(" ")
-        );
-      } finally {
-        if (alive) {
-          setDemandLoading(false);
-        }
-      }
-    })();
-
-    return () => {
-      alive = false;
-    };
-  }, [selectedClan, me]);
-
-  useEffect(() => {
-    let alive = true;
-
-    const clanId = getClanId(selectedClan);
-    const gmfnId = safeStr(me?.gmfn_id);
-
-    if (!clanId || !gmfnId) {
-      setMoneySurface(null);
-      setExpectedPayments([]);
-      setFinanceSyncIssue("");
-      setFinanceLoading(false);
-      return;
-    }
-
-    (async () => {
-      setFinanceLoading(true);
-
-      try {
-        const [surfaceRes, expectedRes] = await Promise.all([
-          getCommunityMoneySurface(clanId, gmfnId, "NGN").catch((err) => ({
-            __failed: String(err?.message || err || "Finance page refresh failed."),
-          })),
-          listExpectedPayments({ clan_id: clanId, limit: 30 }).catch((err) => ({
-            items: [],
-            __failed: String(err?.message || err || "Expected payment refresh failed."),
-          })),
-        ]);
-
-        if (!alive) return;
-
-        const nextSurface =
-          surfaceRes && !("__failed" in (surfaceRes as any))
-            ? (surfaceRes as CommunityMoneySurface)
-            : null;
-        const nextExpectedPayments = rowsOf<ExpectedPaymentRecord>(expectedRes).filter(
-          (item) => !["applied", "cancelled", "expired"].includes(safeStr(item?.status).toLowerCase())
-        );
-
-        setMoneySurface(nextSurface);
-        setExpectedPayments(nextExpectedPayments);
-        setFinanceSyncIssue(
-          [
-            safeStr((surfaceRes as any)?.__failed),
-            safeStr((expectedRes as any)?.__failed),
-          ]
-            .filter(Boolean)
-            .join(" ")
-        );
-      } finally {
-        if (alive) {
-          setFinanceLoading(false);
-        }
-      }
-    })();
-
-    return () => {
-      alive = false;
-    };
-  }, [selectedClan, me]);
 
   useEffect(() => {
     const clanId = getClanId(selectedClan);
@@ -1260,8 +1127,6 @@ export default function CommunityHomePage() {
   }, [selectedClan, spotlightDescription, spotlightTagNumber, spotlightExpiry]);
 
   const selectedClanName = getClanName(selectedClan);
-  const selectedClanTrust = getClanTrust(selectedClan);
-  const selectedClanCci = getClanCci(selectedClan);
   const selectedClanId = getClanId(selectedClan);
   const memberGlobalId = firstTruthy(
     me?.gmfn_id,
@@ -1272,164 +1137,37 @@ export default function CommunityHomePage() {
     "Awaiting issue"
   );
 
-  const poolAmount = getPoolAmountText(poolInfo);
-  const poolCurrency = getPoolCurrency(poolInfo);
-  const poolSummaryCurrency = getSummaryCurrency(poolSummary);
   const cumulativeAvailable = getSummaryTotal(
     poolSummary,
     "effective_available",
     getSummaryTotal(poolSummary, "available_balance", "0.00")
   );
-  const cumulativeReserved = getSummaryTotal(poolSummary, "reserved_pool", "0.00");
-  const cumulativePendingIn = getSummaryTotal(poolSummary, "pending_deposits", "0.00");
-  const cumulativePendingOut = getSummaryTotal(poolSummary, "pending_withdrawals", "0.00");
-  const cumulativeLockedGuarantee = getSummaryTotal(
+  const cumulativeGuarantorEarned = getSummaryTotal(
+    poolSummary,
+    "guarantor_earned_total",
+    "0.00"
+  );
+  const cumulativeBorrowerOutstanding = getSummaryTotal(
+    poolSummary,
+    "borrower_outstanding_total",
+    "0.00"
+  );
+  const cumulativeGuaranteeLocked = getSummaryTotal(
     poolSummary,
     "guarantee_locked_as_guarantor",
     "0.00"
   );
+  const cumulativeStandingAmount =
+    moneyNumber(cumulativeAvailable) +
+    moneyNumber(cumulativeGuarantorEarned) -
+    moneyNumber(cumulativeBorrowerOutstanding) -
+    moneyNumber(cumulativeGuaranteeLocked);
   const communityHomeOwnerName = resolveMemberName(me);
   const communityCountFromSummary = Number(poolSummary?.communities_count || clans.length || 0);
 
   const sortedClans = useMemo(() => {
     return [...clans].sort((a, b) => getClanName(a).localeCompare(getClanName(b)));
   }, [clans]);
-
-  const urgentDemandCount = useMemo(() => {
-    return [...myOpenDemands, ...visibleDemands].filter(
-      (row) => safeStr(row?.urgency).toLowerCase() === "high"
-    ).length;
-  }, [myOpenDemands, visibleDemands]);
-
-  const demandPreviewRows = useMemo(() => {
-    return [...myOpenDemands, ...visibleDemands]
-      .sort((a, b) => safeStr(b?.created_at).localeCompare(safeStr(a?.created_at)))
-      .slice(0, 3);
-  }, [myOpenDemands, visibleDemands]);
-
-  const demandNextAction = useMemo(() => {
-    if (!selectedClanId) {
-      return {
-        title: "Select a community before managing demand",
-        detail:
-          "Demand belongs to a real community. Choose your active community first, then create or review live need signals here.",
-      };
-    }
-
-    if (urgentDemandCount > 0) {
-      return {
-        title: "Review urgent demand before it drifts",
-        detail:
-          "Urgent need signals are already live in this community. Open Demand Box or Action Inbox and decide the next clean follow-up.",
-      };
-    }
-
-    if (myOpenDemands.length > 0) {
-      return {
-        title: "Keep your open demand current",
-        detail:
-          "You already have live demand in this community. Review it, update it, or close it cleanly so notices and visibility stay credible.",
-      };
-    }
-
-    return {
-      title: "Create the next real demand from Community Home",
-      detail:
-        "Start the next real demand here, then continue in Demand Box when you want the fuller follow-up view.",
-    };
-  }, [selectedClanId, urgentDemandCount, myOpenDemands.length]);
-
-  const activeExpectedPayments = useMemo(() => {
-    return expectedPayments;
-  }, [expectedPayments]);
-
-  const pendingFinanceCount = useMemo(() => {
-    return activeExpectedPayments.filter((item) => {
-      const state = expectedPaymentState(item);
-      return state === "Matched" || state === "Awaiting reconciliation";
-    }).length;
-  }, [activeExpectedPayments]);
-
-  const financePreviewPayments = useMemo(() => {
-    return activeExpectedPayments
-      .slice()
-      .sort((a, b) => safeStr(b?.due_at).localeCompare(safeStr(a?.due_at)))
-      .slice(0, 3);
-  }, [activeExpectedPayments]);
-
-  const financeNextAction = useMemo(() => {
-    if (!selectedClanId) {
-      return {
-        title: "Select a marketplace group before reviewing finance",
-        detail:
-          "Choose one community from Community Home first, then review its local signal here before opening the combined Finance workspace.",
-      };
-    }
-
-    if (pendingFinanceCount > 0) {
-      return {
-        title: "Reconciliation is waiting inside this marketplace signal",
-        detail:
-          "One or more expected payments are still waiting for confirmation or bank match. Review this local group signal first, then open Finance for the fuller cumulative money record.",
-      };
-    }
-
-    if (moneySurface?.pendingWithdrawals && safeStr(moneySurface.pendingWithdrawals) !== "0.00") {
-      return {
-        title: "A money-out record is already open in this marketplace",
-        detail:
-          "Withdrawal movement is already visible in this selected marketplace signal. Review the current record and destination details before opening another page.",
-      };
-    }
-
-    return {
-      title: "Community Home shows the local finance signal only",
-      detail:
-        "Review this marketplace group signal here first, then open Finance when you need your combined money record across all marketplaces.",
-    };
-  }, [selectedClanId, pendingFinanceCount, moneySurface]);
-
-  const cumulativeFinanceNextAction = useMemo(() => {
-    if (poolSummaryIssue) {
-      return {
-        title: "Cumulative finance is syncing",
-        detail:
-          "The app can still show the selected community signal, but the full cross-community finance reading needs another refresh.",
-      };
-    }
-
-    if (Number(cumulativeLockedGuarantee || 0) > 0) {
-      return {
-        title: "Part of your pool is already backing trust",
-        detail:
-          "Some money is locked because you guaranteed support. Open Finance to see where the lock sits before taking another money step.",
-      };
-    }
-
-    if (
-      Number(cumulativePendingIn || 0) > 0 ||
-      Number(cumulativePendingOut || 0) > 0
-    ) {
-      return {
-        title: "Money movement is still settling",
-        detail:
-          "At least one money-in or money-out record is not fully settled yet. Open Finance when you need the full cross-community record.",
-      };
-    }
-
-    return {
-      title: "Your cross-community finance signal is steady",
-      detail:
-        "This is your quick money reading across the communities attached to your GSN ID. Open Finance for the fuller breakdown.",
-    };
-  }, [
-    cumulativeLockedGuarantee,
-    cumulativePendingIn,
-    cumulativePendingOut,
-    poolSummaryIssue,
-  ]);
-  const cumulativeFinanceSyncText = userFinanceSyncText(poolSummaryIssue, true);
-  const selectedFinanceSyncText = userFinanceSyncText(financeSyncIssue, false);
 
   const firstCircleProgress = useMemo(
     () => getFirstCircleProgress(firstCircleDraft),
@@ -1587,34 +1325,40 @@ export default function CommunityHomePage() {
     setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
-  function openGrowYourCircle() {
-    setCollapsed((prev) => ({ ...prev, circle: false }));
+  function openCommunityHomeSection(
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    targetId: string,
+    expandKey?: CollapseKey
+  ) {
+    consumeCommunityButtonEvent(event);
+
+    if (expandKey) {
+      setCollapsed((prev) => ({ ...prev, [expandKey]: false }));
+    }
 
     if (typeof document !== "undefined") {
-      const el = document.getElementById("community-home-grow-your-circle");
-      if (el && typeof el.scrollIntoView === "function") {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
+      window.setTimeout(() => {
+        const el = document.getElementById(targetId);
+        if (el && typeof el.scrollIntoView === "function") {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 0);
     }
   }
 
-  function openSpotlightGears() {
-    setCollapsed((prev) => ({ ...prev, spotlight: false }));
+  function openCommunityShopControl(
+    event: React.SyntheticEvent<HTMLElement> | undefined
+  ) {
+    consumeCommunityButtonEvent(event);
+    setShopControlOpenSignal((prev) => prev + 1);
 
     if (typeof document !== "undefined") {
-      const el = document.getElementById("community-home-spotlight-gears");
-      if (el && typeof el.scrollIntoView === "function") {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }
-  }
-
-  function openShopControlPanel() {
-    if (typeof document !== "undefined") {
-      const el = document.getElementById("community-home-shop-control");
-      if (el && typeof el.scrollIntoView === "function") {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
+      window.setTimeout(() => {
+        const el = document.getElementById("community-home-shop-control");
+        if (el && typeof el.scrollIntoView === "function") {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 0);
     }
   }
 
@@ -1649,7 +1393,9 @@ export default function CommunityHomePage() {
     }
   }
 
-  function copyInviteLink() {
+  function copyInviteLink(event?: React.SyntheticEvent<HTMLElement>) {
+    consumeCommunityButtonEvent(event);
+
     if (!inviteLink) {
       showNotice("error", "Invite link is not ready yet.");
       return;
@@ -1657,13 +1403,6 @@ export default function CommunityHomePage() {
 
     safeCopy(inviteLink);
     showNotice("success", "Invite link copied.");
-  }
-
-  function consumeCommunityPointerEvent(
-    event?: React.SyntheticEvent<HTMLElement>
-  ) {
-    if (!event) return;
-    event.stopPropagation();
   }
 
   function consumeCommunityButtonEvent(
@@ -1686,7 +1425,11 @@ export default function CommunityHomePage() {
     navigateWithOrigin(navigate, to, location);
   }
 
-  async function openSelectedMarketplace() {
+  async function openSelectedMarketplace(
+    event?: React.SyntheticEvent<HTMLElement>
+  ) {
+    consumeCommunityButtonEvent(event);
+
     if (!selectedClanId || !selectedClan) {
       showNotice("error", "Select a community first.");
       return;
@@ -1707,7 +1450,9 @@ export default function CommunityHomePage() {
     }
   }
 
-  function clearSpotlightDraft() {
+  function clearSpotlightDraft(event?: React.SyntheticEvent<HTMLElement>) {
+    consumeCommunityButtonEvent(event);
+
     const clanId = getClanId(selectedClan);
     spotlightImagePrepJobRef.current += 1;
     spotlightVideoPrepJobRef.current += 1;
@@ -1860,7 +1605,9 @@ export default function CommunityHomePage() {
     }
   }
 
-  function copyFirstCircleInviteBundle() {
+  function copyFirstCircleInviteBundle(event?: React.SyntheticEvent<HTMLElement>) {
+    consumeCommunityButtonEvent(event);
+
     if (readyFirstCircleContacts.length === 0) {
       showNotice("error", "No ready invite draft is available yet.");
       return;
@@ -1877,7 +1624,9 @@ export default function CommunityHomePage() {
     showNotice("success", "First-circle invite bundle copied.");
   }
 
-  async function publishSpotlight() {
+  async function publishSpotlight(event?: React.SyntheticEvent<HTMLElement>) {
+    consumeCommunityButtonEvent(event);
+
     if (!selectedClanId) {
       showSpotlightNotice(
         "error",
@@ -2021,7 +1770,9 @@ export default function CommunityHomePage() {
 
   if (loading) {
     return (
-      <div style={communityShellStyle(isCompact)}>
+      <div
+        style={communityShellStyle(isCompact)}
+      >
         <div style={communityWatermarkStyle(isCompact)} aria-hidden="true">
           <GSNBrandMark width={isCompact ? 180 : 260} height={isCompact ? 218 : 315} />
         </div>
@@ -2122,7 +1873,6 @@ export default function CommunityHomePage() {
             >
               <button
                 type="button"
-                onPointerDown={consumeCommunityPointerEvent}
                 onClick={(event) => openCommunityRoute(event, "/app/clans")}
                 style={actionBtn("primary")}
               >
@@ -2130,7 +1880,6 @@ export default function CommunityHomePage() {
               </button>
               <button
                 type="button"
-                onPointerDown={consumeCommunityPointerEvent}
                 onClick={(event) =>
                   openCommunityRoute(event, "/app/build-first-circle")
                 }
@@ -2140,7 +1889,6 @@ export default function CommunityHomePage() {
               </button>
               <button
                 type="button"
-                onPointerDown={consumeCommunityPointerEvent}
                 onClick={(event) => openCommunityRoute(event, "/app/dashboard")}
                 style={actionBtn("secondary")}
               >
@@ -2154,7 +1902,9 @@ export default function CommunityHomePage() {
   }
 
   return (
-    <div style={communityShellStyle(isCompact)}>
+    <div
+      style={communityShellStyle(isCompact)}
+    >
       <div style={communityWatermarkStyle(isCompact)} aria-hidden="true">
         <GSNBrandMark width={isCompact ? 180 : 260} height={isCompact ? 218 : 315} />
       </div>
@@ -2164,7 +1914,7 @@ export default function CommunityHomePage() {
           style={{
             display: "grid",
             gridTemplateColumns: isCompact ? "1fr" : "auto minmax(0, 1fr)",
-            gap: isCompact ? 12 : 18,
+            gap: isCompact ? 8 : 18,
             alignItems: "center",
           }}
         >
@@ -2178,11 +1928,11 @@ export default function CommunityHomePage() {
           >
             <div
               style={{
-                width: isCompact ? 54 : 68,
-                height: isCompact ? 62 : 78,
+                width: isCompact ? 44 : 68,
+                height: isCompact ? 50 : 78,
                 display: "grid",
                 placeItems: "center",
-                borderRadius: 22,
+                borderRadius: isCompact ? 18 : 22,
                 background:
                   "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(234,244,255,0.92) 100%)",
                 border: "1px solid rgba(217,172,51,0.24)",
@@ -2190,8 +1940,8 @@ export default function CommunityHomePage() {
               }}
             >
               <GSNBrandMark
-                width={isCompact ? 38 : 48}
-                height={isCompact ? 46 : 58}
+                width={isCompact ? 30 : 48}
+                height={isCompact ? 36 : 58}
               />
             </div>
             {isCompact ? (
@@ -2201,12 +1951,12 @@ export default function CommunityHomePage() {
                   style={{
                     marginTop: 3,
                     color: COMMUNITY_BRAND.ink,
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: 900,
                     lineHeight: 1.15,
                   }}
                 >
-                  Community Home of {communityHomeOwnerName}
+                  {communityHomeOwnerName}
                 </div>
               </div>
             ) : null}
@@ -2233,36 +1983,34 @@ export default function CommunityHomePage() {
 
             <div
               style={{
-                marginTop: isCompact ? 8 : 12,
+                marginTop: isCompact ? 6 : 12,
                 color: "#3A526A",
-                fontSize: isCompact ? 12 : 14,
-                lineHeight: isCompact ? 1.55 : 1.75,
+                fontSize: isCompact ? 11.5 : 14,
+                lineHeight: isCompact ? 1.45 : 1.75,
                 maxWidth: 880,
               }}
             >
-              This page gathers the communities attached to your one GSN ID.
-              Choose a community here when you want to open its Marketplace.
-              Your wider finance, trust, shop, and spotlight controls stay tied
-              to this same identity.
+              Pick the community you want to work in. Your GSN ID keeps your
+              trust, finance, shop, and spotlight clear wherever you belong.
             </div>
 
             <div
               style={{
-                marginTop: 14,
+                marginTop: isCompact ? 8 : 14,
                 display: "grid",
                 gridTemplateColumns: isCompact
                   ? "repeat(2, minmax(0, 1fr))"
                   : "repeat(auto-fit, minmax(142px, 1fr))",
-                gap: 8,
+                gap: isCompact ? 6 : 8,
               }}
             >
               <div style={innerCard("rgba(255,255,255,0.74)")}>
                 <div style={sectionLabel()}>Holder</div>
                 <div
                   style={{
-                    marginTop: 6,
+                    marginTop: 4,
                     color: COMMUNITY_BRAND.ink,
-                    fontSize: 15,
+                    fontSize: isCompact ? 12.5 : 15,
                     fontWeight: 900,
                     lineHeight: 1.25,
                     wordBreak: "break-word",
@@ -2275,9 +2023,9 @@ export default function CommunityHomePage() {
                 <div style={sectionLabel()}>GSN ID</div>
                 <div
                   style={{
-                    marginTop: 6,
+                    marginTop: 4,
                     color: COMMUNITY_BRAND.ink,
-                    fontSize: 15,
+                    fontSize: isCompact ? 12.5 : 15,
                     fontWeight: 900,
                     lineHeight: 1.25,
                     wordBreak: "break-word",
@@ -2290,9 +2038,9 @@ export default function CommunityHomePage() {
                 <div style={sectionLabel()}>Communities</div>
                 <div
                   style={{
-                    marginTop: 6,
+                    marginTop: 2,
                     color: COMMUNITY_BRAND.ink,
-                    fontSize: 24,
+                    fontSize: isCompact ? 22 : 24,
                     fontWeight: 900,
                   }}
                 >
@@ -2300,46 +2048,18 @@ export default function CommunityHomePage() {
                 </div>
               </div>
               <div style={innerCard("rgba(255,255,255,0.74)")}>
-                <div style={sectionLabel()}>Shop</div>
+                <div style={sectionLabel()}>Money across communities</div>
                 <div
                   style={{
-                    marginTop: 6,
+                    marginTop: 4,
                     color: COMMUNITY_BRAND.ink,
-                    fontSize: 15,
-                    fontWeight: 900,
-                    lineHeight: 1.25,
-                  }}
-                >
-                  One ID. One shop.
-                </div>
-              </div>
-              <div style={innerCard("rgba(255,255,255,0.74)")}>
-                <div style={sectionLabel()}>Spotlight</div>
-                <div
-                  style={{
-                    marginTop: 6,
-                    color: COMMUNITY_BRAND.ink,
-                    fontSize: 15,
-                    fontWeight: 900,
-                    lineHeight: 1.25,
-                  }}
-                >
-                  Community-governed exposure
-                </div>
-              </div>
-              <div style={innerCard("rgba(255,255,255,0.74)")}>
-                <div style={sectionLabel()}>Cumulative pool</div>
-                <div
-                  style={{
-                    marginTop: 6,
-                    color: COMMUNITY_BRAND.ink,
-                    fontSize: 15,
+                    fontSize: isCompact ? 16 : 18,
                     fontWeight: 900,
                     lineHeight: 1.25,
                     wordBreak: "break-word",
                   }}
                 >
-                  {formatMoneySignal(cumulativeAvailable, poolSummaryCurrency)}
+                  {standingLabel(cumulativeStandingAmount)}
                 </div>
               </div>
             </div>
@@ -2347,52 +2067,33 @@ export default function CommunityHomePage() {
         </div>
       </section>
 
-      <DomainIntroToggle
-        title="About Community Home"
-        eyebrow="Your guide"
-        body="This is where all your groups sit together. Choose one group here when you want to work inside that community."
-        bullets={[
-          "Use it to see all the communities you belong to.",
-          "Choose one community, then open it as Marketplace to work inside it.",
-          "This page can show simple group signs like trust, money health, CCI (cross-community integrity), demand, and spotlight. Your full private records stay in Finance and Trust Passport.",
-        ]}
-        note="Simple rule: Community Home shows all your groups. Marketplace opens the one you choose."
-        tone="dark"
-      />
-
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
-      <section style={{ ...pageCard("#FFFFFF"), order: 65 }}>
+      <section style={{ ...pageCard("#FFFFFF"), order: 55 }}>
         <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
+          style={collapseHeaderLayout(isCompact)}
         >
-          <div>
-            <div style={sectionLabel()}>Owner controls</div>
+          <div style={collapseHeaderText()}>
+            <div style={sectionLabel()}>Your main actions</div>
             <div
               style={{
                 marginTop: 8,
                 color: "#5F7287",
-                fontSize: 14,
-                lineHeight: 1.75,
+                fontSize: isCompact ? 12.5 : 14,
+                lineHeight: isCompact ? 1.5 : 1.75,
               }}
             >
-              These actions belong to the owner side of Community Home: create a
-              new community, manage the one shop tied to your GSN ID, grow your
-              trusted circle, and open the selected marketplace tools.
+              Create a community, invite trusted people, manage your shop, or open Marketplace.
             </div>
           </div>
 
           <button
             type="button"
-            onPointerDown={consumeCommunityPointerEvent}
-            onClick={() => toggleSection("tools")}
-            style={collapseToggle()}
+            onClick={(event) => {
+              consumeCommunityButtonEvent(event);
+              toggleSection("tools");
+            }}
+            style={collapseHeaderButton(isCompact)}
           >
             {collapsed.tools ? "Open" : "Collapse"}
           </button>
@@ -2401,15 +2102,16 @@ export default function CommunityHomePage() {
         {!collapsed.tools ? (
           <div
             style={{
-              marginTop: 16,
+              marginTop: isCompact ? 10 : 16,
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-              gap: 10,
+              gridTemplateColumns: isCompact
+                ? "repeat(2, minmax(0, 1fr))"
+                : "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: isCompact ? 8 : 10,
             }}
           >
             <button
               type="button"
-              onPointerDown={consumeCommunityPointerEvent}
               onClick={(event) => openCommunityRoute(event, "/app/clans")}
               style={actionBtn("primary")}
             >
@@ -2418,7 +2120,6 @@ export default function CommunityHomePage() {
 
             <button
               type="button"
-              onPointerDown={consumeCommunityPointerEvent}
               onClick={copyInviteLink}
               style={actionBtn("secondary", !inviteLink)}
               disabled={!inviteLink}
@@ -2428,17 +2129,13 @@ export default function CommunityHomePage() {
 
             <button
               type="button"
-              onPointerDown={consumeCommunityPointerEvent}
-              onClick={(event) => openCommunityRoute(event, "/app/demand-box")}
-              style={actionBtn("secondary")}
-            >
-              Demand Box
-            </button>
-
-            <button
-              type="button"
-              onPointerDown={consumeCommunityPointerEvent}
-              onClick={openGrowYourCircle}
+              onClick={(event) =>
+                openCommunityHomeSection(
+                  event,
+                  "community-home-grow-your-circle",
+                  "circle"
+                )
+              }
               style={actionBtn("secondary")}
             >
               Grow Trusted Circle
@@ -2446,8 +2143,13 @@ export default function CommunityHomePage() {
 
             <button
               type="button"
-              onPointerDown={consumeCommunityPointerEvent}
-              onClick={openSpotlightGears}
+              onClick={(event) =>
+                openCommunityHomeSection(
+                  event,
+                  "community-home-spotlight-gears",
+                  "spotlight"
+                )
+              }
               style={actionBtn("secondary")}
             >
               Manage Spotlight
@@ -2455,8 +2157,7 @@ export default function CommunityHomePage() {
 
             <button
               type="button"
-              onPointerDown={consumeCommunityPointerEvent}
-              onClick={openShopControlPanel}
+              onClick={openCommunityShopControl}
               style={actionBtn("secondary")}
             >
               Shop Control
@@ -2464,7 +2165,6 @@ export default function CommunityHomePage() {
 
             <button
               type="button"
-              onPointerDown={consumeCommunityPointerEvent}
               onClick={(event) => openCommunityRoute(event, "/app/notifications")}
               style={actionBtn("secondary")}
             >
@@ -2473,28 +2173,7 @@ export default function CommunityHomePage() {
 
             <button
               type="button"
-              onPointerDown={consumeCommunityPointerEvent}
-              onClick={(event) => openCommunityRoute(event, "/app/payment/pool")}
-              style={actionBtn("secondary")}
-            >
-              Money In
-            </button>
-
-            <button
-              type="button"
-              onPointerDown={consumeCommunityPointerEvent}
-              onClick={(event) =>
-                openCommunityRoute(event, "/app/withdrawal-instructions")
-              }
-              style={actionBtn("secondary")}
-            >
-              Money Out
-            </button>
-
-            <button
-              type="button"
-              onPointerDown={consumeCommunityPointerEvent}
-              onClick={() => void openSelectedMarketplace()}
+              onClick={(event) => void openSelectedMarketplace(event)}
               disabled={!selectedClanId || changingClanId === selectedClanId}
               style={actionBtn(
                 "secondary",
@@ -2509,721 +2188,8 @@ export default function CommunityHomePage() {
         ) : null}
       </section>
 
-      <section style={{ ...pageCard("#FFFFFF"), order: 40 }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>Cumulative finance summary</div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#5F7287",
-                fontSize: 14,
-                lineHeight: 1.75,
-                maxWidth: 860,
-              }}
-            >
-              This is your money signal across the communities attached to your
-              GSN ID. The selected marketplace signal is still shown below, but
-              the fuller personal record belongs in Finance.
-            </div>
-          </div>
-
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={badge(true)}>
-              Available: {formatMoneySignal(cumulativeAvailable, poolSummaryCurrency)}
-            </span>
-            <span style={badge(false)}>
-              Locked: {formatMoneySignal(cumulativeLockedGuarantee, poolSummaryCurrency)}
-            </span>
-            <span style={badge(false)}>Communities: {communityCountFromSummary}</span>
-          </div>
-        </div>
-
-        <ExplainToggle
-          label="About finance here"
-          what="This gives you one quick money reading across your communities, then keeps the local selected-community money signal underneath."
-          why="A person can belong to many communities, so GSN must help them see the wider money picture before they take another money step."
-          next="Open Finance when you need the full breakdown, including the separate record for each community."
-          tone="light"
-          style={{ marginTop: 12 }}
-        />
-
-        <div
-          style={{
-            marginTop: 16,
-            display: "grid",
-            gridTemplateColumns: isCompact
-              ? "1fr"
-              : "minmax(0, 1.12fr) minmax(320px, 0.88fr)",
-            gap: 16,
-            alignItems: "start",
-          }}
-        >
-          <div style={softCard("#F8FBFF")}>
-            <div style={sectionLabel()}>Cross-community reading</div>
-            <ExplainToggle
-              label="About this finance reading"
-              what="This card reads your finance signal across all communities currently attached to your GSN ID."
-              why="It helps you avoid borrowing, guaranteeing, or paying from one place while missing what is already happening elsewhere."
-              next="Open Finance when you need to see each community record and the full money trail."
-              tone="light"
-              style={{ marginTop: 12 }}
-            />
-            <div
-              style={{
-                marginTop: 10,
-                color: "#0B1F33",
-                fontSize: 22,
-                fontWeight: 900,
-                lineHeight: 1.28,
-              }}
-            >
-              {cumulativeFinanceNextAction.title}
-            </div>
-            <div style={{ marginTop: 10, color: "#5F7287", fontSize: 14, lineHeight: 1.78 }}>
-              {cumulativeFinanceNextAction.detail}
-            </div>
-
-            {cumulativeFinanceSyncText ? (
-              <div style={{ marginTop: 12, ...innerCard("#FFF8E1") }}>
-                <div style={sectionLabel()}>Finance refresh note</div>
-                <div style={{ marginTop: 8, color: "#6F4C00", fontWeight: 800 }}>
-                  {cumulativeFinanceSyncText}
-                </div>
-              </div>
-            ) : null}
-
-            {selectedFinanceSyncText ? (
-              <div style={{ marginTop: 12, ...innerCard("#FFF8E1") }}>
-                <div style={sectionLabel()}>Selected community note</div>
-                <div style={{ marginTop: 8, color: "#6F4C00", fontWeight: 800 }}>
-                  {selectedFinanceSyncText}
-                </div>
-              </div>
-            ) : null}
-
-            <div style={{ marginTop: 14, display: "grid", gap: 8 }}>
-              <div style={innerCard("#FFFFFF")}>
-                <div style={sectionLabel()}>Cumulative available</div>
-                <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 20, fontWeight: 900 }}>
-                  {formatMoneySignal(cumulativeAvailable, poolSummaryCurrency)}
-                </div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 8 }}>
-                <div style={innerCard("#FFFFFF")}>
-                  <div style={sectionLabel()}>Money settling</div>
-                  <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900 }}>
-                    In {formatMoneySignal(cumulativePendingIn, poolSummaryCurrency)} | Out {formatMoneySignal(cumulativePendingOut, poolSummaryCurrency)}
-                  </div>
-                </div>
-                <div style={innerCard("#FFFFFF")}>
-                  <div style={sectionLabel()}>Guarantee locked</div>
-                  <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900 }}>
-                    {formatMoneySignal(cumulativeLockedGuarantee, poolSummaryCurrency)}
-                  </div>
-                </div>
-              </div>
-              <div style={innerCard("#FFFFFF")}>
-                <div style={sectionLabel()}>Reserved pool</div>
-                <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900 }}>
-                  {formatMoneySignal(cumulativeReserved, poolSummaryCurrency)}
-                </div>
-              </div>
-            </div>
-
-            <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button
-                type="button"
-                onPointerDown={consumeCommunityPointerEvent}
-                onClick={(event) => openCommunityRoute(event, "/app/finance")}
-                style={actionBtn("primary")}
-              >
-                Open Finance
-              </button>
-            </div>
-
-            <div style={{ marginTop: 10, color: "#5F7287", fontSize: 13, lineHeight: 1.78 }}>
-              Use Finance when you want the full money record. Use this page
-              only for the quick cross-community and selected-community signal.
-            </div>
-          </div>
-
-          <div style={softCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Current-community finance signal</div>
-
-            <div
-              style={{
-                marginTop: 10,
-                color: "#0B1F33",
-                fontSize: 18,
-                fontWeight: 900,
-                lineHeight: 1.35,
-              }}
-            >
-              {financeNextAction.title}
-            </div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#5F7287",
-                fontSize: 13,
-                lineHeight: 1.7,
-              }}
-            >
-              {financeNextAction.detail}
-            </div>
-
-            <ExplainToggle
-              label="What this live finance record does"
-              what="This card gathers the current community money signal into one place, including pool position, movement, record status, money routes, and expected payments."
-              why="It helps users understand this marketplace-linked finance picture here first instead of jumping across several money routes to work out what state the community is in."
-              next="Read this summary first, then open Finance, Payment Rails, Money In, Money Out, or Payout Details when you need the deeper route."
-              tone="light"
-              style={{ marginTop: 12 }}
-            />
-
-            {financeLoading ? (
-              <div style={{ marginTop: 10, color: "#5F7287", fontSize: 14, lineHeight: 1.75 }}>
-                Loading your current community finance record.
-              </div>
-            ) : (
-              <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-                <div style={innerCard("#FCFEFF")}>
-                  <div style={sectionLabel()}>Pool position</div>
-                  <div
-                    style={{
-                      marginTop: 10,
-                      color: "#0B1F33",
-                      fontSize: 20,
-                      fontWeight: 900,
-                      lineHeight: 1.28,
-                    }}
-                  >
-                    {safeStr(moneySurface?.poolAmount || poolAmount)} {safeStr(moneySurface?.poolCurrency || poolCurrency)}
-                  </div>
-                  <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <span style={badge(true)}>
-                      Available: {safeStr(moneySurface?.effectiveAvailable || "0.00")}
-                    </span>
-                    <span style={badge(false)}>
-                      Reserved: {safeStr(moneySurface?.reservedPool || "0.00")}
-                    </span>
-                  </div>
-                </div>
-
-                <div style={innerCard("#FCFEFF")}>
-                  <div style={sectionLabel()}>Movement</div>
-                  <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <span style={badge(true)}>
-                      Pending in: {safeStr(moneySurface?.pendingDeposits || "0.00")}
-                    </span>
-                    <span style={badge(false)}>
-                      Pending out: {safeStr(moneySurface?.pendingWithdrawals || "0.00")}
-                    </span>
-                    <span style={badge(false)}>
-                      Recent events: {Array.isArray(moneySurface?.recentPoolEvents) ? moneySurface?.recentPoolEvents.length : 0}
-                    </span>
-                  </div>
-                </div>
-
-                <div style={innerCard("#FCFEFF")}>
-                  <div style={sectionLabel()}>Record status</div>
-                  <div
-                    style={{
-                      marginTop: 10,
-                      color: "#0B1F33",
-                      fontWeight: 900,
-                      lineHeight: 1.35,
-                    }}
-                  >
-                    {safeStr(moneySurface?.poolReference)
-                      ? `Reference ${safeStr(moneySurface?.poolReference)} is active in the current finance file.`
-                      : "No active pool reference is visible in the current finance file."}
-                  </div>
-                  <div style={{ marginTop: 8, color: "#5F7287", fontSize: 13, lineHeight: 1.7 }}>
-                    {activeExpectedPayments.length > 0
-                      ? `${activeExpectedPayments.length} expected payment record${
-                          activeExpectedPayments.length === 1 ? "" : "s"
-                        } are open in this community.`
-                      : "No expected payment record is open right now."}
-                  </div>
-                </div>
-
-                <div style={innerCard("#FCFEFF")}>
-                  <div style={sectionLabel()}>Money routes</div>
-                  <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                    <div>
-                      <div style={{ color: "#0B1F33", fontWeight: 900, lineHeight: 1.35 }}>
-                        {safeStr(moneySurface?.depositRoute?.title || "Money In route")}
-                      </div>
-                      <div style={{ marginTop: 6, color: "#5F7287", fontSize: 13, lineHeight: 1.7 }}>
-                        {safeStr(
-                          moneySurface?.depositRoute?.detail ||
-                            "Generate and use the current deposit instruction from the finance file."
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ color: "#0B1F33", fontWeight: 900, lineHeight: 1.35 }}>
-                        {safeStr(moneySurface?.withdrawalRoute?.title || "Money Out route")}
-                      </div>
-                      <div style={{ marginTop: 6, color: "#5F7287", fontSize: 13, lineHeight: 1.7 }}>
-                        {safeStr(
-                          moneySurface?.withdrawalRoute?.detail ||
-                            "Use the current payout route only after the finance file is ready."
-                        )}
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <button
-                        type="button"
-                        onPointerDown={consumeCommunityPointerEvent}
-                        onClick={(event) =>
-                          openCommunityRoute(event, "/app/payment-rails")
-                        }
-                        style={actionBtn("soft")}
-                      >
-                        Review Payment Rails
-                      </button>
-                      <button
-                        type="button"
-                        onPointerDown={consumeCommunityPointerEvent}
-                        onClick={(event) =>
-                          openCommunityRoute(event, "/app/payout-details")
-                        }
-                        style={actionBtn("soft")}
-                      >
-                        Review Payout Details
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={innerCard("#FCFEFF")}>
-                  <div style={sectionLabel()}>Expected payments & reconciliation</div>
-                  {financePreviewPayments.length === 0 ? (
-                    <div style={{ marginTop: 10, color: "#5F7287", fontSize: 13, lineHeight: 1.7 }}>
-                      No payment is waiting here right now.
-                    </div>
-                  ) : (
-                    <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                      {financePreviewPayments.map((item, index) => (
-                        <div key={`${item.id || index}`} style={innerCard("#FFFFFF")}>
-                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                            <span style={badge(true)}>
-                              {safeStr(item.expected_type || "Expected payment")}
-                            </span>
-                            <span style={badge(false)}>
-                              State: {expectedPaymentState(item)}
-                            </span>
-                            {safeStr(item.status) ? (
-                              <span style={badge(false)}>
-                                Status: {safeStr(item.status)}
-                              </span>
-                            ) : null}
-                          </div>
-                          <div
-                            style={{
-                              marginTop: 10,
-                              color: "#0B1F33",
-                              fontWeight: 900,
-                              lineHeight: 1.35,
-                            }}
-                          >
-                            {safeStr(item.amount || "0.00")} {safeStr(item.currency || moneySurface?.poolCurrency || poolCurrency)}
-                          </div>
-                          <div style={{ marginTop: 8, color: "#5F7287", fontSize: 13, lineHeight: 1.7 }}>
-                            {[
-                              item.reference_display
-                                ? `Reference: ${safeStr(item.reference_display)}`
-                                : "",
-                              item.confirmed_at
-                                ? `Confirmed: ${safeDateTime(item.confirmed_at)}`
-                                : item.due_at
-                                ? `Due: ${safeDateTime(item.due_at)}`
-                                : "",
-                              `Next action: ${expectedPaymentNextAction(item)}`,
-                            ]
-                              .filter(Boolean)
-                              .join(" - ")}
-                          </div>
-                          <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                            <button
-                              type="button"
-                              onPointerDown={consumeCommunityPointerEvent}
-                              onClick={(event) =>
-                                openCommunityRoute(event, "/app/finance")
-                              }
-                              style={actionBtn("soft")}
-                            >
-                              Open Finance Record
-                            </button>
-                            <button
-                              type="button"
-                              onPointerDown={consumeCommunityPointerEvent}
-                              onClick={(event) =>
-                                openCommunityRoute(
-                                  event,
-                                  expectedPaymentState(item) === "Awaiting issue"
-                                    ? "/app/payment/pool"
-                                    : "/app/payment-rails"
-                                )
-                              }
-                              style={actionBtn("soft")}
-                            >
-                              {expectedPaymentState(item) === "Awaiting issue"
-                                ? "Open Money In"
-                                : "Open Payment Rails"}
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section style={{ ...pageCard("#FFFFFF"), order: 45 }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>Cumulative trust summary</div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#5F7287",
-                fontSize: 14,
-                lineHeight: 1.75,
-                maxWidth: 860,
-              }}
-            >
-              Community Home can show the quick trust signal, but the fuller
-              story belongs in Trust Passport. TrustSlip is the portable proof
-              people can check when they need confidence.
-            </div>
-          </div>
-
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={badge(true)}>Trust: {selectedClanTrust}</span>
-            <span style={badge(false)}>CCI: {selectedClanCci}</span>
-            <span style={badge(false)}>One GSN ID</span>
-          </div>
-        </div>
-
-        <div
-          style={{
-            marginTop: 16,
-            display: "grid",
-            gridTemplateColumns: isCompact
-              ? "1fr"
-              : "minmax(0, 1.05fr) minmax(320px, 0.95fr)",
-            gap: 16,
-            alignItems: "stretch",
-          }}
-        >
-          <div style={softCard("#F8FBFF")}>
-            <div style={sectionLabel()}>What this means</div>
-            <div
-              style={{
-                marginTop: 10,
-                color: "#0B1F33",
-                fontSize: 22,
-                fontWeight: 900,
-                lineHeight: 1.28,
-              }}
-            >
-              Your trust follows one identity across many communities.
-            </div>
-            <div
-              style={{
-                marginTop: 10,
-                color: "#5F7287",
-                fontSize: 14,
-                lineHeight: 1.78,
-              }}
-            >
-              One community can show a local trust reading. Trust Passport
-              gathers the fuller record across your communities. TrustSlip is
-              the shorter proof another person may check before trade, support,
-              or decision.
-            </div>
-          </div>
-
-          <div style={softCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Open the right trust page</div>
-            <div
-              style={{
-                marginTop: 12,
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr"
-                  : "repeat(3, minmax(0, 1fr))",
-                gap: 10,
-              }}
-            >
-              <button
-                type="button"
-                onPointerDown={consumeCommunityPointerEvent}
-                onClick={(event) => openCommunityRoute(event, "/app/trust")}
-                style={actionBtn("secondary")}
-              >
-                Trust Passport
-              </button>
-              <button
-                type="button"
-                onPointerDown={consumeCommunityPointerEvent}
-                onClick={(event) => openCommunityRoute(event, "/app/trust-slip")}
-                style={actionBtn("secondary")}
-              >
-                TrustSlip
-              </button>
-              <button
-                type="button"
-                onPointerDown={consumeCommunityPointerEvent}
-                onClick={(event) => openCommunityRoute(event, "/app/identity")}
-                style={actionBtn("secondary")}
-              >
-                Identity
-              </button>
-            </div>
-
-            <div
-              style={{
-                marginTop: 14,
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr"
-                  : "repeat(3, minmax(0, 1fr))",
-                gap: 8,
-              }}
-            >
-              <div style={innerCard("#FCFEFF")}>
-                <div style={sectionLabel()}>Selected community</div>
-                <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900 }}>
-                  {selectedClanName}
-                </div>
-              </div>
-              <div style={innerCard("#FCFEFF")}>
-                <div style={sectionLabel()}>Trust</div>
-                <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900 }}>
-                  {selectedClanTrust}
-                </div>
-              </div>
-              <div style={innerCard("#FCFEFF")}>
-                <div style={sectionLabel()}>CCI</div>
-                <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900 }}>
-                  {selectedClanCci}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section style={{ ...pageCard("#FFFFFF"), order: 90 }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>Demand Control Box</div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#5F7287",
-                fontSize: 14,
-                lineHeight: 1.75,
-                maxWidth: 860,
-              }}
-            >
-              Raise demand here, review what is already open, and continue into
-              Demand Box when you need the fuller follow-up path.
-            </div>
-          </div>
-
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={badge(true)}>My open: {myOpenDemands.length}</span>
-            <span style={badge(false)}>Community open: {visibleDemands.length}</span>
-            <span style={badge(false)}>Urgent: {urgentDemandCount}</span>
-          </div>
-        </div>
-
-        <ExplainToggle
-          label="What this demand box does"
-          what="This keeps the current community's live need signals in one place so users can raise a new demand, review what is already open, and decide the next follow-up."
-          why="Demand works best when it feels like a real community signal desk rather than a static note or a hidden side route."
-          next="Read the next action first, then create a new demand or open Demand Box when you need the fuller workflow and follow-up view."
-          tone="light"
-          style={{ marginTop: 12 }}
-        />
-
-        <div
-          style={{
-            marginTop: 16,
-            display: "grid",
-            gridTemplateColumns: isCompact
-              ? "1fr"
-              : "minmax(0, 1.12fr) minmax(320px, 0.88fr)",
-            gap: 16,
-            alignItems: "start",
-          }}
-        >
-          <div style={softCard("#F8FBFF")}>
-            <div style={sectionLabel()}>Current next action</div>
-            <div
-              style={{
-                marginTop: 10,
-                color: "#0B1F33",
-                fontSize: 22,
-                fontWeight: 900,
-                lineHeight: 1.28,
-              }}
-            >
-              {demandNextAction.title}
-            </div>
-            <div style={{ marginTop: 10, color: "#5F7287", fontSize: 14, lineHeight: 1.78 }}>
-              {demandNextAction.detail}
-            </div>
-
-            {demandSyncIssue ? (
-              <div style={{ marginTop: 12, ...noticeCard("error") }}>
-                {demandSyncIssue}
-              </div>
-            ) : null}
-
-            <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button
-                type="button"
-                onPointerDown={consumeCommunityPointerEvent}
-                onClick={(event) =>
-                  openCommunityRoute(event, "/app/demand-box#demand-box-create")
-                }
-                style={actionBtn("primary")}
-              >
-                Create Demand
-              </button>
-              <button
-                type="button"
-                onPointerDown={consumeCommunityPointerEvent}
-                onClick={(event) => openCommunityRoute(event, "/app/demand-box")}
-                style={actionBtn("secondary")}
-              >
-                Open Demand Box
-              </button>
-              <button
-                type="button"
-                onPointerDown={consumeCommunityPointerEvent}
-                onClick={(event) => openCommunityRoute(event, "/app/notifications")}
-                style={actionBtn("soft")}
-              >
-                Open Action Inbox
-              </button>
-            </div>
-          </div>
-
-          <div style={softCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Live demand summary</div>
-
-            <ExplainToggle
-              label="What this live demand summary does"
-              what="This card shows the open demand items that are currently visible for your community, including urgency, area, and the latest signal details."
-              why="It helps users read the live need picture here first instead of guessing whether the community has active demand before opening the full Demand Box."
-              next="Check what is already live here, then open Demand Box only when you need to create, update, or manage the underlying demand items."
-              tone="light"
-              style={{ marginTop: 12 }}
-            />
-
-            {demandLoading ? (
-              <div style={{ marginTop: 10, color: "#5F7287", fontSize: 14, lineHeight: 1.75 }}>
-                Loading the current demand state for this community.
-              </div>
-            ) : demandPreviewRows.length === 0 ? (
-              <div style={{ marginTop: 10, color: "#5F7287", fontSize: 14, lineHeight: 1.75 }}>
-                No open demand is visible right now. Create the next real need here
-                when the community has something that should become a live signal.
-              </div>
-            ) : (
-              <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-                {demandPreviewRows.map((row, index) => (
-                  <div key={`${row?.id || index}`} style={innerCard("#FCFEFF")}>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <span style={badge(true)}>{demandUrgencyLabel(row?.urgency)}</span>
-                      {safeStr(row?.status) ? (
-                        <span style={badge(false)}>{safeStr(row?.status)}</span>
-                      ) : null}
-                      {safeStr(row?.area) ? (
-                        <span style={badge(false)}>{safeStr(row?.area)}</span>
-                      ) : null}
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 10,
-                        color: "#0B1F33",
-                        fontWeight: 900,
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      {firstTruthy(row?.title, row?.description, "Open community demand")}
-                    </div>
-                    <div style={{ marginTop: 8, color: "#5F7287", fontSize: 13, lineHeight: 1.7 }}>
-                      {safeDateTime(row?.created_at) || "Recently posted"}
-                    </div>
-                    <div
-                      style={{
-                        marginTop: 12,
-                        display: "flex",
-                        gap: 8,
-                        flexWrap: "wrap",
-                        alignItems: "center",
-                      }}
-                    >
-                      <span style={badge(false)}>
-                        {isMineDemandRow(row, me) ? "My demand" : "Community demand"}
-                      </span>
-                      <button
-                        type="button"
-                        onPointerDown={consumeCommunityPointerEvent}
-                        onClick={(event) => openCommunityRoute(event, "/app/demand-box")}
-                        style={actionBtn("soft")}
-                      >
-                        Manage in Demand Box
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
       <div id="community-home-shop-control" style={{ order: 60 }}>
-        <CommunityShopControlPanel />
+        <CommunityShopControlPanel forceOpenSignal={shopControlOpenSignal} />
       </div>
 
       <section
@@ -3231,47 +2197,33 @@ export default function CommunityHomePage() {
         style={{ ...pageCard("#FFFFFF"), order: 70 }}
       >
         <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
+          style={collapseHeaderLayout(isCompact)}
         >
-          <div>
+          <div style={collapseHeaderText()}>
             <div style={sectionLabel()}>Grow your trusted circle</div>
             <div
               style={{
                 marginTop: 8,
                 color: "#5F7287",
-                fontSize: 14,
-                lineHeight: 1.75,
+                fontSize: isCompact ? 12.5 : 14,
+                lineHeight: isCompact ? 1.5 : 1.75,
               }}
             >
-              Bring in the people you already trust and already do real life with.
-              Keep this circle deliberate.
+              Invite trusted real-life people.
             </div>
           </div>
 
           <button
             type="button"
-            onPointerDown={consumeCommunityPointerEvent}
-            onClick={() => toggleSection("circle")}
-            style={collapseToggle()}
+            onClick={(event) => {
+              consumeCommunityButtonEvent(event);
+              toggleSection("circle");
+            }}
+            style={collapseHeaderButton(isCompact)}
           >
             {collapsed.circle ? "Open" : "Collapse"}
           </button>
         </div>
-
-        <ExplainToggle
-          label="What this trusted circle does"
-          what="This is where the community owner builds the first layer of trusted real-life people who strengthen identity, support, and early growth."
-          why="The trusted circle should feel deliberate, not random, because these relationships shape how the community becomes credible and useful."
-          next="Review the progress first, then open First Circle to add or prepare the right people before copying the invite bundle."
-          tone="light"
-          style={{ marginTop: 12 }}
-        />
 
         {!collapsed.circle ? (
           <div
@@ -3345,7 +2297,6 @@ export default function CommunityHomePage() {
               >
                 <button
                   type="button"
-                  onPointerDown={consumeCommunityPointerEvent}
                   onClick={(event) =>
                     openCommunityRoute(event, "/app/build-first-circle")
                   }
@@ -3447,35 +2398,29 @@ export default function CommunityHomePage() {
         style={{ ...pageCard("#FFFFFF"), order: 80 }}
       >
         <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
+          style={collapseHeaderLayout(isCompact)}
         >
-          <div>
+          <div style={collapseHeaderText()}>
             <div style={sectionLabel()}>Spotlight management</div>
             <div
               style={{
                 marginTop: 8,
                 color: "#5F7287",
-                fontSize: 14,
-                lineHeight: 1.75,
+                fontSize: isCompact ? 12.5 : 14,
+                lineHeight: isCompact ? 1.5 : 1.75,
               }}
             >
-              Choose the spotlight image or short video and details here,
-              preview it first, then publish it to the dashboard spotlight
-              screen.
+              Prepare one image or short video before publishing.
             </div>
           </div>
 
           <button
             type="button"
-            onPointerDown={consumeCommunityPointerEvent}
-            onClick={() => toggleSection("spotlight")}
-            style={collapseToggle()}
+            onClick={(event) => {
+              consumeCommunityButtonEvent(event);
+              toggleSection("spotlight");
+            }}
+            style={collapseHeaderButton(isCompact)}
           >
             {collapsed.spotlight ? "Open" : "Collapse"}
           </button>
@@ -3892,140 +2837,269 @@ export default function CommunityHomePage() {
 
       <section style={{ ...pageCard("#FFFFFF"), order: 20 }}>
         <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
+          style={collapseHeaderLayout(isCompact)}
         >
-          <div>
+          <div style={{ minWidth: 0 }}>
             <div style={sectionLabel()}>Your communities</div>
             <div
               style={{
                 marginTop: 8,
                 color: "#5F7287",
-                fontSize: 14,
-                lineHeight: 1.75,
+                fontSize: isCompact ? 12.5 : 14,
+                lineHeight: isCompact ? 1.5 : 1.75,
               }}
             >
-              Each line is one community attached to your GSN ID. Choose one,
-              then open it as Marketplace when you want to work inside it.
+              Choose a community. GSN opens its Marketplace.
+            </div>
+
+            <div
+              style={{
+                marginTop: 8,
+                display: "flex",
+                gap: 6,
+                flexWrap: "wrap",
+              }}
+            >
+              <span style={badge(false)}>{sortedClans.length} communities</span>
+              {!isCompact ? <span style={badge(false)}>One GSN ID</span> : null}
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={badge(false)}>{sortedClans.length} communities</span>
-            <span style={badge(false)}>One global member ID</span>
-            <button
-              type="button"
-              onPointerDown={consumeCommunityPointerEvent}
-              onClick={() => toggleSection("communities")}
-              style={collapseToggle()}
-            >
-              {collapsed.communities ? "Open" : "Collapse"}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={(event) => {
+              consumeCommunityButtonEvent(event);
+              toggleSection("communities");
+            }}
+            style={collapseHeaderButton(isCompact)}
+          >
+            {collapsed.communities ? "Open" : "Collapse"}
+          </button>
         </div>
 
         {!collapsed.communities ? (
-          <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
+          <div style={{ marginTop: isCompact ? 10 : 16, display: "grid", gap: 10 }}>
             {sortedClans.map((clan, index) => {
               const clanId = getClanId(clan);
               const active = clanId > 0 && clanId === getClanId(selectedClan);
               const working = clanId > 0 && clanId === changingClanId;
+              const financeHealth = getClanFinanceHealth(clan);
+              const memberCount = getClanMemberCount(clan);
+              const strengthLabel = getClanStrength(clan);
+              const numericalStrength = memberCount
+                ? `${memberCount}`
+                : displayPendingSignal(strengthLabel);
+              const interactionDensity = displayPendingSignal(
+                getClanInteractionDensity(clan)
+              );
+              const spotlightSubscribers = getClanSpotlightSubscriberCount(clan);
+              const vaultSubscribers = getClanVaultSubscriberCount(clan);
 
               return (
-                <div key={`${clanId || index}`} style={innerCard("#FCFEFF")}>
+                <div
+                  key={`${clanId || index}`}
+                  style={{
+                    ...innerCard(
+                      active
+                        ? "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 58%, #FFF7D8 100%)"
+                        : "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 62%, #EFF7FF 100%)"
+                    ),
+                    border: active
+                      ? "1px solid rgba(217,172,51,0.30)"
+                      : "1px solid rgba(13,95,168,0.13)",
+                    boxShadow: active
+                      ? "0 14px 30px rgba(217,172,51,0.12), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -2px 0 rgba(83,56,0,0.05)"
+                      : "0 12px 26px rgba(7,24,39,0.07), inset 0 1px 0 rgba(255,255,255,0.86), inset 0 -2px 0 rgba(8,40,72,0.04)",
+                  }}
+                >
                   <div
                     style={{
                       display: "grid",
                       gridTemplateColumns: isCompact
                         ? "1fr"
-                        : "minmax(0, 1.2fr) minmax(0, 0.9fr) auto",
-                      gap: 12,
+                        : "42px minmax(0, 1.45fr) minmax(170px, 0.65fr) minmax(190px, 0.75fr) auto",
+                      gap: isCompact ? 8 : 12,
                       alignItems: "center",
                     }}
                   >
-                    <div>
+                    {!isCompact ? (
+                      <div
+                        style={{
+                          width: 38,
+                          height: 38,
+                          borderRadius: 999,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          background: active
+                            ? "linear-gradient(180deg, #FFE9A8 0%, #D9AC33 100%)"
+                            : "#EEF6FF",
+                          color: "#0B1F33",
+                          fontWeight: 950,
+                          boxShadow: active
+                            ? "0 8px 18px rgba(217,172,51,0.28)"
+                            : "none",
+                        }}
+                      >
+                        {index + 1}
+                      </div>
+                    ) : null}
+
+                    <div style={{ gridColumn: isCompact ? "1 / -1" : "auto" }}>
                       <div
                         style={{
                           color: "#0B1F33",
-                          fontSize: 17,
+                          fontSize: isCompact ? 15 : 17,
                           fontWeight: 900,
                           lineHeight: 1.35,
                         }}
                       >
-                        {index + 1}. {getClanName(clan)}
+                        {isCompact ? `${index + 1}. ` : ""}
+                        {getClanName(clan)}
                       </div>
 
                       <div
                         style={{
                           marginTop: 8,
                           color: "#5F7287",
-                          fontSize: 14,
-                          lineHeight: 1.75,
+                          fontSize: isCompact ? 12.5 : 14,
+                          lineHeight: isCompact ? 1.45 : 1.75,
                         }}
                       >
-                        Community ID: {getClanGlobalId(clan)}
+                        Community no: {getClanGlobalId(clan)}
                       </div>
 
+                      {isCompact ? (
+                        <div style={{ marginTop: 8, display: "flex", gap: 5, flexWrap: "wrap" }}>
+                          {active ? <span style={compactSignal(true)}>Selected</span> : null}
+                          <span style={compactSignal(false)}>
+                            Paid spotlight: {spotlightSubscribers}
+                          </span>
+                          <span style={compactSignal(false)}>Vault: {vaultSubscribers}</span>
+                        </div>
+                      ) : (
+                        <div
+                          style={{
+                            marginTop: 8,
+                            display: "flex",
+                            gap: 5,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          {active ? <span style={compactSignal(true)}>Selected</span> : null}
+                          <span style={compactSignal(false)}>
+                            Numerical strength: {numericalStrength}
+                          </span>
+                          <span style={compactSignal(false)}>
+                            Interaction density: {interactionDensity}
+                          </span>
+                          <span style={compactSignal(false)}>
+                            Paid spotlight: {spotlightSubscribers}
+                          </span>
+                          <span style={compactSignal(false)}>Vault: {vaultSubscribers}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {isCompact ? (
                       <div
                         style={{
-                          marginTop: 10,
-                          display: "flex",
-                          gap: 8,
-                          flexWrap: "wrap",
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: 6,
                         }}
                       >
-                        <span style={badge(active)}>
-                          {active ? "Selected" : "Available"}
-                        </span>
-                        {getClanRole(clan) ? (
-                          <span style={badge(false)}>Role: {getClanRole(clan)}</span>
-                        ) : null}
+                        <div style={metricCard("blue")}>
+                          <div style={metricLabel()}>Numerical strength</div>
+                          <div style={metricValue()}>{numericalStrength}</div>
+                        </div>
+                        <div style={metricCard("white")}>
+                          <div style={metricLabel()}>Interaction density</div>
+                          <div style={metricValue()}>{interactionDensity}</div>
+                        </div>
+                        <div style={metricCard("gold")}>
+                          <div style={metricLabel()}>Community finance standing</div>
+                          <div style={metricValue()}>{financeHealth}</div>
+                        </div>
+                        <div style={metricCard("blue")}>
+                          <div style={metricLabel()}>Trust across communities</div>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <>
+                        <div
+                          style={{
+                            ...innerCard("#FFFFFF"),
+                            padding: 12,
+                          }}
+                        >
+                          <div style={sectionLabel()}>Community finance standing</div>
+                          <div
+                            style={{
+                              marginTop: 8,
+                              color: "#0B1F33",
+                              fontSize: 19,
+                              fontWeight: 950,
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {financeHealth}
+                          </div>
+                        </div>
+
+                        <div
+                          style={{
+                            ...innerCard("#FFFFFF"),
+                            padding: 12,
+                          }}
+                        >
+                          <div style={sectionLabel()}>Trust across communities</div>
+                        </div>
+                      </>
+                    )}
 
                     <div
                       style={{
-                        color: "#64748B",
-                        fontSize: 13,
-                        lineHeight: 1.7,
-                      }}
-                    >
-                      {active
-                        ? "Selected now. Open Marketplace to work inside it."
-                        : "Choose it here, then GSN opens its Marketplace."}
-                    </div>
-
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: isCompact ? "flex-start" : "flex-end",
-                        gap: 10,
-                        flexWrap: "wrap",
+                        display: "grid",
+                        gridTemplateColumns: isCompact
+                          ? active
+                            ? "1fr"
+                            : "0.72fr 1.28fr"
+                          : "auto",
+                        justifyContent: isCompact ? "stretch" : "flex-end",
+                        gap: isCompact ? 6 : 8,
+                        gridColumn: isCompact ? "1 / -1" : "auto",
+                        marginTop: isCompact ? 2 : 0,
                       }}
                     >
                       {!active ? (
                         <button
                           type="button"
-                          onPointerDown={consumeCommunityPointerEvent}
-                          onClick={() => void handleSelectCommunity(clan, false)}
+                          onClick={(event) => {
+                            consumeCommunityButtonEvent(event);
+                            void handleSelectCommunity(clan, false);
+                          }}
                           disabled={working}
-                          style={actionBtn("secondary", working)}
+                          style={{
+                            ...actionBtn("secondary", working),
+                            width: isCompact ? "100%" : undefined,
+                          }}
                         >
-                          {working ? "Selecting..." : "Set Current"}
+                          {working ? "Selecting..." : "Select"}
                         </button>
                       ) : null}
 
                       <button
                         type="button"
-                        onPointerDown={consumeCommunityPointerEvent}
-                        onClick={() => void handleSelectCommunity(clan, true)}
+                        onClick={(event) => {
+                          consumeCommunityButtonEvent(event);
+                          void handleSelectCommunity(clan, true);
+                        }}
                         disabled={working}
-                        style={actionBtn("primary", working)}
+                        style={{
+                          ...actionBtn("primary", working),
+                          width: isCompact ? "100%" : undefined,
+                        }}
                       >
                         {working ? "Opening..." : "Open Marketplace"}
                       </button>

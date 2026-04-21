@@ -531,8 +531,6 @@ function getPageActions(
       { label: "Demand Box", to: "/app/demand-box" },
       { label: "Finance", to: "/app/finance" },
       { label: "Notifications", to: "/app/notifications" },
-      { label: "Money In", to: "/app/payment/pool" },
-      { label: "Money Out", to: "/app/withdrawal-instructions" },
     ]);
   }
 
@@ -1081,17 +1079,6 @@ function bottomNavItem(active = false, disabled = false): React.CSSProperties {
   };
 }
 
-function mobilePostClickShield(): React.CSSProperties {
-  return {
-    position: "fixed",
-    inset: 0,
-    zIndex: 60,
-    background: "transparent",
-    pointerEvents: "auto",
-    touchAction: "none",
-  };
-}
-
 export default function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -1103,16 +1090,9 @@ export default function AppLayout() {
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
-  const [mobileShellRouteGuardActive, setMobileShellRouteGuardActive] =
-    useState(false);
-  const [mobilePostClickShieldActive, setMobilePostClickShieldActive] =
-    useState(false);
   const [myGmfnId, setMyGmfnId] = useState<string>("");
   const [myRole, setMyRole] = useState<string>(() => readRole());
   const [myClanRole, setMyClanRole] = useState<string>("");
-  const mobileShellRouteGuardTimerRef = React.useRef<number | null>(null);
-  const mobilePostClickShieldDelayRef = React.useRef<number | null>(null);
-  const mobilePostClickShieldTimerRef = React.useRef<number | null>(null);
 
   const isAdmin = useMemo(() => {
     const role = String(myRole || "").trim().toLowerCase();
@@ -1182,31 +1162,6 @@ export default function AppLayout() {
     window.addEventListener("resize", handleResize);
 
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (
-        typeof window !== "undefined" &&
-        mobileShellRouteGuardTimerRef.current !== null
-      ) {
-        window.clearTimeout(mobileShellRouteGuardTimerRef.current);
-      }
-
-      if (
-        typeof window !== "undefined" &&
-        mobilePostClickShieldDelayRef.current !== null
-      ) {
-        window.clearTimeout(mobilePostClickShieldDelayRef.current);
-      }
-
-      if (
-        typeof window !== "undefined" &&
-        mobilePostClickShieldTimerRef.current !== null
-      ) {
-        window.clearTimeout(mobilePostClickShieldTimerRef.current);
-      }
-    };
   }, []);
 
   const myShopGalleryTo = useMemo(() => {
@@ -1397,42 +1352,6 @@ export default function AppLayout() {
     setIsDrawerOpen(false);
     setIsActionsOpen(false);
     navigate("/login?force=1", { replace: true });
-  }
-
-  function armMobileShellRouteGuard(durationMs = 480) {
-    if (typeof window === "undefined" || !isMobile) return;
-
-    if (mobileShellRouteGuardTimerRef.current !== null) {
-      window.clearTimeout(mobileShellRouteGuardTimerRef.current);
-    }
-
-    setMobileShellRouteGuardActive(true);
-    mobileShellRouteGuardTimerRef.current = window.setTimeout(() => {
-      setMobileShellRouteGuardActive(false);
-      mobileShellRouteGuardTimerRef.current = null;
-    }, durationMs);
-  }
-
-  function armMobilePostClickShield(durationMs = 420) {
-    if (typeof window === "undefined" || !isMobile) return;
-
-    if (mobilePostClickShieldDelayRef.current !== null) {
-      window.clearTimeout(mobilePostClickShieldDelayRef.current);
-    }
-
-    if (mobilePostClickShieldTimerRef.current !== null) {
-      window.clearTimeout(mobilePostClickShieldTimerRef.current);
-    }
-
-    mobilePostClickShieldDelayRef.current = window.setTimeout(() => {
-      mobilePostClickShieldDelayRef.current = null;
-      setMobilePostClickShieldActive(true);
-
-      mobilePostClickShieldTimerRef.current = window.setTimeout(() => {
-        setMobilePostClickShieldActive(false);
-        mobilePostClickShieldTimerRef.current = null;
-      }, durationMs);
-    }, 0);
   }
 
   const routeMeta = findCurrentRouteMeta(
@@ -1755,7 +1674,7 @@ export default function AppLayout() {
             style={{
               ...actionsPanel(isActionsOpen),
               pointerEvents:
-                isActionsOpen && !mobileShellRouteGuardActive ? "auto" : "none",
+                isActionsOpen ? "auto" : "none",
             }}
             aria-hidden={!isActionsOpen}
           >
@@ -1835,27 +1754,14 @@ export default function AppLayout() {
 
       <main
         style={mainContent(isMobile, !!taskMode)}
-        onPointerDownCapture={() => armMobileShellRouteGuard()}
-        onTouchStartCapture={() => armMobileShellRouteGuard()}
-        onMouseDownCapture={() => armMobileShellRouteGuard()}
-        onClickCapture={() => armMobilePostClickShield()}
       >
         <WorkspaceCompanionBridge />
         <WorkspaceSettingsBridge />
         <Outlet />
       </main>
 
-      {isMobile && mobilePostClickShieldActive ? (
-        <div aria-hidden="true" style={mobilePostClickShield()} />
-      ) : null}
-
       {isMobile && !taskMode ? (
-        <nav
-          style={{
-            ...bottomNav(),
-            pointerEvents: mobileShellRouteGuardActive ? "none" : "auto",
-          }}
-        >
+        <nav style={bottomNav()}>
           {mobileBottomItems.map((item) => (
             <Link
               key={`bottom-${item.label}-${item.to}`}

@@ -11,8 +11,9 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_current_user
 from app.core.clan_auth import get_current_clan_membership
 from app.db.database import get_db
-from app.db.models import Clan, ClanMembership, LoanGuarantor, User
+from app.db.models import Clan, ClanMembership, Loan, LoanGuarantor, User
 from app.schemas.pool import PoolMeOut, PoolRequestIn, PoolEventOut
+from app.services.revenue_allocation_service import get_my_guarantor_earnings
 from app.services.pool_service import (
     compute_pool_balances,
     request_deposit,
@@ -132,11 +133,37 @@ def pool_me_summary(
     )
     locked_guarantees = max(Decimal("0"), _money(locked_guarantees_raw))
 
+    active_borrower_loans = (
+        db.query(Loan)
+        .filter(
+            Loan.borrower_user_id == int(current_user.id),
+            Loan.currency == ccy,
+            Loan.status.in_(("approved", "active", "overdue")),
+        )
+        .all()
+    )
+    borrower_outstanding = Decimal("0")
+    for loan in active_borrower_loans:
+        remaining = _money(getattr(loan, "remaining_amount", None))
+        if remaining <= Decimal("0"):
+            remaining = _money(getattr(loan, "amount", None)) - _money(
+                getattr(loan, "paid_total", None)
+            )
+        borrower_outstanding += max(Decimal("0"), remaining)
+
+    guarantor_earnings = get_my_guarantor_earnings(
+        db,
+        user_id=int(current_user.id),
+        limit=500,
+    )
+
     return {
         "user_id": int(current_user.id),
         "gmfn_id": getattr(current_user, "gmfn_id", None),
         "currency": ccy,
         "communities_count": len(items),
+        "active_borrower_loans_count": len(active_borrower_loans),
+        "guarantor_earnings_count": int(guarantor_earnings.get("total") or 0),
         "totals": {
             "available_balance": _money_str(totals["available_balance"]),
             "pending_deposits": _money_str(totals["pending_deposits"]),
@@ -145,6 +172,10 @@ def pool_me_summary(
             "effective_available": _money_str(totals["effective_available"]),
             "membership_pool_balance": _money_str(totals["membership_pool_balance"]),
             "guarantee_locked_as_guarantor": _money_str(locked_guarantees),
+            "borrower_outstanding_total": _money_str(borrower_outstanding),
+            "guarantor_earned_total": _money_str(
+                guarantor_earnings.get("total_earned")
+            ),
         },
         "items": items,
     }

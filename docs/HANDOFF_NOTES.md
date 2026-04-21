@@ -43,6 +43,509 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-21
+
+#### Workstream
+Community Home mobile tap recovery at system/shell level.
+
+#### Routes/screens affected
+- `/app/community`
+- embedded Shop Control panel on `/app/community`
+- app shell layout around `/app/community`
+- `/app/dashboard`
+- `/app/marketplace`
+
+#### Backend routes/endpoints involved
+- no backend contract changed in this pass
+
+#### Files in play
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `frontend/src/components/CommunityShopControlPanel.tsx`
+- `frontend/src/layout/AppLayout.tsx`
+- `frontend/src/pages/DashboardPage.tsx`
+- `frontend/src/pages/MarketplacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Product-owner phone test reported that opening a Community Home block worked,
+  but collapsing it could still send the user to Payment Instructions.
+- A follow-up test then reported that Main Action and Shop Control buttons no
+- longer worked.
+- An independent audit found a full-screen mobile post-click shield in
+  `AppLayout.tsx`. The shell armed that shield from `<main>` click capture, then
+  rendered a fixed transparent overlay with `pointerEvents: auto` for 420ms.
+- That broad shell shield was removed. The narrower bottom-nav route guard was
+  preserved because it only disables the bottom navigation briefly.
+- Community Home and the embedded Shop Control panel no longer attach
+  `onPointerDown` propagation blockers to action buttons. Route/collapse buttons
+  now rely on normal click handling with `preventDefault` and React
+  `stopPropagation`.
+- The Community Home `Shop Control` main action now forces the embedded Shop
+  Control panel open before scrolling to it, so localStorage cannot leave the
+  target panel closed and make the tap appear dead.
+- Community Home shell page actions no longer include direct `Money In` and
+  `Money Out` shortcuts. `Finance` remains the safer finance doorway; this
+  reduces accidental `/app/payment/pool` jumps while the Community Home screen is
+  being collapsed and tapped.
+- Unused helper functions left behind by the Community Home cleanup were removed
+  from `CommunityHomePage.tsx`.
+- Follow-up product-owner phone test reported the issue still appeared and that
+  Dashboard buttons also felt broken. Inspection confirmed Dashboard had the same
+  family of mobile tap blockers: many `onPointerDown` handlers plus a local
+  transparent `dashboardInteractionShield` overlay.
+- The remaining app-shell route guard was removed from `<main>` capture handlers
+  in `AppLayout.tsx`; the shell no longer changes page-actions or bottom-nav
+  pointer events because of ordinary main-area taps.
+- Dashboard's local transparent interaction shield was removed. Dashboard's
+  pointer-down helper is now harmless, while click handlers still do deliberate
+  `preventDefault` / `stopPropagation` where needed.
+- Marketplace's pointer-down helper is also now harmless, because Marketplace
+  used the same pattern across many route/action buttons.
+- Removed an unused Marketplace helper (`copyCommunityId`) that became visible
+  during targeted lint of the touched route.
+
+#### Verification
+- `npm run build` passed in `frontend`.
+- `npx eslint src/pages/CommunityHomePage.tsx src/components/CommunityShopControlPanel.tsx src/layout/AppLayout.tsx`
+  passed.
+- `npx eslint src/pages/CommunityHomePage.tsx src/components/CommunityShopControlPanel.tsx src/layout/AppLayout.tsx src/pages/DashboardPage.tsx src/pages/MarketplacePage.tsx`
+  passed with no errors; two pre-existing Marketplace hook dependency warnings
+  remain.
+- Full `npm run lint` still fails because the repo currently lints generated
+  `frontend/dist` assets and older unrelated source errors. This is not caused
+  by the Community Home tap fix.
+
+#### Open risks or unknowns
+- Phone redeploy testing is still required. Expected behavior: Main Actions open
+  normally, collapse/open toggles can be tapped repeatedly, Shop Control opens
+  and stays in its own lane, and no Community Home action lands on Payment
+  Instructions unless the user intentionally navigates through Finance. Dashboard
+  and Marketplace buttons should also respond normally after this follow-up.
+
+#### Next recommended step
+- Redeploy frontend, then phone-test `/app/community`: open/collapse Main
+  Actions, open/collapse Shop Control, tap every Shop Control button, then tap
+  the community Select/Open Marketplace row buttons. Also smoke-test
+  `/app/dashboard` and `/app/marketplace` primary buttons before deeper mobile
+  layout work.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
+Community Home Shop Control button root-cause fix after phone taps opened wrong
+destinations.
+
+#### Routes/screens affected
+- `/app/community`
+- `/app/shop-control`
+- `/app/shop-assets`
+- `/app/marketplace`
+- public shop route `/shop/:gmfnId`
+
+#### Backend routes/endpoints involved
+- no backend contract changed in this pass
+
+#### Files in play
+- `frontend/src/components/CommunityShopControlPanel.tsx`
+- `frontend/src/pages/ShopControlPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Product-owner phone test reported that multiple Shop Control buttons on
+  Community Home either did not open or opened the wrong place.
+- The embedded Shop Control panel was using `OriginLink` for route changes while
+  also passing custom tap handlers to stop the collapsible parent panel from
+  reacting.
+- That made the tap contract fragile on phone: the same tap was responsible for
+  stopping parent-panel bubbling and for link navigation.
+- The embedded Shop Control panel now uses explicit `button` elements for its
+  internal route actions. Each button stops panel bubbling and then calls
+  `navigateWithOrigin` to the exact destination.
+- The top buttons now route deliberately:
+  - `Open Shop Tools` -> `/app/shop-control#shop-control-summary`
+  - `Open Public Shop` -> `/shop/:gmfnId`
+  - `Marketplace` -> `/app/marketplace`
+- The four owner lanes now route deliberately:
+  - `Open Gallery Tools` -> `/app/shop-control#shop-control-picture-gallery`
+  - `Manage Products` -> `/app/shop-assets`
+  - `Open Ordinary Spotlight` -> `/app/shop-control#shop-control-spotlight`
+  - `Open Paid Spotlight` -> `/app/shop-control#shop-control-paid-spotlight`
+  - `Open Vault Subscription` -> `/app/shop-control#shop-control-vault-subscription`
+  - `Open Vault Gallery` -> `/app/shop-control#shop-control-vault`
+- `/app/shop-control` hash scrolling now waits until the page is no longer
+  loading and retries until the target exists. This matters especially for
+  ordinary spotlight because that section is mounted only after
+  `spotlightOpen` becomes true.
+- `openSpotlightTools` on `/app/shop-control` now uses the same retrying scroll
+  helper instead of a one-shot scroll.
+
+#### Verification
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- This fixes the route/tap wiring and destination scroll timing. The product
+  owner still needs to test the live phone build to confirm no lower-page tap
+  target is visually overlapping another button.
+
+#### Next recommended step
+- Redeploy/retest `/app/community` on phone. If any specific button still lands
+  wrong, inspect its exact rendered route and bounding box before doing another
+  layout pass.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
+Community Home phone button routing and duplicate-control cleanup after
+product-owner phone review.
+
+#### Routes/screens affected
+- `/app/community`
+- `/app/shop-control` as the destination for owner shop tools
+
+#### Backend routes/endpoints involved
+- no backend contract changed in this pass
+
+#### Files in play
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `frontend/src/components/CommunityShopControlPanel.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Product-owner phone review reported several Community Home controls jumping
+  to the wrong destination, especially controls landing in Guided Withdrawal or
+  payment instructions when the user expected owner shop / spotlight / Vault
+  tools.
+- Owner Controls no longer includes `Money In` or `Money Out`. Those finance
+  routes do not belong in the Community Home owner-control button grid and were
+  removed to reduce wrong-route taps.
+- Owner Controls now sorts before the Shop Control panel in the Community Home
+  visual order, so collapsing Owner Controls should no longer visually fall
+  into Shop Control.
+- Community Home collapse and owner-control buttons now consume click events,
+  not only pointer-down events, before they toggle, scroll, or navigate.
+- Repeated local scroll helpers for Grow Trusted Circle, Spotlight management,
+  and Shop Control were replaced with one `openCommunityHomeSection` helper.
+- Community Home and the embedded Shop Control panel now make action labels
+  wrap safely on mobile, reducing the risk that a long button overlaps a
+  neighboring button and steals the tap.
+- The `Your communities` header now keeps its collapse button in a dedicated
+  right-side column, with the community count badge moved under the title, so
+  the button no longer falls into the badge row on phone.
+- The duplicate `Community-facing picture` / Marketplace billboard card was
+  removed from the embedded Community Shop Control panel because it pointed to
+  the same picture tools as the shop-picture card and was confusing on phone.
+- The embedded `Shop control tools` area now presents four separate lanes:
+  `Public shop gallery`, `Ordinary spotlight`, `Paid spotlight subscription`,
+  and `Vault and private gallery`.
+- Public gallery tools now own public picture/products only; ordinary
+  spotlight opens the free spotlight publisher; paid spotlight opens its own
+  subscription card; Vault opens Vault subscription and Vault gallery controls.
+- `/app/shop-control` now has direct anchors for
+  `#shop-control-paid-spotlight` and `#shop-control-vault-subscription`, so
+  Community Home buttons no longer land in a vague paid-access area.
+- The duplicate always-visible `Spotlight` toggle in the `/app/shop-control`
+  summary was removed. The summary only shows the recommended next action, and
+  spotlight publishing is opened through the ordinary spotlight path.
+- Root cause for the repeated `Open` / `Collapse` button misplacement was
+  ad-hoc section headers: each collapsible block hand-built its own title/button
+  layout, and mobile wrapping made buttons share unstable rows with text and
+  badges.
+- Community Home and the embedded Shop Control panel now use shared collapse
+  header helpers. On compact screens, the collapse button becomes a stable
+  full-width row below the title; on wider screens, it stays in the right-side
+  button column.
+
+#### Verification
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- Product owner still needs to test `/app/community` on a phone and confirm
+  whether any remaining tap target jumps happen lower on the page.
+
+#### Next recommended step
+- Continue phone testing on `/app/community`, especially the embedded Shop
+  Control gear cards and the community row actions.
+
+### Previous update
+
+#### Date
+2026-04-20
+
+#### Workstream
+Community Home phone-first presentation pass started from product-owner
+screenshot review.
+
+#### Routes/screens affected
+- `/app/community`
+
+#### Backend routes/endpoints involved
+- no backend contract changed in this pass
+
+#### Files in play
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The phone screenshot showed that the first fold spent too much height on
+  explanation and oversized cards.
+- The top normal-flow `About Community Home` guide was removed from the active
+  Community Home first fold so the page itself leads the user.
+- The hero copy now speaks directly to the user in one short sentence:
+  choose a community, open its Marketplace, and keep trust, finance, shop, and
+  spotlight under one GSN ID.
+- Mobile hero stat cards, page cards, badges, and community-row cards were
+  tightened to reduce vacant space while preserving the existing GSN branded
+  deep-blue / light-blue / white / gold language.
+- Community Home action buttons and collapse buttons now use the gold embossed
+  button treatment on this route.
+- Community rows now use a compact phone layout: community identity spans the
+  row, finance/trust bottom lines sit side by side, and actions stay underneath.
+- A follow-up phone pass tightened the community-row signal pills so Numerical,
+  Interaction, Spotlight, and Vault no longer occupy several large rows on
+  mobile.
+- The community row was then restructured as a single phone-first card:
+  community identity first, a compact 2-by-2 signal panel for People,
+  Interaction, Finance, and Trust, then aligned full-width actions. This reduces
+  the previous white gaps caused by scattered chips, finance boxes, trust boxes,
+  and uneven buttons.
+- The row metric tiles were then polished with centered text, stronger borders,
+  subtle 3D/embossed shadows, and alternating blue/white/gold brand-tinted
+  backgrounds so the mini-cards no longer look flat or misaligned.
+- The hero `Cumulative standing` card now shows only `Positive` or `Negative`.
+  It no longer displays a money amount because this surface is intended to show
+  directional standing, not the detailed finance value.
+- Collapsed cards for Shop Control, Owner Controls, Trusted Circle, and
+  Spotlight now use a compact two-column header/button layout with shorter
+  language so the phone view is less likely to cut a card halfway between
+  screenfuls.
+- Shop Control, Owner Controls, and Grow Trusted Circle collapsed-surface copy
+  was shortened so those blocks speak to the user without reading like builder
+  notes.
+- The extra trusted-circle explanation toggle was removed from the collapsed
+  surface to reduce phone-height waste.
+- The visible community-row wording remains bottom-line only. Deeper finance and
+  deeper trust details still belong in Finance and Trust Passport.
+
+#### Verification
+- `npm run build` passed in `frontend`.
+
+### Follow-up adjustment
+
+- Removed the visible `Review needed before changes` card from
+  `/app/shop-control`.
+- Shop Control remains viewable as a clean owner tools page.
+- Sensitive save/payment/publish buttons may still show `Review Identity First`
+  until the proper Identity/Settings review flow is handled.
+- `npm run build` passed in `frontend`.
+- `/app/shop-control` then received a GSN branded visual pass:
+  - the page background now uses the same deep-blue side-rail / light-blue /
+    white / gold language as the branded GSN summary surfaces
+  - Shop Control cards, paid-access cards, picture/gallery, slot usage,
+    spotlight, and Vault/private-access sections now share stronger embossed
+    borders, blue-gold gradients, and institutional card shadows
+  - primary, secondary, and soft action buttons now use the raised gold 3D
+    treatment instead of flat white/blue controls
+- `npm run build` passed after the Shop Control branded visual pass.
+- `/app/shop-control` then received a control-intelligence pass:
+  - the summary card now reads current shop readiness signals for shop picture,
+    products, public link, and spotlight
+  - the summary card recommends the next best move, such as adding a picture,
+    adding products, opening Spotlight, or monitoring the live shop
+  - main action rows, paid access actions, gallery actions, shop-details
+    actions, and spotlight actions now use stable button grids so controls stay
+    aligned and deliberate on phone and desktop
+- `npm run build` passed after the Shop Control control-intelligence pass.
+
+#### Open risks or unknowns
+- The product owner still needs to review the updated `/app/community` page on a
+  phone and send the next screenshot for final spacing/polish decisions.
+
+#### Next recommended step
+- Continue screenshot-led phone polishing on `/app/community`, starting from the
+  community rows and then moving down through Owner controls, Shop Control,
+  First Circle, and Spotlight management.
+
+### Previous update
+
+#### Date
+2026-04-20
+
+#### Workstream
+Community Home decongested so Finance and Trust Passport details remain in
+their own domains.
+
+#### Routes/screens affected
+- `/app/community`
+- `/app/finance` as the detailed finance destination
+- Trust Passport / trust pages as the detailed trust destination
+
+#### Backend routes/endpoints involved
+- `GET /clans/me`
+- `GET /pool/me/summary`
+
+#### Files in play
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `gmfn_backend/app/api/routes/clans.py`
+- `gmfn_backend/app/api/routes/pool.py`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Community Home is a cross-community index, not the full Finance file and not
+  the full Trust Passport.
+- Community Home's Shop Control owner-gear buttons now use contained tap events
+  and route into anchored sections of `/app/shop-control`, reducing the mobile
+  jump/collapse problem while the product owner reviews the Shop Control page.
+- `/app/shop-control` now exposes anchors for summary, commercial unlocks,
+  picture/gallery controls, spotlight, and Vault/private access.
+- `/app/shop-control` received a first structural presentation pass:
+  - removed builder-facing copy such as "restore missing controls"
+  - changed visible `GMFN ID` to `GSN ID`
+  - converted blue primary buttons to the shared gold/embossed direction
+  - simplified payment wording to user-facing confirmation language
+  - tightened the flow around shop room, paid access, picture/gallery, spotlight,
+    shop details, slot usage, and Vault/private access
+- `/app/shop-control` is no longer blocked at route-entry by the continuity
+  guard, so the product owner can review the page layout on phone.
+- Sensitive Shop Control actions still pause locally when identity continuity
+  needs review. Payment creation, saving shop details, image upload/removal,
+  paid spotlight selection, and spotlight publishing show `Review Identity
+  First` or disabled controls until continuity is restored.
+- The large `Cumulative finance summary` block was removed from Community Home.
+- The large `Cumulative trust summary` block was removed from Community Home.
+- Community Home keeps the compact community row with global community number,
+  community strength, interaction density, finance bottom line, and trust/CCI
+  bottom line.
+- Community Home rows now also show active paid Spotlight subscriber count and
+  active Vault subscriber count, because those are community-level health
+  signals rather than private finance/trust detail.
+- Deeper finance details such as borrowed money, support given, locked
+  guarantee exposure, and guarantor earnings belong in Finance.
+- Deeper trust details such as guarantees, Trust Passport accumulation, and
+  TrustSlip proof belong in Trust / Trust Passport.
+- Backend `/clans/me` still returns `community_standing` so the frontend is not
+  inventing these bottom-line labels from nothing.
+- Backend `/clans/me` now derives Spotlight/Vault subscriber counts from active
+  `FeatureEntitlement` rows, so the numbers follow subscription activation,
+  expiry, and revocation automatically.
+
+#### Verification
+- `npm run build` passed in `frontend`.
+- `python -m py_compile gmfn_backend/app/api/routes/clans.py gmfn_backend/app/api/routes/pool.py` passed.
+- `python -m py_compile gmfn_backend/app/api/routes/clans.py` passed after adding
+  the subscription counts.
+- `npm run build` passed after the Shop Control presentation pass.
+- `npm run build` passed after allowing Shop Control review while keeping
+  sensitive shop actions locally locked under identity-continuity review.
+
+#### Open risks or unknowns
+- The next pass should be visual phone polishing only unless the product owner
+  asks for another Community Home business metric.
+
+#### Next recommended step
+- Review `/app/community` on phone and tighten spacing/wording around the
+  compact community rows.
+
+### Previous update
+
+#### Date
+2026-04-20
+
+#### Workstream
+Community Home demand ownership corrected after product-owner review confirmed
+Demand Box work should originate from the selected Marketplace.
+
+#### Routes/screens affected
+- `/app/community`
+- `/app/marketplace`
+- `/app/demand-box`
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+
+#### Files in play
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Canonical docs say demand originates in marketplaces, while broader demand
+  can aggregate upward.
+- Marketplace already has a Demand Box shortcut and a Marketplace-level Demand
+  Box block.
+- Community Home no longer fetches marketplace demand rows.
+- Community Home no longer shows the `Demand Control Box`, `Create Demand`,
+  `Open Demand Box`, live demand summary, or Demand Box owner-tool shortcut.
+- Community Home guide text now says demand work starts inside the selected
+  Marketplace.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- A future aggregate demand reflection may still be added to Community Home,
+  but it should be read-only/summary-level and must not become the working
+  Demand Box.
+
+#### Next recommended step
+- Live-review `/app/community` on phone and continue removing blocks that
+  belong to Marketplace rather than the cross-community Community Home index.
+
+### Previous update
+
+#### Date
+2026-04-20
+
+#### Workstream
+Community Home finance logic tightened so the route shows cumulative member
+standing instead of reopening the detailed finance file inside Community Home.
+
+#### Routes/screens affected
+- `/app/community`
+- `/app/finance` as the deeper destination for the full finance file
+
+#### Backend routes/endpoints involved
+- `GET /pool/me/summary`
+
+#### Files in play
+- `gmfn_backend/app/api/routes/pool.py`
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- `/pool/me/summary` already totaled pool balances across all active
+  communities attached to the current member.
+- The endpoint now also returns active borrower outstanding total, active
+  borrower file count, guarantor earned total, and guarantor earning record
+  count.
+- Community Home no longer fetches the selected community money surface,
+  expected payments, payment rails, payout details, or reconciliation preview
+  just to render them on this page.
+- Community Home now shows one compact cumulative finance reading with:
+  available balance, settling money, locked guarantee exposure, money owed,
+  guarantee earned, and reserved pool.
+- The full community-by-community finance file remains behind `Open Finance`.
+- `npm run build` passed in `frontend`.
+- `python -m py_compile gmfn_backend/app/api/routes/pool.py` passed.
+
+#### Open risks or unknowns
+- The borrower outstanding total currently counts active loan statuses
+  `approved`, `active`, and `overdue`; if the backend later introduces another
+  live-debt status, this summary should include it.
+- Guarantor earnings use the existing guarantor earnings service; mixed
+  currency handling remains future work if the product supports multiple live
+  currencies beyond NGN.
+
+#### Next recommended step
+- Live-review `/app/community` on mobile and confirm the cumulative finance
+  block now reads as the quick Community Home signal instead of a detailed
+  Finance page.
+
+### Previous update
+
+#### Date
 2026-04-20
 
 #### Workstream
@@ -2906,3 +3409,206 @@ GSN-branded invite composer and invite-entry continuity.
 - Reduce duplication with other dashboard trust/notification guidance.
 - Remove empty space and reduce technical trust-report styling.
 - Make the block speak more directly to the user.
+
+## Community Home Shop Control gear pass - 2026-04-20
+
+### Confirmed product/backend truth
+
+- Community Home owns the owner-side shop control entry because one global member
+  ID owns one shop across communities.
+- Marketplace remains the selected-community working context.
+- Vault is real backend entitlement logic, not a mock surface:
+  - backend feature code: `vault_slot`
+  - product visibility mode: `vault_private`
+  - payment instruction type: `vault_subscription`
+- Paid spotlight is real backend entitlement logic:
+  - backend feature code: `spotlight_priority`
+  - payment instruction type: `spotlight_subscription`
+- Demand control should not be reintroduced into Community Home as a working
+  control. Demand work belongs in Marketplace / Demand Box.
+
+### Work completed
+
+- Updated `frontend/src/components/CommunityShopControlPanel.tsx`.
+- The Community Home Shop Control block now explains that one GSN ID owns one
+  shop and that the public shop gallery must stay visitor-clean.
+- Added compact owner gears inside the block:
+  - `Shop gallery` -> opens `/app/shop-assets` and `/app/shop-control`
+  - `Shop DP / billboard` -> opens `/app/shop-control`
+  - `Vault` -> opens `/app/shop-control`
+  - `Free spotlight` -> opens `/app/shop-control`
+  - `Paid spotlight` -> opens `/app/shop-control`
+  - `Marketplace billboard` -> opens `/app/marketplace` because marketplace
+    pictures belong to the selected community context
+- Tightened the open/collapse button so it stays button-sized and stops the tap
+  from bubbling upward, reducing the mobile flip/jump problem around this panel.
+- Changed visible `GMFN ID` label in this panel to `GSN ID` to match the current
+  user-facing brand rule.
+
+### Verification
+
+- `npm run build` passed in `frontend`.
+
+## Identity continuity route-guard adjustment - 2026-04-20
+
+### Routes/screens affected
+
+- All routes wrapped by `frontend/src/components/RequireAuth.tsx`
+- Especially finance/payment/shop-management links such as `/app/finance`
+
+### Work completed
+
+- Updated `frontend/src/components/RequireAuth.tsx`.
+- `reverify_required` no longer blocks normal route navigation. This prevents
+  ordinary buttons from opening the full `Reverification needed` route-block
+  page when the user is only trying to inspect a page.
+- The shared guard still hard-blocks `protected_lock` on protected route
+  prefixes.
+- Page-local locks, such as Shop Control's `Review Identity First` disabled
+  actions, remain in place for sensitive save/payment/publish actions.
+
+### Verification
+
+- `npm run build` passed in `frontend`.
+
+### Next suggested step
+
+- Review `/app/community` on the phone at the Shop Control block. If the gear
+  arrangement is accepted, the next implementation pass should add anchors or
+  section-specific route state inside `/app/shop-control` so `Open Vault Tools`,
+  `Open Spotlight`, and `Open Picture Tools` can scroll directly to the exact
+  sub-section instead of only opening the top of Shop Control.
+
+## Community Home community-row summary pass - 2026-04-20
+
+### Product rule clarified
+
+- Community Home should not carry the full Finance body or full Trust Passport
+  body.
+- The community list should work as a cross-community index for one GSN ID:
+  - row number
+  - community name
+  - global community number
+  - final finance standing for that community
+  - final trust / CCI standing for that community
+- Detailed finance files remain in Finance.
+- Detailed trust records remain in Trust Passport / trust routes.
+
+### Work completed
+
+- Updated `frontend/src/pages/CommunityHomePage.tsx`.
+- The `Your communities` block now presents each community as a system-level
+  summary row instead of a plain picker.
+- Each row now shows:
+  - community number and name
+  - `Global community no`
+  - `Finance standing`
+  - `Trust / CCI standing`
+  - select/open-marketplace actions
+- Added `community_code` into the frontend community global-ID resolver, matching
+  the current `/clans/me` backend response.
+- Prepared the backend for detailed standing while keeping Community Home
+  bottom-line only:
+  - backend `/clans/me` still returns `community_standing` for Finance or a
+    future drill-down
+  - Community Home does not display those deeper metrics in the row
+  - the visible row shows only `Finance bottom line` and `Trust bottom line`
+- Decongested the same row before phone UI polishing:
+  - removed role/status clutter from each row
+  - removed builder-style explanatory text inside the finance/trust metric cards
+  - shortened the section helper sentence so it speaks to the user
+  - removed metric chips from Community Home because those details belong in
+    Finance / Trust, not the community index
+- Added backend-backed context needed for fair judgement:
+  - `/clans/me` now returns `member_count` / `members_count`
+  - `/clans/me` now returns `community_strength`
+  - `/clans/me` now returns `interaction_count` and `interaction_density`
+  - interaction density is calculated from the current member's trust events in
+    that community, compared against active community size
+  - Community Home shows compact `Strength` and `Interaction` chips beside each
+    community identity, so finance/trust bottom lines are not judged without the
+    size of the group
+
+### Backend completion added
+
+- Updated `gmfn_backend/app/api/routes/clans.py` so `/clans/me` now returns
+  backend-backed community standing fields for each community row.
+- The route now uses the existing liquidity engine snapshot for each community
+  to derive:
+  - `community_finance_health`
+  - `finance_health`
+  - `finance_band`
+  - `community_trust_band`
+  - `trust_band`
+  - `community_cci_score`
+  - `community_cci_band`
+  - `community_standing`
+- `community_standing` carries the underlying compact truth, including member
+  count, total personal pool, locked guarantees, available guarantee capacity,
+  exposure ratio, risk counts, and risk flags.
+- If the liquidity engine cannot produce a snapshot, the route returns
+  `Preparing` plus a `sync_issue` instead of letting the frontend infer from
+  nothing.
+
+### Verification
+
+- `npm run build` passed in `frontend`.
+- `python -m py_compile gmfn_backend/app/api/routes/clans.py` passed.
+
+### Follow-up wording correction
+
+- Updated `frontend/src/pages/CommunityHomePage.tsx` so compressed mobile row
+  labels keep their business meaning:
+  - `People` now reads as `Numerical strength`
+  - `Interaction` now reads as `Interaction density`
+  - `Finance` now reads as `Community finance standing`
+  - `Trust` now reads as `Cumulative trust standing`
+  - `Spotlight` now reads as `Paid spotlight`, matching the backend
+    `spotlight_priority` subscription entitlement instead of implying ordinary
+    free spotlight exposure
+- The visible `Vault` count remains backend-backed by `vault_slot`; no separate
+  vote/average-usage metric has been invented in the frontend.
+- Placeholder backend states that previously displayed as `Preparing` in these
+  compact row signals now display as `Pending` when shown through the summary UI.
+- `npm run build` passed in `frontend` after the wording correction.
+
+### Next suggested step
+
+- Review `/app/community` on phone and confirm the row language/spacing. If the
+  logic is accepted, the next refinement should be visual only unless the
+  product owner asks for additional standing metrics.
+
+## Shop Control owner-facing polish pass - 2026-04-20
+
+### Routes/screens affected
+
+- `/app/community`
+- `/app/shop-control`
+
+### Work completed
+
+- Updated `frontend/src/pages/ShopControlPage.tsx`.
+- Updated `frontend/src/components/CommunityShopControlPanel.tsx`.
+- Shop Control now uses the same GSN deep-blue / light-blue / white / gold
+  branded background direction and more embossed card/button surfaces.
+- Reworded the page so it speaks to the shop owner/user instead of the builder:
+  - `Open Shop Assets` -> `Manage Products`
+  - `Open Shop Gallery` -> `View Public Shop`
+  - `Copy Gallery Link` -> `Copy Shop Link`
+  - `Merchant Verify` language now reads as `Verify Shop` /
+    `Shop verification`
+  - `Visible blocks` now reads as `Visible items`
+- Kept the route behavior unchanged:
+  - Community Home still opens `/app/shop-control#shop-control-summary`
+  - sensitive shop actions remain locally locked when identity continuity needs
+    review
+  - no backend contracts, auth rules, or payment rules were changed
+
+### Verification
+
+- `npm run build` passed in `frontend`.
+## Community Home Closing Language Tidy - 2026-04-21
+- Removed remaining builder-facing wording from Community Home and Shop Control copy so those surfaces speak directly to users.
+- Reworded technical cumulative labels toward plain GSN language: money across communities, trust across communities, and main user actions.
+- No route, backend, auth, schema, payment, or frozen Dashboard Market Wisdom behavior changed.
+- Verification: `git diff --check` passed. Build was not run for this text-only close-out.

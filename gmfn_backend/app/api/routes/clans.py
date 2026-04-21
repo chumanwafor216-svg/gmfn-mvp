@@ -9,6 +9,7 @@ from urllib.parse import urlencode
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 from app.services.notification_service import create_notification
 from app.core.auth import get_current_user, get_password_hash
@@ -21,6 +22,8 @@ from app.db.models import (
     ClanJoinRequest,
     ClanJoinVote,
     ClanMembership,
+    FeatureEntitlement,
+    TrustEvent,
     User,
 )
 from app.services.invites_service import (
@@ -28,6 +31,7 @@ from app.services.invites_service import (
     create_clan_invite,
     frontend_join_link,
 )
+from app.services.liquidity_engine_service import build_clan_liquidity_snapshot
 
 router = APIRouter(prefix="/clans", tags=["clans"])
 
@@ -92,6 +96,25 @@ class ClanOut(BaseModel):
     marketplace_name: Optional[str] = None
     marketplace_description: Optional[str] = None
     community_code: Optional[str] = None
+    community_finance_health: Optional[str] = None
+    finance_health: Optional[str] = None
+    finance_band: Optional[str] = None
+    community_trust_band: Optional[str] = None
+    trust_band: Optional[str] = None
+    community_cci_score: Optional[str] = None
+    community_cci_band: Optional[str] = None
+    cci_score: Optional[str] = None
+    cci_band: Optional[str] = None
+    member_count: Optional[int] = None
+    members_count: Optional[int] = None
+    community_strength: Optional[str] = None
+    interaction_density: Optional[str] = None
+    interaction_count: Optional[int] = None
+    spotlight_subscription_count: Optional[int] = None
+    spotlight_subscribers_count: Optional[int] = None
+    vault_subscription_count: Optional[int] = None
+    vault_subscribers_count: Optional[int] = None
+    community_standing: Optional[dict[str, Any]] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -604,6 +627,240 @@ def _clan_out(clan: Clan) -> dict[str, Any]:
     }
 
 
+def _decimal_value(value: Any) -> Decimal:
+    if isinstance(value, Decimal):
+        return value
+    if value is None:
+        return Decimal("0")
+    try:
+        return Decimal(str(value))
+    except Exception:
+        return Decimal("0")
+
+
+def _money_text(value: Any) -> str:
+    return str(_decimal_value(value).quantize(Decimal("0.01")))
+
+
+def _cci_band_from_score(value: Any) -> str:
+    score = _decimal_value(value)
+    if score >= Decimal("80"):
+        return "A"
+    if score >= Decimal("65"):
+        return "B"
+    if score >= Decimal("50"):
+        return "C"
+    if score >= Decimal("35"):
+        return "D"
+    return "E"
+
+
+def _community_finance_band(snapshot: dict[str, Any]) -> str:
+    member_count = int(snapshot.get("member_count") or 0)
+    total_pool = _decimal_value(snapshot.get("total_personal_pool_balance"))
+    total_available = _decimal_value(snapshot.get("total_available_guarantee_capacity"))
+    total_locked = _decimal_value(snapshot.get("total_locked_guarantees"))
+    exposure_ratio = _decimal_value(snapshot.get("clan_exposure_ratio"))
+
+    if member_count <= 0:
+        return "Preparing"
+    if total_pool <= Decimal("0") and total_locked <= Decimal("0"):
+        return "Starting"
+    if total_available <= Decimal("0") and total_locked > Decimal("0"):
+        return "Locked"
+    if exposure_ratio >= Decimal("0.80"):
+        return "High pressure"
+    if exposure_ratio >= Decimal("0.60"):
+        return "Watch"
+    return "Ready"
+
+
+def _community_trust_band(snapshot: dict[str, Any]) -> str:
+    risk_flags = [str(x) for x in (snapshot.get("risk_flags") or [])]
+    average_cci = _decimal_value(snapshot.get("average_cci_score"))
+    risk_counts = snapshot.get("risk_counts") or {}
+    high_risk_count = int(risk_counts.get("high") or 0)
+
+    if high_risk_count > 0 or "high_risk_members_present" in risk_flags:
+        return "Pressure"
+    if "clan_overexposed" in risk_flags:
+        return "Watch"
+    if average_cci >= Decimal("65"):
+        return "Strong"
+    if average_cci >= Decimal("50"):
+        return "Visible community"
+    if average_cci > Decimal("0"):
+        return "Building"
+    return "Preparing"
+
+
+def _community_strength_band(member_count: int) -> str:
+    if member_count <= 0:
+        return "Preparing"
+    if member_count < 5:
+        return "Starting circle"
+    if member_count < 25:
+        return "Small community"
+    if member_count < 100:
+        return "Medium community"
+    return "Large community"
+
+
+def _interaction_density_band(*, interaction_count: int, member_count: int) -> str:
+    if interaction_count <= 0:
+        return "No recorded activity"
+
+    denominator = max(int(member_count or 0), 1)
+    density = Decimal(interaction_count) / Decimal(denominator)
+
+    if density >= Decimal("1.00"):
+        return "High"
+    if density >= Decimal("0.25"):
+        return "Medium"
+    return "Low"
+
+
+def _interaction_count_for_user(db: Session, *, clan_id: int, user_id: int) -> int:
+    return int(
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.clan_id == int(clan_id),
+            or_(
+                TrustEvent.actor_user_id == int(user_id),
+                TrustEvent.subject_user_id == int(user_id),
+            ),
+        )
+        .count()
+    )
+
+
+def _active_feature_subscriber_count(
+    db: Session,
+    *,
+    clan_id: int,
+    feature_code: str,
+) -> int:
+    now = datetime.now(timezone.utc)
+    return int(
+        db.query(func.count(func.distinct(FeatureEntitlement.owner_user_id)))
+        .filter(
+            FeatureEntitlement.clan_id == int(clan_id),
+            FeatureEntitlement.feature_code == _safe_str(feature_code),
+            FeatureEntitlement.status == "active",
+            FeatureEntitlement.revoked_at.is_(None),
+            or_(
+                FeatureEntitlement.expires_at.is_(None),
+                FeatureEntitlement.expires_at >= now,
+            ),
+        )
+        .scalar()
+        or 0
+    )
+
+
+def _community_standing(db: Session, clan: Clan, current_user: User) -> dict[str, Any]:
+    try:
+        snapshot = build_clan_liquidity_snapshot(db, int(clan.id))
+    except Exception as exc:
+        return {
+            "source": "liquidity_engine",
+            "status": "preparing",
+            "sync_issue": str(exc),
+            "finance_standing": "Preparing",
+            "trust_standing": "Preparing",
+            "cci_score": "0.00",
+            "cci_band": "E",
+            "member_count": 0,
+            "community_strength": "Preparing",
+            "interaction_count": 0,
+            "interaction_density": "Preparing",
+            "spotlight_subscription_count": 0,
+            "vault_subscription_count": 0,
+        }
+
+    finance_standing = _community_finance_band(snapshot)
+    trust_standing = _community_trust_band(snapshot)
+    cci_score = _money_text(snapshot.get("average_cci_score"))
+    cci_band = _cci_band_from_score(cci_score)
+    member_count = int(snapshot.get("member_count") or 0)
+    interaction_count = _interaction_count_for_user(
+        db,
+        clan_id=int(clan.id),
+        user_id=int(current_user.id),
+    )
+    spotlight_subscription_count = _active_feature_subscriber_count(
+        db,
+        clan_id=int(clan.id),
+        feature_code="spotlight_priority",
+    )
+    vault_subscription_count = _active_feature_subscriber_count(
+        db,
+        clan_id=int(clan.id),
+        feature_code="vault_slot",
+    )
+
+    return {
+        "source": "liquidity_engine",
+        "status": "ready",
+        "finance_standing": finance_standing,
+        "finance_band": finance_standing,
+        "trust_standing": trust_standing,
+        "trust_band": trust_standing,
+        "cci_score": cci_score,
+        "cci_band": cci_band,
+        "member_count": member_count,
+        "community_strength": _community_strength_band(member_count),
+        "interaction_count": interaction_count,
+        "interaction_density": _interaction_density_band(
+            interaction_count=interaction_count,
+            member_count=member_count,
+        ),
+        "spotlight_subscription_count": spotlight_subscription_count,
+        "spotlight_subscribers_count": spotlight_subscription_count,
+        "vault_subscription_count": vault_subscription_count,
+        "vault_subscribers_count": vault_subscription_count,
+        "total_personal_pool_balance": _money_text(
+            snapshot.get("total_personal_pool_balance")
+        ),
+        "total_locked_guarantees": _money_text(snapshot.get("total_locked_guarantees")),
+        "total_available_guarantee_capacity": _money_text(
+            snapshot.get("total_available_guarantee_capacity")
+        ),
+        "clan_exposure_ratio": _money_text(snapshot.get("clan_exposure_ratio")),
+        "risk_counts": snapshot.get("risk_counts") or {},
+        "risk_flags": snapshot.get("risk_flags") or [],
+    }
+
+
+def _clan_out_with_standing(db: Session, clan: Clan, current_user: User) -> dict[str, Any]:
+    out = _clan_out(clan)
+    standing = _community_standing(db, clan, current_user)
+    out.update(
+        {
+            "community_finance_health": standing.get("finance_standing"),
+            "finance_health": standing.get("finance_standing"),
+            "finance_band": standing.get("finance_band"),
+            "community_trust_band": standing.get("trust_standing"),
+            "trust_band": standing.get("trust_band"),
+            "community_cci_score": standing.get("cci_score"),
+            "community_cci_band": standing.get("cci_band"),
+            "cci_score": standing.get("cci_score"),
+            "cci_band": standing.get("cci_band"),
+            "member_count": standing.get("member_count"),
+            "members_count": standing.get("member_count"),
+            "community_strength": standing.get("community_strength"),
+            "interaction_count": standing.get("interaction_count"),
+            "interaction_density": standing.get("interaction_density"),
+            "spotlight_subscription_count": standing.get("spotlight_subscription_count"),
+            "spotlight_subscribers_count": standing.get("spotlight_subscribers_count"),
+            "vault_subscription_count": standing.get("vault_subscription_count"),
+            "vault_subscribers_count": standing.get("vault_subscribers_count"),
+            "community_standing": standing,
+        }
+    )
+    return out
+
+
 @router.post("/", status_code=201, response_model=ClanOut)
 def create_clan(
     payload: ClanCreateIn,
@@ -667,7 +924,7 @@ def list_my_clans(
         .order_by(Clan.id.desc())
         .all()
     )
-    items = [_clan_out(clan) for clan in clans]
+    items = [_clan_out_with_standing(db, clan, current_user) for clan in clans]
     return {"items": items, "total": len(items)}
 
 

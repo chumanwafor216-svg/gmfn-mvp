@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import ExplainToggle from "../components/ExplainToggle";
+import { useLocation, useNavigate } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import PageTopNav from "../components/PageTopNav";
 import {
   getMe,
+  getMyIdentityRisk,
   getSelectedClanId,
   uploadMarketplaceImageFile,
   uploadMarketplaceVideoFile,
@@ -95,7 +95,22 @@ type TrustSlipFeatureSummary = {
   token?: string | null;
 };
 
+type ContinuityReviewState = {
+  blocked: boolean;
+  score: string;
+  reason: string;
+};
+
 type NoticeTone = "success" | "error" | "info";
+
+const SHOP_BRAND = {
+  ink: "#0B1F33",
+  blueDeep: "#071827",
+  blue: "#0B2942",
+  blueSoft: "#EAF4FF",
+  gold: "#D9AC33",
+  goldSoft: "#FFF4C7",
+};
 
 function safeStr(value: unknown): string {
   return String(value ?? "").trim();
@@ -246,40 +261,44 @@ function resolveSpotlightAssetUrl(path: string): string {
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
+    borderRadius: 30,
+    border: "1px solid rgba(212,175,55,0.22)",
     background: bg,
-    padding: 20,
+    padding: "clamp(14px, 3.8vw, 22px)",
     boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
+      "0 26px 60px rgba(2,12,27,0.17), 0 8px 22px rgba(8,40,72,0.10), inset 0 1px 0 rgba(255,255,255,0.92), inset 0 -3px 0 rgba(8,40,72,0.07)",
     overflow: "hidden",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
-    borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
+    borderRadius: 20,
+    border: "1px solid rgba(13,95,168,0.16)",
     background: bg,
     padding: 16,
+    boxShadow:
+      "0 16px 34px rgba(7,24,39,0.10), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -2px 0 rgba(8,40,72,0.06)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
+    borderRadius: 20,
+    border: "1px solid rgba(13,95,168,0.15)",
     background: bg,
-    padding: 14,
+    padding: 13,
+    boxShadow:
+      "0 16px 34px rgba(7,24,39,0.09), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -2px 0 rgba(8,40,72,0.06)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#5D7389",
+    color: "#315A80",
     fontWeight: 900,
-    letterSpacing: 0.35,
+    letterSpacing: 1.8,
     textTransform: "uppercase",
   };
 }
@@ -322,15 +341,23 @@ function badge(primary = false): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
+    justifyContent: "center",
     gap: 6,
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
+    background: primary ? SHOP_BRAND.goldSoft : "rgba(13,95,168,0.08)",
+    color: primary ? "#6F4C00" : "#1E4063",
+    border: primary
+      ? "1px solid rgba(217,172,51,0.26)"
+      : "1px solid rgba(13,95,168,0.11)",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
+    textAlign: "center",
+    boxShadow: primary
+      ? "0 7px 14px rgba(217,172,51,0.13), inset 0 1px 0 rgba(255,255,255,0.72)"
+      : "inset 0 1px 0 rgba(255,255,255,0.78)",
   };
 }
 
@@ -343,12 +370,14 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 42,
-      padding: "10px 14px",
-      borderRadius: 14,
-      border: "none",
-      background: disabled ? "#CBD5E1" : "#0B63D1",
-      color: "#FFFFFF",
+      minHeight: 44,
+      padding: "10px 16px",
+      borderRadius: 16,
+      border: disabled ? "1px solid rgba(148,163,184,0.45)" : "1px solid rgba(112,74,14,0.52)",
+      background: disabled
+        ? "#CBD5E1"
+        : "linear-gradient(180deg, #FFF6C8 0%, #E6BE4D 42%, #B78018 76%, #815407 100%)",
+      color: disabled ? "#FFFFFF" : "#172033",
       fontWeight: 900,
       fontSize: 14,
       textAlign: "center",
@@ -356,6 +385,10 @@ function actionBtn(
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
+      boxShadow: disabled
+        ? "none"
+        : "0 7px 0 rgba(92,64,18,0.34), 0 18px 32px rgba(11,31,51,0.20), inset 0 1px 0 rgba(255,255,255,0.72), inset 0 -2px 0 rgba(72,45,4,0.30)",
+      lineHeight: 1.15,
     };
   }
 
@@ -364,19 +397,24 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 38,
-      padding: "8px 12px",
-      borderRadius: 12,
-      border: "1px solid rgba(11,31,51,0.08)",
-      background: "#F8FBFF",
-      color: disabled ? "#94A3B8" : "#24415C",
-      fontWeight: 800,
+      minHeight: 40,
+      padding: "9px 13px",
+      borderRadius: 14,
+      border: disabled ? "1px solid rgba(148,163,184,0.38)" : "1px solid rgba(212,175,55,0.32)",
+      background: disabled
+        ? "linear-gradient(180deg, #F1F5F9 0%, #CBD5E1 100%)"
+        : "linear-gradient(180deg, #FFFFFF 0%, #FFF7D8 48%, #E1B33D 100%)",
+      color: disabled ? "#94A3B8" : "#172033",
+      fontWeight: 900,
       fontSize: 13,
       textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
+      lineHeight: 1.15,
+      boxShadow:
+        "0 5px 0 rgba(92,64,18,0.20), 0 13px 24px rgba(7,24,39,0.11), inset 0 1px 0 rgba(255,255,255,0.90), inset 0 -2px 0 rgba(83,56,0,0.14)",
     };
   }
 
@@ -386,9 +424,11 @@ function actionBtn(
     justifyContent: "center",
     minHeight: 42,
     padding: "10px 14px",
-    borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    borderRadius: 15,
+    border: disabled ? "1px solid rgba(148,163,184,0.38)" : "1px solid rgba(212,175,55,0.30)",
+    background: disabled
+      ? "linear-gradient(180deg, #F1F5F9 0%, #CBD5E1 100%)"
+      : "linear-gradient(180deg, #FFFFFF 0%, #FFF9E7 50%, #EAC75E 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
@@ -397,6 +437,43 @@ function actionBtn(
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
+    lineHeight: 1.15,
+    boxShadow:
+      "0 5px 0 rgba(92,64,18,0.18), 0 13px 24px rgba(7,24,39,0.10), inset 0 1px 0 rgba(255,255,255,0.90), inset 0 -2px 0 rgba(83,56,0,0.12)",
+  };
+}
+
+function controlGrid(isCompact: boolean, minWidth = 138): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: isCompact
+      ? "repeat(2, minmax(0, 1fr))"
+      : `repeat(auto-fit, minmax(${minWidth}px, 1fr))`,
+    gap: 10,
+    alignItems: "stretch",
+  };
+}
+
+function fullButton(style: React.CSSProperties): React.CSSProperties {
+  return {
+    ...style,
+    width: "100%",
+    minWidth: 0,
+  };
+}
+
+function readinessPill(ready: boolean): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    border: ready
+      ? "1px solid rgba(217,172,51,0.30)"
+      : "1px solid rgba(13,95,168,0.14)",
+    background: ready
+      ? "linear-gradient(180deg, #FFF9D8 0%, #EFD16B 100%)"
+      : "linear-gradient(180deg, #FFFFFF 0%, #EAF4FF 100%)",
+    padding: "10px 11px",
+    boxShadow:
+      "0 10px 20px rgba(7,24,39,0.08), inset 0 1px 0 rgba(255,255,255,0.86), inset 0 -2px 0 rgba(8,40,72,0.05)",
   };
 }
 
@@ -426,10 +503,13 @@ function textAreaStyle(): React.CSSProperties {
 
 function statTile(): React.CSSProperties {
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: "#FFFFFF",
+    borderRadius: 18,
+    border: "1px solid rgba(13,95,168,0.16)",
+    background:
+      "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 48%, #EAF4FF 100%)",
     padding: 14,
+    boxShadow:
+      "0 16px 30px rgba(7,24,39,0.09), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -2px 0 rgba(8,40,72,0.06)",
   };
 }
 
@@ -553,6 +633,7 @@ async function uploadShopImageFile(file: File): Promise<string> {
 
 export default function ShopControlPage() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -565,6 +646,11 @@ export default function ShopControlPage() {
   );
 
   const [me, setMe] = useState<any>(null);
+  const [continuityReview, setContinuityReview] = useState<ContinuityReviewState>({
+    blocked: false,
+    score: "",
+    reason: "",
+  });
   const [shop, setShop] = useState<ShopRecord | null>(null);
   const [products, setProducts] = useState<ProductRecord[]>([]);
   const [spotlights, setSpotlights] = useState<BroadcastRecord[]>([]);
@@ -606,6 +692,7 @@ export default function ShopControlPage() {
   const spotlightVideoPrepJobRef = useRef(0);
 
   const selectedClanId = Number(getSelectedClanId() || 0);
+  const shopActionsLocked = Boolean(continuityReview.blocked);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -671,8 +758,26 @@ export default function ShopControlPage() {
     setLoading(true);
 
     try {
-      const meRes = await getMe().catch(() => null);
+      const [meRes, riskRes] = await Promise.all([
+        getMe().catch(() => null),
+        getMyIdentityRisk().catch(() => null),
+      ]);
       setMe(meRes || null);
+      const continuity = (riskRes as any)?.continuity || {};
+      const continuityStatus = String(continuity?.status || "").trim().toLowerCase();
+      const continuityScore = Number(continuity?.score);
+      setContinuityReview({
+        blocked:
+          continuityStatus === "reverify_required" ||
+          continuityStatus === "protected_lock",
+        score: Number.isFinite(continuityScore)
+          ? String(Math.round(continuityScore))
+          : "",
+        reason: firstTruthy(
+          continuity?.reason,
+          "Identity continuity needs review before shop changes continue."
+        ),
+      });
 
       const gmfnId = firstTruthy(meRes?.gmfn_id);
       if (!gmfnId) {
@@ -754,6 +859,23 @@ export default function ShopControlPage() {
     }
   }
 
+  function scrollToControlTarget(targetId: string, attempt = 0) {
+    if (typeof window === "undefined" || typeof document === "undefined") return;
+
+    const target = document.getElementById(targetId);
+    if (target) {
+      target.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      return;
+    }
+
+    if (attempt < 10) {
+      window.setTimeout(() => scrollToControlTarget(targetId, attempt + 1), 100);
+    }
+  }
+
   useEffect(() => {
     void loadPage();
 
@@ -780,6 +902,21 @@ export default function ShopControlPage() {
       document.removeEventListener("visibilitychange", handleVisibilityRefresh);
     };
   }, [selectedClanId]);
+
+  useEffect(() => {
+    if (loading) return;
+
+    const targetId = String(location.hash || "").replace(/^#/, "");
+    if (!targetId) return;
+
+    if (targetId === "shop-control-spotlight") {
+      setSpotlightOpen(true);
+    }
+
+    window.setTimeout(() => {
+      scrollToControlTarget(targetId);
+    }, targetId === "shop-control-spotlight" ? 140 : 40);
+  }, [loading, location.hash]);
 
   const publicProducts = useMemo(
     () =>
@@ -898,11 +1035,11 @@ export default function ShopControlPage() {
       featureProofLine(latestMerchantVerifyPayment, {
         active: Boolean(trustSlipFeature?.merchant_verify_active),
         activeText:
-          "Merchant Verify is active. Outside merchants can now rely on your verification page.",
+          "Shop verification is active. Visitors can now rely on your verification page.",
         awaitingText:
-          "Merchant Verify is not active yet. Start the payment request first.",
+          "Shop verification is not active yet. Start the payment request first.",
         confirmedText:
-          "Merchant Verify payment is confirmed. Your verification page should now be active for outside merchants.",
+          "Shop verification payment is confirmed. Your verification page should now be active.",
       }),
     [latestMerchantVerifyPayment, trustSlipFeature?.merchant_verify_active]
   );
@@ -970,7 +1107,7 @@ export default function ShopControlPage() {
       return {
         title: "Complete payment and wait for reconciliation",
         detail:
-          "The paid spotlight entitlement is not active yet. Use the payment reference, then return here after bank reconciliation reaches the backend.",
+          "Paid spotlight is not active yet. Use the payment reference, then return here after confirmation.",
       };
     }
 
@@ -980,6 +1117,68 @@ export default function ShopControlPage() {
         "Create the payment instruction first. After confirmation, this page will unlock the paid publish path for the shop.",
     };
   }, [activePaidSpotlights.length, canStartPaidSpotlight, latestSpotlightPayment]);
+
+  const shopReadiness = useMemo(
+    () => [
+      {
+        label: "Shop face",
+        value: safeStr(imageUrlInput) ? "Ready" : "Needs picture",
+        ready: Boolean(safeStr(imageUrlInput)),
+      },
+      {
+        label: "Products",
+        value: `${publicProducts.length} / 12`,
+        ready: publicProducts.length > 0,
+      },
+      {
+        label: "Public link",
+        value: publicShopLink ? "Ready" : "Waiting",
+        ready: Boolean(publicShopLink),
+      },
+      {
+        label: "Spotlight",
+        value: activeSpotlights.length ? `${activeSpotlights.length} live` : "Not live",
+        ready: activeSpotlights.length > 0,
+      },
+    ],
+    [activeSpotlights.length, imageUrlInput, publicProducts.length, publicShopLink]
+  );
+
+  const recommendedShopMove = useMemo(() => {
+    if (!safeStr(imageUrlInput)) {
+      return {
+        title: "Add the shop picture first",
+        detail:
+          "A clear shop face helps visitors recognise the shop before they open the gallery.",
+        kind: "picture" as const,
+      };
+    }
+
+    if (publicProducts.length === 0) {
+      return {
+        title: "Add the first public product",
+        detail:
+          "Products make the gallery useful. Start with the items people can see publicly.",
+        kind: "products" as const,
+      };
+    }
+
+    if (activeSpotlights.length === 0) {
+      return {
+        title: "Publish a spotlight when ready",
+        detail:
+          "The shop is presentable. Spotlight can now help people notice it from the dashboard.",
+        kind: "spotlight" as const,
+      };
+    }
+
+    return {
+      title: "Shop is ready to monitor",
+      detail:
+        "Keep products current, watch the live spotlight, and open Vault only for private offers.",
+      kind: "monitor" as const,
+    };
+  }, [activeSpotlights.length, imageUrlInput, publicProducts.length]);
 
   useEffect(() => {
     if (spotlightPriorityMode === "paid" && !canStartPaidSpotlight) {
@@ -997,6 +1196,14 @@ export default function ShopControlPage() {
       void navigator.clipboard.writeText(text);
     }
     showNotice("success", successMessage);
+  }
+
+  function openSpotlightTools() {
+    setSpotlightOpen(true);
+
+    window.setTimeout(() => {
+      scrollToControlTarget("shop-control-spotlight");
+    }, 80);
   }
 
   async function createVaultInstruction(quantityTotal: 1 | 6) {
@@ -1054,13 +1261,13 @@ export default function ShopControlPage() {
       await loadPage();
       copyText(
         firstTruthy(result?.reference_display, result?.reference),
-        "Merchant Verify payment reference copied."
+        "Shop verification payment reference copied."
       );
-      showNotice("success", "Merchant Verify payment request created.");
+      showNotice("success", "Shop verification payment request created.");
     } catch (err: any) {
       showNotice(
         "error",
-        safeStr(err?.message) || "Merchant Verify payment request could not be created."
+        safeStr(err?.message) || "Shop verification payment request could not be created."
       );
     } finally {
       setCreatingMerchantVerifyInstruction(false);
@@ -1139,7 +1346,7 @@ export default function ShopControlPage() {
       setWhatsApp(firstTruthy(updated?.whatsapp_number));
       setTelegramHandle(firstTruthy(updated?.telegram_handle));
       setImageUrlInput(firstTruthy(updated?.image_url));
-      showNotice("success", "Shop control details saved.");
+      showNotice("success", "Shop details saved.");
     } catch (err: any) {
       showNotice("error", safeStr(err?.message) || "Shop details could not be saved.");
     } finally {
@@ -1415,15 +1622,20 @@ export default function ShopControlPage() {
       style={{
         maxWidth: 1180,
         margin: "0 auto",
-        paddingBottom: 40,
+        padding: isCompact ? "0 10px 40px" : "0 18px 44px",
         display: "grid",
-        gap: 18,
+        gap: 16,
+        background:
+          "radial-gradient(circle at 9% 3%, rgba(217,172,51,0.26) 0%, rgba(217,172,51,0) 30%), radial-gradient(circle at 94% 4%, rgba(38,132,205,0.24) 0%, rgba(38,132,205,0) 32%), linear-gradient(90deg, #071827 0%, #0B2942 4%, #EAF4FF 4.1%, #F8FBFF 12%, #F8FBFF 88%, #EAF4FF 95.9%, #0B2942 96%, #071827 100%)",
+        borderRadius: isCompact ? 26 : 36,
+        boxShadow:
+          "inset 16px 0 28px rgba(7,24,39,0.14), inset -16px 0 28px rgba(7,24,39,0.14)",
       }}
     >
       <PageTopNav
         sectionLabel="Shop Control"
         title="Shop Control"
-        subtitle="Restore the missing shop gallery controls, upload picture control, and keep spotlight compact instead of taking over the page."
+        subtitle="Keep your shop picture, products, Vault, and spotlight together under your GSN ID."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/marketplace"
@@ -1439,19 +1651,12 @@ export default function ShopControlPage() {
         ]}
       />
 
-      <ExplainToggle
-        label="What this screen does"
-        what="Shop Control is where you manage the shop identity, picture, gallery shortcuts, visibility tools, and spotlight controls for the current shop."
-        why="It keeps commercial visibility deliberate, so the shop can stay readable, trusted, and properly prepared before you push it outward."
-        next="Check the shop summary first, then use the picture, spotlight, unlock, and detail sections depending on what you need to update."
-        tone="light"
-      />
-
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
+        id="shop-control-summary"
         style={pageCard(
-          "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+          "radial-gradient(circle at 12% 0%, rgba(217,172,51,0.18) 0%, rgba(217,172,51,0) 30%), linear-gradient(180deg, #071827 0%, #0B2942 58%, #123A59 100%)"
         )}
       >
         <div
@@ -1463,7 +1668,7 @@ export default function ShopControlPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Shop summary</div>
+            <div style={{ ...sectionLabel(), color: "#F6D77A" }}>Your shop room</div>
 
             <div
               style={{
@@ -1485,8 +1690,8 @@ export default function ShopControlPage() {
                 color: "#D7E3F1",
               }}
             >
-              Keep the main page practical. Picture upload, shop gallery, and asset control
-              should remain visible. Spotlight should remain available, but compact.
+              Use this page to update your shop face, manage products, prepare spotlight,
+              and keep Vault private until you choose to open it.
             </div>
 
             <div
@@ -1499,28 +1704,24 @@ export default function ShopControlPage() {
             >
               <span style={badge(true)}>Community: {communityName}</span>
               <span style={badge(false)}>
-                Community ID: {firstTruthy(shop?.clan_id, selectedClanId, "Awaiting issue")}
+                Community no: {firstTruthy(shop?.clan_id, selectedClanId, "Pending")}
               </span>
               <span style={badge(false)}>
-                GMFN ID: {firstTruthy(shop?.gmfn_id, me?.gmfn_id, "Awaiting issue")}
+                GSN ID: {firstTruthy(shop?.gmfn_id, me?.gmfn_id, "Pending")}
               </span>
-              <span style={badge(false)}>Current page: Shop control</span>
-              <span style={badge(false)}>Current step: Manage commerce access</span>
-              <span style={badge(false)}>Community slots used: {publicProducts.length} / 12</span>
-              <span style={badge(false)}>Vault slots used: {vaultProducts.length} / 6</span>
+              <span style={badge(false)}>Public items: {publicProducts.length} / 12</span>
+              <span style={badge(false)}>Vault items: {vaultProducts.length} / 6</span>
               <span style={badge(false)}>Active spotlights: {activeSpotlights.length}</span>
             </div>
 
             <div
               style={{
                 marginTop: 16,
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
+                ...controlGrid(isCompact, 150),
               }}
             >
-              <OriginLink to="/app/shop-assets" style={actionBtn("primary")}>
-                Open Shop Assets
+              <OriginLink to="/app/shop-assets" style={fullButton(actionBtn("primary"))}>
+                Manage Products
               </OriginLink>
 
               <button
@@ -1530,23 +1731,23 @@ export default function ShopControlPage() {
                     window.open(publicShopLink, "_blank", "noopener,noreferrer");
                   }
                 }}
-                style={actionBtn("secondary", !publicShopLink)}
+                style={fullButton(actionBtn("secondary", !publicShopLink))}
                 disabled={!publicShopLink}
               >
-                Open Shop Gallery
+                View Public Shop
               </button>
 
               <button
                 type="button"
                 onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
-                style={actionBtn("secondary", !publicShopLink)}
+                style={fullButton(actionBtn("secondary", !publicShopLink))}
                 disabled={!publicShopLink}
               >
-                Copy Gallery Link
+                Copy Shop Link
               </button>
 
-              <OriginLink to="/app/trust-slip" style={actionBtn("soft")}>
-                Merchant Verify
+              <OriginLink to="/app/trust-slip" style={fullButton(actionBtn("soft"))}>
+                Verify Shop
               </OriginLink>
             </div>
           </div>
@@ -1558,16 +1759,7 @@ export default function ShopControlPage() {
               boxShadow: "0 18px 38px rgba(2,12,27,0.16)",
             }}
           >
-            <div style={sectionLabel()}>Compact spotlight panel</div>
-
-            <ExplainToggle
-              label="What this panel does"
-              what="This keeps the live spotlight available without letting it dominate the whole control page."
-              why="You can quickly check whether a spotlight is live, then open it only when you need to inspect or use it."
-              next="Open the spotlight when you want to review the current featured item, then close it again to keep the rest of the shop controls in view."
-              tone="light"
-              style={{ marginTop: 12 }}
-            />
+            <div style={sectionLabel()}>Control status</div>
 
             <div
               style={{
@@ -1578,44 +1770,91 @@ export default function ShopControlPage() {
                 lineHeight: 1.35,
               }}
             >
-              Spotlight kept smaller
+              {recommendedShopMove.title}
             </div>
 
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-              Spotlight no longer takes over the page. Open it only when needed.
+              {recommendedShopMove.detail}
             </div>
 
-            <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button
-                type="button"
-                onClick={() => setSpotlightOpen((prev) => !prev)}
-                style={spotlightOpen ? actionBtn("primary") : actionBtn("secondary")}
-              >
-                {spotlightOpen ? "Close Spotlight" : "Open Spotlight"}
-              </button>
+            <div
+              style={{
+                marginTop: 14,
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 8,
+              }}
+            >
+              {shopReadiness.map((item) => (
+                <div key={item.label} style={readinessPill(item.ready)}>
+                  <div style={{ ...sectionLabel(), fontSize: 10, letterSpacing: 1.2 }}>
+                    {item.label}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 5,
+                      color: item.ready ? "#6F4C00" : "#0B1F33",
+                      fontSize: 13,
+                      fontWeight: 900,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {item.value}
+                  </div>
+                </div>
+              ))}
+            </div>
 
-              <span style={badge(false)}>{activeSpotlights.length} active</span>
+            <div style={{ marginTop: 14, ...controlGrid(isCompact, 132) }}>
+              {recommendedShopMove.kind === "picture" ? (
+                <a
+                  href="#shop-control-picture-gallery"
+                  style={fullButton(actionBtn("primary"))}
+                >
+                  Open Picture Tools
+                </a>
+              ) : recommendedShopMove.kind === "products" ? (
+                <OriginLink to="/app/shop-assets" style={fullButton(actionBtn("primary"))}>
+                  Add Products
+                </OriginLink>
+              ) : recommendedShopMove.kind === "spotlight" ? (
+                <button
+                  type="button"
+                  onClick={openSpotlightTools}
+                  style={fullButton(actionBtn("primary"))}
+                >
+                  Open Ordinary Spotlight
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (publicShopLink) {
+                      window.open(publicShopLink, "_blank", "noopener,noreferrer");
+                    }
+                  }}
+                  style={fullButton(actionBtn("primary", !publicShopLink))}
+                  disabled={!publicShopLink}
+                >
+                  View Shop
+                </button>
+              )}
+
             </div>
           </div>
         </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>Commercial unlocks</div>
+      <section
+        id="shop-control-unlocks"
+        style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 55%, #EAF4FF 78%, #FFF7D8 100%)")}
+      >
+        <div style={sectionLabel()}>Paid access</div>
 
         <div style={{ marginTop: 10, ...helperText(), maxWidth: 900 }}>
-          These controls show the full path clearly: start the payment request, use the exact
-          reference, wait for payment confirmation, then use the feature.
+          Start only the paid feature you need. Use the exact reference, then return
+          here after payment so GSN can open the feature when it is confirmed.
         </div>
-
-        <ExplainToggle
-          label="How these unlocks work"
-          what="These cards show which paid shop capabilities are available and what each one unlocks."
-          why="They make the payment-first rule explicit so you can see the commercial path before trying to use a locked feature."
-          next="Choose the feature you want, follow its payment or verification step, then return here to confirm the unlock has taken effect."
-          tone="light"
-          style={{ marginTop: 12 }}
-        />
 
         <div
           style={{
@@ -1626,26 +1865,26 @@ export default function ShopControlPage() {
           }}
         >
           <div
+            id="shop-control-vault-subscription"
             style={{
-              ...innerCard("rgba(255,255,255,0.98)"),
+              ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #FFF9E7 100%)"),
               border: "1px solid rgba(212,175,55,0.12)",
               boxShadow: "0 16px 34px rgba(2,12,27,0.10)",
             }}
           >
             <div style={sectionLabel()}>Vault</div>
             <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 18, fontWeight: 900 }}>
-              Vault access
+              Private shop gallery
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-              Start with a Vault payment request. Once payment is confirmed, you can add private
-              offers and share access links.
+              Activate Vault when you want selected people to see private offers.
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span style={badge(true)}>Vault slots used: {vaultProducts.length} / 6</span>
+              <span style={badge(true)}>Vault items: {vaultProducts.length} / 6</span>
               <span style={badge(false)}>Vault links: {vaultLinks.length}</span>
               <span style={badge(false)}>State: {vaultStateLabel}</span>
               <span style={badge(false)}>
-                Latest status: {firstTruthy(latestVaultPayment?.status, "No payment request yet")}
+                Payment: {firstTruthy(latestVaultPayment?.status, "Not started")}
               </span>
             </div>
             {latestVaultPayment ? (
@@ -1658,48 +1897,52 @@ export default function ShopControlPage() {
                   {firstTruthy(latestVaultPayment.currency, "GBP")}
                 </div>
                 <div style={helperText()}>
-                  Reconciliation:
+                  Confirmation:
                   {" "}
                   {safeStr(latestVaultPayment.confirmed_at)
                     ? `Confirmed ${safeDateTime(latestVaultPayment.confirmed_at)}`
                     : firstTruthy(latestVaultPayment.status, "Expected")}
                 </div>
                 <div style={helperText()}>
-                  Bank match: {latestVaultPayment.matched_bank_event_id ? `Bank event ${latestVaultPayment.matched_bank_event_id}` : "Waiting for bank match"}
+                  Bank check: {latestVaultPayment.matched_bank_event_id ? "Matched" : "Waiting"}
                 </div>
               </div>
             ) : null}
             <div style={{ marginTop: 10, ...helperText() }}>{vaultProofText}</div>
-            <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div style={{ marginTop: 12, ...controlGrid(isCompact, 132) }}>
               <button
                 type="button"
                 onClick={() => void createVaultInstruction(1)}
-                disabled={creatingVaultInstruction}
-                style={actionBtn("primary", creatingVaultInstruction)}
+                disabled={shopActionsLocked || creatingVaultInstruction}
+                style={fullButton(actionBtn("primary", shopActionsLocked || creatingVaultInstruction))}
               >
-                {creatingVaultInstruction ? "Creating..." : "Start 1-slot payment"}
+                {shopActionsLocked
+                  ? "Review Identity First"
+                  : creatingVaultInstruction
+                  ? "Creating..."
+                  : "Start 1-slot payment"}
               </button>
               <button
                 type="button"
                 onClick={() => void createVaultInstruction(6)}
-                disabled={creatingVaultInstruction}
-                style={actionBtn("secondary", creatingVaultInstruction)}
+                disabled={shopActionsLocked || creatingVaultInstruction}
+                style={fullButton(actionBtn("secondary", shopActionsLocked || creatingVaultInstruction))}
               >
                 Start 6-slot payment
               </button>
-              <OriginLink to="/app/shop-assets" style={actionBtn("secondary")}>
-                Open Shop Assets
+              <OriginLink to="/app/shop-assets" style={fullButton(actionBtn("secondary"))}>
+                Manage Products
               </OriginLink>
             </div>
           </div>
 
-          <div style={innerCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Merchant Verify</div>
+          <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
+            <div style={sectionLabel()}>Verify shop</div>
             <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 18, fontWeight: 900 }}>
-              Merchant verification
+              Public verification
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-              This controls whether outside merchants can rely on your TrustSlip verification page.
+              Let visitors confirm this shop through your TrustSlip verification page.
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(true)}>
@@ -1707,7 +1950,7 @@ export default function ShopControlPage() {
               </span>
               <span style={badge(false)}>State: {merchantVerifyStateLabel}</span>
               <span style={badge(false)}>
-                Latest status: {firstTruthy(latestMerchantVerifyPayment?.status, "No payment request yet")}
+                Payment: {firstTruthy(latestMerchantVerifyPayment?.status, "Not started")}
               </span>
             </div>
             <div style={{ marginTop: 12, display: "grid", gap: 6 }}>
@@ -1727,29 +1970,36 @@ export default function ShopControlPage() {
                     {firstTruthy(latestMerchantVerifyPayment.currency, "GBP")}
                   </div>
                   <div style={helperText()}>
-                    Reconciliation:
+                    Confirmation:
                     {" "}
                     {safeStr(latestMerchantVerifyPayment.confirmed_at)
                       ? `Confirmed ${safeDateTime(latestMerchantVerifyPayment.confirmed_at)}`
                       : firstTruthy(latestMerchantVerifyPayment.status, "Expected")}
                   </div>
                   <div style={helperText()}>
-                    Bank match: {latestMerchantVerifyPayment.matched_bank_event_id ? `Bank event ${latestMerchantVerifyPayment.matched_bank_event_id}` : "Waiting for bank match"}
+                    Bank check: {latestMerchantVerifyPayment.matched_bank_event_id ? "Matched" : "Waiting"}
                   </div>
                 </>
               ) : null}
             </div>
             <div style={{ marginTop: 10, ...helperText() }}>{merchantVerifyProofText}</div>
-            <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div style={{ marginTop: 12, ...controlGrid(isCompact, 132) }}>
               <button
                 type="button"
                 onClick={() => void createMerchantVerifyInstruction()}
-                disabled={creatingMerchantVerifyInstruction}
-                style={actionBtn("primary", creatingMerchantVerifyInstruction)}
+                disabled={shopActionsLocked || creatingMerchantVerifyInstruction}
+                style={fullButton(actionBtn(
+                  "primary",
+                  shopActionsLocked || creatingMerchantVerifyInstruction
+                ))}
               >
-                {creatingMerchantVerifyInstruction ? "Creating..." : "Start verification payment"}
+                {shopActionsLocked
+                  ? "Review Identity First"
+                  : creatingMerchantVerifyInstruction
+                  ? "Creating..."
+                  : "Start verification payment"}
               </button>
-              <OriginLink to="/app/trust-slip" style={actionBtn("secondary")}>
+              <OriginLink to="/app/trust-slip" style={fullButton(actionBtn("secondary"))}>
                 Open TrustSlip
               </OriginLink>
               {safeStr(trustSlipFeature?.public_verify_url) ? (
@@ -1757,28 +2007,30 @@ export default function ShopControlPage() {
                   href={String(trustSlipFeature?.public_verify_url)}
                   target="_blank"
                   rel="noreferrer"
-                  style={actionBtn("secondary")}
+                  style={fullButton(actionBtn("secondary"))}
                 >
-                  Open Verify Link
+                  Open verification link
                 </a>
               ) : null}
             </div>
           </div>
 
-          <div style={innerCard("#FCFEFF")}>
+          <div
+            id="shop-control-paid-spotlight"
+            style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 100%)")}
+          >
             <div style={sectionLabel()}>Paid spotlight</div>
             <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 18, fontWeight: 900 }}>
               Paid spotlight
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-              Free spotlight stays available under the normal limit. Paid spotlight needs its own
-              payment and only one paid spotlight can run at a time.
+              Use paid spotlight when you want priority visibility after confirmation.
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(true)}>Active paid spotlights: {activePaidSpotlights.length}</span>
               <span style={badge(false)}>State: {spotlightStateLabel}</span>
               <span style={badge(false)}>
-                Latest status: {firstTruthy(latestSpotlightPayment?.status, "No payment request yet")}
+                Payment: {firstTruthy(latestSpotlightPayment?.status, "Not started")}
               </span>
             </div>
             {latestSpotlightPayment ? (
@@ -1787,7 +2039,7 @@ export default function ShopControlPage() {
                   Reference: {firstTruthy(latestSpotlightPayment.reference_display, "Awaiting reference")}
                 </div>
                 <div style={helperText()}>
-                  Reconciliation:
+                  Confirmation:
                   {" "}
                   {safeStr(latestSpotlightPayment.confirmed_at)
                     ? `Confirmed ${safeDateTime(latestSpotlightPayment.confirmed_at)}`
@@ -1798,7 +2050,7 @@ export default function ShopControlPage() {
                   {firstTruthy(latestSpotlightPayment.currency, "GBP")}
                 </div>
                 <div style={helperText()}>
-                  Bank match: {latestSpotlightPayment.matched_bank_event_id ? `Bank event ${latestSpotlightPayment.matched_bank_event_id}` : "Waiting for bank match"}
+                  Bank check: {latestSpotlightPayment.matched_bank_event_id ? "Matched" : "Waiting"}
                 </div>
               </div>
             ) : null}
@@ -1806,11 +2058,11 @@ export default function ShopControlPage() {
             <div
               style={{
                 marginTop: 12,
-                ...innerCard("#FFFFFF"),
+                ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #FFF9E7 100%)"),
                 border: "1px solid rgba(11,31,51,0.08)",
               }}
             >
-              <div style={sectionLabel()}>Current next action</div>
+              <div style={sectionLabel()}>Next action</div>
               <div
                 style={{
                   marginTop: 10,
@@ -1826,29 +2078,36 @@ export default function ShopControlPage() {
                 {spotlightNextAction.detail}
               </div>
             </div>
-            <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div style={{ marginTop: 12, ...controlGrid(isCompact, 132) }}>
               <button
                 type="button"
                 onClick={() => void createSpotlightInstruction()}
-                disabled={creatingSpotlightInstruction}
-                style={actionBtn("primary", creatingSpotlightInstruction)}
+                disabled={shopActionsLocked || creatingSpotlightInstruction}
+                style={fullButton(actionBtn("primary", shopActionsLocked || creatingSpotlightInstruction))}
               >
-                {creatingSpotlightInstruction ? "Creating..." : "Start spotlight payment"}
+                {shopActionsLocked
+                  ? "Review Identity First"
+                  : creatingSpotlightInstruction
+                  ? "Creating..."
+                  : "Start spotlight payment"}
               </button>
               <button
                 type="button"
-                onClick={() => setSpotlightOpen(true)}
-                style={actionBtn("secondary")}
+                onClick={openSpotlightTools}
+                style={fullButton(actionBtn("secondary"))}
               >
-                Open Spotlight Tools
+                Open Spotlight Publisher
               </button>
             </div>
           </div>
         </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>Shop picture and gallery controls</div>
+      <section
+        id="shop-control-picture-gallery"
+        style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 82%, #FFF7D8 100%)")}
+      >
+        <div style={sectionLabel()}>Picture and public gallery</div>
 
         <div
           style={{
@@ -1913,7 +2172,7 @@ export default function ShopControlPage() {
                     backdropFilter: "blur(8px)",
                   }}
                 >
-                  Release preview
+                  Public preview
                 </div>
                 {safeStr(imageUrlInput) ? (
                   <img
@@ -1939,7 +2198,7 @@ export default function ShopControlPage() {
                       lineHeight: 1.35,
                     }}
                   >
-                    <div>Executive shop picture awaiting release</div>
+                    <div>Add your shop picture</div>
                     <div
                       style={{
                         marginTop: 8,
@@ -1949,8 +2208,7 @@ export default function ShopControlPage() {
                         maxWidth: 220,
                       }}
                     >
-                      This preview frame shows how the public image shell will look once you save
-                      the picture.
+                      This is the picture people see before they open the shop.
                     </div>
                   </div>
                 )}
@@ -1961,7 +2219,7 @@ export default function ShopControlPage() {
           <div style={{ display: "grid", gap: 14 }}>
             <div
               style={{
-                ...innerCard("rgba(255,255,255,0.98)"),
+                ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #FFF9E7 100%)"),
                 border: "1px solid rgba(212,175,55,0.12)",
                 boxShadow: "0 16px 34px rgba(2,12,27,0.10)",
               }}
@@ -1969,13 +2227,14 @@ export default function ShopControlPage() {
               <div style={sectionLabel()}>Upload picture</div>
 
               <div style={{ marginTop: 10, ...helperText() }}>
-                Upload a file when available, or paste an image URL and save it directly.
+                Upload a file or paste an image URL. Save when the picture is ready.
               </div>
 
               <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
                 <input
                   type="file"
                   accept="image/*"
+                  disabled={shopActionsLocked}
                   onChange={(e) => void handleFilePicked(e.target.files?.[0] || null)}
                   style={inputStyle()}
                 />
@@ -1990,24 +2249,32 @@ export default function ShopControlPage() {
                   />
                 </div>
 
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <div style={controlGrid(isCompact, 132)}>
                   <button
                     type="button"
                     onClick={() => void saveShopDetails({ image_url: imageUrlInput })}
-                    disabled={savingShop || uploadingImage}
-                    style={actionBtn("primary", savingShop || uploadingImage)}
+                    disabled={shopActionsLocked || savingShop || uploadingImage}
+                    style={fullButton(actionBtn("primary", shopActionsLocked || savingShop || uploadingImage))}
                   >
-                    {savingShop ? "Saving..." : uploadingImage ? "Uploading..." : "Save Picture"}
+                    {shopActionsLocked
+                      ? "Review Identity First"
+                      : savingShop
+                      ? "Saving..."
+                      : uploadingImage
+                      ? "Uploading..."
+                      : "Save Picture"}
                   </button>
 
                   <button
                     type="button"
                     onClick={() => void saveShopDetails({ clear_image: true, image_url: null })}
-                    disabled={savingShop || uploadingImage || !safeStr(imageUrlInput)}
-                    style={actionBtn(
+                    disabled={
+                      shopActionsLocked || savingShop || uploadingImage || !safeStr(imageUrlInput)
+                    }
+                    style={fullButton(actionBtn(
                       "secondary",
-                      savingShop || uploadingImage || !safeStr(imageUrlInput)
-                    )}
+                      shopActionsLocked || savingShop || uploadingImage || !safeStr(imageUrlInput)
+                    ))}
                   >
                     Remove Picture
                   </button>
@@ -2015,12 +2282,12 @@ export default function ShopControlPage() {
               </div>
             </div>
 
-            <div style={innerCard("#FFFFFF")}>
-              <div style={sectionLabel()}>Gallery shortcuts</div>
+            <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
+              <div style={sectionLabel()}>Gallery</div>
 
-              <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <OriginLink to="/app/shop-assets" style={actionBtn("secondary")}>
-                  Shop Assets
+              <div style={{ marginTop: 12, ...controlGrid(isCompact, 132) }}>
+                <OriginLink to="/app/shop-assets" style={fullButton(actionBtn("secondary"))}>
+                  Manage Products
                 </OriginLink>
 
                 <button
@@ -2030,16 +2297,16 @@ export default function ShopControlPage() {
                       window.open(publicShopLink, "_blank", "noopener,noreferrer");
                     }
                   }}
-                  style={actionBtn("secondary", !publicShopLink)}
+                  style={fullButton(actionBtn("secondary", !publicShopLink))}
                   disabled={!publicShopLink}
                 >
-                  Public Gallery
+                  View Public Shop
                 </button>
 
                 <button
                   type="button"
                     onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
-                  style={actionBtn("soft", !publicShopLink)}
+                  style={fullButton(actionBtn("soft", !publicShopLink))}
                   disabled={!publicShopLink}
                 >
                   Copy Link
@@ -2050,7 +2317,7 @@ export default function ShopControlPage() {
         </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 72%, #FFF7D8 100%)")}>
         <div style={sectionLabel()}>Shop details</div>
 
         <div
@@ -2096,29 +2363,29 @@ export default function ShopControlPage() {
             <textarea
               value={shopDescription}
               onChange={(e) => setShopDescription(e.target.value)}
-              placeholder="Describe the shop..."
+              placeholder="Tell people what this shop offers..."
               style={{ ...textAreaStyle(), marginTop: 8 }}
             />
           </div>
         </div>
 
-        <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ marginTop: 16, ...controlGrid(isCompact, 150) }}>
           <button
             type="button"
             onClick={() => void saveShopDetails()}
-            disabled={savingShop}
-            style={actionBtn("primary", savingShop)}
+            disabled={shopActionsLocked || savingShop}
+            style={fullButton(actionBtn("primary", shopActionsLocked || savingShop))}
           >
-            {savingShop ? "Saving..." : "Save Shop Details"}
+            {shopActionsLocked ? "Review Identity First" : savingShop ? "Saving..." : "Save Shop Details"}
           </button>
 
-          <OriginLink to="/app/shop-assets" style={actionBtn("secondary")}>
+          <OriginLink to="/app/shop-assets" style={fullButton(actionBtn("secondary"))}>
             Manage Products
           </OriginLink>
         </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 82%, #FFF7D8 100%)")}>
         <div style={sectionLabel()}>Slot usage</div>
 
         <div
@@ -2130,7 +2397,7 @@ export default function ShopControlPage() {
           }}
         >
           <div style={statTile()}>
-            <div style={sectionLabel()}>Community</div>
+            <div style={sectionLabel()}>Public items</div>
             <div
               style={{
                 marginTop: 8,
@@ -2188,7 +2455,10 @@ export default function ShopControlPage() {
       </section>
 
       {spotlightOpen ? (
-        <section style={pageCard("#FFFFFF")}>
+        <section
+          id="shop-control-spotlight"
+          style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 82%, #FFF7D8 100%)")}
+        >
           <div style={sectionLabel()}>Spotlight</div>
 
           <div
@@ -2198,17 +2468,18 @@ export default function ShopControlPage() {
               maxWidth: 860,
             }}
           >
-            Spotlight is still here, but kept tighter so it does not take over the main page.
+            Prepare the message, image, or short video people will see. Close this section
+            when the spotlight is ready.
           </div>
 
           <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
             <div
               style={{
-                ...innerCard("#FCFEFF"),
+                ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 100%)"),
                 border: "1px solid rgba(11,31,51,0.08)",
               }}
             >
-              <div style={sectionLabel()}>Current live spotlight</div>
+              <div style={sectionLabel()}>Live spotlight</div>
               {currentActiveSpotlight ? (
                 <>
                   <div
@@ -2268,10 +2539,9 @@ export default function ShopControlPage() {
                     </div>
                   ) : null}
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    This live spotlight remains
-                    visible across the live spotlight pages until it expires or is replaced.
+                    This spotlight stays visible until it expires or is replaced.
                   </div>
-                  <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <div style={{ marginTop: 12, ...controlGrid(isCompact, 132) }}>
                     <button
                       type="button"
                       onClick={() => {
@@ -2279,7 +2549,7 @@ export default function ShopControlPage() {
                           window.open(publicShopLink, "_blank", "noopener,noreferrer");
                         }
                       }}
-                      style={actionBtn("secondary", !publicShopLink)}
+                      style={fullButton(actionBtn("secondary", !publicShopLink))}
                       disabled={!publicShopLink}
                     >
                       Open live shop view
@@ -2287,7 +2557,7 @@ export default function ShopControlPage() {
                     <button
                       type="button"
                       onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
-                      style={actionBtn("soft", !publicShopLink)}
+                      style={fullButton(actionBtn("soft", !publicShopLink))}
                       disabled={!publicShopLink}
                     >
                       Copy live link
@@ -2297,24 +2567,23 @@ export default function ShopControlPage() {
               ) : (
                 <>
                   <div style={{ marginTop: 10, ...helperText() }}>
-                    No active spotlight is live for this shop right now.
+                    No spotlight is live for this shop right now.
                   </div>
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    Use the free publish path below, or confirm a paid spotlight first if you want
-                    priority visibility.
+                    Publish a free spotlight now, or start paid spotlight after payment confirmation.
                   </div>
                 </>
               )}
             </div>
 
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <div style={{ ...controlGrid(isCompact, 132), alignItems: "center" }}>
               <button
                 type="button"
                 onClick={() => setSpotlightPriorityMode("free")}
                 style={
                   spotlightPriorityMode === "free"
-                    ? actionBtn("primary")
-                    : actionBtn("secondary")
+                    ? fullButton(actionBtn("primary"))
+                    : fullButton(actionBtn("secondary"))
                 }
               >
                 Free spotlight
@@ -2322,11 +2591,11 @@ export default function ShopControlPage() {
               <button
                 type="button"
                 onClick={() => setSpotlightPriorityMode("paid")}
-                disabled={!canStartPaidSpotlight}
+                disabled={shopActionsLocked || !canStartPaidSpotlight}
                 style={
                   spotlightPriorityMode === "paid"
-                    ? actionBtn("primary", !canStartPaidSpotlight)
-                    : actionBtn("secondary", !canStartPaidSpotlight)
+                    ? fullButton(actionBtn("primary", shopActionsLocked || !canStartPaidSpotlight))
+                    : fullButton(actionBtn("secondary", shopActionsLocked || !canStartPaidSpotlight))
                 }
               >
                 Paid spotlight
@@ -2338,12 +2607,12 @@ export default function ShopControlPage() {
 
             <div style={{ ...helperText(), fontSize: 13 }}>
               {spotlightPriorityMode === "paid"
-                ? "This publish will use your confirmed paid spotlight entitlement for priority visibility."
+                ? "This publish will use your confirmed paid spotlight for priority visibility."
                 : canStartPaidSpotlight
                 ? "A paid spotlight is available, but you can still publish a normal free spotlight if you prefer."
                 : safeStr(latestSpotlightPayment?.confirmed_at)
                 ? "A paid spotlight is already active for this shop. Start another one only after the current paid run ends."
-                : "Free spotlight stays available now. Paid spotlight becomes publishable here after payment confirmation reaches the backend."}
+                : "Free spotlight is available now. Paid spotlight opens after payment confirmation."}
             </div>
 
             <textarea
@@ -2354,15 +2623,15 @@ export default function ShopControlPage() {
             />
 
             <div style={{ ...helperText(), fontSize: 13 }}>
-              Upload a picture, a short video, or both. The app uses the same spotlight media
-              model here as Community Home, so the picture can stay as the fallback cover when a
-              short video is live.
+              Upload a picture, a short video, or both. The picture stays as the cover when
+              a short video is live.
             </div>
 
             <input
               key={spotlightImageInputKey}
               type="file"
               accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/jpg,image/png,image/webp"
+              disabled={shopActionsLocked}
               onChange={(e) => {
                 const file = e.target.files?.[0] || null;
                 void handleSpotlightImagePicked(file);
@@ -2388,6 +2657,7 @@ export default function ShopControlPage() {
               key={spotlightVideoInputKey}
               type="file"
               accept=".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime,video/mov"
+              disabled={shopActionsLocked}
               onChange={(e) => {
                 const file = e.target.files?.[0] || null;
                 void handleSpotlightVideoPicked(file);
@@ -2413,7 +2683,7 @@ export default function ShopControlPage() {
             />
 
             {spotlightImagePreviewUrl || spotlightVideoPreviewUrl || spotlightImageUrl || spotlightVideoUrl ? (
-              <div style={innerCard("#FCFEFF")}>
+              <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 100%)")}>
                 <div style={sectionLabel()}>Draft media preview</div>
                 <div style={{ marginTop: 10 }}>
                   <SpotlightMediaFrame
@@ -2447,27 +2717,37 @@ export default function ShopControlPage() {
               </div>
             ) : null}
 
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <div style={controlGrid(isCompact, 150)}>
               <button
                 type="button"
                 onClick={() => void handleCreateSpotlight()}
-                disabled={creatingSpotlight || preparingSpotlightImage || preparingSpotlightVideo}
-                style={actionBtn(
+                disabled={
+                  shopActionsLocked ||
+                  creatingSpotlight ||
+                  preparingSpotlightImage ||
+                  preparingSpotlightVideo
+                }
+                style={fullButton(actionBtn(
                   "primary",
-                  creatingSpotlight || preparingSpotlightImage || preparingSpotlightVideo
-                )}
+                  shopActionsLocked ||
+                    creatingSpotlight ||
+                    preparingSpotlightImage ||
+                    preparingSpotlightVideo
+                ))}
               >
-                {creatingSpotlight
+                {shopActionsLocked
+                  ? "Review Identity First"
+                  : creatingSpotlight
                   ? "Publishing..."
                   : preparingSpotlightImage || preparingSpotlightVideo
                   ? "Preparing media..."
-                  : "Create Spotlight"}
+                  : "Publish Spotlight"}
               </button>
 
               <button
                 type="button"
                 onClick={() => setSpotlightOpen(false)}
-                style={actionBtn("secondary")}
+                style={fullButton(actionBtn("secondary"))}
               >
                 Collapse Spotlight
               </button>
@@ -2476,7 +2756,7 @@ export default function ShopControlPage() {
             {activeSpotlights.length > 0 ? (
               <div style={{ marginTop: 8, display: "grid", gap: 10 }}>
                 {activeSpotlights.slice(0, 4).map((item) => (
-                  <div key={item.id} style={innerCard("#FCFEFF")}>
+                  <div key={item.id} style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
                     <div
                       style={{
                         color: "#0B1F33",
@@ -2507,8 +2787,13 @@ export default function ShopControlPage() {
         </section>
       ) : null}
 
-      <section style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>Vault and private access</div>
+      <section
+        id="shop-control-vault"
+        style={pageCard(
+          "radial-gradient(circle at 16% 0%, rgba(217,172,51,0.16) 0%, rgba(217,172,51,0) 30%), linear-gradient(180deg, #071827 0%, #0B2942 56%, #123A59 100%)"
+        )}
+      >
+        <div style={{ ...sectionLabel(), color: "#F6D77A" }}>Vault and private access</div>
 
         <div
           style={{
@@ -2518,7 +2803,7 @@ export default function ShopControlPage() {
             gap: 12,
           }}
         >
-          <div style={innerCard("#FCFEFF")}>
+          <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 60%, #FFF9E7 100%)")}>
             <div
               style={{
                 color: "#0B1F33",
@@ -2538,7 +2823,7 @@ export default function ShopControlPage() {
                 ))
               ) : (
                 <div style={helperText()}>
-                  Community-visible products have not been released yet.
+                  Public products have not been released yet.
                 </div>
               )}
             </div>
@@ -2547,10 +2832,11 @@ export default function ShopControlPage() {
           <div
             style={{
               ...innerCard(
-                "linear-gradient(180deg, #0A1625 0%, #11263B 56%, #193A58 100%)"
+                "radial-gradient(circle at 16% 0%, rgba(217,172,51,0.16) 0%, rgba(217,172,51,0) 32%), linear-gradient(180deg, #071827 0%, #0B2942 58%, #123A59 100%)"
               ),
-              border: "1px solid rgba(212,175,55,0.16)",
-              boxShadow: "0 18px 40px rgba(2,12,27,0.20)",
+              border: "1px solid rgba(212,175,55,0.22)",
+              boxShadow:
+                "0 20px 44px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -2px 0 rgba(0,0,0,0.16)",
             }}
           >
             <div
@@ -2575,8 +2861,8 @@ export default function ShopControlPage() {
                 <div
                   key={item.id}
                   style={{
-                    ...innerCard("rgba(255,255,255,0.06)"),
-                    border: "1px solid rgba(212,175,55,0.10)",
+                    ...innerCard("rgba(255,255,255,0.08)"),
+                    border: "1px solid rgba(212,175,55,0.16)",
                     padding: 12,
                   }}
                 >

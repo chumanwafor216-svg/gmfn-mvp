@@ -642,7 +642,7 @@ function fieldTextareaStyle(): React.CSSProperties {
 function stopDashboardPointerEvent(
   event?: React.SyntheticEvent<HTMLElement>
 ) {
-  event?.stopPropagation();
+  void event;
 }
 
 function safeStr(x: unknown): string {
@@ -2328,10 +2328,6 @@ export default function DashboardPage() {
   const [attentionClockMs, setAttentionClockMs] = useState<number>(() =>
     Date.now()
   );
-  const [dashboardInteractionShieldVisible, setDashboardInteractionShieldVisible] =
-    useState<boolean>(false);
-  const dashboardInteractionShieldTimerRef = useRef<number | null>(null);
-
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -2344,17 +2340,6 @@ export default function DashboardPage() {
     window.addEventListener("resize", handleResize);
 
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (
-        typeof window !== "undefined" &&
-        dashboardInteractionShieldTimerRef.current !== null
-      ) {
-        window.clearTimeout(dashboardInteractionShieldTimerRef.current);
-      }
-    };
   }, []);
 
   useEffect(() => {
@@ -4196,27 +4181,13 @@ export default function DashboardPage() {
     navigateWithOrigin(navigate, to, location);
   }
 
-  function armDashboardInteractionShield(durationMs = 420) {
-    if (typeof window === "undefined") return;
-
-    if (dashboardInteractionShieldTimerRef.current !== null) {
-      window.clearTimeout(dashboardInteractionShieldTimerRef.current);
-    }
-
-    setDashboardInteractionShieldVisible(true);
-    dashboardInteractionShieldTimerRef.current = window.setTimeout(() => {
-      setDashboardInteractionShieldVisible(false);
-      dashboardInteractionShieldTimerRef.current = null;
-    }, durationMs);
-  }
-
   function runDashboardUiMutation(
     event: React.SyntheticEvent<HTMLElement> | undefined,
     action: () => void,
-    durationMs = 420
+    _durationMs = 420
   ) {
+    void _durationMs;
     consumeDashboardButtonEvent(event);
-    armDashboardInteractionShield(durationMs);
 
     if (typeof window === "undefined") {
       action();
@@ -9358,22 +9329,6 @@ export default function DashboardPage() {
             </div>
           </div>
       </section>
-
-      {dashboardInteractionShieldVisible ? (
-        <div
-          aria-hidden="true"
-          onPointerDown={consumeDashboardPointerEvent}
-          onClick={consumeDashboardButtonEvent}
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9999,
-            background: "transparent",
-            pointerEvents: "auto",
-            touchAction: "none",
-          }}
-        />
-      ) : null}
 
       </div>
     </div>

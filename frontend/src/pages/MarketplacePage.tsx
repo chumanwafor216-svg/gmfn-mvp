@@ -1401,8 +1401,7 @@ export default function MarketplacePage() {
   function consumeMarketplacePointerEvent(
     event?: React.SyntheticEvent<HTMLElement>
   ) {
-    if (!event) return;
-    event.stopPropagation();
+    void event;
   }
 
   function consumeMarketplaceButtonEvent(
@@ -1885,17 +1884,6 @@ export default function MarketplacePage() {
     if (typeof window !== "undefined") {
       window.open(url, "_blank", "noopener,noreferrer");
     }
-  }
-
-  function copyCommunityId() {
-    const id = communityIdentity(selectedCommunity);
-    if (!id || id === "Pending") {
-      showNotice("error", "Community ID is not available.");
-      return;
-    }
-
-    safeCopy(id);
-    showNotice("success", "Community ID copied.");
   }
 
   async function handleStartLoanDraft() {
