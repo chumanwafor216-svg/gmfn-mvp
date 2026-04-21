@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import DomainIntroToggle from "../components/DomainIntroToggle";
 import GSNBrandMark from "../components/GSNBrandMark";
 import NextActionGuide, {
   type NextActionGuideItem,
@@ -267,6 +268,21 @@ const DASHBOARD_FOCUS_COMMITMENTS_STORAGE_KEY =
 const DASHBOARD_FOCUS_EVENTS_STORAGE_KEY =
   "gmfn.dashboard.focus-events.v1";
 const MARKET_WISDOM_ROTATION_MS = 45000;
+
+const DASHBOARD_HELP_BODY =
+  "Dashboard helps me notice what matters before I get lost inside the whole app. It is not the command centre. It is the place that reads the day for me: wisdom, commitments, events, demand, spotlight, and trust signals.";
+
+const DASHBOARD_HELP_BULLETS = [
+  "Market Wisdom gives me the first reading. It turns what is happening around my activity into a plain signal before I start moving from page to page.",
+  "Focus Commitment keeps my promises in front of me. If I said I will repay, save, build stock, finish a task, or follow up on a goal, Dashboard keeps that promise visible until I act.",
+  "Notifications are not just messages. They are event signals: payment movement, trust changes, join requests, demand updates, spotlight movement, and unfinished things that need attention.",
+  "Demand Box shows when someone has a need or request that may become trade, support, or responsibility. Dashboard helps me see that pressure early instead of missing it.",
+  "Spotlight shows what is currently visible in the marketplace. It helps me notice what the community is presenting, what may need attention, and what trust context sits behind it.",
+  "TrustSlip is the proof layer behind the story. When the events show that I follow through, repay, respond, and support honestly, my TrustSlip has stronger evidence to carry.",
+];
+
+const DASHBOARD_HELP_NOTE =
+  "Innovation wedge: GSN turns informal community vouching into portable, verifiable trust evidence, especially for people who are normally invisible to formal credit systems.";
 
 const PUBLIC_ROUTE_PREFIXES = [
   "cover",
@@ -6356,6 +6372,15 @@ export default function DashboardPage() {
         onSelect={handleDashboardNextAction}
         eyebrow="Your guide"
         intro="Say what you want in normal words, like loan, deposit, withdraw, shop, trust, community, or marketplace. GSN will point you to the closest route."
+      />
+
+      <DomainIntroToggle
+        title="How Dashboard Helps You"
+        eyebrow="What this can do for you"
+        body={DASHBOARD_HELP_BODY}
+        bullets={DASHBOARD_HELP_BULLETS}
+        note={DASHBOARD_HELP_NOTE}
+        tone="blue"
       />
 
       <section
