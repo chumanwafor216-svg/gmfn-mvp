@@ -81,16 +81,18 @@ Impact: Vault may look present in the UI, but link creation/open tracking is not
 fully backed by a mounted API route yet. This should be treated as a product
 implementation gap, not a phone-user mistake.
 
-### 2. System diagnostics route file exists but is not mounted
+### 2. System diagnostics route file existed but was not mounted
 
 - Frontend calls: `getSystemDiagnostics()` -> `/system/diagnostics`
 - Backend file exists: `app/api/routes/system_diagnostics.py`
-- Live route result: `404`
+- Audit-time live route result: `404`
+- Correction prepared after audit: `app/api/router.py` now includes the
+  admin-protected diagnostics router. Local OpenAPI now includes
+  `/system/diagnostics`.
 
 Impact: System Operations silently loses its diagnostics panel and cannot show
-runtime/database health from that endpoint. Because it is admin-only and touches
-system visibility, it should be mounted deliberately during admin cleanup, not
-as a hidden quick fix.
+runtime/database health from that endpoint until the backend redeploy containing
+this correction is live.
 
 ### 3. Duplicate backend route registrations exist
 
@@ -155,7 +157,6 @@ still intentionally reachable. Do not delete them only because they look unused.
 
 1. Continue pilot testing with the active endpoint normalization now in place.
 2. During admin-domain cleanup, decide whether to mount or retire:
-   - `system_diagnostics`
    - admin dispute / repayment routes
    - duplicate trust/admin/bank endpoints
 3. Treat Vault access as the next deliberate backend product gap:
@@ -175,3 +176,6 @@ still intentionally reachable. Do not delete them only because they look unused.
   - `/marketplace/media/ping` -> `200`
   - `/api/marketplace/products` -> `404`
   - `/system/diagnostics` -> `404`
+- Post-audit local verification:
+  - `/system/diagnostics` is now present in local OpenAPI after mounting
+    `system_diagnostics_router`.
