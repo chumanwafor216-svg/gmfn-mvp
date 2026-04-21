@@ -5455,3 +5455,48 @@ GSN-branded invite composer and invite-entry continuity.
 - Keep this pattern route-local until the mobile behavior is trusted. Avoid
   changing shared navigation, auth, route guards, or global shell just to add
   page explanations.
+
+### Finance file consolidation audit addendum
+
+- Updated `frontend/src/pages/FinancePage.tsx` only.
+- Consulted two code-audit agents before changing the page:
+  - UI audit confirmed repeated intro/help layers, duplicate finance-reading
+    sections, repeated balance/guarantor totals, and duplicate route guidance.
+  - Backend-truth audit confirmed the safe finance surfaces already available:
+    `/pool/me/summary`, `/pool/me`, expected payments, loan summaries,
+    guarantor exposure, guarantor earnings, trust evidence, and community
+    liquidity context.
+- Refactored Finance into fewer factual sections:
+  - `About Finance`
+  - `GSN finance file`
+  - `Selected community finance unit`
+  - `Balances and exposure`
+  - `Expected payments and reconciliation`
+  - `Borrowing and support exposure`
+  - `Recent finance events`
+- Removed the duplicate `Fixed finance context`, duplicate `Finance reading`,
+  separate duplicate guarantor cards, hidden `ExplainToggle` usages, and the
+  duplicate `Next routes` section because `PageTopNav` and `NextActionGuide`
+  already provide the route movement.
+- Replaced large repeated card clusters with table-like records:
+  - community finance units table
+  - selected-community pool file table
+  - balances/exposure table
+  - expected-payment table
+  - borrower loan summary table
+  - guarantor exposure and earnings tables
+  - recent finance event ledger table
+- Extended loan-summary normalization to show backend-provided `paid_total`,
+  `service_fee`, `net_disbursed`, `guarantor_pool`, and `platform_revenue`
+  when present.
+- Copy was tightened toward record-style language and away from builder-facing
+  or over-personal phrasing.
+- No backend, auth, schema, payment, ledger, environment config, global shell,
+  or Dashboard Market Wisdom behavior changed.
+
+### Verification after Finance file consolidation
+
+- `npm exec -- eslint src/pages/FinancePage.tsx` passed in `frontend`.
+- `git diff --check -- frontend/src/pages/FinancePage.tsx` passed with only
+  the normal Windows line-ending warning.
+- `npm run build` passed in `frontend`.
