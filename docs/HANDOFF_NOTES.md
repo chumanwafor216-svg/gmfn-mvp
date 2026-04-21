@@ -46,6 +46,63 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
+Install reusable "What do you want to do next?" guide on Finance and Trust
+Passport.
+
+#### Routes/screens affected
+- `/app/finance`
+- `/app/trust`
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+
+#### Files in play
+- `frontend/src/pages/FinancePage.tsx`
+- `frontend/src/pages/TrustScorePage.tsx`
+- `frontend/src/components/NextActionGuide.tsx` through existing shared usage only
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Canonical route skeleton maps Finance to `frontend/src/pages/FinancePage.tsx`
+  and Trust Passport to `frontend/src/pages/TrustScorePage.tsx`.
+- Added the shared `NextActionGuide` to Finance so a member can choose plain
+  language actions such as add money, take money out, borrow/lend/support,
+  payment route, payout details, expected payments, loan readiness,
+  Marketplace, notifications, and focus commitments.
+- Added the shared `NextActionGuide` to Trust Passport so a member can choose
+  plain language actions such as trust score, repair, why changed, evidence,
+  TrustSlip, verify TrustSlip, identity reading, refresh trust, notifications,
+  Marketplace, focus commitments, and the GSN guide.
+- On-page guide actions expand and scroll to existing page sections where
+  appropriate instead of creating new routes.
+- Cross-page guide actions use `navigateWithOrigin` so route origin context is
+  preserved.
+- Did not touch Dashboard Market Wisdom, backend, auth, schema, payment,
+  deployment configuration, or route contracts.
+
+#### Verification
+- `npm exec -- eslint src/components/NextActionGuide.tsx src/pages/FinancePage.tsx src/pages/TrustScorePage.tsx` passed with one pre-existing `TrustScorePage.tsx` hook dependency warning for `loadAll`.
+- `git diff --check -- frontend/src/pages/FinancePage.tsx frontend/src/pages/TrustScorePage.tsx` passed with only normal Windows line-ending warnings.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- Phone review is still needed after deploy to confirm Finance and Trust
+  Passport guide buttons feel steady on edge taps and do not inherit any mobile
+  tap leakage.
+- The existing `TrustScorePage.tsx` hook dependency warning remains unchanged
+  and should be handled in a separate safe pass if needed.
+
+#### Next recommended step
+- Deploy and phone-test `/app/finance` and `/app/trust`. Open/collapse the new
+  guide, try center and edge taps, and confirm the on-page actions scroll to
+  the correct sections before carrying the same pattern into more domains.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
 Dashboard attention surface and shared next-action guide tap containment.
 
 #### Routes/screens affected

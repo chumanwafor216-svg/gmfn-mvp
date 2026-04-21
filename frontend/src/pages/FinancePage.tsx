@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import DomainIntroToggle from "../components/DomainIntroToggle";
 import ExplainToggle from "../components/ExplainToggle";
+import NextActionGuide, {
+  type NextActionGuideItem,
+} from "../components/NextActionGuide";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
@@ -9,6 +13,7 @@ import {
   type CommunityMoneySurface,
   type GuarantorExposureSummary,
 } from "../lib/communityMoney";
+import { navigateWithOrigin } from "../lib/nav";
 
 type CollapseState = {
   overview: boolean;
@@ -695,6 +700,8 @@ function toneStyles(kind: "calm" | "watch" | "pressure") {
 }
 
 export default function FinancePage() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
@@ -1040,11 +1047,138 @@ export default function FinancePage() {
 
   const readingTone = toneStyles(reading.tone);
 
+  const financeNextActionItems = useMemo<NextActionGuideItem[]>(
+    () => [
+      {
+        id: "finance-summary",
+        label: "Check my money record",
+        detail: "Open the main Finance summary on this page.",
+        technical: "Finance summary",
+        keywords: ["summary", "balance", "record", "available", "locked", "pool"],
+        tone: "primary",
+      },
+      {
+        id: "money-in",
+        label: "Add money",
+        detail: "Open the pay-in instructions for your pool.",
+        technical: "Money In",
+        to: "/app/payment/pool",
+        keywords: ["deposit", "pay in", "add money", "money in", "pool"],
+      },
+      {
+        id: "money-out",
+        label: "Take money out",
+        detail: "Open withdrawal guidance and payout checks.",
+        technical: "Money Out",
+        to: "/app/withdrawal-instructions",
+        keywords: ["withdraw", "withdrawal", "cash out", "payout", "take money"],
+      },
+      {
+        id: "support",
+        label: "Borrow / lend / support",
+        detail: "Open the wider support and loan workspace.",
+        technical: "Loans / Support",
+        to: "/app/loans",
+        keywords: ["loan", "borrow", "lend", "support", "guarantor", "repay"],
+      },
+      {
+        id: "payment-rails",
+        label: "Choose payment route",
+        detail: "Review inbound and outbound money route options.",
+        technical: "Payment rails",
+        to: "/app/payment-rails",
+        keywords: ["rail", "payment route", "bank", "transfer", "route"],
+      },
+      {
+        id: "payout-details",
+        label: "Set payout details",
+        detail: "Check where withdrawals should be sent.",
+        technical: "Payout details",
+        to: "/app/payout-details",
+        keywords: ["account", "bank account", "payout details", "destination"],
+      },
+      {
+        id: "reconciliation",
+        label: "Check expected payments",
+        detail: `${pendingReconciliationCount} payment item${
+          pendingReconciliationCount === 1 ? "" : "s"
+        } may need matching or confirmation.`,
+        technical: "Payment reconciliation",
+        keywords: ["expected", "match", "matched", "reference", "reconciliation"],
+        tone: pendingReconciliationCount > 0 ? "primary" : "soft",
+      },
+      {
+        id: "readiness",
+        label: "Check loan readiness",
+        detail: "See whether your support position is clean enough.",
+        technical: "Loan readiness",
+        to: "/app/loan-readiness",
+        keywords: ["ready", "readiness", "eligible", "clean", "trust"],
+      },
+      {
+        id: "marketplace",
+        label: "Return to Marketplace",
+        detail: "Go back to the selected community workspace.",
+        technical: "Marketplace",
+        to: "/app/marketplace",
+        keywords: ["market", "community", "workspace"],
+        tone: "soft",
+      },
+      {
+        id: "notifications",
+        label: "See what is waiting",
+        detail: "Open the action queue when someone needs a response.",
+        technical: "Notifications",
+        to: "/app/notifications",
+        keywords: ["notice", "notification", "inbox", "waiting", "queue"],
+        tone: "soft",
+      },
+      {
+        id: "focus",
+        label: "Add a money promise",
+        detail: "Open focus commitments for a savings, repayment, or support promise.",
+        technical: "Focus commitments",
+        to: "/app/dashboard#focus-commitments",
+        keywords: ["promise", "commitment", "focus", "plan", "repayment plan"],
+        tone: "soft",
+      },
+    ],
+    [pendingReconciliationCount]
+  );
+
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
       ...prev,
       [key]: !prev[key],
     }));
+  }
+
+  function openFinanceRoute(to: string) {
+    navigateWithOrigin(navigate, to, location);
+  }
+
+  function handleFinanceNextAction(item: NextActionGuideItem) {
+    switch (item.id) {
+      case "finance-summary":
+        setCollapsed((prev) => ({ ...prev, overview: false, reading: false }));
+        window.setTimeout(() => {
+          document
+            .getElementById("finance-summary")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 60);
+        break;
+      case "reconciliation":
+        setCollapsed((prev) => ({ ...prev, reconciliation: false }));
+        window.setTimeout(() => {
+          document
+            .getElementById("finance-reconciliation")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 60);
+        break;
+      default:
+        if (item.to) openFinanceRoute(item.to);
+        break;
+    }
   }
 
   if (loading) {
@@ -1130,6 +1264,14 @@ export default function FinancePage() {
         ]}
         note="Simple rule: check local money in Marketplace; check your fuller money picture here."
         tone="blue"
+      />
+
+      <NextActionGuide
+        storageKey="gmfn.finance.nextActionGuide.v1"
+        compact={isCompact}
+        items={financeNextActionItems}
+        onSelect={handleFinanceNextAction}
+        intro="Say what you want in normal words, like deposit, withdraw, loan, payout, support, expected payment, or bank route. GSN will point you to the closest money path."
       />
 
       <ExplainToggle
@@ -1373,7 +1515,7 @@ export default function FinancePage() {
         </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section id="finance-summary" style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
@@ -1590,7 +1732,7 @@ export default function FinancePage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section id="finance-reconciliation" style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",

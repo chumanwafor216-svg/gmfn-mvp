@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import DomainIntroToggle from "../components/DomainIntroToggle";
 import ExplainToggle from "../components/ExplainToggle";
+import NextActionGuide, {
+  type NextActionGuideItem,
+} from "../components/NextActionGuide";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
@@ -10,6 +13,7 @@ import {
   type GuidanceSnapshot,
 } from "../lib/guidance";
 import { buildDashboardTrustJourneyCopy } from "../lib/dashboardUserGuidance";
+import { navigateWithOrigin } from "../lib/nav";
 
 type NoticeTone = "success" | "error";
 
@@ -2000,6 +2004,116 @@ export default function TrustScorePage() {
       ? "Use this Trust Passport reading to see what is helping, what needs care, and what to repair next."
       : trustJourneyModel.primaryRoute.detail;
 
+  const trustNextActionItems = useMemo<NextActionGuideItem[]>(
+    () => [
+      {
+        id: "trust-summary",
+        label: "Check my trust story",
+        detail: "Open the main Trust Passport summary on this page.",
+        technical: "Trust Passport summary",
+        keywords: ["summary", "score", "band", "passport", "trust story"],
+        tone: "primary",
+      },
+      {
+        id: "trust-journey",
+        label: "What should I repair?",
+        detail: trustJourneyPrimaryDetail,
+        technical: "Trust journey",
+        keywords: ["repair", "next step", "journey", "protect", "improve"],
+        tone: trustJourneyModel.tone === "red" ? "primary" : "secondary",
+      },
+      {
+        id: "why-change",
+        label: "Why did trust change?",
+        detail: "Open the recent events and explanation behind the reading.",
+        technical: "Trust explainability",
+        keywords: ["why", "changed", "event", "reason", "explain"],
+      },
+      {
+        id: "evidence",
+        label: "Check evidence",
+        detail: "Open capacity, risk, sponsor, and TrustSlip evidence context.",
+        technical: "Evidence context",
+        keywords: ["evidence", "risk", "sponsor", "capacity", "proof"],
+      },
+      {
+        id: "trust-slip",
+        label: "Show TrustSlip",
+        detail: "Open the smaller proof surface for one decision.",
+        technical: "TrustSlip",
+        to: "/app/trust-slip",
+        keywords: ["trustslip", "trust slip", "proof", "certificate", "merchant"],
+      },
+      {
+        id: "verify-trust-slip",
+        label: "Verify TrustSlip",
+        detail: verifyUrl
+          ? "Open the public verification view for the current TrustSlip."
+          : "Verification link is not ready yet.",
+        technical: "TrustSlip Verify",
+        keywords: ["verify", "verification", "public", "check proof"],
+        disabled: !verifyUrl,
+        disabledReason:
+          "TrustSlip verification is not ready yet. Refresh Trust Passport or open TrustSlip first.",
+      },
+      {
+        id: "cci",
+        label: "Check identity reading",
+        detail: "Open the cross-community integrity reading.",
+        technical: "CCI / Identity",
+        to: "/app/identity",
+        keywords: ["cci", "identity", "integrity", "cross community", "profile"],
+      },
+      {
+        id: "refresh",
+        label: refreshing ? "Refreshing..." : "Refresh trust",
+        detail: "Pull the latest trust reading again.",
+        technical: "Refresh",
+        keywords: ["refresh", "reload", "update", "latest"],
+        tone: "soft",
+        disabled: refreshing,
+        disabledReason: "Refresh is already running.",
+      },
+      {
+        id: "notifications",
+        label: "See what is waiting",
+        detail: "Open actions that may affect trust or membership.",
+        technical: "Notifications",
+        to: "/app/notifications",
+        keywords: ["notice", "notification", "inbox", "queue", "waiting"],
+        tone: "soft",
+      },
+      {
+        id: "marketplace",
+        label: "Return to Marketplace",
+        detail: "Go back to the selected community workspace.",
+        technical: "Marketplace",
+        to: "/app/marketplace",
+        keywords: ["market", "community", "workspace"],
+        tone: "soft",
+      },
+      {
+        id: "focus",
+        label: "Add a trust promise",
+        detail: "Open focus commitments for repair, repayment, or follow-through.",
+        technical: "Focus commitments",
+        to: "/app/dashboard#focus-commitments",
+        keywords: ["promise", "commitment", "focus", "repair plan", "target"],
+        tone: "soft",
+      },
+      {
+        id: "guide",
+        label: "Open my GSN guide",
+        detail: "Open the wider guide for understanding your GSN position.",
+        technical: "My GSN and I",
+        to: "/app/my-gmfn-and-i",
+        keywords: ["guide", "help", "understand", "my gsn"],
+        tone: "soft",
+      },
+    ],
+    [refreshing, trustJourneyModel.tone, trustJourneyPrimaryDetail, verifyUrl]
+  );
+
   function openTrustJourneyRoute(route: { to: string }) {
     if (safeStr(route.to) === "/app/trust") {
       setCollapsed((prev) => ({ ...prev, overview: false }));
@@ -2008,6 +2122,52 @@ export default function TrustScorePage() {
     }
 
     navigate(route.to);
+  }
+
+  function openTrustRoute(to: string) {
+    navigateWithOrigin(navigate, to, location);
+  }
+
+  function openTrustSection(key: keyof CollapseState, targetId: string) {
+    setCollapsed((prev) => ({ ...prev, [key]: false }));
+    window.setTimeout(() => {
+      document
+        .getElementById(targetId)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+  }
+
+  function handleTrustNextAction(item: NextActionGuideItem) {
+    switch (item.id) {
+      case "trust-summary":
+        openTrustSection("overview", "trust-passport-summary");
+        break;
+      case "trust-journey":
+        setTrustJourneyExpanded(true);
+        window.setTimeout(() => {
+          document
+            .getElementById("trust-journey")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 60);
+        break;
+      case "why-change":
+        openTrustSection("explainability", "trust-passport-explainability");
+        break;
+      case "evidence":
+        openTrustSection("evidence", "trust-passport-evidence");
+        break;
+      case "refresh":
+        void handleRefreshTrust();
+        break;
+      case "verify-trust-slip":
+        if (verifyUrl && typeof window !== "undefined") {
+          window.open(verifyUrl, "_blank", "noopener,noreferrer");
+        }
+        break;
+      default:
+        if (item.to) openTrustRoute(item.to);
+        break;
+    }
   }
 
   function toggleSection(key: keyof CollapseState) {
@@ -2128,6 +2288,14 @@ export default function TrustScorePage() {
           tone="blue"
         />
       </div>
+
+      <NextActionGuide
+        storageKey="gmfn.trustPassport.nextActionGuide.v1"
+        compact={isCompact}
+        items={trustNextActionItems}
+        onSelect={handleTrustNextAction}
+        intro="Say what you want in normal words, like trust score, why changed, repair, proof, verify, CCI, or marketplace. GSN will point you to the closest trust path."
+      />
 
       <ExplainToggle
         label="What this screen does"
@@ -2839,7 +3007,7 @@ export default function TrustScorePage() {
         </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section id="trust-passport-summary" style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
@@ -3059,7 +3227,7 @@ export default function TrustScorePage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section id="trust-passport-explainability" style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
@@ -3182,7 +3350,7 @@ export default function TrustScorePage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section id="trust-passport-evidence" style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
