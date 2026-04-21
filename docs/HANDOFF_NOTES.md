@@ -46,6 +46,55 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
+Marketplace full-height landmark/aura coverage.
+
+#### Routes/screens affected
+- `/app/marketplace`
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+
+#### Files in play
+- `frontend/src/pages/MarketplacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Phone review showed the restored Marketplace landmark/aura appeared mainly
+  in the upper part of the page and did not feel uniform down the lower blocks.
+- Confirmed in code that the Marketplace aura layer still had `auto` on the
+  bottom and a fixed `76%` compact height, so it could stop before the end of a
+  tall phone page.
+- Changed the aura from a top-only layer into a full-shell layer by using full
+  vertical inset coverage instead of a fixed height.
+- Added softer mid-page and lower-page blue/pink/gold radial patches to the
+  Marketplace shell background so the same brand wash continues down the page
+  without making every card flashy.
+- No Marketplace business logic, section order, collapse state, backend, auth,
+  schema, payment, deployment config, Dashboard, or Dashboard Market Wisdom
+  behavior changed.
+
+#### Verification
+- `npm exec -- eslint src/pages/MarketplacePage.tsx` passed with no errors.
+  Existing warnings remain for hook dependencies already present in
+  `MarketplacePage.tsx`.
+- `git diff --check -- frontend/src/pages/MarketplacePage.tsx` passed with only
+  normal Windows line-ending warnings.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- Phone review is needed after deploy to confirm the background now reaches the
+  bottom evenly without becoming too colourful.
+
+#### Next recommended step
+- Deploy/retest `/app/marketplace` on phone from top to bottom, especially the
+  lower Marketplace-owned links, Demand Box, and Borrow / Lend / Support areas.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
 Marketplace landmark/aura restoration.
 
 #### Routes/screens affected

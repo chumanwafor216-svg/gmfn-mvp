@@ -1433,7 +1433,7 @@ function marketplaceShellStyle(isCompact: boolean): React.CSSProperties {
     border: "1px solid rgba(16,37,59,0.075)",
     isolation: "isolate",
     background:
-      "radial-gradient(circle at 10% 0%, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0.00) 32%), radial-gradient(circle at 88% 7%, rgba(244,114,182,0.08) 0%, rgba(244,114,182,0.00) 24%), radial-gradient(circle at 92% 14%, rgba(243,208,106,0.075) 0%, rgba(243,208,106,0.00) 28%), linear-gradient(180deg, #F5FAFF 0%, #EEF5FD 42%, #F8FBFF 100%)",
+      "radial-gradient(circle at 10% 0%, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0.00) 32%), radial-gradient(circle at 88% 7%, rgba(244,114,182,0.08) 0%, rgba(244,114,182,0.00) 24%), radial-gradient(circle at 12% 48%, rgba(11,99,209,0.075) 0%, rgba(11,99,209,0.00) 30%), radial-gradient(circle at 90% 58%, rgba(243,208,106,0.055) 0%, rgba(243,208,106,0.00) 26%), radial-gradient(circle at 18% 92%, rgba(244,114,182,0.045) 0%, rgba(244,114,182,0.00) 24%), linear-gradient(180deg, #F5FAFF 0%, #EEF5FD 42%, #F8FBFF 100%)",
     boxShadow:
       "0 22px 52px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.72)",
     overflow: "hidden",
@@ -1443,13 +1443,12 @@ function marketplaceShellStyle(isCompact: boolean): React.CSSProperties {
 function marketplaceAuraStyle(isCompact: boolean): React.CSSProperties {
   return {
     position: "absolute",
-    inset: isCompact ? "-12% -38% auto -38%" : "-16% -18% auto -18%",
-    height: isCompact ? "76%" : "68%",
+    inset: isCompact ? "-7% -38%" : "-10% -18%",
     zIndex: 0,
     pointerEvents: "none",
-    opacity: isCompact ? 0.72 : 0.64,
+    opacity: isCompact ? 0.62 : 0.56,
     background:
-      "radial-gradient(circle at 16% 20%, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0.00) 34%), radial-gradient(circle at 76% 24%, rgba(244,114,182,0.075) 0%, rgba(244,114,182,0.00) 28%), radial-gradient(circle at 58% 8%, rgba(243,208,106,0.07) 0%, rgba(243,208,106,0.00) 24%)",
+      "radial-gradient(circle at 16% 14%, rgba(11,99,209,0.13) 0%, rgba(11,99,209,0.00) 30%), radial-gradient(circle at 76% 20%, rgba(244,114,182,0.07) 0%, rgba(244,114,182,0.00) 26%), radial-gradient(circle at 58% 8%, rgba(243,208,106,0.065) 0%, rgba(243,208,106,0.00) 22%), radial-gradient(circle at 18% 46%, rgba(11,99,209,0.09) 0%, rgba(11,99,209,0.00) 30%), radial-gradient(circle at 84% 62%, rgba(243,208,106,0.055) 0%, rgba(243,208,106,0.00) 26%), radial-gradient(circle at 22% 86%, rgba(244,114,182,0.05) 0%, rgba(244,114,182,0.00) 24%)",
     transform: "translate3d(0,0,0)",
     animation: "marketplaceAuraShift 22s ease-in-out infinite alternate",
     willChange: "transform, opacity",
