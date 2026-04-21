@@ -2027,10 +2027,10 @@ export default function ShopGalleryPage() {
                           height: "100%",
                           borderRadius: 18,
                           border: isCompact
-                            ? "1px solid rgba(255,255,255,0.76)"
+                            ? "1px solid rgba(13,95,168,0.16)"
                             : "1px solid rgba(212,175,55,0.14)",
                           boxShadow: isCompact
-                            ? "0 16px 34px rgba(8,38,67,0.14), inset 0 1px 0 rgba(255,255,255,0.62)"
+                            ? "0 16px 34px rgba(8,38,67,0.12)"
                             : undefined,
                           objectFit: "cover",
                           objectPosition: "center",
@@ -2070,21 +2070,6 @@ export default function ShopGalleryPage() {
                       </div>
                     )}
 
-                    {isCompact ? (
-                      <div
-                        aria-hidden="true"
-                        style={{
-                          position: "absolute",
-                          inset: 10,
-                          zIndex: 1,
-                          borderRadius: 18,
-                          background:
-                            "linear-gradient(180deg, rgba(255,255,255,0.00) 0%, rgba(240,248,253,0.10) 48%, rgba(224,239,249,0.70) 100%)",
-                          pointerEvents: "none",
-                        }}
-                      />
-                    ) : null}
-
                     <div
                       style={{
                         position: "absolute",
@@ -2121,7 +2106,7 @@ export default function ShopGalleryPage() {
                       flex: isCompact ? undefined : 1,
                       background:
                         isCompact
-                          ? "radial-gradient(circle at 0% 0%, rgba(11,99,209,0.11) 0%, transparent 36%), radial-gradient(circle at 100% 0%, rgba(212,175,55,0.08) 0%, transparent 32%), linear-gradient(180deg, rgba(252,254,255,0.88) 0%, rgba(230,243,251,0.82) 100%)"
+                          ? "radial-gradient(circle at 0% 0%, rgba(11,99,209,0.08) 0%, transparent 36%), radial-gradient(circle at 100% 0%, rgba(212,175,55,0.06) 0%, transparent 32%), linear-gradient(180deg, rgba(252,254,255,0.97) 0%, rgba(232,244,251,0.95) 100%)"
                           : "radial-gradient(circle at 0% 0%, rgba(11,99,209,0.075) 0%, transparent 34%), radial-gradient(circle at 100% 0%, rgba(212,175,55,0.06) 0%, transparent 30%), radial-gradient(circle at 100% 100%, rgba(244,114,182,0.035) 0%, transparent 30%), linear-gradient(180deg, rgba(251,253,255,0.99) 0%, rgba(236,246,252,0.96) 100%)",
                       border: isCompact
                         ? "1px solid rgba(255,255,255,0.62)"
@@ -2135,7 +2120,6 @@ export default function ShopGalleryPage() {
                           ? "0 18px 38px rgba(8,38,67,0.18), inset 0 1px 0 rgba(255,255,255,0.86)"
                           : "inset 0 1px 0 rgba(255,255,255,0.88), inset 0 12px 24px rgba(255,255,255,0.42)",
                       alignContent: undefined,
-                      backdropFilter: isCompact ? "blur(12px)" : undefined,
                     }}
                   >
                     <div

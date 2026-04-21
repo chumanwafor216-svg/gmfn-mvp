@@ -46,6 +46,61 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
+Shop Gallery product image clarity correction.
+
+#### Routes/screens affected
+- `/shop/:gmfnId`
+- `/app/shop/:gmfnId` through the existing redirect/public shop route
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+- no product loading, visibility, share, Vault, auth, payment, or schema logic changed
+
+#### Files in play
+- `frontend/src/pages/ShopGalleryPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Product owner accepted the lighter mobile product-card direction but reported
+  that the white/frost framing was reducing the clarity of the actual product
+  photo, especially near the bottom information block.
+- Removed the compact/mobile white image-wash overlay that sat over the product
+  photo.
+- Removed the compact/mobile `backdropFilter` blur from the bottom information
+  dock so the product photo is no longer visually smudged behind/near the dock.
+- Replaced the strong white image rim with a subtle GSN blue border and lighter
+  shadow, preserving the lighter frame without whitening the product image.
+- Made the bottom dock more solid/opaque so text remains readable without
+  needing to blur or wash the photo behind it.
+- Existing product IDs, API fetch flow, visibility filtering, public product
+  recovery logic, and Share behavior were preserved.
+- No Dashboard, Dashboard Market Wisdom, Community Home, Marketplace, backend,
+  auth, schema, payment, or deployment configuration changed.
+
+#### Verification
+- `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
+  the normal Windows line-ending warning.
+- `npm exec -- eslint src/pages/ShopGalleryPage.tsx` passed.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- Phone review is needed to confirm product photos now look clear enough while
+  the bottom information dock remains readable on bright images.
+- The next product decision is what the small information area should carry:
+  whether to keep the two status chips, merge them into one simpler label, or
+  give that space a more useful buyer-facing cue.
+
+#### Next recommended step
+- Deploy/retest the public shop link on phone. First judge photo clarity near
+  the bottom dock, then decide whether the `Storefront block` /
+  `Community-visible` chips should be simplified.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
 Shop Gallery mobile product-card colour balance.
 
 #### Routes/screens affected
