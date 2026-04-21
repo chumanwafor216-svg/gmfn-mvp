@@ -15,6 +15,7 @@ import {
 
 type ShopProfile = {
   id?: number;
+  clanId?: number;
   gmfnId: string;
   shopName: string;
   ownerName: string;
@@ -238,6 +239,7 @@ function normalizeShop(
 
   return {
     id: positiveNumber(src?.id) || undefined,
+    clanId: positiveNumber(src?.clan_id) || undefined,
     gmfnId: ownerGmfnId,
     ownerName: ownerName || "Shop owner",
     shopName: shopName || (ownerGmfnId ? `${ownerGmfnId} Shop` : "Shop"),
@@ -610,9 +612,9 @@ export default function ShopGalleryPage() {
           }).catch(() => null);
 
           if (!shopRes) {
-            shopRes = await getMarketplaceShopByGmfnId(cleanedGmfnId).catch(
-              () => null
-            );
+            shopRes = await getMarketplaceShopByGmfnId(cleanedGmfnId, {
+              header_clan_id: null,
+            }).catch(() => null);
           }
         }
 
@@ -621,22 +623,45 @@ export default function ShopGalleryPage() {
         let productRes: any = null;
 
         if (normalizedShop?.id) {
-          productRes = await getMarketplaceProducts({
-            shop_id: normalizedShop.id,
-            clan_id: selectedClanId || undefined,
-            header_clan_id: selectedClanId || undefined,
-            only_active: true,
-            include_reposted: true,
-            limit: 100,
-          }).catch(() => null);
-
-          if (!productRes) {
-            productRes = await getMarketplaceProducts({
+          const productFetchAttempts = [
+            selectedClanId > 0
+              ? {
+                  shop_id: normalizedShop.id,
+                  clan_id: selectedClanId,
+                  header_clan_id: selectedClanId,
+                  only_active: true,
+                  include_reposted: true,
+                  limit: 100,
+                }
+              : null,
+            normalizedShop.clanId && normalizedShop.clanId !== selectedClanId
+              ? {
+                  shop_id: normalizedShop.id,
+                  clan_id: normalizedShop.clanId,
+                  header_clan_id: normalizedShop.clanId,
+                  only_active: true,
+                  include_reposted: true,
+                  limit: 100,
+                }
+              : null,
+            {
               shop_id: normalizedShop.id,
+              header_clan_id: null,
               only_active: true,
               include_reposted: true,
               limit: 100,
-            }).catch(() => null);
+            },
+          ].filter(Boolean) as Parameters<typeof getMarketplaceProducts>[0][];
+
+          for (const attempt of productFetchAttempts) {
+            const attemptRes = await getMarketplaceProducts(attempt).catch(
+              () => null
+            );
+
+            if (!attemptRes) continue;
+
+            productRes = attemptRes;
+            if (rowsOf<any>(attemptRes).length > 0) break;
           }
         }
 

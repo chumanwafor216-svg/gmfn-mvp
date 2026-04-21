@@ -4815,3 +4815,19 @@ GSN-branded invite composer and invite-entry continuity.
 - `python -m py_compile app/api/routes/marketplace.py` passed in
   `gmfn_backend`.
 - `npm run build` passed in `frontend`.
+
+### Shop frame product visibility addendum
+
+- Updated `frontend/src/pages/ShopGalleryPage.tsx` so the public shop frame no
+  longer accepts an empty product response caused by stale phone
+  `gmfn_selected_clan_id` localStorage.
+- The shop gallery now retries product loading in this order:
+  current selected community, the shop record's own community id, then an
+  explicit no-header fallback that avoids silently sending stale selected-clan
+  context.
+- This is intended to recover Aberdeen shop products into the shop frame even
+  if the phone still remembers a deleted/closed community.
+
+### Verification after shop frame addendum
+
+- `npm run build` passed in `frontend`.
