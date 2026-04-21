@@ -557,6 +557,26 @@ function getToken(): string {
   }
 }
 
+function apiBase(): string {
+  const raw =
+    (typeof import.meta !== "undefined" &&
+      (import.meta as any)?.env &&
+      (import.meta as any).env.VITE_API_BASE_URL) ||
+    "/api";
+
+  return String(raw || "").trim().replace(/\/+$/, "");
+}
+
+function apiUrl(path: string): string {
+  const raw = safeStr(path);
+  if (/^https?:\/\//i.test(raw)) return raw;
+
+  let cleanPath = raw.startsWith("/") ? raw : `/${raw}`;
+  if (cleanPath.startsWith("/api/")) cleanPath = cleanPath.slice(4);
+
+  return `${apiBase()}${cleanPath}`;
+}
+
 async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getToken();
   const headers = new Headers(init?.headers || {});
@@ -568,7 +588,7 @@ async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const res = await fetch(path, {
+  const res = await fetch(apiUrl(path), {
     ...init,
     headers,
     credentials: "include",
@@ -597,43 +617,19 @@ async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 async function uploadShopImageFile(file: File): Promise<string> {
-  const token = getToken();
-  const routes = [
-    "/api/marketplace-media/upload-image",
-    "/api/marketplace-media/images",
-    "/api/marketplace-media/upload",
-  ];
+  const data = await uploadMarketplaceImageFile(file);
+  const url =
+    firstTruthy(
+      data?.image_url,
+      data?.url,
+      data?.path,
+      data?.item?.image_url,
+      data?.item?.url,
+      data?.data?.image_url,
+      data?.data?.url
+    ) || "";
 
-  for (const route of routes) {
-    try {
-      const form = new FormData();
-      form.append("file", file);
-
-      const res = await fetch(route, {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        body: form,
-        credentials: "include",
-      });
-
-      if (!res.ok) continue;
-      const data = await res.json().catch(() => ({}));
-      const url =
-        firstTruthy(
-          data?.image_url,
-          data?.url,
-          data?.path,
-          data?.item?.image_url,
-          data?.item?.url,
-          data?.data?.image_url,
-          data?.data?.url
-        ) || "";
-
-      if (url) return url;
-    } catch {
-      // try next candidate
-    }
-  }
+  if (url) return url;
 
   throw new Error(
     "We could not prepare an image from that upload. Paste an image URL instead and continue."
@@ -826,7 +822,7 @@ export default function ShopControlPage() {
 
       if (shopItem?.id) {
         const expectedPaymentsPath =
-          `/api/bank-reconciliation/expected?clan_id=${selectedClanId || 0}&limit=100` +
+          `/api/bank/expected?clan_id=${selectedClanId || 0}&limit=100` +
           (Number(meRes?.id || 0) > 0 ? `&user_id=${Number(meRes?.id)}` : "");
 
         const [broadcastsRes, vaultLinksRes, privateProductsRes, expectedRes, trustSlipRes] =

@@ -27,6 +27,26 @@ function cleanText(value: any): string {
   return String(value ?? "").trim();
 }
 
+function apiBase(): string {
+  const raw =
+    (typeof import.meta !== "undefined" &&
+      (import.meta as any)?.env &&
+      (import.meta as any).env.VITE_API_BASE_URL) ||
+    "/api";
+
+  return String(raw || "").trim().replace(/\/+$/, "");
+}
+
+function apiUrl(path: string): string {
+  const raw = cleanText(path);
+  if (/^https?:\/\//i.test(raw)) return raw;
+
+  let cleanPath = raw.startsWith("/") ? raw : `/${raw}`;
+  if (cleanPath.startsWith("/api/")) cleanPath = cleanPath.slice(4);
+
+  return `${apiBase()}${cleanPath}`;
+}
+
 function mergeSearchIntoPath(to: string, currentSearch: string): string {
   const [basePath, baseQueryRaw = ""] = String(to || "").split("?");
   const merged = new URLSearchParams(baseQueryRaw);
@@ -235,7 +255,7 @@ export default function JoinByInvitePage() {
         setErr(null);
         setLoading(true);
 
-        const res = await fetch(`/api/invites/preview/${code}`);
+        const res = await fetch(apiUrl(`/api/invites/preview/${code}`));
         if (!res.ok) throw new Error(await parseError(res));
 
         const data = (await res.json()) as Preview;

@@ -5894,3 +5894,32 @@ GSN-branded invite composer and invite-entry continuity.
 - This is documentation/control-layer work only. No frontend route behavior,
   backend routes, auth, permissions, schemas, payment, ledger, migrations,
   deployment config, or Dashboard Market Wisdom presentation changed.
+
+### Endpoint audit and active frontend endpoint normalization addendum
+
+- Product-owner requested an end-to-end endpoint audit because pilot testing has
+  started.
+- Added `docs/ENDPOINT_AUDIT_2026-04-21.md` with confirmed backend/live state,
+  frontend endpoint risks, duplicate backend registrations, unmounted router
+  files, and recommended cleanup order.
+- Confirmed live Render API and local OpenAPI now match exactly with `209`
+  paths each; entry routes are live; marketplace media routes are live.
+- Confirmed the backend is mounted without an `/api` prefix. A live request to
+  `/api/marketplace/products` returns `404`, so active page-local frontend
+  fetches needed normalization.
+- Updated active frontend pages so page-local `/api/...` calls are routed
+  through the configured API base instead of directly hitting the frontend host:
+  - `frontend/src/pages/JoinByInvitePage.tsx`
+  - `frontend/src/pages/ShopAssetsPage.tsx`
+  - `frontend/src/pages/ShopControlPage.tsx`
+  - `frontend/src/pages/LoanSummaryPage.tsx`
+- Replaced stale shop image upload candidates in Shop Assets and Shop Control
+  with the shared marketplace media upload helper using `/marketplace/media/image`.
+- Corrected Shop Control expected-payment lookup to use the mounted
+  `/bank/expected` endpoint shape.
+- Remaining audited backend gaps:
+  - Vault access UI/service exists, but no Vault access router is mounted.
+  - `system_diagnostics.py` exists but is not mounted, so
+    `/system/diagnostics` returns `404`.
+  - Duplicate route registrations exist for several trust/admin/bank endpoints.
+- Verified `npm run build` in `frontend` succeeds after these changes.
