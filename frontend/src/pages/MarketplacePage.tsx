@@ -3010,7 +3010,7 @@ export default function MarketplacePage() {
 
         <DomainIntroToggle
           title="Your Marketplace"
-          eyebrow="Your guide"
+          eyebrow="Choose community first"
           body="Marketplace needs you to choose one community first. Go to Community Home, pick a group, then come back here to work inside it."
           bullets={[
             "This is not the page for all your groups together.",

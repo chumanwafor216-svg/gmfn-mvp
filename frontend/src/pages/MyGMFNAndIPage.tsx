@@ -397,7 +397,7 @@ export default function MyGMFNAndIPage() {
         <PageTopNav
           sectionLabel="My GSN and I"
           title="My GSN and I"
-          subtitle="Loading your guide and workspace settings..."
+          subtitle="Loading your workspace settings..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/dashboard"
@@ -414,7 +414,7 @@ export default function MyGMFNAndIPage() {
 
         <section style={pageCard("#FFFFFF")}>
           <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-            Loading your guide and settings...
+            Loading workspace settings...
           </div>
         </section>
       </div>

@@ -219,7 +219,7 @@ function inputStyle(): React.CSSProperties {
 
 export default function NextActionGuide({
   title = "What do you want to do next?",
-  eyebrow = "Your guide",
+  eyebrow = "",
   intro = "Say it simply. GSN will point you to the closest place.",
   placeholder = "Try: loan, deposit, withdraw, shop, invite...",
   items,
@@ -231,6 +231,7 @@ export default function NextActionGuide({
   const [open, setOpen] = useState(() => readOpenState(storageKey, defaultOpen));
   const [query, setQuery] = useState("");
   const [notice, setNotice] = useState("");
+  const eyebrowText = eyebrow.trim();
 
   useEffect(() => {
     writeOpenState(storageKey, open);
@@ -285,10 +286,10 @@ export default function NextActionGuide({
     >
       <div style={headerStyle(compact)}>
         <div style={{ minWidth: 0 }}>
-          <div style={labelStyle()}>{eyebrow}</div>
+          {eyebrowText ? <div style={labelStyle()}>{eyebrowText}</div> : null}
           <div
             style={{
-              marginTop: 5,
+              marginTop: eyebrowText ? 5 : 0,
               color: "#10253B",
               fontSize: compact ? 22 : 28,
               fontWeight: 950,

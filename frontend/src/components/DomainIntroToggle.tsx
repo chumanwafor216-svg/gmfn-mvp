@@ -179,6 +179,7 @@ export default function DomainIntroToggle(props: DomainIntroToggleProps) {
   const [open, setOpen] = useState(Boolean(props.defaultOpen));
   const tone = toneStyles(props.tone || "light");
   const buttonLabel = open ? "Close" : "Open";
+  const eyebrow = props.eyebrow?.trim();
 
   return (
     <section
@@ -234,27 +235,29 @@ export default function DomainIntroToggle(props: DomainIntroToggleProps) {
         }}
       >
         <div style={{ minWidth: 0 }}>
+          {eyebrow ? (
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                minHeight: 24,
+                padding: "4px 10px",
+                borderRadius: 999,
+                background: tone.eyebrowBg,
+                color: tone.label,
+                fontSize: 10.5,
+                fontWeight: 900,
+                letterSpacing: 0.7,
+                textTransform: "uppercase",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.42)",
+              }}
+            >
+              {eyebrow}
+            </div>
+          ) : null}
           <div
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              minHeight: 24,
-              padding: "4px 10px",
-              borderRadius: 999,
-              background: tone.eyebrowBg,
-              color: tone.label,
-              fontSize: 10.5,
-              fontWeight: 900,
-              letterSpacing: 0.7,
-              textTransform: "uppercase",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.42)",
-            }}
-          >
-            {props.eyebrow || "Your guide"}
-          </div>
-          <div
-            style={{
-              marginTop: 8,
+              marginTop: eyebrow ? 8 : 0,
               color: tone.title,
               fontSize: 17,
               fontWeight: 900,

@@ -5774,3 +5774,22 @@ GSN-branded invite composer and invite-entry continuity.
   - preserved tap containment and mobile-safe button behaviour
 - No page copy, route logic, backend, auth, schema, payment, ledger,
   deployment config, route guard, or Dashboard Market Wisdom behavior changed.
+
+### Removed "Your guide" label addendum
+
+- Removed the visible `Your guide` phrase from shared guide defaults and
+  page-specific helper copy so the newer benefit-led page explanations can
+  carry the meaning without that older label.
+- Updated:
+  - `frontend/src/components/DomainIntroToggle.tsx`
+  - `frontend/src/components/NextActionGuide.tsx`
+  - `frontend/src/layout/AppLayout.tsx`
+  - `frontend/src/pages/CommunityHomePage.tsx`
+  - `frontend/src/pages/DashboardPage.tsx`
+  - `frontend/src/pages/MarketplacePage.tsx`
+  - `frontend/src/pages/MyGMFNAndIPage.tsx`
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+- Full frontend search for `your guide` is now clean.
+- This is copy/surface cleanup only. It does not remove the actual benefit
+  panels, next-action guide logic, routes, backend, auth, schema, payment,
+  ledger, route guard, deployment config, or Dashboard Market Wisdom behavior.
