@@ -46,6 +46,56 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
+Marketplace billboard identity compression.
+
+#### Routes/screens affected
+- `/app/marketplace`
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+
+#### Files in play
+- `frontend/src/pages/MarketplacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The Marketplace first block now uses one billboard/picture-frame surface
+  instead of a side-by-side picture block plus separate identity block.
+- Uploaded marketplace/community pictures now sit under the marketplace name,
+  ID, trust, and rail summary overlay, so the frame acts as both picture frame
+  and official marketplace billboard.
+- When no picture is uploaded, the same billboard uses the GSN system frame and
+  community initials as the default backdrop.
+- Upload/change/remove handles remain attached to the billboard frame.
+- Extra backend-derived details are now hidden by default in a compact
+  `Open details` drawer and can be folded away with `Close details`.
+- The `Marketplace shortcuts` block remains second, preserving the canonical
+  Marketplace order.
+- No Dashboard, Dashboard Market Wisdom, auth, backend, schema, payment, or
+  deployment configuration was changed.
+
+#### Verification
+- `npm exec -- eslint src/pages/MarketplacePage.tsx` passed with no errors.
+  Existing warnings remain for hook dependencies already present in
+  `MarketplacePage.tsx`.
+- `git diff --check -- frontend/src/pages/MarketplacePage.tsx` passed.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- Phone visual review is still needed after deploy, especially to confirm the
+  overlay name stays readable on uploaded photos and the compact details drawer
+  feels small enough on phone.
+
+#### Next recommended step
+- Deploy/retest `/app/marketplace` on phone once this visual checkpoint is
+  accepted locally.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
 Marketplace first-block identity frame.
 
 #### Routes/screens affected

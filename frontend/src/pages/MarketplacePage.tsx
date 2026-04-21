@@ -1092,7 +1092,7 @@ function marketplacePictureFrameOuterStyle(
 ): React.CSSProperties {
   return {
     width: "100%",
-    maxWidth: isCompact ? "100%" : 352,
+    maxWidth: isCompact ? "100%" : 940,
     margin: "0 auto",
     padding: isCompact ? 7 : 8,
     borderRadius: isCompact ? 24 : 28,
@@ -1108,7 +1108,7 @@ function marketplacePictureFrameInnerStyle(
   isCompact: boolean
 ): React.CSSProperties {
   return {
-    minHeight: isCompact ? 248 : 312,
+    minHeight: isCompact ? 318 : 380,
     borderRadius: isCompact ? 18 : 22,
     border: "1px solid rgba(16,37,59,0.13)",
     background:
@@ -1127,7 +1127,7 @@ function marketplacePicturePlaceholderStyle(
   return {
     width: "100%",
     height: "100%",
-    minHeight: isCompact ? 248 : 312,
+    minHeight: isCompact ? 318 : 380,
     display: "grid",
     placeItems: "center",
     gap: isCompact ? 8 : 10,
@@ -1143,13 +1143,13 @@ function marketplaceIdentityPanelStyle(
   isCompact: boolean
 ): React.CSSProperties {
   return {
-    borderRadius: isCompact ? 22 : 26,
+    borderRadius: isCompact ? 18 : 22,
     border: "1px solid rgba(16,37,59,0.10)",
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(247,251,255,0.90) 56%, rgba(238,246,255,0.88) 100%)",
-    padding: isCompact ? 16 : 20,
+    padding: isCompact ? 12 : 16,
     boxShadow:
-      "0 18px 34px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.92)",
+      "0 14px 26px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.92)",
   };
 }
 
@@ -1161,7 +1161,7 @@ function marketplacePictureHandleStyle(
     position: "absolute",
     left: side === "right" ? "auto" : 12,
     right: side === "left" ? "auto" : 12,
-    bottom: 12,
+    top: 12,
     zIndex: 3,
     display: "inline-flex",
     alignItems: "center",
@@ -1187,6 +1187,43 @@ function marketplacePictureHandleStyle(
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
     opacity: disabled ? 0.78 : 1,
+  };
+}
+
+function marketplaceBillboardScrimStyle(): React.CSSProperties {
+  return {
+    position: "absolute",
+    inset: 0,
+    zIndex: 1,
+    background:
+      "linear-gradient(180deg, rgba(4,18,36,0.10) 0%, rgba(4,18,36,0.02) 34%, rgba(4,18,36,0.68) 100%)",
+    pointerEvents: "none",
+  };
+}
+
+function marketplaceBillboardTextStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    position: "absolute",
+    left: isCompact ? 14 : 20,
+    right: isCompact ? 14 : 20,
+    bottom: isCompact ? 14 : 18,
+    zIndex: 2,
+    color: "#F8FBFF",
+    display: "grid",
+    gap: isCompact ? 8 : 10,
+    textShadow: "0 2px 14px rgba(3,10,22,0.44)",
+  };
+}
+
+function marketplaceDetailsToggleStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    ...actionBtn("soft"),
+    justifySelf: "center",
+    minHeight: 36,
+    minWidth: isCompact ? 148 : 168,
+    padding: "8px 14px",
+    borderRadius: 999,
+    fontSize: 12,
   };
 }
 
@@ -1734,6 +1771,7 @@ export default function MarketplacePage() {
 
   const [sectionsOpen, setSectionsOpen] =
     useState<SectionState>(DEFAULT_SECTION_STATE);
+  const [profileDetailsOpen, setProfileDetailsOpen] = useState(false);
 
   const supportSectionRef = useRef<HTMLElement | null>(null);
   const withdrawalHandoffAppliedRef = useRef("");
@@ -1836,6 +1874,13 @@ export default function MarketplacePage() {
     }
 
     event.stopPropagation();
+  }
+
+  function toggleProfileDetails(
+    event?: React.SyntheticEvent<HTMLElement>
+  ) {
+    consumeMarketplaceButtonEvent(event);
+    setProfileDetailsOpen((prev) => !prev);
   }
 
   function openMarketplaceRoute(
@@ -2725,149 +2770,110 @@ export default function MarketplacePage() {
             Marketplace identity
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr"
-                : "minmax(260px, 0.82fr) minmax(0, 1.18fr)",
-              gap: isCompact ? 14 : 18,
-              alignItems: "stretch",
-            }}
+          <SystemPictureFrame
+            outerStyle={marketplacePictureFrameOuterStyle(isCompact)}
+            innerStyle={marketplacePictureFrameInnerStyle(isCompact)}
           >
-            <div
-              style={{
-                display: "grid",
-                gap: 10,
-                alignContent: "start",
-              }}
-            >
-              <SystemPictureFrame
-                outerStyle={marketplacePictureFrameOuterStyle(isCompact)}
-                innerStyle={marketplacePictureFrameInnerStyle(isCompact)}
-              >
-                {hasCommunityPicture ? (
-                  <AuthResolvedImage
-                    candidates={communityImageCandidates}
-                    alt={communityName(selectedCommunity)}
-                    clanId={activeCommunityId}
-                    refreshSeed={communityPictureRefreshSeed}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      minHeight: isCompact ? 248 : 312,
-                      objectFit: "cover",
-                      objectPosition: "center 18%",
-                      display: "block",
-                    }}
-                    fallback={
-                      <div style={marketplacePicturePlaceholderStyle(isCompact)}>
-                        <GSNBrandMark width={isCompact ? 48 : 60} height={isCompact ? 58 : 72} />
-                        <div
-                          style={{
-                            fontSize: isCompact ? 34 : 42,
-                            fontWeight: 950,
-                            letterSpacing: 2,
-                          }}
-                        >
-                          {communityInitials(selectedCommunity)}
-                        </div>
-                        <div style={{ fontSize: 12, fontWeight: 900 }}>
-                          Marketplace picture frame
-                        </div>
-                      </div>
-                    }
-                  />
-                ) : (
+            {hasCommunityPicture ? (
+              <AuthResolvedImage
+                candidates={communityImageCandidates}
+                alt={communityName(selectedCommunity)}
+                clanId={activeCommunityId}
+                refreshSeed={communityPictureRefreshSeed}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  minHeight: isCompact ? 318 : 380,
+                  objectFit: "cover",
+                  objectPosition: "center 18%",
+                  display: "block",
+                }}
+                fallback={
                   <div style={marketplacePicturePlaceholderStyle(isCompact)}>
-                    <GSNBrandMark width={isCompact ? 56 : 68} height={isCompact ? 68 : 82} />
+                    <GSNBrandMark
+                      width={isCompact ? 60 : 76}
+                      height={isCompact ? 72 : 92}
+                    />
                     <div
                       style={{
-                        fontSize: isCompact ? 36 : 44,
+                        fontSize: isCompact ? 36 : 46,
                         fontWeight: 950,
                         letterSpacing: 2,
                       }}
                     >
                       {communityInitials(selectedCommunity)}
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 900 }}>
-                      Marketplace picture frame
-                    </div>
-                    <div
-                      style={{
-                        color: "#5F7287",
-                        fontSize: 12,
-                        fontWeight: 800,
-                        lineHeight: 1.5,
-                        maxWidth: 220,
-                      }}
-                    >
-                      Upload the official community picture when it is ready.
-                    </div>
                   </div>
-                )}
-
-                <label
-                  onClick={(event) => event.stopPropagation()}
-                  onPointerDown={consumeMarketplacePointerEvent}
-                  style={marketplacePictureHandleStyle(
-                    hasCommunityPicture ? "right" : "full",
-                    uploadingCommunityPicture
-                  )}
+                }
+              />
+            ) : (
+              <div style={marketplacePicturePlaceholderStyle(isCompact)}>
+                <GSNBrandMark
+                  width={isCompact ? 64 : 82}
+                  height={isCompact ? 78 : 100}
+                />
+                <div
+                  style={{
+                    fontSize: isCompact ? 38 : 52,
+                    fontWeight: 950,
+                    letterSpacing: 2,
+                  }}
                 >
-                  {uploadingCommunityPicture
-                    ? "Updating..."
-                    : hasCommunityPicture
-                      ? "Change"
-                      : "Add picture"}
-                  <input
-                    key={communityPictureFileInputKey}
-                    type="file"
-                    accept="image/*"
-                    disabled={uploadingCommunityPicture}
-                    onChange={(event) =>
-                      void handleUploadCommunityPicture(event.target.files?.[0] || null)
-                    }
-                    style={{ display: "none" }}
-                  />
-                </label>
-
-                {hasCommunityPicture ? (
-                  <button
-                    type="button"
-                    onPointerDown={consumeMarketplacePointerEvent}
-                    onClick={() => void handleRemoveCommunityPicture()}
-                    disabled={removingCommunityPicture}
-                    style={marketplacePictureHandleStyle(
-                      "left",
-                      removingCommunityPicture
-                    )}
-                  >
-                    {removingCommunityPicture ? "Removing..." : "Remove"}
-                  </button>
-                ) : null}
-              </SystemPictureFrame>
-
-              <div
-                style={{
-                  ...helperText(),
-                  fontSize: 12,
-                  lineHeight: 1.5,
-                  textAlign: "center",
-                  color: "#5F7287",
-                }}
-              >
-                This picture belongs to the selected marketplace. If no picture is
-                uploaded, GSN keeps the system frame in place.
+                  {communityInitials(selectedCommunity)}
+                </div>
               </div>
-            </div>
+            )}
 
-            <div style={marketplaceIdentityPanelStyle(isCompact)}>
+            <div aria-hidden="true" style={marketplaceBillboardScrimStyle()} />
+
+            <label
+              onClick={(event) => event.stopPropagation()}
+              onPointerDown={consumeMarketplacePointerEvent}
+              style={marketplacePictureHandleStyle(
+                hasCommunityPicture ? "right" : "full",
+                uploadingCommunityPicture
+              )}
+            >
+              {uploadingCommunityPicture
+                ? "Updating..."
+                : hasCommunityPicture
+                  ? "Change picture"
+                  : "Add picture"}
+              <input
+                key={communityPictureFileInputKey}
+                type="file"
+                accept="image/*"
+                disabled={uploadingCommunityPicture}
+                onChange={(event) =>
+                  void handleUploadCommunityPicture(event.target.files?.[0] || null)
+                }
+                style={{ display: "none" }}
+              />
+            </label>
+
+            {hasCommunityPicture ? (
+              <button
+                type="button"
+                onPointerDown={consumeMarketplacePointerEvent}
+                onClick={() => void handleRemoveCommunityPicture()}
+                disabled={removingCommunityPicture}
+                style={marketplacePictureHandleStyle(
+                  "left",
+                  removingCommunityPicture
+                )}
+              >
+                {removingCommunityPicture ? "Removing..." : "Remove"}
+              </button>
+            ) : null}
+
+            <div style={marketplaceBillboardTextStyle(isCompact)}>
               <div
                 style={{
-                  ...sectionLabel(),
-                  color: "#315873",
-                  textAlign: isCompact ? "center" : "left",
+                  fontSize: 11,
+                  fontWeight: 900,
+                  letterSpacing: 1.8,
+                  textTransform: "uppercase",
+                  color: "rgba(248,251,255,0.82)",
                 }}
               >
                 Official marketplace
@@ -2875,12 +2881,10 @@ export default function MarketplacePage() {
 
               <div
                 style={{
-                  marginTop: 10,
-                  color: "#0B1F33",
-                  fontSize: isCompact ? 30 : 42,
+                  fontSize: isCompact ? 30 : 48,
                   fontWeight: 950,
-                  lineHeight: 1.04,
-                  textAlign: isCompact ? "center" : "left",
+                  lineHeight: 1.02,
+                  maxWidth: 760,
                 }}
               >
                 {communityName(selectedCommunity)}
@@ -2888,11 +2892,13 @@ export default function MarketplacePage() {
 
               <div
                 style={{
-                  marginTop: 12,
-                  ...helperText(),
-                  color: "#50667A",
-                  textAlign: isCompact ? "center" : "left",
-                  maxWidth: 760,
+                  fontSize: isCompact ? 13 : 15,
+                  lineHeight: 1.55,
+                  fontWeight: 700,
+                  color: "rgba(248,251,255,0.86)",
+                  maxWidth: 800,
+                  maxHeight: isCompact ? 42 : 50,
+                  overflow: "hidden",
                 }}
               >
                 {communityDescription(selectedCommunity)}
@@ -2900,67 +2906,103 @@ export default function MarketplacePage() {
 
               <div
                 style={{
-                  marginTop: 16,
                   display: "flex",
-                  justifyContent: isCompact ? "center" : "flex-start",
                   gap: 8,
                   flexWrap: "wrap",
+                  alignItems: "center",
                 }}
               >
-                <span style={badge(true)}>Group identity</span>
-                <span style={badge(false)}>
-                  Picture: {hasCommunityPicture ? "Custom" : "GSN frame"}
-                </span>
-                <span style={badge(false)}>
-                  Role: {communityRole(selectedCommunity) || "Member"}
-                </span>
+                {[
+                  `ID: ${communityIdentity(selectedCommunity)}`,
+                  `Trust: ${communityTrustLabel(selectedCommunity)}`,
+                  communitySettlementReady ? "Money In ready" : "Money In pending",
+                ].map((item) => (
+                  <span
+                    key={item}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      minHeight: 28,
+                      borderRadius: 999,
+                      padding: "6px 10px",
+                      border: "1px solid rgba(255,255,255,0.22)",
+                      background: "rgba(248,251,255,0.16)",
+                      color: "#F8FBFF",
+                      fontSize: 11,
+                      fontWeight: 900,
+                      backdropFilter: "blur(10px)",
+                    }}
+                  >
+                    {item}
+                  </span>
+                ))}
               </div>
 
+              <button
+                type="button"
+                onPointerDown={consumeMarketplacePointerEvent}
+                onClick={toggleProfileDetails}
+                aria-expanded={profileDetailsOpen}
+                style={marketplaceDetailsToggleStyle(isCompact)}
+              >
+                {profileDetailsOpen ? "Close details" : "Open details"}
+              </button>
+            </div>
+          </SystemPictureFrame>
+
+          {profileDetailsOpen ? (
+            <div style={marketplaceIdentityPanelStyle(isCompact)}>
               <div
                 style={{
-                  marginTop: 16,
                   display: "grid",
                   gridTemplateColumns: isCompact
-                    ? "1fr"
-                    : "repeat(2, minmax(0, 1fr))",
-                  gap: 10,
+                    ? "repeat(2, minmax(0, 1fr))"
+                    : "repeat(4, minmax(0, 1fr))",
+                  gap: 8,
                 }}
               >
                 {[
                   ["Marketplace ID", communityIdentity(selectedCommunity)],
-                  ["Marketplace name", communityName(selectedCommunity)],
                   ["Group trust", communityTrustLabel(selectedCommunity)],
                   ["Group CCI", communityCciLabel(selectedCommunity)],
                   ["Group finance", communityFinanceLabel(selectedCommunity)],
                   ["Local pool", `${visiblePoolAmount} ${visiblePoolCurrency}`],
                   [
-                    "Money In rail",
+                    "Money In",
                     communitySettlementReady ? "Ready" : "Awaiting issue",
                   ],
-                  ["Money Out rail", payoutReady ? "Ready" : "Awaiting issue"],
+                  ["Money Out", payoutReady ? "Ready" : "Awaiting issue"],
+                  ["Role here", communityRole(selectedCommunity) || "Member"],
                 ].map(([label, value]) => (
-                  <div key={label} style={marketplaceProfileStatStyle()}>
+                  <div
+                    key={label}
+                    style={{
+                      ...marketplaceProfileStatStyle(),
+                      minHeight: 64,
+                      padding: 10,
+                    }}
+                  >
                     <div
                       style={{
-                        fontSize: 11,
+                        fontSize: 10,
                         color: "#315873",
                         fontWeight: 900,
-                        letterSpacing: 0.28,
+                        letterSpacing: 0.24,
                         textTransform: "uppercase",
-                        textAlign: isCompact ? "center" : "left",
+                        textAlign: "center",
                       }}
                     >
                       {label}
                     </div>
                     <div
                       style={{
-                        marginTop: 8,
+                        marginTop: 6,
                         color: "#0B1F33",
                         fontWeight: 900,
-                        fontSize: 15,
-                        lineHeight: 1.35,
+                        fontSize: 13,
+                        lineHeight: 1.25,
                         wordBreak: "break-word",
-                        textAlign: isCompact ? "center" : "left",
+                        textAlign: "center",
                       }}
                     >
                       {value}
@@ -2968,8 +3010,21 @@ export default function MarketplacePage() {
                   </div>
                 ))}
               </div>
+
+              <button
+                type="button"
+                onPointerDown={consumeMarketplacePointerEvent}
+                onClick={toggleProfileDetails}
+                aria-expanded={profileDetailsOpen}
+                style={{
+                  ...marketplaceDetailsToggleStyle(isCompact),
+                  marginTop: 12,
+                }}
+              >
+                Close details
+              </button>
             </div>
-          </div>
+          ) : null}
         </div>
       </section>
 
