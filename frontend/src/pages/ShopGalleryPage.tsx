@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
-import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import {
@@ -973,30 +972,24 @@ export default function ShopGalleryPage() {
   const showOwnerBadge =
     Boolean(shopOwnerText) &&
     shopOwnerText.toUpperCase() !== shopGmfnText.toUpperCase();
-  const signpostSummaryText = shopCommunityText
-    ? `Public offers from ${shopCommunityText}. Vault viewing is available by trust link.`
-    : "Public offers from this shop. Vault viewing is available by trust link.";
-  const signpostContactText = firstMeaningful(
+  const sellerContactText = firstMeaningful(
     shopWhatsAppText ? `WhatsApp ${shopWhatsAppText}` : "",
     shopTelegramText ? `Telegram ${shopTelegramText}` : "",
     hasShopContact ? "Contact available" : "",
     "Share by link"
   );
-  const signpostSignals = [
-    shopGmfnText ? { label: "GSN ID", value: shopGmfnText, primary: true } : null,
-    shopTrustText || safeStr(effectiveShop?.trustScore)
-      ? {
-          label: "Trust",
-          value: shopTrustText || safeStr(effectiveShop?.trustScore),
-          primary: false,
-        }
-      : null,
-    shopCommunityText
-      ? { label: "Community", value: shopCommunityText, primary: false }
-      : null,
-    { label: "Contact", value: signpostContactText, primary: false },
+  const publicShelfText =
+    visibleProducts.length === 1
+      ? "1 public item live"
+      : `${visibleProducts.length} public items live`;
+  const buyerConfidenceText = shopCommunityText
+    ? `This shop is visible through ${shopCommunityText}. Public products are open to browse and share; Vault items stay private until the shop sends a trust link.`
+    : "Public products are open to browse and share. Vault items stay private until the shop sends a trust link.";
+  const confidenceSignals = [
+    { label: "Public shelf", value: publicShelfText, primary: true },
     { label: "Vault", value: "Private view by trust link", primary: false },
-  ].filter(Boolean) as Array<{
+    { label: "Seller contact", value: sellerContactText, primary: false },
+  ] satisfies Array<{
     label: string;
     value: string;
     primary: boolean;
@@ -1136,14 +1129,6 @@ export default function ShopGalleryPage() {
     >
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
       {error ? <div style={noticeCard("error")}>{error}</div> : null}
-
-      <ExplainToggle
-        label="What this screen does"
-        what="This screen is the public shop gallery, showing the shop identity, live spotlight, products, and Vault private-viewing options when available."
-        why="It helps visitors understand what this shop offers and how to move into the right next action without needing the full owner workspace."
-        next="Start with the shop identity and live spotlight, then browse products or ask the owner for a Vault viewing link if you want to see selected offers."
-        tone="light"
-      />
 
       <section
         style={{
@@ -1385,20 +1370,9 @@ export default function ShopGalleryPage() {
                     textAlign: "center",
                   }}
                 >
-                  GSN public shop
+                  Trade with confidence
                 </div>
               </div>
-
-              {!isCompact ? (
-                <ExplainToggle
-                  label="What this does"
-                  what="This signpost block gives visitors the main identity of the shop before they browse products or ask for Vault viewing."
-                  why="It helps the shop feel grounded in a real owner and community context rather than as an isolated product wall."
-                  next="Read the shop signpost first, then continue into products, spotlight, or Vault viewing depending on what you need."
-                  tone="light"
-                  style={{ marginTop: 12, marginBottom: 12 }}
-                />
-              ) : null}
 
               <div
                 style={{
@@ -1445,69 +1419,73 @@ export default function ShopGalleryPage() {
                   style={{
                     position: "relative",
                     display: "grid",
-                    gridTemplateColumns: isCompact ? "1fr" : "76px minmax(0, 1fr)",
-                    gap: isCompact ? 10 : 14,
+                    gridTemplateColumns: "1fr",
+                    gap: isCompact ? 10 : 12,
                     alignItems: "center",
-                    justifyItems: isCompact ? "center" : "start",
-                    textAlign: isCompact ? "center" : "left",
+                    justifyItems: "center",
+                    textAlign: "center",
                   }}
                 >
-                  <div
-                    style={{
-                      width: isCompact ? 62 : 80,
-                      height: isCompact ? 62 : 80,
-                      borderRadius: "50%",
-                      border: "1px solid rgba(212,175,55,0.48)",
-                      background:
-                        "radial-gradient(circle at 34% 24%, rgba(255,255,255,1) 0%, rgba(232,244,253,0.98) 52%, rgba(191,213,232,0.95) 100%)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#124E88",
-                      fontWeight: 950,
-                      fontSize: isCompact ? 20 : 24,
-                      boxShadow:
-                        "0 14px 28px rgba(0,0,0,0.24), 0 0 0 5px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
-                    }}
-                  >
-                    {initialsOf(
-                      safeStr(
-                        shopNameText ||
-                          shopOwnerText ||
-                          "Shop"
-                      )
-                    )}
-                  </div>
-
                   <div>
                     <div
                       style={{
                         color: "#FFFFFF",
                         fontWeight: 950,
-                        fontSize: isCompact ? 20 : 22,
+                        fontSize: isCompact ? 18 : 21,
                         lineHeight: 1.18,
                         display: "-webkit-box",
                         WebkitLineClamp: isCompact ? 2 : 2,
                         WebkitBoxOrient: "vertical" as any,
                         overflow: "hidden",
-                        letterSpacing: 0.2,
+                        letterSpacing: 0.25,
                         textShadow: "0 2px 14px rgba(0,0,0,0.25)",
-                        textTransform: "uppercase",
                       }}
                     >
-                      {shopNameText}
+                      Public shelf. Private Vault. One trusted contact.
                     </div>
 
                     <div
                       style={{
-                        marginTop: isCompact ? 7 : 8,
+                        marginTop: isCompact ? 8 : 10,
                         color: "rgba(235,245,255,0.88)",
                         fontSize: isCompact ? 12 : 13,
-                        lineHeight: isCompact ? 1.38 : 1.58,
-                        maxWidth: isCompact ? 280 : 520,
+                        lineHeight: isCompact ? 1.45 : 1.62,
+                        maxWidth: isCompact ? 300 : 560,
                       }}
                     >
-                      {signpostSummaryText}
+                      {buyerConfidenceText}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: isCompact ? 11 : 14,
+                        display: "flex",
+                        flexWrap: "wrap",
+                        justifyContent: "center",
+                        gap: 7,
+                      }}
+                    >
+                      {["Browse openly", "Ask privately", "Share safely"].map((label) => (
+                        <span
+                          key={label}
+                          style={{
+                            minHeight: 28,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: "6px 10px",
+                            borderRadius: 999,
+                            border: "1px solid rgba(255,255,255,0.18)",
+                            background: "rgba(255,255,255,0.12)",
+                            color: "rgba(255,255,255,0.92)",
+                            fontSize: isCompact ? 10.5 : 11,
+                            fontWeight: 900,
+                            letterSpacing: 0.25,
+                          }}
+                        >
+                          {label}
+                        </span>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -1520,7 +1498,7 @@ export default function ShopGalleryPage() {
                   display: "grid",
                   gridTemplateColumns: isCompact
                     ? "repeat(2, minmax(0, 1fr))"
-                    : `repeat(${Math.min(signpostSignals.length, 5)}, minmax(0, 1fr))`,
+                    : `repeat(${confidenceSignals.length}, minmax(0, 1fr))`,
                   gap: isCompact ? 7 : 8,
                   padding: isCompact ? 8 : 10,
                   borderRadius: 24,
@@ -1531,7 +1509,7 @@ export default function ShopGalleryPage() {
                     "inset 0 1px 0 rgba(255,255,255,0.74), 0 10px 22px rgba(8,38,67,0.055)",
                 }}
               >
-                {signpostSignals.map((item) => (
+                {confidenceSignals.map((item) => (
                   <div
                     key={`${item.label}-${item.value}`}
                     style={{
@@ -1592,12 +1570,25 @@ export default function ShopGalleryPage() {
               >
                 <button
                   type="button"
-                  onClick={shareShop}
+                  onClick={askForVaultAccess}
                   style={{
                     ...primaryBtn(false),
                     minHeight: isCompact ? 38 : 42,
                     padding: isCompact ? "8px 12px" : "10px 14px",
-                    flex: isCompact ? "1 1 132px" : undefined,
+                    flex: isCompact ? "1 1 132px" : "0 1 auto",
+                  }}
+                >
+                  Ask seller
+                </button>
+
+                <button
+                  type="button"
+                  onClick={shareShop}
+                  style={{
+                    ...secondaryBtn(false),
+                    minHeight: isCompact ? 38 : 40,
+                    padding: isCompact ? "8px 12px" : "9px 12px",
+                    flex: isCompact ? "1 1 132px" : "0 1 auto",
                   }}
                 >
                   Share shop
@@ -1610,10 +1601,10 @@ export default function ShopGalleryPage() {
                     ...secondaryBtn(false),
                     minHeight: isCompact ? 38 : 40,
                     padding: isCompact ? "8px 12px" : "9px 12px",
-                    flex: isCompact ? "1 1 132px" : undefined,
+                    flex: isCompact ? "1 1 132px" : "0 1 auto",
                   }}
                 >
-                  Copy shop link
+                  Copy link
                 </button>
               </div>
             </div>

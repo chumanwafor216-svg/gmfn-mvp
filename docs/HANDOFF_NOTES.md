@@ -5841,3 +5841,18 @@ GSN-branded invite composer and invite-entry continuity.
 - Updated that migration to use SQLAlchemy's boolean default expression
   `sa.false()`, which compiles safely for PostgreSQL while preserving the same
   meaning: new notifications start unread.
+
+### Shop gallery public signpost cleanup addendum
+
+- The public shop gallery was repeating the same identity details in both the
+  top signpost and the following middle card.
+- Updated `frontend/src/pages/ShopGalleryPage.tsx` so the top hero remains the
+  single shop identity/signpost area, while the repeated middle card now acts
+  as a buyer-confidence action block:
+  - `Trade with confidence`
+  - public shelf / Vault / seller-contact signals
+  - `Ask seller`, `Share shop`, and `Copy link` actions
+- Removed the customer-facing `What this screen does` guide from the public
+  shop gallery so visitors see the shop surface directly.
+- This is frontend copy/layout cleanup only. No backend routes, auth,
+  permissions, schema, payment, ledger, or deployment settings changed.
