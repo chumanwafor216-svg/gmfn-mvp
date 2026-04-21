@@ -2229,8 +2229,10 @@ export default function MarketplacePage() {
         gmfnId: gmfn,
         userId,
         supportKey,
-        shopName: firstTruthy(shop?.name, "No community-visible shop yet"),
-        shopTo: gmfn ? `/app/shop/${encodeURIComponent(gmfn)}` : "",
+        shopName: shop
+          ? firstTruthy(shop?.name, "Shop available")
+          : "Shop not visible yet",
+        shopTo: shop && gmfn ? `/app/shop/${encodeURIComponent(gmfn)}` : "",
       };
     });
 
@@ -3825,10 +3827,10 @@ export default function MarketplacePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Members & shop galleries</div>
+            <div style={sectionLabel()}>Members and shops</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Members visible in this marketplace and the shop galleries they
-              can expose here.
+              Each line shows the person, their GSN ID, and the shop visible
+              in this marketplace.
             </div>
           </div>
 
@@ -3842,20 +3844,11 @@ export default function MarketplacePage() {
           </button>
         </div>
 
-        <ExplainToggle
-          label="What these member rows do"
-          what="These rows show who is visible in the current community, which shop galleries can be opened, and which people may already fit the current support request."
-          why="This keeps marketplace browsing and support decisions grounded in the same community view instead of forcing users to guess who is visible or relevant."
-          next="Browse the rows first, open a shop gallery when you want to inspect a member's commercial presence, and only use someone as a guarantor when the fit signal appears."
-          tone="light"
-          style={{ marginTop: 12 }}
-        />
-
         {sectionsOpen.members ? (
           <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
             {memberRows.length === 0 ? (
               <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                No member rows are visible in this community yet.
+                No members are visible in this marketplace yet.
               </div>
             ) : (
               memberRows.map((row, index) => {
@@ -3863,101 +3856,137 @@ export default function MarketplacePage() {
                 const selected = selectedSupporterKeys.has(row.supportKey);
 
                 return (
-                  <div key={`${row.gmfnId || index}`} style={innerCard("#FCFEFF")}>
+                  <div
+                    key={`${row.gmfnId || index}`}
+                    style={{
+                      ...innerCard("#FCFEFF"),
+                      padding: isCompact ? 12 : 14,
+                    }}
+                  >
                     <div
                       style={{
                         display: "grid",
                         gridTemplateColumns: isCompact
                           ? "1fr"
-                          : "minmax(0, 1.15fr) minmax(0, 0.95fr) auto",
-                        gap: 12,
+                          : "minmax(0, 1fr) auto",
+                        gap: isCompact ? 10 : 14,
                         alignItems: "center",
                       }}
                     >
-                      <div>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 12,
+                          alignItems: "center",
+                          minWidth: 0,
+                        }}
+                      >
                         <div
                           style={{
-                            color: "#0B1F33",
-                            fontSize: 17,
-                            fontWeight: 900,
-                            lineHeight: 1.35,
-                          }}
-                        >
-                          {row.name}
-                        </div>
-
-                        <div
-                          style={{
-                            marginTop: 6,
-                            color: "#64748B",
+                            width: 36,
+                            height: 36,
+                            borderRadius: 999,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flex: "0 0 auto",
+                            border: "1px solid rgba(16,37,59,0.10)",
+                            background:
+                              "linear-gradient(180deg, #FFFFFF 0%, #EEF6FF 100%)",
+                            color: "#12324F",
                             fontSize: 13,
-                            lineHeight: 1.65,
+                            fontWeight: 900,
+                            boxShadow:
+                              "0 8px 16px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
                           }}
                         >
-                          {row.gmfnId ? `GSN ID: ${row.gmfnId}` : "GSN ID pending"}
-                        </div>
-                      </div>
-
-                      <div>
-                        <div
-                          style={{
-                            color: "#0B1F33",
-                            fontSize: 15,
-                            fontWeight: 800,
-                            lineHeight: 1.35,
-                          }}
-                        >
-                          {row.shopName}
+                          {index + 1}
                         </div>
 
                         <div
                           style={{
-                            marginTop: 6,
-                            display: "flex",
+                            minWidth: 0,
+                            display: "grid",
                             gap: 8,
-                            flexWrap: "wrap",
                           }}
                         >
-                          {row.shopTo ? (
-                            <span style={badge(true)}>Shop link available</span>
-                          ) : (
-                            <span style={badge(false)}>No visible shop yet</span>
-                          )}
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                              flexWrap: "wrap",
+                              minWidth: 0,
+                            }}
+                          >
+                            <span
+                              style={{
+                                color: "#0B1F33",
+                                fontSize: 17,
+                                fontWeight: 950,
+                                lineHeight: 1.25,
+                              }}
+                            >
+                              {row.name}
+                            </span>
+                            <span style={badge(true)}>
+                              GSN ID:{" "}
+                              {row.gmfnId ? displayGsnLabel(row.gmfnId) : "Pending"}
+                            </span>
+                            <span style={badge(Boolean(row.shopTo))}>
+                              Shop: {row.shopName}
+                            </span>
+                          </div>
 
                           {fitSuggestion ? (
-                            <span style={badge(false)}>Fit suggestion available</span>
+                            <div
+                              style={{
+                                color: "#51657A",
+                                fontSize: 12,
+                                fontWeight: 800,
+                                lineHeight: 1.45,
+                              }}
+                            >
+                              This member may be able to support the current
+                              request.
+                            </div>
                           ) : null}
                         </div>
                       </div>
 
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: isCompact ? "flex-start" : "flex-end",
-                          gap: 10,
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        {row.shopTo ? (
-                          <OriginLink to={row.shopTo} style={actionBtn("secondary")}>
-                            Open Shop Gallery
-                          </OriginLink>
-                        ) : (
-                          <button type="button" style={actionBtn("secondary", true)} disabled>
-                            No Shop Yet
-                          </button>
-                        )}
+                      {(row.shopTo || fitSuggestion) ? (
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: isCompact ? "flex-start" : "flex-end",
+                            gap: 10,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          {row.shopTo ? (
+                            <OriginLink
+                              to={row.shopTo}
+                              onPointerDown={consumeMarketplacePointerEvent}
+                              style={actionBtn("secondary")}
+                            >
+                              Open shop
+                            </OriginLink>
+                          ) : null}
 
-                        {fitSuggestion ? (
-                          <button
-                            type="button"
-                            onClick={() => toggleMemberAsSupporter(row)}
-                            style={selected ? actionBtn("primary") : actionBtn("soft")}
-                          >
-                            {selected ? "Selected" : "Use as Guarantor"}
-                          </button>
-                        ) : null}
-                      </div>
+                          {fitSuggestion ? (
+                            <button
+                              type="button"
+                              onPointerDown={consumeMarketplacePointerEvent}
+                              onClick={() => toggleMemberAsSupporter(row)}
+                              style={
+                                selected ? actionBtn("primary") : actionBtn("soft")
+                              }
+                            >
+                              {selected ? "Chosen" : "Choose supporter"}
+                            </button>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 );

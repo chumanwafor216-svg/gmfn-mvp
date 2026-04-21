@@ -46,6 +46,55 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
+Marketplace member/shop row cleanup.
+
+#### Routes/screens affected
+- `/app/marketplace`
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+
+#### Files in play
+- `frontend/src/pages/MarketplacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The third Marketplace block now reads `Members and shops` instead of
+  `Members & shop galleries`.
+- The long technical explainer for member rows was removed from this block.
+- Each visible member row is now a compact human line with row number, member
+  name, GSN ID, and shop name in one disciplined row/card.
+- The visible shop action now says `Open shop` instead of `Open Shop Gallery`.
+- The disabled `No Shop Yet` button was removed; when no shop is visible, the
+  row simply says `Shop not visible yet`.
+- The `Open shop` action is now shown only when the member has a visible shop
+  record in the current marketplace, avoiding fake shop visibility from a GSN
+  ID alone.
+- Support-request fit language was softened to `Choose supporter` / `Chosen`.
+- No Dashboard, Dashboard Market Wisdom, auth, backend, schema, payment, or
+  deployment configuration was changed.
+
+#### Verification
+- `npm exec -- eslint src/pages/MarketplacePage.tsx` passed with no errors.
+  Existing warnings remain for hook dependencies already present in
+  `MarketplacePage.tsx`.
+- `git diff --check -- frontend/src/pages/MarketplacePage.tsx` passed.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- Phone visual review is still needed after deploy to confirm long member
+  names, long GSN IDs, and shop names wrap cleanly without making rows feel
+  crowded.
+
+#### Next recommended step
+- Deploy/retest the Marketplace `Members and shops` block on phone.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
 Marketplace billboard picture-control simplification.
 
 #### Routes/screens affected
