@@ -974,6 +974,34 @@ export default function ShopGalleryPage() {
   const showOwnerBadge =
     Boolean(shopOwnerText) &&
     shopOwnerText.toUpperCase() !== shopGmfnText.toUpperCase();
+  const signpostSummaryText = shopCommunityText
+    ? `Public offers from ${shopCommunityText}. Vault viewing is available by trust link.`
+    : "Public offers from this shop. Vault viewing is available by trust link.";
+  const signpostContactText = firstMeaningful(
+    shopWhatsAppText ? `WhatsApp ${shopWhatsAppText}` : "",
+    shopTelegramText ? `Telegram ${shopTelegramText}` : "",
+    hasShopContact ? "Contact available" : "",
+    "Share by link"
+  );
+  const signpostSignals = [
+    shopGmfnText ? { label: "GSN ID", value: shopGmfnText, primary: true } : null,
+    shopTrustText || safeStr(effectiveShop?.trustScore)
+      ? {
+          label: "Trust",
+          value: shopTrustText || safeStr(effectiveShop?.trustScore),
+          primary: false,
+        }
+      : null,
+    shopCommunityText
+      ? { label: "Community", value: shopCommunityText, primary: false }
+      : null,
+    { label: "Contact", value: signpostContactText, primary: false },
+    { label: "Vault", value: "Private view by trust link", primary: false },
+  ].filter(Boolean) as Array<{
+    label: string;
+    value: string;
+    primary: boolean;
+  }>;
 
   async function shareOrCopy(params: {
     title: string;
@@ -1145,9 +1173,9 @@ export default function ShopGalleryPage() {
             padding: isCompact ? 8 : 10,
             border: "1px solid rgba(212,175,55,0.18)",
             background:
-              "linear-gradient(135deg, rgba(16,36,58,0.98) 0%, rgba(23,54,84,0.96) 55%, rgba(38,82,124,0.96) 100%)",
+              "radial-gradient(circle at 9% 2%, rgba(11,99,209,0.46) 0%, transparent 32%), radial-gradient(circle at 91% 5%, rgba(244,114,182,0.20) 0%, transparent 27%), radial-gradient(circle at 82% 92%, rgba(212,175,55,0.24) 0%, transparent 34%), linear-gradient(145deg, rgba(5,22,39,0.99) 0%, rgba(9,52,86,0.98) 48%, rgba(12,70,112,0.96) 100%)",
             boxShadow:
-              "0 26px 56px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.05)",
+              "0 30px 66px rgba(2,12,27,0.27), inset 0 1px 0 rgba(255,255,255,0.10)",
             minHeight: isCompact ? 0 : 360,
           }}
         >
@@ -1175,7 +1203,7 @@ export default function ShopGalleryPage() {
               inset: 10,
               borderRadius: 22,
               background:
-                "linear-gradient(180deg, rgba(12,34,56,0.10) 0%, rgba(12,34,56,0.16) 25%, rgba(12,34,56,0.60) 100%)",
+                "linear-gradient(145deg, rgba(6,24,43,0.20) 0%, rgba(8,36,64,0.12) 28%, rgba(7,25,46,0.70) 100%)",
             }}
           />
 
@@ -1286,14 +1314,14 @@ export default function ShopGalleryPage() {
             <div
               style={{
                 ...innerCard(
-                  "radial-gradient(circle at 6% 0%, rgba(11,99,209,0.20) 0%, transparent 34%), radial-gradient(circle at 94% 8%, rgba(244,114,182,0.12) 0%, transparent 28%), radial-gradient(circle at 72% 92%, rgba(212,175,55,0.13) 0%, transparent 30%), linear-gradient(180deg, rgba(253,255,255,0.98) 0%, rgba(231,243,251,0.96) 100%)"
+                  "radial-gradient(circle at 4% 0%, rgba(11,99,209,0.24) 0%, transparent 34%), radial-gradient(circle at 96% 4%, rgba(244,114,182,0.15) 0%, transparent 28%), radial-gradient(circle at 72% 92%, rgba(212,175,55,0.18) 0%, transparent 32%), linear-gradient(145deg, rgba(255,255,255,0.99) 0%, rgba(235,247,254,0.97) 48%, rgba(246,250,253,0.98) 100%)"
                 ),
                 position: "relative",
-                border: "1px solid rgba(13,95,168,0.20)",
+                border: "1px solid rgba(13,95,168,0.22)",
                 backdropFilter: "blur(8px)",
                 boxShadow:
-                  "0 24px 48px rgba(8,38,67,0.15), inset 0 1px 0 rgba(255,255,255,0.86)",
-                padding: isCompact ? 11 : 18,
+                  "0 26px 56px rgba(8,38,67,0.17), inset 0 1px 0 rgba(255,255,255,0.92)",
+                padding: isCompact ? 12 : 18,
                 overflow: "hidden",
               }}
             >
@@ -1303,7 +1331,7 @@ export default function ShopGalleryPage() {
                   position: "absolute",
                   inset: 0,
                   background:
-                    "linear-gradient(90deg, rgba(11,31,51,0.06) 0%, transparent 18%, transparent 82%, rgba(11,99,209,0.08) 100%)",
+                    "linear-gradient(90deg, rgba(11,31,51,0.055) 0%, transparent 18%, transparent 78%, rgba(11,99,209,0.10) 100%)",
                   pointerEvents: "none",
                 }}
               />
@@ -1318,6 +1346,20 @@ export default function ShopGalleryPage() {
                   borderRadius: "50%",
                   background:
                     "radial-gradient(circle, rgba(212,175,55,0.20) 0%, rgba(244,114,182,0.11) 44%, transparent 68%)",
+                  pointerEvents: "none",
+                }}
+              />
+              <div
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background:
+                    "repeating-linear-gradient(90deg, transparent 0 24px, rgba(13,95,168,0.035) 24px 25px), repeating-linear-gradient(0deg, transparent 0 28px, rgba(8,38,67,0.026) 28px 29px)",
+                  maskImage:
+                    "radial-gradient(circle at 50% 36%, rgba(0,0,0,0.72) 0%, transparent 64%)",
+                  WebkitMaskImage:
+                    "radial-gradient(circle at 50% 36%, rgba(0,0,0,0.72) 0%, transparent 64%)",
                   pointerEvents: "none",
                 }}
               />
@@ -1341,14 +1383,14 @@ export default function ShopGalleryPage() {
                     borderRadius: 999,
                     color: "#FFFFFF",
                     background:
-                      "linear-gradient(135deg, rgba(11,31,51,0.96) 0%, rgba(18,67,106,0.94) 100%)",
-                    border: "1px solid rgba(212,175,55,0.22)",
+                      "linear-gradient(135deg, rgba(11,31,51,0.97) 0%, rgba(25,82,129,0.94) 100%)",
+                    border: "1px solid rgba(212,175,55,0.30)",
                     boxShadow:
-                      "0 10px 22px rgba(8,38,67,0.16), inset 0 1px 0 rgba(255,255,255,0.16)",
+                      "0 12px 26px rgba(8,38,67,0.17), inset 0 1px 0 rgba(255,255,255,0.18)",
                     textAlign: "center",
                   }}
                 >
-                  Shop signpost
+                  GSN public shop
                 </div>
               </div>
 
@@ -1367,13 +1409,13 @@ export default function ShopGalleryPage() {
                 style={{
                   position: "relative",
                   marginTop: isCompact ? 10 : 14,
-                  padding: isCompact ? "14px 12px" : "16px",
-                  borderRadius: isCompact ? 24 : 26,
-                  border: "1px solid rgba(212,175,55,0.18)",
+                  padding: isCompact ? "16px 13px" : "18px",
+                  borderRadius: isCompact ? 26 : 28,
+                  border: "1px solid rgba(212,175,55,0.24)",
                   background:
-                    "radial-gradient(circle at 0% 0%, rgba(11,99,209,0.26) 0%, transparent 36%), radial-gradient(circle at 98% 0%, rgba(244,114,182,0.14) 0%, transparent 30%), radial-gradient(circle at 80% 100%, rgba(212,175,55,0.16) 0%, transparent 34%), linear-gradient(135deg, rgba(8,31,53,0.98) 0%, rgba(13,58,95,0.96) 50%, rgba(8,38,67,0.98) 100%)",
+                    "radial-gradient(circle at 4% 0%, rgba(77,160,255,0.32) 0%, transparent 34%), radial-gradient(circle at 96% 10%, rgba(244,114,182,0.18) 0%, transparent 31%), radial-gradient(circle at 82% 104%, rgba(212,175,55,0.22) 0%, transparent 34%), linear-gradient(135deg, rgba(6,24,43,0.98) 0%, rgba(16,73,116,0.96) 52%, rgba(7,34,62,0.98) 100%)",
                   boxShadow:
-                    "0 18px 38px rgba(8,38,67,0.20), inset 0 1px 0 rgba(255,255,255,0.16)",
+                    "0 20px 42px rgba(8,38,67,0.22), inset 0 1px 0 rgba(255,255,255,0.18)",
                   overflow: "hidden",
                 }}
               >
@@ -1386,7 +1428,22 @@ export default function ShopGalleryPage() {
                     top: 0,
                     height: 3,
                     background:
-                      "linear-gradient(90deg, rgba(212,175,55,0.74) 0%, rgba(11,99,209,0.68) 48%, rgba(244,114,182,0.48) 100%)",
+                      "linear-gradient(90deg, rgba(212,175,55,0.82) 0%, rgba(77,160,255,0.74) 48%, rgba(244,114,182,0.56) 100%)",
+                  }}
+                />
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    right: -36,
+                    top: -36,
+                    width: 146,
+                    height: 146,
+                    borderRadius: "50%",
+                    border: "1px solid rgba(255,255,255,0.16)",
+                    background:
+                      "radial-gradient(circle, rgba(255,255,255,0.16) 0%, rgba(212,175,55,0.08) 38%, transparent 70%)",
+                    pointerEvents: "none",
                   }}
                 />
                 <div
@@ -1402,20 +1459,20 @@ export default function ShopGalleryPage() {
                 >
                   <div
                     style={{
-                      width: isCompact ? 58 : 76,
-                      height: isCompact ? 58 : 76,
-                      borderRadius: isCompact ? 18 : 20,
-                      border: "1px solid rgba(255,255,255,0.32)",
+                      width: isCompact ? 62 : 80,
+                      height: isCompact ? 62 : 80,
+                      borderRadius: "50%",
+                      border: "1px solid rgba(212,175,55,0.48)",
                       background:
-                        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(224,238,249,0.94) 100%)",
+                        "radial-gradient(circle at 34% 24%, rgba(255,255,255,1) 0%, rgba(232,244,253,0.98) 52%, rgba(191,213,232,0.95) 100%)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      color: "#1857AD",
+                      color: "#124E88",
                       fontWeight: 950,
-                      fontSize: isCompact ? 20 : 25,
+                      fontSize: isCompact ? 20 : 24,
                       boxShadow:
-                        "0 14px 28px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.95)",
+                        "0 14px 28px rgba(0,0,0,0.24), 0 0 0 5px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
                     }}
                   >
                     {initialsOf(
@@ -1440,6 +1497,7 @@ export default function ShopGalleryPage() {
                         overflow: "hidden",
                         letterSpacing: 0.2,
                         textShadow: "0 2px 14px rgba(0,0,0,0.25)",
+                        textTransform: "uppercase",
                       }}
                     >
                       {shopNameText}
@@ -1448,19 +1506,13 @@ export default function ShopGalleryPage() {
                     <div
                       style={{
                         marginTop: isCompact ? 7 : 8,
-                        color: "rgba(235,245,255,0.84)",
+                        color: "rgba(235,245,255,0.88)",
                         fontSize: isCompact ? 12 : 13,
                         lineHeight: isCompact ? 1.38 : 1.58,
                         maxWidth: isCompact ? 280 : 520,
                       }}
                     >
-                      {isCompact
-                        ? hasShopContact
-                          ? "Contact the shop, share the link, or ask for Vault viewing."
-                          : "Share this verified shop page or ask for Vault viewing."
-                        : hasShopContact
-                          ? "Contact this shop directly, or share the clean public shop link outside the community."
-                          : "Share this shop outside the community with a clean public shop link."}
+                      {signpostSummaryText}
                     </div>
                   </div>
                 </div>
@@ -1470,100 +1522,68 @@ export default function ShopGalleryPage() {
                 style={{
                   position: "relative",
                   marginTop: isCompact ? 10 : 14,
-                  padding: isCompact ? "10px 9px" : "12px",
-                  borderRadius: 22,
-                  border: "1px solid rgba(13,95,168,0.13)",
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "repeat(2, minmax(0, 1fr))"
+                    : `repeat(${Math.min(signpostSignals.length, 5)}, minmax(0, 1fr))`,
+                  gap: isCompact ? 7 : 8,
+                  padding: isCompact ? 8 : 10,
+                  borderRadius: 24,
+                  border: "1px solid rgba(13,95,168,0.15)",
                   background:
-                    "linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(239,247,253,0.66) 100%)",
+                    "linear-gradient(180deg, rgba(255,255,255,0.76) 0%, rgba(235,246,253,0.70) 100%)",
                   boxShadow:
                     "inset 0 1px 0 rgba(255,255,255,0.74), 0 10px 22px rgba(8,38,67,0.055)",
-                  display: "flex",
-                  gap: isCompact ? 6 : 8,
-                  flexWrap: "wrap",
-                  justifyContent: "center",
                 }}
               >
-                {shopGmfnText ? (
-                  <span
+                {signpostSignals.map((item) => (
+                  <div
+                    key={`${item.label}-${item.value}`}
                     style={{
-                      ...badge(true),
-                      minHeight: isCompact ? 24 : 30,
-                      padding: isCompact ? "4px 8px" : "6px 10px",
-                      fontSize: isCompact ? 10.5 : 12,
+                      minHeight: isCompact ? 54 : 60,
+                      padding: isCompact ? "8px 9px" : "9px 10px",
+                      borderRadius: 18,
+                      border: item.primary
+                        ? "1px solid rgba(29,78,216,0.16)"
+                        : "1px solid rgba(13,95,168,0.11)",
+                      background: item.primary
+                        ? "linear-gradient(180deg, rgba(238,246,255,0.98) 0%, rgba(220,235,250,0.88) 100%)"
+                        : "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(235,242,249,0.84) 100%)",
+                      boxShadow:
+                        "0 8px 18px rgba(8,38,67,0.055), inset 0 1px 0 rgba(255,255,255,0.84)",
+                      display: "grid",
+                      gap: 3,
+                      alignContent: "center",
+                      textAlign: "center",
                     }}
                   >
-                    ID: {shopGmfnText}
-                  </span>
-                ) : null}
-
-                {shopTrustText || safeStr(effectiveShop?.trustScore) ? (
-                  <span
-                    style={{
-                      ...badge(false),
-                      minHeight: isCompact ? 24 : 30,
-                      padding: isCompact ? "4px 8px" : "6px 10px",
-                      fontSize: isCompact ? 10.5 : 12,
-                    }}
-                  >
-                    Trust: {shopTrustText || safeStr(effectiveShop?.trustScore)}
-                    {safeStr(effectiveShop?.trustScore) && shopTrustText
-                      ? ` - ${safeStr(effectiveShop?.trustScore)}`
-                      : ""}
-                  </span>
-                ) : null}
-
-                {shopCommunityText ? (
-                  <span
-                    style={{
-                      ...badge(false),
-                      minHeight: isCompact ? 24 : 30,
-                      padding: isCompact ? "4px 8px" : "6px 10px",
-                      fontSize: isCompact ? 10.5 : 12,
-                    }}
-                  >
-                    {shopCommunityText}
-                  </span>
-                ) : null}
-
-                <span
-                  style={{
-                    ...badge(false),
-                    minHeight: isCompact ? 24 : 30,
-                    padding: isCompact ? "4px 8px" : "6px 10px",
-                    fontSize: isCompact ? 10.5 : 12,
-                  }}
-                >
-                  Vault
-                </span>
-                {!isCompact ? (
-                  <span style={badge(false)}>Vault viewing by trust link</span>
-                ) : null}
-
-                {shopWhatsAppText ? (
-                  <span
-                    style={{
-                      ...badge(false),
-                      minHeight: isCompact ? 24 : 30,
-                      padding: isCompact ? "4px 8px" : "6px 10px",
-                      fontSize: isCompact ? 10.5 : 12,
-                    }}
-                  >
-                    WhatsApp: {shopWhatsAppText}
-                  </span>
-                ) : null}
-
-                {shopTelegramText ? (
-                  <span
-                    style={{
-                      ...badge(false),
-                      minHeight: isCompact ? 24 : 30,
-                      padding: isCompact ? "4px 8px" : "6px 10px",
-                      fontSize: isCompact ? 10.5 : 12,
-                    }}
-                  >
-                    Telegram: {shopTelegramText}
-                  </span>
-                ) : null}
+                    <span
+                      style={{
+                        color: item.primary ? "#1D4ED8" : "#5D7389",
+                        fontSize: isCompact ? 9.5 : 10,
+                        fontWeight: 950,
+                        letterSpacing: 0.45,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {item.label}
+                    </span>
+                    <span
+                      style={{
+                        color: "#0B1F33",
+                        fontSize: isCompact ? 10.5 : 12,
+                        fontWeight: 900,
+                        lineHeight: 1.2,
+                        overflow: "hidden",
+                        display: "-webkit-box",
+                        WebkitLineClamp: isCompact ? 2 : 2,
+                        WebkitBoxOrient: "vertical" as any,
+                      }}
+                    >
+                      {item.value}
+                    </span>
+                  </div>
+                ))}
               </div>
 
               <div

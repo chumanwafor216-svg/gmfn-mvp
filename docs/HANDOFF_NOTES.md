@@ -46,6 +46,64 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
+Shop Gallery world-facing signpost upgrade.
+
+#### Routes/screens affected
+- `/shop/:gmfnId`
+- `/app/shop/:gmfnId` through the existing redirect/public shop route
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+- no product loading, visibility, share, Vault, auth, payment, or schema logic changed
+
+#### Files in play
+- `frontend/src/pages/ShopGalleryPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Product owner accepted that the Shop Gallery signpost structure was stronger
+  than before but said the visual language still did not feel award-level,
+  worldwide, or institutionally distinctive enough.
+- Outside design scan and two code-review agents pointed to the same direction:
+  make the signpost feel like a GSN public shop passport/trade pass, not a
+  decorative nested card or chip cloud.
+- Reworked the public signpost presentation route-locally:
+  - strengthened the surrounding brand field with deeper GSN navy, controlled
+    blue, gold, and pink accents
+  - renamed the signpost label to `GSN public shop`
+  - turned the initials into a crest-like medallion
+  - made the shop name sit on a stronger institutional identity plate
+  - replaced the loose badge/chip cloud with a structured identity rail for
+    GSN ID, Trust, Community, Contact, and Vault
+  - kept `Share shop`, `Copy shop link`, contact, Vault, and product behavior
+    unchanged
+- No Dashboard, Dashboard Market Wisdom, Community Home, Marketplace, backend,
+  auth, schema, payment, or deployment configuration changed.
+
+#### Verification
+- `npm exec -- eslint src/pages/ShopGalleryPage.tsx` passed in `frontend`.
+- `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
+  the normal Windows line-ending warning.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- Phone review is needed to confirm the stronger brand field feels more
+  premium rather than too dark or too busy on the actual device.
+- If the owner likes the identity rail but wants a different colour mood, the
+  safe next adjustment is colour tuning only inside the signpost block; do not
+  change handlers, product fetches, Vault logic, or public route behavior.
+
+#### Next recommended step
+- Deploy/retest the public shop link on phone and judge the signpost in the
+  first screen: shop name strength, colour mood, identity rail readability,
+  and whether it feels like a public-facing GSN trade pass.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
 Shop Gallery product image clarity correction.
 
 #### Routes/screens affected
