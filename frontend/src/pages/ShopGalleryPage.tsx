@@ -1970,7 +1970,7 @@ export default function ShopGalleryPage() {
               gridTemplateColumns: isCompact
                 ? "1fr"
                 : "repeat(3, minmax(0, 1fr))",
-              gap: 14,
+              gap: isCompact ? 22 : 14,
             }}
           >
             {visibleProducts.map((product, index) => {
@@ -1989,15 +1989,19 @@ export default function ShopGalleryPage() {
                     border: "1px solid rgba(13,95,168,0.16)",
                     boxShadow:
                       "0 26px 54px rgba(8,38,67,0.12), 0 8px 20px rgba(8,38,67,0.06), inset 0 1px 0 rgba(255,255,255,0.72)",
-                    minHeight: 430,
+                    minHeight: isCompact ? "calc(100svh - 18px)" : 430,
                     display: "flex",
                     flexDirection: "column",
+                    scrollSnapAlign: isCompact ? "start" : undefined,
+                    scrollMarginTop: isCompact ? 12 : undefined,
                   }}
                 >
                   <div
                     style={{
                       position: "relative",
-                      height: 360,
+                      height: isCompact ? "48svh" : 360,
+                      minHeight: isCompact ? 330 : undefined,
+                      maxHeight: isCompact ? 430 : undefined,
                       background:
                         "linear-gradient(180deg, #14314C 0%, #21496C 52%, #2B5E88 100%)",
                       borderBottom: "1px solid rgba(11,31,51,0.08)",
@@ -2094,16 +2098,32 @@ export default function ShopGalleryPage() {
 
                   <div
                     style={{
-                      padding: 14,
+                      position: "relative",
+                      padding: isCompact ? "18px 16px 20px" : 14,
                       display: "grid",
-                      gap: 10,
+                      gap: isCompact ? 13 : 10,
                       flex: 1,
                       background:
-                        "radial-gradient(circle at 0% 0%, rgba(11,99,209,0.055) 0%, transparent 34%), radial-gradient(circle at 100% 0%, rgba(212,175,55,0.05) 0%, transparent 30%), linear-gradient(180deg, rgba(249,252,255,0.98) 0%, rgba(234,243,251,0.94) 100%)",
+                        "radial-gradient(circle at 0% 0%, rgba(11,99,209,0.075) 0%, transparent 34%), radial-gradient(circle at 100% 0%, rgba(212,175,55,0.06) 0%, transparent 30%), radial-gradient(circle at 100% 100%, rgba(244,114,182,0.035) 0%, transparent 30%), linear-gradient(180deg, rgba(251,253,255,0.99) 0%, rgba(236,246,252,0.96) 100%)",
                       borderTop: "1px solid rgba(13,95,168,0.12)",
-                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.88)",
+                      boxShadow:
+                        "inset 0 1px 0 rgba(255,255,255,0.88), inset 0 12px 24px rgba(255,255,255,0.42)",
+                      alignContent: isCompact ? "space-evenly" : undefined,
                     }}
                   >
+                    <div
+                      aria-hidden="true"
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 18,
+                        right: 18,
+                        height: 2,
+                        borderRadius: 999,
+                        background:
+                          "linear-gradient(90deg, transparent 0%, rgba(13,95,168,0.22) 18%, rgba(212,175,55,0.18) 52%, rgba(13,95,168,0.16) 84%, transparent 100%)",
+                      }}
+                    />
                     <div
                       style={{
                         display: "flex",
@@ -2120,13 +2140,14 @@ export default function ShopGalleryPage() {
                       style={{
                         color: "#0B1F33",
                         fontWeight: 900,
-                        fontSize: 17,
+                        fontSize: isCompact ? 18 : 17,
                         lineHeight: 1.28,
                         display: "-webkit-box",
                         WebkitLineClamp: 2,
                         WebkitBoxOrient: "vertical" as any,
                         overflow: "hidden",
                         textAlign: "center",
+                        letterSpacing: isCompact ? 0.6 : undefined,
                       }}
                     >
                       {product.name}
@@ -2135,17 +2156,18 @@ export default function ShopGalleryPage() {
                     <div
                       style={{
                         color: "#4B6178",
-                        fontSize: 12.5,
-                        lineHeight: 1.55,
-                        minHeight: 42,
-                        padding: "10px 11px",
+                        fontSize: isCompact ? 13.5 : 12.5,
+                        lineHeight: isCompact ? 1.62 : 1.55,
+                        minHeight: isCompact ? 62 : 42,
+                        padding: isCompact ? "13px 14px" : "10px 11px",
                         borderRadius: 16,
                         border: "1px solid rgba(13,95,168,0.10)",
                         background:
-                          "linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(244,249,253,0.64) 100%)",
-                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.82)",
+                          "linear-gradient(180deg, rgba(255,255,255,0.86) 0%, rgba(244,249,253,0.72) 100%)",
+                        boxShadow:
+                          "0 10px 22px rgba(8,38,67,0.055), inset 0 1px 0 rgba(255,255,255,0.88)",
                         display: "-webkit-box",
-                        WebkitLineClamp: 2,
+                        WebkitLineClamp: isCompact ? 3 : 2,
                         WebkitBoxOrient: "vertical" as any,
                         overflow: "hidden",
                         textAlign: "center",
@@ -2163,6 +2185,7 @@ export default function ShopGalleryPage() {
                         gap: 10,
                         alignItems: "center",
                         flexWrap: "wrap",
+                        paddingTop: isCompact ? 2 : undefined,
                       }}
                     >
                       <span style={badge(true)}>{product.priceText}</span>

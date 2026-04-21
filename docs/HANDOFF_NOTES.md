@@ -4970,3 +4970,27 @@ GSN-branded invite composer and invite-entry continuity.
 - `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
   the normal Windows line-ending warning.
 - `npm run build` passed in `frontend`.
+
+### Shop Gallery mobile product panel sizing addendum
+
+- Updated `frontend/src/pages/ShopGalleryPage.tsx` only.
+- Adjusted the 12 public product display cards so each card behaves like a
+  phone-screen panel on compact/mobile screens:
+  - compact cards now use a viewport-based minimum height
+  - compact product image frames use a viewport-based height with safe min/max
+  - product cards have larger compact gaps so the next slot is less likely to
+    peek into the same phone view
+  - cards receive scroll snap alignment hints for cleaner per-product review
+- Polished the lower product information area:
+  - added a subtle institutional separator line between media and details
+  - improved the white/blue product detail wash
+  - gave the description panel more room and depth on compact screens
+  - kept price and share actions centered
+- No backend, auth, schema, payment, environment config, or Dashboard Market
+  Wisdom behavior changed.
+
+### Verification after mobile product panel sizing
+
+- `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
+  the normal Windows line-ending warning.
+- `npm run build` passed in `frontend`.
