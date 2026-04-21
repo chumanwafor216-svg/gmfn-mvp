@@ -5754,3 +5754,23 @@ GSN-branded invite composer and invite-entry continuity.
   Market Wisdom presentation and interaction model was not restyled or
   restructured. No backend, auth, schema, payment, ledger, route guard, or
   deployment config changed.
+
+### Benefit guide visual polish addendum
+
+- Updated the shared `frontend/src/components/DomainIntroToggle.tsx` component
+  used by the benefit-led "What this can do for you" guides.
+- This intentionally polishes the same guide surface across the four current
+  major benefit-story pages:
+  - `/app/dashboard`
+  - `/app/finance`
+  - `/app/trust`
+  - `/app/marketplace`
+- Visual-only improvements:
+  - richer institutional blue/gold/pink background treatment
+  - top accent strip for stronger branded character
+  - more premium open/close pill button
+  - numbered evidence-style bullet rows
+  - clearer wedge/note block treatment
+  - preserved tap containment and mobile-safe button behaviour
+- No page copy, route logic, backend, auth, schema, payment, ledger,
+  deployment config, route guard, or Dashboard Market Wisdom behavior changed.
