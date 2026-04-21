@@ -46,6 +46,69 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
+Marketplace mobile block containment and overflow cleanup.
+
+#### Routes/screens affected
+- `/app/marketplace`
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+
+#### Files in play
+- `frontend/src/pages/MarketplacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Phone screenshots showed Marketplace blocks were still reading as oversized
+  documents on mobile: one block could end while the next began half-visible,
+  long member identifiers overflowed horizontally, and raw outward URLs made
+  link cards stretch too far.
+- Marketplace heavy sections now default closed on fresh load: `Members and
+  shops`, `Marketplace-owned links`, `Money route detail`, and `Borrow / Lend /
+  Support` all start folded unless a guided action, hash handoff, or active
+  loan draft intentionally opens the needed section.
+- The Marketplace section-state local-storage key was moved from
+  `gmfn.marketplace.sections.v2.*` to `gmfn.marketplace.sections.v3.*` so older
+  phone sessions do not keep reopening the previously oversized sections.
+- The first Marketplace billboard is shorter on compact screens: the picture
+  frame, fallback initials, marketplace title, and description clamp were
+  reduced so the identity block is less likely to force the next block into a
+  half-visible state.
+- Raw invite/marketplace/shop URLs are no longer printed inside the mobile link
+  cards. Users now see compact `link ready` / `not ready yet` pills and still
+  use the existing `Copy Link` and `Open Link` actions.
+- Member rows now contain long names, emails, GSN IDs, and shop names inside the
+  card by using explicit overflow wrapping and compact status pills.
+- The always-visible explanation toggles for Marketplace-owned links and
+  Borrow / Lend / Support now appear only when their parent section is open, so
+  collapsed blocks stay compact.
+- No Dashboard, Dashboard Market Wisdom, auth, backend, schema, payment, or
+  deployment configuration was changed.
+
+#### Verification
+- `npm exec -- eslint src/pages/MarketplacePage.tsx` passed with no errors.
+  Existing warnings remain for hook dependencies already present in
+  `MarketplacePage.tsx`.
+- `git diff --check -- frontend/src/pages/MarketplacePage.tsx` passed with only
+  normal Windows line-ending warnings.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- Phone review is still needed after deploy to confirm each folded block now
+  feels self-contained, especially the first billboard, member rows, and
+  Marketplace-owned links.
+
+#### Next recommended step
+- Deploy/retest `/app/marketplace` on phone. Start from a normal refresh so the
+  new `v3` section-state key clears the previously expanded phone layout, then
+  open `Members and shops` and `Marketplace-owned links` one at a time.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
 Marketplace visual quieting and authority pass.
 
 #### Routes/screens affected

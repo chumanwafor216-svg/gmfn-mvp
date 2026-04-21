@@ -210,8 +210,8 @@ const IMAGE_FIELD_NAMES = [
 
 const DEFAULT_SECTION_STATE: SectionState = {
   money: false,
-  tools: true,
-  members: true,
+  tools: false,
+  members: false,
   support: false,
 };
 
@@ -1209,7 +1209,7 @@ function marketplaceProfileBackground(): string {
 function marketplaceProfileCardStyle(isCompact: boolean): React.CSSProperties {
   return {
     ...pageCard(marketplaceProfileBackground()),
-    minHeight: isCompact ? 430 : 390,
+    minHeight: isCompact ? 360 : 390,
     order: 1,
     position: "relative",
   };
@@ -1258,7 +1258,7 @@ function marketplacePictureFrameInnerStyle(
   isCompact: boolean
 ): React.CSSProperties {
   return {
-    minHeight: isCompact ? 318 : 380,
+    minHeight: isCompact ? 258 : 380,
     borderRadius: isCompact ? 18 : 22,
     border: "1px solid rgba(16,37,59,0.13)",
     background:
@@ -1277,7 +1277,7 @@ function marketplacePicturePlaceholderStyle(
   return {
     width: "100%",
     height: "100%",
-    minHeight: isCompact ? 318 : 380,
+    minHeight: isCompact ? 258 : 380,
     display: "grid",
     placeItems: "center",
     gap: isCompact ? 8 : 10,
@@ -1558,6 +1558,15 @@ function badge(primary = false): React.CSSProperties {
   return badgeStyle(primary);
 }
 
+function compactStatusPillStyle(primary = false): React.CSSProperties {
+  return {
+    ...badgeStyle(primary),
+    maxWidth: "100%",
+    overflowWrap: "anywhere",
+    wordBreak: "break-word",
+  };
+}
+
 function actionBtn(
   kind: "primary" | "secondary" | "soft" = "secondary",
   disabled = false
@@ -1719,7 +1728,7 @@ function helperText(): React.CSSProperties {
   return {
     color: "#5F7287",
     fontSize: 14,
-    lineHeight: 1.75,
+    lineHeight: 1.55,
   };
 }
 
@@ -1775,7 +1784,7 @@ function communityPictureStorageKey(communityId: number): string {
 }
 
 function communitySectionsStorageKey(communityId: number): string {
-  return `gmfn.marketplace.sections.v2.${communityId}`;
+  return `gmfn.marketplace.sections.v3.${communityId}`;
 }
 
 function withdrawalTaskStorageKey(clanId: number, gmfnId: string): string {
@@ -3087,7 +3096,7 @@ export default function MarketplacePage() {
                 style={{
                   width: "100%",
                   height: "100%",
-                  minHeight: isCompact ? 318 : 380,
+                  minHeight: isCompact ? 258 : 380,
                   objectFit: "cover",
                   objectPosition: "center 18%",
                   display: "block",
@@ -3100,7 +3109,7 @@ export default function MarketplacePage() {
                     />
                     <div
                       style={{
-                        fontSize: isCompact ? 36 : 46,
+                        fontSize: isCompact ? 28 : 46,
                         fontWeight: 950,
                         letterSpacing: 2,
                       }}
@@ -3118,7 +3127,7 @@ export default function MarketplacePage() {
                 />
                 <div
                   style={{
-                    fontSize: isCompact ? 38 : 52,
+                    fontSize: isCompact ? 30 : 52,
                     fontWeight: 950,
                     letterSpacing: 2,
                   }}
@@ -3216,10 +3225,12 @@ export default function MarketplacePage() {
 
               <div
                 style={{
-                  fontSize: isCompact ? 30 : 48,
+                  fontSize: isCompact ? 24 : 48,
                   fontWeight: 950,
                   lineHeight: 1.02,
                   maxWidth: 760,
+                  overflowWrap: "anywhere",
+                  wordBreak: "break-word",
                 }}
               >
                 {communityName(selectedCommunity)}
@@ -3232,7 +3243,7 @@ export default function MarketplacePage() {
                   fontWeight: 700,
                   color: "rgba(248,251,255,0.86)",
                   maxWidth: 800,
-                  maxHeight: isCompact ? 42 : 50,
+                  maxHeight: isCompact ? 34 : 50,
                   overflow: "hidden",
                 }}
               >
@@ -3264,6 +3275,9 @@ export default function MarketplacePage() {
                       fontSize: 11,
                       fontWeight: 900,
                       backdropFilter: "blur(10px)",
+                      maxWidth: "100%",
+                      overflowWrap: "anywhere",
+                      wordBreak: "break-word",
                     }}
                   >
                     {item}
@@ -3814,14 +3828,16 @@ export default function MarketplacePage() {
           </button>
         </div>
 
-        <ExplainToggle
-          label="What these links do"
-          what="This area keeps the outward links that belong to the selected marketplace, including join, marketplace-view, shop-view, and controlled Vault-style access."
-          why="Invite links, shop-facing links, and other outward paths should stay localized to this marketplace instead of becoming loose dashboard links."
-          next="Use the join, marketplace-view, or shop-view links when something must leave this community and still return to the same marketplace context."
-          tone="light"
-          style={{ marginTop: 12 }}
-        />
+        {sectionsOpen.tools ? (
+          <ExplainToggle
+            label="What these links do"
+            what="This area keeps the outward links that belong to the selected marketplace, including join, marketplace-view, shop-view, and controlled Vault-style access."
+            why="Invite links, shop-facing links, and other outward paths should stay localized to this marketplace instead of becoming loose dashboard links."
+            next="Use the join, marketplace-view, or shop-view links when something must leave this community and still return to the same marketplace context."
+            tone="light"
+            style={{ marginTop: 12 }}
+          />
+        ) : null}
 
         {sectionsOpen.tools ? (
           <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
@@ -3855,21 +3871,13 @@ export default function MarketplacePage() {
                 <div style={innerCard("#FFFFFF")}>
                   <div style={sectionLabel()}>Join this community</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    Use the marketplace join invite when someone should begin
-                    the request-to-join path for this community. Members still
-                    review and vote after the person returns.
+                    Create a join link for someone who should ask to enter this
+                    community.
                   </div>
-                  <div
-                    style={{
-                      marginTop: 10,
-                      color: "#0B1F33",
-                      fontWeight: 900,
-                      fontSize: 13,
-                      lineHeight: 1.5,
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {inviteLink || "Join invite link not ready yet."}
+                  <div style={{ marginTop: 10 }}>
+                    <span style={compactStatusPillStyle(Boolean(inviteLink))}>
+                      {inviteLink ? "Join link ready" : "Join link not ready yet"}
+                    </span>
                   </div>
                   <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
                     <button
@@ -3911,21 +3919,18 @@ export default function MarketplacePage() {
                 <div style={innerCard("#FFFFFF")}>
                   <div style={sectionLabel()}>View this marketplace</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    Share this when someone should see this community's outward
-                    marketplace face directly.
+                    Share the outward face of this selected marketplace.
                   </div>
-                  <div
-                    style={{
-                      marginTop: 10,
-                      color: "#0B1F33",
-                      fontWeight: 900,
-                      fontSize: 13,
-                      lineHeight: 1.5,
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {publicCommunityWorkspaceLink ||
-                      "Marketplace view link not ready yet."}
+                  <div style={{ marginTop: 10 }}>
+                    <span
+                      style={compactStatusPillStyle(
+                        Boolean(publicCommunityWorkspaceLink)
+                      )}
+                    >
+                      {publicCommunityWorkspaceLink
+                        ? "Marketplace view link ready"
+                        : "Marketplace view link not ready yet"}
+                    </span>
                   </div>
                   <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
                     <button
@@ -3963,20 +3968,14 @@ export default function MarketplacePage() {
                 <div style={innerCard("#FFFFFF")}>
                   <div style={sectionLabel()}>View this shop</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    Share this when someone should see the same one-shop
-                    storefront that follows you across marketplaces.
+                    Share the one-shop storefront that follows your GSN ID.
                   </div>
-                  <div
-                    style={{
-                      marginTop: 10,
-                      color: "#0B1F33",
-                      fontWeight: 900,
-                      fontSize: 13,
-                      lineHeight: 1.5,
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {publicShopViewLink || "Shop view link not ready yet."}
+                  <div style={{ marginTop: 10 }}>
+                    <span style={compactStatusPillStyle(Boolean(publicShopViewLink))}>
+                      {publicShopViewLink
+                        ? "Shop view link ready"
+                        : "Shop view link not ready yet"}
+                    </span>
                   </div>
                   <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
                     <button
@@ -4095,6 +4094,7 @@ export default function MarketplacePage() {
                     style={{
                       ...innerCard("#FCFEFF"),
                       padding: isCompact ? 12 : 14,
+                      overflow: "hidden",
                     }}
                   >
                     <div
@@ -4111,8 +4111,9 @@ export default function MarketplacePage() {
                         style={{
                           display: "flex",
                           gap: 12,
-                          alignItems: "center",
+                          alignItems: "flex-start",
                           minWidth: 0,
+                          width: "100%",
                         }}
                       >
                         <div
@@ -4140,6 +4141,7 @@ export default function MarketplacePage() {
                         <div
                           style={{
                             minWidth: 0,
+                            maxWidth: "100%",
                             display: "grid",
                             gap: 8,
                           }}
@@ -4156,18 +4158,21 @@ export default function MarketplacePage() {
                             <span
                               style={{
                                 color: "#0B1F33",
-                                fontSize: 17,
+                                fontSize: isCompact ? 15 : 17,
                                 fontWeight: 950,
                                 lineHeight: 1.25,
+                                maxWidth: "100%",
+                                overflowWrap: "anywhere",
+                                wordBreak: "break-word",
                               }}
                             >
                               {row.name}
                             </span>
-                            <span style={badge(true)}>
+                            <span style={compactStatusPillStyle(true)}>
                               GSN ID:{" "}
                               {row.gmfnId ? displayGsnLabel(row.gmfnId) : "Pending"}
                             </span>
-                            <span style={badge(Boolean(row.shopTo))}>
+                            <span style={compactStatusPillStyle(Boolean(row.shopTo))}>
                               Shop: {row.shopName}
                             </span>
                           </div>
@@ -4319,14 +4324,16 @@ export default function MarketplacePage() {
           </div>
         </div>
 
-        <ExplainToggle
-          label="What this support area does"
-          what="This is where marketplace users begin a support request, read whether guarantors are needed, and continue into the borrowing flow when the draft becomes active."
-          why="Support should feel connected to the current community and visible member context, not like a separate disconnected system."
-          next="Start the request here, check the draft and fit signals below, then move into readiness, suggestions, or workbench only when the guided flow tells you to continue."
-          tone="light"
-          style={{ marginTop: 12 }}
-        />
+        {sectionsOpen.support ? (
+          <ExplainToggle
+            label="What this support area does"
+            what="This is where marketplace users begin a support request, read whether guarantors are needed, and continue into the borrowing flow when the draft becomes active."
+            why="Support should feel connected to the current community and visible member context, not like a separate disconnected system."
+            next="Start the request here, check the draft and fit signals below, then move into readiness, suggestions, or workbench only when the guided flow tells you to continue."
+            tone="light"
+            style={{ marginTop: 12 }}
+          />
+        ) : null}
 
         {sectionsOpen.support ? (
           <div
