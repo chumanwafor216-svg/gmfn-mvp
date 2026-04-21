@@ -112,9 +112,15 @@ Safe classification note:
   `/trust/me/timeline`.
 - The Trust Timeline frontend now sends its JSON/PDF requests through the
   configured backend API base instead of same-origin static-site fetches.
-- Repayment, dispute, courier/shipment, merchant release, merchant verify, and
-  bulk guarantor routes should stay deliberate product work, not automatic
-  router mounts.
+- `merchant_verify.py` was inspected and should remain dormant for now:
+  - its frontend helper is not imported by active pages
+  - active TrustSlip verification is already mounted through `trust_slips.py`
+  - its public `GET /trust-slips/verify/{token}` route conflicts in shape with
+    mounted `GET /trust-slips/verify/{code}`
+  - it writes merchant verification TrustEvents, so it needs explicit product
+    approval before activation
+- Repayment, dispute, courier/shipment, merchant release, and bulk guarantor
+  routes should stay deliberate product work, not automatic router mounts.
 
 Known cleanup targets:
 

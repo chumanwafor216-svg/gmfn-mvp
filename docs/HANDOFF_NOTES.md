@@ -5996,3 +5996,31 @@ GSN-branded invite composer and invite-entry continuity.
   - `admin_trust_why`
 - No schemas, migrations, auth core, permissions core, payment, ledger, or
   TrustEvent scoring logic changed.
+
+### Merchant verification dormant-route inspection addendum
+
+- Continued the safe backend endpoint cleanup by inspecting the next candidate:
+  `gmfn_backend/app/api/routes/merchant_verify.py`.
+- No merchant verification route was mounted in this pass.
+- Confirmed `frontend/src/lib/merchantChannel.ts` references
+  `/trust-slips/me/merchant-link`, but repo search shows it is not imported by
+  active frontend pages.
+- Confirmed active TrustSlip verification is already mounted through
+  `gmfn_backend/app/api/routes/trust_slips.py`, including:
+  - `GET /trust-slips/verify/{code}`
+  - `GET /trust-slips/verify/{code}/page`
+  - `GET /trust-slips/verify/{code}/qr.png`
+  - `GET /trust-slips/{code}/share`
+- Confirmed `merchant_verify.py` defines `GET /trust-slips/verify/{token}`,
+  which overlaps the mounted TrustSlip verification route shape
+  `GET /trust-slips/verify/{code}`.
+- Confirmed `merchant_verify_service.py` can write append-only merchant
+  verification TrustEvents:
+  - `merchant.verify_link_created`
+  - `merchant.verify_token_used`
+- Decision: keep `merchant_verify.py` dormant until the merchant-token route
+  contract is deliberately redesigned, moved to a non-conflicting path, or
+  merged into mounted `trust_slips.py`.
+- This was documentation/control-layer work only. No backend routes, frontend
+  runtime code, schemas, migrations, auth, permissions, payment, ledger, or
+  TrustEvent scoring logic changed.

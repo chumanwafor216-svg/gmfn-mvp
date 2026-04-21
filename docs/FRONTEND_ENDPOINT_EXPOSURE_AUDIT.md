@@ -70,6 +70,15 @@ Confirmed visible capabilities:
 - print-ready trust surfaces
 - merchant verification status visibility
 
+Current merchant-verification boundary:
+- active TrustSlip verification is surfaced through mounted TrustSlip routes
+  such as `/trust-slips/verify/{code}` and `/trust-slips/verify/{code}/page`.
+- `frontend/src/lib/merchantChannel.ts` exists but is not currently imported by
+  active pages.
+- the dormant backend `merchant_verify.py` route file should not be mounted
+  automatically because its public `/trust-slips/verify/{token}` path overlaps
+  the mounted TrustSlip verification path shape.
+
 Confirmed route surfaces:
 - `/app/trust-slip`
 - `/app/trust`

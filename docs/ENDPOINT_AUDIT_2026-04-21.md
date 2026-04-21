@@ -148,10 +148,12 @@ Post-audit classification:
   classification for the remaining dormant files.
 - `trust_timeline.py` has now been mounted locally and the active Trust Timeline
   frontend now routes JSON/PDF requests through the configured backend API base.
-- The next endpoint candidate to inspect is `merchant_verify.py`, because
-  `frontend/src/lib/merchantChannel.ts` references
-  `/trust-slips/me/merchant-link`, but merchant verification overlaps with
-  public TrustSlip verification rules and should not be mounted blindly.
+- `merchant_verify.py` was inspected after classification. It should remain
+  dormant for now because `frontend/src/lib/merchantChannel.ts` is not imported
+  by active pages, active TrustSlip verification is already mounted through
+  `trust_slips.py`, and `merchant_verify.py` defines a conflicting
+  `GET /trust-slips/verify/{token}` route shape that overlaps
+  `GET /trust-slips/verify/{code}`.
 
 ### 5. Dormant frontend files still contain old direct `/api` calls
 
@@ -192,3 +194,7 @@ still intentionally reachable. Do not delete them only because they look unused.
     `system_diagnostics_router`.
   - `/trust/me/timeline` and `/trust/timeline/{user_id}` are now present in
     local OpenAPI after mounting `trust_timeline_router`.
+- Merchant verification follow-up:
+  - no merchant verification routes were mounted during this pass.
+  - active TrustSlip verification remains owned by mounted `trust_slips.py`.
+  - `merchant_verify.py` should be redesigned or merged before activation.
