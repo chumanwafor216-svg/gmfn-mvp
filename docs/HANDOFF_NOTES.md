@@ -74,6 +74,10 @@ Vault access backend contract and Shop Control wiring.
 - Added a route-local Vault access router under `/marketplace`.
 - Added an idempotent migration for `vault_access_links`; it skips creation if
   the table already exists and uses PostgreSQL-safe boolean defaults.
+- After Render failed the first `5c392d1` deploy during pre-deploy, the Vault
+  migration was made more defensive: it now creates the Vault table without
+  requiring `marketplace_shops` to already exist, and only adds the shop foreign
+  key when that referenced table is present.
 - `GET /marketplace/vault-access/{token}` resolves a Vault view without
   incrementing the view counter.
 - `POST /marketplace/vault-access/{token}/open` records the open/view by using
@@ -88,6 +92,8 @@ Vault access backend contract and Shop Control wiring.
 #### Verification
 - `python -m compileall app\api\router.py app\api\routes\vault_access.py app\services\vault_access_service.py` passed.
 - `python -m alembic upgrade head` passed locally with `GMFN_DEV_MODE=1`.
+- A fresh temporary SQLite migration from empty database to head passed and
+  reached `20260421_add_vault_access_links`.
 - Local OpenAPI now includes all six Vault access operations; local path count
   is `217`.
 - `npm exec -- eslint src/pages/ShopControlPage.tsx` produced no errors; the
@@ -95,8 +101,8 @@ Vault access backend contract and Shop Control wiring.
 - `npm run build` passed in `frontend`.
 
 #### Open risks or unknowns
-- Render still needs the backend redeploy before live OpenAPI shows the Vault
-  endpoints.
+- Render still needs a successful backend redeploy before live OpenAPI shows the
+  Vault endpoints.
 - Phone testing is needed for the new Shop Control Vault link buttons.
 - Duplicate OpenAPI operation ID warnings remain from older trust/admin routes.
 

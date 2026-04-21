@@ -53,7 +53,9 @@ Definition of done:
 
 ## Phase 2 - Vault Access Backend Contract
 
-Status: corrected locally, pending live Render redeploy and phone testing.
+Status: corrected locally, pending successful live Render redeploy and phone
+testing. The first live Vault deploy attempt failed during pre-deploy, so the
+Vault migration was made defensive for the next deploy.
 
 Goal: turn Vault from a frontend/service idea into a mounted backend product
 flow.
@@ -105,6 +107,14 @@ Implemented files:
 - `gmfn_backend/app/api/router.py`
 - `gmfn_backend/alembic/versions/20260421_add_vault_access_links.py`
 - `frontend/src/pages/ShopControlPage.tsx`
+
+Migration safety note:
+
+- `20260421_add_vault_access_links.py` is idempotent.
+- It uses PostgreSQL-safe boolean defaults.
+- It creates `vault_access_links` even if Render pre-deploy has not yet created
+  `marketplace_shops`, then adds the shop foreign key only when the referenced
+  table is present.
 
 Remaining Phase 2 check:
 

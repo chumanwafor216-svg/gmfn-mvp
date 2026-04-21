@@ -19,7 +19,8 @@ This document is a testing-control note. It does not redefine product behavior.
   access locally. Latest local OpenAPI path count after the Vault correction is
   `217`.
 - Live Render should be rechecked after the backend redeploy containing these
-  corrections.
+  corrections. The first Vault deploy attempt (`5c392d1`) failed during
+  pre-deploy, so the Vault migration was made defensive before the next deploy.
 - Entry routes are now present on live Render:
   - `/entry/phone/start`
   - `/entry/bank-details`
@@ -82,9 +83,12 @@ and the latest local code now mounts:
 - `GET /marketplace/vault-access/{token}`
 - `POST /marketplace/vault-access/{token}/open`
 
-Correction status: corrected locally and pending live Render redeploy. Shop
-Control now uses the shared Vault access helpers instead of the stale
-`/api/vault-access/links` path.
+Correction status: corrected locally and pending a successful live Render
+redeploy. Shop Control now uses the shared Vault access helpers instead of the
+stale `/api/vault-access/links` path. The Vault migration is defensive: it does
+not require `marketplace_shops` to exist before pre-deploy can create the
+`vault_access_links` table, and it adds the shop foreign key only when the
+referenced table is present.
 
 Impact before deploy: live Vault link creation/open tracking can still fail
 until Render runs the new backend code and migration.
