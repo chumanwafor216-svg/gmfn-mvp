@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import DomainIntroToggle from "../components/DomainIntroToggle";
 import ExplainToggle from "../components/ExplainToggle";
 import GSNBrandMark from "../components/GSNBrandMark";
+import SystemPictureFrame from "../components/SystemPictureFrame";
 import { navigateWithOrigin } from "../lib/nav";
 import { useLocation, useNavigate } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
@@ -41,14 +42,18 @@ type CommunityRow = {
   description?: string | null;
   marketplace_name?: string | null;
   marketplace_description?: string | null;
+  clan_name?: string | null;
   invite_code?: string | null;
   invite_link?: string | null;
   invite_url?: string | null;
+  community_global_id?: string | null;
+  global_id?: string | null;
   community_id?: string | null;
   community_code?: string | null;
   marketplace_id?: string | null;
   gmfn_id?: string | null;
   clan_code?: string | null;
+  code?: string | null;
   image_url?: string | null;
   profile_image_url?: string | null;
   community_image_url?: string | null;
@@ -60,6 +65,17 @@ type CommunityRow = {
   trust_class?: string | null;
   community_trust_band?: string | null;
   reputation_band?: string | null;
+  community_cci_score?: string | null;
+  community_cci_band?: string | null;
+  cci_score?: string | null;
+  cci_band?: string | null;
+  community_finance_health?: string | null;
+  finance_health?: string | null;
+  finance_band?: string | null;
+  member_count?: number | null;
+  members_count?: number | null;
+  community_standing?: any;
+  community_strength?: string | null;
   status?: string | null;
   role?: string | null;
   member_role?: string | null;
@@ -209,6 +225,11 @@ function firstTruthy(...values: any[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function displayGsnLabel(value: any): string {
+  const text = safeStr(value);
+  return text.replace(/^GMF[MN]/i, "GSN");
 }
 
 function firstDefined(...values: any[]): any {
@@ -584,8 +605,15 @@ function communityName(row: CommunityRow | null | undefined): string {
   return (
     firstTruthy(
       row?.marketplace_name,
+      row?.marketplace?.marketplace_name,
+      row?.community?.marketplace_name,
+      row?.clan?.marketplace_name,
       row?.display_name,
       row?.name,
+      row?.clan_name,
+      row?.community?.display_name,
+      row?.community?.name,
+      row?.clan?.name,
       row?.title
     ) || "Selected community"
   );
@@ -594,10 +622,29 @@ function communityDescription(row: CommunityRow | null | undefined): string {
   return (
     firstTruthy(
       row?.marketplace_description,
+      row?.marketplace?.marketplace_description,
+      row?.community?.marketplace_description,
+      row?.clan?.marketplace_description,
       row?.description,
+      row?.community?.description,
+      row?.clan?.description,
       "Marketplace home for your current community."
     )
   );
+}
+
+function communityInitials(row: CommunityRow | null | undefined): string {
+  const words = communityName(row)
+    .split(/\s+/)
+    .map((word) => word.replace(/[^A-Za-z0-9]/g, ""))
+    .filter(Boolean);
+
+  const initials = words
+    .slice(0, 3)
+    .map((word) => word[0]?.toUpperCase())
+    .join("");
+
+  return initials || "GSN";
 }
 
 function normalizeMarketplaceShopVisibility(raw: any): ShopVisibilityMode {
@@ -675,16 +722,37 @@ function normalizeMarketplaceShop(raw: any): MarketplaceShop | null {
 }
 
 function communityIdentity(row: CommunityRow | null | undefined): string {
-  return (
-    firstTruthy(
-      row?.community_code,
-      row?.community?.community_code,
-      row?.profile?.community_code,
-      row?.marketplace?.community_code,
-      row?.clan?.community_code,
-      row?.meta?.community_code
-    ) || "Pending"
+  const raw = firstTruthy(
+    row?.community_global_id,
+    row?.global_id,
+    row?.community_code,
+    row?.community_id,
+    row?.marketplace_id,
+    row?.gmfn_id,
+    row?.clan_code,
+    row?.code,
+    row?.community?.community_global_id,
+    row?.community?.global_id,
+    row?.community?.community_code,
+    row?.community?.community_id,
+    row?.profile?.community_global_id,
+    row?.profile?.global_id,
+    row?.profile?.community_code,
+    row?.marketplace?.community_global_id,
+    row?.marketplace?.global_id,
+    row?.marketplace?.community_code,
+    row?.marketplace?.marketplace_id,
+    row?.clan?.community_global_id,
+    row?.clan?.global_id,
+    row?.clan?.community_code,
+    row?.clan?.clan_code,
+    row?.meta?.community_global_id,
+    row?.meta?.global_id,
+    row?.meta?.community_code,
+    getRowId(row) ? `COMM-${getRowId(row)}` : ""
   );
+
+  return raw ? displayGsnLabel(raw) : "Pending";
 }
 
 function communityTrustLabel(row: CommunityRow | null | undefined): string {
@@ -697,7 +765,70 @@ function communityTrustLabel(row: CommunityRow | null | undefined): string {
       row?.status,
       row?.community?.community_trust_band,
       row?.community?.trust_band,
+      row?.marketplace?.community_trust_band,
+      row?.marketplace?.trust_band,
+      row?.clan?.community_trust_band,
+      row?.clan?.trust_band,
+      row?.community_standing?.community_trust_band,
+      row?.community_standing?.trust_band,
       "Visible community"
+    )
+  );
+}
+
+function communityCciLabel(row: CommunityRow | null | undefined): string {
+  const band = firstTruthy(
+    row?.community_cci_band,
+    row?.community_standing?.community_cci_band,
+    row?.community_standing?.cci_band,
+    row?.community?.community_cci_band,
+    row?.community?.cci_band,
+    row?.marketplace?.community_cci_band,
+    row?.marketplace?.cci_band,
+    row?.clan?.community_cci_band,
+    row?.clan?.cci_band,
+    row?.meta?.community_cci_band,
+    row?.meta?.cci_band,
+    row?.cci_band
+  );
+  const score = firstTruthy(
+    row?.community_cci_score,
+    row?.community_standing?.community_cci_score,
+    row?.community_standing?.cci_score,
+    row?.community?.community_cci_score,
+    row?.community?.cci_score,
+    row?.marketplace?.community_cci_score,
+    row?.marketplace?.cci_score,
+    row?.clan?.community_cci_score,
+    row?.clan?.cci_score,
+    row?.meta?.community_cci_score,
+    row?.meta?.cci_score,
+    row?.cci_score
+  );
+
+  if (band && score) return `${band} / ${score}`;
+  return band || score || "Community CCI preparing";
+}
+
+function communityFinanceLabel(row: CommunityRow | null | undefined): string {
+  return (
+    firstTruthy(
+      row?.community_finance_health,
+      row?.finance_health,
+      row?.finance_band,
+      row?.community_standing?.community_finance_health,
+      row?.community_standing?.finance_health,
+      row?.community_standing?.finance_band,
+      row?.community?.community_finance_health,
+      row?.community?.finance_health,
+      row?.community?.finance_band,
+      row?.marketplace?.community_finance_health,
+      row?.marketplace?.finance_health,
+      row?.marketplace?.finance_band,
+      row?.clan?.community_finance_health,
+      row?.clan?.finance_health,
+      row?.clan?.finance_band,
+      "Marketplace finance preparing"
     )
   );
 }
@@ -953,6 +1084,109 @@ function marketplaceProfileStatStyle(): React.CSSProperties {
     padding: 14,
     minHeight: 82,
     boxShadow: "0 12px 24px rgba(10,24,49,0.06)",
+  };
+}
+
+function marketplacePictureFrameOuterStyle(
+  isCompact: boolean
+): React.CSSProperties {
+  return {
+    width: "100%",
+    maxWidth: isCompact ? "100%" : 352,
+    margin: "0 auto",
+    padding: isCompact ? 7 : 8,
+    borderRadius: isCompact ? 24 : 28,
+    border: "1px solid rgba(184,137,45,0.24)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(232,243,255,0.86) 46%, rgba(211,226,242,0.92) 100%)",
+    boxShadow:
+      "0 24px 44px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.92)",
+  };
+}
+
+function marketplacePictureFrameInnerStyle(
+  isCompact: boolean
+): React.CSSProperties {
+  return {
+    minHeight: isCompact ? 248 : 312,
+    borderRadius: isCompact ? 18 : 22,
+    border: "1px solid rgba(16,37,59,0.13)",
+    background:
+      "radial-gradient(circle at 18% 10%, rgba(11,99,209,0.22) 0%, rgba(11,99,209,0.00) 42%), radial-gradient(circle at 86% 18%, rgba(244,114,182,0.12) 0%, rgba(244,114,182,0.00) 30%), linear-gradient(180deg, #F9FCFF 0%, #EAF3FC 100%)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -22px 38px rgba(10,24,49,0.06)",
+  };
+}
+
+function marketplacePicturePlaceholderStyle(
+  isCompact: boolean
+): React.CSSProperties {
+  return {
+    width: "100%",
+    height: "100%",
+    minHeight: isCompact ? 248 : 312,
+    display: "grid",
+    placeItems: "center",
+    gap: isCompact ? 8 : 10,
+    padding: isCompact ? 18 : 22,
+    textAlign: "center",
+    color: "#12324F",
+    background:
+      "radial-gradient(circle at 50% 18%, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0.00) 34%), linear-gradient(180deg, rgba(255,255,255,0.42) 0%, rgba(234,243,252,0.36) 100%)",
+  };
+}
+
+function marketplaceIdentityPanelStyle(
+  isCompact: boolean
+): React.CSSProperties {
+  return {
+    borderRadius: isCompact ? 22 : 26,
+    border: "1px solid rgba(16,37,59,0.10)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(247,251,255,0.90) 56%, rgba(238,246,255,0.88) 100%)",
+    padding: isCompact ? 16 : 20,
+    boxShadow:
+      "0 18px 34px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.92)",
+  };
+}
+
+function marketplacePictureHandleStyle(
+  side: "left" | "right" | "full",
+  disabled = false
+): React.CSSProperties {
+  return {
+    position: "absolute",
+    left: side === "right" ? "auto" : 12,
+    right: side === "left" ? "auto" : 12,
+    bottom: 12,
+    zIndex: 3,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 34,
+    maxWidth: side === "full" ? "calc(100% - 24px)" : "calc(50% - 16px)",
+    padding: "7px 12px",
+    borderRadius: 999,
+    border: "1px solid rgba(255,255,255,0.78)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(238,246,255,0.92) 100%)",
+    color: disabled ? "#94A3B8" : "#12324F",
+    boxShadow:
+      "0 14px 24px rgba(10,24,49,0.18), inset 0 1px 0 rgba(255,255,255,0.96)",
+    fontSize: 12,
+    fontWeight: 900,
+    lineHeight: 1,
+    textAlign: "center",
+    textDecoration: "none",
+    cursor: disabled ? "not-allowed" : "pointer",
+    whiteSpace: "nowrap",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    opacity: disabled ? 0.78 : 1,
   };
 }
 
@@ -1849,31 +2083,6 @@ export default function MarketplacePage() {
     );
   }, [me]);
 
-  const gmfnId = useMemo(() => {
-    return firstTruthy(me?.gmfn_id, "Pending");
-  }, [me]);
-
-  const cciLabel = useMemo(() => {
-    const rawScore = firstTruthy(
-      me?.cross_community_integrity_score,
-      me?.cross_clan_integrity_score,
-      me?.cross_client_integrity_score,
-      me?.cci_score
-    );
-    const rawBand = firstTruthy(
-      me?.cross_community_integrity_class,
-      me?.cross_clan_integrity_class,
-      me?.cross_client_integrity_class,
-      me?.cross_community_integrity_band,
-      me?.cross_clan_integrity_band,
-      me?.cross_client_integrity_band,
-      me?.cci_band
-    );
-
-    if (rawBand && rawScore) return `${rawBand} / ${rawScore}`;
-    return rawBand || rawScore || "Preparing";
-  }, [me]);
-
   const poolAmount = getPoolAmountText(poolInfo);
   const poolCurrency = getPoolCurrency(poolInfo);
   const visiblePoolAmount = safeStr(moneySurface?.poolAmount || poolAmount || "—");
@@ -2495,116 +2704,122 @@ export default function MarketplacePage() {
         style={{ order: 0 }}
       />
 
-      <section
-        style={marketplaceProfileCardStyle(isCompact)}
-      >
-        {hasCommunityPicture ? (
-          <div
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              inset: 0,
-              zIndex: 0,
-              opacity: 0.16,
-            }}
-          >
-            <AuthResolvedImage
-              candidates={communityImageCandidates}
-              alt={communityName(selectedCommunity)}
-              clanId={activeCommunityId}
-              refreshSeed={communityPictureRefreshSeed}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                objectPosition: "center 18%",
-                display: "block",
-              }}
-              fallback={null}
-            />
-          </div>
-        ) : null}
+      <section style={marketplaceProfileCardStyle(isCompact)}>
+        <div aria-hidden="true" style={marketplaceProfileScrimStyle()} />
 
         <div
-          aria-hidden="true"
-          style={marketplaceProfileScrimStyle()}
-        />
-
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <div style={{ ...sectionLabel(), color: "#315873" }}>
-            Marketplace profile & member standing
+          style={{
+            position: "relative",
+            zIndex: 1,
+            display: "grid",
+            gap: isCompact ? 14 : 18,
+          }}
+        >
+          <div
+            style={{
+              ...sectionLabel(),
+              color: "#315873",
+              textAlign: "center",
+            }}
+          >
+            Marketplace identity
           </div>
 
           <div
             style={{
-              marginTop: 14,
               display: "grid",
               gridTemplateColumns: isCompact
                 ? "1fr"
-                : "minmax(0, 1.15fr) minmax(320px, 0.85fr)",
-              gap: 18,
-              alignItems: "start",
+                : "minmax(260px, 0.82fr) minmax(0, 1.18fr)",
+              gap: isCompact ? 14 : 18,
+              alignItems: "stretch",
             }}
           >
-            <div>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontSize: isCompact ? 32 : 46,
-                  fontWeight: 900,
-                  lineHeight: 1.04,
-                  maxWidth: 780,
-                }}
+            <div
+              style={{
+                display: "grid",
+                gap: 10,
+                alignContent: "start",
+              }}
+            >
+              <SystemPictureFrame
+                outerStyle={marketplacePictureFrameOuterStyle(isCompact)}
+                innerStyle={marketplacePictureFrameInnerStyle(isCompact)}
               >
-                {communityName(selectedCommunity)}
-              </div>
+                {hasCommunityPicture ? (
+                  <AuthResolvedImage
+                    candidates={communityImageCandidates}
+                    alt={communityName(selectedCommunity)}
+                    clanId={activeCommunityId}
+                    refreshSeed={communityPictureRefreshSeed}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      minHeight: isCompact ? 248 : 312,
+                      objectFit: "cover",
+                      objectPosition: "center 18%",
+                      display: "block",
+                    }}
+                    fallback={
+                      <div style={marketplacePicturePlaceholderStyle(isCompact)}>
+                        <GSNBrandMark width={isCompact ? 48 : 60} height={isCompact ? 58 : 72} />
+                        <div
+                          style={{
+                            fontSize: isCompact ? 34 : 42,
+                            fontWeight: 950,
+                            letterSpacing: 2,
+                          }}
+                        >
+                          {communityInitials(selectedCommunity)}
+                        </div>
+                        <div style={{ fontSize: 12, fontWeight: 900 }}>
+                          Marketplace picture frame
+                        </div>
+                      </div>
+                    }
+                  />
+                ) : (
+                  <div style={marketplacePicturePlaceholderStyle(isCompact)}>
+                    <GSNBrandMark width={isCompact ? 56 : 68} height={isCompact ? 68 : 82} />
+                    <div
+                      style={{
+                        fontSize: isCompact ? 36 : 44,
+                        fontWeight: 950,
+                        letterSpacing: 2,
+                      }}
+                    >
+                      {communityInitials(selectedCommunity)}
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 900 }}>
+                      Marketplace picture frame
+                    </div>
+                    <div
+                      style={{
+                        color: "#5F7287",
+                        fontSize: 12,
+                        fontWeight: 800,
+                        lineHeight: 1.5,
+                        maxWidth: 220,
+                      }}
+                    >
+                      Upload the official community picture when it is ready.
+                    </div>
+                  </div>
+                )}
 
-              <div
-                style={{
-                  marginTop: 12,
-                  ...helperText(),
-                  color: "#50667A",
-                  maxWidth: 760,
-                }}
-              >
-                {communityDescription(selectedCommunity)}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 16,
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                }}
-              >
-                <span style={badge(true)}>One official board</span>
-                <span style={badge(false)}>
-                  Backdrop: {hasCommunityPicture ? "Custom picture" : "GSN default"}
-                </span>
-                <span style={badge(false)}>Local marketplace standing</span>
-              </div>
-
-              <div
-                style={{
-                  marginTop: 16,
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
-                }}
-              >
                 <label
+                  onClick={(event) => event.stopPropagation()}
                   onPointerDown={consumeMarketplacePointerEvent}
-                  style={{
-                    ...actionBtn("soft", uploadingCommunityPicture),
-                    cursor: uploadingCommunityPicture ? "not-allowed" : "pointer",
-                  }}
+                  style={marketplacePictureHandleStyle(
+                    hasCommunityPicture ? "right" : "full",
+                    uploadingCommunityPicture
+                  )}
                 >
                   {uploadingCommunityPicture
-                    ? "Updating backdrop..."
+                    ? "Updating..."
                     : hasCommunityPicture
-                      ? "Change backdrop"
-                      : "Add backdrop"}
+                      ? "Change"
+                      : "Add picture"}
                   <input
                     key={communityPictureFileInputKey}
                     type="file"
@@ -2623,66 +2838,136 @@ export default function MarketplacePage() {
                     onPointerDown={consumeMarketplacePointerEvent}
                     onClick={() => void handleRemoveCommunityPicture()}
                     disabled={removingCommunityPicture}
-                    style={actionBtn("soft", removingCommunityPicture)}
+                    style={marketplacePictureHandleStyle(
+                      "left",
+                      removingCommunityPicture
+                    )}
                   >
-                    {removingCommunityPicture ? "Removing..." : "Use GSN default"}
+                    {removingCommunityPicture ? "Removing..." : "Remove"}
                   </button>
                 ) : null}
+              </SystemPictureFrame>
+
+              <div
+                style={{
+                  ...helperText(),
+                  fontSize: 12,
+                  lineHeight: 1.5,
+                  textAlign: "center",
+                  color: "#5F7287",
+                }}
+              >
+                This picture belongs to the selected marketplace. If no picture is
+                uploaded, GSN keeps the system frame in place.
               </div>
             </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr 1fr"
-                  : "repeat(2, minmax(0, 1fr))",
-                gap: 10,
-              }}
-            >
-              {[
-                ["Community ID", communityIdentity(selectedCommunity)],
-                ["GSN ID", gmfnId],
-                ["Current member", memberName],
-                ["Role here", communityRole(selectedCommunity) || "Member"],
-                ["Trust record", communityTrustLabel(selectedCommunity)],
-                ["CCI record", cciLabel],
-                ["Local pool", `${visiblePoolAmount} ${visiblePoolCurrency}`],
-                [
-                  "Money In rail",
-                  communitySettlementReady ? "Ready" : "Awaiting issue",
-                ],
-                ["Money Out rail", payoutReady ? "Ready" : "Awaiting issue"],
-              ].map(([label, value]) => (
-                <div
-                  key={label}
-                  style={marketplaceProfileStatStyle()}
-                >
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: "#315873",
-                      fontWeight: 900,
-                      letterSpacing: 0.28,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {label}
+            <div style={marketplaceIdentityPanelStyle(isCompact)}>
+              <div
+                style={{
+                  ...sectionLabel(),
+                  color: "#315873",
+                  textAlign: isCompact ? "center" : "left",
+                }}
+              >
+                Official marketplace
+              </div>
+
+              <div
+                style={{
+                  marginTop: 10,
+                  color: "#0B1F33",
+                  fontSize: isCompact ? 30 : 42,
+                  fontWeight: 950,
+                  lineHeight: 1.04,
+                  textAlign: isCompact ? "center" : "left",
+                }}
+              >
+                {communityName(selectedCommunity)}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 12,
+                  ...helperText(),
+                  color: "#50667A",
+                  textAlign: isCompact ? "center" : "left",
+                  maxWidth: 760,
+                }}
+              >
+                {communityDescription(selectedCommunity)}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 16,
+                  display: "flex",
+                  justifyContent: isCompact ? "center" : "flex-start",
+                  gap: 8,
+                  flexWrap: "wrap",
+                }}
+              >
+                <span style={badge(true)}>Group identity</span>
+                <span style={badge(false)}>
+                  Picture: {hasCommunityPicture ? "Custom" : "GSN frame"}
+                </span>
+                <span style={badge(false)}>
+                  Role: {communityRole(selectedCommunity) || "Member"}
+                </span>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 16,
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "1fr"
+                    : "repeat(2, minmax(0, 1fr))",
+                  gap: 10,
+                }}
+              >
+                {[
+                  ["Marketplace ID", communityIdentity(selectedCommunity)],
+                  ["Marketplace name", communityName(selectedCommunity)],
+                  ["Group trust", communityTrustLabel(selectedCommunity)],
+                  ["Group CCI", communityCciLabel(selectedCommunity)],
+                  ["Group finance", communityFinanceLabel(selectedCommunity)],
+                  ["Local pool", `${visiblePoolAmount} ${visiblePoolCurrency}`],
+                  [
+                    "Money In rail",
+                    communitySettlementReady ? "Ready" : "Awaiting issue",
+                  ],
+                  ["Money Out rail", payoutReady ? "Ready" : "Awaiting issue"],
+                ].map(([label, value]) => (
+                  <div key={label} style={marketplaceProfileStatStyle()}>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "#315873",
+                        fontWeight: 900,
+                        letterSpacing: 0.28,
+                        textTransform: "uppercase",
+                        textAlign: isCompact ? "center" : "left",
+                      }}
+                    >
+                      {label}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#0B1F33",
+                        fontWeight: 900,
+                        fontSize: 15,
+                        lineHeight: 1.35,
+                        wordBreak: "break-word",
+                        textAlign: isCompact ? "center" : "left",
+                      }}
+                    >
+                      {value}
+                    </div>
                   </div>
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "#0B1F33",
-                      fontWeight: 900,
-                      fontSize: 15,
-                      lineHeight: 1.35,
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {value}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </div>

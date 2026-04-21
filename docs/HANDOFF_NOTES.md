@@ -46,6 +46,64 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
+Marketplace first-block identity frame.
+
+#### Routes/screens affected
+- `/app/marketplace`
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+- frontend still composes the first Marketplace block from existing selected
+  community, member, community-money, and picture-upload truth
+
+#### Files in play
+- `frontend/src/pages/MarketplacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The Marketplace top block is now one joined identity surface rather than a
+  faded full-card backdrop.
+- The left partition is a real system picture frame using
+  `SystemPictureFrame`, with existing upload/change/remove handlers for the
+  selected community picture.
+- If no community picture exists, the frame shows a GSN default picture-frame
+  placeholder using the marketplace/community initials.
+- The right partition carries the selected marketplace/community identity:
+  marketplace name, marketplace ID, group trust, group CCI slot, group finance
+  slot, local pool, and Money In / Money Out rail readiness.
+- The top identity block avoids making the community profile look like a
+  personal DP. Personal/member actions remain lower on the page.
+- `Group CCI` and `Group finance` prefer community/marketplace/clan fields when
+  the backend provides them and otherwise display an honest preparing state.
+- The second block remains `Marketplace shortcuts`, preserving the canonical
+  Marketplace page order.
+- No Dashboard, Dashboard Market Wisdom, auth, backend, schema, payment, or
+  deployment configuration was changed.
+
+#### Verification
+- `npm exec -- eslint src/pages/MarketplacePage.tsx` passed with no errors.
+  Existing warnings remain for hook dependencies already present in
+  `MarketplacePage.tsx`.
+- `git diff --check -- frontend/src/pages/MarketplacePage.tsx` passed.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- Phone visual review is needed after deploy to confirm the frame height, upload
+  handles, and identity partitions feel balanced on the target phone.
+- Current backend `/clans/me` does not reliably expose finished group CCI or
+  group finance fields in the Marketplace payload on this branch, so those slots
+  may show preparing until backend truth is expanded again.
+
+#### Next recommended step
+- Deploy/retest `/app/marketplace` on phone. If accepted, reuse this same
+  marketplace identity-frame method for other community-owned identity surfaces.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
 Marketplace page re-engineering pass after Community Home visual freeze.
 
 #### Routes/screens affected
