@@ -46,6 +46,53 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
+Community Home visual freeze and Marketplace background alignment.
+
+#### Routes/screens affected
+- `/app/community`
+- `/app/marketplace`
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+
+#### Files in play
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `frontend/src/pages/MarketplacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The accepted Community Home mobile arrangement was committed as
+  `5584678 style: freeze community home aura`.
+- Community Home now acts as the frozen visual reference for this stage: calm
+  blue/white institutional background, subtle pink/gold wash, GSN watermark,
+  reduced-motion-safe aura, and route-local styling.
+- Marketplace was updated only at the outer page/shell background layer to use
+  the same Community Home shell, aura, and watermark treatment.
+- Marketplace route purpose, business logic, action buttons, section order,
+  backend calls, selected-community context, and Marketplace profile card were
+  not intentionally changed.
+
+#### Verification
+- `npm exec -- eslint src/pages/MarketplacePage.tsx` passed with no errors.
+  Existing warnings remain for hook dependencies already present in
+  `MarketplacePage.tsx`.
+- `git diff --check -- frontend/src/pages/MarketplacePage.tsx` passed.
+
+#### Open risks or unknowns
+- Phone visual testing is still required after the next frontend deploy to
+  confirm Marketplace now feels aligned with Community Home and that the
+  background motion is comfortable on the device.
+
+#### Next recommended step
+- Run the frontend build, commit the Marketplace background alignment, deploy,
+  then phone-test `/app/community` and `/app/marketplace` side by side.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
 Safe recovery branch for Community Home / Shop Control mobile tap recovery.
 
 #### Branches and checkpoints

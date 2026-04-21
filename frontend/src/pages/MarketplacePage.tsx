@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import DomainIntroToggle from "../components/DomainIntroToggle";
 import ExplainToggle from "../components/ExplainToggle";
+import GSNBrandMark from "../components/GSNBrandMark";
 import { navigateWithOrigin } from "../lib/nav";
 import { useLocation, useNavigate } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
@@ -918,6 +919,121 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
       "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
     overflow: "hidden",
   };
+}
+
+function marketplaceShellStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    position: "relative",
+    maxWidth: 1180,
+    margin: "0 auto",
+    padding: isCompact ? 12 : 22,
+    paddingBottom: isCompact ? 28 : 44,
+    display: "grid",
+    gap: isCompact ? 14 : 18,
+    borderRadius: isCompact ? 24 : 34,
+    border: "1px solid rgba(16,37,59,0.10)",
+    isolation: "isolate",
+    background:
+      "radial-gradient(circle at 10% 0%, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0.00) 32%), radial-gradient(circle at 88% 7%, rgba(244,114,182,0.09) 0%, rgba(244,114,182,0.00) 24%), radial-gradient(circle at 92% 14%, rgba(243,208,106,0.09) 0%, rgba(243,208,106,0.00) 28%), linear-gradient(180deg, #F5FAFF 0%, #EEF5FD 42%, #F8FBFF 100%)",
+    boxShadow:
+      "0 22px 52px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.72)",
+    overflow: "hidden",
+  };
+}
+
+function marketplaceAuraStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    position: "absolute",
+    inset: isCompact ? "-12% -38% auto -38%" : "-16% -18% auto -18%",
+    height: isCompact ? "76%" : "68%",
+    zIndex: 0,
+    pointerEvents: "none",
+    opacity: isCompact ? 0.78 : 0.7,
+    background:
+      "radial-gradient(circle at 16% 20%, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0.00) 34%), radial-gradient(circle at 76% 24%, rgba(244,114,182,0.085) 0%, rgba(244,114,182,0.00) 28%), radial-gradient(circle at 58% 8%, rgba(243,208,106,0.08) 0%, rgba(243,208,106,0.00) 24%)",
+    transform: "translate3d(0,0,0)",
+    animation: "marketplaceAuraShift 20s ease-in-out infinite alternate",
+    willChange: "transform, opacity",
+  };
+}
+
+function marketplaceWatermarkStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    position: "absolute",
+    right: isCompact ? -28 : 20,
+    top: isCompact ? 70 : 88,
+    zIndex: 0,
+    opacity: isCompact ? 0.045 : 0.065,
+    pointerEvents: "none",
+    filter: "drop-shadow(0 18px 30px rgba(16,36,58,0.14))",
+  };
+}
+
+function marketplaceContentStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 1,
+    display: "grid",
+    gap: isCompact ? 10 : 18,
+  };
+}
+
+function MarketplaceShellLayers({ isCompact }: { isCompact: boolean }) {
+  return (
+    <>
+      <style>
+        {`
+          @keyframes marketplaceAuraShift {
+            0% {
+              transform: translate3d(-1.6%, -0.8%, 0) scale(1);
+              opacity: 0.68;
+            }
+            50% {
+              transform: translate3d(1.2%, 1.1%, 0) scale(1.035);
+              opacity: 0.82;
+            }
+            100% {
+              transform: translate3d(2.2%, -0.4%, 0) scale(1.02);
+              opacity: 0.74;
+            }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .marketplace-aura-shift {
+              animation: none !important;
+              transform: none !important;
+            }
+          }
+        `}
+      </style>
+      <div
+        aria-hidden="true"
+        className="marketplace-aura-shift"
+        style={marketplaceAuraStyle(isCompact)}
+      />
+      <div style={marketplaceWatermarkStyle(isCompact)} aria-hidden="true">
+        <GSNBrandMark
+          width={isCompact ? 180 : 260}
+          height={isCompact ? 218 : 315}
+        />
+      </div>
+    </>
+  );
+}
+
+function MarketplaceShell({
+  children,
+  isCompact,
+}: {
+  children: React.ReactNode;
+  isCompact: boolean;
+}) {
+  return (
+    <div style={marketplaceShellStyle(isCompact)}>
+      <MarketplaceShellLayers isCompact={isCompact} />
+      <div style={marketplaceContentStyle(isCompact)}>{children}</div>
+    </div>
+  );
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
@@ -2171,15 +2287,7 @@ export default function MarketplacePage() {
 
   if (loading) {
     return (
-      <div
-        style={{
-          maxWidth: 1180,
-          margin: "0 auto",
-          paddingBottom: 40,
-          display: "grid",
-          gap: 18,
-        }}
-      >
+      <MarketplaceShell isCompact={isCompact}>
         <section
           style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
         >
@@ -2199,21 +2307,13 @@ export default function MarketplacePage() {
             Loading your current community...
           </div>
         </section>
-      </div>
+      </MarketplaceShell>
     );
   }
 
   if (!activeCommunityId || !selectedCommunity) {
     return (
-      <div
-        style={{
-          maxWidth: 1180,
-          margin: "0 auto",
-          paddingBottom: 40,
-          display: "grid",
-          gap: 18,
-        }}
-      >
+      <MarketplaceShell isCompact={isCompact}>
         {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
         <DomainIntroToggle
@@ -2326,20 +2426,12 @@ export default function MarketplacePage() {
             </button>
           </div>
         </section>
-      </div>
+      </MarketplaceShell>
     );
   }
 
   return (
-    <div
-      style={{
-        maxWidth: 1180,
-        margin: "0 auto",
-        paddingBottom: 40,
-        display: "grid",
-        gap: 18,
-      }}
-    >
+    <MarketplaceShell isCompact={isCompact}>
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <DomainIntroToggle
@@ -4020,7 +4112,7 @@ export default function MarketplacePage() {
           </div>
         ) : null}
       </section>
-    </div>
+    </MarketplaceShell>
   );
 }
 
