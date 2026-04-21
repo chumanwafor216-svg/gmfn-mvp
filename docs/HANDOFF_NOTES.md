@@ -46,6 +46,59 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
+Install reusable "What do you want to do next?" guide on Loans & Support.
+
+#### Routes/screens affected
+- `/app/loans`
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+
+#### Files in play
+- `frontend/src/pages/LoansPage.tsx`
+- `frontend/src/components/NextActionGuide.tsx` through existing shared usage only
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Canonical route skeleton treats Borrow / Lend / Support as a core
+  marketplace-owned capability, with `/app/loans` acting as the calmer deeper
+  Loans & Support workspace.
+- Added the shared `NextActionGuide` to `/app/loans` so a member can choose
+  plain language actions such as borrow/start support request, guarantee for
+  someone, check summary, show what needs attention, readiness, suggestions,
+  workbench, pay in, withdraw, guarantor earnings, Finance, Marketplace, and
+  notifications.
+- On-page guide actions expand and scroll to the existing Loans & Support
+  sections: support summary, current support focus, borrower-side flow, and
+  guarantor-side queue.
+- Cross-page guide actions use `navigateWithOrigin` so route origin context is
+  preserved.
+- Did not touch Dashboard Market Wisdom, backend, auth, schema, payment,
+  deployment configuration, or route contracts.
+
+#### Verification
+- `npm exec -- eslint src/components/NextActionGuide.tsx src/pages/LoansPage.tsx` passed.
+- `git diff --check -- frontend/src/pages/LoansPage.tsx` passed with only normal Windows line-ending warnings.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- Phone review is needed after deploy to confirm `/app/loans` guide buttons
+  remain steady on center and edge taps.
+- The guide currently points repayment-like users toward the existing money
+  routes and support workbench because this page does not expose a specific
+  active loan repayment URL without a loan id.
+
+#### Next recommended step
+- Deploy and phone-test `/app/loans`. Open/collapse the new guide, search for
+  words like borrow, guarantee, withdraw, ready, and inbox, then confirm the
+  selected action opens the correct section or route.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
 Install reusable "What do you want to do next?" guide on Finance and Trust
 Passport.
 

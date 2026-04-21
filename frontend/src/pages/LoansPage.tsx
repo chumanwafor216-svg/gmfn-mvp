@@ -1,12 +1,17 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
+import NextActionGuide, {
+  type NextActionGuideItem,
+} from "../components/NextActionGuide";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { useLocation, useNavigate } from "react-router-dom";
 import * as api from "../lib/api";
 import {
   buildGuidanceSnapshot,
   type GuidanceSnapshot,
 } from "../lib/guidance";
+import { navigateWithOrigin } from "../lib/nav";
 
 type LoanRow = {
   id?: number;
@@ -418,6 +423,8 @@ function normalizeCollapseState(raw: any): CollapseState {
 }
 
 export default function LoansPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
@@ -638,11 +645,185 @@ export default function LoansPage() {
   const supportFlowActive =
     guarantorInbox.length > 0 || borrowerLoans.length > 0 || guarantorLoans.length > 0;
 
+  const loansNextActionItems = useMemo<NextActionGuideItem[]>(
+    () => [
+      {
+        id: "support-summary",
+        label: "Check support summary",
+        detail: `See ${activeLoans.length} active support item${activeLoans.length === 1 ? "" : "s"} and ${guarantorInbox.length} waiting guarantor request${guarantorInbox.length === 1 ? "" : "s"}.`,
+        technical: "Loans & Support summary",
+        keywords: ["summary", "support", "loan", "borrow", "lend"],
+        tone: "primary",
+      },
+      {
+        id: "start-support",
+        label: "Start support request",
+        detail:
+          "Begin or continue the borrower-side request from the selected Marketplace.",
+        technical: "Marketplace support path",
+        to: "/app/marketplace#marketplace-loans-support",
+        keywords: ["borrow", "loan", "request", "support", "start"],
+        tone: supportFlowActive ? "secondary" : "primary",
+      },
+      {
+        id: "current-focus",
+        label: "Show what needs attention",
+        detail: supportFocus.title,
+        technical: "Current support focus",
+        keywords: ["attention", "waiting", "focus", "urgent", "next"],
+        tone: supportFlowActive ? "primary" : "secondary",
+      },
+      {
+        id: "borrower-flow",
+        label: "My borrowing side",
+        detail: `Open borrower-side support items. Current count: ${borrowerLoans.length}.`,
+        technical: "Borrower-side support flow",
+        keywords: ["borrower", "borrow", "my loan", "my support"],
+        tone: borrowerLoans.length > 0 ? "primary" : "secondary",
+      },
+      {
+        id: "guarantor-queue",
+        label: "Guarantee for someone",
+        detail: `Open guarantor requests and guarantor-side items. Waiting requests: ${guarantorInbox.length}.`,
+        technical: "Guarantor-side queue",
+        keywords: ["guarantor", "guarantee", "pledge", "someone waiting"],
+        tone: guarantorInbox.length > 0 ? "primary" : "secondary",
+      },
+      {
+        id: "guarantor-inbox",
+        label: "Open guarantor inbox",
+        detail: "Use this when someone is waiting for your guarantor decision.",
+        technical: "Incoming guarantor requests",
+        to: "/app/guarantor-inbox",
+        keywords: ["inbox", "guarantor inbox", "decision", "approve"],
+        tone: guarantorInbox.length > 0 ? "primary" : "secondary",
+      },
+      {
+        id: "readiness",
+        label: "Check readiness",
+        detail:
+          "Check whether the support flow looks ready enough for the next step.",
+        technical: "Loan readiness",
+        to: "/app/loan-readiness",
+        keywords: ["readiness", "ready", "check", "qualify"],
+      },
+      {
+        id: "suggestions",
+        label: "Get suggestions",
+        detail:
+          "Open suggested next steps around the active support or loan flow.",
+        technical: "Loan suggestions",
+        to: "/app/loan-suggestions",
+        keywords: ["suggest", "suggestion", "advice", "next step"],
+      },
+      {
+        id: "workbench",
+        label: "Open workbench",
+        detail: "Use the deeper workbench for support handling and review.",
+        technical: "Loan workbench",
+        to: "/app/loan-workbench",
+        keywords: ["workbench", "review", "deeper", "handle"],
+      },
+      {
+        id: "money-in",
+        label: "Add money",
+        detail: "Open payment into the pool when the next step is money in.",
+        technical: "Payment pool",
+        to: "/app/payment/pool",
+        keywords: ["deposit", "pay in", "money in", "add money"],
+      },
+      {
+        id: "money-out",
+        label: "Take money out",
+        detail: "Open withdrawal instructions when the next step is money out.",
+        technical: "Withdrawal instructions",
+        to: "/app/withdrawal-instructions",
+        keywords: ["withdraw", "cash out", "take money", "money out"],
+      },
+      {
+        id: "earnings",
+        label: "Guarantor earnings",
+        detail: "Read the reward side of guarantor participation.",
+        technical: "Guarantor earnings",
+        to: "/app/guarantor-earnings",
+        keywords: ["earnings", "reward", "guarantor reward"],
+      },
+      {
+        id: "finance",
+        label: "Open Finance",
+        detail: "See the wider money record across communities.",
+        technical: "Finance",
+        to: "/app/finance",
+        keywords: ["finance", "money record", "balance"],
+      },
+      {
+        id: "marketplace",
+        label: "Return to Marketplace",
+        detail: "Go back to the selected community Marketplace.",
+        technical: "Marketplace",
+        to: "/app/marketplace",
+        keywords: ["marketplace", "community", "shop"],
+      },
+      {
+        id: "notifications",
+        label: "See what is waiting",
+        detail: "Open notifications when someone is waiting directly on you.",
+        technical: "Notifications",
+        to: "/app/notifications",
+        keywords: ["notifications", "waiting", "messages", "action inbox"],
+      },
+    ],
+    [
+      activeLoans.length,
+      borrowerLoans.length,
+      guarantorInbox.length,
+      supportFlowActive,
+      supportFocus.title,
+    ]
+  );
+
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
       ...prev,
       [key]: !prev[key],
     }));
+  }
+
+  function openLoansRoute(to: string) {
+    navigateWithOrigin(navigate, to, location);
+  }
+
+  function openLoansSection(key: keyof CollapseState, targetId: string) {
+    setCollapsed((prev) => ({
+      ...prev,
+      [key]: false,
+    }));
+
+    window.setTimeout(() => {
+      document
+        .getElementById(targetId)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+  }
+
+  function handleLoansNextAction(item: NextActionGuideItem) {
+    switch (item.id) {
+      case "support-summary":
+        openLoansSection("overview", "loans-support-summary");
+        break;
+      case "current-focus":
+        openLoansSection("focus", "loans-current-focus");
+        break;
+      case "borrower-flow":
+        openLoansSection("borrower", "loans-borrower-flow");
+        break;
+      case "guarantor-queue":
+        openLoansSection("guarantor", "loans-guarantor-queue");
+        break;
+      default:
+        if (item.to) openLoansRoute(item.to);
+        break;
+    }
   }
 
   if (loading) {
@@ -735,7 +916,16 @@ export default function LoansPage() {
         tone="blue"
       />
 
+      <NextActionGuide
+        storageKey="gmfn.loans.nextActionGuide.v1"
+        compact={isCompact}
+        items={loansNextActionItems}
+        onSelect={handleLoansNextAction}
+        intro="Say what you want in normal words, like borrow, guarantee, pay in, withdraw, readiness, suggestion, or waiting request. GSN will point you to the closest support path."
+      />
+
       <section
+        id="loans-support-overview"
         style={pageCard("linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)")}
       >
         <div
@@ -805,7 +995,7 @@ export default function LoansPage() {
         </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section id="loans-support-summary" style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
@@ -925,7 +1115,7 @@ export default function LoansPage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section id="loans-current-focus" style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
@@ -1014,7 +1204,7 @@ export default function LoansPage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section id="loans-borrower-flow" style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
@@ -1118,7 +1308,7 @@ export default function LoansPage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section id="loans-guarantor-queue" style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
@@ -1246,7 +1436,7 @@ export default function LoansPage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section id="loans-next-routes" style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
