@@ -1125,18 +1125,21 @@ export default function ShopGalleryPage() {
       />
 
       <section
-        style={pageCard(
-          heroImage
-            ? "linear-gradient(180deg, rgba(16,36,58,0.82) 0%, rgba(23,54,84,0.92) 52%, rgba(35,79,118,0.98) 100%)"
-            : "linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)"
-        )}
+        style={{
+          ...pageCard(
+            heroImage
+              ? "linear-gradient(180deg, rgba(16,36,58,0.82) 0%, rgba(23,54,84,0.92) 52%, rgba(35,79,118,0.98) 100%)"
+              : "linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)"
+          ),
+          padding: isCompact ? 10 : 20,
+        }}
       >
         <div
           style={{
             position: "relative",
             borderRadius: 28,
             overflow: "hidden",
-            padding: 10,
+            padding: isCompact ? 8 : 10,
             border: "1px solid rgba(212,175,55,0.18)",
             background:
               "linear-gradient(135deg, rgba(16,36,58,0.98) 0%, rgba(23,54,84,0.96) 55%, rgba(38,82,124,0.96) 100%)",
@@ -1145,30 +1148,6 @@ export default function ShopGalleryPage() {
             minHeight: isCompact ? 0 : 360,
           }}
         >
-          <div
-            style={{
-              position: isCompact ? "relative" : "absolute",
-              top: isCompact ? "auto" : 18,
-              right: isCompact ? "auto" : 18,
-              zIndex: 2,
-              display: "inline-flex",
-              alignItems: "center",
-              minHeight: 30,
-              margin: isCompact ? "0 0 8px 6px" : 0,
-              padding: isCompact ? "5px 9px" : "6px 10px",
-              borderRadius: 999,
-              background: "rgba(7,16,28,0.72)",
-              border: "1px solid rgba(212,175,55,0.22)",
-              color: "#F6D77A",
-              fontSize: isCompact ? 10 : 11,
-              fontWeight: 900,
-              letterSpacing: 0.24,
-              textTransform: "uppercase",
-              backdropFilter: "blur(8px)",
-            }}
-          >
-            Public shop identity
-          </div>
           {heroImage ? (
             <img
               src={heroImage}
@@ -1201,58 +1180,23 @@ export default function ShopGalleryPage() {
             style={{
               position: "relative",
               zIndex: 1,
-              padding: isCompact ? 12 : 24,
+              padding: isCompact ? 10 : 24,
               minHeight: isCompact ? 0 : 360,
               display: "grid",
               gridTemplateColumns: isCompact
                 ? "1fr"
                 : "minmax(0, 1.08fr) minmax(320px, 0.92fr)",
-              gap: isCompact ? 12 : 18,
+              gap: isCompact ? 10 : 18,
               alignItems: isCompact ? "start" : "end",
             }}
           >
             <div>
               <div
                 style={{
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                  alignItems: "center",
-                }}
-              >
-                <span
-                  style={{
-                    ...badge(true),
-                    background: "rgba(255,255,255,0.16)",
-                    color: "#FFFFFF",
-                    minHeight: isCompact ? 24 : 30,
-                    padding: isCompact ? "4px 8px" : "6px 10px",
-                    fontSize: isCompact ? 10.5 : 12,
-                  }}
-                >
-                  {isCompact ? "Visitor view" : "Visitor shop page"}
-                </span>
-
-                <span
-                  style={{
-                    ...badge(false),
-                    background: "rgba(255,255,255,0.12)",
-                    color: "#FFFFFF",
-                    minHeight: isCompact ? 24 : 30,
-                    padding: isCompact ? "4px 8px" : "6px 10px",
-                    fontSize: isCompact ? 10.5 : 12,
-                  }}
-                >
-                  {isCompact ? "Clean link" : "Clean outside view"}
-                </span>
-              </div>
-
-              <div
-                style={{
-                  marginTop: isCompact ? 9 : 14,
+                  marginTop: 0,
                   color: "#FFFFFF",
                   fontWeight: 900,
-                  fontSize: isCompact ? 25 : 44,
+                  fontSize: isCompact ? 24 : 44,
                   lineHeight: 1.05,
                   maxWidth: 900,
                   textShadow: "0 6px 18px rgba(0,0,0,0.22)",

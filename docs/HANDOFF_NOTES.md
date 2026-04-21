@@ -4881,3 +4881,22 @@ GSN-branded invite composer and invite-entry continuity.
 - `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
   the normal Windows line-ending warning.
 - `npm run build` passed in `frontend`.
+
+### Shop Gallery mobile label removal addendum
+
+- Updated `frontend/src/pages/ShopGalleryPage.tsx` only.
+- Removed the decorative hero labels `Public shop identity`, `Visitor view`,
+  and `Clean link` from the Shop Gallery identity area after phone review.
+- Used the freed vertical space to pull the actual shop identity upward and
+  tighten compact-screen padding/gaps so the first identity block fits closer
+  to a normal phone-screen yardstick.
+- Preserved the shop data, share/copy actions, product loading, Vault access
+  flow, desktop detail, and the accepted institutional background treatment.
+- No backend, auth, schema, payment, environment config, or Dashboard Market
+  Wisdom behavior changed.
+
+### Verification after mobile label removal
+
+- `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
+  the normal Windows line-ending warning.
+- `npm run build` passed in `frontend`.
