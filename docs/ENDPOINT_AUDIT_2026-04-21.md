@@ -13,11 +13,13 @@ This document is a testing-control note. It does not redefine product behavior.
 - Live API health is good:
   - `https://gmfn-api.onrender.com/health` returns healthy.
   - `dev_mode` is false on Render.
-- Local backend OpenAPI and live Render OpenAPI now match exactly:
-  - local paths: `209`
-  - live paths: `209`
-  - local-only paths: none
-  - live-only paths: none
+- The original audit found local backend OpenAPI and live Render OpenAPI
+  matched at `209` paths.
+- Subsequent safe corrections added diagnostics, Trust Timeline, and Vault
+  access locally. Latest local OpenAPI path count after the Vault correction is
+  `217`.
+- Live Render should be rechecked after the backend redeploy containing these
+  corrections.
 - Entry routes are now present on live Render:
   - `/entry/phone/start`
   - `/entry/bank-details`
@@ -59,7 +61,7 @@ the configured backend API in production.
 
 ## Confirmed Weak Points Remaining
 
-### 1. Vault access is frontend-present but backend-unmounted
+### 1. Vault access was frontend-present but backend-unmounted
 
 The frontend has Vault access flows:
 
@@ -71,15 +73,21 @@ The frontend has Vault access flows:
 - Shop control Vault link display
 
 The backend has `VaultAccessLink` models and `app/services/vault_access_service.py`,
-but the live OpenAPI does not expose mounted Vault access endpoints such as:
+and the latest local code now mounts:
 
-- `/vault-access/{token}`
-- `/vault-access-links`
-- `/marketplace/vault-access-links`
+- `POST /marketplace/shops/{shop_id}/vault-access-links`
+- `GET /marketplace/shops/{shop_id}/vault-access-links`
+- `POST /marketplace/vault-access-links/{link_id}/revoke`
+- `POST /marketplace/vault-access-links/{link_id}/extend`
+- `GET /marketplace/vault-access/{token}`
+- `POST /marketplace/vault-access/{token}/open`
 
-Impact: Vault may look present in the UI, but link creation/open tracking is not
-fully backed by a mounted API route yet. This should be treated as a product
-implementation gap, not a phone-user mistake.
+Correction status: corrected locally and pending live Render redeploy. Shop
+Control now uses the shared Vault access helpers instead of the stale
+`/api/vault-access/links` path.
+
+Impact before deploy: live Vault link creation/open tracking can still fail
+until Render runs the new backend code and migration.
 
 ### 2. System diagnostics route file existed but was not mounted
 
@@ -172,12 +180,14 @@ still intentionally reachable. Do not delete them only because they look unused.
 2. During admin-domain cleanup, decide whether to mount or retire:
    - admin dispute / repayment routes
    - duplicate trust/admin/bank endpoints
-3. Treat Vault access as the next deliberate backend product gap:
-   - confirm route contract
-   - expose link creation/list/open endpoints
-   - wire them to `vault_access_service.py`
-   - then retest `ShopAccessPage` and Shop Control Vault links
-4. After endpoint cleanup, rerun this audit and update this document with the
+3. After the Vault backend deploy, retest `ShopAccessPage` and Shop Control
+   Vault links end to end:
+   - add at least one Vault private product
+   - create a private viewing link
+   - open `/vault/:token`
+   - confirm open tracking increments once through the `/open` call
+   - extend and revoke the link
+4. After admin endpoint cleanup, rerun this audit and update this document with the
    remaining unresolved endpoints.
 
 ## Verification Performed
@@ -194,6 +204,13 @@ still intentionally reachable. Do not delete them only because they look unused.
     `system_diagnostics_router`.
   - `/trust/me/timeline` and `/trust/timeline/{user_id}` are now present in
     local OpenAPI after mounting `trust_timeline_router`.
+- Vault access follow-up:
+  - local OpenAPI now includes all six planned Vault access operations under
+    `/marketplace`.
+  - `python -m alembic upgrade head` passed locally after adding the
+    idempotent `vault_access_links` migration.
+  - `npm run build` passed after wiring Shop Control to the shared Vault API
+    helpers.
 - Merchant verification follow-up:
   - no merchant verification routes were mounted during this pass.
   - active TrustSlip verification remains owned by mounted `trust_slips.py`.

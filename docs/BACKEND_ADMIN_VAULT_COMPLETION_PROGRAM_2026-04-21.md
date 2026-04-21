@@ -53,6 +53,8 @@ Definition of done:
 
 ## Phase 2 - Vault Access Backend Contract
 
+Status: corrected locally, pending live Render redeploy and phone testing.
+
 Goal: turn Vault from a frontend/service idea into a mounted backend product
 flow.
 
@@ -88,11 +90,28 @@ Files to inspect before implementation:
 
 Definition of done:
 
-- Vault endpoints appear in OpenAPI.
-- Shop Control can create/list/revoke/extend Vault links.
-- Shop Access can open a token and record an open.
+- Vault endpoints appear in OpenAPI. Corrected locally: latest local path count
+  is `217`, including all six planned Vault operations.
+- Shop Control can create/list/revoke/extend Vault links. Corrected locally
+  through shared frontend Vault API helpers.
+- Shop Access can open a token and record an open. Corrected locally: `GET`
+  resolves the view without incrementing and `POST /open` records the open.
 - Private products remain hidden unless a valid Vault token permits viewing.
 - No trust event is created until the team explicitly approves that behavior.
+
+Implemented files:
+
+- `gmfn_backend/app/api/routes/vault_access.py`
+- `gmfn_backend/app/api/router.py`
+- `gmfn_backend/alembic/versions/20260421_add_vault_access_links.py`
+- `frontend/src/pages/ShopControlPage.tsx`
+
+Remaining Phase 2 check:
+
+- Deploy to Render and confirm live OpenAPI exposes the six Vault operations.
+- Phone-test Shop Control link creation/copy/open/extend/revoke.
+- Open `/vault/:token` and confirm a valid link shows only Vault-private
+  products for that shop.
 
 ## Phase 3 - Admin Backend Cleanup
 

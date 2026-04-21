@@ -46,6 +46,71 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
+Vault access backend contract and Shop Control wiring.
+
+#### Routes/screens affected
+- `/app/shop-control`
+- `/vault/:token`
+
+#### Backend routes/endpoints involved
+- `POST /marketplace/shops/{shop_id}/vault-access-links`
+- `GET /marketplace/shops/{shop_id}/vault-access-links`
+- `POST /marketplace/vault-access-links/{link_id}/revoke`
+- `POST /marketplace/vault-access-links/{link_id}/extend`
+- `GET /marketplace/vault-access/{token}`
+- `POST /marketplace/vault-access/{token}/open`
+
+#### Files in play
+- `gmfn_backend/app/api/routes/vault_access.py`
+- `gmfn_backend/app/api/router.py`
+- `gmfn_backend/alembic/versions/20260421_add_vault_access_links.py`
+- `frontend/src/pages/ShopControlPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+- `docs/ENDPOINT_AUDIT_2026-04-21.md`
+- `docs/BACKEND_ADMIN_VAULT_COMPLETION_PROGRAM_2026-04-21.md`
+
+#### Confirmed facts
+- Vault had an existing model and service but no mounted API router.
+- Added a route-local Vault access router under `/marketplace`.
+- Added an idempotent migration for `vault_access_links`; it skips creation if
+  the table already exists and uses PostgreSQL-safe boolean defaults.
+- `GET /marketplace/vault-access/{token}` resolves a Vault view without
+  incrementing the view counter.
+- `POST /marketplace/vault-access/{token}/open` records the open/view by using
+  the existing service increment path.
+- Shop Control now lists Vault links through the shared Vault API helper instead
+  of the stale `/api/vault-access/links` path.
+- Shop Control can create a 7-day/20-view private viewing link, copy/open it,
+  extend it by 7 days, and revoke it.
+- No Vault trust event creation was added. No auth core, payment, ledger,
+  TrustSlip, Dashboard Market Wisdom, or public Shop Gallery behavior changed.
+
+#### Verification
+- `python -m compileall app\api\router.py app\api\routes\vault_access.py app\services\vault_access_service.py` passed.
+- `python -m alembic upgrade head` passed locally with `GMFN_DEV_MODE=1`.
+- Local OpenAPI now includes all six Vault access operations; local path count
+  is `217`.
+- `npm exec -- eslint src/pages/ShopControlPage.tsx` produced no errors; the
+  page still has two pre-existing hook dependency warnings.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- Render still needs the backend redeploy before live OpenAPI shows the Vault
+  endpoints.
+- Phone testing is needed for the new Shop Control Vault link buttons.
+- Duplicate OpenAPI operation ID warnings remain from older trust/admin routes.
+
+#### Next recommended step
+- Push/deploy this change, then confirm live OpenAPI includes the six Vault
+  endpoints and test: create Vault private product, create link in Shop Control,
+  open `/vault/:token`, verify the private product appears, then revoke/extend.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
 Shop Gallery quality extension across Vault, Spotlight, and Product Shelf.
 
 #### Routes/screens affected

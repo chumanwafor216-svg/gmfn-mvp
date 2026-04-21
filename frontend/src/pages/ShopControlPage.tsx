@@ -7,6 +7,10 @@ import {
   getMe,
   getMyIdentityRisk,
   getSelectedClanId,
+  createVaultShopAccessLink,
+  extendVaultShopAccessLink,
+  listVaultShopAccessLinks,
+  revokeVaultShopAccessLink,
   uploadMarketplaceImageFile,
   uploadMarketplaceVideoFile,
 } from "../lib/api";
@@ -59,6 +63,7 @@ type BroadcastRecord = {
 type VaultLinkRecord = {
   id: number;
   shop_id: number;
+  access_url?: string | null;
   token?: string | null;
   status?: string | null;
   expires_at?: string | null;
@@ -70,6 +75,8 @@ type VaultLinkRecord = {
   watermark_enabled?: boolean;
   frontend_hint_path?: string | null;
   api_view_url?: string | null;
+  created_at?: string | null;
+  last_opened_at?: string | null;
 };
 
 type ExpectedPaymentRecord = {
@@ -665,6 +672,8 @@ export default function ShopControlPage() {
     null
   );
   const [creatingVaultInstruction, setCreatingVaultInstruction] = useState(false);
+  const [creatingVaultLink, setCreatingVaultLink] = useState(false);
+  const [busyVaultLinkId, setBusyVaultLinkId] = useState<number | null>(null);
   const [creatingMerchantVerifyInstruction, setCreatingMerchantVerifyInstruction] =
     useState(false);
   const [creatingSpotlightInstruction, setCreatingSpotlightInstruction] = useState(false);
@@ -830,9 +839,7 @@ export default function ShopControlPage() {
           apiJson<any>(
             `/api/marketplace/broadcasts?clan_id=${selectedClanId || 0}&limit=20`
           ).catch(() => ({ items: [] })),
-          apiJson<any>(
-            `/api/vault-access/links?shop_id=${shopItem.id}`
-          ).catch(() => ({ items: [] })),
+          listVaultShopAccessLinks(shopItem.id).catch(() => []),
           apiJson<any>(
             `/api/marketplace/products?clan_id=${selectedClanId || 0}&shop_id=${shopItem.id}&include_private_manage=true&limit=200`
           ).catch(() => ({ items: [] })),
@@ -853,7 +860,7 @@ export default function ShopControlPage() {
         setProducts(privateManagedProducts.length > 0 ? privateManagedProducts : shopProducts);
         setSpotlights(visibleSpotlights);
         setVaultLinks(
-          Array.isArray(vaultLinksRes?.items) ? (vaultLinksRes.items as VaultLinkRecord[]) : []
+          Array.isArray(vaultLinksRes) ? (vaultLinksRes as VaultLinkRecord[]) : []
         );
         setExpectedPayments(
           Array.isArray(expectedRes)
@@ -1260,6 +1267,94 @@ export default function ShopControlPage() {
       void navigator.clipboard.writeText(text);
     }
     showNotice("success", successMessage);
+  }
+
+  function vaultLinkUrl(link: VaultLinkRecord | null | undefined): string {
+    const raw = firstTruthy(
+      link?.access_url,
+      link?.frontend_hint_path,
+      link?.api_view_url,
+      link?.token ? `/vault/${encodeURIComponent(String(link.token))}` : ""
+    );
+    if (!raw) return "";
+    if (/^https?:\/\//i.test(raw)) return raw;
+    if (typeof window === "undefined") return raw;
+    return `${window.location.origin}${raw.startsWith("/") ? raw : `/${raw}`}`;
+  }
+
+  function vaultDefaultExpiry(): string {
+    const next = new Date();
+    next.setDate(next.getDate() + 7);
+    return next.toISOString();
+  }
+
+  async function createVaultViewingLink() {
+    if (!shop?.id) {
+      showNotice("error", "Shop record is not available.");
+      return;
+    }
+
+    setCreatingVaultLink(true);
+    try {
+      const link = await createVaultShopAccessLink({
+        shop_id: shop.id,
+        expires_at: vaultDefaultExpiry(),
+        max_views: 20,
+        watermark_enabled: true,
+      });
+      setVaultLinks((prev) => [link as VaultLinkRecord, ...prev]);
+      copyText(vaultLinkUrl(link as VaultLinkRecord), "Vault viewing link created and copied.");
+    } catch (err: any) {
+      showNotice("error", safeStr(err?.message) || "Vault viewing link could not be created.");
+    } finally {
+      setCreatingVaultLink(false);
+    }
+  }
+
+  async function revokeVaultViewingLink(link: VaultLinkRecord) {
+    const linkId = Number(link?.id || 0);
+    if (!linkId) {
+      showNotice("error", "Vault link is not available.");
+      return;
+    }
+
+    setBusyVaultLinkId(linkId);
+    try {
+      const updated = await revokeVaultShopAccessLink(linkId);
+      setVaultLinks((prev) =>
+        prev.map((item) =>
+          Number(item.id) === linkId ? (updated as VaultLinkRecord) : item
+        )
+      );
+      showNotice("success", "Vault viewing link revoked.");
+    } catch (err: any) {
+      showNotice("error", safeStr(err?.message) || "Vault viewing link could not be revoked.");
+    } finally {
+      setBusyVaultLinkId(null);
+    }
+  }
+
+  async function extendVaultViewingLink(link: VaultLinkRecord) {
+    const linkId = Number(link?.id || 0);
+    if (!linkId) {
+      showNotice("error", "Vault link is not available.");
+      return;
+    }
+
+    setBusyVaultLinkId(linkId);
+    try {
+      const updated = await extendVaultShopAccessLink(linkId, vaultDefaultExpiry());
+      setVaultLinks((prev) =>
+        prev.map((item) =>
+          Number(item.id) === linkId ? (updated as VaultLinkRecord) : item
+        )
+      );
+      showNotice("success", "Vault viewing link extended for 7 more days.");
+    } catch (err: any) {
+      showNotice("error", safeStr(err?.message) || "Vault viewing link could not be extended.");
+    } finally {
+      setBusyVaultLinkId(null);
+    }
   }
 
   function openSpotlightTools() {
@@ -2011,6 +2106,25 @@ export default function ShopControlPage() {
               <OriginLink to="/app/shop-assets" style={fullButton(actionBtn("secondary"))}>
                 Manage Products
               </OriginLink>
+              <button
+                type="button"
+                onClick={() => void createVaultViewingLink()}
+                disabled={
+                  shopActionsLocked ||
+                  creatingVaultLink ||
+                  vaultProducts.length === 0
+                }
+                style={fullButton(actionBtn(
+                  "soft",
+                  shopActionsLocked || creatingVaultLink || vaultProducts.length === 0
+                ))}
+              >
+                {shopActionsLocked
+                  ? "Review Identity First"
+                  : creatingVaultLink
+                  ? "Creating..."
+                  : "Create Vault link"}
+              </button>
             </div>
           </div>
 
@@ -2958,7 +3072,51 @@ export default function ShopControlPage() {
                     </span>
                   </div>
                   <div style={{ marginTop: 8, ...helperText(), color: "#D7E3F1" }}>
-                    Access ends: {safeDateTime(item?.expires_at)}
+                    Access ends: {safeDateTime(item?.expires_at) || "No expiry set"}
+                  </div>
+                  <div style={{ marginTop: 10, ...controlGrid(isCompact, 120) }}>
+                    <button
+                      type="button"
+                      onClick={() => copyText(vaultLinkUrl(item), "Vault viewing link copied.")}
+                      style={fullButton(actionBtn("soft", !vaultLinkUrl(item)))}
+                      disabled={!vaultLinkUrl(item)}
+                    >
+                      Copy link
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const url = vaultLinkUrl(item);
+                        if (url) window.open(url, "_blank", "noopener,noreferrer");
+                      }}
+                      style={fullButton(actionBtn("secondary", !vaultLinkUrl(item)))}
+                      disabled={!vaultLinkUrl(item)}
+                    >
+                      Open link
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void extendVaultViewingLink(item)}
+                      style={fullButton(actionBtn("secondary", busyVaultLinkId === Number(item.id)))}
+                      disabled={busyVaultLinkId === Number(item.id)}
+                    >
+                      Extend 7 days
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void revokeVaultViewingLink(item)}
+                      style={fullButton(actionBtn(
+                        "secondary",
+                        busyVaultLinkId === Number(item.id) ||
+                          firstTruthy(item?.status).toLowerCase() === "revoked"
+                      ))}
+                      disabled={
+                        busyVaultLinkId === Number(item.id) ||
+                        firstTruthy(item?.status).toLowerCase() === "revoked"
+                      }
+                    >
+                      Revoke
+                    </button>
                   </div>
                 </div>
               ))}
@@ -2969,6 +3127,27 @@ export default function ShopControlPage() {
                   here after you activate Vault and release access.
                 </div>
               ) : null}
+              <button
+                type="button"
+                onClick={() => void createVaultViewingLink()}
+                disabled={
+                  shopActionsLocked ||
+                  creatingVaultLink ||
+                  vaultProducts.length === 0
+                }
+                style={fullButton(actionBtn(
+                  "primary",
+                  shopActionsLocked || creatingVaultLink || vaultProducts.length === 0
+                ))}
+              >
+                {shopActionsLocked
+                  ? "Review Identity First"
+                  : creatingVaultLink
+                  ? "Creating..."
+                  : vaultProducts.length === 0
+                    ? "Add Vault product first"
+                    : "Create private viewing link"}
+              </button>
             </div>
           </div>
         </div>
