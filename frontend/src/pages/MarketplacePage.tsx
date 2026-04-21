@@ -1192,18 +1192,18 @@ function safeDateTime(x: any): string {
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 24,
-    border: "1px solid rgba(16,37,59,0.11)",
+    borderRadius: 22,
+    border: "1px solid rgba(16,37,59,0.075)",
     background: bg,
-    padding: 20,
+    padding: 18,
     boxShadow:
-      "0 18px 38px rgba(10,24,49,0.075), inset 0 1px 0 rgba(255,255,255,0.72)",
+      "0 12px 28px rgba(10,24,49,0.052), inset 0 1px 0 rgba(255,255,255,0.64)",
     overflow: "hidden",
   };
 }
 
 function marketplaceProfileBackground(): string {
-  return "radial-gradient(circle at top left, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0.00) 38%), radial-gradient(circle at 88% 12%, rgba(244,114,182,0.09) 0%, rgba(244,114,182,0.00) 28%), radial-gradient(circle at 82% 76%, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0.00) 30%), linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(238,245,253,0.96) 58%, rgba(248,251,255,0.98) 100%)";
+  return "radial-gradient(circle at 14% 0%, rgba(34,82,120,0.11) 0%, rgba(34,82,120,0.00) 34%), linear-gradient(180deg, rgba(249,252,255,0.98) 0%, rgba(239,246,251,0.96) 58%, rgba(250,252,254,0.98) 100%)";
 }
 
 function marketplaceProfileCardStyle(isCompact: boolean): React.CSSProperties {
@@ -1221,19 +1221,19 @@ function marketplaceProfileScrimStyle(): React.CSSProperties {
     inset: 0,
     zIndex: 0,
     background:
-      "linear-gradient(90deg, rgba(248,251,255,0.98) 0%, rgba(241,247,255,0.94) 50%, rgba(255,251,235,0.76) 100%)",
+      "linear-gradient(90deg, rgba(249,252,255,0.98) 0%, rgba(242,248,252,0.94) 56%, rgba(249,252,255,0.90) 100%)",
   };
 }
 
 function marketplaceProfileStatStyle(): React.CSSProperties {
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(16,37,59,0.10)",
+    borderRadius: 15,
+    border: "1px solid rgba(16,37,59,0.075)",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(246,250,255,0.90) 100%)",
-    padding: 14,
+      "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(246,250,253,0.90) 100%)",
+    padding: 13,
     minHeight: 82,
-    boxShadow: "0 12px 24px rgba(10,24,49,0.06)",
+    boxShadow: "0 8px 18px rgba(10,24,49,0.035)",
   };
 }
 
@@ -1425,17 +1425,17 @@ function marketplaceShellStyle(isCompact: boolean): React.CSSProperties {
     position: "relative",
     maxWidth: 1180,
     margin: "0 auto",
-    padding: isCompact ? 12 : 22,
-    paddingBottom: isCompact ? 28 : 44,
+    padding: isCompact ? 11 : 20,
+    paddingBottom: isCompact ? 26 : 40,
     display: "grid",
-    gap: isCompact ? 14 : 18,
-    borderRadius: isCompact ? 24 : 34,
-    border: "1px solid rgba(16,37,59,0.10)",
+    gap: isCompact ? 13 : 17,
+    borderRadius: isCompact ? 22 : 32,
+    border: "1px solid rgba(16,37,59,0.075)",
     isolation: "isolate",
     background:
-      "radial-gradient(circle at 10% 0%, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0.00) 32%), radial-gradient(circle at 88% 7%, rgba(244,114,182,0.09) 0%, rgba(244,114,182,0.00) 24%), radial-gradient(circle at 92% 14%, rgba(243,208,106,0.09) 0%, rgba(243,208,106,0.00) 28%), linear-gradient(180deg, #F5FAFF 0%, #EEF5FD 42%, #F8FBFF 100%)",
+      "radial-gradient(circle at 12% 0%, rgba(34,82,120,0.10) 0%, rgba(34,82,120,0.00) 30%), linear-gradient(180deg, #F6FAFD 0%, #EEF4F9 44%, #F9FBFD 100%)",
     boxShadow:
-      "0 22px 52px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.72)",
+      "0 18px 42px rgba(10,24,49,0.075), inset 0 1px 0 rgba(255,255,255,0.66)",
     overflow: "hidden",
   };
 }
@@ -1447,12 +1447,10 @@ function marketplaceAuraStyle(isCompact: boolean): React.CSSProperties {
     height: isCompact ? "76%" : "68%",
     zIndex: 0,
     pointerEvents: "none",
-    opacity: isCompact ? 0.78 : 0.7,
+    opacity: isCompact ? 0.34 : 0.3,
     background:
-      "radial-gradient(circle at 16% 20%, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0.00) 34%), radial-gradient(circle at 76% 24%, rgba(244,114,182,0.085) 0%, rgba(244,114,182,0.00) 28%), radial-gradient(circle at 58% 8%, rgba(243,208,106,0.08) 0%, rgba(243,208,106,0.00) 24%)",
+      "radial-gradient(circle at 18% 18%, rgba(34,82,120,0.16) 0%, rgba(34,82,120,0.00) 38%)",
     transform: "translate3d(0,0,0)",
-    animation: "marketplaceAuraShift 20s ease-in-out infinite alternate",
-    willChange: "transform, opacity",
   };
 }
 
@@ -1480,34 +1478,8 @@ function marketplaceContentStyle(isCompact: boolean): React.CSSProperties {
 function MarketplaceShellLayers({ isCompact }: { isCompact: boolean }) {
   return (
     <>
-      <style>
-        {`
-          @keyframes marketplaceAuraShift {
-            0% {
-              transform: translate3d(-1.6%, -0.8%, 0) scale(1);
-              opacity: 0.68;
-            }
-            50% {
-              transform: translate3d(1.2%, 1.1%, 0) scale(1.035);
-              opacity: 0.82;
-            }
-            100% {
-              transform: translate3d(2.2%, -0.4%, 0) scale(1.02);
-              opacity: 0.74;
-            }
-          }
-
-          @media (prefers-reduced-motion: reduce) {
-            .marketplace-aura-shift {
-              animation: none !important;
-              transform: none !important;
-            }
-          }
-        `}
-      </style>
       <div
         aria-hidden="true"
-        className="marketplace-aura-shift"
         style={marketplaceAuraStyle(isCompact)}
       />
       <div style={marketplaceWatermarkStyle(isCompact)} aria-hidden="true">
@@ -1537,30 +1509,30 @@ function MarketplaceShell({
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
-    borderRadius: 18,
-    border: "1px solid rgba(16,37,59,0.10)",
+    borderRadius: 17,
+    border: "1px solid rgba(16,37,59,0.07)",
     background: bg,
-    padding: 16,
-    boxShadow: "0 10px 22px rgba(10,24,49,0.04)",
+    padding: 15,
+    boxShadow: "0 8px 18px rgba(10,24,49,0.028)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(16,37,59,0.10)",
+    borderRadius: 15,
+    border: "1px solid rgba(16,37,59,0.07)",
     background: bg,
-    padding: 14,
-    boxShadow: "0 10px 22px rgba(10,24,49,0.04)",
+    padding: 13,
+    boxShadow: "0 8px 18px rgba(10,24,49,0.026)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#5D7389",
+    color: "#405C73",
     fontWeight: 900,
-    letterSpacing: 0.35,
+    letterSpacing: 0.28,
     textTransform: "uppercase",
   };
 }
@@ -1570,11 +1542,11 @@ function badgeStyle(primary = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     gap: 6,
-    minHeight: 30,
+    minHeight: 28,
     borderRadius: 999,
-    padding: "6px 10px",
-    background: primary ? "rgba(29,78,216,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#1D4ED8" : "#51657A",
+    padding: "6px 9px",
+    background: primary ? "rgba(34,82,120,0.08)" : "rgba(100,116,139,0.08)",
+    color: primary ? "#254B66" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",

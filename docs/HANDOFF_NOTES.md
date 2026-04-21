@@ -46,7 +46,7 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
-Marketplace button authority polish.
+Marketplace visual quieting and authority pass.
 
 #### Routes/screens affected
 - `/app/marketplace`
@@ -59,6 +59,16 @@ Marketplace button authority polish.
 - `docs/HANDOFF_NOTES.md`
 
 #### Confirmed facts
+- Marketplace was not considered visually complete after phone review because
+  the page still felt too busy/fretted.
+- The Marketplace shell was quieted by reducing layered borders, shadows,
+  card padding, and competing accent gradients.
+- The animated multi-colour aura layer behind Marketplace was removed and
+  replaced with one static low-opacity navy wash.
+- Pink/yellow accent patches were removed from the route-local Marketplace
+  shell/profile background so the page reads more institutional.
+- Marketplace cards, soft cards, inner cards, section labels, and badges now
+  use softer borders and calmer navy/slate tones.
 - Marketplace route-local controls were tightened for a calmer institutional
   feel without changing any backend contract or navigation target.
 - The billboard `Picture` pill is smaller, less glossy, and uses a firmer
@@ -103,14 +113,14 @@ Marketplace button authority polish.
 - `npm run build` passed in `frontend`.
 
 #### Open risks or unknowns
-- Phone visual review is needed to confirm the new button tone feels
-  authoritative without becoming too dull, and that the `Picture` and `Open
-  details` pills are still easy to tap.
+- Phone visual review is needed to confirm the quieter Marketplace now feels
+  authoritative rather than fretted, and that the lower-motion background does
+  not feel too plain.
 
 #### Next recommended step
-- Deploy/retest `/app/marketplace` on phone, especially `Picture`, the picture
-  tool panel, `Open details`, the compact intent guide, and the main action
-  buttons.
+- Deploy/retest `/app/marketplace` on phone from top to bottom, checking the
+  overall calmness first, then `Picture`, the picture tool panel, `Open
+  details`, the compact intent guide, and the main action buttons.
 
 ### Previous update
 
