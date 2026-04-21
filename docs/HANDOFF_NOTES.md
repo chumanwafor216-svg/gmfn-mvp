@@ -4856,3 +4856,28 @@ GSN-branded invite composer and invite-entry continuity.
 - `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
   the normal Windows line-ending warning.
 - `npm run build` passed in `frontend`.
+
+### Shop Gallery mobile identity compression addendum
+
+- Updated `frontend/src/pages/ShopGalleryPage.tsx` only.
+- Compressed the first public shop identity/signpost area for average phone
+  screens after phone screenshots showed the identity block being split across
+  two screenshots.
+- Mobile Shop Gallery now treats a normal phone viewport as the yardstick for
+  one major introduction/identity block:
+  - removed the repeated explanation toggle inside the mobile signpost card
+  - reduced duplicate owner/ID presentation where owner and GMFN ID are the same
+  - moved the `Public shop identity` label into the mobile flow so it no longer
+    overlaps the top chips
+  - shortened top chips, shop description, signpost copy, avatar size, badges,
+    and action buttons on compact screens
+  - preserved desktop detail and route behavior
+- Kept the calm institutional blue-white brand treatment from the accepted
+  Shop Gallery polish. No backend, auth, schema, payment, environment config,
+  or Dashboard Market Wisdom behavior changed.
+
+### Verification after mobile identity compression
+
+- `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
+  the normal Windows line-ending warning.
+- `npm run build` passed in `frontend`.

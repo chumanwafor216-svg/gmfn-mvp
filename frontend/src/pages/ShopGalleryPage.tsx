@@ -955,6 +955,25 @@ export default function ShopGalleryPage() {
     return `${window.location.origin}${location.pathname}`;
   }, [location.pathname]);
 
+  const shopNameText = safeStr(effectiveShop?.shopName || "Shop");
+  const shopDescriptionText = safeStr(
+    effectiveShop?.description ||
+      "Public shop page for trusted products. Private stock stays inside Vault."
+  );
+  const shopGmfnText = safeStr(effectiveShop?.gmfnId);
+  const shopOwnerText = safeStr(effectiveShop?.ownerName);
+  const shopCommunityText = safeStr(effectiveShop?.communityName);
+  const shopTrustText = firstMeaningful(
+    effectiveShop?.trustBand,
+    effectiveShop?.trustScore
+      ? `Trust score ${safeStr(effectiveShop?.trustScore)}`
+      : "",
+    ""
+  );
+  const showOwnerBadge =
+    Boolean(shopOwnerText) &&
+    shopOwnerText.toUpperCase() !== shopGmfnText.toUpperCase();
+
   async function shareOrCopy(params: {
     title: string;
     text: string;
@@ -1123,24 +1142,25 @@ export default function ShopGalleryPage() {
               "linear-gradient(135deg, rgba(16,36,58,0.98) 0%, rgba(23,54,84,0.96) 55%, rgba(38,82,124,0.96) 100%)",
             boxShadow:
               "0 26px 56px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.05)",
-            minHeight: isCompact ? 300 : 360,
+            minHeight: isCompact ? 0 : 360,
           }}
         >
           <div
             style={{
-              position: "absolute",
-              top: 18,
-              right: 18,
+              position: isCompact ? "relative" : "absolute",
+              top: isCompact ? "auto" : 18,
+              right: isCompact ? "auto" : 18,
               zIndex: 2,
               display: "inline-flex",
               alignItems: "center",
               minHeight: 30,
-              padding: "6px 10px",
+              margin: isCompact ? "0 0 8px 6px" : 0,
+              padding: isCompact ? "5px 9px" : "6px 10px",
               borderRadius: 999,
               background: "rgba(7,16,28,0.72)",
               border: "1px solid rgba(212,175,55,0.22)",
               color: "#F6D77A",
-              fontSize: 11,
+              fontSize: isCompact ? 10 : 11,
               fontWeight: 900,
               letterSpacing: 0.24,
               textTransform: "uppercase",
@@ -1181,14 +1201,14 @@ export default function ShopGalleryPage() {
             style={{
               position: "relative",
               zIndex: 1,
-              padding: isCompact ? 18 : 24,
-              minHeight: isCompact ? 300 : 360,
+              padding: isCompact ? 12 : 24,
+              minHeight: isCompact ? 0 : 360,
               display: "grid",
               gridTemplateColumns: isCompact
                 ? "1fr"
                 : "minmax(0, 1.08fr) minmax(320px, 0.92fr)",
-              gap: 18,
-              alignItems: "end",
+              gap: isCompact ? 12 : 18,
+              alignItems: isCompact ? "start" : "end",
             }}
           >
             <div>
@@ -1205,9 +1225,12 @@ export default function ShopGalleryPage() {
                     ...badge(true),
                     background: "rgba(255,255,255,0.16)",
                     color: "#FFFFFF",
+                    minHeight: isCompact ? 24 : 30,
+                    padding: isCompact ? "4px 8px" : "6px 10px",
+                    fontSize: isCompact ? 10.5 : 12,
                   }}
                 >
-                  Visitor shop page
+                  {isCompact ? "Visitor view" : "Visitor shop page"}
                 </span>
 
                 <span
@@ -1215,82 +1238,99 @@ export default function ShopGalleryPage() {
                     ...badge(false),
                     background: "rgba(255,255,255,0.12)",
                     color: "#FFFFFF",
+                    minHeight: isCompact ? 24 : 30,
+                    padding: isCompact ? "4px 8px" : "6px 10px",
+                    fontSize: isCompact ? 10.5 : 12,
                   }}
                 >
-                  Clean outside view
+                  {isCompact ? "Clean link" : "Clean outside view"}
                 </span>
               </div>
 
               <div
                 style={{
-                  marginTop: 14,
+                  marginTop: isCompact ? 9 : 14,
                   color: "#FFFFFF",
                   fontWeight: 900,
-                  fontSize: isCompact ? 30 : 44,
+                  fontSize: isCompact ? 25 : 44,
                   lineHeight: 1.05,
                   maxWidth: 900,
                   textShadow: "0 6px 18px rgba(0,0,0,0.22)",
+                  display: "-webkit-box",
+                  WebkitLineClamp: isCompact ? 3 : 4,
+                  WebkitBoxOrient: "vertical" as any,
+                  overflow: "hidden",
                 }}
               >
-                {safeStr(effectiveShop?.shopName || "Shop")}
+                {shopNameText}
               </div>
 
               <div
                 style={{
-                  marginTop: 10,
+                  marginTop: isCompact ? 7 : 10,
                   color: "rgba(255,255,255,0.90)",
-                  fontSize: 15,
-                  lineHeight: 1.8,
+                  fontSize: isCompact ? 13 : 15,
+                  lineHeight: isCompact ? 1.45 : 1.8,
                   maxWidth: 860,
+                  display: "-webkit-box",
+                  WebkitLineClamp: isCompact ? 2 : 4,
+                  WebkitBoxOrient: "vertical" as any,
+                  overflow: "hidden",
                 }}
               >
-                {safeStr(
-                  effectiveShop?.description ||
-                    "A premium visitor page for trusted products. Management controls stay out of this page."
-                )}
+                {shopDescriptionText}
               </div>
 
               <div
                 style={{
-                  marginTop: 14,
+                  marginTop: isCompact ? 9 : 14,
                   display: "flex",
-                  gap: 8,
+                  gap: isCompact ? 6 : 8,
                   flexWrap: "wrap",
                 }}
               >
-                {safeStr(effectiveShop?.ownerName) ? (
+                {showOwnerBadge ? (
                   <span
                     style={{
                       ...badge(true),
                       background: "rgba(255,255,255,0.16)",
                       color: "#FFFFFF",
+                      minHeight: isCompact ? 24 : 30,
+                      padding: isCompact ? "4px 8px" : "6px 10px",
+                      fontSize: isCompact ? 10.5 : 12,
                     }}
                   >
-                    Owner: {safeStr(effectiveShop?.ownerName)}
+                    Owner: {shopOwnerText}
                   </span>
                 ) : null}
 
-                {safeStr(effectiveShop?.gmfnId) ? (
+                {shopGmfnText ? (
                   <span
                     style={{
                       ...badge(false),
                       background: "rgba(255,255,255,0.12)",
                       color: "#FFFFFF",
+                      minHeight: isCompact ? 24 : 30,
+                      padding: isCompact ? "4px 8px" : "6px 10px",
+                      fontSize: isCompact ? 10.5 : 12,
                     }}
                   >
-                    GMFN ID: {safeStr(effectiveShop?.gmfnId)}
+                    ID: {shopGmfnText}
                   </span>
                 ) : null}
 
-                {safeStr(effectiveShop?.communityName) ? (
+                {shopCommunityText ? (
                   <span
                     style={{
                       ...badge(false),
                       background: "rgba(255,255,255,0.12)",
                       color: "#FFFFFF",
+                      minHeight: isCompact ? 24 : 30,
+                      padding: isCompact ? "4px 8px" : "6px 10px",
+                      fontSize: isCompact ? 10.5 : 12,
                     }}
                   >
-                    {safeStr(effectiveShop?.communityName)}
+                    {shopCommunityText}
                   </span>
                 ) : null}
               </div>
@@ -1298,38 +1338,42 @@ export default function ShopGalleryPage() {
 
             <div
               style={{
-                ...innerCard("rgba(255,255,255,0.95)"),
+                ...innerCard(
+                  "radial-gradient(circle at 0% 0%, rgba(11,99,209,0.07) 0%, transparent 34%), linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(239,247,253,0.92) 100%)"
+                ),
                 border: "1px solid rgba(255,255,255,0.28)",
                 backdropFilter: "blur(8px)",
                 boxShadow: "0 18px 38px rgba(11,31,51,0.16)",
-                padding: 18,
+                padding: isCompact ? 12 : 18,
               }}
             >
               <div style={sectionLabel()}>Shop signpost</div>
 
-              <ExplainToggle
-                label="What this does"
-                what="This signpost block gives visitors the main identity of the shop before they browse products or ask for private access."
-                why="It helps the shop feel grounded in a real owner and community context rather than as an isolated product wall."
-                next="Read the shop signpost first, then continue into products, spotlight, or vault access depending on what you need."
-                tone="light"
-                style={{ marginTop: 12, marginBottom: 12 }}
-              />
+              {!isCompact ? (
+                <ExplainToggle
+                  label="What this does"
+                  what="This signpost block gives visitors the main identity of the shop before they browse products or ask for private access."
+                  why="It helps the shop feel grounded in a real owner and community context rather than as an isolated product wall."
+                  next="Read the shop signpost first, then continue into products, spotlight, or vault access depending on what you need."
+                  tone="light"
+                  style={{ marginTop: 12, marginBottom: 12 }}
+                />
+              ) : null}
 
               <div
                 style={{
-                  marginTop: 12,
+                  marginTop: isCompact ? 8 : 12,
                   display: "grid",
-                  gridTemplateColumns: "72px minmax(0, 1fr)",
-                  gap: 12,
+                  gridTemplateColumns: isCompact ? "52px minmax(0, 1fr)" : "72px minmax(0, 1fr)",
+                  gap: isCompact ? 9 : 12,
                   alignItems: "center",
                 }}
               >
                 <div
                   style={{
-                    width: 72,
-                    height: 72,
-                    borderRadius: 18,
+                    width: isCompact ? 52 : 72,
+                    height: isCompact ? 52 : 72,
+                    borderRadius: isCompact ? 16 : 18,
                     border: "1px solid rgba(11,31,51,0.10)",
                     background:
                       "linear-gradient(180deg, #F8FBFF 0%, #E7F0FF 100%)",
@@ -1338,13 +1382,13 @@ export default function ShopGalleryPage() {
                     justifyContent: "center",
                     color: "#1D4ED8",
                     fontWeight: 900,
-                    fontSize: 24,
+                    fontSize: isCompact ? 19 : 24,
                   }}
                 >
                   {initialsOf(
                     safeStr(
-                      effectiveShop?.shopName ||
-                        effectiveShop?.ownerName ||
+                      shopNameText ||
+                        shopOwnerText ||
                         "Shop"
                     )
                   )}
@@ -1355,57 +1399,94 @@ export default function ShopGalleryPage() {
                     style={{
                       color: "#0B1F33",
                       fontWeight: 900,
-                      fontSize: 19,
+                      fontSize: isCompact ? 15.5 : 19,
                       lineHeight: 1.25,
+                      display: "-webkit-box",
+                      WebkitLineClamp: isCompact ? 1 : 2,
+                      WebkitBoxOrient: "vertical" as any,
+                      overflow: "hidden",
                     }}
                   >
-                    {safeStr(effectiveShop?.shopName || "Shop")}
+                    {isCompact ? "Public shop link" : shopNameText}
                   </div>
 
-                  <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
-                    Share this shop outside the community with a clean public shop link.
+                  <div
+                    style={{
+                      marginTop: isCompact ? 4 : 6,
+                      ...helperText(),
+                      fontSize: isCompact ? 11.5 : 13,
+                      lineHeight: isCompact ? 1.35 : 1.75,
+                    }}
+                  >
+                    {isCompact
+                      ? "Share this verified shop page."
+                      : "Share this shop outside the community with a clean public shop link."}
                   </div>
                 </div>
               </div>
 
               <div
                 style={{
-                  marginTop: 14,
+                  marginTop: isCompact ? 9 : 14,
                   display: "flex",
-                  gap: 8,
+                  gap: isCompact ? 6 : 8,
                   flexWrap: "wrap",
                 }}
               >
-                {safeStr(effectiveShop?.gmfnId) ? (
-                  <span style={badge(true)}>
-                    GMFN ID: {safeStr(effectiveShop?.gmfnId)}
+                {shopGmfnText ? (
+                  <span
+                    style={{
+                      ...badge(true),
+                      minHeight: isCompact ? 24 : 30,
+                      padding: isCompact ? "4px 8px" : "6px 10px",
+                      fontSize: isCompact ? 10.5 : 12,
+                    }}
+                  >
+                    ID: {shopGmfnText}
                   </span>
                 ) : null}
 
-                <span style={badge(false)}>
-                  Trust:{" "}
-                  {safeStr(effectiveShop?.trustBand || "Trust reading not available yet")}
-                  {safeStr(effectiveShop?.trustScore)
-                    ? ` - ${safeStr(effectiveShop?.trustScore)}`
-                    : ""}
-                </span>
-
-                {safeStr(effectiveShop?.communityName) ? (
-                  <span style={badge(false)}>
-                    {safeStr(effectiveShop?.communityName)}
+                {shopTrustText || safeStr(effectiveShop?.trustScore) ? (
+                  <span
+                    style={{
+                      ...badge(false),
+                      minHeight: isCompact ? 24 : 30,
+                      padding: isCompact ? "4px 8px" : "6px 10px",
+                      fontSize: isCompact ? 10.5 : 12,
+                    }}
+                  >
+                    Trust: {shopTrustText || safeStr(effectiveShop?.trustScore)}
+                    {safeStr(effectiveShop?.trustScore) && shopTrustText
+                      ? ` - ${safeStr(effectiveShop?.trustScore)}`
+                      : ""}
                   </span>
                 ) : null}
 
-                <span style={badge(false)}>Vault</span>
-                <span style={badge(false)}>Private access by permission</span>
+                {shopCommunityText ? (
+                  <span
+                    style={{
+                      ...badge(false),
+                      minHeight: isCompact ? 24 : 30,
+                      padding: isCompact ? "4px 8px" : "6px 10px",
+                      fontSize: isCompact ? 10.5 : 12,
+                    }}
+                  >
+                    {shopCommunityText}
+                  </span>
+                ) : null}
 
-                {safeStr(effectiveShop?.whatsapp) ? (
+                {!isCompact ? <span style={badge(false)}>Vault</span> : null}
+                {!isCompact ? (
+                  <span style={badge(false)}>Private access by permission</span>
+                ) : null}
+
+                {!isCompact && safeStr(effectiveShop?.whatsapp) ? (
                   <span style={badge(false)}>
                     WhatsApp: {safeStr(effectiveShop?.whatsapp)}
                   </span>
                 ) : null}
 
-                {safeStr(effectiveShop?.telegram) ? (
+                {!isCompact && safeStr(effectiveShop?.telegram) ? (
                   <span style={badge(false)}>
                     Telegram: {safeStr(effectiveShop?.telegram)}
                   </span>
@@ -1414,17 +1495,36 @@ export default function ShopGalleryPage() {
 
               <div
                 style={{
-                  marginTop: 16,
+                  marginTop: isCompact ? 10 : 16,
                   display: "flex",
-                  gap: 10,
+                  gap: isCompact ? 8 : 10,
                   flexWrap: "wrap",
+                  justifyContent: isCompact ? "center" : "flex-start",
                 }}
               >
-                <button type="button" onClick={repostShop} style={primaryBtn(false)}>
+                <button
+                  type="button"
+                  onClick={repostShop}
+                  style={{
+                    ...primaryBtn(false),
+                    minHeight: isCompact ? 38 : 42,
+                    padding: isCompact ? "8px 12px" : "10px 14px",
+                    flex: isCompact ? "1 1 132px" : undefined,
+                  }}
+                >
                   Share shop
                 </button>
 
-                <button type="button" onClick={copyShopLink} style={secondaryBtn(false)}>
+                <button
+                  type="button"
+                  onClick={copyShopLink}
+                  style={{
+                    ...secondaryBtn(false),
+                    minHeight: isCompact ? 38 : 40,
+                    padding: isCompact ? "8px 12px" : "9px 12px",
+                    flex: isCompact ? "1 1 132px" : undefined,
+                  }}
+                >
                   Copy shop link
                 </button>
               </div>
