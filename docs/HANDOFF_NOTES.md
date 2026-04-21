@@ -46,6 +46,56 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
+Marketplace intent guide pilot.
+
+#### Routes/screens affected
+- `/app/marketplace`
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+
+#### Files in play
+- `frontend/src/pages/MarketplacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The second Marketplace block was changed from a route-name shortcut deck into
+  a plain-language `What do you want to do next?` intent guide.
+- The guide accepts typed everyday words such as `loan`, `deposit`,
+  `withdraw`, `shop`, `invite`, `trust`, or `group` and maps them to the
+  closest Marketplace route or local section.
+- Visible action cards now lead with ordinary goals such as `Add money`,
+  `Take money out`, `Ask for support`, `Show my shop`, and `Invite people`,
+  while still showing the technical/product label underneath.
+- Technical users can still type hidden route language such as `CCI` or
+  `TrustSlip` and be sent to the matching route.
+- `Ask for support` opens the local Borrow / Lend / Support section, while
+  `Invite people` opens the Marketplace-owned links section.
+- The guide remains scoped to the selected marketplace and does not change
+  Menu, Tools, bottom navigation, Dashboard, Dashboard Market Wisdom, backend,
+  auth, schema, payment, or deployment configuration.
+
+#### Verification
+- `npm exec -- eslint src/pages/MarketplacePage.tsx` passed with no errors.
+  Existing warnings remain for hook dependencies already present in
+  `MarketplacePage.tsx`.
+- `git diff --check -- frontend/src/pages/MarketplacePage.tsx` passed.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- Phone visual review is needed to confirm the intent card grid does not feel
+  too large and that typed matching is understandable for first-time users.
+
+#### Next recommended step
+- Deploy/retest `/app/marketplace` on phone, especially the typed guide and the
+  everyday-action cards.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
 Marketplace member/shop row cleanup.
 
 #### Routes/screens affected

@@ -167,6 +167,17 @@ type SectionState = {
   support: boolean;
 };
 
+type MarketplaceIntentItem = {
+  id: string;
+  label: string;
+  detail: string;
+  technical: string;
+  to: string;
+  tone: "primary" | "secondary" | "soft";
+  keywords: string[];
+  visible?: boolean;
+};
+
 type PersistedWithdrawalTask = {
   amountInput: string;
   noteInput: string;
@@ -204,6 +215,119 @@ const DEFAULT_SECTION_STATE: SectionState = {
   support: false,
 };
 
+const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
+  {
+    id: "money-in",
+    label: "Add money",
+    detail: "Pay into this marketplace or community pool.",
+    technical: "Money In",
+    to: "/app/payment/pool",
+    tone: "primary",
+    keywords: ["add", "deposit", "pay", "pay in", "money in", "fund", "top up"],
+  },
+  {
+    id: "money-out",
+    label: "Take money out",
+    detail: "Start the withdrawal or payout route.",
+    technical: "Money Out",
+    to: "/app/withdrawal-instructions",
+    tone: "secondary",
+    keywords: ["withdraw", "cash out", "money out", "payout", "take out"],
+  },
+  {
+    id: "finance",
+    label: "Check money record",
+    detail: "Review this marketplace's money picture.",
+    technical: "Finance",
+    to: "/app/finance",
+    tone: "secondary",
+    keywords: ["finance", "balance", "pool", "record", "account", "money"],
+  },
+  {
+    id: "support",
+    label: "Ask for support",
+    detail: "Start or continue a support or loan request.",
+    technical: "Borrow / Lend / Support",
+    to: "#marketplace-loans-support",
+    tone: "secondary",
+    keywords: ["loan", "borrow", "support", "lend", "help", "guarantor"],
+  },
+  {
+    id: "shop",
+    label: "Show my shop",
+    detail: "Open the shop connected to your GSN ID.",
+    technical: "Shop Gallery",
+    to: "",
+    tone: "secondary",
+    keywords: ["shop", "gallery", "sell", "market", "store", "product"],
+  },
+  {
+    id: "invite",
+    label: "Invite people",
+    detail: "Create or use marketplace-owned links.",
+    technical: "Marketplace links",
+    to: "#marketplace-owned-links",
+    tone: "soft",
+    keywords: ["invite", "join", "link", "bring", "people", "share"],
+  },
+  {
+    id: "trust",
+    label: "Check trust or ID",
+    detail: "Open your broader trust reading.",
+    technical: "Trust Passport",
+    to: "/app/trust",
+    tone: "soft",
+    keywords: ["trust", "score", "passport"],
+  },
+  {
+    id: "cci",
+    label: "Check ID or CCI",
+    detail: "Open identity and continuity checks.",
+    technical: "CCI",
+    to: "/app/identity",
+    tone: "soft",
+    keywords: ["cci", "id", "identity", "continuity"],
+    visible: false,
+  },
+  {
+    id: "trustslip",
+    label: "Show proof",
+    detail: "Open TrustSlip proof.",
+    technical: "TrustSlip",
+    to: "/app/trust-slip",
+    tone: "soft",
+    keywords: ["trustslip", "slip", "proof", "verify"],
+    visible: false,
+  },
+  {
+    id: "demand",
+    label: "Post a need",
+    detail: "Tell this marketplace what is needed.",
+    technical: "Demand Box",
+    to: "/app/demand-box",
+    tone: "soft",
+    keywords: ["need", "demand", "request", "post", "supply", "want"],
+  },
+  {
+    id: "community",
+    label: "Choose my group",
+    detail: "Return to the community list.",
+    technical: "Community Home",
+    to: "/app/community",
+    tone: "soft",
+    keywords: ["community", "group", "clan", "choose", "switch", "home"],
+  },
+  {
+    id: "messages",
+    label: "Check messages",
+    detail: "See alerts, requests, and unfinished items.",
+    technical: "Notifications",
+    to: "/app/notifications",
+    tone: "soft",
+    keywords: ["message", "messages", "notification", "alert", "notice"],
+  },
+];
+
 const FINAL_LOAN_STATUSES = new Set([
   "approved",
   "repaid",
@@ -225,6 +349,32 @@ function firstTruthy(...values: any[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function normalizeIntentText(value: any): string {
+  return safeStr(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function findMarketplaceIntent(value: string): MarketplaceIntentItem | null {
+  const text = normalizeIntentText(value);
+  if (!text) return null;
+
+  return (
+    MARKETPLACE_INTENT_ITEMS.find((item) =>
+      item.keywords.some((keyword) => {
+        const normalizedKeyword = normalizeIntentText(keyword);
+        return (
+          text === normalizedKeyword ||
+          text.includes(normalizedKeyword) ||
+          normalizedKeyword.includes(text)
+        );
+      })
+    ) || null
+  );
 }
 
 function displayGsnLabel(value: any): string {
@@ -1513,6 +1663,33 @@ function actionBtn(
   };
 }
 
+function intentGuideCardStyle(): React.CSSProperties {
+  return {
+    marginTop: 14,
+    borderRadius: 20,
+    border: "1px solid rgba(16,37,59,0.10)",
+    background:
+      "radial-gradient(circle at 12% 8%, rgba(11,99,209,0.10) 0%, rgba(11,99,209,0.00) 36%), linear-gradient(180deg, #FFFFFF 0%, #F5FAFF 100%)",
+    padding: 14,
+    boxShadow:
+      "0 14px 26px rgba(10,24,49,0.065), inset 0 1px 0 rgba(255,255,255,0.82)",
+  };
+}
+
+function intentChoiceStyle(
+  tone: MarketplaceIntentItem["tone"]
+): React.CSSProperties {
+  return {
+    ...actionBtn(tone),
+    minHeight: 72,
+    alignItems: "flex-start",
+    flexDirection: "column",
+    gap: 5,
+    padding: "12px 13px",
+    textAlign: "left",
+  };
+}
+
 function inputStyle(): React.CSSProperties {
   return {
     width: "100%",
@@ -1808,6 +1985,7 @@ export default function MarketplacePage() {
     useState<SectionState>(DEFAULT_SECTION_STATE);
   const [profileDetailsOpen, setProfileDetailsOpen] = useState(false);
   const [pictureToolsOpen, setPictureToolsOpen] = useState(false);
+  const [intentQuery, setIntentQuery] = useState("");
 
   const supportSectionRef = useRef<HTMLElement | null>(null);
   const withdrawalHandoffAppliedRef = useRef("");
@@ -1820,6 +1998,18 @@ export default function MarketplacePage() {
       ? `/app/shop/${encodeURIComponent(currentGmfnId)}`
       : "";
   }, [currentGmfnId]);
+
+  const marketplaceIntentItems = useMemo(() => {
+    return MARKETPLACE_INTENT_ITEMS.map((item) =>
+      item.id === "shop" ? { ...item, to: myShopTo } : item
+    );
+  }, [myShopTo]);
+
+  const matchedIntent = useMemo(() => {
+    const match = findMarketplaceIntent(intentQuery);
+    if (!match) return null;
+    return marketplaceIntentItems.find((item) => item.id === match.id) || match;
+  }, [intentQuery, marketplaceIntentItems]);
 
   const activeCommunityId = useMemo(() => {
     return positiveNumber(selectedCommunity?.id || selectedCommunity?.clan_id);
@@ -1945,6 +2135,70 @@ export default function MarketplacePage() {
   function openFinance(event?: React.SyntheticEvent<HTMLElement>) {
     consumeMarketplaceButtonEvent(event);
     navigateWithOrigin(navigate, "/app/finance", location);
+  }
+
+  function scrollToMarketplaceSection(id: string) {
+    window.setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({
+        block: "start",
+        behavior: "smooth",
+      });
+    }, 120);
+  }
+
+  function openMarketplaceIntent(
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    item: MarketplaceIntentItem | null
+  ) {
+    consumeMarketplaceButtonEvent(event);
+
+    if (!item) {
+      showNotice(
+        "error",
+        "Type what you want to do, like loan, deposit, withdraw, shop, invite, or trust."
+      );
+      return;
+    }
+
+    if (item.id === "support") {
+      setSectionsOpen((prev) => ({ ...prev, support: true }));
+      scrollToMarketplaceSection("marketplace-loans-support");
+      return;
+    }
+
+    if (item.id === "invite") {
+      setSectionsOpen((prev) => ({ ...prev, tools: true }));
+      scrollToMarketplaceSection("marketplace-owned-links");
+      return;
+    }
+
+    if (item.id === "shop" && !item.to) {
+      showNotice("error", "Your shop route is not ready yet.");
+      return;
+    }
+
+    if (!item.to) {
+      showNotice("error", "That route is not ready yet.");
+      return;
+    }
+
+    openMarketplaceRoute(undefined, item.to);
+  }
+
+  function handleIntentSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const match = matchedIntent;
+    if (!match) {
+      showNotice(
+        "error",
+        "I could not match that yet. Try loan, deposit, withdraw, shop, invite, trust, or group."
+      );
+      return;
+    }
+
+    openMarketplaceIntent(undefined, match);
   }
 
   async function loadLoanDraftContext(loanId: number, communityId: number) {
@@ -3113,7 +3367,7 @@ export default function MarketplacePage() {
       </section>
 
       <section style={{ ...pageCard("#FFFFFF"), order: 2 }}>
-        <div style={sectionLabel()}>Marketplace shortcuts</div>
+        <div style={sectionLabel()}>What do you want to do next?</div>
 
         <div
           style={{
@@ -3122,146 +3376,105 @@ export default function MarketplacePage() {
             maxWidth: 880,
           }}
         >
-          Open the route you need. Each action keeps this selected community
-          context.
+          Type simple words like loan, deposit, withdraw, shop, invite, or
+          trust. GSN will point you to the right marketplace route.
         </div>
 
-        <div
-          style={{
-            marginTop: 16,
-            display: "grid",
-            gap: 10,
-          }}
-        >
-          <div
+        <div style={intentGuideCardStyle()}>
+          <form
+            onSubmit={handleIntentSubmit}
             style={{
-              display: "flex",
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
               gap: 10,
-              flexWrap: "wrap",
+              alignItems: "center",
             }}
           >
-            <button
-              type="button"
-              onPointerDown={consumeMarketplacePointerEvent}
-              onClick={openFinance}
+            <input
+              value={intentQuery}
+              onChange={(event) => setIntentQuery(event.target.value)}
+              placeholder="Try: loan, deposit, withdraw, shop, invite..."
+              aria-label="Type what you want to do next"
               style={{
-                ...actionBtn("primary"),
-                position: "relative",
-                zIndex: 4,
+                ...inputStyle(),
+                fontWeight: 800,
               }}
-            >
-              Finance
-            </button>
+            />
 
             <button
-              type="button"
+              type="submit"
               onPointerDown={consumeMarketplacePointerEvent}
-              onClick={(event) => openMarketplaceRoute(event, "/app/payment/pool")}
-              style={actionBtn("secondary")}
+              style={actionBtn("primary")}
             >
-              Money In
+              {matchedIntent ? `Open ${matchedIntent.label}` : "Find action"}
             </button>
+          </form>
 
-            <button
-              type="button"
-              onPointerDown={consumeMarketplacePointerEvent}
-              onClick={(event) =>
-                openMarketplaceRoute(event, "/app/withdrawal-instructions")
-              }
-              style={actionBtn("secondary")}
-            >
-              Money Out
-            </button>
+          <div
+            style={{
+              marginTop: 10,
+              ...helperText(),
+              fontSize: 13,
+            }}
+          >
+            {matchedIntent
+              ? `Best match: ${matchedIntent.label} - ${matchedIntent.technical}.`
+              : "If you already know the app words, use the smaller technical label on each card."}
           </div>
 
           <div
             style={{
-              display: "flex",
+              marginTop: 12,
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "1fr"
+                : "repeat(4, minmax(0, 1fr))",
               gap: 10,
-              flexWrap: "wrap",
             }}
           >
-            <button
-              type="button"
-              onPointerDown={consumeMarketplacePointerEvent}
-              onClick={(event) => openMarketplaceRoute(event, "/app/trust")}
-              style={actionBtn("soft")}
-            >
-              Trust Passport
-            </button>
-
-            <button
-              type="button"
-              onPointerDown={consumeMarketplacePointerEvent}
-              onClick={(event) => openMarketplaceRoute(event, "/app/identity")}
-              style={actionBtn("soft")}
-            >
-              CCI
-            </button>
-
-            <button
-              type="button"
-              onPointerDown={consumeMarketplacePointerEvent}
-              onClick={(event) => openMarketplaceRoute(event, "/app/trust-slip")}
-              style={actionBtn("soft")}
-            >
-              TrustSlip
-            </button>
-
-            <button
-              type="button"
-              onPointerDown={consumeMarketplacePointerEvent}
-              onClick={(event) => openMarketplaceRoute(event, "/app/demand-box")}
-              style={actionBtn("soft")}
-            >
-              Demand Box
-            </button>
-
-            <button
-              type="button"
-              onPointerDown={consumeMarketplacePointerEvent}
-              onClick={(event) => openMarketplaceRoute(event, "/app/notifications")}
-              style={actionBtn("soft")}
-            >
-              Notifications
-            </button>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            {myShopTo ? (
-              <button
-                type="button"
-                onPointerDown={consumeMarketplacePointerEvent}
-                onClick={(event) => openMarketplaceRoute(event, myShopTo)}
-                style={actionBtn("secondary")}
-              >
-                Shop Gallery
-              </button>
-            ) : null}
-
-            <button
-              type="button"
-              onPointerDown={consumeMarketplacePointerEvent}
-              onClick={(event) => openMarketplaceRoute(event, "/app/community")}
-              style={actionBtn("secondary")}
-            >
-              Community Home
-            </button>
-
-            <button
-              type="button"
-              onPointerDown={consumeMarketplacePointerEvent}
-              onClick={(event) => openMarketplaceRoute(event, "/app/dashboard")}
-              style={actionBtn("secondary")}
-            >
-              Dashboard
-            </button>
+            {marketplaceIntentItems
+              .filter((item) => item.visible !== false)
+              .map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onPointerDown={consumeMarketplacePointerEvent}
+                  onClick={(event) => openMarketplaceIntent(event, item)}
+                  style={intentChoiceStyle(item.tone)}
+                >
+                  <span
+                    style={{
+                      color: "#0B1F33",
+                      fontSize: 15,
+                      fontWeight: 950,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {item.label}
+                  </span>
+                  <span
+                    style={{
+                      color: "#52677C",
+                      fontSize: 12,
+                      fontWeight: 800,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {item.detail}
+                  </span>
+                  <span
+                    style={{
+                      color: "#1D4ED8",
+                      fontSize: 11,
+                      fontWeight: 950,
+                      letterSpacing: 0.18,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {item.technical}
+                  </span>
+                </button>
+              ))}
           </div>
         </div>
       </section>
@@ -3552,7 +3765,10 @@ export default function MarketplacePage() {
         ) : null}
       </section>
 
-      <section style={{ ...pageCard("#FFFFFF"), order: 4 }}>
+      <section
+        id="marketplace-owned-links"
+        style={{ ...pageCard("#FFFFFF"), order: 4 }}
+      >
         <div
           style={{
             display: "flex",
