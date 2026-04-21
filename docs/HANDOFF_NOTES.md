@@ -5793,3 +5793,24 @@ GSN-branded invite composer and invite-entry continuity.
 - This is copy/surface cleanup only. It does not remove the actual benefit
   panels, next-action guide logic, routes, backend, auth, schema, payment,
   ledger, route guard, deployment config, or Dashboard Market Wisdom behavior.
+
+### Live entry route deploy check addendum
+
+- Phone pilot testing reported `Not Found` during the first create-community
+  entry steps.
+- Local branch inspection confirmed the entry routers are present in
+  `gmfn_backend/app/api/router.py` and the create-entry frontend calls
+  `/entry/phone/start`, `/entry/bank-details`, and `/entry/create`.
+- Live Render inspection on 2026-04-21 showed:
+  - `https://gmfn-api.onrender.com/health` returns healthy.
+  - `POST https://gmfn-api.onrender.com/entry/phone/start` returns 404.
+  - Live OpenAPI does not list the `/entry/*` routes.
+- Conclusion: the live API deployment is stale or not running the latest backend
+  branch that contains public entry routes. This is not currently evidence of a
+  user form mistake.
+- Added `gmfn_backend/docs/render_deploy_marker.md` as a docs-only backend-root
+  change to trigger Render API redeploy without changing runtime behavior.
+- Recommended test links after the API redeploy:
+  - Create a new community: `https://gmfn-frontend.onrender.com/cover?entry=create`
+  - Join an existing community: use a generated invite link containing a real
+    invite code.
