@@ -5923,3 +5923,23 @@ GSN-branded invite composer and invite-entry continuity.
     `/system/diagnostics` returns `404`.
   - Duplicate route registrations exist for several trust/admin/bank endpoints.
 - Verified `npm run build` in `frontend` succeeds after these changes.
+
+### Safe backend correction and completion-program addendum
+
+- Product-owner approved applying the safe endpoint corrections now and
+  separating heavier Vault/admin/backend work into a controlled program.
+- Mounted the existing admin-protected diagnostics router:
+  - `gmfn_backend/app/api/router.py`
+  - `gmfn_backend/app/api/routes/system_diagnostics.py`
+- Local OpenAPI now includes `/system/diagnostics`; path count moves from `209`
+  to `210` locally. The route should become live after the backend Render
+  redeploy containing this commit.
+- Updated `docs/ENDPOINT_AUDIT_2026-04-21.md` to mark system diagnostics as
+  corrected locally but pending live deploy.
+- Added `docs/BACKEND_ADMIN_VAULT_COMPLETION_PROGRAM_2026-04-21.md` to guide:
+  - pilot-critical route confirmation
+  - Vault access backend contract
+  - admin backend cleanup
+  - final freeze before wider testing
+- This correction does not change auth rules, schemas, migrations, payments,
+  ledger behavior, environment config, or user-facing route layout.

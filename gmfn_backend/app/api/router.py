@@ -88,6 +88,7 @@ from app.api.routes.settings import router as settings_router
 # =========================
 from app.api.routes.revenue_allocation import router as revenue_allocation_router
 from app.api.routes.guarantor_earnings import router as guarantor_earnings_router
+from app.api.routes.system_diagnostics import router as system_diagnostics_router
 from app.api.routes.system_health import router as system_health_router
 from app.api.routes.system_status import router as system_status_router
 from app.api.routes.protocol_status import router as protocol_status_router
@@ -174,6 +175,7 @@ api_router.include_router(settings_router)
 # REVENUE / EARNINGS / STATUS
 api_router.include_router(revenue_allocation_router)
 api_router.include_router(guarantor_earnings_router)
+api_router.include_router(system_diagnostics_router)
 api_router.include_router(system_health_router)
 api_router.include_router(system_status_router)
 api_router.include_router(protocol_status_router)
