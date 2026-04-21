@@ -5373,3 +5373,33 @@ GSN-branded invite composer and invite-entry continuity.
 - `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
   the normal Windows line-ending warning.
 - `npm run build` passed in `frontend`.
+
+### Finance File cross-community backbone addendum
+
+- Updated `frontend/src/pages/FinancePage.tsx` only.
+- Confirmed backend finance truth before changing UI:
+  - `/pool/me/summary` already provides the cumulative member pool summary
+    across all active communities.
+  - `/pool/me` remains the current selected-community pool file.
+  - `/trust/me/why` provides Trust Passport evidence/score context.
+  - `/guarantor-earnings/me` provides visible guarantor earnings rows.
+- Added a new route-local `GSN finance file` surface near the top of Finance:
+  - reads the member's same GSN ID across communities
+  - shows combined effective available, membership pool total, reserved/locked
+    money, locked guarantor support, and visible guarantor earnings
+  - separates `What is helping` from `What needs attention`
+  - lists compact community finance units from the backend cumulative pool
+    summary
+  - links directly into Trust Passport and Loan Readiness for correlation
+- Preserved the existing Finance summary, expected-payment reconciliation,
+  borrower-side finance, guarantor-side finance, recent finance events, and
+  route links.
+- No backend, auth, schema, payment, ledger, environment config, or Dashboard
+  Market Wisdom behavior changed.
+
+### Verification after Finance File update
+
+- `npm exec -- eslint src/pages/FinancePage.tsx` passed in `frontend`.
+- `git diff --check -- frontend/src/pages/FinancePage.tsx` passed with only
+  the normal Windows line-ending warning.
+- `npm run build` passed in `frontend`.

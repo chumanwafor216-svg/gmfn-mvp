@@ -85,6 +85,38 @@ type ExpectedPaymentRecord = {
   confirmed_at?: string | null;
 };
 
+type CrossCommunityPoolItem = {
+  clan_id?: number | null;
+  community_code?: string | null;
+  clan_name?: string | null;
+  marketplace_name?: string | null;
+  currency?: string | null;
+  available_balance?: string | null;
+  pending_deposits?: string | null;
+  pending_withdrawals?: string | null;
+  reserved_pool?: string | null;
+  effective_available?: string | null;
+  membership_pool_balance?: string | null;
+  reference?: string | null;
+};
+
+type CrossCommunityPoolSummary = {
+  user_id?: number | null;
+  gmfn_id?: string | null;
+  currency?: string | null;
+  communities_count?: number | null;
+  totals?: {
+    available_balance?: string | null;
+    pending_deposits?: string | null;
+    pending_withdrawals?: string | null;
+    reserved_pool?: string | null;
+    effective_available?: string | null;
+    membership_pool_balance?: string | null;
+    guarantee_locked_as_guarantor?: string | null;
+  } | null;
+  items?: CrossCommunityPoolItem[];
+};
+
 const FINANCE_UI_STORAGE_KEY = "gmfn.finance.sections.v1";
 
 const FINAL_LOAN_STATUSES = new Set([
@@ -139,6 +171,49 @@ function rowsOf<T = any>(input: any): T[] {
   if (Array.isArray(input?.results)) return input.results as T[];
   if (Array.isArray(input?.rows)) return input.rows as T[];
   return [];
+}
+
+function normalizeCrossCommunityPoolSummary(
+  raw: any
+): CrossCommunityPoolSummary | null {
+  if (!raw) return null;
+  const src = raw?.item || raw?.data || raw;
+  const items = rowsOf<CrossCommunityPoolItem>(src?.items).map((item) => ({
+    clan_id: Number.isFinite(Number(item?.clan_id))
+      ? Number(item.clan_id)
+      : null,
+    community_code: firstTruthy(item?.community_code),
+    clan_name: firstTruthy(item?.clan_name),
+    marketplace_name: firstTruthy(item?.marketplace_name),
+    currency: firstTruthy(item?.currency),
+    available_balance: firstTruthy(item?.available_balance),
+    pending_deposits: firstTruthy(item?.pending_deposits),
+    pending_withdrawals: firstTruthy(item?.pending_withdrawals),
+    reserved_pool: firstTruthy(item?.reserved_pool),
+    effective_available: firstTruthy(item?.effective_available),
+    membership_pool_balance: firstTruthy(item?.membership_pool_balance),
+    reference: firstTruthy(item?.reference),
+  }));
+
+  return {
+    user_id: Number.isFinite(Number(src?.user_id)) ? Number(src.user_id) : null,
+    gmfn_id: firstTruthy(src?.gmfn_id),
+    currency: firstTruthy(src?.currency, "NGN"),
+    communities_count: Number.isFinite(Number(src?.communities_count))
+      ? Number(src.communities_count)
+      : items.length,
+    totals: src?.totals || null,
+    items,
+  };
+}
+
+function countTrustEvents(rawCounts: any, names: string[]): number {
+  if (!rawCounts || typeof rawCounts !== "object") return 0;
+  return names.reduce((sum, name) => {
+    const direct = Number(rawCounts[name] || 0);
+    if (Number.isFinite(direct)) return sum + direct;
+    return sum;
+  }, 0);
 }
 
 function safeDateTime(x: any): string {
@@ -731,6 +806,10 @@ export default function FinancePage() {
   const [expectedPayments, setExpectedPayments] = useState<ExpectedPaymentRecord[]>(
     []
   );
+  const [crossCommunityPool, setCrossCommunityPool] =
+    useState<CrossCommunityPoolSummary | null>(null);
+  const [trustWhy, setTrustWhy] = useState<any>(null);
+  const [guarantorEarnings, setGuarantorEarnings] = useState<any>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -794,11 +873,37 @@ export default function FinancePage() {
             ? (api as any).getPoolMe("NGN", 20).catch(() => null)
             : Promise.resolve(null);
 
-        const [meRes, clanRes, loansRes, poolRes] = await Promise.all([
+        const crossPoolPromise =
+          typeof (api as any).getPoolMeSummary === "function"
+            ? (api as any).getPoolMeSummary("NGN").catch(() => null)
+            : Promise.resolve(null);
+
+        const trustWhyPromise =
+          typeof (api as any).getTrustWhyMe === "function"
+            ? (api as any).getTrustWhyMe().catch(() => null)
+            : Promise.resolve(null);
+
+        const guarantorEarningsPromise =
+          typeof (api as any).getMyGuarantorEarnings === "function"
+            ? (api as any).getMyGuarantorEarnings(100).catch(() => null)
+            : Promise.resolve(null);
+
+        const [
+          meRes,
+          clanRes,
+          loansRes,
+          poolRes,
+          crossPoolRes,
+          trustWhyRes,
+          guarantorEarningsRes,
+        ] = await Promise.all([
           mePromise,
           clanPromise,
           loansPromise,
           poolPromise,
+          crossPoolPromise,
+          trustWhyPromise,
+          guarantorEarningsPromise,
         ]);
 
         if (!alive) return;
@@ -816,6 +921,9 @@ export default function FinancePage() {
         setCurrentClan(clanRes || null);
         setLoans(filteredLoans);
         setPoolState(poolRes || null);
+        setCrossCommunityPool(normalizeCrossCommunityPoolSummary(crossPoolRes));
+        setTrustWhy(trustWhyRes || null);
+        setGuarantorEarnings(guarantorEarningsRes || null);
 
         const gmfnId = firstTruthy(meRes?.gmfn_id);
 
@@ -960,6 +1068,86 @@ export default function FinancePage() {
     moneySurface?.poolReference || poolState?.reference || ""
   );
 
+  const crossCommunityItems = useMemo(() => {
+    return Array.isArray(crossCommunityPool?.items)
+      ? crossCommunityPool.items
+      : [];
+  }, [crossCommunityPool]);
+
+  const crossTotals = (crossCommunityPool?.totals || {}) as NonNullable<
+    CrossCommunityPoolSummary["totals"]
+  >;
+  const crossCurrency = safeStr(crossCommunityPool?.currency || poolCurrency || "NGN");
+  const crossCommunitiesCount =
+    positiveNumber(crossCommunityPool?.communities_count) ||
+    crossCommunityItems.length ||
+    (selectedClanId ? 1 : 0);
+  const crossAvailableBalance = safeStr(
+    crossTotals?.available_balance || poolAmount || "0.00"
+  );
+  const crossEffectiveAvailable = safeStr(
+    crossTotals?.effective_available || effectiveAvailable || "0.00"
+  );
+  const crossPendingDeposits = safeStr(
+    crossTotals?.pending_deposits || pendingDeposits || "0.00"
+  );
+  const crossPendingWithdrawals = safeStr(
+    crossTotals?.pending_withdrawals || pendingWithdrawals || "0.00"
+  );
+  const crossReservedPool = safeStr(
+    crossTotals?.reserved_pool || reservedPool || "0.00"
+  );
+  const crossMembershipPool = safeStr(
+    crossTotals?.membership_pool_balance || crossAvailableBalance || "0.00"
+  );
+  const crossLockedGuarantees = safeStr(
+    crossTotals?.guarantee_locked_as_guarantor ||
+      guarantorExposure?.totalLocked ||
+      "0.00"
+  );
+
+  const trustComputed = trustWhy?.computed || {};
+  const trustCounts = trustComputed?.counts || {};
+  const trustScore = firstTruthy(
+    trustComputed?.standing_score,
+    trustComputed?.trust_score,
+    trustComputed?.score,
+    me?.trust_score,
+    "0"
+  );
+  const trustBand = firstTruthy(
+    trustComputed?.trust_band,
+    trustComputed?.band,
+    me?.trust_band,
+    "Not ready"
+  );
+  const trustPackId = firstTruthy(trustWhy?.pack_id);
+  const repaymentProofCount = countTrustEvents(trustCounts, [
+    "loan_fully_repaid",
+    "loan_repaid",
+    "repaid",
+    "repayment_full",
+    "full_repayment",
+    "loan_repayment_completed",
+  ]);
+  const supportProofCount = countTrustEvents(trustCounts, [
+    "guarantor_success",
+    "guarantor_repayment_success",
+    "guarantor_supported_repaid",
+    "guarantor_credit",
+  ]);
+  const financePressureEventCount = countTrustEvents(trustCounts, [
+    "missed_payment",
+    "repayment_missed",
+    "late_payment",
+    "overdue",
+    "default",
+    "loan_defaulted",
+    "write_off",
+  ]);
+  const guarantorEarningsTotal = safeStr(guarantorEarnings?.total_earned || "0.00");
+  const guarantorEarningsItems = rowsOf<any>(guarantorEarnings);
+
   const activeExpectedPayments = useMemo(() => {
     return expectedPayments.filter((item) => {
       const status = safeStr(item?.status).toLowerCase();
@@ -1006,6 +1194,179 @@ export default function FinancePage() {
     }, 0);
   }, [borrowerLoans]);
 
+  const financeHelps = useMemo(() => {
+    const rows: string[] = [];
+
+    if (crossCommunitiesCount > 0) {
+      rows.push(
+        `${crossCommunitiesCount} community finance file${
+          crossCommunitiesCount === 1 ? "" : "s"
+        } ${crossCommunitiesCount === 1 ? "is" : "are"} visible under this one GSN ID.`
+      );
+    }
+
+    if (parseMoneyNumber(crossEffectiveAvailable) > 0) {
+      rows.push(
+        `Effective available across communities is ${fmtMoney(
+          crossEffectiveAvailable
+        )} ${crossCurrency}.`
+      );
+    }
+
+    if (repaymentProofCount > 0) {
+      rows.push(
+        `${repaymentProofCount} repayment proof event${
+          repaymentProofCount === 1 ? "" : "s"
+        } support the Trust Passport record.`
+      );
+    }
+
+    if (supportProofCount > 0) {
+      rows.push(
+        `${supportProofCount} guarantor support success event${
+          supportProofCount === 1 ? "" : "s"
+        } show contribution to others.`
+      );
+    }
+
+    if (parseMoneyNumber(guarantorEarningsTotal) > 0) {
+      rows.push(
+        `Visible guarantor earnings are ${fmtMoney(
+          guarantorEarningsTotal
+        )} ${crossCurrency}.`
+      );
+    }
+
+    if (rows.length === 0) {
+      rows.push(
+        "The finance file is active, but it needs more confirmed money movement before it can show strong positive signals."
+      );
+    }
+
+    return rows.slice(0, 5);
+  }, [
+    crossCommunitiesCount,
+    crossCurrency,
+    crossEffectiveAvailable,
+    guarantorEarningsTotal,
+    repaymentProofCount,
+    supportProofCount,
+  ]);
+
+  const financeWatchItems = useMemo(() => {
+    const rows: string[] = [];
+
+    if (borrowerRemainingTotal > 0) {
+      rows.push(
+        `Remaining borrower-side amount shown: ${fmtMoney(
+          borrowerRemainingTotal
+        )} ${crossCurrency}.`
+      );
+    }
+
+    if (parseMoneyNumber(crossLockedGuarantees) > 0) {
+      rows.push(
+        `Guarantee support still locked across the file: ${fmtMoney(
+          crossLockedGuarantees
+        )} ${crossCurrency}.`
+      );
+    }
+
+    if (pendingReconciliationCount > 0) {
+      rows.push(
+        `${pendingReconciliationCount} expected payment${
+          pendingReconciliationCount === 1 ? "" : "s"
+        } still need matching or confirmation.`
+      );
+    }
+
+    if (parseMoneyNumber(crossPendingWithdrawals) > 0) {
+      rows.push(
+        `Withdrawals awaiting completion: ${fmtMoney(
+          crossPendingWithdrawals
+        )} ${crossCurrency}.`
+      );
+    }
+
+    if (parseMoneyNumber(crossPendingDeposits) > 0) {
+      rows.push(
+        `Deposits awaiting completion: ${fmtMoney(
+          crossPendingDeposits
+        )} ${crossCurrency}.`
+      );
+    }
+
+    if (financePressureEventCount > 0) {
+      rows.push(
+        `${financePressureEventCount} finance pressure event${
+          financePressureEventCount === 1 ? "" : "s"
+        } appear in the trust record and should be reviewed in Trust Passport.`
+      );
+    }
+
+    if (rows.length === 0) {
+      rows.push(
+        "No cross-community money pressure is standing out from the visible records right now."
+      );
+    }
+
+    return rows.slice(0, 5);
+  }, [
+    borrowerRemainingTotal,
+    crossCurrency,
+    crossLockedGuarantees,
+    crossPendingDeposits,
+    crossPendingWithdrawals,
+    financePressureEventCount,
+    pendingReconciliationCount,
+  ]);
+
+  const financeFileReading = useMemo(() => {
+    const hasHardPressure =
+      borrowerRemainingTotal > 0 ||
+      parseMoneyNumber(crossLockedGuarantees) > parseMoneyNumber(crossEffectiveAvailable);
+
+    const hasWatchPressure =
+      hasHardPressure ||
+      pendingReconciliationCount > 0 ||
+      parseMoneyNumber(crossPendingDeposits) > 0 ||
+      parseMoneyNumber(crossPendingWithdrawals) > 0 ||
+      financePressureEventCount > 0;
+
+    if (hasHardPressure) {
+      return {
+        tone: "pressure" as const,
+        title: "Your finance file needs careful watching.",
+        detail:
+          "Borrower-side repayment, locked support, or both are creating visible pressure across your money record.",
+      };
+    }
+
+    if (hasWatchPressure) {
+      return {
+        tone: "watch" as const,
+        title: "Your finance file is active and should be followed up.",
+        detail:
+          "The record is not blocked, but pending payments, withdrawals, deposits, or trust-linked finance events need attention.",
+      };
+    }
+
+    return {
+      tone: "calm" as const,
+      title: "Your finance file is calm from the visible records.",
+      detail:
+        "The current combined view is not showing active borrower pressure, heavy locked support, or waiting payment items.",
+    };
+  }, [
+    borrowerRemainingTotal,
+    crossEffectiveAvailable,
+    crossLockedGuarantees,
+    crossPendingDeposits,
+    crossPendingWithdrawals,
+    financePressureEventCount,
+    pendingReconciliationCount,
+  ]);
+
   const reading = useMemo(() => {
     const activeGuarantees = Number(guarantorExposure?.activeGuarantees || 0);
     const locked = parseMoneyNumber(guarantorExposure?.totalLocked);
@@ -1046,6 +1407,7 @@ export default function FinancePage() {
   }, [borrowerLoans.length, guarantorExposure]);
 
   const readingTone = toneStyles(reading.tone);
+  const financeFileTone = toneStyles(financeFileReading.tone);
 
   const financeNextActionItems = useMemo<NextActionGuideItem[]>(
     () => [
@@ -1114,6 +1476,14 @@ export default function FinancePage() {
         technical: "Loan readiness",
         to: "/app/loan-readiness",
         keywords: ["ready", "readiness", "eligible", "clean", "trust"],
+      },
+      {
+        id: "trust-passport",
+        label: "Open Trust Passport",
+        detail: "See the trust evidence behind repayment and support behaviour.",
+        technical: "Trust Passport",
+        to: "/app/trust",
+        keywords: ["trust", "passport", "evidence", "score", "record"],
       },
       {
         id: "marketplace",
@@ -1283,6 +1653,318 @@ export default function FinancePage() {
       />
 
       <section
+        id="finance-file"
+        style={pageCard(
+          "linear-gradient(145deg, #F8FBFF 0%, #FFFFFF 34%, #EEF6FF 72%, #FFF7EF 100%)"
+        )}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.1fr) minmax(320px, 0.9fr)",
+            gap: 16,
+            alignItems: "stretch",
+          }}
+        >
+          <div
+            style={{
+              borderRadius: 24,
+              padding: isCompact ? 18 : 22,
+              border: "1px solid rgba(15,23,42,0.12)",
+              background:
+                "radial-gradient(circle at 14% 18%, rgba(219,39,119,0.20), transparent 28%), radial-gradient(circle at 90% 8%, rgba(245,158,11,0.24), transparent 26%), linear-gradient(145deg, #0B1F33 0%, #133A5A 54%, #1F5C86 100%)",
+              boxShadow: "0 24px 48px rgba(11,31,51,0.16)",
+              color: "#F8FBFF",
+            }}
+          >
+            <div
+              style={{
+                color: "#FDE68A",
+                fontSize: 12,
+                fontWeight: 950,
+                letterSpacing: 2.4,
+                textTransform: "uppercase",
+              }}
+            >
+              GSN finance file
+            </div>
+
+            <div
+              style={{
+                marginTop: 10,
+                fontSize: isCompact ? 30 : 38,
+                fontWeight: 950,
+                lineHeight: 1.05,
+              }}
+            >
+              {memberName}'s money story across communities
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                color: "#D8E7F5",
+                fontSize: 15,
+                lineHeight: 1.75,
+                maxWidth: 760,
+              }}
+            >
+              This is the combined member finance file. It reads the same GSN ID
+              through the communities you belong to, then separates what is
+              helping you from what may be stretching you.
+            </div>
+
+            <div
+              style={{
+                marginTop: 16,
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
+              <span
+                style={{
+                  ...badge(true),
+                  color: "#FFFFFF",
+                  background: "rgba(255,255,255,0.16)",
+                  border: "1px solid rgba(255,255,255,0.14)",
+                }}
+              >
+                Communities: {crossCommunitiesCount}
+              </span>
+              <span
+                style={{
+                  ...badge(false),
+                  color: "#F8FBFF",
+                  background: "rgba(255,255,255,0.12)",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                }}
+              >
+                GSN ID: {gmfnId}
+              </span>
+              <span
+                style={{
+                  ...badge(false),
+                  color: "#F8FBFF",
+                  background: "rgba(255,255,255,0.12)",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                }}
+              >
+                Trust band: {trustBand}
+              </span>
+              <span
+                style={{
+                  ...badge(false),
+                  color: "#F8FBFF",
+                  background: "rgba(255,255,255,0.12)",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                }}
+              >
+                Trust score: {trustScore}
+              </span>
+            </div>
+          </div>
+
+          <div
+            style={{
+              ...softCard(financeFileTone.bg),
+              border: financeFileTone.border,
+              display: "grid",
+              gap: 12,
+              alignContent: "start",
+            }}
+          >
+            <div style={sectionLabel()}>Combined reading</div>
+            <div
+              style={{
+                color: financeFileTone.text,
+                fontSize: 23,
+                fontWeight: 950,
+                lineHeight: 1.18,
+              }}
+            >
+              {financeFileReading.title}
+            </div>
+            <div style={{ ...helperText(), color: "#0B1F33" }}>
+              {financeFileReading.detail}
+            </div>
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+                marginTop: 2,
+              }}
+            >
+              <OriginLink to="/app/trust" style={actionBtn("secondary")}>
+                Open Trust Passport
+              </OriginLink>
+              <OriginLink to="/app/loan-readiness" style={actionBtn("soft")}>
+                Check readiness
+              </OriginLink>
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "0.95fr 1fr 1fr",
+            gap: 12,
+          }}
+        >
+          <div style={innerCard("rgba(255,255,255,0.82)")}>
+            <div style={sectionLabel()}>Across communities</div>
+            <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+              <div style={helperText()}>
+                Effective available:{" "}
+                <strong>
+                  {fmtMoney(crossEffectiveAvailable)} {crossCurrency}
+                </strong>
+              </div>
+              <div style={helperText()}>
+                Membership pool total:{" "}
+                <strong>
+                  {fmtMoney(crossMembershipPool)} {crossCurrency}
+                </strong>
+              </div>
+              <div style={helperText()}>
+                Reserved / locked:{" "}
+                <strong>
+                  {fmtMoney(crossReservedPool)} {crossCurrency}
+                </strong>
+              </div>
+              <div style={helperText()}>
+                Guarantee locked as supporter:{" "}
+                <strong>
+                  {fmtMoney(crossLockedGuarantees)} {crossCurrency}
+                </strong>
+              </div>
+              <div style={helperText()}>
+                Visible guarantor earnings:{" "}
+                <strong>
+                  {fmtMoney(guarantorEarningsTotal)} {crossCurrency}
+                </strong>
+              </div>
+            </div>
+          </div>
+
+          <div style={innerCard("#F7FBF8")}>
+            <div style={sectionLabel()}>What is helping</div>
+            <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+              {financeHelps.map((item, index) => (
+                <div key={`finance-help-${index}`} style={helperText()}>
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={innerCard("#FFFDF7")}>
+            <div style={sectionLabel()}>What needs attention</div>
+            <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+              {financeWatchItems.map((item, index) => (
+                <div key={`finance-watch-${index}`} style={helperText()}>
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {crossCommunityItems.length > 0 ? (
+          <div style={{ marginTop: 16 }}>
+            <div style={sectionLabel()}>Community finance units</div>
+            <div
+              style={{
+                marginTop: 10,
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : "repeat(2, minmax(0, 1fr))",
+                gap: 10,
+              }}
+            >
+              {crossCommunityItems.slice(0, 6).map((item, index) => {
+                const label =
+                  firstTruthy(item.marketplace_name, item.clan_name) ||
+                  `Community ${item.clan_id || index + 1}`;
+                const itemCurrency = safeStr(item.currency || crossCurrency);
+
+                return (
+                  <div key={`${item.clan_id || index}`} style={innerCard("#FFFFFF")}>
+                    <div
+                      style={{
+                        color: "#0B1F33",
+                        fontSize: 17,
+                        fontWeight: 950,
+                        lineHeight: 1.25,
+                      }}
+                    >
+                      {label}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 10,
+                        display: "flex",
+                        gap: 8,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <span style={badge(true)}>
+                        Effective: {fmtMoney(item.effective_available)} {itemCurrency}
+                      </span>
+                      <span style={badge(false)}>
+                        Reserved: {fmtMoney(item.reserved_pool)} {itemCurrency}
+                      </span>
+                      <span style={badge(false)}>
+                        Pending in: {fmtMoney(item.pending_deposits)} {itemCurrency}
+                      </span>
+                      <span style={badge(false)}>
+                        Pending out: {fmtMoney(item.pending_withdrawals)}{" "}
+                        {itemCurrency}
+                      </span>
+                    </div>
+                    <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                      {[
+                        item.community_code
+                          ? `Community ID: ${safeStr(item.community_code)}`
+                          : "",
+                        item.reference ? `Pool ref: ${safeStr(item.reference)}` : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" - ") || "Community finance unit"}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
+        {trustPackId || guarantorEarningsItems.length > 0 ? (
+          <div
+            style={{
+              marginTop: 14,
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
+            {trustPackId ? (
+              <span style={badge(false)}>Trust pack: {trustPackId}</span>
+            ) : null}
+            {guarantorEarningsItems.length > 0 ? (
+              <span style={badge(false)}>
+                Earnings rows: {guarantorEarningsItems.length}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
+
+      <section
         style={pageCard(
           "linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)"
         )}
@@ -1392,7 +2074,7 @@ export default function FinancePage() {
                   border: "1px solid rgba(255,255,255,0.08)",
                 }}
               >
-                GMFN ID: {gmfnId}
+                GSN ID: {gmfnId}
               </span>
               <span
                 style={{
