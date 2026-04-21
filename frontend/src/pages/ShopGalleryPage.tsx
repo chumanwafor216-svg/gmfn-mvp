@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
-import DomainIntroToggle from "../components/DomainIntroToggle";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
@@ -1138,18 +1137,6 @@ export default function ShopGalleryPage() {
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
       {error ? <div style={noticeCard("error")}>{error}</div> : null}
 
-      <DomainIntroToggle
-        title="Your Shop Gallery"
-        body="Use Shop Gallery as the public door to a shop. People in the community, and approved outside viewers, can see what the shop is showing."
-        bullets={[
-          "One person has one shop, and that shop can appear in the communities they belong to.",
-          "A shop normally shows through its communities. Wider sharing should use the right link or repost path.",
-          "Vault is the private-viewing path for selected offers shared by trust link.",
-        ]}
-        note="Simple rule: Shop Gallery is where people come to view the shop."
-        tone="dark"
-      />
-
       <ExplainToggle
         label="What this screen does"
         what="This screen is the public shop gallery, showing the shop identity, live spotlight, products, and Vault private-viewing options when available."
@@ -1220,7 +1207,13 @@ export default function ShopGalleryPage() {
               alignItems: isCompact ? "start" : "end",
             }}
           >
-            <div>
+            <div
+              style={{
+                display: "grid",
+                justifyItems: "center",
+                textAlign: "center",
+              }}
+            >
               <div
                 style={{
                   marginTop: 0,
@@ -1229,6 +1222,7 @@ export default function ShopGalleryPage() {
                   fontSize: isCompact ? 24 : 44,
                   lineHeight: 1.05,
                   maxWidth: 900,
+                  marginInline: "auto",
                   textShadow: "0 6px 18px rgba(0,0,0,0.22)",
                   display: "-webkit-box",
                   WebkitLineClamp: isCompact ? 3 : 4,
@@ -1246,6 +1240,7 @@ export default function ShopGalleryPage() {
                   fontSize: isCompact ? 13 : 15,
                   lineHeight: isCompact ? 1.45 : 1.8,
                   maxWidth: 860,
+                  marginInline: "auto",
                   display: "-webkit-box",
                   WebkitLineClamp: isCompact ? 2 : 4,
                   WebkitBoxOrient: "vertical" as any,
@@ -1261,6 +1256,7 @@ export default function ShopGalleryPage() {
                   display: "flex",
                   gap: isCompact ? 6 : 8,
                   flexWrap: "wrap",
+                  justifyContent: "center",
                 }}
               >
                 {showOwnerBadge ? (
