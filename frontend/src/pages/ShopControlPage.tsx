@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import PageTopNav from "../components/PageTopNav";
@@ -632,7 +632,6 @@ async function uploadShopImageFile(file: File): Promise<string> {
 }
 
 export default function ShopControlPage() {
-  const navigate = useNavigate();
   const location = useLocation();
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
@@ -1066,7 +1065,7 @@ export default function ShopControlPage() {
         ? "Awaiting confirmation"
         : "No payment request";
 
-  const merchantVerifyStateLabel = Boolean(trustSlipFeature?.merchant_verify_active)
+  const merchantVerifyStateLabel = trustSlipFeature?.merchant_verify_active
     ? "Usable now"
     : safeStr(latestMerchantVerifyPayment?.confirmed_at)
       ? "Confirmed"
