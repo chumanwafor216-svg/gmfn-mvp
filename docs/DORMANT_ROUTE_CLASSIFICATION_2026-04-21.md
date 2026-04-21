@@ -102,7 +102,7 @@ Remaining caution:
 - the admin timeline route must keep its admin guard
 - the route becomes live only after the backend deploy containing this change
 
-## Category B - Active Frontend Gap Candidate
+## Category B - Inspected Active Frontend Gap Candidate
 
 These are not safe to ignore forever because a current frontend screen or shared
 frontend helper references the behavior.
@@ -120,16 +120,33 @@ Frontend evidence:
 - `frontend/src/lib/merchantChannel.ts` calls
   `/trust-slips/me/merchant-link`
 
-Recommended next safe step:
+Inspection result:
 
-- inspect whether `merchantChannel.ts` is reachable from active pages
-- decide whether this belongs inside the mounted TrustSlip router instead of
-  mounting a second verification owner
+- `frontend/src/lib/merchantChannel.ts` is not imported by active frontend
+  pages in the current repo scan.
+- active TrustSlip pages already use the mounted TrustSlip verification routes:
+  - `GET /trust-slips/verify/{code}`
+  - `GET /trust-slips/verify/{code}/page`
+  - `GET /trust-slips/verify/{code}/qr.png`
+  - `GET /trust-slips/{code}/share`
+- `merchant_verify.py` defines `GET /trust-slips/verify/{token}`, which has the
+  same method/path shape as the mounted `GET /trust-slips/verify/{code}` route.
+- the merchant token service creates append-only events:
+  - `merchant.verify_link_created`
+  - `merchant.verify_token_used`
+
+Decision:
+
+- do not mount `merchant_verify.py` during the pilot-safe endpoint cleanup.
+- treat it as a future merchant-token design that must either be folded into
+  the mounted TrustSlip router or moved to a non-conflicting path.
+- keep `merchantChannel.ts` dormant until a page intentionally imports it and
+  the backend contract is approved.
 
 Risk:
 
-- medium, because merchant-facing verification is public/trust-sensitive and
-  overlaps with existing TrustSlip verification routes
+- high enough to avoid automatic mounting, because it is public/trust-sensitive,
+  route-conflicting, and can write merchant verification TrustEvents.
 
 ## Category C - Real Product Work, But Not Safe To Mount Blindly
 
@@ -242,8 +259,8 @@ Safe action now:
 
 ## Recommended Safe Order From Here
 
-1. Inspect `merchantChannel.ts` reachability before touching merchant verify
-   routes.
+1. Leave `merchant_verify.py` dormant until the merchant-token route contract is
+   deliberately redesigned or merged into the mounted TrustSlip router.
 2. Leave repayment, dispute, shipment, courier, merchant release, and bulk
    guarantor routes dormant until the business rules are deliberately reviewed.
 3. During admin cleanup, retire or archive true duplicates only after confirming
