@@ -5727,3 +5727,30 @@ GSN-branded invite composer and invite-entry continuity.
   Market Wisdom presentation and interaction model was not restyled or
   restructured. No backend, auth, schema, payment, ledger, route guard, or
   deployment config changed.
+
+### Dashboard lived-reality explanation rewrite addendum
+
+- Rewrote the active Dashboard `How Dashboard Helps You` guide in
+  `frontend/src/pages/DashboardPage.tsx` after product-owner review because the
+  first version was accurate but too surface-level.
+- The new version explains Dashboard from ordinary market/community life:
+  - seeing what trusted friends and community members are selling without
+    physically travelling to each shop
+  - using Spotlight as real-time visibility, buying, support, or resale
+    opportunity
+  - using Focus Commitment as a practical reminder and follow-through record,
+    not just a to-do list
+  - treating Demand Box as opportunity from what people are asking for, not only
+    from what a seller already displays
+  - treating Notifications as event memory for payment movement, kindness,
+    approvals, demand, spotlight, repayments, and unfinished duties
+  - keeping evidence together when a member borrows, lends, repays, contributes,
+    supports, or helps from another city or country
+  - connecting Dashboard events back to stronger TrustSlip evidence
+- Updated `docs/BENEFIT_LED_PAGE_EXPLANATIONS_2026-04-21.md` with the same
+  deeper Dashboard storyline for later school, partner, innovation,
+  immigration, or institutional documentation.
+- This remains copy/system-explanation work only. The frozen `/app/dashboard`
+  Market Wisdom presentation and interaction model was not restyled or
+  restructured. No backend, auth, schema, payment, ledger, route guard, or
+  deployment config changed.
