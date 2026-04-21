@@ -5707,3 +5707,23 @@ GSN-branded invite composer and invite-entry continuity.
 - This remains copy/system-explanation work only. No backend, auth, schema,
   payment, ledger, route guard, deployment config, public Shop Gallery, or
   Dashboard Market Wisdom behavior changed.
+
+### Dashboard benefit-led explanation addendum
+
+- Added a route-local `How Dashboard Helps You` guide to
+  `frontend/src/pages/DashboardPage.tsx`.
+- The guide frames Dashboard as the reflector/summary surface, not the command
+  centre, and focuses the story on:
+  - Market Wisdom as the first reading
+  - Focus Commitment as visible follow-through discipline
+  - Notifications as event signals, not just messages
+  - Demand Box pressure and opportunity signals
+  - Spotlight visibility and marketplace context
+  - TrustSlip as the proof layer behind repeated honest behaviour
+- Added the same Dashboard source language to
+  `docs/BENEFIT_LED_PAGE_EXPLANATIONS_2026-04-21.md` for later school,
+  partner, innovation, immigration, or institutional documentation.
+- This is copy/system-explanation work only. The frozen `/app/dashboard`
+  Market Wisdom presentation and interaction model was not restyled or
+  restructured. No backend, auth, schema, payment, ledger, route guard, or
+  deployment config changed.

@@ -23,6 +23,43 @@ Good page explanations should:
 - keep personal records separate from group or community rollups
 - make privacy, consent, repair, and trust evidence clear
 
+## Dashboard
+
+Dashboard helps a member notice what matters before they get lost inside the
+whole app.
+
+Dashboard is not the command centre. It is the reflector: the place that reads
+the day for the member through wisdom, commitments, events, demand, spotlight,
+and trust signals.
+
+Market Wisdom gives the first reading. It turns what is happening around the
+member's activity into a plain signal before they start moving from page to
+page.
+
+Focus Commitment keeps promises visible. If the member said they will repay,
+save, build stock, finish a task, or follow up on a goal, Dashboard keeps that
+promise in front of them until they act.
+
+Notifications should be understood as events, not just messages. They can carry
+payment movement, trust changes, join requests, demand updates, spotlight
+movement, and unfinished things that need attention.
+
+Demand Box shows when someone has a need or request that may become trade,
+support, or responsibility. Dashboard helps the member see that pressure early
+instead of missing it.
+
+Spotlight shows what is currently visible in the marketplace. It helps the
+member notice what the community is presenting, what may need attention, and
+what trust context sits behind it.
+
+TrustSlip is the proof layer behind the Dashboard story. When events show that
+the member follows through, repays, responds, and supports honestly, TrustSlip
+has stronger evidence to carry.
+
+Innovation wedge: GSN turns informal community vouching into portable,
+verifiable trust evidence, especially for people who are normally invisible to
+formal credit systems.
+
 ## Finance
 
 Finance should not measure trust by how much money someone has. It should help
