@@ -5500,3 +5500,29 @@ GSN-branded invite composer and invite-entry continuity.
 - `git diff --check -- frontend/src/pages/FinancePage.tsx` passed with only
   the normal Windows line-ending warning.
 - `npm run build` passed in `frontend`.
+
+### Finance benefit-led explanation addendum
+
+- Updated `frontend/src/pages/FinancePage.tsx` only.
+- Product-owner voice correction: page explanations should not read like
+  instructions for operating the screen. They should explain what the page can
+  do for the member in real life and what future benefit it creates.
+- Rewrote the Finance `DomainIntroToggle` around this standard:
+  - Finance is not a wealth judge.
+  - Finance helps underbanked and unbanked members build visible reliability
+    through money behaviour.
+  - completed repayments, confirmed payments, and responsible support become
+    proof.
+  - one member keeps one GSN finance file across communities, with each
+    community shown as its own finance unit.
+  - Helping / Watch / Pressure language should be the simple interpretation
+    pattern for community finance units.
+  - Finance shows what happened with money, Trust Passport explains what it
+    means, and Trust Events record the proof.
+- Updated the Finance top subtitle and hero description so the page introduces
+  itself as a cross-community proof trail rather than a technical record page.
+- Future page explanations should follow this benefit-led pattern: show the
+  user how the page helps their life, trust, access, safety, or proof story
+  before explaining page controls.
+- No backend, auth, schema, payment, ledger, environment config, global shell,
+  or Dashboard Market Wisdom behavior changed.

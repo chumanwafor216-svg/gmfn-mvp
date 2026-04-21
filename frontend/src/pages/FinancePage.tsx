@@ -1508,7 +1508,7 @@ export default function FinancePage() {
       <PageTopNav
         sectionLabel="Finance"
         title="Finance"
-        subtitle="One GSN finance file, with cross-community totals and selected-community records."
+        subtitle="Finance turns money behaviour into a proof trail across communities."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/marketplace"
@@ -1527,16 +1527,17 @@ export default function FinancePage() {
       />
 
       <DomainIntroToggle
-        title="About Finance"
-        eyebrow="Plain guide"
-        body="Finance records pool balances, expected payments, borrowing, support exposure, guarantor earnings, and recent money events. Trust Passport interprets the trust meaning of those records."
+        title="How Finance Helps You"
+        eyebrow="What this can do for you"
+        body="Finance is not here to judge trust by how much money someone already has. It helps a member build visible reliability from how they behave around money: borrowing honestly, repaying properly, supporting others responsibly, and avoiding pressure across too many communities."
         bullets={[
-          "One member keeps one GSN finance file across all communities.",
-          "Each community remains visible as its own finance unit inside the wider file.",
-          "Confirmed repayments, matched payments, responsible support, and earnings strengthen the evidence record.",
-          "Missed payments, defaults, unresolved expected payments, or heavy locked support become attention signals.",
+          "A member without formal bank history can still build proof through small completed repayments, confirmed payments, and responsible support.",
+          "If the member belongs to five communities, Finance keeps one GSN finance file with each community shown as its own simple finance unit.",
+          "Each community unit can show what came in, what was borrowed, what was repaid, what is still due, and whether the status is Helping, Watch, or Pressure.",
+          "Good behaviour in one community can strengthen the wider trust story, while missed payments, defaults, or heavy locked support become early warning signals.",
+          "Finance shows what happened with money. Trust Passport explains what that behaviour means. Trust Events record the proof that changes the trust story.",
         ]}
-        note="Finance records money activity. Trust Passport interprets trust evidence."
+        note="Golden rule: trust is earned when finance promises are completed, not when money merely moves."
         tone="blue"
       />
 
@@ -1606,8 +1607,9 @@ export default function FinancePage() {
               }}
             >
               Combined finance view for {memberName}. The same GSN ID is read
-              across communities, with local finance units kept separate inside
-              the wider file.
+              across communities, with each local finance unit kept separate so
+              GSN can see whether money behaviour is helping, needs watching,
+              or creating pressure.
             </div>
 
             <div
