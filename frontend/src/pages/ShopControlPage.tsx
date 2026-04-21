@@ -689,6 +689,9 @@ export default function ShopControlPage() {
   const [spotlightPriorityMode, setSpotlightPriorityMode] = useState<"free" | "paid">("free");
   const spotlightImagePrepJobRef = useRef(0);
   const spotlightVideoPrepJobRef = useRef(0);
+  const lastAutoScrolledHashRef = useRef("");
+  const hashScrollTimerRef = useRef<number | null>(null);
+  const hashScrollRetryTimersRef = useRef<number[]>([]);
 
   const selectedClanId = Number(getSelectedClanId() || 0);
   const shopActionsLocked = Boolean(continuityReview.blocked);
@@ -735,6 +738,13 @@ export default function ShopControlPage() {
 
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });
+  }
+
+  function clearHashScrollRetryTimers() {
+    hashScrollRetryTimersRef.current.forEach((timerId) => {
+      window.clearTimeout(timerId);
+    });
+    hashScrollRetryTimersRef.current = [];
   }
 
   function clearSpotlightDraft() {
@@ -863,6 +873,7 @@ export default function ShopControlPage() {
 
     const target = document.getElementById(targetId);
     if (target) {
+      clearHashScrollRetryTimers();
       target.scrollIntoView({
         behavior: "smooth",
         block: "start",
@@ -871,7 +882,13 @@ export default function ShopControlPage() {
     }
 
     if (attempt < 10) {
-      window.setTimeout(() => scrollToControlTarget(targetId, attempt + 1), 100);
+      const retryTimer = window.setTimeout(() => {
+        hashScrollRetryTimersRef.current = hashScrollRetryTimersRef.current.filter(
+          (timerId) => timerId !== retryTimer
+        );
+        scrollToControlTarget(targetId, attempt + 1);
+      }, 100);
+      hashScrollRetryTimersRef.current.push(retryTimer);
     }
   }
 
@@ -903,16 +920,54 @@ export default function ShopControlPage() {
   }, [selectedClanId]);
 
   useEffect(() => {
+    return () => {
+      if (hashScrollTimerRef.current !== null) {
+        window.clearTimeout(hashScrollTimerRef.current);
+        hashScrollTimerRef.current = null;
+      }
+      hashScrollRetryTimersRef.current.forEach((timerId) => {
+        window.clearTimeout(timerId);
+      });
+      hashScrollRetryTimersRef.current = [];
+    };
+  }, []);
+
+  useEffect(() => {
     if (loading) return;
 
-    const targetId = String(location.hash || "").replace(/^#/, "");
+    const rawTargetId = String(location.hash || "").replace(/^#/, "").trim();
+    if (!rawTargetId) {
+      lastAutoScrolledHashRef.current = "";
+      return;
+    }
+
+    let targetId = rawTargetId;
+    try {
+      targetId = decodeURIComponent(rawTargetId);
+    } catch {
+      targetId = rawTargetId;
+    }
+
     if (!targetId) return;
+    if (lastAutoScrolledHashRef.current === targetId) return;
+
+    lastAutoScrolledHashRef.current = targetId;
 
     if (targetId === "shop-control-spotlight") {
       setSpotlightOpen(true);
     }
 
-    window.setTimeout(() => {
+    if (hashScrollTimerRef.current !== null) {
+      window.clearTimeout(hashScrollTimerRef.current);
+      hashScrollTimerRef.current = null;
+    }
+    hashScrollRetryTimersRef.current.forEach((timerId) => {
+      window.clearTimeout(timerId);
+    });
+    hashScrollRetryTimersRef.current = [];
+
+    hashScrollTimerRef.current = window.setTimeout(() => {
+      hashScrollTimerRef.current = null;
       scrollToControlTarget(targetId);
     }, targetId === "shop-control-spotlight" ? 140 : 40);
   }, [loading, location.hash]);

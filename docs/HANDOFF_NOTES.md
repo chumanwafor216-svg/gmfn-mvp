@@ -46,6 +46,89 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
+Safe recovery branch for Community Home / Shop Control mobile tap recovery.
+
+#### Branches and checkpoints
+- Full preserved checkpoint: `checkpoint/mobile-tap-recovery-2026-04-21`
+- Safer deploy candidate branch: `recovery/mobile-tap-safe-frontend-2026-04-21`
+- External backup patch already created before this recovery work:
+  `C:\Users\chukwuma pc\mobile-tap-recovery-2026-04-21.patch`
+
+#### Routes/screens affected
+- `/app/community`
+- embedded Shop Control panel on `/app/community`
+- `/app/shop-control`
+- `/app/dashboard`
+- `/app/marketplace`
+
+#### Backend routes/endpoints involved
+- no backend contract is intended to change on the recovery branch
+
+#### Files in play
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `frontend/src/components/CommunityShopControlPanel.tsx`
+- `frontend/src/layout/AppLayout.tsx`
+- `frontend/src/pages/DashboardPage.tsx`
+- `frontend/src/pages/MarketplacePage.tsx`
+- `frontend/src/pages/ShopControlPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The full mobile tap recovery work remains preserved on
+  `checkpoint/mobile-tap-recovery-2026-04-21`.
+- A safer recovery branch was created from that checkpoint so risky work could
+  be isolated without destroying the checkpoint.
+- On the recovery branch, the backend aggregation changes in
+  `gmfn_backend/app/api/routes/clans.py` and
+  `gmfn_backend/app/api/routes/pool.py` were restored to the
+  `feature/vault-shops` branch-point content.
+- On the recovery branch, `frontend/src/components/RequireAuth.tsx` was also
+  restored to the `feature/vault-shops` branch-point content. This avoids
+  mixing auth/continuity guard changes into the mobile tap recovery.
+- `git diff feature/vault-shops -- frontend/src/components/RequireAuth.tsx
+  gmfn_backend/app/api/routes/clans.py gmfn_backend/app/api/routes/pool.py`
+  is empty in the recovery working tree.
+- `/app/shop-control` hash scrolling was tightened. A hash target such as
+  `#shop-control-paid-spotlight` or `#shop-control-vault-subscription` now
+  auto-scrolls once for that hash instead of re-scrolling after each background
+  refresh/focus reload.
+- `/app/shop-control` now also tracks and clears hash-scroll retry timers, so
+  stale retry timers do not survive route changes.
+- Independent assistant review found no high or medium remaining findings in
+  the Community Home embedded Shop Control buttons, Dashboard/Marketplace
+  pointer helpers, or `/app/shop-control` hash-scroll behavior after this pass.
+
+#### Verification
+- `git diff --check` passed.
+- `npx eslint src/pages/CommunityHomePage.tsx src/components/CommunityShopControlPanel.tsx src/layout/AppLayout.tsx src/pages/DashboardPage.tsx src/pages/MarketplacePage.tsx src/pages/ShopControlPage.tsx`
+  passed with no errors. Existing hook dependency warnings remain in
+  `MarketplacePage.tsx` and `ShopControlPage.tsx`.
+- `npm run build` passed in `frontend`.
+- `python -m pytest -q tests/test_smoke.py` passed in `gmfn_backend`.
+
+#### Open risks or unknowns
+- Phone redeploy testing is still required. The key smoke path is:
+  `/app/community` open/collapse main actions, open/collapse Shop Control,
+  tap each Shop Control lane, then test `/app/shop-control` anchors directly.
+- The recovery branch is intentionally frontend-focused. Backend cumulative
+  standing/finance aggregation ideas should remain separate until load-tested.
+- Marketplace still intentionally contains Money In and Money Out shortcuts
+  because the Marketplace blueprint says those are required marketplace
+  shortcuts. If phone testing shows those buttons still steal taps, address
+  layout/tap-target spacing there rather than silently removing the routes.
+
+#### Next recommended step
+- Commit and push `recovery/mobile-tap-safe-frontend-2026-04-21`, then deploy
+  that branch to the frontend test service only. Do not use the full checkpoint
+  branch as the deploy candidate unless backend/auth risk is explicitly
+  accepted.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
 Community Home mobile tap recovery at system/shell level.
 
 #### Routes/screens affected

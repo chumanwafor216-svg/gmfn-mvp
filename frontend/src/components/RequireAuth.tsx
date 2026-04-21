@@ -33,6 +33,7 @@ const CONTINUITY_PROTECTED_PREFIXES = [
   "/app/money-out",
   "/app/loan-workbench",
   "/app/loan-summary",
+  "/app/shop-control",
   "/app/shop-assets",
   "/app/command-center",
 ];
@@ -236,7 +237,7 @@ export default function RequireAuth({ children, requireRole }: Props) {
         }
 
         if (
-          blockingContinuity?.status === "protected_lock" &&
+          blockingContinuity &&
           isContinuityProtectedRoute(location.pathname)
         ) {
           setContinuityBlock(blockingContinuity);
