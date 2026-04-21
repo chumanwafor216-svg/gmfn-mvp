@@ -46,6 +46,57 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
+Marketplace landmark/aura restoration.
+
+#### Routes/screens affected
+- `/app/marketplace`
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+
+#### Files in play
+- `frontend/src/pages/MarketplacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Phone review after the mobile block containment pass showed Marketplace had
+  become too white/plain and had lost the blue landmark/aura depth that had
+  been transported from the accepted Community Home direction.
+- Confirmed in code that Community Home still used the stronger blue/pink/gold
+  aura layer while Marketplace had been reduced to one low-opacity navy radial.
+- Restored the Marketplace route-local shell to the Community Home family:
+  blue primary wash, soft pink/gold accents, stronger institutional shadow, and
+  a subtle moving aura layer.
+- Restored a matching blue/pink/gold tint to the Marketplace identity/profile
+  card background so the first block does not read as plain white.
+- The aura remains decorative only, `pointer-events: none`, and respects
+  `prefers-reduced-motion`.
+- No Marketplace business logic, section order, section collapse behavior,
+  backend, auth, schema, payment, deployment config, Dashboard, or Dashboard
+  Market Wisdom behavior changed.
+
+#### Verification
+- `npm exec -- eslint src/pages/MarketplacePage.tsx` passed with no errors.
+  Existing warnings remain for hook dependencies already present in
+  `MarketplacePage.tsx`.
+- `git diff --check -- frontend/src/pages/MarketplacePage.tsx` passed with only
+  normal Windows line-ending warnings.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- Phone review is needed after deploy to confirm the restored aura is visible
+  enough without becoming flashy.
+
+#### Next recommended step
+- Deploy/retest `/app/marketplace` on phone and compare the page background
+  against the accepted Community Home look.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
 Marketplace mobile block containment and overflow cleanup.
 
 #### Routes/screens affected

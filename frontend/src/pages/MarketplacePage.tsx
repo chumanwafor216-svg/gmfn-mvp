@@ -1203,7 +1203,7 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
 }
 
 function marketplaceProfileBackground(): string {
-  return "radial-gradient(circle at 14% 0%, rgba(34,82,120,0.11) 0%, rgba(34,82,120,0.00) 34%), linear-gradient(180deg, rgba(249,252,255,0.98) 0%, rgba(239,246,251,0.96) 58%, rgba(250,252,254,0.98) 100%)";
+  return "radial-gradient(circle at 12% 0%, rgba(11,99,209,0.12) 0%, rgba(11,99,209,0.00) 34%), radial-gradient(circle at 90% 6%, rgba(244,114,182,0.055) 0%, rgba(244,114,182,0.00) 26%), radial-gradient(circle at 88% 16%, rgba(243,208,106,0.06) 0%, rgba(243,208,106,0.00) 28%), linear-gradient(180deg, rgba(249,252,255,0.98) 0%, rgba(239,246,251,0.96) 58%, rgba(250,252,254,0.98) 100%)";
 }
 
 function marketplaceProfileCardStyle(isCompact: boolean): React.CSSProperties {
@@ -1433,9 +1433,9 @@ function marketplaceShellStyle(isCompact: boolean): React.CSSProperties {
     border: "1px solid rgba(16,37,59,0.075)",
     isolation: "isolate",
     background:
-      "radial-gradient(circle at 12% 0%, rgba(34,82,120,0.10) 0%, rgba(34,82,120,0.00) 30%), linear-gradient(180deg, #F6FAFD 0%, #EEF4F9 44%, #F9FBFD 100%)",
+      "radial-gradient(circle at 10% 0%, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0.00) 32%), radial-gradient(circle at 88% 7%, rgba(244,114,182,0.08) 0%, rgba(244,114,182,0.00) 24%), radial-gradient(circle at 92% 14%, rgba(243,208,106,0.075) 0%, rgba(243,208,106,0.00) 28%), linear-gradient(180deg, #F5FAFF 0%, #EEF5FD 42%, #F8FBFF 100%)",
     boxShadow:
-      "0 18px 42px rgba(10,24,49,0.075), inset 0 1px 0 rgba(255,255,255,0.66)",
+      "0 22px 52px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.72)",
     overflow: "hidden",
   };
 }
@@ -1447,10 +1447,12 @@ function marketplaceAuraStyle(isCompact: boolean): React.CSSProperties {
     height: isCompact ? "76%" : "68%",
     zIndex: 0,
     pointerEvents: "none",
-    opacity: isCompact ? 0.34 : 0.3,
+    opacity: isCompact ? 0.72 : 0.64,
     background:
-      "radial-gradient(circle at 18% 18%, rgba(34,82,120,0.16) 0%, rgba(34,82,120,0.00) 38%)",
+      "radial-gradient(circle at 16% 20%, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0.00) 34%), radial-gradient(circle at 76% 24%, rgba(244,114,182,0.075) 0%, rgba(244,114,182,0.00) 28%), radial-gradient(circle at 58% 8%, rgba(243,208,106,0.07) 0%, rgba(243,208,106,0.00) 24%)",
     transform: "translate3d(0,0,0)",
+    animation: "marketplaceAuraShift 22s ease-in-out infinite alternate",
+    willChange: "transform, opacity",
   };
 }
 
@@ -1478,8 +1480,34 @@ function marketplaceContentStyle(isCompact: boolean): React.CSSProperties {
 function MarketplaceShellLayers({ isCompact }: { isCompact: boolean }) {
   return (
     <>
+      <style>
+        {`
+          @keyframes marketplaceAuraShift {
+            0% {
+              transform: translate3d(-1.2%, -0.6%, 0) scale(1);
+              opacity: 0.62;
+            }
+            50% {
+              transform: translate3d(1%, 1%, 0) scale(1.025);
+              opacity: 0.76;
+            }
+            100% {
+              transform: translate3d(1.8%, -0.4%, 0) scale(1.015);
+              opacity: 0.68;
+            }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .marketplace-aura-shift {
+              animation: none !important;
+              transform: none !important;
+            }
+          }
+        `}
+      </style>
       <div
         aria-hidden="true"
+        className="marketplace-aura-shift"
         style={marketplaceAuraStyle(isCompact)}
       />
       <div style={marketplaceWatermarkStyle(isCompact)} aria-hidden="true">
