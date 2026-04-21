@@ -5814,3 +5814,19 @@ GSN-branded invite composer and invite-entry continuity.
   - Create a new community: `https://gmfn-frontend.onrender.com/cover?entry=create`
   - Join an existing community: use a generated invite link containing a real
     invite code.
+
+### Render pre-deploy migration hardening addendum
+
+- A Render pre-deploy failure was reported with SQLAlchemy `f405` after
+  `alembic upgrade head`.
+- The pasted log tail did not include the exact failing SQL line, but the likely
+  failure class is an already-existing table, column, index, or foreign-key
+  during newer entry/marketplace migrations.
+- Hardened these migrations to be idempotent before pushing another deploy:
+  - `20260418_add_entry_bank_details_and_payout_destinations.py`
+  - `20260418_add_entry_region_consistency_fields.py`
+  - `20260420_add_marketplace_request_clan_id.py`
+- The hardening only checks for existing objects before creating them. It does
+  not change table meaning, route logic, auth, permissions, payment, ledger, or
+  frontend behavior.
+- Verified a fresh SQLite Alembic upgrade to head locally after the change.
