@@ -46,6 +46,62 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
+Shop Gallery mobile product-card colour balance.
+
+#### Routes/screens affected
+- `/shop/:gmfnId`
+- `/app/shop/:gmfnId` through the existing redirect/public shop route
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+- no product loading, visibility, share, Vault, auth, payment, or schema logic changed
+
+#### Files in play
+- `frontend/src/pages/ShopGalleryPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Product owner accepted the new image-led product-card structure but reported
+  that the dark frame/background felt too deep, heavy, and plastic against the
+  lighter Shop Gallery page background.
+- The colour pass keeps the one-screen poster structure from the previous
+  checkpoint but changes compact/mobile colour hierarchy:
+  - product card shell is now a lighter GSN white-blue surface with soft
+    blue/gold/pink accents
+  - image frame uses a pale institutional blue wash instead of a heavy navy
+    stage
+  - dark navy is retained only as controlled authority in shadows and the
+    primary Share button
+  - bottom product information dock is now frosted white-blue with dark navy
+    text instead of dark glass
+  - product image border and frame label were softened to make the photo feel
+    larger and less boxed in
+- Existing product IDs, API fetch flow, visibility filtering, public product
+  recovery logic, and Share behavior were preserved.
+- No Dashboard, Dashboard Market Wisdom, Community Home, Marketplace, backend,
+  auth, schema, payment, or deployment configuration changed.
+
+#### Verification
+- `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx` passed with only
+  the normal Windows line-ending warning.
+- `npm exec -- eslint src/pages/ShopGalleryPage.tsx` passed.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- Phone review is still needed because the new light dock may need a minor tint
+  adjustment depending on how it overlays very bright product photos.
+
+#### Next recommended step
+- Deploy/retest the public shop link on phone and compare product slots with
+  both light and dark photos. If the structure is accepted but the dock needs
+  more contrast, adjust only compact dock tint/text colours.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
 Shop Gallery mobile product-card bank-standard polish.
 
 #### Routes/screens affected
