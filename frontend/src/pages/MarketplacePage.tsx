@@ -912,12 +912,47 @@ function safeDateTime(x: any): string {
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
+    border: "1px solid rgba(16,37,59,0.11)",
     background: bg,
     padding: 20,
     boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
+      "0 18px 38px rgba(10,24,49,0.075), inset 0 1px 0 rgba(255,255,255,0.72)",
     overflow: "hidden",
+  };
+}
+
+function marketplaceProfileBackground(): string {
+  return "radial-gradient(circle at top left, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0.00) 38%), radial-gradient(circle at 88% 12%, rgba(244,114,182,0.09) 0%, rgba(244,114,182,0.00) 28%), radial-gradient(circle at 82% 76%, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0.00) 30%), linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(238,245,253,0.96) 58%, rgba(248,251,255,0.98) 100%)";
+}
+
+function marketplaceProfileCardStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    ...pageCard(marketplaceProfileBackground()),
+    minHeight: isCompact ? 430 : 390,
+    order: 1,
+    position: "relative",
+  };
+}
+
+function marketplaceProfileScrimStyle(): React.CSSProperties {
+  return {
+    position: "absolute",
+    inset: 0,
+    zIndex: 0,
+    background:
+      "linear-gradient(90deg, rgba(248,251,255,0.98) 0%, rgba(241,247,255,0.94) 50%, rgba(255,251,235,0.76) 100%)",
+  };
+}
+
+function marketplaceProfileStatStyle(): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    border: "1px solid rgba(16,37,59,0.10)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(246,250,255,0.90) 100%)",
+    padding: 14,
+    minHeight: 82,
+    boxShadow: "0 12px 24px rgba(10,24,49,0.06)",
   };
 }
 
@@ -1039,18 +1074,20 @@ function MarketplaceShell({
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
+    border: "1px solid rgba(16,37,59,0.10)",
     background: bg,
     padding: 16,
+    boxShadow: "0 10px 22px rgba(10,24,49,0.04)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
+    border: "1px solid rgba(16,37,59,0.10)",
     background: bg,
     padding: 14,
+    boxShadow: "0 10px 22px rgba(10,24,49,0.04)",
   };
 }
 
@@ -1097,9 +1134,11 @@ function actionBtn(
       minHeight: 42,
       padding: "10px 14px",
       borderRadius: 14,
-      border: "none",
-      background: disabled ? "#CBD5E1" : "#1D4ED8",
-      color: "#FFFFFF",
+      border: "1px solid rgba(11,99,209,0.18)",
+      background: disabled
+        ? "#E2E8F0"
+        : "linear-gradient(180deg, #FFFFFF 0%, #EDF6FF 58%, #DDEBFA 100%)",
+      color: disabled ? "#64748B" : "#10324F",
       fontWeight: 900,
       fontSize: 14,
       textAlign: "center",
@@ -1107,6 +1146,8 @@ function actionBtn(
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
+      boxShadow:
+        "0 12px 22px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.82)",
       touchAction: "manipulation",
       WebkitTapHighlightColor: "transparent",
       userSelect: "none",
@@ -1121,8 +1162,9 @@ function actionBtn(
       minHeight: 38,
       padding: "8px 12px",
       borderRadius: 12,
-      border: "1px solid rgba(11,31,51,0.08)",
-      background: "#F8FBFF",
+      border: "1px solid rgba(16,37,59,0.10)",
+      background:
+        "linear-gradient(180deg, #FFFFFF 0%, #F6FAFF 68%, #EEF5FD 100%)",
       color: disabled ? "#94A3B8" : "#24415C",
       fontWeight: 800,
       fontSize: 13,
@@ -1131,6 +1173,8 @@ function actionBtn(
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
+      boxShadow:
+        "0 10px 18px rgba(10,24,49,0.065), inset 0 1px 0 rgba(255,255,255,0.82)",
       touchAction: "manipulation",
       WebkitTapHighlightColor: "transparent",
       userSelect: "none",
@@ -1144,8 +1188,9 @@ function actionBtn(
     minHeight: 42,
     padding: "10px 14px",
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(16,37,59,0.12)",
+    background:
+      "linear-gradient(180deg, #FFFFFF 0%, #F9FCFF 65%, #EDF3FA 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
@@ -1154,6 +1199,8 @@ function actionBtn(
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
+    boxShadow:
+      "0 10px 18px rgba(10,24,49,0.075), inset 0 1px 0 rgba(255,255,255,0.84)",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
@@ -2289,13 +2336,13 @@ export default function MarketplacePage() {
     return (
       <MarketplaceShell isCompact={isCompact}>
         <section
-          style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
+          style={pageCard(marketplaceProfileBackground())}
         >
           <div style={sectionLabel()}>Marketplace</div>
           <div
             style={{
               marginTop: 10,
-              color: "#F8FBFF",
+              color: "#0B1F33",
               fontSize: isCompact ? 30 : 40,
               fontWeight: 900,
               lineHeight: 1.08,
@@ -2303,7 +2350,7 @@ export default function MarketplacePage() {
           >
             Selected community marketplace
           </div>
-          <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1" }}>
+          <div style={{ marginTop: 12, ...helperText(), color: "#50667A" }}>
             Loading your current community...
           </div>
         </section>
@@ -2326,18 +2373,18 @@ export default function MarketplacePage() {
             "After choosing a community, come here to work inside that group.",
           ]}
           note="Simple rule: choose your group first, then work inside it here."
-          tone="dark"
+          tone="blue"
         />
 
         <section
-          style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
+          style={pageCard(marketplaceProfileBackground())}
         >
           <div style={sectionLabel()}>Marketplace</div>
 
           <div
             style={{
               marginTop: 10,
-              color: "#F8FBFF",
+              color: "#0B1F33",
               fontSize: isCompact ? 30 : 40,
               fontWeight: 900,
               lineHeight: 1.08,
@@ -2347,7 +2394,7 @@ export default function MarketplacePage() {
             Selected community marketplace
           </div>
 
-          <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
+          <div style={{ marginTop: 12, ...helperText(), color: "#50667A", maxWidth: 860 }}>
             Choose a community in Community Home first, then return here to open
             its marketplace.
           </div>
@@ -2437,26 +2484,19 @@ export default function MarketplacePage() {
       <DomainIntroToggle
         title="Your Marketplace"
         eyebrow="Your guide"
-        body="You are in the working room for one community. Use this place for that group's people, shops, invite links, demand, support, trust, and money movement."
+        body="You are inside one selected community. Work here with that community's people, shops, links, demand, support, trust, and money routes."
         bullets={[
-          "Check the top board first so you know which community you are inside.",
-          "Use this place for members, shops, invite links, Demand Box, support, money in, and money out.",
-          "Finance and Trust Passport show the bigger story, but Marketplace shows what is happening here.",
+          "Confirm the marketplace at the top first.",
+          "Open the right route for this community only.",
+          "Finance and Trust Passport hold the bigger story when needed.",
         ]}
         note="Simple rule: use Marketplace to work inside one community at a time."
-        tone="dark"
+        tone="blue"
         style={{ order: 0 }}
       />
 
       <section
-        style={{
-          ...pageCard(
-            "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
-          ),
-          minHeight: isCompact ? 430 : 390,
-          order: 1,
-          position: "relative",
-        }}
+        style={marketplaceProfileCardStyle(isCompact)}
       >
         {hasCommunityPicture ? (
           <div
@@ -2465,7 +2505,7 @@ export default function MarketplacePage() {
               position: "absolute",
               inset: 0,
               zIndex: 0,
-              opacity: 0.44,
+              opacity: 0.16,
             }}
           >
             <AuthResolvedImage
@@ -2487,18 +2527,12 @@ export default function MarketplacePage() {
 
         <div
           aria-hidden="true"
-          style={{
-            position: "absolute",
-            inset: 0,
-            zIndex: 0,
-            background:
-              "linear-gradient(90deg, rgba(8,17,31,0.96) 0%, rgba(8,17,31,0.86) 42%, rgba(8,17,31,0.58) 100%), radial-gradient(circle at 88% 16%, rgba(212,175,55,0.26) 0%, rgba(212,175,55,0.04) 34%, transparent 60%)",
-          }}
+          style={marketplaceProfileScrimStyle()}
         />
 
         <div style={{ position: "relative", zIndex: 1 }}>
-          <div style={{ ...sectionLabel(), color: "#A8C7E8" }}>
-            Official marketplace billboard
+          <div style={{ ...sectionLabel(), color: "#315873" }}>
+            Marketplace profile & member standing
           </div>
 
           <div
@@ -2515,7 +2549,7 @@ export default function MarketplacePage() {
             <div>
               <div
                 style={{
-                  color: "#F8FBFF",
+                  color: "#0B1F33",
                   fontSize: isCompact ? 32 : 46,
                   fontWeight: 900,
                   lineHeight: 1.04,
@@ -2529,7 +2563,7 @@ export default function MarketplacePage() {
                 style={{
                   marginTop: 12,
                   ...helperText(),
-                  color: "#D7E3F1",
+                  color: "#50667A",
                   maxWidth: 760,
                 }}
               >
@@ -2563,9 +2597,6 @@ export default function MarketplacePage() {
                   onPointerDown={consumeMarketplacePointerEvent}
                   style={{
                     ...actionBtn("soft", uploadingCommunityPicture),
-                    background: "rgba(255,255,255,0.12)",
-                    border: "1px solid rgba(255,255,255,0.16)",
-                    color: "#F8FBFF",
                     cursor: uploadingCommunityPicture ? "not-allowed" : "pointer",
                   }}
                 >
@@ -2592,12 +2623,7 @@ export default function MarketplacePage() {
                     onPointerDown={consumeMarketplacePointerEvent}
                     onClick={() => void handleRemoveCommunityPicture()}
                     disabled={removingCommunityPicture}
-                    style={{
-                      ...actionBtn("soft", removingCommunityPicture),
-                      background: "rgba(255,255,255,0.10)",
-                      border: "1px solid rgba(255,255,255,0.14)",
-                      color: "#F8FBFF",
-                    }}
+                    style={actionBtn("soft", removingCommunityPicture)}
                   >
                     {removingCommunityPicture ? "Removing..." : "Use GSN default"}
                   </button>
@@ -2616,7 +2642,7 @@ export default function MarketplacePage() {
             >
               {[
                 ["Community ID", communityIdentity(selectedCommunity)],
-                ["Personal ID", gmfnId],
+                ["GSN ID", gmfnId],
                 ["Current member", memberName],
                 ["Role here", communityRole(selectedCommunity) || "Member"],
                 ["Trust record", communityTrustLabel(selectedCommunity)],
@@ -2630,18 +2656,12 @@ export default function MarketplacePage() {
               ].map(([label, value]) => (
                 <div
                   key={label}
-                  style={{
-                    borderRadius: 16,
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    background: "rgba(255,255,255,0.07)",
-                    padding: 14,
-                    minHeight: 82,
-                  }}
+                  style={marketplaceProfileStatStyle()}
                 >
                   <div
                     style={{
                       fontSize: 11,
-                      color: "#A8C7E8",
+                      color: "#315873",
                       fontWeight: 900,
                       letterSpacing: 0.28,
                       textTransform: "uppercase",
@@ -2652,7 +2672,7 @@ export default function MarketplacePage() {
                   <div
                     style={{
                       marginTop: 8,
-                      color: "#F8FBFF",
+                      color: "#0B1F33",
                       fontWeight: 900,
                       fontSize: 15,
                       lineHeight: 1.35,
@@ -2678,8 +2698,8 @@ export default function MarketplacePage() {
             maxWidth: 880,
           }}
         >
-          Use these launchers only after confirming the active marketplace above.
-          Each action should continue with this selected community context.
+          Open the route you need. Each action keeps this selected community
+          context.
         </div>
 
         <div
@@ -2827,7 +2847,7 @@ export default function MarketplacePage() {
         what="Marketplace is where one selected community becomes active. Read the current community identity, open Shop, check money readiness, and continue into the next trade or support route."
         why="It keeps one community in focus so users can see who is visible, what is ready, and when a money or support route should take over."
         next="Read the community identity first, then move into Shop, money, members, or support depending on what you need to do in this community."
-        tone="dark"
+        tone="blue"
         style={{ order: 9 }}
       />
 
@@ -2842,11 +2862,10 @@ export default function MarketplacePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Optional money route detail</div>
+            <div style={sectionLabel()}>Money route detail</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              The first block already shows money readiness. Open this detail
-              when you want to inspect pay-in, payout, or Finance routes more
-              slowly.
+              A slower view of pay-in, payout, and Finance readiness for this
+              marketplace.
             </div>
           </div>
 
@@ -3120,10 +3139,10 @@ export default function MarketplacePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Marketplace-owned outward links</div>
+            <div style={sectionLabel()}>Marketplace-owned links</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              This marketplace owns the outward links for this one community.
-              They must carry this community identity when they leave the app.
+              Invite, marketplace, shop, and controlled links for this community
+              only.
             </div>
           </div>
 
@@ -3159,11 +3178,10 @@ export default function MarketplacePage() {
               }}
             >
               <div>
-                <div style={sectionLabel()}>Marketplace-owned outward links</div>
+                <div style={sectionLabel()}>Marketplace-owned links</div>
                 <div style={{ marginTop: 8, ...helperText() }}>
-                  These links belong to this marketplace only. They carry this
-                  community identity outward and should return people into this
-                  same marketplace context.
+                  These links carry this community identity outward and should
+                  return people to this same marketplace context.
                 </div>
               </div>
 
@@ -3385,10 +3403,10 @@ export default function MarketplacePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Member rows</div>
+            <div style={sectionLabel()}>Members & shop galleries</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Browse members and open community-visible shop galleries from here.
-              Private Vault Shops do not appear in this listing.
+              Members visible in this marketplace and the shop galleries they
+              can expose here.
             </div>
           </div>
 
@@ -3454,7 +3472,7 @@ export default function MarketplacePage() {
                             lineHeight: 1.65,
                           }}
                         >
-                          {row.gmfnId ? `GMFN ID: ${row.gmfnId}` : "GMFN ID pending"}
+                          {row.gmfnId ? `GSN ID: ${row.gmfnId}` : "GSN ID pending"}
                         </div>
                       </div>
 
@@ -3537,10 +3555,8 @@ export default function MarketplacePage() {
             maxWidth: 860,
           }}
         >
-          Demand starts from marketplace life: a member needs something, and the
-          community looks for who can answer it. The broader demand reading may
-          combine upward, but this button should open the demand work from the
-          current marketplace context.
+          Open demand work from this marketplace when a community need must be
+          answered.
         </div>
 
         <div
@@ -3599,10 +3615,9 @@ export default function MarketplacePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Loans & Support</div>
+            <div style={sectionLabel()}>Borrow / Lend / Support</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Start a support request here. If guarantors are needed, the app can
-              show suitable people to ask next.
+              Start or continue support work inside this selected marketplace.
             </div>
           </div>
 

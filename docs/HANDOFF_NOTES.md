@@ -46,6 +46,58 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
+Marketplace page re-engineering pass after Community Home visual freeze.
+
+#### Routes/screens affected
+- `/app/marketplace`
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+
+#### Files in play
+- `frontend/src/pages/MarketplacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Marketplace remains scoped to one selected community, following
+  `docs/MARKETPLACE_PAGE_BLUEPRINT_2026-04-20.md`.
+- The core Marketplace order is preserved visually: Marketplace profile/member
+  standing, shortcuts, members and shop galleries, marketplace-owned links,
+  Demand Box, then Borrow / Lend / Support.
+- The old dark navy Marketplace billboard treatment was removed from loading,
+  empty, and active states.
+- Marketplace now uses a calmer light institutional profile surface aligned
+  with the accepted Community Home background family.
+- Marketplace action buttons were softened into raised light/blue controls
+  instead of deep solid-blue controls.
+- Visible helper copy was shortened so the page speaks less like a builder note
+  and more like a user-facing operating screen.
+- User-visible member identity copy now says `GSN ID` while internal technical
+  model names remain unchanged.
+
+#### Verification
+- `npm exec -- eslint src/pages/MarketplacePage.tsx` passed with no errors.
+  Existing warnings remain for hook dependencies already present in
+  `MarketplacePage.tsx`.
+- `git diff --check -- frontend/src/pages/MarketplacePage.tsx` passed.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- Phone visual review is needed after deploy. Check that the calmer Marketplace
+  profile block still shows enough of any uploaded community picture while
+  remaining readable.
+
+#### Next recommended step
+- Deploy/retest `/app/marketplace` on phone, then decide whether the same
+  Marketplace card/button language should be carried into Finance and Trust
+  Passport next.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
 Community Home visual freeze and Marketplace background alignment.
 
 #### Routes/screens affected
