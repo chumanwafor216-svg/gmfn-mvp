@@ -4772,3 +4772,46 @@ GSN-branded invite composer and invite-entry continuity.
 - `npx eslint src/pages/CommunityHomePage.tsx` passed.
 - `git diff --check -- frontend/src/pages/CommunityHomePage.tsx` passed with only normal Windows line-ending warnings.
 - `npm run build` passed in `frontend`.
+
+## Shop Assets restore path and local gallery media restore - 2026-04-21
+
+### Routes/screens affected
+
+- `/app/shop-assets`
+- `/app/shop/:gmfnId`
+- Backend marketplace product update route:
+  `PATCH /api/marketplace/products/{product_id}`
+
+### Work completed
+
+- Added backend support for restoring a soft-removed product block by sending
+  `is_active: true` or an active/restore status to the existing product update
+  endpoint.
+- Kept existing slot protection intact: restored community-visible products
+  still respect the 12 public product slot limit, and restored Vault products
+  still respect active Vault entitlement capacity.
+- Updated Shop Assets to fetch owner-managed shop products with
+  `only_active=false`, so hidden/soft-removed blocks no longer disappear from
+  the owner management screen.
+- Added hidden-block counts and a Restore action to Shop Assets. Hidden blocks
+  are visually marked as restorable and their public copy-link action is
+  disabled until they are live again.
+- Added asset URL resolution in Shop Assets so `/uploads/...` images resolve
+  correctly in local Vite and production API-backed environments.
+- Restored 11 referenced marketplace upload images from
+  `gmfn_backend_FREEZE_20260321_211455/uploads` into
+  `gmfn_backend/uploads` without deleting or overwriting existing files.
+- Confirmed two active newer product records still reference image files that
+  do not exist anywhere in this repo:
+  `/uploads/marketplace/images/20260326220342_6364908345ab88a4.jpg` and
+  `/uploads/marketplace/images/20260412163112_b3deb91a22a05cbf.jpg`.
+  Those product records were left intact; the gallery fallback image state will
+  handle them until the original media is re-uploaded or replaced.
+- No auth, schema, payment, environment config, or Dashboard Market Wisdom
+  behavior changed.
+
+### Verification
+
+- `python -m py_compile app/api/routes/marketplace.py` passed in
+  `gmfn_backend`.
+- `npm run build` passed in `frontend`.

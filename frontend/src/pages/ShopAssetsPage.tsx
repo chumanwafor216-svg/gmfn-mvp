@@ -431,6 +431,45 @@ function composeProductDescription(label: string, description: string): string {
   return `[LABEL:${cleanLabel}] ${cleanDescription}`;
 }
 
+function apiAssetOrigin(): string {
+  if (typeof window === "undefined") return "";
+
+  const configured =
+    (typeof import.meta !== "undefined" &&
+      (import.meta as any)?.env?.VITE_API_BASE_URL) ||
+    "/api";
+  const trimmed = String(configured || "").trim().replace(/\/+$/, "");
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      return new URL(trimmed).origin;
+    } catch {
+      return window.location.origin;
+    }
+  }
+
+  return window.location.origin;
+}
+
+function resolveAssetSrc(raw: unknown): string {
+  const value = safeStr(raw);
+  if (!value) return "";
+
+  if (
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.startsWith("blob:") ||
+    value.startsWith("data:")
+  ) {
+    return value;
+  }
+
+  const origin = apiAssetOrigin();
+  if (!origin) return value;
+
+  return `${origin}${value.startsWith("/") ? value : `/${value}`}`;
+}
+
 export default function ShopAssetsPage() {
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<{ tone: NoticeTone; text: string } | null>(
@@ -475,6 +514,7 @@ export default function ShopAssetsPage() {
   const [productPreviewUrl, setProductPreviewUrl] = useState("");
   const [savingProduct, setSavingProduct] = useState(false);
   const [deletingProductId, setDeletingProductId] = useState<number | null>(null);
+  const [restoringProductId, setRestoringProductId] = useState<number | null>(null);
 
   const selectedClanId = Number(getSelectedClanId() || 0);
 
@@ -561,7 +601,7 @@ export default function ShopAssetsPage() {
 
       if (shopItem?.id) {
         const productsRes = await apiJson<any>(
-          `/api/marketplace/products?clan_id=${selectedClanId || 0}&shop_id=${shopItem.id}&include_private_manage=true&limit=200`
+          `/api/marketplace/products?clan_id=${selectedClanId || 0}&shop_id=${shopItem.id}&include_private_manage=true&only_active=false&limit=200`
         ).catch(() => ({ items: nextProducts }));
 
         nextProducts = Array.isArray(productsRes?.items)
@@ -599,6 +639,11 @@ export default function ShopAssetsPage() {
           firstTruthy(item?.visibility_mode, "community_visible") === "vault_private" &&
           item?.is_active !== false
       ),
+    [products]
+  );
+
+  const hiddenProducts = useMemo(
+    () => products.filter((item) => item?.is_active === false),
     [products]
   );
 
@@ -812,6 +857,23 @@ export default function ShopAssetsPage() {
     }
   }
 
+  async function restoreProduct(productId: number) {
+    setRestoringProductId(productId);
+
+    try {
+      await apiJson<any>(`/api/marketplace/products/${productId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ is_active: true, status: "active" }),
+      });
+      await loadPage();
+      showNotice("success", "Product restored.");
+    } catch (err: any) {
+      showNotice("error", safeStr(err?.message) || "Product could not be restored.");
+    } finally {
+      setRestoringProductId(null);
+    }
+  }
+
   if (loading) {
     return (
       <div style={{ maxWidth: 1180, margin: "0 auto", display: "grid", gap: 18 }}>
@@ -928,6 +990,9 @@ export default function ShopAssetsPage() {
                 Vault slots used: {vaultProducts.length} / 6
               </span>
               <span style={badge(false)}>
+                Hidden blocks: {hiddenProducts.length}
+              </span>
+              <span style={badge(false)}>
                 Community: {firstTruthy(shop?.marketplace_name, shop?.community_name, "Selected community")}
               </span>
               <span style={badge(false)}>Current page: Shop assets</span>
@@ -1015,6 +1080,23 @@ export default function ShopAssetsPage() {
                 </div>
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
                   Private offers by permission
+                </div>
+              </div>
+
+              <div style={statTile()}>
+                <div style={sectionLabel()}>Hidden</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 22,
+                  }}
+                >
+                  {hiddenProducts.length}
+                </div>
+                <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
+                  Restorable owner-only blocks
                 </div>
               </div>
             </div>
@@ -1537,7 +1619,7 @@ export default function ShopAssetsPage() {
               >
                 {safeStr(productPreviewUrl) ? (
                   <img
-                    src={productPreviewUrl}
+                    src={resolveAssetSrc(productPreviewUrl)}
                     alt={firstTruthy(productName, "Preview")}
                     style={{
                       width: "100%",
@@ -1627,8 +1709,8 @@ export default function ShopAssetsPage() {
           <div>
             <div style={sectionLabel()}>Posted product blocks</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Review what is already live so dead placeholders and wrong visibility states are easy
-              to catch.
+              Review everything the shop already has, including hidden blocks that can be restored
+              without rebuilding the shop from scratch.
             </div>
           </div>
 
@@ -1659,16 +1741,29 @@ export default function ShopAssetsPage() {
               const label = extractProductLabel(firstTruthy(item?.description));
               const cleanDescription = stripProductLabel(firstTruthy(item?.description));
               const productLink = buildProductDeepLink(gmfnId, Number(item.id));
+              const isHidden = item?.is_active === false;
+              const itemName = firstTruthy(item?.name, "Product");
+              const itemImage = resolveAssetSrc(item?.image_url);
+              const isBusy =
+                deletingProductId === Number(item.id) ||
+                restoringProductId === Number(item.id);
 
               return (
                 <div
                   key={item.id}
                   style={{
                     ...innerCard(
-                      "linear-gradient(180deg, #0A1625 0%, #11263B 56%, #193A58 100%)"
+                      isHidden
+                        ? "linear-gradient(180deg, #243244 0%, #2F4054 56%, #405267 100%)"
+                        : "linear-gradient(180deg, #0A1625 0%, #11263B 56%, #193A58 100%)"
                     ),
-                    border: "1px solid rgba(212,175,55,0.16)",
-                    boxShadow: "0 18px 40px rgba(2,12,27,0.20)",
+                    border: isHidden
+                      ? "1px solid rgba(148,163,184,0.26)"
+                      : "1px solid rgba(212,175,55,0.16)",
+                    boxShadow: isHidden
+                      ? "0 18px 38px rgba(15,23,42,0.16)"
+                      : "0 18px 40px rgba(2,12,27,0.20)",
+                    opacity: isHidden ? 0.92 : 1,
                   }}
                 >
                   <div
@@ -1678,17 +1773,19 @@ export default function ShopAssetsPage() {
                       borderRadius: 16,
                       overflow: "hidden",
                       background:
-                        "linear-gradient(180deg, #11263B 0%, #193A58 100%)",
+                        isHidden
+                          ? "linear-gradient(180deg, #334155 0%, #475569 100%)"
+                          : "linear-gradient(180deg, #11263B 0%, #193A58 100%)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       border: "1px solid rgba(212,175,55,0.12)",
                     }}
                   >
-                    {safeStr(item?.image_url) ? (
+                    {itemImage ? (
                       <img
-                        src={safeStr(item?.image_url)}
-                        alt={firstTruthy(item?.name, "Product")}
+                        src={itemImage}
+                        alt={itemName}
                         style={{
                           width: "100%",
                           height: "100%",
@@ -1705,6 +1802,17 @@ export default function ShopAssetsPage() {
 
                   <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <span style={badge(true)}>Block #{item.id}</span>
+                    <span
+                      style={{
+                        ...badge(false),
+                        background: isHidden
+                          ? "rgba(248,250,252,0.16)"
+                          : "rgba(34,197,94,0.12)",
+                        color: isHidden ? "#CBD5E1" : "#BBF7D0",
+                      }}
+                    >
+                      {isHidden ? "Hidden - can restore" : "Live"}
+                    </span>
                     {label ? <span style={badge(false)}>Tag: {label}</span> : null}
                     <span
                       style={{
@@ -1726,7 +1834,7 @@ export default function ShopAssetsPage() {
                       lineHeight: 1.35,
                     }}
                   >
-                    {firstTruthy(item?.name, "Product")}
+                    {itemName}
                   </div>
 
                   <div
@@ -1755,28 +1863,36 @@ export default function ShopAssetsPage() {
                     <button
                       type="button"
                       onClick={() => startEditProduct(item)}
-                      style={actionBtn("primary")}
+                      style={actionBtn(isHidden ? "secondary" : "primary")}
                     >
                       Edit
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => void deleteProduct(Number(item.id))}
-                      disabled={deletingProductId === Number(item.id)}
-                      style={actionBtn(
-                        "secondary",
-                        deletingProductId === Number(item.id)
-                      )}
-                    >
-                      {deletingProductId === Number(item.id) ? "Removing..." : "Delete"}
-                    </button>
+                    {isHidden ? (
+                      <button
+                        type="button"
+                        onClick={() => void restoreProduct(Number(item.id))}
+                        disabled={isBusy}
+                        style={actionBtn("primary", isBusy)}
+                      >
+                        {restoringProductId === Number(item.id) ? "Restoring..." : "Restore"}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => void deleteProduct(Number(item.id))}
+                        disabled={isBusy}
+                        style={actionBtn("secondary", isBusy)}
+                      >
+                        {deletingProductId === Number(item.id) ? "Removing..." : "Delete"}
+                      </button>
+                    )}
 
                     <button
                       type="button"
                       onClick={() => copyText(productLink, "Product gallery link copied.")}
-                      style={actionBtn("soft", !productLink)}
-                      disabled={!productLink}
+                      style={actionBtn("soft", !productLink || isHidden)}
+                      disabled={!productLink || isHidden}
                     >
                       Copy Link
                     </button>

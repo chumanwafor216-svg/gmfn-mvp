@@ -1406,7 +1406,22 @@ def update_marketplace_product(
     if "visibility_mode" in provided and payload.visibility_mode is not None:
         target_visibility = _resolve_visibility_mode(payload.visibility_mode)
 
-    if target_visibility == VISIBILITY_COMMUNITY:
+    current_active = bool(getattr(product, "is_active", True))
+    soft_remove_requested = (
+        payload.archived is True
+        or payload.is_active is False
+        or _safe_str(payload.status).lower() in {"removed", "archived", "deleted", "inactive"}
+    )
+    restore_requested = (
+        not soft_remove_requested
+        and (
+            payload.is_active is True
+            or _safe_str(payload.status).lower() in {"active", "restore", "restored", "live"}
+        )
+    )
+    target_active = False if soft_remove_requested else True if restore_requested else current_active
+
+    if target_active and target_visibility == VISIBILITY_COMMUNITY:
         active_product_count = _count_active_products_for_shop(
             db,
             shop_id=int(target_shop_id),
@@ -1418,7 +1433,7 @@ def update_marketplace_product(
                 status_code=400,
                 detail=f"Maximum of {FREE_COMMUNITY_PRODUCT_SLOTS} community-visible products allowed per shop",
             )
-    else:
+    elif target_active:
         entitled_slots = min(
             MAX_VAULT_PRIVATE_PRODUCT_SLOTS,
             get_active_feature_quantity(
@@ -1456,15 +1471,12 @@ def update_marketplace_product(
         product.visibility_mode = target_visibility
         changed = True
 
-    soft_remove_requested = (
-        payload.archived is True
-        or payload.is_active is False
-        or _safe_str(payload.status).lower() in {"removed", "archived", "deleted", "inactive"}
-    )
-
     if soft_remove_requested and bool(getattr(product, "is_active", True)):
         product.is_active = False
         removed_reposts += _remove_product_reposts(db, product_id=int(product.id))
+        changed = True
+    elif restore_requested and not bool(getattr(product, "is_active", True)):
+        product.is_active = True
         changed = True
 
     if changed:
@@ -1472,9 +1484,18 @@ def update_marketplace_product(
         db.commit()
         db.refresh(product)
 
+        event_type = "marketplace.product.updated"
+        reason = "marketplace_product_updated"
+        if soft_remove_requested:
+            event_type = "marketplace.product.removed"
+            reason = "marketplace_product_removed"
+        elif restore_requested:
+            event_type = "marketplace.product.restored"
+            reason = "marketplace_product_restored"
+
         log_trust_event(
             db,
-            event_type="marketplace.product.removed" if soft_remove_requested else "marketplace.product.updated",
+            event_type=event_type,
             clan_id=resolved_clan_id,
             actor_user_id=int(current_user.id),
             subject_user_id=int(current_user.id),
@@ -1486,7 +1507,7 @@ def update_marketplace_product(
                 "visibility_mode": _safe_str(getattr(product, "visibility_mode", None), VISIBILITY_COMMUNITY),
                 "removed_reposts": removed_reposts,
                 "image_url": getattr(product, "image_url", None),
-                "reason": "marketplace_product_removed" if soft_remove_requested else "marketplace_product_updated",
+                "reason": reason,
             },
             commit=False,
             refresh=False,
@@ -1497,7 +1518,13 @@ def update_marketplace_product(
         "ok": True,
         "item": _product_out(db, product),
         "removed_reposts": removed_reposts,
-        "detail": "Product updated." if not soft_remove_requested else "Product removed from visible blocks.",
+        "detail": (
+            "Product restored to visible blocks."
+            if restore_requested
+            else "Product updated."
+            if not soft_remove_requested
+            else "Product removed from visible blocks."
+        ),
     }
 
 
