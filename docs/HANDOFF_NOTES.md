@@ -46,6 +46,55 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-21
 
 #### Workstream
+Marketplace billboard picture-control simplification.
+
+#### Routes/screens affected
+- `/app/marketplace`
+
+#### Backend routes/endpoints involved
+- no backend contract changed
+
+#### Files in play
+- `frontend/src/pages/MarketplacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- The Marketplace billboard now exposes one visible `Picture` control instead
+  of separate always-visible add/change/remove picture buttons.
+- Tapping `Picture` opens a compact in-frame tool panel with `Add picture` or
+  `Change picture`, optional `Remove picture`, and `Close`.
+- Successful picture upload or removal closes the picture tool panel so the
+  billboard returns to the clean identity view.
+- The visible billboard identity chips were reduced to the marketplace ID only;
+  repeated `Trust` and `Money In` status copy was removed from the billboard
+  face.
+- Deeper trust, CCI, finance, Money In, Money Out, local pool, and role facts
+  remain available in the existing `Open details` drawer.
+- No Dashboard, Dashboard Market Wisdom, auth, backend, schema, payment, or
+  deployment configuration was changed.
+
+#### Verification
+- `npm exec -- eslint src/pages/MarketplacePage.tsx` passed with no errors.
+  Existing warnings remain for hook dependencies already present in
+  `MarketplacePage.tsx`.
+- `git diff --check -- frontend/src/pages/MarketplacePage.tsx docs/HANDOFF_NOTES.md`
+  passed.
+- `npm run build` passed in `frontend`.
+
+#### Open risks or unknowns
+- Phone visual review is still needed after deploy to confirm the single
+  `Picture` control feels obvious without creating extra mental load.
+
+#### Next recommended step
+- Deploy/retest `/app/marketplace` on phone, especially the single `Picture`
+  control, picture tool panel, and details drawer.
+
+### Previous update
+
+#### Date
+2026-04-21
+
+#### Workstream
 Marketplace billboard identity compression.
 
 #### Routes/screens affected

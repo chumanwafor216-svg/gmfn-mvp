@@ -1190,6 +1190,41 @@ function marketplacePictureHandleStyle(
   };
 }
 
+function marketplacePictureToolsPanelStyle(
+  isCompact: boolean
+): React.CSSProperties {
+  return {
+    position: "absolute",
+    top: 54,
+    right: 12,
+    zIndex: 4,
+    width: isCompact ? "min(232px, calc(100% - 24px))" : 244,
+    display: "grid",
+    gap: 8,
+    padding: 10,
+    borderRadius: 18,
+    border: "1px solid rgba(255,255,255,0.78)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(239,247,255,0.95) 100%)",
+    boxShadow:
+      "0 20px 36px rgba(3,10,22,0.24), inset 0 1px 0 rgba(255,255,255,0.96)",
+  };
+}
+
+function marketplacePictureToolButtonStyle(
+  disabled = false
+): React.CSSProperties {
+  return {
+    ...actionBtn("soft", disabled),
+    width: "100%",
+    minHeight: 38,
+    padding: "9px 12px",
+    borderRadius: 14,
+    fontSize: 12,
+    justifyContent: "center",
+  };
+}
+
 function marketplaceBillboardScrimStyle(): React.CSSProperties {
   return {
     position: "absolute",
@@ -1772,6 +1807,7 @@ export default function MarketplacePage() {
   const [sectionsOpen, setSectionsOpen] =
     useState<SectionState>(DEFAULT_SECTION_STATE);
   const [profileDetailsOpen, setProfileDetailsOpen] = useState(false);
+  const [pictureToolsOpen, setPictureToolsOpen] = useState(false);
 
   const supportSectionRef = useRef<HTMLElement | null>(null);
   const withdrawalHandoffAppliedRef = useRef("");
@@ -1880,7 +1916,22 @@ export default function MarketplacePage() {
     event?: React.SyntheticEvent<HTMLElement>
   ) {
     consumeMarketplaceButtonEvent(event);
-    setProfileDetailsOpen((prev) => !prev);
+    const nextOpen = !profileDetailsOpen;
+    setProfileDetailsOpen(nextOpen);
+    if (nextOpen) {
+      setPictureToolsOpen(false);
+    }
+  }
+
+  function togglePictureTools(
+    event?: React.SyntheticEvent<HTMLElement>
+  ) {
+    consumeMarketplaceButtonEvent(event);
+    const nextOpen = !pictureToolsOpen;
+    setPictureToolsOpen(nextOpen);
+    if (nextOpen) {
+      setProfileDetailsOpen(false);
+    }
   }
 
   function openMarketplaceRoute(
@@ -2238,6 +2289,7 @@ export default function MarketplacePage() {
       writeLocalString(communityPictureStorageKey(activeCommunityId), imageUrl);
       setCommunityPictureRefreshSeed((x) => x + 1);
       await loadPage();
+      setPictureToolsOpen(false);
       showNotice("success", "Community picture updated.");
     } catch (err: any) {
       showNotice(
@@ -2264,6 +2316,7 @@ export default function MarketplacePage() {
       removeLocal(communityPictureStorageKey(activeCommunityId));
       setCommunityPictureRefreshSeed((x) => x + 1);
       await loadPage();
+      setPictureToolsOpen(false);
       showNotice("success", "Community picture removed.");
     } catch (err: any) {
       showNotice(
@@ -2826,44 +2879,75 @@ export default function MarketplacePage() {
 
             <div aria-hidden="true" style={marketplaceBillboardScrimStyle()} />
 
-            <label
-              onClick={(event) => event.stopPropagation()}
+            <button
+              type="button"
               onPointerDown={consumeMarketplacePointerEvent}
+              onClick={togglePictureTools}
+              aria-expanded={pictureToolsOpen}
               style={marketplacePictureHandleStyle(
-                hasCommunityPicture ? "right" : "full",
-                uploadingCommunityPicture
+                "right",
+                uploadingCommunityPicture || removingCommunityPicture
               )}
+              disabled={uploadingCommunityPicture || removingCommunityPicture}
             >
-              {uploadingCommunityPicture
-                ? "Updating..."
-                : hasCommunityPicture
-                  ? "Change picture"
-                  : "Add picture"}
-              <input
-                key={communityPictureFileInputKey}
-                type="file"
-                accept="image/*"
-                disabled={uploadingCommunityPicture}
-                onChange={(event) =>
-                  void handleUploadCommunityPicture(event.target.files?.[0] || null)
-                }
-                style={{ display: "none" }}
-              />
-            </label>
+              {uploadingCommunityPicture || removingCommunityPicture
+                ? "Working..."
+                : "Picture"}
+            </button>
 
-            {hasCommunityPicture ? (
-              <button
-                type="button"
+            {pictureToolsOpen ? (
+              <div
+                onClick={(event) => event.stopPropagation()}
                 onPointerDown={consumeMarketplacePointerEvent}
-                onClick={() => void handleRemoveCommunityPicture()}
-                disabled={removingCommunityPicture}
-                style={marketplacePictureHandleStyle(
-                  "left",
-                  removingCommunityPicture
-                )}
+                style={marketplacePictureToolsPanelStyle(isCompact)}
               >
-                {removingCommunityPicture ? "Removing..." : "Remove"}
-              </button>
+                <label
+                  style={marketplacePictureToolButtonStyle(
+                    uploadingCommunityPicture
+                  )}
+                >
+                  {uploadingCommunityPicture
+                    ? "Updating..."
+                    : hasCommunityPicture
+                      ? "Change picture"
+                      : "Add picture"}
+                  <input
+                    key={communityPictureFileInputKey}
+                    type="file"
+                    accept="image/*"
+                    disabled={uploadingCommunityPicture}
+                    onChange={(event) =>
+                      void handleUploadCommunityPicture(
+                        event.target.files?.[0] || null
+                      )
+                    }
+                    style={{ display: "none" }}
+                  />
+                </label>
+
+                {hasCommunityPicture ? (
+                  <button
+                    type="button"
+                    onPointerDown={consumeMarketplacePointerEvent}
+                    onClick={() => void handleRemoveCommunityPicture()}
+                    disabled={removingCommunityPicture}
+                    style={marketplacePictureToolButtonStyle(
+                      removingCommunityPicture
+                    )}
+                  >
+                    {removingCommunityPicture ? "Removing..." : "Remove picture"}
+                  </button>
+                ) : null}
+
+                <button
+                  type="button"
+                  onPointerDown={consumeMarketplacePointerEvent}
+                  onClick={togglePictureTools}
+                  style={marketplacePictureToolButtonStyle()}
+                >
+                  Close
+                </button>
+              </div>
             ) : null}
 
             <div style={marketplaceBillboardTextStyle(isCompact)}>
@@ -2914,8 +2998,6 @@ export default function MarketplacePage() {
               >
                 {[
                   `ID: ${communityIdentity(selectedCommunity)}`,
-                  `Trust: ${communityTrustLabel(selectedCommunity)}`,
-                  communitySettlementReady ? "Money In ready" : "Money In pending",
                 ].map((item) => (
                   <span
                     key={item}
