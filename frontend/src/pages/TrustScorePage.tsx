@@ -201,6 +201,21 @@ const DASHBOARD_FOCUS_COMMITMENTS_STORAGE_KEY =
 const DASHBOARD_FOCUS_EVENTS_STORAGE_KEY =
   "gmfn.dashboard.focus-events.v1";
 
+const TRUST_PASSPORT_HELP_BODY =
+  "Trust Passport helps your good name travel with you. In real life, many people already get support through trust: a seller may release goods on credit because someone respected says, 'I know this person. They will pay.' GSN keeps that familiar community trust, but gives it a portable proof layer.";
+
+const TRUST_PASSPORT_HELP_BULLETS = [
+  "Ordinary vouching already works, but it has limits. It mostly works where you are known. It depends on people being physically available, and it can be affected by sentiment, favour, fear, family pressure, or personal relationships.",
+  "Trust Passport is built to solve that gap. It keeps the record of what you have already done: money promises kept, loans repaid, support given, guarantor responsibility, missed promises, completed repayments, and verified community behaviour.",
+  "TrustSlip is the shareable proof from that record. Before a seller releases goods on credit, before a loan is approved, before support is given, or before a guarantor accepts risk, your TrustSlip can be checked.",
+  "This protects both sides. Your record can speak with you when the people who know you are not present. The seller, community, or guarantor does not have to rely only on words or guesswork.",
+  "For the unbanked and underbanked, this means trust is not only about bank statements, salary slips, or how much money someone has. A person who borrows small and repays properly can build proof. A person who supports others responsibly can build proof.",
+  "Finance records what happened with money. Trust Passport explains what that behaviour means. TrustSlip proves the current trust state quickly when someone needs to decide.",
+];
+
+const TRUST_PASSPORT_HELP_NOTE =
+  "Innovation wedge: GSN turns informal community vouching into portable, verifiable trust evidence, especially for people who are normally invisible to formal credit systems.";
+
 function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
@@ -2372,15 +2387,9 @@ export default function TrustScorePage() {
         <DomainIntroToggle
           title="How Trust Passport Helps You"
           eyebrow="What this can do for you"
-          body="Trust Passport is not here to label a person forever. It helps a member carry proof of reliable behaviour across communities: promises kept, support given responsibly, identity continuity protected, and repair steps completed when something goes wrong."
-          bullets={[
-            "One member keeps one personal GSN trust record across every community they belong to.",
-            "Each selected community can still show its own smaller Open Trust reading, because one group may see strength or pressure before another group does.",
-            "Completed finance promises, clean support, verified identity continuity, and good community participation become evidence that can travel with the member.",
-            "If trust weakens, the Passport should show what happened, why it matters, and the first repair step instead of leaving the member confused or judged.",
-            "TrustSlip is the smaller proof for one outside decision. Trust Passport is the fuller story that explains the person over time.",
-          ]}
-          note="Simple rule: personal Trust Passport carries the full member story; community trust shows the local reading for the selected group."
+          body={TRUST_PASSPORT_HELP_BODY}
+          bullets={TRUST_PASSPORT_HELP_BULLETS}
+          note={TRUST_PASSPORT_HELP_NOTE}
           tone="blue"
         />
       </div>

@@ -5629,3 +5629,29 @@ GSN-branded invite composer and invite-entry continuity.
   - pointer events kept explicitly on the button surface
 - No backend scoring, auth, schemas, payment, ledger, deployment config,
   environment config, route guards, or Dashboard Market Wisdom behavior changed.
+
+### Trust Passport benefit-led wedge addendum
+
+- Updated `frontend/src/pages/TrustScorePage.tsx` so the `How Trust Passport
+  Helps You` guide now tells the stronger product story:
+  - informal community vouching already works in real life
+  - that vouching is limited by location, availability, sentiment, and personal
+    relationship pressure
+  - Trust Passport keeps the fuller trust record
+  - TrustSlip becomes the shareable proof that can be checked before a seller
+    releases goods on credit, before a loan is approved, before support is
+    given, or before a guarantor accepts risk
+  - Finance records what happened, Trust Passport explains what it means, and
+    TrustSlip proves the current state quickly
+- Updated `frontend/src/lib/gmfnCapabilities.ts` under capability `15`
+  (`Portable Trust Identity`) so the shared 22-capability guide carries the
+  innovation wedge:
+  `GSN turns informal community vouching into portable, verifiable trust
+  evidence, especially for people who are normally invisible to formal credit
+  systems.`
+- Updated `docs/BENEFIT_LED_PAGE_EXPLANATIONS_2026-04-21.md` with the same
+  fuller Trust Passport story for later school, partner, innovation, or
+  immigration/institutional documentation.
+- This is copy/system-explanation work only. No backend scoring, auth, schemas,
+  payment, ledger, deployment config, route guards, or Dashboard Market Wisdom
+  presentation logic changed.

@@ -51,35 +51,62 @@ real behaviour, not from wealth alone.
 
 ## Trust Passport
 
-Trust Passport is not here to label a person forever. It helps a member carry
-proof of reliable behaviour across communities.
+Trust Passport helps your good name travel with you.
 
-One member should keep one personal GSN trust record across every community
-they belong to. That personal record should gather completed money promises,
-responsible support, identity continuity, community participation, repair steps,
-TrustSlip status, CCI, and evidence into one explainable story.
+In real life, many people already get support through trust. A seller may
+release goods on credit because someone respected says, "I know this person.
+They will pay." A community may support a borrower because trusted people stand
+behind them.
 
-At the same time, each selected community can still show its own smaller trust
-reading. That matters because one community may see strength, watch, or pressure
-before another community does. Personal trust and community trust are related,
-but they are not the same thing.
+That system already works, but it has limits.
 
-Trust strengthens when promises are completed, guarantees are handled
-responsibly, identity continuity is clean, and community behaviour remains
-helpful. Trust comes under pressure when promises are missed, defaults happen,
-overexposure appears, actions remain unresolved, or identity continuity needs
-review.
+It only works where you are known. It depends on people being physically
+available. It can be affected by sentiment, favour, fear, family pressure, or
+personal relationships. If you move to another place, join another community, or
+meet a seller who does not know you, your good name may not follow you.
 
-The practical benefit is that the member can understand the trust story they
-are carrying, see what is helping them, see what needs repair, and show a
-smaller proof through TrustSlip without exposing the whole private Passport.
+Trust Passport is built to solve that problem.
 
-The simplest model is:
+Your Trust Passport keeps the record of what you have already done: money
+promises kept, loans repaid, support given, guarantor responsibility, missed
+promises, completed repayments, and verified community behaviour.
 
-- Trust Passport is the fuller personal trust story.
-- Community trust is the local reading for one selected group.
-- TrustSlip is the smaller portable proof for one outside decision.
-- Evidence packs and timelines support the story without exposing everything.
+Your TrustSlip is the shareable proof from that record.
 
-The human benefit is that reliable behaviour can travel with a person, even
-when they enter a new community where people do not yet know them personally.
+Before a seller releases goods on credit, before a loan is approved, before
+support is given, or before a guarantor accepts risk, your TrustSlip can be
+checked. It helps the other person confirm that this is really you, and that
+your trust record belongs to you.
+
+This does not remove human trust. It strengthens it.
+
+Instead of needing someone to walk around and vouch for you every time, your
+record can speak with you. The seller does not have to rely only on words. The
+community does not have to guess. The guarantor does not have to act blindly.
+
+If your record is good, your TrustSlip becomes evidence that you have kept
+promises before.
+
+That is powerful for the unbanked and underbanked because trust is no longer
+only about bank statements, salary slips, or how much money someone has. It
+becomes about behaviour.
+
+A person who borrows small and repays properly can build trust.
+A person who supports others responsibly can build trust.
+A person who keeps promises across communities can carry that proof forward.
+
+Finance records what happened.
+Trust Passport explains what it means.
+TrustSlip proves it quickly when someone needs to decide.
+
+The simple idea is this:
+
+Your good behaviour should not remain trapped in one street, one market, one
+family, or one community.
+
+Trust Passport lets your trust record travel with you.
+TrustSlip lets another person verify it before they take a risk.
+
+Innovation wedge: GSN turns informal community vouching into portable,
+verifiable trust evidence, especially for people who are normally invisible to
+formal credit systems.
