@@ -25,6 +25,11 @@ def _has_index(bind, table_name: str, index_name: str) -> bool:
     return any(idx["name"] == index_name for idx in inspector.get_indexes(table_name))
 
 
+def _has_foreign_key(bind, table_name: str, constraint_name: str) -> bool:
+    inspector = sa.inspect(bind)
+    return any(fk["name"] == constraint_name for fk in inspector.get_foreign_keys(table_name))
+
+
 def upgrade() -> None:
     bind = op.get_bind()
 
@@ -44,9 +49,14 @@ def upgrade() -> None:
 
     # SQLite cannot add foreign keys with ALTER TABLE; the ORM still enforces
     # community ownership in the request route for development databases.
-    if bind.dialect.name != "sqlite":
+    constraint_name = "fk_marketplace_requests_clan_id_clans"
+    if bind.dialect.name != "sqlite" and not _has_foreign_key(
+        bind,
+        "marketplace_requests",
+        constraint_name,
+    ):
         op.create_foreign_key(
-            "fk_marketplace_requests_clan_id_clans",
+            constraint_name,
             "marketplace_requests",
             "clans",
             ["clan_id"],
@@ -58,9 +68,14 @@ def upgrade() -> None:
 def downgrade() -> None:
     bind = op.get_bind()
 
-    if bind.dialect.name != "sqlite":
+    constraint_name = "fk_marketplace_requests_clan_id_clans"
+    if bind.dialect.name != "sqlite" and _has_foreign_key(
+        bind,
+        "marketplace_requests",
+        constraint_name,
+    ):
         op.drop_constraint(
-            "fk_marketplace_requests_clan_id_clans",
+            constraint_name,
             "marketplace_requests",
             type_="foreignkey",
         )
