@@ -1226,7 +1226,7 @@ export default function AppLayout() {
         key: "identity",
         label: "Identity & settings",
         hint:
-          "Identity integrity, notifications, your guide, and settings live here.",
+          "Identity integrity, notifications, profile help, and settings live here.",
         items: identityItems,
       },
       {

@@ -5648,7 +5648,7 @@ export default function DashboardPage() {
                   textTransform: "uppercase",
                 }}
               >
-                Your guide
+                First look
               </span>
               <span
                 style={{
@@ -6371,7 +6371,6 @@ export default function DashboardPage() {
         compact={isPhone || isCompact}
         items={dashboardNextActionItems}
         onSelect={handleDashboardNextAction}
-        eyebrow="Your guide"
         intro="Say what you want in normal words, like loan, deposit, withdraw, shop, trust, community, or marketplace. GSN will point you to the closest route."
       />
 
