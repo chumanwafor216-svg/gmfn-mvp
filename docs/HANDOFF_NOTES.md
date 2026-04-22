@@ -6196,3 +6196,24 @@ GSN-branded invite composer and invite-entry continuity.
   contract changed.
 - Verification:
   - `npm run build` passed in `frontend`.
+
+### Create-entry read-first gate addendum
+
+- Product-owner clarified that the `Read First` guide should sit in the body of
+  the create-community screen, not as an abstract top-right header action.
+- Updated `frontend/src/pages/CreateEntryPage.tsx` only:
+  - Replaced the top subtitle `Founder entry and verification` with `Start a
+    new community`.
+  - Removed the top-right `About / Read First` launcher from the entry header.
+  - Renamed the hero label from `Create entry` to `Create community`.
+  - Placed the `Read First` button directly under `Start a new community`.
+  - Block 1 no longer opens by default for a plain create-community entry.
+  - The guide now has a clear `Done, start Block 1` action; pressing it closes
+    the guide and opens Block 1.
+  - Pressing the locked Block 1 button before reading opens the guide instead
+    of exposing the form.
+- Existing entry API calls, password/account setup fields, verification steps,
+  bank rails, community creation submission, auth, schema, invite/join routes,
+  and backend contracts were not changed.
+- Verification:
+  - `npm run build` passed in `frontend`.

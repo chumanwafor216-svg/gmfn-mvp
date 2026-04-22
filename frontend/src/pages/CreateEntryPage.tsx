@@ -359,6 +359,9 @@ export default function CreateEntryPage() {
       getCreateCode() ||
       ""
   );
+  const hasInitialCommunityContext = Boolean(
+    initialCommunityName || initialDescription
+  );
 
   const [communityName, setCommunityName] = useState(initialCommunityName);
   const [description, setDescription] = useState(initialDescription);
@@ -371,7 +374,7 @@ export default function CreateEntryPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [step, setStep] = useState<"details" | "verify" | "bank" | "community">(
-    initialCommunityName || initialDescription ? "community" : "details"
+    hasInitialCommunityContext ? "community" : "details"
   );
   const [verificationId, setVerificationId] = useState<number>(0);
   const [otpCode, setOtpCode] = useState("");
@@ -391,9 +394,10 @@ export default function CreateEntryPage() {
     useState<EntryVerificationResult>(null);
   const [licenceVerificationResult, setLicenceVerificationResult] =
     useState<EntryVerificationResult>(null);
-  const [procedureOpen, setProcedureOpen] = useState(true);
+  const [guideDone, setGuideDone] = useState(hasInitialCommunityContext);
+  const [procedureOpen, setProcedureOpen] = useState(false);
   const [openPanel, setOpenPanel] = useState<"details" | "verification" | "community" | null>(
-    initialCommunityName || initialDescription ? "community" : "details"
+    hasInitialCommunityContext ? "community" : null
   );
   const detailsRef = useRef<HTMLDivElement | null>(null);
   const verificationRef = useRef<HTMLDivElement | null>(null);
@@ -427,6 +431,7 @@ export default function CreateEntryPage() {
     [step]
   );
 
+  const canOpenDetails = guideDone;
   const canOpenVerification = step !== "details";
   const canOpenCommunity = step === "community";
 
@@ -444,10 +449,23 @@ export default function CreateEntryPage() {
   }
 
   function handleOpenPanel(next: "details" | "verification" | "community") {
+    if (next === "details" && !canOpenDetails) {
+      setProcedureOpen(true);
+      return;
+    }
     if (next === "verification" && !canOpenVerification) return;
     if (next === "community" && !canOpenCommunity) return;
     setOpenPanel(next);
     focusPanel(next);
+  }
+
+  function handleGuideDone() {
+    setGuideDone(true);
+    setProcedureOpen(false);
+    if (step === "details") {
+      setOpenPanel("details");
+      focusPanel("details");
+    }
   }
 
   function clearDetailsBlock() {
@@ -715,7 +733,7 @@ export default function CreateEntryPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "56px 1fr auto",
+            gridTemplateColumns: "56px 1fr 56px",
             alignItems: "center",
             gap: 12,
           }}
@@ -744,23 +762,17 @@ export default function CreateEntryPage() {
                 opacity: 0.92,
               }}
             >
-              Founder entry and verification
+              Start a new community
             </div>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <EntryGuideLauncher
-              label="About"
-              text="Read First"
-              onClick={() => setProcedureOpen((current) => !current)}
-            />
-          </div>
+          <div aria-hidden="true" />
         </div>
 
         <div
           style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
         >
-          <div style={sectionLabel()}>Create entry</div>
+          <div style={sectionLabel()}>Create community</div>
 
           <div
             style={{
@@ -774,7 +786,24 @@ export default function CreateEntryPage() {
             Start a new community
           </div>
 
-          <div style={{ marginTop: 14, display: "grid", gap: 10, justifyItems: "start" }}>
+          <div style={{ marginTop: 14, display: "grid", gap: 12, justifyItems: "start" }}>
+            <EntryGuideLauncher
+              compact
+              text={guideDone ? "Read Again" : "Read First"}
+              onClick={() => setProcedureOpen(true)}
+            />
+            <div
+              style={{
+                color: guideDone ? "#B9D7F0" : "#F3D06A",
+                fontSize: 13,
+                fontWeight: 800,
+                lineHeight: 1.6,
+              }}
+            >
+              {guideDone
+                ? "Guide read. Block 1 is open so you can start safely."
+                : "Read this first. Block 1 opens after you finish the guide."}
+            </div>
             {procedureOpen ? (
               <div
                 style={{
@@ -863,42 +892,6 @@ export default function CreateEntryPage() {
                 <div style={{ display: "grid", gap: 18 }}>
                   <div
                     style={{
-                      display: "flex",
-                      justifyContent: "center",
-                      paddingTop: 4,
-                      paddingBottom: 6,
-                      position: "relative",
-                      zIndex: 1,
-                    }}
-                  >
-                    <div
-                      style={{
-                        borderRadius: 30,
-                        padding: "12px 18px",
-                        background:
-                          "linear-gradient(180deg, rgba(255,255,255,0.62) 0%, rgba(236,242,250,0.24) 100%)",
-                        border: "1px solid rgba(255,255,255,0.56)",
-                        boxShadow:
-                          "0 18px 36px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.82), inset 0 -10px 18px rgba(123,149,181,0.08)",
-                        minWidth: 184,
-                        minHeight: 42,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "#24415C",
-                        fontWeight: 900,
-                        fontSize: 12,
-                        letterSpacing: 2.2,
-                        textTransform: "uppercase",
-                        textShadow: "0 1px 0 rgba(255,255,255,0.8)",
-                      }}
-                    >
-                      Founder route
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
                       display: "grid",
                       gap: 12,
                       position: "relative",
@@ -956,6 +949,19 @@ export default function CreateEntryPage() {
                     abnormal changes if someone else tries to take over your flow.
                   </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={handleGuideDone}
+                    style={{
+                      ...primaryBtn(false),
+                      width: "100%",
+                      minHeight: 54,
+                      position: "relative",
+                      zIndex: 1,
+                    }}
+                  >
+                    Done, start Block 1
+                  </button>
                 </div>
               </div>
             ) : null}
@@ -971,7 +977,10 @@ export default function CreateEntryPage() {
           <div style={{ display: "grid", gap: 14 }}>
             <div
               ref={detailsRef}
-              style={stageShell(stepProgress.details, stepProgress.detailsDone)}
+              style={stageShell(
+                guideDone && stepProgress.details,
+                stepProgress.detailsDone
+              )}
             >
               <div
                 style={{
@@ -985,7 +994,7 @@ export default function CreateEntryPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span
                     style={stageBadge(
-                      stepProgress.details,
+                      guideDone && stepProgress.details,
                       stepProgress.detailsDone
                     )}
                   >
@@ -1009,13 +1018,19 @@ export default function CreateEntryPage() {
                 <button
                   type="button"
                   onClick={() =>
-                    openPanel === "details"
+                    !guideDone
+                      ? setProcedureOpen(true)
+                      : openPanel === "details"
                       ? setOpenPanel(null)
                       : handleOpenPanel("details")
                   }
-                  style={stageToggleBtn(openPanel === "details")}
+                  style={stageToggleBtn(guideDone && openPanel === "details")}
                 >
-                  {openPanel === "details" ? "Collapse" : "Open"}
+                  {!guideDone
+                    ? "Read First"
+                    : openPanel === "details"
+                    ? "Collapse"
+                    : "Open"}
                 </button>
               </div>
 
@@ -1027,10 +1042,12 @@ export default function CreateEntryPage() {
                   fontSize: 14,
                 }}
               >
-                Street name, phone number, email, and password start the founder identity.
+                {guideDone
+                  ? "Street name, phone number, email, and password start the founder identity."
+                  : "Read the short guide first. After you press Done, this first block opens here."}
               </div>
 
-              {openPanel === "details" ? (
+              {guideDone && openPanel === "details" ? (
                 <div style={{ display: "grid", gap: 14, marginTop: 16 }}>
                   <div>
                     <div style={fieldLabel()}>Street name or nickname</div>
