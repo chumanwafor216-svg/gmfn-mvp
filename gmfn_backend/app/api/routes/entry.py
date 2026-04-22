@@ -15,6 +15,7 @@ from app.api.routes.auth import (
     _ensure_user_gmfn_id,
     _validate_founder_invite,
 )
+from app.core.security import create_access_token, get_password_hash
 from app.db.database import get_db
 from app.db.models import Clan, EntryPhoneVerification, User, UserPayoutDestination
 from app.db.verification_models import IdentityVerificationCheck
@@ -86,6 +87,8 @@ class CreateEntryIn(BaseModel):
     display_name: Optional[str] = Field(default=None, min_length=2, max_length=120)
     phone_e164: Optional[str] = Field(default=None, min_length=8, max_length=32)
     email: Optional[EmailStr] = None
+    password: Optional[str] = Field(default=None, min_length=6, max_length=128)
+    confirm_password: Optional[str] = Field(default=None, min_length=6, max_length=128)
     clan_name: str = Field(..., min_length=2, max_length=80)
     clan_description: Optional[str] = Field(default=None, max_length=500)
     create_code: Optional[str] = Field(default=None, max_length=128)
@@ -103,6 +106,8 @@ class CreateEntryOut(BaseModel):
     clan_name: str
     membership_role: str
     next_step: str
+    access_token: Optional[str] = None
+    token_type: Optional[str] = None
 
 
 def _clean_text(value: object, *, upper: bool = False) -> str:
@@ -541,6 +546,15 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
     phone_e164 = verification.phone_e164
     email = _founder_email(payload_email=verification.email or payload.email, phone_e164=phone_e164)
     create_code = _clean_text(payload.create_code)
+    password = _clean_text(payload.password)
+    confirm_password = _clean_text(payload.confirm_password)
+
+    has_entry_password = bool(password or confirm_password)
+    if has_entry_password:
+        if len(password) < 6:
+            raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+        if password != confirm_password:
+            raise HTTPException(status_code=400, detail="Passwords do not match")
 
     invite = _validate_founder_invite(db, create_code) if create_code else None
 
@@ -558,7 +572,7 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
 
     user = User(
         email=email,
-        hashed_password="PENDING_APPROVAL",
+        hashed_password=get_password_hash(password) if has_entry_password else "PENDING_APPROVAL",
         role="admin",
         display_name=display_name,
         phone_e164=phone_e164,
@@ -823,6 +837,8 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
             action_label="Review Trust",
         )
 
+    access_token = create_access_token(data={"sub": user.email}) if has_entry_password else None
+
     return {
         "ok": True,
         "user_id": int(user.id),
@@ -834,5 +850,7 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
         "clan_id": int(clan.id),
         "clan_name": clan.name,
         "membership_role": membership_role,
-        "next_step": "activate-membership",
+        "next_step": "build-first-circle" if access_token else "activate-membership",
+        "access_token": access_token,
+        "token_type": "bearer" if access_token else None,
     }

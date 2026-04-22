@@ -6141,3 +6141,27 @@ GSN-branded invite composer and invite-entry continuity.
 - No backend route, schema, auth, verification, bank, or payment logic changed.
 - Verification:
   - `npm run build` passed in `frontend`.
+
+### Create-entry password-in-first-block addendum
+
+- Product-owner confirmed the first create-community block should be a complete
+  account setup block, not only name/phone/email.
+- Updated `frontend/src/pages/CreateEntryPage.tsx`:
+  - Block 1 now asks for email, password, and repeat password.
+  - Email is now required in the create-entry UI.
+  - Password must be at least 6 characters and match before phone verification
+    can start.
+  - Final create-entry submission sends `password` and `confirm_password`.
+- Updated `gmfn_backend/app/api/routes/entry.py`:
+  - `/entry/create` now accepts optional `password` and `confirm_password`.
+  - When provided, the password is validated, hashed, and saved immediately for
+    the founder account.
+  - The response includes an access token, allowing the frontend to continue
+    into the app without sending the founder to activation-password setup again.
+  - Older callers that do not send a password still keep the previous
+    `PENDING_APPROVAL` activation behavior.
+- No database schema, migrations, auth core, permission core, or payment logic
+  changed.
+- Verification:
+  - `npm run build` passed in `frontend`.
+  - `python -m compileall app\api\routes\entry.py` passed from `gmfn_backend`.

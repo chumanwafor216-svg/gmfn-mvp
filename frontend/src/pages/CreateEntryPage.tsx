@@ -366,6 +366,8 @@ export default function CreateEntryPage() {
   const [displayName, setDisplayName] = useState(initialDisplayName);
   const [phone, setPhone] = useState(initialPhone);
   const [email, setEmail] = useState(initialEmail);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -399,8 +401,16 @@ export default function CreateEntryPage() {
   const verificationRef = useRef<HTMLDivElement | null>(null);
   const communityRef = useRef<HTMLDivElement | null>(null);
 
-  const canContinue = !!safeStr(communityName) && !!safeStr(displayName) && !!safeStr(phone);
-  const canContinueDetails = !!safeStr(displayName) && !!safeStr(phone);
+  const passwordReady =
+    safeStr(password).length >= 6 && safeStr(password) === safeStr(confirmPassword);
+  const canContinue =
+    !!safeStr(communityName) &&
+    !!safeStr(displayName) &&
+    !!safeStr(phone) &&
+    !!safeStr(email) &&
+    passwordReady;
+  const canContinueDetails =
+    !!safeStr(displayName) && !!safeStr(phone) && !!safeStr(email) && passwordReady;
   const canConfirmOtp = Number(verificationId) > 0 && safeStr(otpCode).length >= 4;
   const canContinueBank =
     Number(verificationId) > 0 &&
@@ -446,6 +456,8 @@ export default function CreateEntryPage() {
     setDisplayName("");
     setPhone("");
     setEmail("");
+    setPassword("");
+    setConfirmPassword("");
     setError("");
     setSuccess("");
   }
@@ -640,11 +652,11 @@ export default function CreateEntryPage() {
         verification_id: verificationId,
         clan_name: safeStr(communityName),
         clan_description: safeStr(description) || undefined,
+        password: safeStr(password),
+        confirm_password: safeStr(confirmPassword),
       };
 
-      if (safeStr(email)) {
-        payload.email = safeStr(email);
-      }
+      payload.email = safeStr(email);
 
       if (createCode) {
         payload.create_code = createCode;
@@ -1015,7 +1027,7 @@ export default function CreateEntryPage() {
                   fontSize: 14,
                 }}
               >
-                Street name, phone number, and optional email start the founder identity.
+                Street name, phone number, email, and password start the founder identity.
               </div>
 
               {openPanel === "details" ? (
@@ -1052,13 +1064,59 @@ export default function CreateEntryPage() {
                   </div>
 
                   <div>
-                    <div style={fieldLabel()}>Email (optional)</div>
+                    <div style={fieldLabel()}>Email</div>
                     <input
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter your email if you use one"
+                      placeholder="Enter the email you will use to sign in"
                       style={input()}
                     />
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                      gap: 12,
+                    }}
+                  >
+                    <div>
+                      <div style={fieldLabel()}>Password</div>
+                      <input
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        type="password"
+                        placeholder="At least 6 characters"
+                        autoComplete="new-password"
+                        style={input()}
+                      />
+                    </div>
+
+                    <div>
+                      <div style={fieldLabel()}>Repeat password</div>
+                      <input
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        type="password"
+                        placeholder="Type the password again"
+                        autoComplete="new-password"
+                        style={input()}
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: -4,
+                      color: passwordReady ? "#166534" : "#5F7287",
+                      fontSize: 12,
+                      lineHeight: 1.6,
+                      fontWeight: 800,
+                    }}
+                  >
+                    {passwordReady
+                      ? "Password is ready. This email and password will be used for sign in."
+                      : "Use at least 6 characters and repeat the same password so the app can create your sign-in safely."}
                   </div>
 
                   <div
