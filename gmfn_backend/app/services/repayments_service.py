@@ -59,6 +59,8 @@ def create_repayment(
     loan_id: int,
     payer: User,
     amount: Decimal,
+    payment_reference: str | None = None,
+    confirmed_by_user_id: int | None = None,
 ) -> Tuple[Repayment, Loan]:
     if _uid(payer) <= 0:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -141,6 +143,8 @@ def create_repayment(
             "remaining_before": str(remaining_before),
             "remaining_after": str(remaining_after),
             "loan_status_after": str(getattr(loan, "status", None)),
+            "payment_reference": payment_reference,
+            "confirmed_by_user_id": confirmed_by_user_id,
         },
         commit=False,
         refresh=False,
@@ -185,8 +189,8 @@ def create_repayment(
             borrower_user_id=borrower_user_id,
             loan_id=int(loan.id),
             amount=loan_amount,
-            confirmed_by_user_id=_uid(payer),
-            payment_reference=None,
+            confirmed_by_user_id=int(confirmed_by_user_id or _uid(payer)),
+            payment_reference=payment_reference,
             reason="loan_fully_repaid",
             note="Loan balance reached zero through confirmed repayment.",
             commit=False,

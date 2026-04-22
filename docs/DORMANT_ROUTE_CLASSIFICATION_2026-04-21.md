@@ -66,6 +66,18 @@ behavior is proven.
     - `GET /trust/score/explained-clan`
     - `GET /trust/score/explained-clan/{user_id}`
   - likely older/specialized naming beside mounted trust score explanations
+- `bank_reconciliation.py`
+  - dormant routes after local cleanup:
+    - `POST /bank/events`
+    - `GET /bank/events`
+    - `POST /bank/expected`
+    - `GET /bank/expected`
+    - `GET /bank/expected/{expected_payment_id}`
+    - `POST /bank/reconcile`
+  - superseded by the mounted canonical bank router in
+    `app/api/routes/bank.py`
+  - unmounted because it duplicated `/bank/expected` and `/bank/reconcile` and
+    exposed older bank-event surfaces not used by active frontend code
 
 Safe action now:
 

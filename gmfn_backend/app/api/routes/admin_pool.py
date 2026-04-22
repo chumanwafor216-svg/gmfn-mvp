@@ -42,11 +42,11 @@ def admin_confirm_pool_event(
             db,
             event_id=int(event_id),
             clan_id=int(clan.id),
-            admin_user_id=int(current_user.id),
+            confirmed_by_user_id=int(current_user.id),
             note=note,
         )
         db.commit()
         db.refresh(e)
         return PoolEventOut.model_validate(e)
-    except LookupError as le:
+    except ValueError as le:
         raise HTTPException(status_code=404, detail=str(le))

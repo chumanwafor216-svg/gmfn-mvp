@@ -260,6 +260,13 @@ def _apply_repayment(
         loan_id=int(loan_id),
         payer=borrower,
         amount=delta,
+        payment_reference=str(
+            getattr(be, "reference_raw", None)
+            or getattr(be, "reference_normalized", None)
+            or ""
+        ).strip()
+        or None,
+        confirmed_by_user_id=int(borrower_user_id),
     )
 
     _mark_expected_applied(

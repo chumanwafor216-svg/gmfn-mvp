@@ -454,11 +454,9 @@ def create_expected_pool_deposit(
     reference_display = (
         payload.reference_display.strip()
         if payload.reference_display and payload.reference_display.strip()
-        else build_reference(
-            int(clan.id),
-            int(current_user.id),
-            purpose="POOL",
-            intent_key=datetime.now().strftime("%Y%m%d%H%M%S%f"),
+        else (
+            f"{build_reference(int(clan.id), int(current_user.id))}-POOL-"
+            f"{datetime.now().strftime('%Y%m%d%H%M%S%f')}"
         )
     )
 

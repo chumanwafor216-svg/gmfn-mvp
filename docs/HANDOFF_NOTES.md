@@ -6120,6 +6120,66 @@ GSN-branded invite composer and invite-entry continuity.
     `https://gmfn-frontend.onrender.com`.
 - Verification:
   - `npm run build` passed in `frontend`.
+
+### Bank rails, repayment, and guarantor commission audit addendum
+
+- Product-owner asked to inspect bank rails, borrowing repayment, payback,
+  commissions, and guarantor commissions before wider testing continues.
+- Applied the safest contract fixes found during the audit:
+  - `frontend/src/lib/api.ts`
+    - `createPoolInstruction` and `createLoanInstruction` now send JSON bodies
+      to `/payment-instructions/pool` and `/payment-instructions/loan`, matching
+      the backend contract.
+    - Bank Console manual ingest now sends a JSON body to `/bank/ingest`,
+      matching the backend contract.
+    - Bank Console/finance bank reads and reconciliation now pass the selected
+      clan as `X-Clan-Id` instead of relying only on ignored `clan_id` query
+      parameters.
+    - `listExpectedPayments` now targets the mounted `/bank/expected` route
+      instead of the non-mounted `/bank-reconciliation/expected` path.
+  - `frontend/src/lib/communityMoney.ts`
+    - Money In and loan repayment instruction generation now use JSON-body
+      POST calls instead of query-string no-body POST calls.
+  - `gmfn_backend/app/api/routes/admin_pool.py`
+    - Admin pool confirmation now calls `confirm_pool_event` using the correct
+      `confirmed_by_user_id` parameter.
+    - Admin pool confirmation now catches the service's `ValueError` cleanly
+      instead of allowing a not-found/mismatch case to become a server error.
+  - `gmfn_backend/app/api/routes/admin_repayments.py`
+    - Admin manual repayment confirmation now loads the borrower and calls the
+      canonical `create_repayment` service with `payer`, `payment_reference`,
+      and `confirmed_by_user_id`.
+  - `gmfn_backend/app/services/repayments_service.py`
+    - `create_repayment` now accepts optional `payment_reference` and
+      `confirmed_by_user_id` so admin/bank-origin repayments can preserve
+      reference evidence in trust metadata.
+  - `gmfn_backend/app/services/bank_application_service.py`
+    - Reconciled repayment application now passes the matched bank reference
+      into repayment creation.
+  - `gmfn_backend/app/api/routes/bank.py`
+    - Fixed the expected pool deposit reference generator that was calling
+      `build_reference` with unsupported keyword arguments.
+  - `gmfn_backend/app/services/guarantor_earnings_service.py`
+    - Updated dormant guarantor earnings materialization to use
+      `get_loan_revenue_allocation` and `share_amount`, matching the active
+      revenue-allocation service.
+- Confirmed remaining structural risks:
+  - Duplicate mounted routes still exist for `GET /bank/expected` and
+    `POST /bank/reconcile`. The first mounted `/bank` routes currently win.
+    This was documented but not removed because deleting/remounting finance
+    routes is a higher-risk cleanup.
+  - Pool deposit instruction creates an expected payment, while the older pool
+    deposit request flow creates a `PoolEvent`. A future pass should decide
+    whether one guided pay-in action should create both records or whether the
+    old pool-event request path should be retired.
+  - Active guarantor commission logic currently computes entitlement from loan
+    revenue allocation; there is not yet a full paid/pending/payout lifecycle
+    for guarantor earnings.
+- Verification:
+  - `npm run build` passed in `frontend`.
+  - `python -m compileall app` passed in `gmfn_backend`.
+  - `python -m pytest tests/test_reconciliation_integrity.py tests/test_clan_pool.py -q`
+    passed in `gmfn_backend` (`5 passed`).
   - `python -m compileall app\api\routes\clans.py app\services\invites_service.py`
     passed from `gmfn_backend`.
 
@@ -6349,3 +6409,286 @@ GSN-branded invite composer and invite-entry continuity.
   membership rules were not changed.
 - Verification:
   - `npm run build` passed in `frontend`.
+
+### Pool deposit instruction reconciliation bridge addendum
+
+- Product-owner asked to continue with the next safest bank-rails correction
+  before committing the current work.
+- Confirmed risk:
+  - New pool Money In instructions created an `ExpectedPayment`.
+  - Older pool deposit flow created a `PoolEvent`.
+  - Bank reconciliation could only auto-confirm pool money into the member pool
+    when it found a matching `PoolEvent`, so instruction-generated deposits
+    could reconcile at bank level but fail downstream with `pool_event_not_found`.
+- Updated `gmfn_backend/app/services/payment_instruction_service.py`:
+  - `create_pool_deposit_instruction` now creates a pending
+    `PoolEvent(event_type="deposit.requested")` with the exact same generated
+    reference as the `ExpectedPayment`.
+  - The `ExpectedPayment.meta_json` now stores `pool_event_id`, `source`, and
+    `reference`.
+  - The instruction response now includes `pool_event_id`.
+  - Currency is normalized to uppercase and amount is validated as positive in
+    the service, not only at the API schema boundary.
+- Updated `frontend/src/lib/communityMoney.ts`:
+  - Normalizes the optional backend `pool_event_id` response as `poolEventId`.
+- Updated `gmfn_backend/tests/test_reconciliation_integrity.py`:
+  - Test fixture now creates both core app metadata and bank metadata because
+    `pool_events` and `expected_payments` live under different Base metadata
+    objects in the current codebase.
+  - Added a test proving that a pool instruction generates a linked pool event
+    and bank reconciliation turns it into `deposit.confirmed`.
+- No public route path, request body, database schema, migration, auth,
+  permission, settlement config, or old `/pool/deposits/request` contract was
+  changed.
+- Verification:
+  - `python -m compileall app` passed in `gmfn_backend`.
+  - `python -m pytest tests/test_reconciliation_integrity.py tests/test_clan_pool.py -q`
+    passed: 6 tests.
+  - `npm run build` passed in `frontend`.
+
+### Bank duplicate-route surface cleanup addendum
+
+- Product-owner asked to continue with the remaining low-risk interconnected
+  correction before committing, so the bank-rails pieces can be tested together.
+- Confirmed `frontend/src/pages/ShopControlPage.tsx` still contains some
+  `/api/...` path strings, but its route-local `apiUrl()` helper strips `/api`
+  and sends requests through the configured backend API base. No frontend
+  correction was needed there.
+- Updated `gmfn_backend/app/api/router.py`:
+  - Unmounted the legacy `bank_reconciliation.py` router.
+  - Kept the route file itself in the repo; no code was deleted.
+  - Canonical `/bank` behavior is now owned by `app/api/routes/bank.py`.
+- Why this was safe:
+  - Active frontend code uses `/bank/ingest`, `/bank/recent`,
+    `/bank/unmatched`, `/bank/expected`, `/bank/reconcile`, and `/bank/credits`
+    from the canonical `bank.py` router.
+  - The legacy router created duplicate `GET /bank/expected` and
+    `POST /bank/reconcile` registrations.
+  - It also exposed older `/bank/events` and generic expected-payment surfaces
+    that are not active frontend routes and should not be part of the pilot
+    bank surface without deliberate review.
+- Updated docs:
+  - `docs/ENDPOINT_AUDIT_2026-04-21.md`
+  - `docs/BACKEND_ADMIN_VAULT_COMPLETION_PROGRAM_2026-04-21.md`
+  - `docs/DORMANT_ROUTE_CLASSIFICATION_2026-04-21.md`
+- Verification:
+  - `python -m compileall app\api\router.py app\api\routes\bank.py app\api\routes\bank_reconciliation.py`
+    passed from `gmfn_backend`.
+  - `python -m pytest tests/test_reconciliation_integrity.py tests/test_clan_pool.py -q`
+    passed: 6 tests.
+  - Local duplicate-route inspection no longer reports `GET /bank/expected` or
+    `POST /bank/reconcile`. Remaining duplicate route warnings are trust/admin
+    pre-existing items, not bank routes.
+
+### Guarantor earnings lifecycle clarity addendum
+
+- Product-owner asked to continue through the remaining low-risk bank-rails
+  surface corrections before committing/deploying the interconnected batch.
+- Confirmed risk:
+  - `/guarantor-earnings/me` returned a calculated guarantor reward share but
+    did not say whether the share was merely potential, actually earned, or
+    blocked by an unclean loan outcome.
+  - The frontend therefore had to infer status and could make pending support
+    look like completed earnings.
+- Updated `gmfn_backend/app/services/revenue_allocation_service.py`:
+  - `get_my_guarantor_earnings` now returns `estimated_amount`,
+    `payable_amount`, `earning_status`, `status_note`, `loan_status`,
+    `guarantor_status`, `clan_id`, `created_at`, and `updated_at` per row.
+  - `total_earned`/`total_payable` now represent only reward value earned after
+    the supported loan is fully repaid.
+  - `total_estimated`, `total_pending`, and `total_blocked` keep the wider
+    support-share picture visible without calling it payable money too early.
+  - `get_loan_revenue_allocation` now also returns `clan_id` and
+    `loan_status` metadata.
+- Updated frontend clarity:
+  - `frontend/src/pages/GuarantorEarningsPage.tsx` now distinguishes
+    `Potential share` from `Total earned`.
+  - Recent rows show the loan status and lifecycle note.
+  - `frontend/src/pages/FinancePage.tsx` now calls the summary
+    `Earned guarantor value` and includes row status in the guarantor earnings
+    table.
+- Added `gmfn_backend/tests/test_guarantor_earnings_service.py`:
+  - Covers pending reward share before repayment.
+  - Covers earned/payable reward after full repayment.
+- This is still not a payout implementation. It does not move money, create
+  payout rows, alter payment/ledger tables, change auth, change schemas, or add
+  migrations.
+- Verification:
+  - `python -m compileall app` passed from `gmfn_backend`.
+  - `python -m pytest tests\test_guarantor_earnings_service.py tests\test_reconciliation_integrity.py tests\test_clan_pool.py -q`
+    passed: 8 tests.
+  - `npm run build` passed in `frontend`.
+
+### Create-entry Block 2 phone-code clarity addendum
+
+- Product-owner sent a phone screenshot showing that after Block 1, Block 2
+  opened with a `Verification code` field under `Verification and bank rails`.
+  This felt like a mistake because testers had not clearly received a phone
+  code and expected bank/account details.
+- Confirmed from code:
+  - Block 1 starts `/entry/phone/start`.
+  - Block 2 first enters the temporary `verify` state.
+  - Only after `/entry/phone/confirm` does the bank/account form open.
+  - The repo has no live SMS sender wired for this route, so Render could ask
+    for a code while returning no visible code unless `GMFN_DEV_MODE` was set.
+- Updated `gmfn_backend/app/api/routes/entry.py`:
+  - Added pilot-safe `GMFN_ENTRY_PHONE_DELIVERY` handling.
+  - Default delivery is `preview`, so controlled testing shows the OTP code.
+  - Future live SMS can disable preview by setting
+    `GMFN_ENTRY_PHONE_DELIVERY` away from `preview`/`pilot`/`manual`.
+- Updated `frontend/src/pages/CreateEntryPage.tsx`:
+  - Block 2 title is now dynamic:
+    - `Phone code first` while waiting for phone confirmation.
+    - `Bank and wallet details` after phone confirmation.
+    - `Verification and bank rails` before Block 2 is reached.
+  - Added a simple explanatory card: Block 2 has two parts; confirm phone,
+    then account/wallet details open.
+  - Pilot OTP preview explains that the visible code appears because live SMS
+    is not connected yet.
+  - Button label changed from `Submit Block 2` to `Confirm phone code` for the
+    phone step.
+- No entry database schema, auth token logic, community creation contract, bank
+  details endpoint, invite/join route, or payment/ledger behavior changed.
+- Verification:
+  - `python -m compileall app\api\routes\entry.py` passed from
+    `gmfn_backend`.
+  - `npm run build` passed in `frontend`.
+
+### Create-entry phone proof feedback addendum
+
+- Product-owner clarified that after confirming the phone code, the app should
+  tell the user that the phone has been verified and registered against their
+  name, and should return a trust-event response instead of silently moving to
+  the next fields.
+- Confirmed from code:
+  - A permanent `TrustEvent` needs a real `User` and community context.
+  - The create-entry flow only has an `EntryPhoneVerification` row at the
+    phone-confirm step.
+  - The permanent `identity.phone_verified` TrustEvent is already written when
+    `/entry/create` completes and creates the founder user/community.
+- Updated `gmfn_backend/app/api/routes/entry.py`:
+  - `/entry/phone/confirm` now returns `verified_at`,
+    `confirmation_message`, and `trust_event_response`.
+  - `trust_event_response.event_type` is `identity.phone_verified`.
+  - `trust_event_response.status` is `ready_for_registration`, meaning the
+    phone proof is ready and will become a permanent trust event when the
+    community creation finishes.
+- Updated `frontend/src/pages/CreateEntryPage.tsx`:
+  - After the phone code is confirmed, Block 2 now shows a `Phone verified`
+    proof card with the user's name, phone number, and trust-event response.
+  - The success message now uses the backend confirmation text when available.
+- Updated `gmfn_backend/tests/test_entry_create.py`:
+  - The entry flow test now asserts the new confirmation and trust-event
+    response fields.
+- No database schema, auth core, invite/join logic, phone-code validation,
+  bank details logic, payment, ledger, or permanent TrustEvent timing changed.
+- Verification:
+  - `python -m compileall app\api\routes\entry.py` passed from
+    `gmfn_backend`.
+  - `python -m pytest tests\test_entry_create.py -q` passed: 9 tests.
+  - `npm run build` passed in `frontend`.
+
+### Bank rails payout destination alignment addendum
+
+- Product-owner asked to continue with the safest bank-rails corrections while
+  waiting for live testing.
+- Confirmed from code:
+  - Backend `/withdrawal-destinations/me` already accepts and stores `country`
+    and `currency` on payout destinations.
+  - Frontend `PayoutDetailsPage` collected those values, but the shared
+    withdrawal-destination API helper did not forward them as first-class
+    fields.
+- Updated `frontend/src/lib/api.ts`:
+  - `saveWithdrawalDestination` and `updateWithdrawalDestination` payloads now
+    accept `country` and `currency`.
+  - `normalizeWithdrawalDestinationPayload` now forwards `country` and
+    uppercased `currency` to the backend.
+- Updated `frontend/src/pages/PayoutDetailsPage.tsx`:
+  - Save payload now includes `country` and `currency` as real fields.
+  - Copied payout summary now uses ASCII fallback dashes for missing fields.
+- Updated `frontend/src/pages/PaymentRailsPage.tsx`:
+  - Improved contrast on the dark Payment Rails intelligence card.
+  - Fixed a pale text color in the white structured rail section.
+- No backend route, schema, migration, reconciliation logic, payment movement,
+  ledger behavior, auth, or permission behavior was changed.
+- Verification:
+  - `git diff --check -- frontend/src/lib/api.ts frontend/src/pages/PayoutDetailsPage.tsx frontend/src/pages/PaymentRailsPage.tsx`
+    passed with only existing line-ending warnings.
+  - `npm run build` passed in `frontend`.
+
+### Bank rails achievement-feedback addendum
+
+- Product-owner clarified that every practical achievement in the bank/rails
+  entry line should give immediate human feedback, including trust-event-style
+  feedback separate from notifications.
+- Confirmed safety decision:
+  - `identity.bank_destination_recorded` already affects trust scoring when
+    written as a permanent `TrustEvent`.
+  - To avoid noisy repeated scoring events when users edit payout details, this
+    change adds immediate proof-style `trust_event_response` messages without
+    creating extra permanent scoring events at payout-edit time.
+- Updated `gmfn_backend/app/api/routes/entry.py`:
+  - `/entry/bank-details` now returns `confirmation_message` and
+    `trust_event_response` for the bank/wallet proof recorded during founder
+    onboarding.
+- Updated `gmfn_backend/app/api/routes/withdrawal_destinations.py`:
+  - `/withdrawal-destinations/me` GET/POST/PATCH payloads now include
+    `confirmation_message` and `trust_event_response`.
+  - The message explains that the payout destination tells GSN where approved
+    withdrawals should go, but it does not move money by itself.
+  - It also explains that external bank-rail ownership verification is still a
+    separate future connection.
+- Updated frontend proof surfaces:
+  - `frontend/src/pages/CreateEntryPage.tsx` now shows a persistent
+    `Bank and wallet proof recorded` card after Block 2 bank details save.
+  - `frontend/src/pages/PayoutDetailsPage.tsx` now shows a persistent
+    `Trust event response` card after payout details are saved.
+- No schema, migration, auth, permission, payment movement, ledger movement, or
+  permanent TrustEvent timing was changed.
+- Verification:
+  - `python -m compileall app\api\routes\entry.py app\api\routes\withdrawal_destinations.py`
+    passed from `gmfn_backend`.
+  - `python -m pytest tests\test_entry_create.py -q` passed: 9 tests.
+  - `npm run build` passed in `frontend`.
+  - `git diff --check -- gmfn_backend/app/api/routes/entry.py gmfn_backend/app/api/routes/withdrawal_destinations.py frontend/src/pages/CreateEntryPage.tsx frontend/src/pages/PayoutDetailsPage.tsx gmfn_backend/tests/test_entry_create.py`
+    passed with only existing line-ending warnings.
+
+### Create-entry Block 2 pilot auto-confirm addendum
+
+- Product-owner re-tested onboarding from Render and still saw Block 2 open as
+  a `Verification code` screen with the old `Verification and bank rails` /
+  `Submit Block 2` language.
+- Confirmed current architecture:
+  - Backend still requires phone verification before `/entry/bank-details`.
+  - During pilot testing, `/entry/phone/start` returns `otp_preview` because
+    live SMS is not connected.
+  - The confusing part was frontend presentation: testers had to manually copy
+    the preview code before reaching the practical bank/wallet fields.
+- Updated `frontend/src/pages/CreateEntryPage.tsx` only:
+  - Block 2 now presents as `Bank and wallet details` by default.
+  - If the backend returns an `otp_preview`, the frontend immediately confirms
+    it and opens the bank/wallet fields.
+  - The manual phone-code form remains only as a fallback for future live SMS
+    or if pilot auto-confirm fails.
+  - The bank/wallet account-name field now pre-fills from the entered street
+    name when possible.
+  - The bank save button now reads `Save bank and wallet details` instead of
+    the generic `Submit Block 2`.
+  - The guide copy now says `Bank and wallet details` and explains that the
+    phone check protects the record in the background.
+- Onboarding-line audit result:
+  - `/entry/phone/start`, `/entry/phone/confirm`, `/entry/bank-details`, and
+    `/entry/create` are still distinct and aligned.
+  - Permanent TrustEvents are still written at `/entry/create`, not repeatedly
+    during temporary entry steps.
+  - Starter-trust notifications are still created after community creation.
+  - Activation page already gives success feedback and links to Notifications,
+    Trust, and the next workspace step.
+- No backend route, schema, migration, auth core, invite/join flow, payment
+  movement, ledger movement, permanent TrustEvent timing, or notification
+  pipeline was changed in this Block 2 pass.
+- Verification:
+  - `npm run build` passed in `frontend`.
+  - `python -m pytest tests\test_entry_create.py -q` passed: 9 tests.
+  - `git diff --check -- frontend/src/pages/CreateEntryPage.tsx gmfn_backend/app/api/routes/entry.py gmfn_backend/tests/test_entry_create.py`
+    passed with only existing line-ending warnings.

@@ -66,13 +66,17 @@ def confirm_manual_repayment(
         raise HTTPException(status_code=400, detail=f"Cannot confirm repayment for a {st} loan")
 
     amt = _parse_amount_decimal(payload.amount)
+    borrower = db.get(User, int(getattr(loan, "borrower_user_id", 0) or 0))
+    if not borrower:
+        raise HTTPException(status_code=404, detail="Borrower not found")
 
     repayment, updated_loan = create_repayment(
-        db,
+        db=db,
         loan_id=int(loan_id),
-        payer_user_id=int(getattr(loan, "borrower_user_id")),
+        payer=borrower,
         amount=amt,
         payment_reference=payload.payment_reference,
+        confirmed_by_user_id=int(current_user.id),
     )
 
     return {

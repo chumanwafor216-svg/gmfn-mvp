@@ -60,6 +60,38 @@ def _verification_summary(current_user: User) -> tuple[str, str]:
     )
 
 
+def _confirmation_message(row: UserPayoutDestination) -> str:
+    destination = _clean(getattr(row, "destination_name", None)) or "Your payout destination"
+    return (
+        f"{destination} has been recorded as your payout destination. "
+        "This tells GSN where approved withdrawals should go; it does not move money by itself."
+    )
+
+
+def _trust_event_response(row: UserPayoutDestination) -> dict:
+    status = _clean(getattr(row, "verification_status", None)) or "recorded"
+    note = _clean(getattr(row, "verification_note", None))
+
+    if status.startswith("phone_verified"):
+        message = (
+            "Payout proof is recorded against your verified identity. "
+            "External bank-rail ownership verification is not connected yet, so this is recorded payout evidence, not confirmed bank ownership."
+        )
+    else:
+        message = (
+            "Payout proof is recorded. Complete phone verification before relying on this destination for high-trust money movement."
+        )
+
+    if note:
+        message = f"{message} {note}"
+
+    return {
+        "event_type": "identity.bank_destination_recorded",
+        "status": status,
+        "message": message,
+    }
+
+
 class WithdrawalDestinationIn(BaseModel):
     destination_name: str = Field(..., min_length=2, max_length=160)
     bank_name: str = Field(..., min_length=2, max_length=120)
@@ -91,6 +123,8 @@ def _payload(row: UserPayoutDestination) -> dict:
         "region_consistency_note": row.region_consistency_note,
         "verified_at": row.verified_at.isoformat() if row.verified_at else None,
         "updated_at": row.updated_at.isoformat() if row.updated_at else None,
+        "confirmation_message": _confirmation_message(row),
+        "trust_event_response": _trust_event_response(row),
     }
 
 

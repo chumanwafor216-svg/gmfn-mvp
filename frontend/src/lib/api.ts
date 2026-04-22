@@ -1028,12 +1028,14 @@ export async function createPoolInstruction(payload: {
   currency?: string;
 }): Promise<any> {
   return httpJson(
-    `/payment-instructions/pool${buildQuery({
+    "/payment-instructions/pool",
+    "POST",
+    {
       clan_id: payload.clan_id,
       amount: payload.amount,
       currency: payload.currency || "NGN",
-    })}`,
-    "POST"
+    },
+    { header_clan_id: payload.clan_id }
   );
 }
 
@@ -1044,13 +1046,15 @@ export async function createLoanInstruction(payload: {
   currency?: string;
 }): Promise<any> {
   return httpJson(
-    `/payment-instructions/loan${buildQuery({
+    "/payment-instructions/loan",
+    "POST",
+    {
       clan_id: payload.clan_id,
       loan_id: payload.loan_id,
       amount: payload.amount,
       currency: payload.currency || "NGN",
-    })}`,
-    "POST"
+    },
+    { header_clan_id: payload.clan_id }
   );
 }
 
@@ -1265,6 +1269,8 @@ function normalizeWithdrawalDestinationPayload(payload: {
   bank_name?: string | null;
   account_number?: string | null;
   phone_number?: string | null;
+  country?: string | null;
+  currency?: string | null;
   note?: string | null;
 }): Record<string, any> {
   const cleaned: Record<string, any> = {};
@@ -1275,6 +1281,8 @@ function normalizeWithdrawalDestinationPayload(payload: {
   const bankName = String(payload?.bank_name || "").trim();
   const accountNumber = String(payload?.account_number || "").trim();
   const phoneNumber = String(payload?.phone_number || "").trim();
+  const country = String(payload?.country || "").trim();
+  const currency = String(payload?.currency || "").trim().toUpperCase();
   const note = String(payload?.note || "").trim();
 
   if (clanId > 0) {
@@ -1304,6 +1312,14 @@ function normalizeWithdrawalDestinationPayload(payload: {
   if (phoneNumber) {
     cleaned.phone_number = phoneNumber;
     cleaned.phone = phoneNumber;
+  }
+
+  if (country) {
+    cleaned.country = country;
+  }
+
+  if (currency) {
+    cleaned.currency = currency;
   }
 
   if (note) {
@@ -1350,6 +1366,8 @@ export async function saveWithdrawalDestination(payload: {
   bank_name?: string | null;
   account_number?: string | null;
   phone_number?: string | null;
+  country?: string | null;
+  currency?: string | null;
   note?: string | null;
 }): Promise<any> {
   const requestOptions =
@@ -1380,6 +1398,8 @@ export async function updateWithdrawalDestination(payload: {
   bank_name?: string | null;
   account_number?: string | null;
   phone_number?: string | null;
+  country?: string | null;
+  currency?: string | null;
   note?: string | null;
 }): Promise<any> {
   const requestOptions =
@@ -1921,24 +1941,35 @@ export async function bankIngestEvent(payload: {
   description?: string | null;
 }): Promise<any> {
   return httpJson(
-    `/bank/ingest${buildQuery({
-      clan_id: payload.clan_id,
+    "/bank/ingest",
+    "POST",
+    {
       amount: payload.amount,
       currency: payload.currency || "NGN",
       direction: payload.direction,
-      reference: payload.reference ?? undefined,
-      description: payload.description ?? undefined,
-    })}`,
-    "POST"
+      reference: payload.reference ?? null,
+      description: payload.description ?? null,
+    },
+    { header_clan_id: payload.clan_id }
   );
 }
 
 export async function listRecentBankEvents(clanId: number): Promise<any> {
-  return httpJson(`/bank/recent${buildQuery({ clan_id: clanId })}`, "GET");
+  return httpJson(
+    `/bank/recent${buildQuery({ clan_id: clanId })}`,
+    "GET",
+    undefined,
+    { header_clan_id: clanId }
+  );
 }
 
 export async function listUnmatchedBankEvents(clanId: number): Promise<any> {
-  return httpJson(`/bank/unmatched${buildQuery({ clan_id: clanId })}`, "GET");
+  return httpJson(
+    `/bank/unmatched${buildQuery({ clan_id: clanId })}`,
+    "GET",
+    undefined,
+    { header_clan_id: clanId }
+  );
 }
 
 export async function listBankCredits(payload: {
@@ -1952,7 +1983,9 @@ export async function listBankCredits(payload: {
       user_id: payload.user_id,
       currency: payload.currency,
     })}`,
-    "GET"
+    "GET",
+    undefined,
+    { header_clan_id: payload.clan_id }
   );
 }
 
@@ -1974,17 +2007,12 @@ export async function listExpectedPayments(payload?: {
     limit: payload?.limit ?? 100,
   });
 
-  if (primaryClanId > 0) {
-    return httpJson(`/bank-reconciliation/expected${query}`, "GET");
-  }
-
-  return httpJson(`/bank/expected${buildQuery({
-    user_id: payload?.user_id ?? undefined,
-    expected_type: payload?.expected_type ?? undefined,
-    status: payload?.status ?? undefined,
-    currency: payload?.currency ?? undefined,
-    limit: payload?.limit ?? 100,
-  })}`, "GET");
+  return httpJson(
+    `/bank/expected${query}`,
+    "GET",
+    undefined,
+    primaryClanId > 0 ? { header_clan_id: primaryClanId } : undefined
+  );
 }
 
 export async function runBankReconciliation(payload: {
@@ -1996,7 +2024,9 @@ export async function runBankReconciliation(payload: {
       clan_id: payload.clan_id,
       limit: payload.limit ?? 200,
     })}`,
-    "POST"
+    "POST",
+    undefined,
+    { header_clan_id: payload.clan_id }
   );
 }
 

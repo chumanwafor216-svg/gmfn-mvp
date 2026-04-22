@@ -1,6 +1,7 @@
 # tests/test_reconciliation_integrity.py
 from __future__ import annotations
 
+import json
 from decimal import Decimal
 
 import pytest
@@ -8,8 +9,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.db.database import Base
+from app.db.base import Base as CoreBase
+from app.db.database import Base as BankBase
 from app.db.bank_models import BankEvent, ExpectedPayment
+from app.db.models import PoolEvent
+from app.services.payment_instruction_service import create_pool_deposit_instruction
 from app.services.reconciliation_service import (
     create_bank_event,
     normalize_reference,
@@ -33,7 +37,8 @@ def db():
         future=True,
     )
 
-    Base.metadata.create_all(bind=engine)
+    CoreBase.metadata.create_all(bind=engine)
+    BankBase.metadata.create_all(bind=engine)
 
     SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
     session = SessionLocal()
@@ -229,4 +234,60 @@ def test_create_bank_event_idempotent_by_hash(db):
 
     assert a.id == b.id
     assert a.hash == b.hash
-    
+
+
+def test_pool_instruction_links_pool_event_for_auto_reconciliation(db):
+    """
+    Pool Money In instructions must leave a pending PoolEvent behind so that
+    bank reconciliation can turn the confirmed bank match into a confirmed pool
+    deposit without manual admin cleanup.
+    """
+    instruction = create_pool_deposit_instruction(
+        db,
+        clan_id=7,
+        user_id=42,
+        amount=Decimal("12.50"),
+        currency="NGN",
+    )
+
+    exp = db.get(ExpectedPayment, int(instruction["expected_payment_id"]))
+    pool_event = db.get(PoolEvent, int(instruction["pool_event_id"]))
+
+    assert exp is not None
+    assert pool_event is not None
+    assert pool_event.event_type == "deposit.requested"
+    assert pool_event.reference == instruction["reference_display"]
+    assert pool_event.reference == exp.reference_display
+
+    meta = json.loads(exp.meta_json or "{}")
+    assert meta["pool_event_id"] == pool_event.id
+    assert meta["source"] == "payment_instruction.pool"
+
+    bank_event = create_bank_event(
+        db,
+        clan_id=7,
+        source_type="statement_csv",
+        source_id="pool-file",
+        direction="credit",
+        amount=Decimal("12.50"),
+        currency="NGN",
+        reference_raw=instruction["reference_display"],
+        description_raw="pool deposit",
+        bank_txn_id="TXN-POOL-1",
+        posted_at=None,
+        value_at=None,
+        meta={"test": "pool"},
+    )
+
+    stats = reconcile_batch(db, clan_id=7, limit=50)
+    assert stats["confirmed"] == 1
+
+    exp_after = db.get(ExpectedPayment, exp.id)
+    pool_after = db.get(PoolEvent, pool_event.id)
+    bank_after = db.get(BankEvent, bank_event.id)
+
+    assert exp_after.status == "confirmed"
+    assert bank_after.status == "confirmed"
+    assert pool_after.event_type == "deposit.confirmed"
+    assert pool_after.confirmed_at is not None
+    assert "auto-confirmed by bank reconciliation" in (pool_after.note or "")

@@ -100,7 +100,6 @@ from app.api.routes.pilot_readiness import router as pilot_readiness_router
 # Bank / Reconciliation
 # =========================
 from app.api.routes.bank import router as bank_router
-from app.api.routes.bank_reconciliation import router as bank_reconciliation_router
 
 
 api_router = APIRouter()
@@ -187,4 +186,3 @@ api_router.include_router(pilot_readiness_router)
 
 # BANK / RECONCILIATION
 api_router.include_router(bank_router)
-api_router.include_router(bank_reconciliation_router)

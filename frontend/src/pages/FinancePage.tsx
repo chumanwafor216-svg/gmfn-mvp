@@ -1200,7 +1200,7 @@ export default function FinancePage() {
 
     if (parseMoneyNumber(guarantorEarningsTotal) > 0) {
       rows.push(
-        `Visible guarantor earnings: ${fmtMoney(
+        `Earned guarantor value: ${fmtMoney(
           guarantorEarningsTotal
         )} ${crossCurrency}.`
       );
@@ -1774,7 +1774,7 @@ export default function FinancePage() {
                 </strong>
               </div>
               <div style={helperText()}>
-                Visible guarantor earnings:{" "}
+                Earned guarantor value:{" "}
                 <strong>
                   {fmtMoney(guarantorEarningsTotal)} {crossCurrency}
                 </strong>
@@ -2284,7 +2284,8 @@ export default function FinancePage() {
                         <th style={tableHeadCell()}>Loan ID</th>
                         <th style={tableHeadCell()}>Guarantor row</th>
                         <th style={tableHeadCell()}>Weight amount</th>
-                        <th style={tableHeadCell()}>Share amount</th>
+                        <th style={tableHeadCell()}>Potential share</th>
+                        <th style={tableHeadCell()}>Status</th>
                         <th style={tableHeadCell()}>Currency</th>
                       </tr>
                     </thead>
@@ -2295,6 +2296,7 @@ export default function FinancePage() {
                           <td style={tableCell()}>{safeStr(item?.loan_guarantor_id || "-")}</td>
                           <td style={tableCell()}>{safeStr(item?.weight_amount || "0.00")}</td>
                           <td style={tableCell(true)}>{safeStr(item?.share_amount || "0.00")}</td>
+                          <td style={tableCell()}>{safeStr(item?.earning_status || item?.status || "-")}</td>
                           <td style={tableCell()}>{safeStr(item?.currency || poolCurrency)}</td>
                         </tr>
                       ))}

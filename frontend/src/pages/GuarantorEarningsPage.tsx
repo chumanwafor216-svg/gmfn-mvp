@@ -15,9 +15,15 @@ type GuarantorEarningItem = {
   loan_id?: number;
   clan_id?: number;
   share_amount?: string | number | null;
+  estimated_amount?: string | number | null;
+  payable_amount?: string | number | null;
   weight_amount?: string | number | null;
   currency?: string | null;
   status?: string | null;
+  earning_status?: string | null;
+  status_note?: string | null;
+  loan_status?: string | null;
+  guarantor_status?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -329,6 +335,18 @@ function normalizeEarning(raw: any): GuarantorEarningItem | null {
       src?.amount ??
       src?.guarantor_share ??
       null,
+    estimated_amount:
+      src?.estimated_amount ??
+      src?.share_amount ??
+      src?.earned_amount ??
+      src?.amount ??
+      src?.guarantor_share ??
+      null,
+    payable_amount:
+      src?.payable_amount ??
+      src?.earned_payable ??
+      src?.total_payable ??
+      null,
     weight_amount:
       src?.weight_amount ??
       src?.pledge_amount ??
@@ -336,7 +354,11 @@ function normalizeEarning(raw: any): GuarantorEarningItem | null {
       src?.weight ??
       null,
     currency: firstTruthy(src?.currency, src?.currency_code, "NGN") || null,
-    status: firstTruthy(src?.status, src?.earning_status, "pending") || null,
+    status: firstTruthy(src?.earning_status, src?.status, "pending") || null,
+    earning_status: firstTruthy(src?.earning_status, src?.status) || null,
+    status_note: firstTruthy(src?.status_note, src?.note, src?.message) || null,
+    loan_status: firstTruthy(src?.loan_status, src?.support_status) || null,
+    guarantor_status: firstTruthy(src?.guarantor_status) || null,
     created_at: firstTruthy(src?.created_at, src?.earned_at, src?.recorded_at) || null,
     updated_at: firstTruthy(src?.updated_at, src?.settled_at) || null,
   };
@@ -361,6 +383,19 @@ function statusTone(status: string) {
     };
   }
 
+  if (
+    s.includes("blocked") ||
+    s.includes("default") ||
+    s.includes("cancel") ||
+    s.includes("no_reward")
+  ) {
+    return {
+      bg: "#FEF2F2",
+      border: "1px solid #FECACA",
+      text: "#991B1B",
+    };
+  }
+
   return {
     bg: "#F8FAFC",
     border: "1px solid #E2E8F0",
@@ -376,6 +411,18 @@ function isSettledStatus(status: string): boolean {
 function isPendingStatus(status: string): boolean {
   const s = safeStr(status).toLowerCase();
   return s.includes("pending") || s.includes("waiting");
+}
+
+function estimatedValue(row: GuarantorEarningItem): number {
+  return toNum(row?.estimated_amount ?? row?.share_amount);
+}
+
+function payableValue(row: GuarantorEarningItem): number {
+  if (row?.payable_amount !== null && row?.payable_amount !== undefined) {
+    return toNum(row.payable_amount);
+  }
+
+  return isSettledStatus(safeStr(row?.status)) ? estimatedValue(row) : 0;
 }
 
 function renderStepAction(step: NextStepState) {
@@ -496,7 +543,12 @@ export default function GuarantorEarningsPage() {
 
   const totals = useMemo(() => {
     const total = visibleItems.reduce(
-      (sum: number, row: GuarantorEarningItem) => sum + toNum(row?.share_amount),
+      (sum: number, row: GuarantorEarningItem) => sum + payableValue(row),
+      0
+    );
+
+    const estimatedTotal = visibleItems.reduce(
+      (sum: number, row: GuarantorEarningItem) => sum + estimatedValue(row),
       0
     );
 
@@ -513,7 +565,7 @@ export default function GuarantorEarningsPage() {
         return !!d && d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
       })
       .reduce(
-        (sum: number, row: GuarantorEarningItem) => sum + toNum(row?.share_amount),
+        (sum: number, row: GuarantorEarningItem) => sum + payableValue(row),
         0
       );
 
@@ -523,7 +575,7 @@ export default function GuarantorEarningsPage() {
         return !!d && d.getFullYear() === now.getFullYear();
       })
       .reduce(
-        (sum: number, row: GuarantorEarningItem) => sum + toNum(row?.share_amount),
+        (sum: number, row: GuarantorEarningItem) => sum + payableValue(row),
         0
       );
 
@@ -540,7 +592,16 @@ export default function GuarantorEarningsPage() {
         .filter(Boolean)
         .sort((a, b) => (b!.getTime() - a!.getTime()))[0] || null;
 
-    return { total, totalWeight, thisMonth, thisYear, settledCount, pendingCount, latestDate };
+    return {
+      total,
+      estimatedTotal,
+      totalWeight,
+      thisMonth,
+      thisYear,
+      settledCount,
+      pendingCount,
+      latestDate,
+    };
   }, [visibleItems]);
 
   const nextStep = useMemo<NextStepState>(() => {
@@ -613,6 +674,7 @@ export default function GuarantorEarningsPage() {
       `GMFN ID: ${gmfnId}`,
       memberRole ? `Role: ${memberRole}` : "",
       `Total earned: ${fmtMoney(totals.total)} ${currency}`,
+      `Potential share: ${fmtMoney(totals.estimatedTotal)} ${currency}`,
       `This month: ${fmtMoney(totals.thisMonth)} ${currency}`,
       `This year: ${fmtMoney(totals.thisYear)} ${currency}`,
       `Settled items: ${totals.settledCount}`,
@@ -629,7 +691,7 @@ export default function GuarantorEarningsPage() {
       <PageTopNav
         sectionLabel="Guarantor Earnings"
         title="Guarantor Earnings"
-        subtitle="See what you have earned by supporting successful community loans."
+        subtitle="See pending and earned value from supporting successful community loans."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/loans"
@@ -647,8 +709,8 @@ export default function GuarantorEarningsPage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="This screen shows what you have earned through guarantor support work, how those earnings are distributed, and which recent items are feeding that record."
-        why="It helps you understand the value of your guarantor contribution without having to search through separate support or finance screens."
+        what="This screen separates potential support reward from value that is actually earned after the loan is fully repaid."
+        why="It keeps guarantor contribution honest: support can be visible early, but GSN should only call it earned when the support cycle closes properly."
         next="Read the fixed context first, then open the earnings overview and recent earnings sections to see the current picture."
         tone="light"
         style={{ marginTop: 18 }}
@@ -929,7 +991,7 @@ export default function GuarantorEarningsPage() {
                 </div>
 
                 <div style={statTile()}>
-                  <div style={sectionLabel()}>This month</div>
+                  <div style={sectionLabel()}>Potential share</div>
                   <div
                     style={{
                       marginTop: 8,
@@ -938,7 +1000,7 @@ export default function GuarantorEarningsPage() {
                       color: "#0B1F33",
                     }}
                   >
-                    {fmtMoney(totals.thisMonth)} {currency}
+                    {fmtMoney(totals.estimatedTotal)} {currency}
                   </div>
                 </div>
 
@@ -1105,6 +1167,9 @@ export default function GuarantorEarningsPage() {
                   visibleItems.map((earning: GuarantorEarningItem, idx: number) => {
                     const status = safeStr(earning?.status || "Not available yet");
                     const tone = statusTone(status);
+                    const settled = isSettledStatus(status);
+                    const amountLabel = settled ? "EARNED" : "POTENTIAL SHARE";
+                    const amountValue = settled ? payableValue(earning) : estimatedValue(earning);
 
                     return (
                       <div
@@ -1150,6 +1215,15 @@ export default function GuarantorEarningsPage() {
                               <div>
                                 Recorded: {safeDateTime(earning?.created_at || earning?.updated_at)}
                               </div>
+                              {earning?.loan_status ? (
+                                <div>
+                                  Loan status:{" "}
+                                  <strong style={{ color: "#0B1F33" }}>
+                                    {safeStr(earning.loan_status)}
+                                  </strong>
+                                </div>
+                              ) : null}
+                              {earning?.status_note ? <div>{earning.status_note}</div> : null}
                             </div>
                           </div>
 
@@ -1179,7 +1253,7 @@ export default function GuarantorEarningsPage() {
                                 fontWeight: 1000,
                               }}
                             >
-                              EARNED
+                              {amountLabel}
                             </div>
 
                             <div
@@ -1187,10 +1261,10 @@ export default function GuarantorEarningsPage() {
                                 marginTop: 6,
                                 fontWeight: 1000,
                                 fontSize: 18,
-                                color: isSettledStatus(status) ? "#065F46" : "#0B1F33",
+                                color: settled ? "#065F46" : "#0B1F33",
                               }}
                             >
-                              {safeStr(earning?.share_amount || "0")}{" "}
+                              {fmtMoney(amountValue)}{" "}
                               {safeStr(earning?.currency || currency)}
                             </div>
                           </div>

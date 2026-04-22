@@ -36,6 +36,17 @@ type NextStepState = {
   ctaTo: string;
 };
 
+type TrustEventFeedback = {
+  confirmation_message?: string;
+  verification_status?: string;
+  verification_note?: string;
+  trust_event_response?: {
+    event_type?: string;
+    status?: string;
+    message?: string;
+  } | null;
+} | null;
+
 const LOCAL_PAYOUT_KEY = "gmfn_payout_account";
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
@@ -197,11 +208,11 @@ function removeLocalPayout(): void {
 function buildPayoutSummary(form: PayoutForm): string {
   return [
     "GSN Payout Details",
-    `Account Name: ${safeStr(form.account_name || "—")}`,
-    `Account Number / Wallet: ${safeStr(form.account_number || "—")}`,
-    `Bank / Wallet Provider: ${safeStr(form.bank_name || "—")}`,
-    `Country: ${safeStr(form.country || "—")}`,
-    `Currency: ${safeStr(form.currency || "—")}`,
+    `Account Name: ${safeStr(form.account_name || "-")}`,
+    `Account Number / Wallet: ${safeStr(form.account_number || "-")}`,
+    `Bank / Wallet Provider: ${safeStr(form.bank_name || "-")}`,
+    `Country: ${safeStr(form.country || "-")}`,
+    `Currency: ${safeStr(form.currency || "-")}`,
   ].join("\n");
 }
 
@@ -229,6 +240,7 @@ export default function PayoutDetailsPage() {
   const [loadedFromServer, setLoadedFromServer] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
+  const [proofFeedback, setProofFeedback] = useState<TrustEventFeedback>(null);
 
   const [form, setForm] = useState<PayoutForm>({
     account_name: "",
@@ -380,6 +392,8 @@ export default function PayoutDetailsPage() {
         bank_name: safeStr(form.bank_name),
         account_number: safeStr(form.account_number),
         phone_number: safeStr(me?.phone_e164 || "") || undefined,
+        country: safeStr(form.country) || undefined,
+        currency: safeStr(form.currency).toUpperCase() || undefined,
         note: [
           safeStr(form.country) ? `Country: ${safeStr(form.country)}` : "",
           safeStr(form.currency) ? `Currency: ${safeStr(form.currency)}` : "",
@@ -388,18 +402,27 @@ export default function PayoutDetailsPage() {
           .join(" | "),
       };
 
-      if (loadedFromServer) {
-        await updateWithdrawalDestination(payload);
-      } else {
-        await saveWithdrawalDestination(payload);
-      }
+      const saved = loadedFromServer
+        ? await updateWithdrawalDestination(payload)
+        : await saveWithdrawalDestination(payload);
+
+      setProofFeedback({
+        confirmation_message: safeStr(saved?.confirmation_message),
+        verification_status: safeStr(saved?.verification_status),
+        verification_note: safeStr(saved?.verification_note),
+        trust_event_response: saved?.trust_event_response || null,
+      });
 
       writeLocalPayout(form);
       setLoadedFromLocal(true);
       setLoadedFromServer(true);
       setErr("");
-      setMsg("Payout details saved on the system and kept locally for continuity.");
+      setMsg(
+        safeStr(saved?.confirmation_message) ||
+          "Payout details saved on the system and kept locally for continuity."
+      );
     } catch {
+      setProofFeedback(null);
       setErr("Payout details could not be saved on the system.");
     }
   }
@@ -418,6 +441,7 @@ export default function PayoutDetailsPage() {
       });
 
       setErr("");
+      setProofFeedback(null);
       setMsg("Local payout details cleared.");
     } catch {
       setErr("Local payout details could not be cleared.");
@@ -462,6 +486,48 @@ export default function PayoutDetailsPage() {
 
       {err ? <div style={{ ...feedbackCard(false), marginTop: 18 }}>{err}</div> : null}
       {msg ? <div style={{ ...feedbackCard(true), marginTop: 18 }}>{msg}</div> : null}
+      {proofFeedback ? (
+        <div
+          style={{
+            ...pageCard("#ECFDF5"),
+            marginTop: 18,
+            border: "1px solid #A7F3D0",
+            color: "#065F46",
+          }}
+        >
+          <div style={{ ...sectionLabel(), color: "#047857" }}>
+            Trust event response
+          </div>
+          <div style={{ marginTop: 8, fontWeight: 1000, lineHeight: 1.55 }}>
+            {safeStr(proofFeedback.confirmation_message) ||
+              "Your payout destination has been recorded."}
+          </div>
+          <div
+            style={{
+              marginTop: 10,
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
+            {safeStr(proofFeedback.verification_status) ? (
+              <span style={badge(false)}>
+                Status: {safeStr(proofFeedback.verification_status).replace(/_/g, " ")}
+              </span>
+            ) : null}
+            {safeStr(proofFeedback.trust_event_response?.event_type) ? (
+              <span style={badge(true)}>
+                Event: {safeStr(proofFeedback.trust_event_response?.event_type)}
+              </span>
+            ) : null}
+          </div>
+          <div style={{ marginTop: 10, lineHeight: 1.7, fontWeight: 800 }}>
+            {safeStr(proofFeedback.trust_event_response?.message) ||
+              safeStr(proofFeedback.verification_note) ||
+              "This proof is ready for the trust record when the matching flow writes the permanent event."}
+          </div>
+        </div>
+      ) : null}
 
       <section
         style={{

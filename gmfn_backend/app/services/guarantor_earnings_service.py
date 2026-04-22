@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 from sqlalchemy.orm import Session
 
 from app.db.guarantor_earnings_models import GuarantorEarning
-from app.services.revenue_allocation_service import compute_revenue_allocation
+from app.services.revenue_allocation_service import get_loan_revenue_allocation
 
 
 TWOPLACES = Decimal("0.01")
@@ -25,7 +25,8 @@ def _q2(x: Any) -> Decimal:
 
 
 def materialize_guarantor_earnings(db: Session, *, loan_id: int, currency: str = "NGN") -> Dict[str, Any]:
-    allocation = compute_revenue_allocation(db, loan_id=int(loan_id))
+    allocation = get_loan_revenue_allocation(db, loan_id=int(loan_id))
+    allocation_currency = str(allocation.get("currency") or currency or "NGN")
 
     created: List[Dict[str, Any]] = []
 
@@ -54,8 +55,8 @@ def materialize_guarantor_earnings(db: Session, *, loan_id: int, currency: str =
             loan_id=int(allocation["loan_id"]),
             loan_guarantor_id=loan_guarantor_id,
             guarantor_user_id=int(item["guarantor_user_id"]),
-            earned_amount=_q2(item["earned_amount"]),
-            currency=currency,
+            earned_amount=_q2(item["share_amount"]),
+            currency=allocation_currency,
             status="pending",
             note=f"Auto-created from revenue allocation for loan {loan_id}",
         )

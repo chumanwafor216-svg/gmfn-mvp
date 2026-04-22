@@ -158,14 +158,19 @@ Known cleanup targets:
   - `GET /trust/why/{user_id}`
   - `GET /admin/trust-events/recent`
   - `GET /admin/trust/why/{user_id}`
-  - `POST /bank/reconcile`
-  - `GET /bank/expected`
 - Unmounted admin/backend route files that must be classified:
   - mount if still needed
   - retire if superseded
   - document if deliberately dormant
   - current classification is recorded in
     `docs/DORMANT_ROUTE_CLASSIFICATION_2026-04-21.md`
+
+Bank-route cleanup status:
+
+- The legacy `bank_reconciliation.py` router has been unmounted locally.
+- Canonical bank operations now remain under `app/api/routes/bank.py`.
+- Local duplicate-route inspection no longer reports `GET /bank/expected` or
+  `POST /bank/reconcile`.
 
 Admin-domain screens to verify:
 

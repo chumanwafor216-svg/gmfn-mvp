@@ -35,6 +35,10 @@ def test_entry_phone_verification_then_create_and_phone_login(client):
     assert confirm_body["ok"] is True
     assert confirm_body["verified"] is True
     assert confirm_body["display_name"] == "Mama Chuks"
+    assert confirm_body["verified_at"]
+    assert "verified against your name" in confirm_body["confirmation_message"]
+    assert confirm_body["trust_event_response"]["event_type"] == "identity.phone_verified"
+    assert confirm_body["trust_event_response"]["status"] == "ready_for_registration"
 
     bank_res = client.post(
         "/entry/bank-details",
@@ -54,6 +58,9 @@ def test_entry_phone_verification_then_create_and_phone_login(client):
 
     assert bank_body["ok"] is True
     assert bank_body["bank_details_recorded"] is True
+    assert "recorded against this verified phone session" in bank_body["confirmation_message"]
+    assert bank_body["trust_event_response"]["event_type"] == "identity.bank_destination_recorded"
+    assert bank_body["trust_event_response"]["status"] == "ready_for_registration"
 
     create_res = client.post(
         "/entry/create",
@@ -115,6 +122,9 @@ def test_entry_phone_verification_then_create_and_phone_login(client):
     assert payout_body["bank_name"] == "Pilot Community Bank"
     assert payout_body["verification_status"] == "phone_verified_bank_recorded_region_matched"
     assert payout_body["region_consistency_status"] == "matched"
+    assert payout_body["confirmation_message"]
+    assert payout_body["trust_event_response"]["event_type"] == "identity.bank_destination_recorded"
+    assert "phone_verified" in payout_body["trust_event_response"]["status"]
 
     observe_res = client.post(
         "/identity-risk/observe",

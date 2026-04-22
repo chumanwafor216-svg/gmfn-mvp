@@ -114,12 +114,18 @@ The backend currently has duplicate `(method, path)` registrations for:
 - `GET /trust/why/{user_id}`
 - `GET /admin/trust-events/recent`
 - `GET /admin/trust/why/{user_id}`
-- `POST /bank/reconcile`
-- `GET /bank/expected`
 
 Impact: FastAPI still serves a route, but duplicate operation IDs create OpenAPI
 warnings and make endpoint ownership harder to reason about. This should be
 cleaned during admin/backend stabilization.
+
+Post-audit correction:
+
+- The legacy `bank_reconciliation.py` router is no longer mounted in current
+  local code.
+- Canonical live bank routes are owned by `app/api/routes/bank.py`.
+- Local duplicate-route inspection no longer reports `GET /bank/expected` or
+  `POST /bank/reconcile`.
 
 ### 4. Several APIRouter files are not included in the central router
 
@@ -156,6 +162,9 @@ Post-audit classification:
 
 - `system_diagnostics` has now been mounted locally and is no longer dormant in
   current code.
+- `bank_reconciliation.py` has now been unmounted locally because its active
+  `/bank` routes were older duplicates or legacy surfaces beside the canonical
+  mounted bank router.
 - `docs/DORMANT_ROUTE_CLASSIFICATION_2026-04-21.md` records the safer
   classification for the remaining dormant files.
 - `trust_timeline.py` has now been mounted locally and the active Trust Timeline

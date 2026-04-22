@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional
 
 from sqlalchemy.orm import Session
 
+from app.db.models import PoolEvent
 from app.services.expected_payments_service import (
     create_expected_payment as create_expected_payment_row,
     ensure_loan_repayment_expected_payment,
@@ -156,32 +157,56 @@ def create_pool_deposit_instruction(
     currency: str = "NGN",
 ) -> Dict[str, Any]:
     amount = _d(amount)
+    if amount <= Decimal("0.00"):
+        raise ValueError("amount must be > 0")
+
+    ccy = (currency or "NGN").strip().upper() or "NGN"
 
     reference_display = (
         f"GMFN-POOL-CLAN-{int(clan_id)}-U{int(user_id)}-"
         f"{_timestamp_code()}-{_unique_suffix()}"
     )
 
+    pool_event = PoolEvent(
+        clan_id=int(clan_id),
+        user_id=int(user_id),
+        event_type="deposit.requested",
+        amount=amount,
+        currency=ccy,
+        reference=reference_display,
+        note="payment instruction generated",
+        created_at=_now_utc(),
+        confirmed_at=None,
+        confirmed_by_user_id=None,
+    )
+    db.add(pool_event)
+    db.flush()
+
     exp = ensure_pool_deposit_expected_payment(
         db,
         clan_id=int(clan_id),
         user_id=int(user_id),
         amount=amount,
-        currency=currency,
+        currency=ccy,
         reference_display=reference_display,
         due_at=None,
-        meta=None,
+        meta={
+            "pool_event_id": int(pool_event.id),
+            "source": "payment_instruction.pool",
+            "reference": reference_display,
+        },
         commit=True,
         refresh=True,
     )
 
     return {
         "expected_payment_id": int(exp.id),
+        "pool_event_id": int(pool_event.id),
         "reference": exp.reference_display,
         "reference_display": exp.reference_display,
         "reference_normalized": exp.reference_normalized,
         "amount": str(amount),
-        "currency": currency,
+        "currency": ccy,
         "due_at": exp.due_at.isoformat() if exp.due_at else None,
     }
 

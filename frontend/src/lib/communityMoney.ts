@@ -95,6 +95,7 @@ export type PoolStateSummary = {
 
 export type GeneratedPoolDepositInstruction = {
   expectedPaymentId?: number | null;
+  poolEventId?: number | null;
   reference: string;
   amount: string;
   currency: string;
@@ -227,33 +228,6 @@ async function postJson(
     },
     credentials: "include",
     body: JSON.stringify(body || {}),
-  });
-
-  const text = await res.text();
-  let payload: any = null;
-
-  try {
-    payload = text ? JSON.parse(text) : null;
-  } catch {
-    payload = text;
-  }
-
-  if (!res.ok) {
-    throw new Error(
-      safeStr(payload?.detail) ||
-        safeStr(payload?.message) ||
-        `Request failed (${res.status})`
-    );
-  }
-
-  return payload;
-}
-
-async function postNoBody(path: string, clanId?: number): Promise<any | null> {
-  const res = await fetch(`${apiBase()}${path}`, {
-    method: "POST",
-    headers: buildHeaders(clanId),
-    credentials: "include",
   });
 
   const text = await res.text();
@@ -413,6 +387,9 @@ function normalizePoolDepositInstruction(
   return {
     expectedPaymentId: Number.isFinite(Number(src?.expected_payment_id))
       ? Number(src.expected_payment_id)
+      : null,
+    poolEventId: Number.isFinite(Number(src?.pool_event_id))
+      ? Number(src.pool_event_id)
       : null,
     reference: firstTruthy(src?.reference),
     amount: firstTruthy(src?.amount),
@@ -705,14 +682,13 @@ export async function createPoolDepositInstruction(params: {
 }): Promise<CommunityMoneyRoute | null> {
   const currency = safeStr(params.currency || "NGN") || "NGN";
 
-  const query = new URLSearchParams({
-    clan_id: String(params.clanId),
-    amount: safeStr(params.amount),
-    currency,
-  }).toString();
-
-  const raw = await postNoBody(
-    `/payment-instructions/pool?${query}`,
+  const raw = await postJson(
+    "/payment-instructions/pool",
+    {
+      clan_id: Number(params.clanId),
+      amount: safeStr(params.amount),
+      currency,
+    },
     params.clanId
   ).catch(() => null);
 
@@ -744,7 +720,7 @@ export async function createPoolDepositInstruction(params: {
       .join("\n"),
     status: "ready",
     reference: normalized.reference,
-    currency: normalized.currency,
+    currency,
     minAmount: "",
     maxAmount: "",
     updatedAt: new Date().toISOString(),
@@ -765,15 +741,14 @@ export async function createLoanRepaymentInstruction(params: {
 }): Promise<CommunityMoneyRoute | null> {
   const currency = safeStr(params.currency || "NGN") || "NGN";
 
-  const query = new URLSearchParams({
-    clan_id: String(params.clanId),
-    loan_id: String(params.loanId),
-    amount: safeStr(params.amount),
-    currency,
-  }).toString();
-
-  const raw = await postNoBody(
-    `/payment-instructions/loan?${query}`,
+  const raw = await postJson(
+    "/payment-instructions/loan",
+    {
+      clan_id: Number(params.clanId),
+      loan_id: Number(params.loanId),
+      amount: safeStr(params.amount),
+      currency,
+    },
     params.clanId
   ).catch(() => null);
 
@@ -805,7 +780,7 @@ export async function createLoanRepaymentInstruction(params: {
       .join("\n"),
     status: "ready",
     reference: normalized.reference,
-    currency: normalized.currency,
+    currency,
     minAmount: "",
     maxAmount: "",
     updatedAt: new Date().toISOString(),

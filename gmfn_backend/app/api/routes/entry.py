@@ -48,13 +48,22 @@ class EntryPhoneConfirmIn(BaseModel):
     code: str = Field(..., min_length=4, max_length=12)
 
 
+class EntryTrustEventResponse(BaseModel):
+    event_type: str
+    status: str
+    message: str
+
+
 class EntryPhoneConfirmOut(BaseModel):
     ok: bool
     verification_id: int
     verified: bool
+    verified_at: str
     display_name: str
     phone_e164: str
     email: Optional[EmailStr] = None
+    confirmation_message: str
+    trust_event_response: EntryTrustEventResponse
 
 
 class EntryBankDetailsIn(BaseModel):
@@ -77,6 +86,8 @@ class EntryBankDetailsOut(BaseModel):
     bank_details_recorded: bool
     verification_status: str
     verification_note: str
+    confirmation_message: str
+    trust_event_response: EntryTrustEventResponse
     region_consistency_status: Optional[str] = None
     phone_country_hint: Optional[str] = None
     locale_country_hint: Optional[str] = None
@@ -152,6 +163,11 @@ def _dev_mode() -> bool:
         "yes",
         "on",
     }
+
+
+def _entry_otp_preview_enabled() -> bool:
+    configured = str(os.getenv("GMFN_ENTRY_PHONE_DELIVERY") or "preview").strip().lower()
+    return _dev_mode() or configured in {"", "preview", "pilot", "manual"}
 
 
 def _generate_code() -> str:
@@ -403,13 +419,15 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
     db.commit()
     db.refresh(verification)
 
+    preview_enabled = _entry_otp_preview_enabled()
+
     return {
         "ok": True,
         "verification_id": int(verification.id),
         "phone_e164": phone_e164,
         "expires_at": verification.expires_at.isoformat(),
-        "delivery_mode": "preview" if _dev_mode() else "pending-sms",
-        "otp_preview": verification.code if _dev_mode() else None,
+        "delivery_mode": "preview" if preview_enabled else "pending-sms",
+        "otp_preview": verification.code if preview_enabled else None,
     }
 
 
@@ -435,18 +453,34 @@ def confirm_entry_phone_verification(
     if _clean_text(payload.code) != str(row.code):
         raise HTTPException(status_code=400, detail="Verification code is not correct")
 
-    row.verified_at = _now()
+    verified_at = _now()
+    row.verified_at = verified_at
     db.add(row)
     db.commit()
     db.refresh(row)
+
+    confirmation_message = (
+        f"{row.display_name}, this phone number is now verified against your name. "
+        "GSN will use it to protect your onboarding record as you continue."
+    )
 
     return {
         "ok": True,
         "verification_id": int(row.id),
         "verified": True,
+        "verified_at": verified_at.isoformat(),
         "display_name": row.display_name,
         "phone_e164": row.phone_e164,
         "email": row.email,
+        "confirmation_message": confirmation_message,
+        "trust_event_response": {
+            "event_type": "identity.phone_verified",
+            "status": "ready_for_registration",
+            "message": (
+                "Phone proof is ready. When you finish creating the community, "
+                "GSN will write this as a permanent trust event on your record."
+            ),
+        },
     }
 
 
@@ -508,6 +542,10 @@ def save_entry_bank_details(
     db.refresh(row)
 
     verification_status, verification_note = _bank_status_note(region_consistency_status)
+    confirmation_message = (
+        "Your bank or wallet destination has been recorded against this verified phone session. "
+        "GSN will attach this proof to your starter trust record when community creation is completed."
+    )
 
     return {
         "ok": True,
@@ -515,6 +553,15 @@ def save_entry_bank_details(
         "bank_details_recorded": True,
         "verification_status": verification_status,
         "verification_note": verification_note,
+        "confirmation_message": confirmation_message,
+        "trust_event_response": {
+            "event_type": "identity.bank_destination_recorded",
+            "status": "ready_for_registration",
+            "message": (
+                "Bank or wallet proof is ready. When you finish creating the community, "
+                "GSN will write this as permanent starter trust evidence. External bank ownership verification remains a separate future rail."
+            ),
+        },
         "region_consistency_status": region_consistency_status,
         "phone_country_hint": phone_country,
         "locale_country_hint": locale_country,

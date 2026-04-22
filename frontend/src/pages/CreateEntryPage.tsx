@@ -190,6 +190,29 @@ type EntryVerificationResult = {
   verified_at?: string | null;
 } | null;
 
+type PhoneVerificationProof = {
+  display_name?: string;
+  phone_e164?: string;
+  verified_at?: string;
+  confirmation_message?: string;
+  trust_event_response?: {
+    event_type?: string;
+    status?: string;
+    message?: string;
+  };
+} | null;
+
+type BankRecordProof = {
+  confirmation_message?: string;
+  verification_status?: string;
+  verification_note?: string;
+  trust_event_response?: {
+    event_type?: string;
+    status?: string;
+    message?: string;
+  };
+} | null;
+
 function verificationCard(status?: string | null): React.CSSProperties {
   const normalized = safeStr(status).toLowerCase();
 
@@ -403,6 +426,10 @@ export default function CreateEntryPage() {
   const [verificationId, setVerificationId] = useState<number>(0);
   const [otpCode, setOtpCode] = useState("");
   const [otpPreview, setOtpPreview] = useState("");
+  const [otpDeliveryMode, setOtpDeliveryMode] = useState("");
+  const [phoneVerificationProof, setPhoneVerificationProof] =
+    useState<PhoneVerificationProof>(null);
+  const [bankRecordProof, setBankRecordProof] = useState<BankRecordProof>(null);
   const [bankAccountName, setBankAccountName] = useState(initialDisplayName);
   const [bankName, setBankName] = useState("");
   const [bankAccountNumber, setBankAccountNumber] = useState("");
@@ -459,6 +486,17 @@ export default function CreateEntryPage() {
   const canOpenDetails = guideDone;
   const canOpenVerification = step !== "details";
   const canOpenCommunity = step === "community";
+
+  const verificationBlockTitle =
+    step === "verify"
+      ? "Phone confirmation"
+      : "Bank and wallet details";
+  const verificationBlockHelp =
+    step === "verify"
+      ? "Confirm this phone only if the app asks for a live SMS code. In pilot testing, GSN should usually finish this check automatically and open the bank or wallet fields."
+      : step === "bank"
+        ? "Add the account or wallet where trusted support, repayment records, and future payment references should point."
+        : "After your first details are accepted, this block records the bank or wallet destination for trusted support, repayments, and future payout references.";
 
   const existingMemberLoginTo = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -618,6 +656,7 @@ export default function CreateEntryPage() {
 
   function clearVerificationBlock() {
     setOtpCode("");
+    setOtpDeliveryMode("");
     setBankAccountName(initialDisplayName);
     setBankName("");
     setBankAccountNumber("");
@@ -631,6 +670,8 @@ export default function CreateEntryPage() {
     setDriverLicenceNote("");
     setBankVerificationResult(null);
     setLicenceVerificationResult(null);
+    setPhoneVerificationProof(null);
+    setBankRecordProof(null);
     setError("");
     setSuccess("");
   }
@@ -657,13 +698,54 @@ export default function CreateEntryPage() {
       });
 
       setVerificationId(Number(out?.verification_id || 0));
-      setOtpPreview(safeStr(out?.otp_preview));
+      const nextVerificationId = Number(out?.verification_id || 0);
+      const previewCode = safeStr(out?.otp_preview);
+      setOtpPreview(previewCode);
+      setOtpDeliveryMode(safeStr(out?.delivery_mode));
+      setPhoneVerificationProof(null);
+      setBankRecordProof(null);
+
+      if (nextVerificationId > 0 && previewCode) {
+        try {
+          const confirmed = await confirmEntryPhoneVerification({
+            verification_id: nextVerificationId,
+            code: previewCode,
+          });
+
+          setOtpCode(previewCode);
+          setPhoneVerificationProof({
+            display_name: safeStr(confirmed?.display_name),
+            phone_e164: safeStr(confirmed?.phone_e164),
+            verified_at: safeStr(confirmed?.verified_at),
+            confirmation_message: safeStr(confirmed?.confirmation_message),
+            trust_event_response: confirmed?.trust_event_response || null,
+          });
+          setBankAccountName((current) => safeStr(current) || safeStr(displayName));
+          setStep("bank");
+          setOpenPanel("verification");
+          focusPanel("verification");
+          setSuccess(
+            safeStr(confirmed?.confirmation_message) ||
+              "Pilot phone check completed. Add your bank or wallet details now."
+          );
+        } catch {
+          setOtpCode(previewCode);
+          setStep("verify");
+          setOpenPanel("verification");
+          focusPanel("verification");
+          setError(
+            "Pilot phone check could not finish automatically. Use the code shown here to continue."
+          );
+        }
+        return;
+      }
+
       setStep("verify");
       setOpenPanel("verification");
       focusPanel("verification");
       setSuccess(
         safeStr(out?.message) ||
-          "Phone verification started. Enter the code to continue."
+          "Phone confirmation started. Enter the code to continue."
       );
     } catch (err: any) {
       setError(err?.message || "Phone verification could not be started.");
@@ -680,15 +762,26 @@ export default function CreateEntryPage() {
     setBusy(true);
 
     try {
-      await confirmEntryPhoneVerification({
+      const out = await confirmEntryPhoneVerification({
         verification_id: verificationId,
         code: otpCode,
       });
 
+      setPhoneVerificationProof({
+        display_name: safeStr(out?.display_name),
+        phone_e164: safeStr(out?.phone_e164),
+        verified_at: safeStr(out?.verified_at),
+        confirmation_message: safeStr(out?.confirmation_message),
+        trust_event_response: out?.trust_event_response || null,
+      });
+      setBankAccountName((current) => safeStr(current) || safeStr(displayName));
       setStep("bank");
       setOpenPanel("verification");
       focusPanel("verification");
-      setSuccess("Phone verified. Add your bank details before community details continue.");
+      setSuccess(
+        safeStr(out?.confirmation_message) ||
+          "Phone verified. Add your bank details before community details continue."
+      );
     } catch (err: any) {
       setError(err?.message || "Phone verification could not be completed.");
     } finally {
@@ -716,6 +809,13 @@ export default function CreateEntryPage() {
         driver_licence_number: safeStr(driverLicenceNumber) || undefined,
         driver_licence_country: safeStr(driverLicenceCountry) || undefined,
         driver_licence_note: safeStr(driverLicenceNote) || undefined,
+      });
+
+      setBankRecordProof({
+        confirmation_message: safeStr(out?.confirmation_message),
+        verification_status: safeStr(out?.verification_status),
+        verification_note: safeStr(out?.verification_note),
+        trust_event_response: out?.trust_event_response || null,
       });
 
       let nextBankVerification: EntryVerificationResult = null;
@@ -782,7 +882,8 @@ export default function CreateEntryPage() {
       setOpenPanel("community");
       focusPanel("community");
       setSuccess(
-        safeStr(nextBankVerification?.explanation) ||
+        safeStr(out?.confirmation_message) ||
+          safeStr(nextBankVerification?.explanation) ||
           safeStr(out?.verification_note) ||
           "Bank details recorded. You can now continue with community details."
       );
@@ -1067,12 +1168,11 @@ export default function CreateEntryPage() {
                       padding: "13px 14px",
                     }}
                   >
-                    <strong style={{ color: "#10253B" }}>2. Verification and bank rails.</strong> Your phone is verified so the
-                    system can confirm identity continuity. GSN does not keep your money. It records
-                    the account or wallet you say belongs to you so future support, repayments,
-                    payouts, and trusted financial actions can be matched to the right person. This
-                    protects both sides and gives people a clear proof trail instead of relying on
-                    memory.
+                    <strong style={{ color: "#10253B" }}>2. Bank and wallet details.</strong> GSN does
+                    not keep your money. It records the account or wallet you say belongs to you so
+                    future support, repayments, payouts, and trusted financial actions can be matched
+                    to the right person. The phone check protects this record in the background, and
+                    the bank or wallet details become the practical part you fill here.
                   </div>
                   <div
                     style={{
@@ -1346,7 +1446,7 @@ export default function CreateEntryPage() {
                         lineHeight: 1.15,
                       }}
                     >
-                      Verification and bank rails
+                      {verificationBlockTitle}
                     </div>
                   </div>
                 </div>
@@ -1373,8 +1473,181 @@ export default function CreateEntryPage() {
                   fontSize: 14,
                 }}
               >
-                Phone verification, bank destination, region explanation, and optional licence proof sit here.
+                {verificationBlockHelp}
               </div>
+
+              {phoneVerificationProof ? (
+                <div
+                  style={{
+                    ...softCard("#ECFDF5"),
+                    marginTop: 14,
+                    border: "1px solid #A7F3D0",
+                  }}
+                >
+                  <div style={{ ...sectionLabel(), color: "#047857" }}>
+                    Phone verified
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#065F46",
+                      fontWeight: 1000,
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    {safeStr(phoneVerificationProof.confirmation_message) ||
+                      `${safeStr(phoneVerificationProof.phone_e164) || "This phone"} is now verified for ${safeStr(phoneVerificationProof.display_name) || "this founder"}.`}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      display: "flex",
+                      gap: 8,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    {safeStr(phoneVerificationProof.display_name) ? (
+                      <span style={secondaryBtn()}>
+                        Name: {safeStr(phoneVerificationProof.display_name)}
+                      </span>
+                    ) : null}
+                    {safeStr(phoneVerificationProof.phone_e164) ? (
+                      <span style={secondaryBtn()}>
+                        Phone: {safeStr(phoneVerificationProof.phone_e164)}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {phoneVerificationProof.trust_event_response ? (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        borderRadius: 14,
+                        background: "rgba(255,255,255,0.72)",
+                        border: "1px solid rgba(4,120,87,0.16)",
+                        padding: 12,
+                      }}
+                    >
+                      <div style={{ ...sectionLabel(), color: "#047857" }}>
+                        Trust event response
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 8,
+                          color: "#065F46",
+                          lineHeight: 1.65,
+                          fontWeight: 800,
+                        }}
+                      >
+                        {safeStr(
+                          phoneVerificationProof.trust_event_response.message
+                        ) ||
+                          "This phone proof is ready to become trust evidence when registration is completed."}
+                      </div>
+                      {safeStr(
+                        phoneVerificationProof.trust_event_response.event_type
+                      ) ? (
+                        <div
+                          style={{
+                            marginTop: 8,
+                            color: "#047857",
+                            fontSize: 12.5,
+                            fontWeight: 1000,
+                          }}
+                        >
+                          Event:{" "}
+                          {safeStr(
+                            phoneVerificationProof.trust_event_response.event_type
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {bankRecordProof ? (
+                <div
+                  style={{
+                    ...softCard("#ECFDF5"),
+                    marginTop: 14,
+                    border: "1px solid #A7F3D0",
+                  }}
+                >
+                  <div style={{ ...sectionLabel(), color: "#047857" }}>
+                    Bank and wallet proof recorded
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#065F46",
+                      fontWeight: 1000,
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    {safeStr(bankRecordProof.confirmation_message) ||
+                      "Your bank or wallet destination has been recorded for this onboarding session."}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      display: "flex",
+                      gap: 8,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    {safeStr(bankRecordProof.verification_status) ? (
+                      <span style={secondaryBtn()}>
+                        Status:{" "}
+                        {safeStr(bankRecordProof.verification_status).replace(/_/g, " ")}
+                      </span>
+                    ) : null}
+                    {safeStr(bankRecordProof.verification_note) ? (
+                      <span style={secondaryBtn()}>Recorded for trust review</span>
+                    ) : null}
+                  </div>
+
+                  {bankRecordProof.trust_event_response ? (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        borderRadius: 14,
+                        background: "rgba(255,255,255,0.72)",
+                        border: "1px solid rgba(4,120,87,0.16)",
+                        padding: 12,
+                      }}
+                    >
+                      <div style={{ ...sectionLabel(), color: "#047857" }}>
+                        Trust event response
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 8,
+                          color: "#065F46",
+                          lineHeight: 1.65,
+                          fontWeight: 800,
+                        }}
+                      >
+                        {safeStr(bankRecordProof.trust_event_response.message) ||
+                          "This bank or wallet proof is ready to become trust evidence when registration is completed."}
+                      </div>
+                      {safeStr(bankRecordProof.trust_event_response.event_type) ? (
+                        <div
+                          style={{
+                            marginTop: 8,
+                            color: "#047857",
+                            fontSize: 12.5,
+                            fontWeight: 1000,
+                          }}
+                        >
+                          Event:{" "}
+                          {safeStr(bankRecordProof.trust_event_response.event_type)}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
 
               {bankVerificationResult ? (
                 <div style={{ ...verificationCard(bankVerificationResult.status), marginTop: 14 }}>
@@ -1424,6 +1697,21 @@ export default function CreateEntryPage() {
               {openPanel === "verification" ? (
                 step === "verify" ? (
                   <div style={{ display: "grid", gap: 14, marginTop: 16 }}>
+                    <div style={softCard("#F8FBFF")}>
+                      <div style={sectionLabel()}>Phone check</div>
+                      <div
+                        style={{
+                          marginTop: 8,
+                          color: "#475569",
+                          lineHeight: 1.75,
+                          fontSize: 14,
+                        }}
+                      >
+                        Block 2 has two parts. First confirm this phone number.
+                        Then the bank or wallet details will open below it.
+                      </div>
+                    </div>
+
                     <div>
                       <div style={fieldLabel()}>Verification code</div>
                       <input
@@ -1447,6 +1735,35 @@ export default function CreateEntryPage() {
                           }}
                         >
                           {otpPreview}
+                        </div>
+                        <div
+                          style={{
+                            marginTop: 8,
+                            color: "#92400E",
+                            fontSize: 13,
+                            lineHeight: 1.6,
+                            fontWeight: 800,
+                          }}
+                        >
+                          This appears during pilot testing because no live SMS
+                          sender is connected yet.
+                        </div>
+                      </div>
+                    ) : otpDeliveryMode === "pending-sms" ? (
+                      <div style={softCard("#EFF6FF")}>
+                        <div style={sectionLabel()}>SMS code</div>
+                        <div
+                          style={{
+                            marginTop: 8,
+                            color: "#1D4ED8",
+                            fontSize: 13,
+                            lineHeight: 1.6,
+                            fontWeight: 800,
+                          }}
+                        >
+                          A live SMS sender is expected to deliver this code.
+                          If no code arrives during testing, the phone delivery
+                          setting needs to be switched back to pilot preview.
                         </div>
                       </div>
                     ) : null}
@@ -1477,7 +1794,7 @@ export default function CreateEntryPage() {
                         }}
                         disabled={!canConfirmOtp || busy}
                       >
-                        {busy ? "Verifying..." : "Submit Block 2"}
+                        {busy ? "Verifying..." : "Confirm phone code"}
                       </button>
                     </div>
                   </div>
@@ -1649,7 +1966,7 @@ export default function CreateEntryPage() {
                         }}
                         disabled={!canContinueBank || busy}
                       >
-                        {busy ? "Saving..." : "Submit Block 2"}
+                        {busy ? "Saving..." : "Save bank and wallet details"}
                       </button>
                     </div>
                   </div>

@@ -711,14 +711,16 @@ export default function PaymentRailsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Rails intelligence</div>
+            <div style={{ ...sectionLabel(), color: "#BFD2E8" }}>
+              Rails intelligence
+            </div>
 
             <div
               style={{
                 marginTop: 10,
                 fontSize: 30,
                 fontWeight: 1000,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 lineHeight: 1.15,
               }}
             >
@@ -728,7 +730,7 @@ export default function PaymentRailsPage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#6B7A88",
+                color: "#D7E3F1",
                 lineHeight: 1.8,
               }}
             >
@@ -900,7 +902,7 @@ export default function PaymentRailsPage() {
             <div
               style={{
                 marginTop: 8,
-                color: "#D7E3F1",
+                color: "#6B7A88",
                 lineHeight: 1.8,
               }}
             >
