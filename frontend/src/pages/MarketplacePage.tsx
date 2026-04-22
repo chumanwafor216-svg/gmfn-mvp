@@ -2788,7 +2788,7 @@ export default function MarketplacePage() {
     setCreatingInviteLink(true);
 
     try {
-      const inviteRes = await getClanInviteLink(activeCommunityId).catch(() => null);
+      const inviteRes = await getClanInviteLink(activeCommunityId);
       const nextInviteLink = getInviteUrl(inviteRes);
 
       if (!nextInviteLink) {
@@ -2799,6 +2799,12 @@ export default function MarketplacePage() {
       setInviteLink(nextInviteLink);
       safeCopy(nextInviteLink);
       showNotice("success", "Invite link created and copied.");
+    } catch (err: any) {
+      showNotice(
+        "error",
+        safeStr(err?.message) ||
+          "GSN could not create the WhatsApp join link yet. Please refresh and try again."
+      );
     } finally {
       setCreatingInviteLink(false);
     }

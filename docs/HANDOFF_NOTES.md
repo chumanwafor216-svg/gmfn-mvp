@@ -7179,3 +7179,29 @@ GSN-branded invite composer and invite-entry continuity.
     still pending.
   - Users should not be left with a cold `saved`, `failed`, or raw provider
     message when the app already knows the next safe thing to do.
+
+### Marketplace WhatsApp join-link recovery addendum
+
+- Product-owner tested Marketplace-owned links on phone and saw the WhatsApp
+  join link still showing `Join link not ready yet` while the marketplace view
+  link was ready.
+- Confirmed from code:
+  - The backend `GET /clans/{clan_id}/invite-link` requires the active
+    `X-Clan-Id` header to match the `clan_id` in the URL.
+  - The frontend helper was using the stored selected clan header by default,
+    which could be stale or different from the Marketplace page's active
+    community id.
+- Updated `frontend/src/lib/api.ts`:
+  - `getClanInviteLink(clanId)` and `createClanInvite(clanId)` now send the
+    same `clanId` as the explicit `X-Clan-Id` header.
+- Updated `frontend/src/pages/MarketplacePage.tsx`:
+  - The `Create / Refresh` action now surfaces the backend error instead of
+    silently converting every failure into `Invite link is not ready yet`.
+- No backend permission, invite lifetime, schema, auth, or route contract was
+  changed.
+- Verification:
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx` passed with only the two
+    pre-existing hook dependency warnings in that file.
+  - `npm run build` passed in `frontend`.
+  - `git diff --check -- frontend/src/lib/api.ts frontend/src/pages/MarketplacePage.tsx`
+    passed with only Windows line-ending warnings.

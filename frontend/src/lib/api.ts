@@ -751,14 +751,18 @@ export async function devBootstrapClan(): Promise<any> {
 export async function getClanInviteLink(clanId: number): Promise<any> {
   return httpJson(
     `/clans/${encodeURIComponent(String(clanId))}/invite-link`,
-    "GET"
+    "GET",
+    undefined,
+    { header_clan_id: clanId }
   );
 }
 
 export async function createClanInvite(clanId: number): Promise<any> {
   return httpJson(
     `/clans/${encodeURIComponent(String(clanId))}/invite`,
-    "POST"
+    "POST",
+    undefined,
+    { header_clan_id: clanId }
   );
 }
 
