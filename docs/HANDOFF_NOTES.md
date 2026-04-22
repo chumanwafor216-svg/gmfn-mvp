@@ -46,6 +46,46 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-22
 
 #### Workstream
+Build First Circle mobile simplification and button stability.
+
+#### Routes/screens affected
+- `/app/build-first-circle`
+
+#### Backend routes/endpoints involved
+- None changed. This is route-local frontend UX cleanup only.
+
+#### Files in play
+- `frontend/src/pages/BuildFirstCirclePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Tester screenshots showed repeated step guidance and unstable/jumpy tap
+  behavior on the First Circle page.
+- The duplicate `Simple path` block was removed because the hero progress card
+  and Step 1/2/3 sections already explain the same sequence.
+- Mobile Step 1 now uses one native role dropdown instead of a long field of
+  role buttons. Desktop still keeps direct role buttons.
+- First Circle button styles now include stable mobile tap behavior and guarded
+  pointer propagation so taps stay attached to the visible button.
+- `npm run build` in `frontend/` passed after this cleanup.
+
+#### Open risks or unknowns
+- This does not redesign the full First Circle workflow. It only removes
+  repetition and tightens the current page.
+- If testers still see jumps after deploy, inspect global layout overlays or
+  browser back/forward UI interference next.
+
+#### Next recommended step
+- Deploy the latest frontend commit, open `/app/build-first-circle` on phone,
+  and test role selection, add-person, collapse, include/remove, copy bundle,
+  and reset buttons.
+
+### Previous update
+
+#### Date
+2026-04-22
+
+#### Workstream
 WhatsApp-first public link audit and origin hardening.
 
 #### Routes/screens affected

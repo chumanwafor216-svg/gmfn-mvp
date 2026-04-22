@@ -130,8 +130,18 @@ function actionBtn(
   kind: "primary" | "secondary" | "soft" = "secondary",
   disabled = false
 ): React.CSSProperties {
+  const stableTap: React.CSSProperties = {
+    position: "relative",
+    zIndex: 2,
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    boxSizing: "border-box",
+  };
+
   if (kind === "primary") {
     return {
+      ...stableTap,
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
@@ -153,6 +163,7 @@ function actionBtn(
 
   if (kind === "soft") {
     return {
+      ...stableTap,
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
@@ -173,6 +184,7 @@ function actionBtn(
   }
 
   return {
+    ...stableTap,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -194,6 +206,12 @@ function actionBtn(
 
 function collapseToggle(): React.CSSProperties {
   return {
+    position: "relative",
+    zIndex: 2,
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    boxSizing: "border-box",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -209,6 +227,10 @@ function collapseToggle(): React.CSSProperties {
     cursor: "pointer",
     whiteSpace: "normal",
   };
+}
+
+function guardButtonPress(event: React.SyntheticEvent) {
+  event.stopPropagation();
 }
 
 function inputStyle(): React.CSSProperties {
@@ -674,18 +696,18 @@ export default function BuildFirstCirclePage() {
   );
   const activeStepTitle =
     activeStep === 1
-      ? "Choose what you mostly do"
+      ? "Choose your role"
       : activeStep === 2
-      ? "Add real people"
-      : "Review and copy invites";
+      ? "Add trusted people"
+      : "Copy the invite message";
   const activeStepText =
     activeStep === 1
-      ? "Start with one simple choice. This helps GSN suggest the right kind of people."
+      ? "Pick the closest one. GSN will suggest the right people next."
       : activeStep === 2
       ? `Add ${remainingReady} more ${
           remainingReady === 1 ? "person" : "people"
-        } with a phone or email. Three serious people are enough to begin.`
-      : "Your first circle has enough ready names. Review the list, then copy the invite message.";
+        } with phone or email.`
+      : "Review the list, then copy the message.";
 
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });
@@ -1038,90 +1060,6 @@ export default function BuildFirstCirclePage() {
       </section>
 
       <section style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>Simple path</div>
-        <div
-          style={{
-            marginTop: 12,
-            display: "grid",
-            gridTemplateColumns: isCompact
-              ? "1fr"
-              : "repeat(3, minmax(0, 1fr))",
-            gap: 12,
-          }}
-        >
-          {[
-            {
-              number: "1",
-              title: "Say what you do",
-              text: hasRole
-                ? `Chosen: ${roleText(draft.memberRole)}`
-                : "Pick the closest work or life role.",
-              done: hasRole,
-            },
-            {
-              number: "2",
-              title: "Add real people",
-              text: `${readyCount}/${targetCount} ready with phone or email.`,
-              done: readyCount >= targetCount,
-            },
-            {
-              number: "3",
-              title: "Copy invite message",
-              text:
-                readyCount >= targetCount
-                  ? "Ready to review."
-                  : "This opens when enough names are ready.",
-              done: readyCount >= targetCount,
-            },
-          ].map((step) => (
-            <div
-              key={step.number}
-              style={innerCard(
-                step.done ? "rgba(11,99,209,0.06)" : "#FCFEFF"
-              )}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  gap: 10,
-                  alignItems: "center",
-                }}
-              >
-                <span
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: 999,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: step.done ? "#0B63D1" : "#EAF1F8",
-                    color: step.done ? "#FFFFFF" : "#24415C",
-                    fontWeight: 900,
-                  }}
-                >
-                  {step.number}
-                </span>
-                <div
-                  style={{
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    fontSize: 16,
-                    lineHeight: 1.25,
-                  }}
-                >
-                  {step.title}
-                </div>
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                {step.text}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
@@ -1134,12 +1072,29 @@ export default function BuildFirstCirclePage() {
           <div>
             <div style={sectionLabel()}>Step 1</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              What do you mostly do? Pick the closest one. You can change it later.
+              Choose the closest role. You can change it later.
             </div>
           </div>
         </div>
 
         <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+          {isCompact ? (
+            <div>
+              <div style={sectionLabel()}>Role</div>
+              <select
+                value={safeStr(draft.memberRole)}
+                onChange={(event) => setRole(event.target.value)}
+                style={{ ...inputStyle(), marginTop: 8, minHeight: 52 }}
+              >
+                <option value="">Choose one</option>
+                {ROLE_OPTIONS.map((role) => (
+                  <option key={role} value={role}>
+                    {roleText(role)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
             <div
               style={{
                 display: "flex",
@@ -1154,6 +1109,7 @@ export default function BuildFirstCirclePage() {
                   <button
                     key={role}
                     type="button"
+                    onPointerDown={guardButtonPress}
                     onClick={() => setRole(role)}
                     style={active ? actionBtn("primary") : actionBtn("secondary")}
                   >
@@ -1162,29 +1118,30 @@ export default function BuildFirstCirclePage() {
                 );
               })}
             </div>
+          )}
 
-            <div style={innerCard("#F8FBFF")}>
-              <div style={sectionLabel()}>Suggested relationships for this role</div>
+          <div style={innerCard("#F8FBFF")}>
+            <div style={sectionLabel()}>Suggested people</div>
 
-              <div
-                style={{
-                  marginTop: 10,
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                }}
-              >
-                {roleHints.length > 0 ? (
-                  roleHints.map((item) => (
-                    <span key={item} style={badge(false)}>
-                      {relationshipText(item)}
-                    </span>
-                  ))
-                ) : (
-                  <span style={badge(false)}>Choose a role first</span>
-                )}
-              </div>
+            <div
+              style={{
+                marginTop: 10,
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
+              {roleHints.length > 0 ? (
+                roleHints.slice(0, 5).map((item) => (
+                  <span key={item} style={badge(false)}>
+                    {relationshipText(item)}
+                  </span>
+                ))
+              ) : (
+                <span style={badge(false)}>Choose a role first</span>
+              )}
             </div>
+          </div>
         </div>
       </section>
 
@@ -1329,12 +1286,18 @@ export default function BuildFirstCirclePage() {
                     flexWrap: "wrap",
                   }}
                 >
-                  <button type="button" onClick={addManualContact} style={actionBtn("primary")}>
+                  <button
+                    type="button"
+                    onPointerDown={guardButtonPress}
+                    onClick={addManualContact}
+                    style={actionBtn("primary")}
+                  >
                     Add Person
                   </button>
 
                   <button
                     type="button"
+                    onPointerDown={guardButtonPress}
                     onClick={() => setManualForm(defaultManualForm())}
                     style={actionBtn("secondary")}
                   >
@@ -1354,6 +1317,7 @@ export default function BuildFirstCirclePage() {
               <div style={{ marginTop: 14 }}>
                 <button
                   type="button"
+                  onPointerDown={guardButtonPress}
                   onClick={() => void addFromPhoneContacts()}
                   disabled={pickingContacts}
                   style={actionBtn("secondary", pickingContacts)}
@@ -1408,6 +1372,7 @@ export default function BuildFirstCirclePage() {
             <span style={badge(false)}>{draft.contacts.length} contacts</span>
             <button
               type="button"
+              onPointerDown={guardButtonPress}
               onClick={() => toggleSection("contacts")}
               style={collapseToggle()}
             >
@@ -1483,6 +1448,7 @@ export default function BuildFirstCirclePage() {
                     >
                       <button
                         type="button"
+                        onPointerDown={guardButtonPress}
                         onClick={() => toggleSelected(item.id)}
                         style={item.selected ? actionBtn("primary") : actionBtn("secondary")}
                       >
@@ -1491,6 +1457,7 @@ export default function BuildFirstCirclePage() {
 
                       <button
                         type="button"
+                        onPointerDown={guardButtonPress}
                         onClick={() => removeContact(item.id)}
                         style={actionBtn("soft")}
                       >
@@ -1524,6 +1491,7 @@ export default function BuildFirstCirclePage() {
 
           <button
             type="button"
+            onPointerDown={guardButtonPress}
             onClick={() => toggleSection("invite")}
             style={collapseToggle()}
           >
@@ -1583,6 +1551,7 @@ export default function BuildFirstCirclePage() {
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <button
                     type="button"
+                    onPointerDown={guardButtonPress}
                     onClick={copyInviteBundle}
                     disabled={readyContacts.length === 0}
                     style={actionBtn("primary", readyContacts.length === 0)}
@@ -1592,6 +1561,7 @@ export default function BuildFirstCirclePage() {
 
                   <button
                     type="button"
+                    onPointerDown={guardButtonPress}
                     onClick={resetDraft}
                     style={actionBtn("secondary")}
                   >
