@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import { navigateWithOrigin } from "../lib/nav";
+import { publicFrontendUrl } from "../lib/publicLinks";
 import {
   createClan,
   createClanInvite,
@@ -241,19 +242,12 @@ function extractMembers(community: any): any[] {
     : [];
 }
 
-function appOrigin(): string {
-  if (typeof window !== "undefined" && window.location?.origin) {
-    return window.location.origin;
-  }
-  return "";
-}
-
 function buildGuideUrl(): string {
-  return `${appOrigin()}/app/my-gmfn-and-i`;
+  return publicFrontendUrl("/app/my-gmfn-and-i");
 }
 
 function buildGuideFallbackUrl(): string {
-  return `${appOrigin()}/GMFN_FINAL_WHITE.pdf`;
+  return publicFrontendUrl("/GMFN_FINAL_WHITE.pdf");
 }
 
 function buildInviteState(
@@ -264,7 +258,14 @@ function buildInviteState(
   selectedCommunityName: string
 ): InviteState {
   const code = safeStr(raw?.code || raw?.invite_code || "");
-  const link = safeStr(raw?.link || raw?.invite_link || raw?.invite_url || "");
+  const rawLink = safeStr(raw?.link || raw?.invite_link || raw?.invite_url || "");
+  const link = rawLink
+    ? publicFrontendUrl(rawLink)
+    : code
+      ? publicFrontendUrl(
+          `/start/join/${encodeURIComponent(code)}?invite=${encodeURIComponent(code)}`
+        )
+      : "";
   const expiresAt = safeStr(raw?.expires_at || raw?.expiry || "");
   const guideUrl = buildGuideUrl();
   const fallbackGuideUrl = buildGuideFallbackUrl();

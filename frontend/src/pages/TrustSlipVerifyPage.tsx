@@ -4,6 +4,7 @@ import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
+import { publicFrontendUrl } from "../lib/publicLinks";
 
 type TrustSlipVerifyRecord = {
   id?: number;
@@ -693,10 +694,7 @@ export default function TrustSlipVerifyPage() {
   const bannerStyle = bannerToneStyle(banner.tone);
 
   const verifyPath = resolvedCode ? `/t/${encodeURIComponent(resolvedCode)}` : "";
-  const verifyUrl =
-    resolvedCode && typeof window !== "undefined"
-      ? `${window.location.origin}${verifyPath}`
-      : "";
+  const verifyUrl = resolvedCode ? publicFrontendUrl(verifyPath) : "";
 
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });

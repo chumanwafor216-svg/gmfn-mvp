@@ -3,6 +3,7 @@ import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
+import { publicApiUrl } from "../lib/publicLinks";
 
 type NoticeTone = "success" | "error";
 
@@ -210,11 +211,11 @@ function toApiAbsoluteUrl(pathOrUrl: string): string {
   if (!raw) return "";
 
   if (raw.startsWith("http://") || raw.startsWith("https://")) {
-    return raw;
+    return publicApiUrl(raw);
   }
 
   if (raw.startsWith("/")) {
-    return joinUrl(apiOrigin(), raw);
+    return publicApiUrl(raw);
   }
 
   return raw;
@@ -829,8 +830,7 @@ export default function TrustSlipPage() {
     return firstTruthy(
       toApiAbsoluteUrl(summary?.public_verify_url || ""),
       trustSlipCode
-        ? joinUrl(
-            apiOrigin(),
+        ? publicApiUrl(
             `/trust-slips/verify/${encodeURIComponent(trustSlipCode)}/page`
           )
         : ""
@@ -839,8 +839,7 @@ export default function TrustSlipPage() {
 
   const qrUrl = useMemo(() => {
     if (!trustSlipCode) return "";
-    return joinUrl(
-      apiOrigin(),
+    return publicApiUrl(
       `/trust-slips/verify/${encodeURIComponent(trustSlipCode)}/qr.png`
     );
   }, [trustSlipCode]);

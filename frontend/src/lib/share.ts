@@ -3,6 +3,7 @@
 // - Copy link
 // - WhatsApp prefilled message
 // - QR image (hosted generator) for screenshot-based sharing
+import { buildPublicWhatsAppUrl, publicFrontendUrl } from "./publicLinks";
 
 export type ShareTarget = {
   title: string;           // short label shown to user
@@ -13,14 +14,11 @@ export type ShareTarget = {
 export function normalizeUrl(url: string): string {
   const s = String(url || "").trim();
   if (!s) return "";
-  // If it looks like a relative path, convert to absolute using current origin.
-  if (s.startsWith("/")) return `${window.location.origin}${s}`;
-  return s;
+  return publicFrontendUrl(s);
 }
 
 export function buildWhatsAppUrl(text: string): string {
-  const msg = encodeURIComponent(String(text || "").trim());
-  return `https://wa.me/?text=${msg}`;
+  return buildPublicWhatsAppUrl(text);
 }
 
 export function buildShareText(target: ShareTarget): string {

@@ -4,6 +4,7 @@ import ExplainToggle from "../components/ExplainToggle";
 import GSNBrandMark from "../components/GSNBrandMark";
 import SystemPictureFrame from "../components/SystemPictureFrame";
 import { navigateWithOrigin } from "../lib/nav";
+import { publicFrontendUrl } from "../lib/publicLinks";
 import { useLocation, useNavigate } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
 import {
@@ -2254,15 +2255,13 @@ export default function MarketplacePage() {
   }, [selectedCommunity]);
 
   const publicCommunityWorkspaceLink = useMemo(() => {
-    const origin = browserOrigin();
-    if (!origin || !activeCommunityId) return "";
-    return `${origin}/community/${encodeURIComponent(String(activeCommunityId))}`;
+    if (!activeCommunityId) return "";
+    return publicFrontendUrl(`/community/${encodeURIComponent(String(activeCommunityId))}`);
   }, [activeCommunityId]);
 
   const publicShopViewLink = useMemo(() => {
-    const origin = browserOrigin();
-    if (!origin || !currentGmfnId) return "";
-    return `${origin}/shop/${encodeURIComponent(currentGmfnId)}`;
+    if (!currentGmfnId) return "";
+    return publicFrontendUrl(`/shop/${encodeURIComponent(currentGmfnId)}`);
   }, [currentGmfnId]);
 
   const controlledMarketplaceLinkNote = useMemo(() => {

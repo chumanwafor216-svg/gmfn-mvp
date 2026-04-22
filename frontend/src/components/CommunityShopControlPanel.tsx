@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import * as api from "../lib/api";
 import { navigateWithOrigin } from "../lib/nav";
+import { publicFrontendUrl } from "../lib/publicLinks";
 
 type NoticeTone = "success" | "error";
 
@@ -657,10 +658,7 @@ export default function CommunityShopControlPanel({
       return;
     }
 
-    const url =
-      typeof window === "undefined"
-        ? publicShopTo
-        : `${window.location.origin}${publicShopTo}`;
+    const url = publicFrontendUrl(publicShopTo);
 
     api.safeCopy(url);
     setNotice({ tone: "success", text: "Public shop link copied." });

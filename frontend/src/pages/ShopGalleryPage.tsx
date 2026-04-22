@@ -10,6 +10,7 @@ import {
   getSelectedClanId,
   safeCopy,
 } from "../lib/api";
+import { publicFrontendUrl } from "../lib/publicLinks";
 
 type ShopProfile = {
   id?: number;
@@ -947,8 +948,7 @@ export default function ShopGalleryPage() {
   }, [miniSpotlight, effectiveShop]);
 
   const absoluteShopLink = useMemo(() => {
-    if (typeof window === "undefined") return location.pathname;
-    return `${window.location.origin}${location.pathname}`;
+    return publicFrontendUrl(location.pathname);
   }, [location.pathname]);
 
   const shopNameText = safeStr(effectiveShop?.shopName || "Shop");
@@ -1052,10 +1052,7 @@ export default function ShopGalleryPage() {
 
   function shareProduct(product: ShopProduct) {
     const hash = product.id ? `#product-${product.id}` : "";
-    const productUrl =
-      typeof window === "undefined"
-        ? `${location.pathname}${hash}`
-        : `${window.location.origin}${location.pathname}${hash}`;
+    const productUrl = publicFrontendUrl(`${location.pathname}${hash}`);
     const title = productDisplayTitle(product);
     const text = firstMeaningful(
       productBuyerCue(product, ""),

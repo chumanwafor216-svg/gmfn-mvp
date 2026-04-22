@@ -12,6 +12,7 @@ import {
 } from "../lib/guidance";
 import { buildDashboardTrustJourneyCopy } from "../lib/dashboardUserGuidance";
 import { navigateWithOrigin } from "../lib/nav";
+import { publicApiUrl } from "../lib/publicLinks";
 
 type NoticeTone = "success" | "error";
 
@@ -894,9 +895,11 @@ function normalizeCollapseState(raw: any): CollapseState {
 function absoluteUrl(pathOrUrl: string): string {
   const raw = safeStr(pathOrUrl);
   if (!raw) return "";
-  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
-  if (typeof window !== "undefined" && raw.startsWith("/")) {
-    return `${window.location.origin}${raw}`;
+  if (raw.startsWith("http://") || raw.startsWith("https://")) {
+    return publicApiUrl(raw);
+  }
+  if (raw.startsWith("/")) {
+    return publicApiUrl(raw);
   }
   return raw;
 }

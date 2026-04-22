@@ -18,6 +18,7 @@ import {
   prepareSpotlightImageFile,
   prepareSpotlightVideoFile,
 } from "../lib/spotlightMediaPrep";
+import { publicFrontendUrl } from "../lib/publicLinks";
 
 type ShopRecord = {
   id: number;
@@ -1034,8 +1035,8 @@ export default function ShopControlPage() {
 
   const publicShopLink = useMemo(() => {
     const gmfnId = firstTruthy(shop?.gmfn_id, me?.gmfn_id);
-    if (!gmfnId || typeof window === "undefined") return "";
-    return `${window.location.origin}/shop/${encodeURIComponent(gmfnId)}`;
+    if (!gmfnId) return "";
+    return publicFrontendUrl(`/shop/${encodeURIComponent(gmfnId)}`);
   }, [shop, me]);
 
   const communityName = useMemo(() => {
@@ -1277,9 +1278,7 @@ export default function ShopControlPage() {
       link?.token ? `/vault/${encodeURIComponent(String(link.token))}` : ""
     );
     if (!raw) return "";
-    if (/^https?:\/\//i.test(raw)) return raw;
-    if (typeof window === "undefined") return raw;
-    return `${window.location.origin}${raw.startsWith("/") ? raw : `/${raw}`}`;
+    return publicFrontendUrl(raw);
   }
 
   function vaultDefaultExpiry(): string {

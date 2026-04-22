@@ -46,6 +46,71 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-22
 
 #### Workstream
+WhatsApp-first public link audit and origin hardening.
+
+#### Routes/screens affected
+- Marketplace outward links: `/app/marketplace`, `/community/:clanId`
+- Public shop/gallery links: `/shop/:gmfnId`
+- Shop control Vault/public shop links: `/app/shop/*`, `/vault/:token`
+- Community invite composer links
+- TrustSlip public verification links: `/t/:code` and backend verify pages
+
+#### Backend routes/endpoints involved
+- Confirmed backend invite responses mostly expose public `share_link` values.
+- Backend still also exposes `api_link` values for API use; frontend should not
+  use those for WhatsApp/user-facing join links.
+
+#### Files in play
+- `frontend/src/lib/publicLinks.ts`
+- `frontend/src/lib/share.ts`
+- `frontend/src/pages/MarketplacePage.tsx`
+- `frontend/src/pages/MarketplaceWorkspacePage.tsx`
+- `frontend/src/pages/ClansPage.tsx`
+- `frontend/src/pages/ShopControlPage.tsx`
+- `frontend/src/pages/ShopGalleryPage.tsx`
+- `frontend/src/pages/ShopAssetsPage.tsx`
+- `frontend/src/pages/TrustSlipPage.tsx`
+- `frontend/src/pages/TrustSlipVerifyPage.tsx`
+- `frontend/src/pages/TrustScorePage.tsx`
+- `frontend/src/components/CommunityShopControlPanel.tsx`
+
+#### Confirmed facts
+- Public/share links must not be built from the current browser origin during
+  pilot testing. That leaks `localhost`, LAN addresses, or stale private
+  origins into WhatsApp links.
+- A shared public link helper now normalizes frontend links to the configured
+  public frontend origin, falling back to `https://gmfn-frontend.onrender.com`.
+- TrustSlip verification/QR links now normalize through the configured public
+  API origin, falling back to `https://gmfn-api.onrender.com`.
+- Marketplace, shop gallery, shop control, community invite composer,
+  marketplace workspace, TrustSlip, and shared share helpers were moved to the
+  public-link helper for outward links.
+- Community invite packaging now synthesizes a public `/start/join/:code`
+  fallback when a backend response has an invite code but no usable link.
+- `npm run build` in `frontend/` passed after the link changes.
+
+#### Open risks or unknowns
+- Existing broken or already-expired invite codes still need a fresh invite;
+  this patch prevents newly copied WhatsApp/public links from using the wrong
+  origin, but it cannot revive a stale code.
+- Some `window.location.origin` usages remain intentionally for API/media
+  fetching and internal navigation. They are not public WhatsApp link builders.
+- Backend `api_link` remains present for API consumers. Do not surface it as a
+  human WhatsApp invite unless it is explicitly converted to a frontend share
+  route first.
+
+#### Next recommended step
+- After deploy, regenerate the Aberdeen WhatsApp join link from Marketplace
+  using `Create / Refresh`, then test it on a phone from WhatsApp. If it still
+  fails, inspect the exact URL copied from the button and compare the invite
+  code against backend invite preview.
+
+### Previous update
+
+#### Date
+2026-04-22
+
+#### Workstream
 Join-entry invite precheck for live tester links.
 
 #### Routes/screens affected

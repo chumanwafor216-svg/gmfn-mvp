@@ -7,6 +7,7 @@ import {
   getSelectedClanId,
   uploadMarketplaceImageFile as uploadMarketplaceImageFileApi,
 } from "../lib/api";
+import { publicFrontendUrl } from "../lib/publicLinks";
 
 type ShopRecord = {
   id: number;
@@ -404,8 +405,8 @@ async function uploadMarketplaceImageFile(file: File): Promise<string> {
 }
 
 function buildShopLink(gmfnId: string): string {
-  if (!gmfnId || typeof window === "undefined") return "";
-  return `${window.location.origin}/shop/${encodeURIComponent(gmfnId)}`;
+  if (!gmfnId) return "";
+  return publicFrontendUrl(`/shop/${encodeURIComponent(gmfnId)}`);
 }
 
 function buildProductDeepLink(gmfnId: string, productId: number): string {

@@ -12,6 +12,7 @@ import {
   setSelectedClanId,
 } from "../lib/api";
 import { navigateWithOrigin } from "../lib/nav";
+import { publicFrontendUrl } from "../lib/publicLinks";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -400,12 +401,14 @@ export default function MarketplaceWorkspacePage() {
   }, [inviteInfo]);
 
   const inviteLink = useMemo(() => {
-    return safeStr(
-      inviteInfo?.invite_url ||
-        inviteInfo?.url ||
-        inviteInfo?.link ||
-        inviteInfo?.invite_link ||
-        ""
+    return publicFrontendUrl(
+      safeStr(
+        inviteInfo?.invite_url ||
+          inviteInfo?.url ||
+          inviteInfo?.link ||
+          inviteInfo?.invite_link ||
+          ""
+      )
     );
   }, [inviteInfo]);
 
@@ -414,20 +417,19 @@ export default function MarketplaceWorkspacePage() {
   }, [inviteInfo]);
 
   const shopViewLink = useMemo(() => {
-    return safeStr(
-      inviteInfo?.shop_view_url ||
-        inviteInfo?.shop_link ||
-        inviteInfo?.shop_profile_url ||
-        inviteInfo?.public_shop_url ||
-        ""
+    return publicFrontendUrl(
+      safeStr(
+        inviteInfo?.shop_view_url ||
+          inviteInfo?.shop_link ||
+          inviteInfo?.shop_profile_url ||
+          inviteInfo?.public_shop_url ||
+          ""
+      )
     );
   }, [inviteInfo]);
 
   const guideUrl = useMemo(() => {
-    if (typeof window !== "undefined" && window.location?.origin) {
-      return `${window.location.origin}/GMFN_FINAL_WHITE.pdf`;
-    }
-    return "/GMFN_FINAL_WHITE.pdf";
+    return publicFrontendUrl("/GMFN_FINAL_WHITE.pdf");
   }, []);
 
   const pendingCount = useMemo(() => {
