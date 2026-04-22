@@ -6310,3 +6310,23 @@ GSN-branded invite composer and invite-entry continuity.
   permissions, and membership rules were not changed.
 - Verification:
   - `npm run build` passed in `frontend`.
+
+### Create-entry existing-member placement and memory addendum
+
+- Product-owner clarified that the `Already a member?` escape should not sit in
+  the middle of the create-community explanation because it interrupts the
+  creation story.
+- Updated `frontend/src/pages/CreateEntryPage.tsx` only:
+  - Moved the `Already a member?` card to the top of the create page, before
+    the create-community story begins.
+  - Removed the duplicate/old placement from inside the create-community story.
+  - Added a route-local local-storage choice
+    `gmfn.createEntry.existingMemberChoice.v1`.
+  - When a user chooses `I am already a member`, the create form is tucked away
+    on that device and the page opens in existing-member mode next time.
+  - Added `Start a new community instead` so a mistaken existing-member choice
+    can be safely reversed without clearing browser data.
+- This remains frontend route-local. No backend, auth core, schema, invite,
+  join, membership, payment, or permission behavior was changed.
+- Verification:
+  - `npm run build` passed in `frontend`.

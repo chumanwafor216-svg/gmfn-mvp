@@ -18,8 +18,12 @@ import {
   ENTRY_CREATE_CODE_KEY,
   ENTRY_INVITE_CODE_KEY,
   ENTRY_MODE_KEY,
+  readStorage,
   writeStorage,
 } from "../lib/entryFlow";
+
+const CREATE_ENTRY_EXISTING_MEMBER_CHOICE_KEY =
+  "gmfn.createEntry.existingMemberChoice.v1";
 
 function pageShell(): React.CSSProperties {
   return {
@@ -420,7 +424,12 @@ export default function CreateEntryPage() {
     useState<EntryVerificationResult>(null);
   const [guideDone, setGuideDone] = useState(hasInitialCommunityContext);
   const [procedureOpen, setProcedureOpen] = useState(false);
-  const [existingMemberOpen, setExistingMemberOpen] = useState(false);
+  const [existingMemberPreferred, setExistingMemberPreferred] = useState(
+    () => readStorage(CREATE_ENTRY_EXISTING_MEMBER_CHOICE_KEY) === "1"
+  );
+  const [existingMemberOpen, setExistingMemberOpen] = useState(
+    () => readStorage(CREATE_ENTRY_EXISTING_MEMBER_CHOICE_KEY) === "1"
+  );
   const [openPanel, setOpenPanel] = useState<"details" | "verification" | "community" | null>(
     hasInitialCommunityContext ? "community" : null
   );
@@ -506,9 +515,12 @@ export default function CreateEntryPage() {
   }
 
   function handleExistingMemberLogin() {
+    writeStorage(CREATE_ENTRY_EXISTING_MEMBER_CHOICE_KEY, "1");
     writeStorage(ENTRY_MODE_KEY, "existing");
     writeStorage(ENTRY_CREATE_CODE_KEY, null);
     writeStorage(ENTRY_INVITE_CODE_KEY, null);
+    setExistingMemberPreferred(true);
+    setExistingMemberOpen(true);
     nav(existingMemberLoginTo, {
       replace: false,
       state: {
@@ -519,6 +531,111 @@ export default function CreateEntryPage() {
       },
     });
   }
+
+  function handleCreateInstead() {
+    writeStorage(CREATE_ENTRY_EXISTING_MEMBER_CHOICE_KEY, null);
+    setExistingMemberPreferred(false);
+    setExistingMemberOpen(false);
+  }
+
+  const existingMemberPanel = (
+    <div style={existingMemberCard(existingMemberOpen)}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ display: "grid", gap: 5 }}>
+          <div style={{ ...sectionLabel(), color: "#F3D06A" }}>
+            Already a member?
+          </div>
+          <div
+            style={{
+              color: "#F8FBFF",
+              fontSize: 15,
+              fontWeight: 900,
+              lineHeight: 1.35,
+            }}
+          >
+            {existingMemberPreferred
+              ? "Existing-member sign in is remembered on this device."
+              : "Sign in instead of filling the new-community form."}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setExistingMemberOpen((current) => !current)}
+          style={{
+            ...secondaryBtn(),
+            minHeight: 44,
+            color: "#123055",
+          }}
+        >
+          {existingMemberOpen ? "Collapse" : "Open"}
+        </button>
+      </div>
+
+      {existingMemberOpen ? (
+        <div
+          style={{
+            borderRadius: 18,
+            border: "1px solid rgba(255,255,255,0.16)",
+            background: "rgba(255,255,255,0.08)",
+            padding: 14,
+            display: "grid",
+            gap: 12,
+          }}
+        >
+          <div
+            style={{
+              color: "rgba(255,255,255,0.86)",
+              fontSize: 13.5,
+              lineHeight: 1.7,
+              fontWeight: 700,
+            }}
+          >
+            {existingMemberPreferred
+              ? "This device recently chose the existing-member path, so the new-community form is tucked away. Sign in to continue, or start a new community instead if this was a mistake."
+              : "If you already have a GSN account, do not create another one. Go to sign in and verify yourself with your email and password. This keeps your existing communities, shop, finance record, and trust history together."}
+          </div>
+
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={handleExistingMemberLogin}
+              style={{
+                ...primaryBtn(false),
+                width: "auto",
+                minWidth: 178,
+                flex: "1 1 220px",
+              }}
+            >
+              I am already a member
+            </button>
+            <button
+              type="button"
+              onClick={
+                existingMemberPreferred
+                  ? handleCreateInstead
+                  : () => setExistingMemberOpen(false)
+              }
+              style={{
+                ...secondaryBtn(),
+                minWidth: existingMemberPreferred ? 196 : 112,
+              }}
+            >
+              {existingMemberPreferred ? "Start a new community instead" : "Stay here"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
 
   function clearDetailsBlock() {
     setDisplayName("");
@@ -821,8 +938,13 @@ export default function CreateEntryPage() {
           <div aria-hidden="true" />
         </div>
 
+        {existingMemberPanel}
+
         <div
-          style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
+          style={{
+            ...pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
+            display: existingMemberPreferred ? "none" : undefined,
+          }}
         >
           <div style={sectionLabel()}>Create community</div>
 
@@ -1018,106 +1140,23 @@ export default function CreateEntryPage() {
               </div>
             ) : null}
 
-            <div style={existingMemberCard(existingMemberOpen)}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 12,
-                  flexWrap: "wrap",
-                }}
-              >
-                <div style={{ display: "grid", gap: 5 }}>
-                  <div style={{ ...sectionLabel(), color: "#F3D06A" }}>
-                    Already a member?
-                  </div>
-                  <div
-                    style={{
-                      color: "#F8FBFF",
-                      fontSize: 15,
-                      fontWeight: 900,
-                      lineHeight: 1.35,
-                    }}
-                  >
-                    Sign in instead of filling the new-community form.
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setExistingMemberOpen((current) => !current)}
-                  style={{
-                    ...secondaryBtn(),
-                    minHeight: 44,
-                    color: "#123055",
-                  }}
-                >
-                  {existingMemberOpen ? "Collapse" : "Open"}
-                </button>
-              </div>
-
-              {existingMemberOpen ? (
-                <div
-                  style={{
-                    borderRadius: 18,
-                    border: "1px solid rgba(255,255,255,0.16)",
-                    background: "rgba(255,255,255,0.08)",
-                    padding: 14,
-                    display: "grid",
-                    gap: 12,
-                  }}
-                >
-                  <div
-                    style={{
-                      color: "rgba(255,255,255,0.86)",
-                      fontSize: 13.5,
-                      lineHeight: 1.7,
-                      fontWeight: 700,
-                    }}
-                  >
-                    If you already have a GSN account, do not create another one.
-                    Go to sign in and verify yourself with your email and password.
-                    This keeps your existing communities, shop, finance record, and
-                    trust history together.
-                  </div>
-
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    <button
-                      type="button"
-                      onClick={handleExistingMemberLogin}
-                      style={{
-                        ...primaryBtn(false),
-                        width: "auto",
-                        minWidth: 178,
-                        flex: "1 1 220px",
-                      }}
-                    >
-                      I am already a member
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setExistingMemberOpen(false)}
-                      style={{
-                        ...secondaryBtn(),
-                        minWidth: 112,
-                      }}
-                    >
-                      Stay here
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-
           </div>
 
         </div>
 
-        {error ? <div style={feedbackCard(false)}>{error}</div> : null}
-        {success ? <div style={feedbackCard(true)}>{success}</div> : null}
+        {!existingMemberPreferred && error ? (
+          <div style={feedbackCard(false)}>{error}</div>
+        ) : null}
+        {!existingMemberPreferred && success ? (
+          <div style={feedbackCard(true)}>{success}</div>
+        ) : null}
 
-        <div style={pageCard()}>
+        <div
+          style={{
+            ...pageCard(),
+            display: existingMemberPreferred ? "none" : undefined,
+          }}
+        >
           <div style={{ display: "grid", gap: 14 }}>
             <div
               ref={detailsRef}
