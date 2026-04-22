@@ -6095,3 +6095,30 @@ GSN-branded invite composer and invite-entry continuity.
 - This was documentation/control-layer work only. No backend routes, frontend
   runtime code, schemas, migrations, auth, permissions, payment, ledger, or
   TrustEvent scoring logic changed.
+
+### Controlled entry-lane addendum
+
+- Product-owner reported testing confusion when WhatsApp testers land directly
+  on `/cover`, press Continue, and then see multiple welcome choices.
+- Confirmed explicit entry routes already preserve distinct lanes:
+  - `/public-create` and `/founder` set create mode.
+  - `/invite/:code` and `/get-invite/:code` set invite mode.
+  - `/approved/:requestId` sets approved mode.
+  - `/existing` sets existing-member mode.
+- Applied a narrow frontend correction so plain `/cover` now continues to
+  `/create` instead of `/welcome`; this makes the controlled pilot default to
+  one create-community action rather than a three-choice welcome screen.
+- Kept invite, approved, and existing-member paths distinct.
+- Updated shared `coverContinueTo()` to match the same create-default behavior
+  for any future shared caller.
+- Fixed backend-generated frontend links so community invite and activation
+  links no longer default to `127.0.0.1` or `localhost`:
+  - `clans.py` now uses `FRONTEND_BASE_URL`, `GMFN_FRONTEND_BASE_URL`, or
+    `PUBLIC_FRONTEND_URL`, then request origin, then
+    `https://gmfn-frontend.onrender.com`.
+  - `invites_service.py` keeps respecting `FRONTEND_BASE_URL` and falls back to
+    `https://gmfn-frontend.onrender.com`.
+- Verification:
+  - `npm run build` passed in `frontend`.
+  - `python -m compileall app\api\routes\clans.py app\services\invites_service.py`
+    passed from `gmfn_backend`.

@@ -71,7 +71,7 @@ def _require_member_or_admin(db: Session, *, clan_id: int, user: User) -> None:
 
 
 def frontend_join_link(code: str) -> str:
-    base = os.getenv("FRONTEND_BASE_URL", "http://localhost:5174")
+    base = os.getenv("FRONTEND_BASE_URL", "https://gmfn-frontend.onrender.com")
     return f"{base.rstrip('/')}/join?code={code}"
 
 

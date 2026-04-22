@@ -189,7 +189,7 @@ export function mergeSearchIntoPath(to: string, currentSearch: string): string {
 }
 
 export function coverContinueTo(currentSearch: string): string {
-  return mergeSearchIntoPath("/welcome", currentSearch);
+  return routeForCreate(currentSearch);
 }
 
 export function routeForCreate(currentSearch: string): string {

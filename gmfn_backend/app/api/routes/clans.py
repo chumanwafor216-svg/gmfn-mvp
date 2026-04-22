@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import secrets
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -380,8 +381,20 @@ def _join_request_out(db: Session, req: ClanJoinRequest) -> dict[str, Any]:
         "threshold_ratio": stats["threshold_ratio"],
     }
 
-def _frontend_origin() -> str:
-    return "http://127.0.0.1:5174"
+def _frontend_origin(request: Request) -> str:
+    configured = _safe_str(
+        os.getenv("FRONTEND_BASE_URL")
+        or os.getenv("GMFN_FRONTEND_BASE_URL")
+        or os.getenv("PUBLIC_FRONTEND_URL")
+    )
+    if configured:
+        return configured.rstrip("/")
+
+    request_origin = _safe_str(request.headers.get("origin"))
+    if request_origin:
+        return request_origin.rstrip("/")
+
+    return "https://gmfn-frontend.onrender.com"
 
 
 def _frontend_community_join_link(
@@ -391,7 +404,7 @@ def _frontend_community_join_link(
     invite_code: str,
     inviter: Optional[User] = None,
 ) -> str:
-    origin = _frontend_origin()
+    origin = _frontend_origin(request)
 
     params = {
         "invite": invite_code,
@@ -411,7 +424,7 @@ def _frontend_community_join_link(
 
 
 def _frontend_activation_link(request: Request, gmfn_id: str) -> str:
-    origin = _frontend_origin()
+    origin = _frontend_origin(request)
     return f"{origin}/activate-membership?{urlencode({'gmfn_id': gmfn_id})}"
 
 

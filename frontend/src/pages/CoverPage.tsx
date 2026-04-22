@@ -356,7 +356,7 @@ function nextRouteForMode(mode: EntryMode): string {
 
   if (mode === "existing") return "/login";
 
-  return "/welcome";
+  return "/create";
 
 }
 
