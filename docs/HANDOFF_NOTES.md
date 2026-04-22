@@ -46,6 +46,51 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-22
 
 #### Workstream
+Admin pilot intake monitor for live onboarding tests.
+
+#### Routes/screens affected
+- `/app/command-center/system-operations`
+- Admin-only operational oversight surfaces
+
+#### Backend routes/endpoints involved
+- `GET /admin/pilot-intake`
+
+#### Files in play
+- `gmfn_backend/app/api/routes/admin.py`
+- `gmfn_backend/tests/test_entry_create.py`
+- `frontend/src/lib/api.ts`
+- `frontend/src/pages/SystemOperationsPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Live testers are using the create-entry and join-entry flows from shared
+  WhatsApp/Render links, so admin needs a simple way to see where people are
+  getting stuck without manually querying the database.
+- `GET /admin/pilot-intake` is admin-only and read-only. It summarizes recent
+  create-entry phone verification records and recent community join requests.
+- Create-entry rows are grouped into practical stages such as completed,
+  ready-for-community, awaiting-bank-details, expired, or account-exists.
+- Join-request rows are grouped by request status and activation readiness.
+- The System Operations page now shows a Pilot intake monitor section with
+  counts, next actions, recent create-entry tester cards, and recent join
+  request cards.
+- Backend coverage was added in `test_admin_pilot_intake_reports_completed_create_entry`.
+
+#### Open risks or unknowns
+- The monitor is intentionally a pilot surface, not a final analytics dashboard.
+  It uses small recent samples and per-row summaries suitable for controlled
+  testing.
+- It does not change business rules, create new approvals, or mutate tester
+  records.
+
+#### Next recommended step
+Use the monitor during live testing to identify whether a tester is blocked at
+phone proof, bank/wallet details, community setup, join review, or activation.
+
+#### Date
+2026-04-22
+
+#### Workstream
 Create-entry recovery after Block 2 bank/wallet failure.
 
 #### Routes/screens affected
@@ -68,6 +113,9 @@ Create-entry recovery after Block 2 bank/wallet failure.
 - A live tester could complete the phone proof, hit trouble around Block 2
   bank/wallet details, then get stuck on retry with `Phone number already
   registered`.
+- A second live tester could complete phone proof and community setup but not
+  visibly progress into the app; a later retry showed the same registered-phone
+  dead end.
 - The safest intended behavior is not to let an unfinished founder entry become
   a dead end.
 - `/entry/phone/start` now reopens an unconsumed, unexpired entry-phone session
@@ -83,18 +131,29 @@ Create-entry recovery after Block 2 bank/wallet failure.
 - Scotland, England, Wales, and Northern Ireland are normalized as GB for
   onboarding region checks, and the frontend bank-country helper now tells UK
   testers to use `United Kingdom` or `GB`.
+- After a successful `/entry/create`, the frontend now stores the returned
+  `clan_id` as the selected community before routing into
+  `/app/build-first-circle`.
+- If a mobile browser misses that first redirect and a retry reports
+  `Phone number already registered`, `Email already registered`, or a used
+  phone-verification session, the frontend now attempts to sign the tester in
+  with the email and password they already entered, selects their created
+  community, clears public entry state, and opens `/app/build-first-circle`.
+- If recovery sign-in fails, the tester is guided to use `Already a member`
+  and the helper can check the pilot intake monitor.
 - This is a working-tree-only update. It has not been committed and has not
   been deployed to Render.
 
 #### Verification
 - `python -m compileall app\api\routes\entry.py app\api\routes\entry_verification.py` passed.
 - `python -m pytest tests\test_entry_create.py -q` passed: 12 tests.
-- `npm run build` passed in `frontend`.
+- `npm run build` passed in `frontend` after the completion-recovery patch.
 
 #### Next recommended step
-- Phone-test the same failed create-entry path: enter the same phone/name/email
-  again after a Block 2 issue and confirm it resumes to Bank and wallet details
-  or Community setup instead of blocking.
+- Phone-test both failed create-entry paths: after a Block 2 issue it should
+  resume to Bank and wallet details or Community setup; after a completed create
+  retry it should recover into the app instead of trapping the tester on
+  `Phone number already registered`.
 
 ### Previous update
 
@@ -7049,3 +7108,32 @@ GSN-branded invite composer and invite-entry continuity.
   - Reduce `GMFN_JOIN_INVITE_MIN_TTL_HOURS` and
     `GMFN_ENTRY_PHONE_SESSION_MINUTES` back toward one or two hours when the
     outside-circle test moves beyond controlled pilot testing.
+
+### Controlled pilot relaxations register addendum
+
+- Product-owner clarified the current testing philosophy:
+  - keep the pilot moving for known testers,
+  - allow selected rails to behave as recorded/accepted during testing,
+  - but record every suspended or simulated external dependency so it can be
+    restored before wider public launch.
+- Updated `docs/PILOT_TEST_FLOW_2026-04-21.md` with a controlled-relaxations
+  register covering:
+  - phone proof / live SMS OTP,
+  - bank and wallet destination recording,
+  - payment expectations and reconciliation,
+  - payout destination and money-out execution,
+  - invite-link lifetime,
+  - trust-event-style feedback versus permanent trust scoring events.
+- Current engineering interpretation:
+  - It is acceptable in the controlled pilot for GSN to record bank/wallet
+    details and continue even when a live bank provider is not configured.
+  - It is acceptable for admin/manual bank-event ingest to support controlled
+    reconciliation tests.
+  - It is not acceptable to call these final production bank ownership checks,
+    real payout execution, or certified banking rails until the external
+    providers and audit controls are connected.
+- Practical language standard:
+  - Each step should explain what was recorded, what it proves, and what is
+    still pending.
+  - Users should not be left with a cold `saved`, `failed`, or raw provider
+    message when the app already knows the next safe thing to do.

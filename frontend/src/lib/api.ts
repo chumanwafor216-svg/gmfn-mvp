@@ -1803,6 +1803,10 @@ export async function getTrustEvents(params?: {
   );
 }
 
+export async function getAdminPilotIntake(limit: number = 50): Promise<any> {
+  return httpJson(`/admin/pilot-intake${buildQuery({ limit })}`, "GET");
+}
+
 export async function adminConfirmPoolEvent(
   eventId: number,
   note?: string

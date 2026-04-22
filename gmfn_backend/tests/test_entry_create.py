@@ -212,6 +212,75 @@ def test_entry_phone_verification_then_create_and_phone_login(client):
     assert "Starter trust has been established" in notification_titles
 
 
+def test_admin_pilot_intake_reports_completed_create_entry(client, override_current_user):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    os.environ["GMFN_DEV_MODE"] = "1"
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Pilot Admin Watch",
+            "phone_e164": "+2348012345600",
+            "email": "pilot.admin.watch@example.com",
+            "browser_locale": "en-NG",
+        },
+    )
+    assert start_res.status_code == 201, start_res.text
+    start_body = start_res.json()
+
+    confirm_res = client.post(
+        "/entry/phone/confirm",
+        json={
+            "verification_id": start_body["verification_id"],
+            "code": start_body["otp_preview"],
+        },
+    )
+    assert confirm_res.status_code == 200, confirm_res.text
+
+    bank_res = client.post(
+        "/entry/bank-details",
+        json={
+            "verification_id": start_body["verification_id"],
+            "destination_name": "Pilot Admin Watch",
+            "bank_name": "Pilot Community Bank",
+            "account_number": "0123456789",
+            "country": "NG",
+            "currency": "NGN",
+        },
+    )
+    assert bank_res.status_code == 200, bank_res.text
+
+    create_res = client.post(
+        "/entry/create",
+        json={
+            "verification_id": start_body["verification_id"],
+            "clan_name": "Pilot Admin Watch Circle",
+            "clan_description": "Admin-visible pilot intake test",
+            "password": "secret123",
+            "confirm_password": "secret123",
+        },
+    )
+    assert create_res.status_code == 201, create_res.text
+
+    intake_res = client.get("/admin/pilot-intake?limit=20")
+    assert intake_res.status_code == 200, intake_res.text
+    intake_body = intake_res.json()
+
+    assert intake_body["summary"]["create_by_stage"]["completed"] >= 1
+
+    item = next(
+        row
+        for row in intake_body["create_entries"]
+        if row["verification_id"] == start_body["verification_id"]
+    )
+    assert item["stage"] == "completed"
+    assert item["display_name"] == "Pilot Admin Watch"
+    assert item["bank_account_last4"] == "6789"
+    assert item["user"]["gmfn_id"]
+    assert item["communities"][0]["name"] == "Pilot Admin Watch Circle"
+    assert "Creation appears complete" in item["next_action"]
+
+
 def test_entry_phone_start_resumes_unfinished_verified_session(client):
     os.environ["GMFN_DEV_MODE"] = "1"
 

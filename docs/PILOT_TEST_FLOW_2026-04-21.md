@@ -20,6 +20,144 @@ The pilot should prove three simple things:
 The pilot is not only looking for bugs. It is testing whether ordinary users,
 including unbanked and underbanked users, can understand what to do next.
 
+## Controlled Pilot Relaxations
+
+These relaxations are allowed only for the controlled pilot. They are not final
+production banking, telecoms, or public-access rules. Keep them visible in every
+handoff so that nobody mistakes a test shortcut for a completed external rail.
+
+### 1. Phone Proof
+
+Current pilot state:
+
+- Live SMS OTP is not fully connected.
+- The frontend may use the preview code returned by the backend to keep testing
+  moving.
+- Pilot phone proof sessions last about 24 hours so remote testers are not
+  blocked by short expiry while giving feedback.
+
+User-facing standard:
+
+- If the phone step succeeds, say that the phone has been linked to the person's
+  name for this entry record.
+- If it fails because time has passed, say plainly that the session expired and
+  the safest step is to start again.
+
+Before public launch:
+
+- Connect the real SMS provider.
+- Reduce the session lifetime back toward one or two hours.
+- Keep the same plain-language success and expiry messages.
+
+### 2. Bank And Wallet Details
+
+Current pilot state:
+
+- Bank or wallet destination details can be recorded against a verified phone
+  session.
+- External bank ownership verification is not treated as fully certified unless
+  a live provider confirms it.
+- Provider-unavailable states should not stop the pilot user from continuing;
+  they should be explained as recorded evidence, not confirmed bank ownership.
+
+User-facing standard:
+
+- Tell the user that GSN has recorded where approved money should go.
+- Make clear that GSN is not moving money at that moment.
+- Make clear that stronger bank ownership checks are a later production rail.
+
+Before public launch:
+
+- Configure the required bank provider for target regions.
+- Add/confirm manual-review handling where providers cannot verify directly.
+- Do not label recorded details as bank-owned unless the provider or approved
+  manual review supports that claim.
+
+### 3. Payment Expectations And Reconciliation
+
+Current pilot state:
+
+- Payment instructions can generate expected-payment references.
+- Admin/manual bank-event ingest can be used to simulate a bank credit during
+  controlled testing.
+- Reconciliation can match expected payments and create downstream evidence for
+  pool deposits, repayments, and paid feature subscriptions.
+
+User-facing standard:
+
+- Every successful step should return practical feedback: what was recorded,
+  what changed, and what remains pending.
+- Mismatch, duplicate, pending, and partial states must tell the user/admin the
+  first safe thing to do next.
+
+Before public launch:
+
+- Prefer canonical bank events from signed webhooks or statement imports.
+- Keep manual ingest admin-only and clearly marked as a support/testing tool.
+- Review whether non-canonical manual events should auto-confirm or require
+  admin approval before affecting trust/ledger state.
+
+### 4. Payout Destination And Money Out
+
+Current pilot state:
+
+- Users can save payout destinations.
+- The saved destination is proof of where approved withdrawals should go.
+- The system does not yet execute real payouts from GSN.
+
+User-facing standard:
+
+- Say that the payout route tells GSN where approved withdrawals should be sent.
+- Do not imply that saving details sends money.
+
+Before public launch:
+
+- Connect payout execution provider(s).
+- Add approval, failure, reversal, and audit records around every real payout.
+- Keep payout state separate from trust score until the money movement is
+  confirmed.
+
+### 5. Invite Links
+
+Current pilot state:
+
+- Invite links are protected with a minimum 24-hour usable window for the
+  controlled test day.
+- This does not rescue a link whose code was copied incompletely or never
+  existed in the active Render database.
+
+User-facing standard:
+
+- If the invite exists but is expired, explain that it needs a fresh GSN invite.
+- If the invite code is missing or copied wrongly, say the link may not have
+  been copied fully.
+
+Before public launch:
+
+- Reduce minimum invite lifetime toward one or two hours where appropriate.
+- Keep longer-lived invite packages only where the product intentionally needs
+  them.
+
+### 6. Trust Events And Notifications
+
+Current pilot state:
+
+- Some entry and payout steps show trust-event-style feedback immediately.
+- Permanent scoring events should still be written only at safe completion
+  points, not repeatedly while a tester edits a form.
+
+User-facing standard:
+
+- The app should not merely say `saved`.
+- It should tell the person what the action proves, what remains pending, and
+  whether the evidence is temporary, ready for registration, or permanent.
+
+Before public launch:
+
+- Audit every simulated trust-event response and decide which ones become real
+  permanent events.
+- Avoid writing duplicate trust evidence for the same completed action.
+
 ## Current Test URLs
 
 - Live frontend: `https://gmfn-frontend.onrender.com`

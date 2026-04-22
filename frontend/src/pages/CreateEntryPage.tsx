@@ -9,7 +9,10 @@ import {
   getEntryVerificationCheck,
   getMe,
   isAuthenticated,
+  listMyClans,
+  loginAndStore,
   saveEntryBankDetails,
+  setSelectedClanId,
   startEntryPhoneVerification,
   verifyEntryBankDetails,
   verifyEntryDriversLicence,
@@ -777,6 +780,75 @@ export default function CreateEntryPage() {
     return message.includes("phone number already registered");
   }
 
+  function isCompletedAccountError(err: any): boolean {
+    const message = safeStr(err?.message || err).toLowerCase();
+    return (
+      message.includes("phone number already registered") ||
+      message.includes("email already registered") ||
+      message.includes("founder identity already exists") ||
+      message.includes("phone verification session has already been used") ||
+      message.includes("verified phone session has already been used")
+    );
+  }
+
+  function firstClanIdFrom(out: any): number | null {
+    const direct = Number(
+      out?.clan_id ||
+        out?.clan?.id ||
+        out?.selected_clan_id ||
+        out?.data?.clan_id ||
+        0
+    );
+
+    if (Number.isFinite(direct) && direct > 0) return direct;
+    return null;
+  }
+
+  async function selectCreatedOrFirstClan(out?: any): Promise<number | null> {
+    const directClanId = firstClanIdFrom(out);
+    if (directClanId) {
+      setSelectedClanId(directClanId);
+      return directClanId;
+    }
+
+    const clans = await listMyClans().catch(() => null);
+    const rows = Array.isArray(clans)
+      ? clans
+      : Array.isArray(clans?.items)
+        ? clans.items
+        : [];
+    const first = rows[0] || null;
+    const firstClanId = firstClanIdFrom(first);
+
+    if (firstClanId) {
+      setSelectedClanId(firstClanId);
+      return firstClanId;
+    }
+
+    return null;
+  }
+
+  async function openCreatedWorkspace(out?: any): Promise<void> {
+    await selectCreatedOrFirstClan(out);
+    clearPublicEntryState();
+    nav("/app/build-first-circle", { replace: true });
+  }
+
+  async function recoverCompletedCreateEntry(): Promise<boolean> {
+    const userEmail = safeStr(email);
+    const userPassword = safeStr(password);
+
+    if (!userEmail || !userPassword) return false;
+
+    try {
+      await loginAndStore(userEmail, userPassword);
+      await openCreatedWorkspace();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async function startAndMaybeConfirmPhoneSession(): Promise<{
     verificationId: number;
     autoConfirmed: boolean;
@@ -885,6 +957,9 @@ export default function CreateEntryPage() {
       setSuccess(started.message);
     } catch (err: any) {
       if (isPhoneAlreadyRegisteredError(err)) {
+        const recovered = await recoverCompletedCreateEntry();
+        if (recovered) return;
+
         setExistingMemberOpen(true);
         setError(
           "This phone number already belongs to a completed GSN account. Please use Already a member to sign in instead of starting a second community entry."
@@ -1037,7 +1112,7 @@ export default function CreateEntryPage() {
 
     if (!refreshed.autoConfirmed || !refreshed.verificationId) {
       throw new Error(
-        "Your phone proof is more than one hour old. Please start this entry step afresh so GSN can link the phone to your name again."
+        "Your pilot phone proof has timed out. Please start this entry step afresh so GSN can link the phone to your name again."
       );
     }
 
@@ -1061,12 +1136,12 @@ export default function CreateEntryPage() {
           const saved = await saveBankDetailsForVerification(refreshedVerificationId);
           finishBankStep(saved.out, saved.bankVerification);
           setSuccess(
-            "Your one-hour phone proof had timed out, so GSN refreshed it and saved your bank or wallet details."
+            "Your pilot phone proof had timed out, so GSN refreshed it and saved your bank or wallet details."
           );
         } catch (retryErr: any) {
           setError(
             retryErr?.message ||
-              "Your phone proof is more than one hour old. Please start afresh so GSN can link the phone to your name again."
+              "Your pilot phone proof has timed out. Please start afresh so GSN can link the phone to your name again."
           );
         }
       } else {
@@ -1104,8 +1179,7 @@ export default function CreateEntryPage() {
     const authenticatedNow = isAuthenticated();
 
     if (authenticatedNow) {
-      clearPublicEntryState();
-      nav("/app/build-first-circle", { replace: true });
+      await openCreatedWorkspace(out);
       return;
     }
 
@@ -1157,11 +1231,24 @@ export default function CreateEntryPage() {
           await saveBankDetailsForVerification(refreshedVerificationId);
           await submitCreateEntry(refreshedVerificationId);
         } catch (retryErr: any) {
+          if (isCompletedAccountError(retryErr)) {
+            const recovered = await recoverCompletedCreateEntry();
+            if (recovered) return;
+          }
+
           setError(
             retryErr?.message ||
-              "Your phone proof is more than one hour old. Please start afresh so GSN can link the phone to your name again."
+              "Your pilot phone proof has timed out. Please start afresh so GSN can link the phone to your name again."
           );
         }
+      } else if (isCompletedAccountError(err)) {
+        const recovered = await recoverCompletedCreateEntry();
+        if (recovered) return;
+
+        setExistingMemberOpen(true);
+        setError(
+          "This phone or email already has a completed GSN account. Use Already a member to sign in with the email and password you entered. If that does not work, ask the person helping you to check the pilot intake monitor."
+        );
       } else {
         setError(err?.message || "Founder entry could not be completed.");
       }

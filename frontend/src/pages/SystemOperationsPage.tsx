@@ -3,6 +3,7 @@ import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
+  getAdminPilotIntake,
   getAdminIdentityRisk,
   getAdminIncompleteLoans,
   getCurrentClan,
@@ -28,6 +29,7 @@ type RawSystemRow = {
 
 type CollapseState = {
   overview: boolean;
+  intake: boolean;
   signals: boolean;
   queues: boolean;
   routes: boolean;
@@ -262,6 +264,7 @@ function writeLocalJSON(key: string, value: any) {
 function defaultCollapseState(): CollapseState {
   return {
     overview: false,
+    intake: false,
     signals: false,
     queues: true,
     routes: false,
@@ -273,6 +276,7 @@ function normalizeCollapseState(raw: any): CollapseState {
 
   return {
     overview: Boolean(raw?.overview ?? base.overview),
+    intake: Boolean(raw?.intake ?? base.intake),
     signals: Boolean(raw?.signals ?? base.signals),
     queues: Boolean(raw?.queues ?? base.queues),
     routes: Boolean(raw?.routes ?? base.routes),
@@ -310,6 +314,40 @@ function signalTone(row: RawSystemRow): {
     text: "#0B63D1",
     label: "Informational",
   };
+}
+
+function stageTone(stage: string): {
+  bg: string;
+  text: string;
+  label: string;
+} {
+  const normalized = safeStr(stage).toLowerCase();
+
+  if (
+    normalized.includes("expired") ||
+    normalized.includes("missing") ||
+    normalized.includes("account_exists")
+  ) {
+    return { bg: "#FFF5F5", text: "#991B1B", label: "Needs help" };
+  }
+
+  if (
+    normalized.includes("awaiting") ||
+    normalized.includes("pending") ||
+    normalized.includes("ready_for_community")
+  ) {
+    return { bg: "#FFFBEF", text: "#92400E", label: "In progress" };
+  }
+
+  if (
+    normalized.includes("completed") ||
+    normalized.includes("approved") ||
+    normalized.includes("ready")
+  ) {
+    return { bg: "#ECFDF5", text: "#065F46", label: "Good signal" };
+  }
+
+  return { bg: "#F8FBFF", text: "#0B63D1", label: "Visible" };
 }
 
 function identitySignalLevel(row: any): "high" | "medium" | "low" {
@@ -356,6 +394,7 @@ export default function SystemOperationsPage() {
   const [bankRecent, setBankRecent] = useState<any[]>([]);
   const [bankUnmatched, setBankUnmatched] = useState<any[]>([]);
   const [expectedPayments, setExpectedPayments] = useState<any[]>([]);
+  const [pilotIntake, setPilotIntake] = useState<any>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -381,11 +420,19 @@ export default function SystemOperationsPage() {
       setLoading(true);
 
       try {
-        const [meRes, clanRes, diagnosticsRes, identityRiskRes, clanOpsRes] = await Promise.all([
+        const [
+          meRes,
+          clanRes,
+          diagnosticsRes,
+          identityRiskRes,
+          pilotIntakeRes,
+          clanOpsRes,
+        ] = await Promise.all([
           getMe().catch(() => null),
           getCurrentClan().catch(() => null),
           getSystemDiagnostics().catch(() => null),
           getAdminIdentityRisk(100).catch(() => ({ items: [] })),
+          getAdminPilotIntake(80).catch(() => null),
           selectedClanId > 0
             ? Promise.all([
                 getAdminIncompleteLoans(selectedClanId, 100).catch(() => ({ items: [] })),
@@ -417,6 +464,7 @@ export default function SystemOperationsPage() {
         setCurrentClan(clanRes || null);
         setDiagnostics(diagnosticsRes || null);
         setIdentityRisk(rowsOf<any>(identityRiskRes));
+        setPilotIntake(pilotIntakeRes || null);
         setIncompleteLoans(rowsOf<any>(incompleteLoansRes));
         setPendingPool(rowsOf<any>(pendingPoolRes));
         setBankRecent(rowsOf<any>(bankRecentRes));
@@ -474,7 +522,45 @@ export default function SystemOperationsPage() {
     };
   }, [bankRecent, bankUnmatched, expectedPayments, identityRisk, incompleteLoans, pendingPool]);
 
+  const pilotCreateRows = useMemo(
+    () => rowsOf<any>(pilotIntake?.create_entries).slice(0, 8),
+    [pilotIntake]
+  );
+
+  const pilotJoinRows = useMemo(
+    () => rowsOf<any>(pilotIntake?.join_requests).slice(0, 6),
+    [pilotIntake]
+  );
+
+  const pilotIntakeSummary = useMemo(() => {
+    const src = pilotIntake?.summary || {};
+    const createByStage = src.create_by_stage || {};
+    const joinByStage = src.join_by_stage || {};
+
+    return {
+      createTotal: toNum(src.create_total),
+      joinTotal: toNum(src.join_total),
+      needsAttention: toNum(src.needs_attention),
+      createCompleted: toNum(createByStage.completed),
+      createReady: toNum(createByStage.ready_for_community),
+      createAwaitingBank: toNum(createByStage.awaiting_bank),
+      createExpired: toNum(createByStage.expired),
+      joinPending: toNum(joinByStage.pending),
+      joinApproved: toNum(joinByStage.approved_activation_ready),
+      joinActivationMissing: toNum(joinByStage.approved_missing_activation),
+    };
+  }, [pilotIntake]);
+
   const operationalFocus = useMemo(() => {
+    if (pilotIntakeSummary.needsAttention > 0) {
+      return {
+        detail:
+          pilotIntakeSummary.needsAttention === 1
+            ? "One pilot intake record needs help. Check whether the tester should continue, sign in, or receive an activation link."
+            : `${pilotIntakeSummary.needsAttention} pilot intake records need help. Check whether testers should continue, sign in, or receive activation links.`,
+      };
+    }
+
     if (!selectedClanId) {
       return {
         detail:
@@ -556,6 +642,7 @@ export default function SystemOperationsPage() {
     expectedPayments.length,
     identityRisk,
     incompleteLoans,
+    pilotIntakeSummary.needsAttention,
     pendingPool.length,
     selectedClanId,
   ]);
@@ -981,6 +1068,263 @@ export default function SystemOperationsPage() {
               >
                 {summary.identityInterventions}
               </div>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Pilot intake monitor</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Follow public create-entry and join-request testers from the admin side while the pilot is live.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => toggleSection("intake")}
+            style={collapseToggle()}
+          >
+            {collapsed.intake ? "Open" : "Collapse"}
+          </button>
+        </div>
+
+        <ExplainToggle
+          label="What this monitor does"
+          what="This monitor shows whether testers are still at phone proof, bank or wallet details, community setup, completed account creation, or join-request activation."
+          why="It stops pilot testing from becoming guesswork. If someone says they are stuck, the admin can see the last known backend stage and the safest next action."
+          next="Look first at records needing help, then use the next-action text to decide whether the tester should continue, sign in, start again, or receive an activation link."
+          tone="light"
+          style={{ marginTop: 14 }}
+        />
+
+        {!collapsed.intake ? (
+          <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr 1fr"
+                  : "repeat(6, minmax(0, 1fr))",
+                gap: 12,
+              }}
+            >
+              <div style={statTile("#F8FBFF")}>
+                <div style={sectionLabel()}>Create records</div>
+                <div style={{ marginTop: 8, color: "#0B63D1", fontSize: 24, fontWeight: 900 }}>
+                  {pilotIntakeSummary.createTotal}
+                </div>
+              </div>
+
+              <div style={statTile("#ECFDF5")}>
+                <div style={sectionLabel()}>Completed</div>
+                <div style={{ marginTop: 8, color: "#065F46", fontSize: 24, fontWeight: 900 }}>
+                  {pilotIntakeSummary.createCompleted}
+                </div>
+              </div>
+
+              <div style={statTile("#FFFBEF")}>
+                <div style={sectionLabel()}>Ready setup</div>
+                <div style={{ marginTop: 8, color: "#92400E", fontSize: 24, fontWeight: 900 }}>
+                  {pilotIntakeSummary.createReady}
+                </div>
+              </div>
+
+              <div style={statTile("#FFFBEF")}>
+                <div style={sectionLabel()}>Awaiting bank</div>
+                <div style={{ marginTop: 8, color: "#92400E", fontSize: 24, fontWeight: 900 }}>
+                  {pilotIntakeSummary.createAwaitingBank}
+                </div>
+              </div>
+
+              <div style={statTile("#FFF5F5")}>
+                <div style={sectionLabel()}>Needs help</div>
+                <div style={{ marginTop: 8, color: "#991B1B", fontSize: 24, fontWeight: 900 }}>
+                  {pilotIntakeSummary.needsAttention}
+                </div>
+              </div>
+
+              <div style={statTile("#F8FBFF")}>
+                <div style={sectionLabel()}>Join requests</div>
+                <div style={{ marginTop: 8, color: "#0B63D1", fontSize: 24, fontWeight: 900 }}>
+                  {pilotIntakeSummary.joinTotal}
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "1.1fr 0.9fr",
+                gap: 12,
+              }}
+            >
+              <div style={innerCard("#FCFEFF")}>
+                <div style={sectionLabel()}>Create-entry testers</div>
+                <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                  {pilotCreateRows.length === 0 ? (
+                    <div style={helperText()}>
+                      No public create-entry intake records are visible yet.
+                    </div>
+                  ) : (
+                    pilotCreateRows.map((row) => {
+                      const tone = stageTone(row?.stage);
+                      const communityNames = rowsOf<any>(row?.communities)
+                        .map((community) =>
+                          firstTruthy(
+                            community?.marketplace_name,
+                            community?.name,
+                            community?.clan_id ? `Community ${community.clan_id}` : ""
+                          )
+                        )
+                        .filter(Boolean);
+
+                      return (
+                        <div
+                          key={`pilot-create-${row?.verification_id || row?.created_at}`}
+                          style={innerCard(tone.bg)}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              gap: 10,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <div>
+                              <div
+                                style={{
+                                  color: "#0B1F33",
+                                  fontWeight: 900,
+                                  lineHeight: 1.35,
+                                }}
+                              >
+                                {firstTruthy(row?.display_name, row?.user?.display_name, "Unnamed tester")}
+                              </div>
+                              <div style={{ marginTop: 4, ...helperText(), fontSize: 13 }}>
+                                {firstTruthy(row?.phone_e164, "No phone")} | {firstTruthy(row?.email, "No email")}
+                              </div>
+                            </div>
+
+                            <span style={{ ...badge(false), color: tone.text, background: "#FFFFFF" }}>
+                              {safeStr(row?.stage || "visible").replace(/_/g, " ")}
+                            </span>
+                          </div>
+
+                          <div style={{ marginTop: 10, ...helperText() }}>
+                            {firstTruthy(row?.next_action, "Review this tester record.")}
+                          </div>
+
+                          <div
+                            style={{
+                              marginTop: 10,
+                              display: "flex",
+                              gap: 8,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <span style={badge(false)}>
+                              Bank: {firstTruthy(row?.bank_country, "not recorded")}
+                            </span>
+                            <span style={badge(false)}>
+                              Region: {firstTruthy(row?.region_consistency_status, "unknown")}
+                            </span>
+                            <span style={badge(false)}>
+                              Checks: {rowsOf<any>(row?.verification_checks).length}
+                            </span>
+                          </div>
+
+                          {communityNames.length > 0 ? (
+                            <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                              Community: {communityNames.join(", ")}
+                            </div>
+                          ) : null}
+
+                          <div style={{ marginTop: 8, color: "#64748B", fontSize: 12, fontWeight: 700 }}>
+                            Started {safeDateTime(row?.created_at)} | Expires {safeDateTime(row?.expires_at)}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              <div style={innerCard("#FFFFFF")}>
+                <div style={sectionLabel()}>Join-request testers</div>
+                <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                  {pilotJoinRows.length === 0 ? (
+                    <div style={helperText()}>
+                      No public join requests are visible yet.
+                    </div>
+                  ) : (
+                    pilotJoinRows.map((row) => {
+                      const tone = stageTone(row?.stage);
+                      return (
+                        <div
+                          key={`pilot-join-${row?.id || row?.created_at}`}
+                          style={innerCard(tone.bg)}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              gap: 10,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <div
+                              style={{
+                                color: "#0B1F33",
+                                fontWeight: 900,
+                                lineHeight: 1.35,
+                              }}
+                            >
+                              {firstTruthy(row?.applicant?.display_name, row?.applicant?.email, "Join applicant")}
+                            </div>
+
+                            <span style={{ ...badge(false), color: tone.text, background: "#FFFFFF" }}>
+                              {safeStr(row?.stage || row?.status || "visible").replace(/_/g, " ")}
+                            </span>
+                          </div>
+
+                          <div style={{ marginTop: 8, ...helperText() }}>
+                            {firstTruthy(row?.next_action, "Review this join request.")}
+                          </div>
+
+                          <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                            Community:{" "}
+                            {firstTruthy(
+                              row?.clan?.marketplace_name,
+                              row?.clan?.name,
+                              row?.clan?.id ? `Community ${row.clan.id}` : "Unknown"
+                            )}
+                          </div>
+
+                          <div style={{ marginTop: 8, color: "#64748B", fontSize: 12, fontWeight: 700 }}>
+                            Requested {safeDateTime(row?.created_at)}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ ...helperText(), fontSize: 12 }}>
+              Last generated: {safeDateTime(pilotIntake?.generated_at) || "not loaded"}
             </div>
           </div>
         ) : null}
