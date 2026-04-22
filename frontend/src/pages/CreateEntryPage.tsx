@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { EntryBackLink, EntryGuideLauncher } from "../components/EntryControls";
+import OriginLink from "../components/OriginLink";
 import {
   clearPublicEntryState,
   confirmEntryPhoneVerification,
@@ -390,6 +391,7 @@ export default function CreateEntryPage() {
   const [licenceVerificationResult, setLicenceVerificationResult] =
     useState<EntryVerificationResult>(null);
   const [procedureOpen, setProcedureOpen] = useState(false);
+  const [bankWhyOpen, setBankWhyOpen] = useState(true);
   const [openPanel, setOpenPanel] = useState<"details" | "verification" | "community" | null>(
     initialCommunityName || initialDescription ? "community" : "details"
   );
@@ -920,10 +922,10 @@ export default function CreateEntryPage() {
                       padding: "13px 14px",
                     }}
                   >
-                    <strong style={{ color: "#10253B" }}>2. Verification and bank rails.</strong> Your phone is verified so the
-                    system can confirm identity continuity. Your bank details are recorded now so
-                    they can be checked, locked to your onboarding, and ready when you later need
-                    support, help, or trusted financial action without repeating this step again.
+                    <strong style={{ color: "#10253B" }}>2. Verification and payment record.</strong> Your phone is verified so the
+                    system can confirm identity continuity. Your account or wallet details are
+                    recorded now so future support, repayments, payouts, and trusted financial
+                    actions can be connected to the right person without repeating this step again.
                   </div>
                   <div
                     style={{
@@ -1127,7 +1129,7 @@ export default function CreateEntryPage() {
                         lineHeight: 1.15,
                       }}
                     >
-                      Verification and bank rails
+                      Verification and payment record
                     </div>
                   </div>
                 </div>
@@ -1154,7 +1156,100 @@ export default function CreateEntryPage() {
                   fontSize: 14,
                 }}
               >
-                Phone verification, bank destination, region explanation, and optional licence proof sit here.
+                Phone verification and the account or wallet where trusted payments should be recorded sit here.
+              </div>
+
+              <div
+                style={{
+                  marginTop: 14,
+                  borderRadius: 18,
+                  border: "1px solid rgba(29,78,216,0.16)",
+                  background:
+                    "radial-gradient(circle at 8% 0%, rgba(11,99,209,0.11) 0%, transparent 34%), radial-gradient(circle at 100% 0%, rgba(212,175,55,0.10) 0%, transparent 30%), linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(232,243,250,0.96) 100%)",
+                  boxShadow:
+                    "0 14px 30px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.74)",
+                  padding: 16,
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div>
+                    <div style={{ ...sectionLabel(), color: "#0F3B74" }}>
+                      Read this first
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 6,
+                        color: "#0B1F33",
+                        fontWeight: 1000,
+                        fontSize: 18,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      Why GSN asks for your account or wallet details
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setBankWhyOpen((current) => !current)}
+                    style={{ ...secondaryBtn(), minWidth: 124 }}
+                  >
+                    {bankWhyOpen ? "Collapse" : "Read why"}
+                  </button>
+                </div>
+
+                {bankWhyOpen ? (
+                  <div
+                    style={{
+                      display: "grid",
+                      gap: 12,
+                      marginTop: 14,
+                      color: "#334E68",
+                      fontSize: 14,
+                      lineHeight: 1.75,
+                    }}
+                  >
+                    <div>
+                      GSN does not keep your money. It records the account or wallet you say belongs
+                      to you so trusted payments, support, repayments, and payouts can later be
+                      matched to the right person.
+                    </div>
+                    <div>
+                      This protects both sides. If someone supports you, pays you, or receives money
+                      from you later, the app can keep a clear proof trail instead of leaving people
+                      to argue from memory.
+                    </div>
+                    <div>
+                      In simple terms: your bank or wallet details help GSN protect relationships,
+                      protect records, and make future trust evidence easier to explain.
+                    </div>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 2 }}>
+                      <OriginLink to="/guide" style={{ ...secondaryBtn(), minWidth: 170 }}>
+                        Read My GSN and I
+                      </OriginLink>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      marginTop: 10,
+                      color: "#4F6B8A",
+                      fontSize: 13,
+                      lineHeight: 1.7,
+                      fontWeight: 800,
+                    }}
+                  >
+                    GSN records your payment destination for future proof. It does not hold your
+                    money.
+                  </div>
+                )}
               </div>
 
               {bankVerificationResult ? (

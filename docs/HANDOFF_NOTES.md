@@ -6122,3 +6122,22 @@ GSN-branded invite composer and invite-entry continuity.
   - `npm run build` passed in `frontend`.
   - `python -m compileall app\api\routes\clans.py app\services\invites_service.py`
     passed from `gmfn_backend`.
+
+### Create-entry payment-record explanation addendum
+
+- Product-owner reported that WhatsApp testers can become cautious when the
+  create-community flow asks for bank/account details before they understand
+  what GSN does.
+- Updated `frontend/src/pages/CreateEntryPage.tsx` only:
+  - Renamed the second visible stage from "Verification and bank rails" to
+    "Verification and payment record".
+  - Added a default-open "Read this first" explanation before the account or
+    wallet fields.
+  - The explanation states that GSN does not keep money, and that account/wallet
+    details are recorded so future support, repayments, payouts, and trust
+    evidence can be matched to the right person.
+  - Added a public `/guide` link labeled "Read My GSN and I" from the same
+    explanation card.
+- No backend route, schema, auth, verification, bank, or payment logic changed.
+- Verification:
+  - `npm run build` passed in `frontend`.
