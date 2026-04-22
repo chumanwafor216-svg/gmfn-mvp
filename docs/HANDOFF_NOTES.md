@@ -7301,3 +7301,29 @@ GSN-branded invite composer and invite-entry continuity.
   schema, or permission behavior was changed.
 - Verification:
   - `npm run build` passed in `frontend`.
+
+### Marketplace fresh invite creation addendum
+
+- Product-owner shared a later join-page screenshot that now reached invite
+  validation but showed `Fresh invite link needed`.
+- Confirmed against the live Render API:
+  - `GET https://gmfn-api.onrender.com/clans/join-invite/preview?code=JEszw1VrZ-md_jOijmjkZg`
+    returned `valid: false`, `status: not_found`.
+  - This means the active Render backend could not find that invite code in
+    either the invite package table or the legacy community invite field.
+- Root-cause risk:
+  - The Marketplace page's `Create / Refresh` button was still calling the
+    read endpoint `getClanInviteLink`, which can preserve or re-copy a legacy
+    community invite code.
+  - For pilot testers, the safer action is to create a fresh invite package in
+    the active backend database whenever the owner presses `Create / Refresh`.
+- Updated `frontend/src/pages/MarketplacePage.tsx`:
+  - Imported `createClanInvite`.
+  - `handleCreateInviteLink()` now calls `createClanInvite(activeCommunityId)`
+    instead of `getClanInviteLink(activeCommunityId)`.
+- No backend route, database schema, membership approval, invite validation,
+  auth, or permission behavior was changed.
+- Verification:
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx` passed with the two
+    pre-existing hook dependency warnings in that file.
+  - `npm run build` passed in `frontend`.

@@ -9,6 +9,7 @@ import OriginLink from "../components/OriginLink";
 import {
   addLoanGuarantorRequest,
   cancelLoanRequest,
+  createClanInvite,
   createLoanRequest,
   getAccessToken,
   getClanInviteLink,
@@ -2836,7 +2837,7 @@ export default function MarketplacePage() {
     setCreatingInviteLink(true);
 
     try {
-      const inviteRes = await getClanInviteLink(activeCommunityId);
+      const inviteRes = await createClanInvite(activeCommunityId);
       const nextInviteLink = getInviteUrl(inviteRes);
 
       if (!nextInviteLink) {
