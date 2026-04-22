@@ -1,7 +1,6 @@
 import React, { useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { EntryBackLink, EntryGuideLauncher } from "../components/EntryControls";
-import OriginLink from "../components/OriginLink";
 import {
   clearPublicEntryState,
   confirmEntryPhoneVerification,
@@ -925,30 +924,6 @@ export default function CreateEntryPage() {
                   <div
                     style={{
                       borderRadius: 16,
-                      border: "1px solid rgba(29,78,216,0.16)",
-                      background:
-                        "radial-gradient(circle at 8% 0%, rgba(11,99,209,0.11) 0%, transparent 34%), radial-gradient(circle at 100% 0%, rgba(212,175,55,0.10) 0%, transparent 30%), linear-gradient(180deg, rgba(248,251,255,0.96) 0%, rgba(232,243,250,0.92) 100%)",
-                      boxShadow:
-                        "inset 0 1px 0 rgba(255,255,255,0.82), 0 8px 20px rgba(10,24,49,0.06)",
-                      padding: "13px 14px",
-                    }}
-                  >
-                    <strong style={{ color: "#10253B" }}>
-                      Why GSN asks for your account or wallet details.
-                    </strong>{" "}
-                    GSN does not keep your money. It records the account or wallet you say belongs to
-                    you so future support, repayments, payouts, and trusted financial actions can be
-                    matched to the right person. This protects both sides and gives people a clear
-                    proof trail instead of relying on memory.
-                    <div style={{ marginTop: 10 }}>
-                      <OriginLink to="/guide" style={{ ...secondaryBtn(), minWidth: 170 }}>
-                        Read My GSN and I
-                      </OriginLink>
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      borderRadius: 16,
                       border: "1px solid rgba(16,37,59,0.10)",
                       background:
                         "linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(245,249,253,0.68) 100%)",
@@ -958,9 +933,11 @@ export default function CreateEntryPage() {
                     }}
                   >
                     <strong style={{ color: "#10253B" }}>2. Verification and bank rails.</strong> Your phone is verified so the
-                    system can confirm identity continuity. Your bank details are recorded now so
-                    they can be checked, locked to your onboarding, and ready when you later need
-                    support, help, or trusted financial action without repeating this step again.
+                    system can confirm identity continuity. GSN does not keep your money. It records
+                    the account or wallet you say belongs to you so future support, repayments,
+                    payouts, and trusted financial actions can be matched to the right person. This
+                    protects both sides and gives people a clear proof trail instead of relying on
+                    memory.
                   </div>
                   <div
                     style={{

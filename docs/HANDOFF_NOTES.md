@@ -6180,3 +6180,19 @@ GSN-branded invite composer and invite-entry continuity.
 - No backend route, auth, schema, bank, verification, or payment logic changed.
 - Verification:
   - `npm run build` passed in `frontend`.
+
+### Create-entry guide simplification addendum
+
+- Product-owner clarified the account/wallet explanation should not appear as
+  a separate extra card because it makes the create flow look more complex.
+- Updated `frontend/src/pages/CreateEntryPage.tsx` only:
+  - Removed the separate "Why GSN asks for your account or wallet details"
+    card from the open create guide.
+  - Folded that explanation directly into guide step `2. Verification and bank
+    rails`.
+  - Kept the practical visible Block 2 as `Verification and bank rails`.
+  - Removed the now-unused `OriginLink` import from the page.
+- No backend route, auth, schema, bank, verification, payment, or route
+  contract changed.
+- Verification:
+  - `npm run build` passed in `frontend`.
