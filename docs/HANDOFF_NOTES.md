@@ -6330,3 +6330,22 @@ GSN-branded invite composer and invite-entry continuity.
   join, membership, payment, or permission behavior was changed.
 - Verification:
   - `npm run build` passed in `frontend`.
+
+### Existing-member sign-in return-path correction addendum
+
+- Product-owner tested the `Already a member?` path and found that after
+  signing in, the user returned to the create-community page instead of entering
+  the app workspace.
+- Corrected `frontend/src/pages/CreateEntryPage.tsx` only:
+  - The existing-member action still sends the user to
+    `/login?entry=existing&force=1`.
+  - It no longer passes `/create` as the login return location.
+  - Removed the remembered create-page hiding behavior from the create page so
+    existing-member guidance behaves as a simple doorway to sign-in, not a
+    second mode on the create screen.
+  - Updated the visible explanation to tell the user that after sign-in the app
+    opens their workspace instead of returning to the create-community form.
+- Login behavior itself, backend auth, tokens, schemas, invite/join paths, and
+  membership rules were not changed.
+- Verification:
+  - `npm run build` passed in `frontend`.

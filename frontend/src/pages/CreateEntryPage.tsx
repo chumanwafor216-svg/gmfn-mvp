@@ -18,12 +18,8 @@ import {
   ENTRY_CREATE_CODE_KEY,
   ENTRY_INVITE_CODE_KEY,
   ENTRY_MODE_KEY,
-  readStorage,
   writeStorage,
 } from "../lib/entryFlow";
-
-const CREATE_ENTRY_EXISTING_MEMBER_CHOICE_KEY =
-  "gmfn.createEntry.existingMemberChoice.v1";
 
 function pageShell(): React.CSSProperties {
   return {
@@ -424,12 +420,7 @@ export default function CreateEntryPage() {
     useState<EntryVerificationResult>(null);
   const [guideDone, setGuideDone] = useState(hasInitialCommunityContext);
   const [procedureOpen, setProcedureOpen] = useState(false);
-  const [existingMemberPreferred, setExistingMemberPreferred] = useState(
-    () => readStorage(CREATE_ENTRY_EXISTING_MEMBER_CHOICE_KEY) === "1"
-  );
-  const [existingMemberOpen, setExistingMemberOpen] = useState(
-    () => readStorage(CREATE_ENTRY_EXISTING_MEMBER_CHOICE_KEY) === "1"
-  );
+  const [existingMemberOpen, setExistingMemberOpen] = useState(false);
   const [openPanel, setOpenPanel] = useState<"details" | "verification" | "community" | null>(
     hasInitialCommunityContext ? "community" : null
   );
@@ -515,27 +506,10 @@ export default function CreateEntryPage() {
   }
 
   function handleExistingMemberLogin() {
-    writeStorage(CREATE_ENTRY_EXISTING_MEMBER_CHOICE_KEY, "1");
     writeStorage(ENTRY_MODE_KEY, "existing");
     writeStorage(ENTRY_CREATE_CODE_KEY, null);
     writeStorage(ENTRY_INVITE_CODE_KEY, null);
-    setExistingMemberPreferred(true);
-    setExistingMemberOpen(true);
-    nav(existingMemberLoginTo, {
-      replace: false,
-      state: {
-        from: {
-          pathname: location.pathname,
-          search: location.search,
-        },
-      },
-    });
-  }
-
-  function handleCreateInstead() {
-    writeStorage(CREATE_ENTRY_EXISTING_MEMBER_CHOICE_KEY, null);
-    setExistingMemberPreferred(false);
-    setExistingMemberOpen(false);
+    nav(existingMemberLoginTo, { replace: false });
   }
 
   const existingMemberPanel = (
@@ -561,9 +535,7 @@ export default function CreateEntryPage() {
               lineHeight: 1.35,
             }}
           >
-            {existingMemberPreferred
-              ? "Existing-member sign in is remembered on this device."
-              : "Sign in instead of filling the new-community form."}
+            Sign in instead of filling the new-community form.
           </div>
         </div>
 
@@ -599,9 +571,10 @@ export default function CreateEntryPage() {
               fontWeight: 700,
             }}
           >
-            {existingMemberPreferred
-              ? "This device recently chose the existing-member path, so the new-community form is tucked away. Sign in to continue, or start a new community instead if this was a mistake."
-              : "If you already have a GSN account, do not create another one. Go to sign in and verify yourself with your email and password. This keeps your existing communities, shop, finance record, and trust history together."}
+            If you already have a GSN account, do not create another one.
+            Go to sign in and verify yourself with your email and password.
+            After sign-in, the app opens your workspace instead of returning
+            you to this create-community form.
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -619,17 +592,13 @@ export default function CreateEntryPage() {
             </button>
             <button
               type="button"
-              onClick={
-                existingMemberPreferred
-                  ? handleCreateInstead
-                  : () => setExistingMemberOpen(false)
-              }
+              onClick={() => setExistingMemberOpen(false)}
               style={{
                 ...secondaryBtn(),
-                minWidth: existingMemberPreferred ? 196 : 112,
+                minWidth: 112,
               }}
             >
-              {existingMemberPreferred ? "Start a new community instead" : "Stay here"}
+              Stay here
             </button>
           </div>
         </div>
@@ -943,7 +912,6 @@ export default function CreateEntryPage() {
         <div
           style={{
             ...pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
-            display: existingMemberPreferred ? "none" : undefined,
           }}
         >
           <div style={sectionLabel()}>Create community</div>
@@ -1144,19 +1112,10 @@ export default function CreateEntryPage() {
 
         </div>
 
-        {!existingMemberPreferred && error ? (
-          <div style={feedbackCard(false)}>{error}</div>
-        ) : null}
-        {!existingMemberPreferred && success ? (
-          <div style={feedbackCard(true)}>{success}</div>
-        ) : null}
+        {error ? <div style={feedbackCard(false)}>{error}</div> : null}
+        {success ? <div style={feedbackCard(true)}>{success}</div> : null}
 
-        <div
-          style={{
-            ...pageCard(),
-            display: existingMemberPreferred ? "none" : undefined,
-          }}
-        >
+        <div style={pageCard()}>
           <div style={{ display: "grid", gap: 14 }}>
             <div
               ref={detailsRef}
