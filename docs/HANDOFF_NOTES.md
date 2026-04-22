@@ -6165,3 +6165,18 @@ GSN-branded invite composer and invite-entry continuity.
 - Verification:
   - `npm run build` passed in `frontend`.
   - `python -m compileall app\api\routes\entry.py` passed from `gmfn_backend`.
+
+### Create-entry guide-placement correction addendum
+
+- Product-owner clarified that the "why GSN asks for account/wallet details"
+  explanation should not replace or sit inside Block 2.
+- Corrected `frontend/src/pages/CreateEntryPage.tsx`:
+  - The create guide now opens by default and is labeled "Read First".
+  - The account/wallet explanation now sits in the "My GSN and I guide" area
+    before the user works through the blocks.
+  - Block 2 title and purpose were restored to "Verification and bank rails".
+  - Block 2 again presents the practical phone verification, bank destination,
+    region explanation, and optional licence proof step.
+- No backend route, auth, schema, bank, verification, or payment logic changed.
+- Verification:
+  - `npm run build` passed in `frontend`.
