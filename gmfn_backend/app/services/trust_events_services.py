@@ -257,17 +257,23 @@ def log_loan_defaulted(
         refresh=refresh,
     )
 def log_loan_repaid(
-    db,
+    db: Session,
     *,
     clan_id: int,
     actor_user_id: int,
     borrower_user_id: int,
     loan_id: int,
-    repayment_amount,
+    repayment_amount: Any | None = None,
+    amount: Any | None = None,
+    confirmed_by_user_id: int | None = None,
+    payment_reference: str | None = None,
+    reason: str = "loan_repaid",
     note: str | None = None,
     commit: bool = True,
     refresh: bool = True,
 ):
+    applied_amount = repayment_amount if repayment_amount is not None else amount
+
     event = log_trust_event(
         db,
         event_type="loan.repaid",
@@ -277,13 +283,14 @@ def log_loan_repaid(
         actor_user_id=int(actor_user_id),
         subject_user_id=int(borrower_user_id),
         meta={
-            "repayment_amount": str(repayment_amount),
-            "reason": "loan_repaid",
+            "repayment_amount": str(applied_amount),
+            "reason": str(reason),
             "note": note,
+            "confirmed_by_user_id": confirmed_by_user_id,
+            "payment_reference": payment_reference,
         },
+        commit=commit,
+        refresh=refresh,
     )
 
-    if commit:
-        db.commit()
-
-    return event    
+    return event

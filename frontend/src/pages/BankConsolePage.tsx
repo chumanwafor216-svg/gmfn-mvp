@@ -266,6 +266,29 @@ function statusTone(status?: string | null) {
   };
 }
 
+function reconciliationMessage(res: any): string {
+  const seen = safeStr(res?.seen || 0);
+  const confirmed = safeStr(res?.confirmed || 0);
+  const partial = safeStr(res?.partial || 0);
+  const pending = safeStr(res?.pending_match || 0);
+  const mismatch = safeStr(res?.mismatch_flagged || 0);
+  const duplicate = safeStr(res?.duplicate || 0);
+
+  const needsReview = Number(pending) > 0 || Number(mismatch) > 0;
+  const resultLine = [
+    `Seen ${seen}`,
+    `confirmed ${confirmed}`,
+    `partial ${partial}`,
+    `pending ${pending}`,
+    `mismatch ${mismatch}`,
+    `duplicate ${duplicate}`,
+  ].join(", ");
+
+  return needsReview
+    ? `Reconciliation complete: ${resultLine}. Review unmatched or mismatched items before treating the rail as settled.`
+    : `Reconciliation complete: ${resultLine}. No unmatched review item is visible from this run.`;
+}
+
 function renderStepAction(step: NextStepState) {
   return (
     <OriginLink to={step.ctaTo} style={primaryBtn(false)}>
@@ -416,10 +439,16 @@ export default function BankConsolePage() {
         description: description || null,
       });
 
+      const visibleReference = firstTruthy(res?.reference, reference, "no reference");
+      const visibleStatus = firstTruthy(res?.status, "detected");
+      const visibleReason = firstTruthy(res?.status_reason);
+
       setMsg(
         `Bank event ingested${
           res?.bank_event_id ? ` (#${res.bank_event_id})` : ""
-        }.`
+        }. Status: ${visibleStatus}. Reference: ${visibleReference}.${
+          visibleReason ? ` Reason: ${visibleReason}.` : ""
+        } Next step: run reconciliation so GSN can match it against expected payments.`
       );
       await loadAll();
     } catch (e: any) {
@@ -439,11 +468,7 @@ export default function BankConsolePage() {
       if (!clanId) throw new Error("Select a community first.");
 
       const res = await runBankReconciliation({ clan_id: clanId, limit: 200 });
-      setMsg(
-        `Reconciliation complete. Seen=${safeStr(
-          res?.seen || 0
-        )} Confirmed=${safeStr(res?.confirmed || 0)}.`
-      );
+      setMsg(reconciliationMessage(res));
       await loadAll();
     } catch (e: any) {
       setErr(String(e?.message || e || "Unable to run reconciliation."));

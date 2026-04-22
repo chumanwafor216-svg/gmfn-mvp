@@ -683,6 +683,75 @@ export default function CreateEntryPage() {
     setSuccess("");
   }
 
+  function isPhoneSessionExpiredError(err: any): boolean {
+    const message = safeStr(err?.message || err).toLowerCase();
+    return (
+      message.includes("verified phone session has expired") ||
+      message.includes("phone verification code has expired") ||
+      message.includes("phone verification session not found")
+    );
+  }
+
+  async function startAndMaybeConfirmPhoneSession(): Promise<{
+    verificationId: number;
+    autoConfirmed: boolean;
+    message: string;
+  }> {
+    const out = await startEntryPhoneVerification({
+      display_name: safeStr(displayName),
+      phone_e164: safeStr(phone),
+      email: safeStr(email) || undefined,
+    });
+
+    setVerificationId(Number(out?.verification_id || 0));
+    const nextVerificationId = Number(out?.verification_id || 0);
+    const previewCode = safeStr(out?.otp_preview);
+    setOtpPreview(previewCode);
+    setOtpDeliveryMode(safeStr(out?.delivery_mode));
+    setPhoneVerificationProof(null);
+    setBankRecordProof(null);
+
+    if (nextVerificationId > 0 && previewCode) {
+      const confirmed = await confirmEntryPhoneVerification({
+        verification_id: nextVerificationId,
+        code: previewCode,
+      });
+
+      setOtpCode(previewCode);
+      setPhoneVerificationProof({
+        display_name: safeStr(confirmed?.display_name),
+        phone_e164: safeStr(confirmed?.phone_e164),
+        verified_at: safeStr(confirmed?.verified_at),
+        confirmation_message: safeStr(confirmed?.confirmation_message),
+        trust_event_response: confirmed?.trust_event_response || null,
+      });
+      setBankAccountName((current) => safeStr(current) || safeStr(displayName));
+      setStep("bank");
+      setOpenPanel("verification");
+      focusPanel("verification");
+
+      return {
+        verificationId: nextVerificationId,
+        autoConfirmed: true,
+        message:
+          safeStr(confirmed?.confirmation_message) ||
+          "Pilot phone check completed. Add your bank or wallet details now.",
+      };
+    }
+
+    setStep("verify");
+    setOpenPanel("verification");
+    focusPanel("verification");
+
+    return {
+      verificationId: nextVerificationId,
+      autoConfirmed: false,
+      message:
+        safeStr(out?.message) ||
+        "Phone confirmation started. Enter the code to continue.",
+    };
+  }
+
   async function handleStartVerification() {
     if (!canContinueDetails || busy) return;
 
@@ -691,62 +760,8 @@ export default function CreateEntryPage() {
     setBusy(true);
 
     try {
-      const out = await startEntryPhoneVerification({
-        display_name: safeStr(displayName),
-        phone_e164: safeStr(phone),
-        email: safeStr(email) || undefined,
-      });
-
-      setVerificationId(Number(out?.verification_id || 0));
-      const nextVerificationId = Number(out?.verification_id || 0);
-      const previewCode = safeStr(out?.otp_preview);
-      setOtpPreview(previewCode);
-      setOtpDeliveryMode(safeStr(out?.delivery_mode));
-      setPhoneVerificationProof(null);
-      setBankRecordProof(null);
-
-      if (nextVerificationId > 0 && previewCode) {
-        try {
-          const confirmed = await confirmEntryPhoneVerification({
-            verification_id: nextVerificationId,
-            code: previewCode,
-          });
-
-          setOtpCode(previewCode);
-          setPhoneVerificationProof({
-            display_name: safeStr(confirmed?.display_name),
-            phone_e164: safeStr(confirmed?.phone_e164),
-            verified_at: safeStr(confirmed?.verified_at),
-            confirmation_message: safeStr(confirmed?.confirmation_message),
-            trust_event_response: confirmed?.trust_event_response || null,
-          });
-          setBankAccountName((current) => safeStr(current) || safeStr(displayName));
-          setStep("bank");
-          setOpenPanel("verification");
-          focusPanel("verification");
-          setSuccess(
-            safeStr(confirmed?.confirmation_message) ||
-              "Pilot phone check completed. Add your bank or wallet details now."
-          );
-        } catch {
-          setOtpCode(previewCode);
-          setStep("verify");
-          setOpenPanel("verification");
-          focusPanel("verification");
-          setError(
-            "Pilot phone check could not finish automatically. Use the code shown here to continue."
-          );
-        }
-        return;
-      }
-
-      setStep("verify");
-      setOpenPanel("verification");
-      focusPanel("verification");
-      setSuccess(
-        safeStr(out?.message) ||
-          "Phone confirmation started. Enter the code to continue."
-      );
+      const started = await startAndMaybeConfirmPhoneSession();
+      setSuccess(started.message);
     } catch (err: any) {
       setError(err?.message || "Phone verification could not be started.");
     } finally {
@@ -789,6 +804,118 @@ export default function CreateEntryPage() {
     }
   }
 
+  async function saveBankDetailsForVerification(activeVerificationId: number): Promise<{
+    out: any;
+    bankVerification: EntryVerificationResult;
+  }> {
+    const out = await saveEntryBankDetails({
+      verification_id: activeVerificationId,
+      destination_name: safeStr(bankAccountName),
+      bank_name: safeStr(bankName),
+      account_number: safeStr(bankAccountNumber),
+      phone_number: safeStr(phone) || undefined,
+      country: safeStr(bankCountry) || undefined,
+      currency: safeStr(bankCurrency) || "NGN",
+      note: safeStr(bankNote) || undefined,
+      driver_licence_number: safeStr(driverLicenceNumber) || undefined,
+      driver_licence_country: safeStr(driverLicenceCountry) || undefined,
+      driver_licence_note: safeStr(driverLicenceNote) || undefined,
+    });
+
+    setBankRecordProof({
+      confirmation_message: safeStr(out?.confirmation_message),
+      verification_status: safeStr(out?.verification_status),
+      verification_note: safeStr(out?.verification_note),
+      trust_event_response: out?.trust_event_response || null,
+    });
+
+    let nextBankVerification: EntryVerificationResult = null;
+    let nextLicenceVerification: EntryVerificationResult = null;
+
+    try {
+      const bankVerification = await verifyEntryBankDetails({
+        verification_id: activeVerificationId,
+        destination_name: safeStr(bankAccountName),
+        bank_name: safeStr(bankName),
+        account_number: safeStr(bankAccountNumber),
+        sort_code: safeStr(bankSortCode) || undefined,
+        iban: safeStr(bankIban) || undefined,
+        phone_number: safeStr(phone) || undefined,
+        country: safeStr(bankCountry) || undefined,
+        currency: safeStr(bankCurrency) || "NGN",
+        note: safeStr(bankNote) || undefined,
+      });
+      nextBankVerification = bankVerification;
+
+      if (Number(bankVerification?.verification_check_id || 0) > 0) {
+        nextBankVerification = await getEntryVerificationCheck(
+          bankVerification.verification_check_id
+        ).catch(() => bankVerification);
+      }
+    } catch (verificationErr: any) {
+      nextBankVerification = {
+        status: "failed",
+        explanation:
+          verificationErr?.message ||
+          "Bank verification could not be checked right now.",
+      };
+    }
+
+    if (safeStr(driverLicenceNumber) && safeStr(driverLicenceCountry)) {
+      try {
+        const licenceVerification = await verifyEntryDriversLicence({
+          verification_id: activeVerificationId,
+          licence_number: safeStr(driverLicenceNumber),
+          country: safeStr(driverLicenceCountry),
+          note: safeStr(driverLicenceNote) || undefined,
+        });
+        nextLicenceVerification = licenceVerification;
+
+        if (Number(licenceVerification?.verification_check_id || 0) > 0) {
+          nextLicenceVerification = await getEntryVerificationCheck(
+            licenceVerification.verification_check_id
+          ).catch(() => licenceVerification);
+        }
+      } catch (verificationErr: any) {
+        nextLicenceVerification = {
+          status: "failed",
+          explanation:
+            verificationErr?.message ||
+            "Driver's licence verification could not be checked right now.",
+        };
+      }
+    }
+
+    setBankVerificationResult(nextBankVerification);
+    setLicenceVerificationResult(nextLicenceVerification);
+
+    return { out, bankVerification: nextBankVerification };
+  }
+
+  function finishBankStep(out: any, nextBankVerification: EntryVerificationResult) {
+    setStep("community");
+    setOpenPanel("community");
+    focusPanel("community");
+    setSuccess(
+      safeStr(out?.confirmation_message) ||
+        safeStr(nextBankVerification?.explanation) ||
+        safeStr(out?.verification_note) ||
+        "Bank details recorded. You can now continue with community details."
+    );
+  }
+
+  async function refreshPilotPhoneSession(): Promise<number> {
+    const refreshed = await startAndMaybeConfirmPhoneSession();
+
+    if (!refreshed.autoConfirmed || !refreshed.verificationId) {
+      throw new Error(
+        "Your phone proof is more than one hour old. Please start this entry step afresh so GSN can link the phone to your name again."
+      );
+    }
+
+    return refreshed.verificationId;
+  }
+
   async function handleSaveBankDetails() {
     if (!canContinueBank || busy) return;
 
@@ -797,101 +924,92 @@ export default function CreateEntryPage() {
     setBusy(true);
 
     try {
-      const out = await saveEntryBankDetails({
-        verification_id: verificationId,
-        destination_name: safeStr(bankAccountName),
-        bank_name: safeStr(bankName),
-        account_number: safeStr(bankAccountNumber),
-        phone_number: safeStr(phone) || undefined,
-        country: safeStr(bankCountry) || undefined,
-        currency: safeStr(bankCurrency) || "NGN",
-        note: safeStr(bankNote) || undefined,
-        driver_licence_number: safeStr(driverLicenceNumber) || undefined,
-        driver_licence_country: safeStr(driverLicenceCountry) || undefined,
-        driver_licence_note: safeStr(driverLicenceNote) || undefined,
-      });
-
-      setBankRecordProof({
-        confirmation_message: safeStr(out?.confirmation_message),
-        verification_status: safeStr(out?.verification_status),
-        verification_note: safeStr(out?.verification_note),
-        trust_event_response: out?.trust_event_response || null,
-      });
-
-      let nextBankVerification: EntryVerificationResult = null;
-      let nextLicenceVerification: EntryVerificationResult = null;
-
-      try {
-        const bankVerification = await verifyEntryBankDetails({
-          verification_id: verificationId,
-          destination_name: safeStr(bankAccountName),
-          bank_name: safeStr(bankName),
-          account_number: safeStr(bankAccountNumber),
-          sort_code: safeStr(bankSortCode) || undefined,
-          iban: safeStr(bankIban) || undefined,
-          phone_number: safeStr(phone) || undefined,
-          country: safeStr(bankCountry) || undefined,
-          currency: safeStr(bankCurrency) || "NGN",
-          note: safeStr(bankNote) || undefined,
-        });
-        nextBankVerification = bankVerification;
-
-        if (Number(bankVerification?.verification_check_id || 0) > 0) {
-          nextBankVerification = await getEntryVerificationCheck(
-            bankVerification.verification_check_id
-          ).catch(() => bankVerification);
-        }
-      } catch (verificationErr: any) {
-        nextBankVerification = {
-          status: "failed",
-          explanation:
-            verificationErr?.message ||
-            "Bank verification could not be checked right now.",
-        };
-      }
-
-      if (safeStr(driverLicenceNumber) && safeStr(driverLicenceCountry)) {
-        try {
-          const licenceVerification = await verifyEntryDriversLicence({
-            verification_id: verificationId,
-            licence_number: safeStr(driverLicenceNumber),
-            country: safeStr(driverLicenceCountry),
-            note: safeStr(driverLicenceNote) || undefined,
-          });
-          nextLicenceVerification = licenceVerification;
-
-          if (Number(licenceVerification?.verification_check_id || 0) > 0) {
-            nextLicenceVerification = await getEntryVerificationCheck(
-              licenceVerification.verification_check_id
-            ).catch(() => licenceVerification);
-          }
-        } catch (verificationErr: any) {
-          nextLicenceVerification = {
-            status: "failed",
-            explanation:
-              verificationErr?.message ||
-              "Driver's licence verification could not be checked right now.",
-          };
-        }
-      }
-
-      setBankVerificationResult(nextBankVerification);
-      setLicenceVerificationResult(nextLicenceVerification);
-
-      setStep("community");
-      setOpenPanel("community");
-      focusPanel("community");
-      setSuccess(
-        safeStr(out?.confirmation_message) ||
-          safeStr(nextBankVerification?.explanation) ||
-          safeStr(out?.verification_note) ||
-          "Bank details recorded. You can now continue with community details."
-      );
+      const saved = await saveBankDetailsForVerification(verificationId);
+      finishBankStep(saved.out, saved.bankVerification);
     } catch (err: any) {
-      setError(err?.message || "Bank details could not be recorded.");
+      if (isPhoneSessionExpiredError(err) && canContinueDetails) {
+        try {
+          const refreshedVerificationId = await refreshPilotPhoneSession();
+          const saved = await saveBankDetailsForVerification(refreshedVerificationId);
+          finishBankStep(saved.out, saved.bankVerification);
+          setSuccess(
+            "Your one-hour phone proof had timed out, so GSN refreshed it and saved your bank or wallet details."
+          );
+        } catch (retryErr: any) {
+          setError(
+            retryErr?.message ||
+              "Your phone proof is more than one hour old. Please start afresh so GSN can link the phone to your name again."
+          );
+        }
+      } else {
+        setError(err?.message || "Bank details could not be recorded.");
+      }
     } finally {
       setBusy(false);
     }
+  }
+
+  function buildCreateEntryPayload(activeVerificationId: number): Record<string, any> {
+    const payload: Record<string, any> = {
+      verification_id: activeVerificationId,
+      clan_name: safeStr(communityName),
+      clan_description: safeStr(description) || undefined,
+      password: safeStr(password),
+      confirm_password: safeStr(confirmPassword),
+    };
+
+    payload.email = safeStr(email);
+
+    if (createCode) {
+      payload.create_code = createCode;
+    }
+
+    return payload;
+  }
+
+  async function submitCreateEntry(activeVerificationId: number) {
+    const out = await createEntry(buildCreateEntryPayload(activeVerificationId));
+    const me = await getMe().catch(() => null);
+
+    const issuedGmfnId = resolveIssuedGmfnId(out, me);
+    const requestId = resolveActivationRequestId(out);
+    const authenticatedNow = isAuthenticated();
+
+    if (authenticatedNow) {
+      clearPublicEntryState();
+      nav("/app/build-first-circle", { replace: true });
+      return;
+    }
+
+    if (issuedGmfnId || requestId) {
+      clearPublicEntryState();
+
+      const next = new URLSearchParams();
+      if (issuedGmfnId) next.set("gmfn_id", issuedGmfnId);
+      if (requestId) next.set("request_id", requestId);
+
+      nav(
+        next.toString()
+          ? `/activate-membership?${next.toString()}`
+          : "/activate-membership",
+        {
+          replace: true,
+          state: {
+            gmfn_id: issuedGmfnId || undefined,
+            request_id: requestId || undefined,
+          },
+        }
+      );
+      return;
+    }
+
+    setSuccess(
+      safeStr(
+        out?.detail ||
+          out?.message ||
+          "Founder entry was submitted successfully. Continue when activation details are available."
+      )
+    );
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -903,64 +1021,22 @@ export default function CreateEntryPage() {
     setBusy(true);
 
     try {
-      const payload: Record<string, any> = {
-        verification_id: verificationId,
-        clan_name: safeStr(communityName),
-        clan_description: safeStr(description) || undefined,
-        password: safeStr(password),
-        confirm_password: safeStr(confirmPassword),
-      };
-
-      payload.email = safeStr(email);
-
-      if (createCode) {
-        payload.create_code = createCode;
-      }
-
-      const out = await createEntry(payload);
-      const me = await getMe().catch(() => null);
-
-      const issuedGmfnId = resolveIssuedGmfnId(out, me);
-      const requestId = resolveActivationRequestId(out);
-      const authenticatedNow = isAuthenticated();
-
-      if (authenticatedNow) {
-        clearPublicEntryState();
-        nav("/app/build-first-circle", { replace: true });
-        return;
-      }
-
-      if (issuedGmfnId || requestId) {
-        clearPublicEntryState();
-
-        const next = new URLSearchParams();
-        if (issuedGmfnId) next.set("gmfn_id", issuedGmfnId);
-        if (requestId) next.set("request_id", requestId);
-
-        nav(
-          next.toString()
-            ? `/activate-membership?${next.toString()}`
-            : "/activate-membership",
-          {
-            replace: true,
-            state: {
-              gmfn_id: issuedGmfnId || undefined,
-              request_id: requestId || undefined,
-            },
-          }
-        );
-        return;
-      }
-
-      setSuccess(
-        safeStr(
-          out?.detail ||
-            out?.message ||
-            "Founder entry was submitted successfully. Continue when activation details are available."
-        )
-      );
+      await submitCreateEntry(verificationId);
     } catch (err: any) {
-      setError(err?.message || "Founder entry could not be completed.");
+      if (isPhoneSessionExpiredError(err) && canContinueBank) {
+        try {
+          const refreshedVerificationId = await refreshPilotPhoneSession();
+          await saveBankDetailsForVerification(refreshedVerificationId);
+          await submitCreateEntry(refreshedVerificationId);
+        } catch (retryErr: any) {
+          setError(
+            retryErr?.message ||
+              "Your phone proof is more than one hour old. Please start afresh so GSN can link the phone to your name again."
+          );
+        }
+      } else {
+        setError(err?.message || "Founder entry could not be completed.");
+      }
     } finally {
       setBusy(false);
     }

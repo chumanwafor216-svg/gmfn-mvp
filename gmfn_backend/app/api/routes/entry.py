@@ -170,6 +170,21 @@ def _entry_otp_preview_enabled() -> bool:
     return _dev_mode() or configured in {"", "preview", "pilot", "manual"}
 
 
+def _entry_phone_session_minutes(*, preview_enabled: bool) -> int:
+    configured = str(os.getenv("GMFN_ENTRY_PHONE_SESSION_MINUTES") or "").strip()
+    fallback = 60 if preview_enabled else 10
+
+    if not configured:
+        return fallback
+
+    try:
+        minutes = int(configured)
+    except ValueError:
+        return fallback
+
+    return max(10, min(minutes, 24 * 60))
+
+
 def _generate_code() -> str:
     return f"{secrets.randbelow(900000) + 100000}"
 
@@ -402,6 +417,8 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
     if phone_clash:
         raise HTTPException(status_code=400, detail="Phone number already registered")
 
+    preview_enabled = _entry_otp_preview_enabled()
+
     verification = EntryPhoneVerification(
         display_name=display_name,
         phone_e164=phone_e164,
@@ -411,15 +428,14 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
         phone_country_hint=phone_country_hint,
         locale_country_hint=locale_country_hint,
         code=_generate_code(),
-        expires_at=_now() + timedelta(minutes=10),
+        expires_at=_now()
+        + timedelta(minutes=_entry_phone_session_minutes(preview_enabled=preview_enabled)),
         verified_at=None,
         consumed_at=None,
     )
     db.add(verification)
     db.commit()
     db.refresh(verification)
-
-    preview_enabled = _entry_otp_preview_enabled()
 
     return {
         "ok": True,
@@ -460,7 +476,7 @@ def confirm_entry_phone_verification(
     db.refresh(row)
 
     confirmation_message = (
-        f"{row.display_name}, this phone number is now verified against your name. "
+        f"{row.display_name}, your phone has been successfully linked to your name. "
         "GSN will use it to protect your onboarding record as you continue."
     )
 

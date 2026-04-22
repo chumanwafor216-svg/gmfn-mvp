@@ -32,6 +32,10 @@ from app.services.invites_service import (
 router = APIRouter(prefix="/clans", tags=["clans"])
 
 JOIN_APPROVAL_RATIO = Decimal("0.40")
+JOIN_INVITATION_NOT_FOUND = (
+    "This invitation link is no longer valid or was not copied fully. "
+    "Ask the person who invited you to send a fresh GSN invite link."
+)
 
 
 @router.post(
@@ -276,6 +280,13 @@ def _is_invite_expired(clan: Clan) -> bool:
     return expires_at < datetime.now(timezone.utc)
 
 
+def _is_clan_invite_expired(invite: ClanInvite) -> bool:
+    expires_at = _utc_aware(getattr(invite, "expires_at", None))
+    if expires_at is None:
+        return False
+    return expires_at < datetime.now(timezone.utc)
+
+
 def _ensure_user_gmfn_id(db: Session, user: User) -> User:
     current = str(getattr(user, "gmfn_id", "") or "").strip()
     if current:
@@ -435,14 +446,14 @@ def _build_invite_text(
     inviter: Optional[User],
 ) -> str:
     inviter_name = _member_display(inviter)
-    clan_name = _safe_str(clan.name, "our GMFN community")
+    clan_name = _safe_str(clan.name, "our GSN community")
     community_code = _community_code(clan.id)
     marketplace_name = _safe_str(getattr(clan, "marketplace_name", None))
 
     lines = [
         "Hello,",
         "",
-        f"You have been invited to begin the join request process for {clan_name}.",
+        f"{inviter_name} is inviting you to join {clan_name} on GSN.",
         f"Invited by: {inviter_name}",
         f"Community ID: {community_code}",
     ]
@@ -453,15 +464,17 @@ def _build_invite_text(
     lines.extend(
         [
             "",
-            "GMFN is a trust-based community system for structured support, credibility, and economic coordination.",
-            "This invitation does not mean automatic admission. The community will still review and vote on your request.",
+            "We have already built trust by knowing, helping, lending, supporting, and standing for one another.",
+            "GSN helps make that trust visible, recordable, and useful, so the good things people do for each other can become proof for tomorrow.",
+            "With GSN, a trusted circle can trade, support small needs, lend, borrow, repay, and build a clearer record of reliability.",
+            "Over time, those records can help members carry their good name further, even beyond the people who already know them.",
+            "",
+            "This invitation does not mean automatic entry. The community will still review your request so trust stays protected.",
             "",
             "Use this link to begin your request:",
             invite_link,
             "",
-            "After review and approval, GMFN will issue your ID and invite you to activate your membership properly.",
-            "",
-            "— Sent via GMFN",
+            "Sent through GSN",
         ]
     )
 
@@ -1003,31 +1016,56 @@ def create_join_request(
     if not invite_code:
         raise HTTPException(status_code=400, detail="invite_code is required")
 
-    clan = db.query(Clan).filter(Clan.invite_code == invite_code).first()
-    if not clan:
-        raise HTTPException(status_code=404, detail="Invitation not found")
-
-    clan = _ensure_invite_expiry(db, clan, days=None)
-
-    if _is_invite_expired(clan):
-        raise HTTPException(status_code=400, detail="Invitation has expired")
-
-    invite_max_uses = getattr(clan, "invite_max_uses", None)
-    invite_uses = int(getattr(clan, "invite_uses", 0) or 0)
-    if invite_max_uses is not None and invite_uses >= int(invite_max_uses):
-        raise HTTPException(status_code=400, detail="Invitation usage limit reached")
-
-    inviter_membership = (
-        db.query(ClanMembership)
-        .filter(
-            ClanMembership.clan_id == int(clan.id),
-            ClanMembership.left_at.is_(None),
-        )
-        .order_by(ClanMembership.created_at.asc(), ClanMembership.id.asc())
+    invite_row = (
+        db.query(ClanInvite)
+        .filter(ClanInvite.code == invite_code)
+        .order_by(ClanInvite.created_at.desc(), ClanInvite.id.desc())
         .first()
     )
 
-    invited_by_user_id = int(inviter_membership.user_id) if inviter_membership else None
+    if invite_row:
+        clan = db.get(Clan, int(invite_row.clan_id))
+        if not clan:
+            raise HTTPException(status_code=404, detail=JOIN_INVITATION_NOT_FOUND)
+
+        if not bool(invite_row.is_active) or invite_row.revoked_at is not None:
+            raise HTTPException(status_code=400, detail="Invitation is no longer active")
+
+        if _is_clan_invite_expired(invite_row):
+            raise HTTPException(status_code=400, detail="Invitation has expired")
+
+        invite_max_uses = getattr(invite_row, "max_uses", None)
+        invite_uses = int(getattr(invite_row, "uses", 0) or 0)
+        if invite_max_uses is not None and invite_uses >= int(invite_max_uses):
+            raise HTTPException(status_code=400, detail="Invitation usage limit reached")
+
+        invited_by_user_id = int(invite_row.created_by_user_id)
+    else:
+        clan = db.query(Clan).filter(Clan.invite_code == invite_code).first()
+        if not clan:
+            raise HTTPException(status_code=404, detail=JOIN_INVITATION_NOT_FOUND)
+
+        clan = _ensure_invite_expiry(db, clan, days=None)
+
+        if _is_invite_expired(clan):
+            raise HTTPException(status_code=400, detail="Invitation has expired")
+
+        invite_max_uses = getattr(clan, "invite_max_uses", None)
+        invite_uses = int(getattr(clan, "invite_uses", 0) or 0)
+        if invite_max_uses is not None and invite_uses >= int(invite_max_uses):
+            raise HTTPException(status_code=400, detail="Invitation usage limit reached")
+
+        inviter_membership = (
+            db.query(ClanMembership)
+            .filter(
+                ClanMembership.clan_id == int(clan.id),
+                ClanMembership.left_at.is_(None),
+            )
+            .order_by(ClanMembership.created_at.asc(), ClanMembership.id.asc())
+            .first()
+        )
+
+        invited_by_user_id = int(inviter_membership.user_id) if inviter_membership else None
 
     applicant_email = (
         f"{payload.phone_e164.strip().replace('+', '').replace(' ', '')}@pending.gmfn.local"
@@ -1061,13 +1099,6 @@ def create_join_request(
             detail="A pending join request already exists",
         )
 
-    invite_row = (
-        db.query(ClanInvite)
-        .filter(ClanInvite.code == invite_code)
-        .order_by(ClanInvite.created_at.desc(), ClanInvite.id.desc())
-        .first()
-    )
-
     join_request = ClanJoinRequest(
         clan_id=int(clan.id),
         applicant_user_id=int(applicant_user.id),
@@ -1078,8 +1109,17 @@ def create_join_request(
     )
     db.add(join_request)
 
-    clan.invite_uses = invite_uses + 1
-    db.add(clan)
+    if invite_row:
+        invite_row.uses = invite_uses + 1
+        if (
+            invite_max_uses is not None
+            and int(invite_row.uses or 0) >= int(invite_max_uses)
+        ):
+            invite_row.is_active = False
+        db.add(invite_row)
+    else:
+        clan.invite_uses = invite_uses + 1
+        db.add(clan)
 
     db.commit()
     db.refresh(join_request)

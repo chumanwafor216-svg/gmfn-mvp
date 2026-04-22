@@ -1,4 +1,34 @@
 import os
+from datetime import datetime, timedelta, timezone
+
+
+def _parse_api_datetime(value: str) -> datetime:
+    parsed = datetime.fromisoformat(value)
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def test_entry_phone_preview_session_lasts_one_hour_for_pilot_onboarding(client):
+    os.environ["GMFN_DEV_MODE"] = "1"
+    os.environ.pop("GMFN_ENTRY_PHONE_SESSION_MINUTES", None)
+
+    started_at = datetime.now(timezone.utc)
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Patient Tester",
+            "phone_e164": "+2348011111111",
+        },
+    )
+    assert start_res.status_code == 201, start_res.text
+    start_body = start_res.json()
+
+    assert start_body["delivery_mode"] == "preview"
+    assert start_body["otp_preview"]
+    expires_at = _parse_api_datetime(start_body["expires_at"])
+    assert expires_at - started_at > timedelta(minutes=59)
+    assert expires_at - started_at < timedelta(minutes=61)
 
 
 def test_entry_phone_verification_then_create_and_phone_login(client):
@@ -36,7 +66,7 @@ def test_entry_phone_verification_then_create_and_phone_login(client):
     assert confirm_body["verified"] is True
     assert confirm_body["display_name"] == "Mama Chuks"
     assert confirm_body["verified_at"]
-    assert "verified against your name" in confirm_body["confirmation_message"]
+    assert "successfully linked to your name" in confirm_body["confirmation_message"]
     assert confirm_body["trust_event_response"]["event_type"] == "identity.phone_verified"
     assert confirm_body["trust_event_response"]["status"] == "ready_for_registration"
 

@@ -45,6 +45,7 @@ EV_GUARANTOR_SUCCESS_REV = "guarantor_success_reversed"
 _EVENT_ALIASES = {
     EV_BORROWER_FULL_REPAID: {
         "loan_fully_repaid",
+        "loan.repaid",
         "loan_repaid",
         "repaid",
         "repayment_full",

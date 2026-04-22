@@ -567,6 +567,11 @@ def get_loan_summary(
         "guarantors_required": int(getattr(loan, "guarantors_required", 0) or 0),
         "guarantors_total": int(guarantors_total),
         "approved_guarantors": int(approved_guarantors),
+        "personal_pool_at_request": s(
+            getattr(loan, "personal_pool_at_request", 0) or 0
+        ),
+        "pool_used": s(getattr(loan, "pool_used", 0) or 0),
+        "guarantee_gap": s(getattr(loan, "guarantee_gap", 0) or 0),
         "created_at": getattr(loan, "created_at", None),
         "decision_at": getattr(loan, "decision_at", None),
     }

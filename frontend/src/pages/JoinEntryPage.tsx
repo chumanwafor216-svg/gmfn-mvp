@@ -174,8 +174,92 @@ function noticeStyle(kind: "success" | "error" | "info"): React.CSSProperties {
   };
 }
 
+const COUNTRY_OPTIONS = [
+  "Afghanistan",
+  "Albania",
+  "Algeria",
+  "Argentina",
+  "Australia",
+  "Austria",
+  "Bangladesh",
+  "Belgium",
+  "Benin",
+  "Brazil",
+  "Cameroon",
+  "Canada",
+  "China",
+  "Cote d'Ivoire",
+  "Denmark",
+  "Egypt",
+  "Ethiopia",
+  "France",
+  "Gambia",
+  "Germany",
+  "Ghana",
+  "India",
+  "Ireland",
+  "Italy",
+  "Japan",
+  "Kenya",
+  "Liberia",
+  "Malaysia",
+  "Morocco",
+  "Netherlands",
+  "New Zealand",
+  "Niger",
+  "Nigeria",
+  "Norway",
+  "Pakistan",
+  "Philippines",
+  "Portugal",
+  "Rwanda",
+  "Senegal",
+  "Sierra Leone",
+  "South Africa",
+  "Spain",
+  "Tanzania",
+  "Togo",
+  "Turkey",
+  "Uganda",
+  "United Arab Emirates",
+  "United Kingdom",
+  "United States",
+  "Zambia",
+  "Zimbabwe",
+];
+
 function cleanText(value: any): string {
   return String(value || "").trim();
+}
+
+function friendlyJoinError(value: any): string {
+  const raw = cleanText(value);
+  const lower = raw.toLowerCase();
+
+  if (
+    lower.includes("invitation not found") ||
+    lower.includes("invite not found") ||
+    lower.includes("not copied fully")
+  ) {
+    return (
+      "This invitation link is no longer valid or was not copied fully. " +
+      "Ask the person who invited you to send a fresh GSN invite link."
+    );
+  }
+
+  if (lower.includes("expired")) {
+    return "This invitation has expired. Ask the person who invited you to send a fresh GSN invite link.";
+  }
+
+  if (lower.includes("usage limit")) {
+    return "This invitation has already reached its use limit. Ask the inviter to create a fresh GSN invite link.";
+  }
+
+  if (lower.includes("pending join request already exists")) {
+    return "Your join request is already waiting for community review. You do not need to submit it again.";
+  }
+
+  return raw || "Unable to submit your join request.";
 }
 
 function looksLikeSystemId(value: string): boolean {
@@ -247,7 +331,16 @@ function buildInviteLetter(args: {
   }
 
   lines.push(
-    "GSN is a community trust system built for support, credibility, and meaningful participation."
+    "We have already built trust by knowing, helping, lending, supporting, and standing for one another."
+  );
+  lines.push(
+    "GSN helps make that trust visible, recordable, and useful, so the good things people do for each other can become proof for tomorrow."
+  );
+  lines.push(
+    "With GSN, a trusted circle can trade, support small needs, lend, borrow, repay, and build a clearer record of reliability."
+  );
+  lines.push(
+    "Over time, those records can help members carry their good name further, even beyond the people who already know them."
   );
 
   if (customMessage) {
@@ -460,7 +553,7 @@ export default function JoinEntryPage() {
       setNote("");
       setFormOpen(false);
     } catch (e: any) {
-      setErr(String(e?.message || "Unable to submit your join request."));
+      setErr(friendlyJoinError(e?.message));
     } finally {
       setBusy(false);
     }
@@ -628,8 +721,9 @@ export default function JoinEntryPage() {
             </div>
 
             <div style={{ marginTop: 10, ...helperText() }}>
-              Provide the details the community needs in order to review your
-              admission request.
+              Tell the community enough to know who is asking to join. Your
+              request still goes back to people for review, because trust stays
+              protected.
             </div>
 
             <div
@@ -664,8 +758,8 @@ export default function JoinEntryPage() {
 
             {!inviteCode ? (
               <div style={{ marginTop: 18, ...noticeStyle("error") }}>
-                This join page does not contain a valid invite code yet. Return
-                to the invited link and reopen it correctly before submitting.
+                This join page does not contain a valid invite code yet. Ask the
+                person who invited you to send the full GSN invite link again.
               </div>
             ) : null}
 
@@ -770,21 +864,27 @@ export default function JoinEntryPage() {
 
                 <div>
                   <div style={labelText()}>Country</div>
-                  <input
+                  <select
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
-                    placeholder="Enter country"
                     style={{ ...inputStyle(), marginTop: 8 }}
-                  />
+                  >
+                    <option value="">Select country</option>
+                    {COUNTRY_OPTIONS.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
               <div style={{ marginTop: 12 }}>
-                <div style={labelText()}>Business or trade (optional)</div>
+                <div style={labelText()}>Work, business, or trade (optional)</div>
                 <input
                   value={businessName}
                   onChange={(e) => setBusinessName(e.target.value)}
-                  placeholder="Business / trade"
+                  placeholder="Example: trader, driver, teacher, student, shop owner"
                   style={{ ...inputStyle(), marginTop: 8 }}
                 />
               </div>

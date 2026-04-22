@@ -3,6 +3,7 @@ import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
+  decideLoanGuarantor,
   getCurrentClan,
   getLoanGuarantorInbox,
   getMe,
@@ -59,6 +60,11 @@ type CollapseState = {
   queue: boolean;
   guidance: boolean;
   routes: boolean;
+};
+
+type Notice = {
+  tone: "success" | "error";
+  text: string;
 };
 
 const GUARANTOR_INBOX_UI_STORAGE_KEY = "gmfn.guarantorInbox.sections.v1";
@@ -235,6 +241,19 @@ function collapseToggle(): React.CSSProperties {
     textAlign: "center",
     cursor: "pointer",
     whiteSpace: "normal",
+  };
+}
+
+function noticeCard(tone: Notice["tone"]): React.CSSProperties {
+  return {
+    ...pageCard(tone === "error" ? "#FEF2F2" : "#F3FBF5"),
+    border:
+      tone === "error"
+        ? "1px solid rgba(239,68,68,0.16)"
+        : "1px solid rgba(34,197,94,0.16)",
+    color: tone === "error" ? "#991B1B" : "#166534",
+    fontWeight: 900,
+    lineHeight: 1.65,
   };
 }
 
@@ -453,6 +472,8 @@ export default function GuarantorInboxPage() {
   const [pendingRows, setPendingRows] = useState<InboxRow[]>([]);
   const [approvedRows, setApprovedRows] = useState<InboxRow[]>([]);
   const [declinedRows, setDeclinedRows] = useState<InboxRow[]>([]);
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const [busyDecisionKey, setBusyDecisionKey] = useState("");
 
   async function loadInbox() {
     setLoading(true);
@@ -641,6 +662,45 @@ export default function GuarantorInboxPage() {
     safeCopy(text);
   }
 
+  async function handleDecision(row: InboxRow, status: "approved" | "declined") {
+    const loanId = positiveNumber(row.loanId);
+    const guarantorId = positiveNumber(row.id);
+
+    if (!loanId || !guarantorId) {
+      setNotice({
+        tone: "error",
+        text: "This guarantor request is missing the loan or request number, so it cannot be decided here.",
+      });
+      return;
+    }
+
+    const key = `${loanId}-${guarantorId}-${status}`;
+    setBusyDecisionKey(key);
+    setNotice(null);
+
+    try {
+      await decideLoanGuarantor(loanId, guarantorId, {
+        status,
+        clan_id: selectedClanId || undefined,
+      });
+      setNotice({
+        tone: "success",
+        text:
+          status === "approved"
+            ? "Support approved. GSN has recorded your guarantor response and will update the loan progress."
+            : "Support declined. GSN has recorded your response so the borrower can continue clearly.",
+      });
+      await loadInbox();
+    } catch (error: any) {
+      setNotice({
+        tone: "error",
+        text: String(error?.message || error || "Unable to record this guarantor response."),
+      });
+    } finally {
+      setBusyDecisionKey("");
+    }
+  }
+
   return (
     <div style={{ maxWidth: 1180, margin: "0 auto", paddingBottom: 40 }}>
       <PageTopNav
@@ -670,6 +730,10 @@ export default function GuarantorInboxPage() {
         tone="blue"
         style={{ marginTop: 18 }}
       />
+
+      {notice ? (
+        <div style={{ marginTop: 18, ...noticeCard(notice.tone) }}>{notice.text}</div>
+      ) : null}
 
       <section
         style={{
@@ -1082,6 +1146,30 @@ export default function GuarantorInboxPage() {
                       ) : null}
 
                       <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                        {safeStr(row.status).toLowerCase() === "pending" ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => void handleDecision(row, "approved")}
+                              disabled={Boolean(busyDecisionKey)}
+                              style={primaryBtn(Boolean(busyDecisionKey))}
+                            >
+                              {busyDecisionKey === `${row.loanId}-${row.id}-approved`
+                                ? "Approving..."
+                                : "Approve support"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleDecision(row, "declined")}
+                              disabled={Boolean(busyDecisionKey)}
+                              style={secondaryBtn(Boolean(busyDecisionKey))}
+                            >
+                              {busyDecisionKey === `${row.loanId}-${row.id}-declined`
+                                ? "Declining..."
+                                : "Decline"}
+                            </button>
+                          </>
+                        ) : null}
                         <OriginLink to="/app/loan-workbench" style={secondaryBtn(false)}>
                           Open workbench
                         </OriginLink>

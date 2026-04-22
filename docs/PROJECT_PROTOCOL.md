@@ -66,6 +66,20 @@ This means the assistant should think in terms of:
 - parity across platforms
 - minimal-risk improvements
 
+### 2.1 Real-life institutional language standard
+
+GSN must not sound like a textbook app. It is intended to face real community
+life: trust, confusion, fear, hope, money pressure, family pressure, informal
+support, local trade, lending, repayment, and the emotional weight of people
+standing for one another.
+
+User-facing guidance should therefore explain practical benefit before process.
+When copy explains a route, invite, trust record, marketplace action, or finance
+action, it should make clear how GSN turns existing community trust into
+visible, recordable, portable evidence that can help ordinary people trade,
+support, borrow, repay, and move to a stronger economic position. Avoid cold
+institutional phrases when plain lived language will carry the truth better.
+
 ---
 
 ## 3. Current reality and known problem

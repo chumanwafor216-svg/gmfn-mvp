@@ -43,6 +43,64 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-22
+
+#### Workstream
+Public invite/join pilot correction and GSN real-life wedge language.
+
+#### Routes/screens affected
+- `/start/join/:code`
+- `/cover?entry=invite`
+- `/welcome?entry=invite`
+- `/join`
+
+#### Backend routes/endpoints involved
+- `POST /clans/join-requests`
+- `POST /clans/{clan_id}/invite`
+- `GET /clans/{clan_id}/invite-link`
+
+#### Files in play
+- `gmfn_backend/app/api/routes/clans.py`
+- `gmfn_backend/alembic/versions/20260422_add_join_request_activation_fields.py`
+- `frontend/src/pages/JoinEntryPage.tsx`
+- `gmfn_backend/tests/test_join_requests.py`
+- `docs/PROJECT_PROTOCOL.md`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- A tester in Nigeria reached the public join form but received
+  `Invitation not found` after submitting.
+- Code inspection confirmed two invite-code sources:
+  - newer package invite rows in `clan_invites.code`
+  - older community invite codes in `clans.invite_code`
+- Public join submission previously checked the older community invite code
+  first, so a valid newer invite-link code could open the page but fail on
+  submit.
+- Public invite copy now follows the GSN wedge: existing community trust should
+  become visible, recordable, useful proof that can support trade, lending,
+  repayment, and stronger economic opportunity.
+- `docs/PROJECT_PROTOCOL.md` now records the real-life institutional language
+  standard so future work avoids cold textbook explanations.
+- Added an idempotent migration for join-request activation delivery fields,
+  because the model already used those fields and the join approval/status path
+  can fail if the database has not been patched.
+
+#### Verification
+- `python -m compileall gmfn_backend\app\api\routes\clans.py gmfn_backend\alembic\versions\20260422_add_join_request_activation_fields.py` passed.
+- `python -m pytest gmfn_backend\tests\test_join_requests.py gmfn_backend\tests\test_entry_create.py -q` passed: 12 tests.
+- `npm run build` passed in `frontend`.
+- `GMFN_DEV_MODE=1 python -m alembic upgrade head` passed locally and applied
+  `20260422_add_join_request_activation_fields`.
+- `git diff --check` passed for the touched files with only normal line-ending
+  warnings.
+
+#### Next recommended step
+- Run targeted backend tests for join requests and frontend build. Then deploy
+  so testers can retry the same WhatsApp invite path.
+
+### Latest update
+
+#### Date
 2026-04-21
 
 #### Workstream
@@ -6121,6 +6179,100 @@ GSN-branded invite composer and invite-entry continuity.
 - Verification:
   - `npm run build` passed in `frontend`.
 
+### Create-entry pilot phone-session expiry addendum
+
+- Product-owner tested the Render create-community flow and saw
+  `Verified phone session has expired` during onboarding.
+- Confirmed current behavior from code:
+  - `/entry/phone/start` creates an `EntryPhoneVerification`.
+  - Pilot/preview mode returns `otp_preview` because live SMS OTP delivery is
+    not connected yet.
+  - `/entry/bank-details` and `/entry/create` correctly reject expired phone
+    sessions, but a 10-minute timeout is too short for controlled pilot testers
+    who pause to read the guide or ask questions.
+- Updated `gmfn_backend/app/api/routes/entry.py`:
+  - Added `_entry_phone_session_minutes`.
+  - Pilot/preview/manual delivery now defaults to a one-hour phone-session
+    window.
+  - Live SMS mode still defaults to 10 minutes.
+  - `GMFN_ENTRY_PHONE_SESSION_MINUTES` can override the value, clamped between
+    10 minutes and 24 hours.
+- Updated `frontend/src/pages/CreateEntryPage.tsx`:
+  - Detects expired/not-found temporary phone sessions.
+  - When saving bank/wallet details, the frontend refreshes and auto-confirms
+    the pilot phone proof, then saves the details against the fresh proof.
+  - When finishing community creation, the frontend also refreshes the pilot
+    phone proof, re-saves the bank/wallet proof against it, and then submits
+    community creation.
+- Product-owner refined the pilot rule:
+  - One hour is enough for controlled testing.
+  - The phone confirmation message should say the phone has been successfully
+    linked to the user's name.
+  - If a refresh cannot complete after the proof is too old, the user-facing
+    error should explain that the phone proof is more than one hour old and ask
+    the user to start afresh.
+- Updated `gmfn_backend/tests/test_entry_create.py`:
+  - Added a regression test proving preview/pilot phone sessions last long
+    enough for practical pilot onboarding.
+- Product decision captured:
+  - Current pilot flow is not full real SMS OTP.
+  - It ties the founder name, phone number, and bank/wallet record as starter
+    proof during onboarding.
+  - Real OTP should later be connected through an SMS provider with delivery
+    env config, spend controls, rate limiting, and phone-number formatting.
+- No schema, migration, auth core, invite/join flow, payment movement, ledger
+  movement, or permanent TrustEvent timing was changed.
+- Verification:
+  - `python -m compileall gmfn_backend\app\api\routes\entry.py` passed.
+  - `python -m pytest gmfn_backend\tests\test_entry_create.py -q` passed:
+    10 tests.
+  - `npm run build` passed in `frontend`.
+
+### Loan, guarantor, repayment proof audit addendum
+
+- Product-owner requested an end-to-end audit of bank verification, bank rails,
+  loan amount vs personal pool, above-pool guarantor requirements, guarantor
+  responses, repayment, and TrustEvent proof.
+- Confirmed backend behavior:
+  - Loan requests within the member personal pool are auto-approved and log
+    `loan.created` plus `loan.auto_approved_by_pool`.
+  - Loan requests above the personal pool remain pending/incomplete until both
+    guarantor count and locked pledge coverage meet the required gap.
+  - Current guarantor policy is tiered as 4 / 8 / 12 guarantors, not 1 / 2.
+    Do not silently change this without explicit product-owner approval because
+    it is a business-policy change.
+  - Guarantor approval locks pledge exposure and logs guarantor/guarantee
+    events; repayment should release those locks.
+  - Bank reconciliation can create expected repayment records and auto-apply a
+    matching bank event to the repayment service.
+- Safe corrections made:
+  - `gmfn_backend/app/services/trust_events_services.py` now accepts the
+    repayment-service full-repayment call shape, including `amount`,
+    `confirmed_by_user_id`, `payment_reference`, `reason`, `commit`, and
+    `refresh`.
+  - `gmfn_backend/app/services/trust_score_service.py` now treats legacy
+    `loan.repaid` events as full-repayment trust evidence.
+  - `gmfn_backend/app/api/routes/loans.py` loan summary now returns
+    `personal_pool_at_request`, `pool_used`, and `guarantee_gap` so frontend
+    support screens can show the pool/gap story instead of defaulting to zero.
+  - `frontend/src/pages/GuarantorInboxPage.tsx` now lets a guarantor approve or
+    decline a pending request directly from the inbox, with success/error
+    feedback and a queue refresh.
+  - Added `gmfn_backend/tests/test_repayment_completion_service.py` to verify
+    full repayment records repayment proof, releases guarantor lock, and keeps
+    `payment_reference` / `confirmed_by_user_id` in TrustEvent metadata.
+- Remaining product decisions / risks:
+  - The product-owner mentioned one/two guarantor examples, but live rules use
+    4/8/12. This should be treated as a separate policy discussion.
+  - Bank details are recorded payout/rail evidence in the pilot; external bank
+    ownership verification and actual payout execution are still not connected.
+  - Older dormant guarantor tests appear to reference removed service names and
+    should be cleaned in a later test-suite maintenance pass.
+- Verification:
+  - `python -m pytest gmfn_backend/tests/test_repayment_completion_service.py -q`
+    passed.
+  - `npm run build` passed in `frontend`.
+
 ### Bank rails, repayment, and guarantor commission audit addendum
 
 - Product-owner asked to inspect bank rails, borrowing repayment, payback,
@@ -6692,3 +6844,26 @@ GSN-branded invite composer and invite-entry continuity.
   - `python -m pytest tests\test_entry_create.py -q` passed: 9 tests.
   - `git diff --check -- frontend/src/pages/CreateEntryPage.tsx gmfn_backend/app/api/routes/entry.py gmfn_backend/tests/test_entry_create.py`
     passed with only existing line-ending warnings.
+
+### Bank console achievement-feedback polish addendum
+
+- Product-owner returned to the bank-rails work while waiting for Render to
+  finish redeploying the previous backend/frontend batch.
+- Confirmed status:
+  - The pilot bank-rails path now has expected payments, generated references,
+    pool deposit reconciliation bridge, repayment reconciliation application,
+    payout destination proof, and guarantor earnings lifecycle clarity.
+  - It is not yet a full production banking system because external bank
+    ownership verification and actual payout execution are still deliberately
+    not connected.
+- Updated `frontend/src/pages/BankConsolePage.tsx` only:
+  - Manual bank-event ingest feedback now shows event id, status, reference,
+    reason when available, and the next step to run reconciliation.
+  - Reconciliation feedback now reports seen, confirmed, partial, pending,
+    mismatch, and duplicate counts.
+  - If pending or mismatch items remain, the message tells the admin not to
+    treat the rail as settled until review is complete.
+- No backend route, schema, migration, reconciliation algorithm, ledger,
+  payout movement, auth, permission, or expected-payment contract was changed.
+- Verification:
+  - `npm run build` passed in `frontend`.
