@@ -6290,3 +6290,23 @@ GSN-branded invite composer and invite-entry continuity.
   changed.
 - Verification:
   - `npm run build` passed in `frontend`.
+
+### Create-entry existing-member escape addendum
+
+- Product-owner observed that the controlled create link now sends testers from
+  cover directly into the create-community path, which is correct for new
+  founders but confusing for someone who is already a member.
+- Updated `frontend/src/pages/CreateEntryPage.tsx` only:
+  - Added a small collapsed `Already a member?` card near the top of the
+    create-community page.
+  - Opening it explains that existing members should not create another
+    account/community just to continue.
+  - The `I am already a member` action stores the entry mode as `existing`,
+    clears create/invite entry storage, and sends the user to
+    `/login?entry=existing&force=1`.
+  - `force=1` keeps the sign-in page from silently bypassing the email/password
+    check if a stale token exists during testing.
+- The create-community, invite/join, activation, backend auth, schemas,
+  permissions, and membership rules were not changed.
+- Verification:
+  - `npm run build` passed in `frontend`.

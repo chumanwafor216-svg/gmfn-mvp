@@ -14,6 +14,12 @@ import {
   verifyEntryBankDetails,
   verifyEntryDriversLicence,
 } from "../lib/api";
+import {
+  ENTRY_CREATE_CODE_KEY,
+  ENTRY_INVITE_CODE_KEY,
+  ENTRY_MODE_KEY,
+  writeStorage,
+} from "../lib/entryFlow";
 
 function pageShell(): React.CSSProperties {
   return {
@@ -132,6 +138,24 @@ function stageToggleBtn(active = false): React.CSSProperties {
           "0 16px 30px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.56)",
         textShadow: "0 1px 0 rgba(255,255,255,0.36)",
       };
+}
+
+function existingMemberCard(open = false): React.CSSProperties {
+  return {
+    width: "min(100%, 760px)",
+    borderRadius: 22,
+    border: open
+      ? "1px solid rgba(243,208,106,0.34)"
+      : "1px solid rgba(255,255,255,0.16)",
+    background: open
+      ? "linear-gradient(180deg, rgba(255,251,235,0.14) 0%, rgba(255,255,255,0.07) 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%)",
+    boxShadow:
+      "0 16px 34px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.10)",
+    padding: 14,
+    display: "grid",
+    gap: 12,
+  };
 }
 
 function sectionLabel(): React.CSSProperties {
@@ -396,6 +420,7 @@ export default function CreateEntryPage() {
     useState<EntryVerificationResult>(null);
   const [guideDone, setGuideDone] = useState(hasInitialCommunityContext);
   const [procedureOpen, setProcedureOpen] = useState(false);
+  const [existingMemberOpen, setExistingMemberOpen] = useState(false);
   const [openPanel, setOpenPanel] = useState<"details" | "verification" | "community" | null>(
     hasInitialCommunityContext ? "community" : null
   );
@@ -435,6 +460,18 @@ export default function CreateEntryPage() {
   const canOpenVerification = step !== "details";
   const canOpenCommunity = step === "community";
 
+  const existingMemberLoginTo = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    params.set("entry", "existing");
+    params.set("force", "1");
+    params.delete("create_code");
+    params.delete("founder_code");
+    params.delete("public_create_code");
+    params.delete("code");
+    const query = params.toString();
+    return `/login${query ? `?${query}` : "?entry=existing&force=1"}`;
+  }, [location.search]);
+
   function focusPanel(next: "details" | "verification" | "community") {
     const map = {
       details: detailsRef,
@@ -466,6 +503,21 @@ export default function CreateEntryPage() {
       setOpenPanel("details");
       focusPanel("details");
     }
+  }
+
+  function handleExistingMemberLogin() {
+    writeStorage(ENTRY_MODE_KEY, "existing");
+    writeStorage(ENTRY_CREATE_CODE_KEY, null);
+    writeStorage(ENTRY_INVITE_CODE_KEY, null);
+    nav(existingMemberLoginTo, {
+      replace: false,
+      state: {
+        from: {
+          pathname: location.pathname,
+          search: location.search,
+        },
+      },
+    });
   }
 
   function clearDetailsBlock() {
@@ -965,6 +1017,98 @@ export default function CreateEntryPage() {
                 </div>
               </div>
             ) : null}
+
+            <div style={existingMemberCard(existingMemberOpen)}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={{ display: "grid", gap: 5 }}>
+                  <div style={{ ...sectionLabel(), color: "#F3D06A" }}>
+                    Already a member?
+                  </div>
+                  <div
+                    style={{
+                      color: "#F8FBFF",
+                      fontSize: 15,
+                      fontWeight: 900,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    Sign in instead of filling the new-community form.
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setExistingMemberOpen((current) => !current)}
+                  style={{
+                    ...secondaryBtn(),
+                    minHeight: 44,
+                    color: "#123055",
+                  }}
+                >
+                  {existingMemberOpen ? "Collapse" : "Open"}
+                </button>
+              </div>
+
+              {existingMemberOpen ? (
+                <div
+                  style={{
+                    borderRadius: 18,
+                    border: "1px solid rgba(255,255,255,0.16)",
+                    background: "rgba(255,255,255,0.08)",
+                    padding: 14,
+                    display: "grid",
+                    gap: 12,
+                  }}
+                >
+                  <div
+                    style={{
+                      color: "rgba(255,255,255,0.86)",
+                      fontSize: 13.5,
+                      lineHeight: 1.7,
+                      fontWeight: 700,
+                    }}
+                  >
+                    If you already have a GSN account, do not create another one.
+                    Go to sign in and verify yourself with your email and password.
+                    This keeps your existing communities, shop, finance record, and
+                    trust history together.
+                  </div>
+
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      onClick={handleExistingMemberLogin}
+                      style={{
+                        ...primaryBtn(false),
+                        width: "auto",
+                        minWidth: 178,
+                        flex: "1 1 220px",
+                      }}
+                    >
+                      I am already a member
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setExistingMemberOpen(false)}
+                      style={{
+                        ...secondaryBtn(),
+                        minWidth: 112,
+                      }}
+                    >
+                      Stay here
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
 
           </div>
 
