@@ -1723,6 +1723,28 @@ function compactStatusPillStyle(primary = false): React.CSSProperties {
   };
 }
 
+function highlightedExternalLinkStyle(): React.CSSProperties {
+  return {
+    display: "block",
+    marginTop: 10,
+    borderRadius: 14,
+    border: "1px solid rgba(11,99,209,0.24)",
+    background:
+      "linear-gradient(180deg, rgba(239,246,255,0.98) 0%, rgba(219,234,254,0.88) 100%)",
+    color: "#0B63D1",
+    fontWeight: 900,
+    fontSize: 13,
+    lineHeight: 1.55,
+    padding: "10px 12px",
+    textDecoration: "underline",
+    textUnderlineOffset: 3,
+    overflowWrap: "anywhere",
+    wordBreak: "break-word",
+    boxShadow:
+      "0 10px 20px rgba(11,99,209,0.10), inset 0 1px 0 rgba(255,255,255,0.82)",
+  };
+}
+
 function actionBtn(
   kind: "primary" | "secondary" | "soft" = "secondary",
   disabled = false
@@ -4048,6 +4070,21 @@ export default function MarketplacePage() {
                         : "Join link not ready yet"}
                     </span>
                   </div>
+                  {inviteLink ? (
+                    <a
+                      href={inviteLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onPointerDown={consumeMarketplacePointerEvent}
+                      style={highlightedExternalLinkStyle()}
+                    >
+                      {inviteLink}
+                    </a>
+                  ) : (
+                    <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                      Tap Create / Refresh to make the WhatsApp join link active.
+                    </div>
+                  )}
                   <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
                     <button
                       type="button"
@@ -4088,6 +4125,28 @@ export default function MarketplacePage() {
                       disabled={!inviteLink}
                     >
                       Open Link
+                    </button>
+                    <button
+                      type="button"
+                      onPointerDown={consumeMarketplaceButtonEvent}
+                      onClick={(event) => {
+                        consumeMarketplaceButtonEvent(event);
+                        if (!inviteLink) {
+                          showNotice("error", "Join invite link is not ready yet.");
+                          return;
+                        }
+                        if (typeof window !== "undefined") {
+                          window.open(
+                            `https://wa.me/?text=${encodeURIComponent(inviteLink)}`,
+                            "_blank",
+                            "noopener,noreferrer"
+                          );
+                        }
+                      }}
+                      style={actionBtn("secondary", !inviteLink)}
+                      disabled={!inviteLink}
+                    >
+                      Send WhatsApp
                     </button>
                   </div>
                 </div>
