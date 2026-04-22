@@ -5,7 +5,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, List, Optional
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
@@ -27,7 +27,6 @@ from app.db.models import (
 from app.services.invites_service import (
     api_join_link,
     create_clan_invite,
-    frontend_join_link,
 )
 
 router = APIRouter(prefix="/clans", tags=["clans"])
@@ -420,7 +419,8 @@ def _frontend_community_join_link(
     if inviter_name:
         params["inviter_name"] = inviter_name
 
-    return f"{origin}/join/community/{int(clan.id)}?{urlencode(params)}"
+    safe_invite_code = quote(str(invite_code or "").strip(), safe="")
+    return f"{origin}/start/join/{safe_invite_code}?{urlencode(params)}"
 
 
 def _frontend_activation_link(request: Request, gmfn_id: str) -> str:

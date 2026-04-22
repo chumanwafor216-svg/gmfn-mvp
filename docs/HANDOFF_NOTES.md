@@ -6217,3 +6217,32 @@ GSN-branded invite composer and invite-entry continuity.
   and backend contracts were not changed.
 - Verification:
   - `npm run build` passed in `frontend`.
+
+### Controlled WhatsApp/start-link routing addendum
+
+- Product-owner clarified that early testers will mostly receive links through
+  WhatsApp/Telegram/direct messages, and those links should make the intended
+  lane obvious without showing multiple first-step choices.
+- Added frontend start-route aliases in `frontend/src/App.tsx`:
+  - `/start`, `/start/create`, and `/start/community` open the create-community
+    lane through `/cover?entry=create`.
+  - `/start/join/:code` and `/start/invite/:code` open the invite/join lane
+    through `/cover?entry=invite&invite_code=:code`.
+  - `/start/existing`, `/start/member`, and `/start/login` open the
+    existing-member lane through `/cover?entry=existing`.
+- Updated backend-generated invite links so new share links point to
+  `/start/join/{invite_code}` while preserving community, marketplace, and
+  inviter query context:
+  - `gmfn_backend/app/api/routes/clans.py`
+  - `gmfn_backend/app/services/invites_service.py`
+- Plain `https://gmfn-frontend.onrender.com` still enters the controlled
+  create-community pilot flow through `/cover`.
+- Existing older routes such as `/invite/:code`, `/get-invite/:code`,
+  `/join/community/:clanId`, `/public-create`, `/founder`, and `/existing` were
+  preserved.
+- No database schema, auth core, permission core, payment, ledger, invite
+  validation, or join-request backend rules changed.
+- Verification:
+  - `npm run build` passed in `frontend`.
+  - `python -m compileall app\api\routes\clans.py app\services\invites_service.py`
+    passed from `gmfn_backend`.

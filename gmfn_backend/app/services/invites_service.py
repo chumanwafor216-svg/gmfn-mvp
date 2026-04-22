@@ -5,6 +5,7 @@ import secrets
 import time
 from datetime import datetime, timezone
 from typing import Optional
+from urllib.parse import quote
 
 from fastapi import HTTPException, Request
 from sqlalchemy.exc import IntegrityError
@@ -72,7 +73,7 @@ def _require_member_or_admin(db: Session, *, clan_id: int, user: User) -> None:
 
 def frontend_join_link(code: str) -> str:
     base = os.getenv("FRONTEND_BASE_URL", "https://gmfn-frontend.onrender.com")
-    return f"{base.rstrip('/')}/join?code={code}"
+    return f"{base.rstrip('/')}/start/join/{quote(str(code or '').strip(), safe='')}"
 
 
 def api_join_link(request: Request, code: str) -> str:

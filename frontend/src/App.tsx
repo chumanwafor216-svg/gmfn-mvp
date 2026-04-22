@@ -379,6 +379,12 @@ export default function App() {
 
       <Route path="/login" element={<LoginPage />} />
       <Route path="/existing" element={<RedirectToCover entry="existing" />} />
+      <Route path="/start" element={<RedirectToCover entry="create" />} />
+      <Route path="/start/create" element={<RedirectToCover entry="create" />} />
+      <Route path="/start/community" element={<RedirectToCover entry="create" />} />
+      <Route path="/start/existing" element={<RedirectToCover entry="existing" />} />
+      <Route path="/start/member" element={<RedirectToCover entry="existing" />} />
+      <Route path="/start/login" element={<RedirectToCover entry="existing" />} />
 
       <Route path="/create" element={<CreateEntryPage />} />
       <Route path="/register" element={<PreserveRedirect to="/create" />} />
@@ -388,6 +394,26 @@ export default function App() {
       <Route path="/join" element={<JoinEntryPage />} />
       <Route path="/join/community/:clanId" element={<JoinEntryPage />} />
       <Route path="/invite-composer-preview" element={<InviteComposerPreviewPage />} />
+      <Route
+        path="/start/join/:code"
+        element={
+          <RedirectToCover
+            entry="invite"
+            sourceParam="code"
+            targetQueryKey="invite_code"
+          />
+        }
+      />
+      <Route
+        path="/start/invite/:code"
+        element={
+          <RedirectToCover
+            entry="invite"
+            sourceParam="code"
+            targetQueryKey="invite_code"
+          />
+        }
+      />
       <Route
         path="/invite/:code"
         element={
