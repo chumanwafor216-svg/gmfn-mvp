@@ -6246,3 +6246,26 @@ GSN-branded invite composer and invite-entry continuity.
   - `npm run build` passed in `frontend`.
   - `python -m compileall app\api\routes\clans.py app\services\invites_service.py`
     passed from `gmfn_backend`.
+
+### Marketplace WhatsApp link block normalization addendum
+
+- Product-owner asked how the new `/start/...` links affect Marketplace-owned
+  link blocks and whether marketplace-tailored information still travels with
+  the link.
+- Updated `frontend/src/pages/MarketplacePage.tsx` only:
+  - Marketplace invite payloads are now normalized into
+    `/start/join/{invite_code}` before the page displays, copies, or opens the
+    join link.
+  - The normalization preserves existing query context such as invite code,
+    community name, community code, marketplace name, and inviter name.
+  - Legacy invite formats like `/join?code=...`, `/join/community/...`, and
+    `/invite/...` are converted into the newer start-link shape when enough
+    invite-code information is present.
+  - The Marketplace-owned links copy now calls the first card a
+    `WhatsApp join link` and explains that the link still knows which
+    marketplace invited the person.
+- This is a frontend display/share normalization only. It does not change
+  invite creation, invite validation, join-request submission, auth, schemas,
+  payments, ledger behavior, or backend permissions.
+- Verification:
+  - `npm run build` passed in `frontend`.

@@ -570,21 +570,111 @@ function getPoolCurrency(payload: any): string {
   );
 }
 
+function frontendOrigin(): string {
+  if (typeof window === "undefined") return "https://gmfn-frontend.onrender.com";
+  return String(window.location.origin || "https://gmfn-frontend.onrender.com")
+    .trim()
+    .replace(/\/+$/, "");
+}
+
+function inviteCodeFromUrl(raw: string): string {
+  const text = safeStr(raw);
+  if (!text) return "";
+
+  try {
+    const url = new URL(text, frontendOrigin());
+    const queryCode = firstTruthy(
+      url.searchParams.get("invite_code"),
+      url.searchParams.get("invite"),
+      url.searchParams.get("join_code"),
+      url.searchParams.get("code")
+    );
+    if (queryCode) return queryCode;
+
+    const parts = url.pathname.split("/").filter(Boolean);
+    const startIndex = parts.findIndex(
+      (part, index) =>
+        part === "join" &&
+        (parts[index - 1] === "start" || parts[index - 1] === "get-invite")
+    );
+    if (startIndex >= 0 && parts[startIndex + 1]) {
+      return decodeURIComponent(parts[startIndex + 1]);
+    }
+
+    const inviteIndex = parts.findIndex(
+      (part) => part === "invite" || part === "get-invite"
+    );
+    if (inviteIndex >= 0 && parts[inviteIndex + 1]) {
+      return decodeURIComponent(parts[inviteIndex + 1]);
+    }
+  } catch {
+    // Fall through to payload-based fallback.
+  }
+
+  return "";
+}
+
+function buildMarketplaceStartJoinLink(payload: any, directLink: string): string {
+  const code = firstTruthy(
+    payload?.code,
+    payload?.invite_code,
+    inviteCodeFromUrl(directLink)
+  );
+
+  if (!code) return safeStr(directLink);
+
+  const params = new URLSearchParams();
+
+  try {
+    if (directLink) {
+      const url = new URL(directLink, frontendOrigin());
+      url.searchParams.forEach((value, key) => {
+        if (key !== "entry" && key !== "flow" && key !== "mode") {
+          params.set(key, value);
+        }
+      });
+    }
+  } catch {
+    // Keep going with payload fields below.
+  }
+
+  const payloadFields: Array<[string, string]> = [
+    ["invite", code],
+    ["community_name", firstTruthy(payload?.community_name, payload?.clan_name)],
+    ["community_code", firstTruthy(payload?.community_code, payload?.clan_code)],
+    ["marketplace_name", safeStr(payload?.marketplace_name)],
+    [
+      "inviter_name",
+      firstTruthy(payload?.invited_by_display, payload?.inviter_name),
+    ],
+  ];
+
+  payloadFields.forEach(([key, value]) => {
+    if (value && !params.has(key)) {
+      params.set(key, value);
+    }
+  });
+
+  const query = params.toString();
+  return `${frontendOrigin()}/start/join/${encodeURIComponent(code)}${
+    query ? `?${query}` : ""
+  }`;
+}
+
 function getInviteUrl(payload: any): string {
   const direct = firstTruthy(
     payload?.share_link,
     payload?.invite_url,
     payload?.invite_link,
     payload?.url,
-    payload?.link,
-    payload?.api_link
+    payload?.link
   );
 
-  if (direct) return direct;
+  if (direct) return buildMarketplaceStartJoinLink(payload, direct);
 
   const code = firstTruthy(payload?.code, payload?.invite_code);
-  if (code && typeof window !== "undefined") {
-    return `${window.location.origin}/join?code=${encodeURIComponent(code)}`;
+  if (code) {
+    return buildMarketplaceStartJoinLink(payload, "");
   }
 
   return "";
@@ -3889,8 +3979,8 @@ export default function MarketplacePage() {
           <div>
             <div style={sectionLabel()}>Marketplace-owned links</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Invite, marketplace, shop, and controlled links for this community
-              only.
+              WhatsApp-ready invite, marketplace, shop, and controlled links
+              for this community only.
             </div>
           </div>
 
@@ -3907,7 +3997,7 @@ export default function MarketplacePage() {
         {sectionsOpen.tools ? (
           <ExplainToggle
             label="What these links do"
-            what="This area keeps the outward links that belong to the selected marketplace, including join, marketplace-view, shop-view, and controlled Vault-style access."
+            what="This area keeps the outward links that belong to the selected marketplace, including the WhatsApp join link, marketplace-view, shop-view, and controlled Vault-style access."
             why="Invite links, shop-facing links, and other outward paths should stay localized to this marketplace instead of becoming loose dashboard links."
             next="Use the join, marketplace-view, or shop-view links when something must leave this community and still return to the same marketplace context."
             tone="light"
@@ -3930,8 +4020,9 @@ export default function MarketplacePage() {
               <div>
                 <div style={sectionLabel()}>Marketplace-owned links</div>
                 <div style={{ marginTop: 8, ...helperText() }}>
-                  These links carry this community identity outward and should
-                  return people to this same marketplace context.
+                  These links carry this community identity outward. If someone
+                  opens the join link from WhatsApp, the link still knows which
+                  marketplace invited them.
                 </div>
               </div>
 
@@ -3945,14 +4036,16 @@ export default function MarketplacePage() {
                 }}
               >
                 <div style={innerCard("#FFFFFF")}>
-                  <div style={sectionLabel()}>Join this community</div>
+                  <div style={sectionLabel()}>WhatsApp join link</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    Create a join link for someone who should ask to enter this
-                    community.
+                    Send this to someone who should ask to enter this exact
+                    marketplace/community.
                   </div>
                   <div style={{ marginTop: 10 }}>
                     <span style={compactStatusPillStyle(Boolean(inviteLink))}>
-                      {inviteLink ? "Join link ready" : "Join link not ready yet"}
+                      {inviteLink
+                        ? "WhatsApp join link ready"
+                        : "Join link not ready yet"}
                     </span>
                   </div>
                   <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -3982,7 +4075,7 @@ export default function MarketplacePage() {
                       style={actionBtn("secondary", !inviteLink)}
                       disabled={!inviteLink}
                     >
-                      Copy Link
+                      Copy WhatsApp Link
                     </button>
                     <button
                       type="button"
