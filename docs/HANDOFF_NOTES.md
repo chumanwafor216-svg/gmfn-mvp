@@ -7205,3 +7205,38 @@ GSN-branded invite composer and invite-entry continuity.
   - `npm run build` passed in `frontend`.
   - `git diff --check -- frontend/src/lib/api.ts frontend/src/pages/MarketplacePage.tsx`
     passed with only Windows line-ending warnings.
+
+### First Circle guided-flow simplification addendum
+
+- Product-owner shared phone feedback that `/app/first-circle` was too complex
+  for ordinary testers:
+  - repeated `Member` wording made the role unclear,
+  - the large progress card looked inactive/confusing,
+  - users were getting lost before understanding the next action.
+- Confirmed from code:
+  - `BuildFirstCirclePage.tsx` had local role values such as `seller`,
+    `worker`, and `service-provider`, while shared First Circle logic expects
+    canonical values such as `trader`, `supplier`, and `service_provider`.
+  - That mismatch caused shared role labels to fall back to generic `Member`.
+- Updated `frontend/src/pages/BuildFirstCirclePage.tsx`:
+  - Replaced page-local role and relationship lists with the shared
+    First Circle role/relationship options.
+  - Reworked the top of the page into a guided `Do this now` card with a small
+    progress bar and a three-step path: choose role, add people, copy invite.
+  - Removed the separate oversized progress-tile block.
+  - Made Step 2 depend on Step 1 so the user is guided instead of facing every
+    action at once.
+  - Changed repeated `Selected`/`Member` style language to clearer terms such
+    as `In first circle`, `Included`, and `Not chosen`.
+- Updated `frontend/src/lib/firstCircle.ts`:
+  - `roleLabel("")` now returns `Not chosen`.
+  - First Circle progress no longer gets stuck asking for an operating-pattern
+    field that the page does not currently collect.
+- No backend route, invite, membership, auth, schema, or navigation contract was
+  changed.
+- Verification:
+  - `npm exec -- eslint src/pages/BuildFirstCirclePage.tsx src/lib/firstCircle.ts`
+    passed.
+  - `npm run build` passed in `frontend`.
+  - `git diff --check -- frontend/src/pages/BuildFirstCirclePage.tsx frontend/src/lib/firstCircle.ts`
+    passed with only Windows line-ending warnings.

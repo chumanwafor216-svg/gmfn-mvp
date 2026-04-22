@@ -11,7 +11,7 @@ type FirstCircleContact = {
   email?: string;
   note?: string;
   selected?: boolean;
-  source?: "manual" | "phone";
+  source?: "manual" | "device";
 };
 
 type FirstCircleDraft = {
@@ -41,27 +41,13 @@ type NoticeTone = "success" | "error";
 const UI_STORAGE_KEY = "gmfn.buildFirstCircle.sections.v1";
 const DRAFT_FALLBACK_KEY = "gmfn.firstCircle.fallback.v1";
 
-const ROLE_OPTIONS = [
-  "buyer",
-  "seller",
-  "worker",
-  "service-provider",
-  "community-officer",
-  "family-support",
-];
+const ROLE_OPTIONS = firstCircle.FIRST_CIRCLE_ROLE_OPTIONS.map(
+  (option) => option.value
+);
 
-const COMMON_RELATIONSHIPS = [
-  "buyer",
-  "seller",
-  "supplier",
-  "family",
-  "friend",
-  "community-officer",
-  "savings-partner",
-  "remittance-contact",
-  "worker",
-  "service-provider",
-];
+const COMMON_RELATIONSHIPS = firstCircle.FIRST_CIRCLE_RELATIONSHIP_OPTIONS.map(
+  (option) => option.value
+);
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -400,18 +386,24 @@ function clearSavedDraft() {
 }
 
 function roleText(value: string): string {
+  const raw = safeStr(value);
+  if (!raw) return "Not chosen";
+
   const fn = (firstCircle as any).roleLabel;
   if (typeof fn === "function") {
     try {
-      return safeStr(fn(value)) || value;
+      const label = safeStr(fn(raw));
+      if (label && label !== "Member") return label;
     } catch {
       // ignore
     }
   }
 
-  return value
+  return raw
     ? value
         .split("-")
+        .join("_")
+        .split("_")
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
         .join(" ")
     : "Not chosen";
@@ -465,30 +457,24 @@ function suggestedRelationships(role: string): string[] {
 }
 
 function progressForDraft(draft: FirstCircleDraft) {
-  const fn = (firstCircle as any).getFirstCircleProgress;
-  if (typeof fn === "function") {
-    try {
-      return fn(draft);
-    } catch {
-      // ignore
-    }
-  }
-
   const selectedCount = draft.contacts.filter((item) => item.selected).length;
   const readyCount = draft.contacts.filter(
     (item) => item.selected && contactInviteReady(item)
   ).length;
-  const targetCount = 7;
+  const targetCount = 3;
+  const missingReadyCount = Math.max(targetCount - readyCount, 0);
 
-  let nextStepText = "Choose your role first.";
-  if (draft.memberRole && draft.contacts.length === 0) {
-    nextStepText = "Add the first trusted person.";
-  } else if (selectedCount < targetCount) {
-    nextStepText = "Keep adding trusted people to your first circle.";
-  } else if (readyCount < selectedCount) {
-    nextStepText = "Complete missing phone or email details.";
+  let nextStepText = "First choose what you mostly do.";
+  if (draft.memberRole && readyCount === 0) {
+    nextStepText = "Now add three real people with phone or email.";
+  } else if (draft.memberRole && missingReadyCount > 0) {
+    nextStepText = `Add ${missingReadyCount} more ready ${
+      missingReadyCount === 1 ? "person" : "people"
+    }.`;
+  } else if (selectedCount > readyCount) {
+    nextStepText = "Some selected people still need phone or email.";
   } else {
-    nextStepText = "Your first-circle invite bundle is ready to copy.";
+    nextStepText = "Your first circle is ready to review and copy.";
   }
 
   return {
@@ -677,6 +663,30 @@ export default function BuildFirstCirclePage() {
     });
   }, [draft, memberName, gmfnId, communityName]);
 
+  const readyCount = Number(progress.readyCount || 0);
+  const targetCount = Number(progress.targetCount || 3);
+  const hasRole = Boolean(safeStr(draft.memberRole));
+  const remainingReady = Math.max(targetCount - readyCount, 0);
+  const activeStep = !hasRole ? 1 : remainingReady > 0 ? 2 : 3;
+  const progressPercent = Math.max(
+    0,
+    Math.min(100, Math.round((readyCount / Math.max(targetCount, 1)) * 100))
+  );
+  const activeStepTitle =
+    activeStep === 1
+      ? "Choose what you mostly do"
+      : activeStep === 2
+      ? "Add real people"
+      : "Review and copy invites";
+  const activeStepText =
+    activeStep === 1
+      ? "Start with one simple choice. This helps GSN suggest the right kind of people."
+      : activeStep === 2
+      ? `Add ${remainingReady} more ${
+          remainingReady === 1 ? "person" : "people"
+        } with a phone or email. Three serious people are enough to begin.`
+      : "Your first circle has enough ready names. Review the list, then copy the invite message.";
+
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });
   }
@@ -795,7 +805,7 @@ export default function BuildFirstCirclePage() {
             phone: phone || undefined,
             email: email || undefined,
             selected: true,
-            source: "phone" as const,
+            source: "device" as const,
           };
         })
         .filter(Boolean) as FirstCircleContact[];
@@ -972,7 +982,7 @@ export default function BuildFirstCirclePage() {
           </div>
 
           <div style={softCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Current progress</div>
+            <div style={sectionLabel()}>Do this now</div>
 
             <div
               style={{
@@ -983,13 +993,131 @@ export default function BuildFirstCirclePage() {
                 lineHeight: 1.25,
               }}
             >
-              {safeStr(progress.nextStepText || "Start by choosing your role.")}
+              {activeStepTitle}
             </div>
 
             <div style={{ marginTop: 10, ...helperText() }}>
-              Fewer real people are better than many weak names.
+              {activeStepText}
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                height: 10,
+                borderRadius: 999,
+                background: "rgba(11,31,51,0.08)",
+                overflow: "hidden",
+              }}
+              aria-label={`First circle progress ${progressPercent}%`}
+            >
+              <div
+                style={{
+                  width: `${progressPercent}%`,
+                  height: "100%",
+                  borderRadius: 999,
+                  background:
+                    "linear-gradient(90deg, #0B63D1 0%, #F0C94B 100%)",
+                }}
+              />
+            </div>
+
+            <div
+              style={{
+                marginTop: 12,
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
+              <span style={badge(hasRole)}>1. Role</span>
+              <span style={badge(readyCount > 0)}>2. People {readyCount}/{targetCount}</span>
+              <span style={badge(readyCount >= targetCount)}>3. Invite</span>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div style={sectionLabel()}>Simple path</div>
+        <div
+          style={{
+            marginTop: 12,
+            display: "grid",
+            gridTemplateColumns: isCompact
+              ? "1fr"
+              : "repeat(3, minmax(0, 1fr))",
+            gap: 12,
+          }}
+        >
+          {[
+            {
+              number: "1",
+              title: "Say what you do",
+              text: hasRole
+                ? `Chosen: ${roleText(draft.memberRole)}`
+                : "Pick the closest work or life role.",
+              done: hasRole,
+            },
+            {
+              number: "2",
+              title: "Add real people",
+              text: `${readyCount}/${targetCount} ready with phone or email.`,
+              done: readyCount >= targetCount,
+            },
+            {
+              number: "3",
+              title: "Copy invite message",
+              text:
+                readyCount >= targetCount
+                  ? "Ready to review."
+                  : "This opens when enough names are ready.",
+              done: readyCount >= targetCount,
+            },
+          ].map((step) => (
+            <div
+              key={step.number}
+              style={innerCard(
+                step.done ? "rgba(11,99,209,0.06)" : "#FCFEFF"
+              )}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  alignItems: "center",
+                }}
+              >
+                <span
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 999,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: step.done ? "#0B63D1" : "#EAF1F8",
+                    color: step.done ? "#FFFFFF" : "#24415C",
+                    fontWeight: 900,
+                  }}
+                >
+                  {step.number}
+                </span>
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 16,
+                    lineHeight: 1.25,
+                  }}
+                >
+                  {step.title}
+                </div>
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                {step.text}
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -1004,120 +1132,14 @@ export default function BuildFirstCirclePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Progress</div>
+            <div style={sectionLabel()}>Step 1</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Check selected and ready contacts.
+              What do you mostly do? Pick the closest one. You can change it later.
             </div>
           </div>
-
-          <button
-            type="button"
-            onClick={() => toggleSection("progress")}
-            style={collapseToggle()}
-          >
-            {collapsed.progress ? "Open" : "Collapse"}
-          </button>
         </div>
 
-        {!collapsed.progress ? (
-          <div
-            style={{
-              marginTop: 14,
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr 1fr"
-                : "repeat(4, minmax(0, 1fr))",
-              gap: 12,
-            }}
-          >
-            <div style={statTile()}>
-              <div style={sectionLabel()}>Selected</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 26,
-                  fontWeight: 900,
-                }}
-              >
-                {Number(progress.selectedCount || 0)}
-              </div>
-            </div>
-
-            <div style={statTile()}>
-              <div style={sectionLabel()}>Ready</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B63D1",
-                  fontSize: 26,
-                  fontWeight: 900,
-                }}
-              >
-                {Number(progress.readyCount || 0)}
-              </div>
-            </div>
-
-            <div style={statTile()}>
-              <div style={sectionLabel()}>Target</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 26,
-                  fontWeight: 900,
-                }}
-              >
-                {Number(progress.targetCount || 0)}
-              </div>
-            </div>
-
-            <div style={statTile()}>
-              <div style={sectionLabel()}>Role</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 18,
-                  fontWeight: 900,
-                  lineHeight: 1.25,
-                }}
-              >
-                {roleText(draft.memberRole)}
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </section>
-
-      <section style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>Choose your role</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Pick the role closest to what you do.
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => toggleSection("role")}
-            style={collapseToggle()}
-          >
-            {collapsed.role ? "Open" : "Collapse"}
-          </button>
-        </div>
-
-        {!collapsed.role ? (
-          <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+        <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
             <div
               style={{
                 display: "flex",
@@ -1163,8 +1185,7 @@ export default function BuildFirstCirclePage() {
                 )}
               </div>
             </div>
-          </div>
-        ) : null}
+        </div>
       </section>
 
       <section style={pageCard("#FFFFFF")}>
@@ -1178,22 +1199,14 @@ export default function BuildFirstCirclePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Add trusted people</div>
+            <div style={sectionLabel()}>Step 2</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Add manually or use phone contacts where supported.
+              Add three real people you already trust. A phone or email makes each invite ready.
             </div>
           </div>
-
-          <button
-            type="button"
-            onClick={() => toggleSection("add")}
-            style={collapseToggle()}
-          >
-            {collapsed.add ? "Open" : "Collapse"}
-          </button>
         </div>
 
-        {!collapsed.add ? (
+        {hasRole ? (
           <div
             style={{
               marginTop: 16,
@@ -1354,7 +1367,24 @@ export default function BuildFirstCirclePage() {
               </div>
             </div>
           </div>
-        ) : null}
+        ) : (
+          <div style={{ marginTop: 16, ...innerCard("#F8FBFF") }}>
+            <div
+              style={{
+                color: "#0B1F33",
+                fontWeight: 900,
+                fontSize: 16,
+                lineHeight: 1.35,
+              }}
+            >
+              Choose Step 1 first.
+            </div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Once you choose what you mostly do, GSN will suggest the right
+              kinds of trusted people to add here.
+            </div>
+          </div>
+        )}
       </section>
 
       <section style={pageCard("#FFFFFF")}>
@@ -1368,9 +1398,9 @@ export default function BuildFirstCirclePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Current first circle</div>
+            <div style={sectionLabel()}>Step 3</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Review selected people and missing contact details.
+              Review your people. Keep only names you truly know.
             </div>
           </div>
 
@@ -1418,14 +1448,16 @@ export default function BuildFirstCirclePage() {
                       </div>
 
                       <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        <span style={badge(item.selected)}>{item.selected ? "Selected" : "Saved"}</span>
+                        <span style={badge(item.selected)}>
+                          {item.selected ? "In first circle" : "Saved only"}
+                        </span>
                         <span style={badge(false)}>{relationshipText(item.relationship)}</span>
                         <span style={badge(false)}>
                           {contactInviteReady(item) ? "Invite ready" : "Needs phone or email"}
                         </span>
                         {safeStr(item.source) ? (
                           <span style={badge(false)}>
-                            {item.source === "phone" ? "From phone" : "Manual"}
+                            {item.source === "device" ? "From phone" : "Manual"}
                           </span>
                         ) : null}
                       </div>
@@ -1454,7 +1486,7 @@ export default function BuildFirstCirclePage() {
                         onClick={() => toggleSelected(item.id)}
                         style={item.selected ? actionBtn("primary") : actionBtn("secondary")}
                       >
-                        {item.selected ? "Selected" : "Select"}
+                        {item.selected ? "Included" : "Include"}
                       </button>
 
                       <button
@@ -1484,9 +1516,9 @@ export default function BuildFirstCirclePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Invite bundle</div>
+            <div style={sectionLabel()}>Final step</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Copy when selected people have phone or email details.
+              Copy the invite message when the first circle is ready.
             </div>
           </div>
 

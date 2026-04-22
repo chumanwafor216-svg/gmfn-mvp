@@ -354,14 +354,18 @@ export function saveFirstCircleDraft(draft: FirstCircleDraft): void {
     };
 
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(safeDraft));
-  } catch {}
+  } catch {
+    // Draft persistence is helpful but should never block the page.
+  }
 }
 
 export function clearFirstCircleDraft(): void {
   try {
     if (!canUseStorage()) return;
     window.localStorage.removeItem(STORAGE_KEY);
-  } catch {}
+  } catch {
+    // Ignore storage cleanup issues.
+  }
 }
 
 export const persistFirstCircleDraft = saveFirstCircleDraft;
@@ -369,6 +373,8 @@ export const setFirstCircleDraft = saveFirstCircleDraft;
 export const resetFirstCircleDraft = clearFirstCircleDraft;
 
 export function roleLabel(role: FirstCircleMemberRole | ""): string {
+  if (!role) return "Not chosen";
+
   const match = FIRST_CIRCLE_ROLE_OPTIONS.find(
     (option: FirstCircleRoleOption) => option.value === role
   );
@@ -413,14 +419,9 @@ export function getFirstCircleProgress(
     (item: FirstCircleContact) => isContactInviteReady(item)
   );
 
-  let nextStepText = "Choose your role first.";
+  let nextStepText = "First choose what you mostly do.";
 
   if (draft.memberRole) {
-    nextStepText =
-      "Describe how you work so the app can guide the right kind of circle.";
-  }
-
-  if (draft.memberRole && safeStr(draft.operatingPattern)) {
     nextStepText =
       selectedContacts.length === 0
         ? `Add ${targetCount} trusted people you already do real life with.`
