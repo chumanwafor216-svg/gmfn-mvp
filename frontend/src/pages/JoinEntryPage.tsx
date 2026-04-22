@@ -228,8 +228,123 @@ const COUNTRY_OPTIONS = [
   "Zimbabwe",
 ];
 
+const COUNTRY_DIAL_CODES: Record<string, string> = {
+  Afghanistan: "+93",
+  Albania: "+355",
+  Algeria: "+213",
+  Argentina: "+54",
+  Australia: "+61",
+  Austria: "+43",
+  Bangladesh: "+880",
+  Belgium: "+32",
+  Benin: "+229",
+  Brazil: "+55",
+  Cameroon: "+237",
+  Canada: "+1",
+  China: "+86",
+  "Cote d'Ivoire": "+225",
+  Denmark: "+45",
+  Egypt: "+20",
+  Ethiopia: "+251",
+  France: "+33",
+  Gambia: "+220",
+  Germany: "+49",
+  Ghana: "+233",
+  India: "+91",
+  Ireland: "+353",
+  Italy: "+39",
+  Japan: "+81",
+  Kenya: "+254",
+  Liberia: "+231",
+  Malaysia: "+60",
+  Morocco: "+212",
+  Netherlands: "+31",
+  "New Zealand": "+64",
+  Niger: "+227",
+  Nigeria: "+234",
+  Norway: "+47",
+  Pakistan: "+92",
+  Philippines: "+63",
+  Portugal: "+351",
+  Rwanda: "+250",
+  Senegal: "+221",
+  "Sierra Leone": "+232",
+  "South Africa": "+27",
+  Spain: "+34",
+  Tanzania: "+255",
+  Togo: "+228",
+  Turkey: "+90",
+  Uganda: "+256",
+  "United Arab Emirates": "+971",
+  "United Kingdom": "+44",
+  "United States": "+1",
+  Zambia: "+260",
+  Zimbabwe: "+263",
+};
+
+const WORK_OPTIONS = [
+  {
+    value: "trader",
+    label: "Trader / market seller",
+    hint: "Food seller, clothes, phone accessories, spare parts, provisions.",
+  },
+  {
+    value: "service",
+    label: "Service work / skill",
+    hint: "Driver, plumber, tailor, hairdresser, mechanic, electrician.",
+  },
+  {
+    value: "salary",
+    label: "Salary worker / civil servant",
+    hint: "Teacher, nurse, office worker, security, government or company work.",
+  },
+  {
+    value: "farming",
+    label: "Farming / agriculture",
+    hint: "Crop farming, poultry, livestock, produce trading.",
+  },
+  {
+    value: "student",
+    label: "Student / apprentice",
+    hint: "School, training, learning a skill, early work stage.",
+  },
+  {
+    value: "home",
+    label: "Home support / family work",
+    hint: "Family care, home trading, helping a household business.",
+  },
+  {
+    value: "none",
+    label: "Not working yet",
+    hint: "You can still join if the community knows you.",
+  },
+  {
+    value: "other",
+    label: "Other",
+    hint: "Write the closest simple description.",
+  },
+];
+
 function cleanText(value: any): string {
   return String(value || "").trim();
+}
+
+function dialCodeForCountry(country: string): string {
+  return COUNTRY_DIAL_CODES[cleanText(country)] || "";
+}
+
+function workOptionFor(value: string) {
+  return WORK_OPTIONS.find((item) => item.value === value) || null;
+}
+
+function buildWorkSummary(category: string, detail: string): string {
+  const option = workOptionFor(category);
+  const safeDetail = cleanText(detail);
+
+  if (!option) return safeDetail;
+  if (!safeDetail) return option.label;
+
+  return `${option.label}: ${safeDetail}`;
 }
 
 function friendlyJoinError(value: any): string {
@@ -479,7 +594,8 @@ export default function JoinEntryPage() {
   const [surname, setSurname] = useState("");
   const [phone, setPhone] = useState("");
   const [country, setCountry] = useState("");
-  const [businessName, setBusinessName] = useState("");
+  const [workCategory, setWorkCategory] = useState("");
+  const [workDetail, setWorkDetail] = useState("");
   const [note, setNote] = useState("");
   const [formOpen, setFormOpen] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
@@ -502,6 +618,42 @@ export default function JoinEntryPage() {
     success?.request?.id || success?.request_id || ""
   );
 
+  const selectedDialCode = useMemo(() => {
+    return dialCodeForCountry(country);
+  }, [country]);
+
+  const selectedWorkOption = useMemo(() => {
+    return workOptionFor(workCategory);
+  }, [workCategory]);
+
+  function handleCountryChange(nextCountry: string) {
+    const previousDialCode = dialCodeForCountry(country);
+    const nextDialCode = dialCodeForCountry(nextCountry);
+
+    setCountry(nextCountry);
+
+    if (!nextDialCode) return;
+
+    setPhone((current) => {
+      const safeCurrent = cleanText(current);
+
+      if (!safeCurrent) return `${nextDialCode} `;
+      if (previousDialCode && safeCurrent === previousDialCode) {
+        return `${nextDialCode} `;
+      }
+      if (previousDialCode && safeCurrent === `${previousDialCode} `) {
+        return `${nextDialCode} `;
+      }
+
+      return current;
+    });
+  }
+
+  function handleWorkCategoryChange(nextCategory: string) {
+    setWorkCategory(nextCategory);
+    setWorkDetail("");
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
 
@@ -515,7 +667,7 @@ export default function JoinEntryPage() {
       const safeSurname = cleanText(surname);
       const safePhone = cleanText(phone);
       const safeCountry = cleanText(country);
-      const safeBusinessName = cleanText(businessName);
+      const safeBusinessName = buildWorkSummary(workCategory, workDetail);
       const safeNote = cleanText(note);
 
       if (!safeInviteCode) {
@@ -549,7 +701,8 @@ export default function JoinEntryPage() {
       setSurname("");
       setPhone("");
       setCountry("");
-      setBusinessName("");
+      setWorkCategory("");
+      setWorkDetail("");
       setNote("");
       setFormOpen(false);
     } catch (e: any) {
@@ -857,16 +1010,26 @@ export default function JoinEntryPage() {
                   <input
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Preferably +E164 format"
+                    placeholder={
+                      selectedDialCode
+                        ? `${selectedDialCode} then your number`
+                        : "Preferably +E164 format"
+                    }
                     style={{ ...inputStyle(), marginTop: 8 }}
                   />
+                  {selectedDialCode ? (
+                    <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                      Phone starts with {selectedDialCode} for {country}. Add
+                      the rest of your number after it.
+                    </div>
+                  ) : null}
                 </div>
 
                 <div>
                   <div style={labelText()}>Country</div>
                   <select
                     value={country}
-                    onChange={(e) => setCountry(e.target.value)}
+                    onChange={(e) => handleCountryChange(e.target.value)}
                     style={{ ...inputStyle(), marginTop: 8 }}
                   >
                     <option value="">Select country</option>
@@ -881,13 +1044,43 @@ export default function JoinEntryPage() {
 
               <div style={{ marginTop: 12 }}>
                 <div style={labelText()}>Work, business, or trade (optional)</div>
-                <input
-                  value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
-                  placeholder="Example: trader, driver, teacher, student, shop owner"
+                <select
+                  value={workCategory}
+                  onChange={(e) => handleWorkCategoryChange(e.target.value)}
                   style={{ ...inputStyle(), marginTop: 8 }}
-                />
+                >
+                  <option value="">Select the closest one</option>
+                  {WORK_OPTIONS.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+                <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                  Choose the nearest fit. This only helps the community
+                  understand you faster.
+                </div>
               </div>
+
+              {workCategory && workCategory !== "none" ? (
+                <div style={{ marginTop: 12 }}>
+                  <div style={labelText()}>Short detail (optional)</div>
+                  <input
+                    value={workDetail}
+                    onChange={(e) => setWorkDetail(e.target.value)}
+                    placeholder={selectedWorkOption?.hint || "Add a few words if needed"}
+                    style={{ ...inputStyle(), marginTop: 8 }}
+                  />
+                </div>
+              ) : null}
+
+              {workCategory === "none" ? (
+                <div style={{ marginTop: 12, ...noticeStyle("info") }}>
+                  That is okay. GSN is not judging income. The community can
+                  still review you by relationship, trust, and what they know
+                  about you.
+                </div>
+              ) : null}
 
               <div style={{ marginTop: 12 }}>
                 <div style={labelText()}>Short note to the community (optional)</div>

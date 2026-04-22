@@ -41,6 +41,10 @@ class EntryPhoneStartOut(BaseModel):
     expires_at: str
     delivery_mode: str
     otp_preview: Optional[str] = None
+    verified: bool = False
+    verified_at: Optional[str] = None
+    bank_details_recorded: bool = False
+    confirmation_message: Optional[str] = None
 
 
 class EntryPhoneConfirmIn(BaseModel):
@@ -172,7 +176,7 @@ def _entry_otp_preview_enabled() -> bool:
 
 def _entry_phone_session_minutes(*, preview_enabled: bool) -> int:
     configured = str(os.getenv("GMFN_ENTRY_PHONE_SESSION_MINUTES") or "").strip()
-    fallback = 60 if preview_enabled else 10
+    fallback = 24 * 60 if preview_enabled else 10
 
     if not configured:
         return fallback
@@ -187,6 +191,56 @@ def _entry_phone_session_minutes(*, preview_enabled: bool) -> int:
 
 def _generate_code() -> str:
     return f"{secrets.randbelow(900000) + 100000}"
+
+
+def _phone_confirmation_message(row: EntryPhoneVerification) -> str:
+    return (
+        f"{row.display_name}, your phone has been successfully linked to your name. "
+        "GSN will use it to protect your onboarding record as you continue."
+    )
+
+
+def _find_resumable_entry_phone_session(
+    *,
+    db: Session,
+    phone_e164: str,
+    display_name: str,
+    email: Optional[str],
+) -> Optional[EntryPhoneVerification]:
+    normalized_email = _clean_text(email).lower()
+    normalized_name = _clean_text(display_name).lower()
+    candidates = (
+        db.query(EntryPhoneVerification)
+        .filter(
+            EntryPhoneVerification.phone_e164 == phone_e164,
+            EntryPhoneVerification.consumed_at.is_(None),
+        )
+        .order_by(EntryPhoneVerification.id.desc())
+        .limit(8)
+        .all()
+    )
+
+    for row in candidates:
+        if _verification_expired(row):
+            continue
+
+        row_email = _clean_text(row.email).lower()
+        row_name = _clean_text(row.display_name).lower()
+        email_matches = bool(normalized_email and row_email == normalized_email)
+        name_matches = bool(normalized_name and row_name == normalized_name)
+
+        if row_email and normalized_email and row_email != normalized_email and not name_matches:
+            continue
+        if row_email and not normalized_email and not name_matches:
+            continue
+        if row_email and not email_matches and not name_matches:
+            continue
+        if not row_email and not name_matches:
+            continue
+
+        return row
+
+    return None
 
 
 PHONE_COUNTRY_HINTS: list[tuple[str, str]] = [
@@ -216,6 +270,9 @@ COUNTRY_ALIASES = {
     "GREAT BRITAIN": "GB",
     "BRITAIN": "GB",
     "ENGLAND": "GB",
+    "SCOTLAND": "GB",
+    "WALES": "GB",
+    "NORTHERN IRELAND": "GB",
     "NIGERIA": "NG",
     "GHANA": "GH",
     "KENYA": "KE",
@@ -418,6 +475,47 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
         raise HTTPException(status_code=400, detail="Phone number already registered")
 
     preview_enabled = _entry_otp_preview_enabled()
+    resumable = _find_resumable_entry_phone_session(
+        db=db,
+        phone_e164=phone_e164,
+        display_name=display_name,
+        email=email,
+    )
+
+    if resumable is not None:
+        if email and not _clean_text(resumable.email):
+            resumable.email = email
+        if browser_locale:
+            resumable.browser_locale = browser_locale
+            resumable.locale_country_hint = _infer_locale_country(browser_locale)
+        if browser_timezone:
+            resumable.browser_timezone = browser_timezone
+
+        resumable.expires_at = _now() + timedelta(
+            minutes=_entry_phone_session_minutes(preview_enabled=preview_enabled)
+        )
+        db.add(resumable)
+        db.commit()
+        db.refresh(resumable)
+
+        verified_at = _utc_aware(resumable.verified_at)
+        is_verified = verified_at is not None
+        return {
+            "ok": True,
+            "verification_id": int(resumable.id),
+            "phone_e164": resumable.phone_e164,
+            "expires_at": resumable.expires_at.isoformat(),
+            "delivery_mode": "preview" if preview_enabled else "pending-sms",
+            "otp_preview": resumable.code if preview_enabled and not is_verified else None,
+            "verified": is_verified,
+            "verified_at": verified_at.isoformat() if verified_at else None,
+            "bank_details_recorded": resumable.bank_details_recorded_at is not None,
+            "confirmation_message": (
+                "GSN found your unfinished entry record and reopened it so you can continue."
+                if not is_verified
+                else _phone_confirmation_message(resumable)
+            ),
+        }
 
     verification = EntryPhoneVerification(
         display_name=display_name,
@@ -475,10 +573,7 @@ def confirm_entry_phone_verification(
     db.commit()
     db.refresh(row)
 
-    confirmation_message = (
-        f"{row.display_name}, your phone has been successfully linked to your name. "
-        "GSN will use it to protect your onboarding record as you continue."
-    )
+    confirmation_message = _phone_confirmation_message(row)
 
     return {
         "ok": True,

@@ -9,7 +9,7 @@ def _parse_api_datetime(value: str) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
-def test_entry_phone_preview_session_lasts_one_hour_for_pilot_onboarding(client):
+def test_entry_phone_preview_session_lasts_one_day_for_pilot_onboarding(client):
     os.environ["GMFN_DEV_MODE"] = "1"
     os.environ.pop("GMFN_ENTRY_PHONE_SESSION_MINUTES", None)
 
@@ -27,8 +27,8 @@ def test_entry_phone_preview_session_lasts_one_hour_for_pilot_onboarding(client)
     assert start_body["delivery_mode"] == "preview"
     assert start_body["otp_preview"]
     expires_at = _parse_api_datetime(start_body["expires_at"])
-    assert expires_at - started_at > timedelta(minutes=59)
-    assert expires_at - started_at < timedelta(minutes=61)
+    assert expires_at - started_at > timedelta(hours=23, minutes=59)
+    assert expires_at - started_at < timedelta(hours=24, minutes=1)
 
 
 def test_entry_phone_verification_then_create_and_phone_login(client):
@@ -210,6 +210,101 @@ def test_entry_phone_verification_then_create_and_phone_login(client):
     notifications_body = notifications_res.json()
     notification_titles = [item["title"] for item in notifications_body["items"]]
     assert "Starter trust has been established" in notification_titles
+
+
+def test_entry_phone_start_resumes_unfinished_verified_session(client):
+    os.environ["GMFN_DEV_MODE"] = "1"
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Pilot Resume",
+            "phone_e164": "+2348015550001",
+            "email": "pilot.resume@example.com",
+        },
+    )
+    assert start_res.status_code == 201, start_res.text
+    start_body = start_res.json()
+
+    confirm_res = client.post(
+        "/entry/phone/confirm",
+        json={
+            "verification_id": start_body["verification_id"],
+            "code": start_body["otp_preview"],
+        },
+    )
+    assert confirm_res.status_code == 200, confirm_res.text
+
+    resume_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Pilot Resume",
+            "phone_e164": "+2348015550001",
+            "email": "pilot.resume@example.com",
+        },
+    )
+    assert resume_res.status_code == 201, resume_res.text
+    resume_body = resume_res.json()
+
+    assert resume_body["verification_id"] == start_body["verification_id"]
+    assert resume_body["verified"] is True
+    assert resume_body["bank_details_recorded"] is False
+    assert resume_body["otp_preview"] is None
+    assert "successfully linked to your name" in resume_body["confirmation_message"]
+
+
+def test_entry_phone_start_resumes_unfinished_bank_record(client):
+    os.environ["GMFN_DEV_MODE"] = "1"
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Pilot Bank Resume",
+            "phone_e164": "+447700900321",
+            "email": "pilot.bank.resume@example.com",
+            "browser_locale": "en-GB",
+        },
+    )
+    assert start_res.status_code == 201, start_res.text
+    start_body = start_res.json()
+
+    confirm_res = client.post(
+        "/entry/phone/confirm",
+        json={
+            "verification_id": start_body["verification_id"],
+            "code": start_body["otp_preview"],
+        },
+    )
+    assert confirm_res.status_code == 200, confirm_res.text
+
+    bank_res = client.post(
+        "/entry/bank-details",
+        json={
+            "verification_id": start_body["verification_id"],
+            "destination_name": "Pilot Bank Resume",
+            "bank_name": "Pilot Scotland Bank",
+            "account_number": "12345678",
+            "country": "Scotland",
+            "currency": "GBP",
+        },
+    )
+    assert bank_res.status_code == 200, bank_res.text
+    assert bank_res.json()["region_consistency_status"] == "matched"
+
+    resume_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Pilot Bank Resume",
+            "phone_e164": "+447700900321",
+            "email": "pilot.bank.resume@example.com",
+        },
+    )
+    assert resume_res.status_code == 201, resume_res.text
+    resume_body = resume_res.json()
+
+    assert resume_body["verification_id"] == start_body["verification_id"]
+    assert resume_body["verified"] is True
+    assert resume_body["bank_details_recorded"] is True
 
 
 def test_entry_create_requires_verified_phone_first(client):

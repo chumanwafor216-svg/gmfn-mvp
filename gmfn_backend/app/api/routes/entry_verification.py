@@ -57,6 +57,37 @@ def _clean_text(value: object, *, upper: bool = False) -> str:
     return text.upper() if upper else text
 
 
+REGION_ALIASES = {
+    "UK": "GB",
+    "UNITED KINGDOM": "GB",
+    "GREAT BRITAIN": "GB",
+    "BRITAIN": "GB",
+    "ENGLAND": "GB",
+    "SCOTLAND": "GB",
+    "WALES": "GB",
+    "NORTHERN IRELAND": "GB",
+    "NIGERIA": "NG",
+    "GHANA": "GH",
+    "KENYA": "KE",
+    "UNITED STATES": "US",
+    "USA": "US",
+}
+
+
+def _normalize_region_code(value: object) -> Optional[str]:
+    raw = _clean_text(value, upper=True)
+    if not raw:
+        return None
+
+    compact = raw.replace("-", " ").replace("_", " ")
+    if compact in REGION_ALIASES:
+        return REGION_ALIASES[compact]
+    if len(raw) == 2 and raw.isalpha():
+        return raw
+
+    return raw
+
+
 def _now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -113,10 +144,9 @@ def _serialize_check(row: IdentityVerificationCheck) -> dict[str, Any]:
 @router.post("/bank/verify", response_model=VerificationCheckOut, status_code=status.HTTP_201_CREATED)
 def verify_bank_details(payload: BankVerificationIn, db: Session = Depends(get_db)):
     session_row = _require_verified_session(payload.verification_id, db)
-    region_code = _clean_text(payload.country, upper=True) or _clean_text(
-        session_row.bank_country or session_row.phone_country_hint,
-        upper=True,
-    ) or None
+    region_code = _normalize_region_code(payload.country) or _normalize_region_code(
+        session_row.bank_country or session_row.phone_country_hint
+    )
 
     adapter = route_bank_verification(region_code)
     adapter_result = adapter.verify(
@@ -157,10 +187,9 @@ def verify_drivers_licence(
     db: Session = Depends(get_db),
 ):
     session_row = _require_verified_session(payload.verification_id, db)
-    region_code = _clean_text(payload.country, upper=True) or _clean_text(
-        session_row.driver_licence_country,
-        upper=True,
-    ) or None
+    region_code = _normalize_region_code(payload.country) or _normalize_region_code(
+        session_row.driver_licence_country
+    )
 
     adapter = route_drivers_licence_verification(region_code)
     adapter_result = adapter.verify(

@@ -83,6 +83,60 @@ def test_public_join_request_accepts_clan_invite_record_code(client):
         assert join_request.invite_id == 1
 
 
+def test_public_join_request_accepts_short_lived_invite_during_daily_pilot_window(client):
+    _seed_join_context()
+    now = datetime.now(timezone.utc)
+
+    with SessionLocal() as db:
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="short-lived-package",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=now - timedelta(hours=2),
+                expires_at=now - timedelta(hours=1),
+            )
+        )
+        db.commit()
+
+    res = client.post("/clans/join-requests", json=_join_payload("short-lived-package"))
+
+    assert res.status_code == 201, res.text
+    data = res.json()
+    assert data["ok"] is True
+    assert data["request"]["invite_id"] == 1
+
+
+def test_public_join_request_rejects_short_lived_invite_after_daily_pilot_window(client):
+    _seed_join_context()
+    now = datetime.now(timezone.utc)
+
+    with SessionLocal() as db:
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="old-short-lived-package",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=now - timedelta(hours=26),
+                expires_at=now - timedelta(hours=25),
+            )
+        )
+        db.commit()
+
+    res = client.post("/clans/join-requests", json=_join_payload("old-short-lived-package"))
+
+    assert res.status_code == 400, res.text
+    assert res.json()["detail"] == "Invitation has expired"
+
+
 def test_public_join_request_still_accepts_legacy_community_invite_code(client):
     _seed_join_context(invite_code="legacy-code")
 

@@ -345,6 +345,77 @@ function resolveActivationRequestId(out: any): string {
   );
 }
 
+const BANK_COUNTRY_OPTIONS = [
+  "Nigeria",
+  "United Kingdom",
+  "Ghana",
+  "Kenya",
+  "United States",
+  "Ireland",
+  "South Africa",
+  "Uganda",
+  "Tanzania",
+  "Rwanda",
+  "Other",
+];
+
+const BANK_COUNTRY_CURRENCY: Record<string, string> = {
+  Nigeria: "NGN",
+  "United Kingdom": "GBP",
+  Ghana: "GHS",
+  Kenya: "KES",
+  "United States": "USD",
+  Ireland: "EUR",
+  "South Africa": "ZAR",
+  Uganda: "UGX",
+  Tanzania: "TZS",
+  Rwanda: "RWF",
+};
+
+function currencyForBankCountry(country: string): string {
+  return BANK_COUNTRY_CURRENCY[safeStr(country)] || "";
+}
+
+function bankVerificationHelpText(result: EntryVerificationResult): string {
+  const status = safeStr(result?.status).toLowerCase();
+  const explanation = safeStr(result?.explanation);
+
+  if (status === "unavailable") {
+    return (
+      "Your bank or wallet details have been recorded. The live bank-check provider is not connected for this pilot region yet, so GSN keeps this as reviewable evidence instead of blocking you."
+    );
+  }
+
+  if (status === "manual_review_required") {
+    return (
+      "Your bank or wallet details have been recorded, but this one needs human review or more information before it can become a stronger bank-check signal."
+    );
+  }
+
+  if (status === "failed") {
+    return (
+      explanation ||
+      "The live bank check could not confirm these details. Check the account name, number, country, and any required sort code or IBAN, then try again."
+    );
+  }
+
+  if (status === "partial_match") {
+    return (
+      explanation ||
+      "The bank check found a partial match. GSN recorded it, but it may need a closer review before it becomes strong evidence."
+    );
+  }
+
+  if (status === "matched") {
+    return (
+      explanation ||
+      "The bank check matched these details and GSN has recorded it as stronger identity evidence."
+    );
+  }
+
+  return explanation || "The bank verification result is now attached to this onboarding session.";
+}
+
 export default function CreateEntryPage() {
   const nav = useNavigate();
   const location = useLocation();
@@ -683,6 +754,15 @@ export default function CreateEntryPage() {
     setSuccess("");
   }
 
+  function handleBankCountryChange(nextCountry: string) {
+    setBankCountry(nextCountry);
+
+    const nextCurrency = currencyForBankCountry(nextCountry);
+    if (nextCurrency) {
+      setBankCurrency(nextCurrency);
+    }
+  }
+
   function isPhoneSessionExpiredError(err: any): boolean {
     const message = safeStr(err?.message || err).toLowerCase();
     return (
@@ -690,6 +770,11 @@ export default function CreateEntryPage() {
       message.includes("phone verification code has expired") ||
       message.includes("phone verification session not found")
     );
+  }
+
+  function isPhoneAlreadyRegisteredError(err: any): boolean {
+    const message = safeStr(err?.message || err).toLowerCase();
+    return message.includes("phone number already registered");
   }
 
   async function startAndMaybeConfirmPhoneSession(): Promise<{
@@ -710,6 +795,42 @@ export default function CreateEntryPage() {
     setOtpDeliveryMode(safeStr(out?.delivery_mode));
     setPhoneVerificationProof(null);
     setBankRecordProof(null);
+
+    if (nextVerificationId > 0 && out?.verified) {
+      setPhoneVerificationProof({
+        display_name: safeStr(displayName),
+        phone_e164: safeStr(out?.phone_e164) || safeStr(phone),
+        verified_at: safeStr(out?.verified_at),
+        confirmation_message: safeStr(out?.confirmation_message),
+        trust_event_response: undefined,
+      });
+      setBankAccountName((current) => safeStr(current) || safeStr(displayName));
+
+      if (out?.bank_details_recorded) {
+        setStep("community");
+        setOpenPanel("community");
+        focusPanel("community");
+
+        return {
+          verificationId: nextVerificationId,
+          autoConfirmed: true,
+          message:
+            "GSN found your unfinished entry record. Your phone and bank or wallet details are already recorded, so you can continue with community setup.",
+        };
+      }
+
+      setStep("bank");
+      setOpenPanel("verification");
+      focusPanel("verification");
+
+      return {
+        verificationId: nextVerificationId,
+        autoConfirmed: true,
+        message:
+          safeStr(out?.confirmation_message) ||
+          "GSN found your verified phone record. Continue with your bank or wallet details.",
+      };
+    }
 
     if (nextVerificationId > 0 && previewCode) {
       const confirmed = await confirmEntryPhoneVerification({
@@ -763,7 +884,14 @@ export default function CreateEntryPage() {
       const started = await startAndMaybeConfirmPhoneSession();
       setSuccess(started.message);
     } catch (err: any) {
-      setError(err?.message || "Phone verification could not be started.");
+      if (isPhoneAlreadyRegisteredError(err)) {
+        setExistingMemberOpen(true);
+        setError(
+          "This phone number already belongs to a completed GSN account. Please use Already a member to sign in instead of starting a second community entry."
+        );
+      } else {
+        setError(err?.message || "Phone verification could not be started.");
+      }
     } finally {
       setBusy(false);
     }
@@ -1734,8 +1862,7 @@ export default function CreateEntryPage() {
                       .replace(/\b\w/g, (char) => char.toUpperCase())}
                   </div>
                   <div style={{ marginTop: 8, lineHeight: 1.7 }}>
-                    {safeStr(bankVerificationResult.explanation) ||
-                      "The bank verification result is now attached to this onboarding session."}
+                    {bankVerificationHelpText(bankVerificationResult)}
                   </div>
                   {safeStr(bankVerificationResult.provider_key) ? (
                     <div style={{ marginTop: 8, fontSize: 12, fontWeight: 900, opacity: 0.84 }}>
@@ -1943,12 +2070,44 @@ export default function CreateEntryPage() {
                     >
                       <div>
                         <div style={fieldLabel()}>Country (optional)</div>
-                        <input
+                        <select
                           value={bankCountry}
-                          onChange={(e) => setBankCountry(e.target.value)}
-                          placeholder="Country"
+                          onChange={(e) => handleBankCountryChange(e.target.value)}
                           style={input()}
-                        />
+                        >
+                          <option value="">Select bank country</option>
+                          {BANK_COUNTRY_OPTIONS.map((item) => (
+                            <option key={item} value={item}>
+                              {item}
+                            </option>
+                          ))}
+                        </select>
+                        <div
+                          style={{
+                            marginTop: 7,
+                            color: "#64748B",
+                            fontSize: 12.5,
+                            lineHeight: 1.55,
+                            fontWeight: 800,
+                          }}
+                        >
+                          For Scotland, England, Wales, or Northern Ireland, use
+                          United Kingdom or GB.
+                        </div>
+                        {bankCountry === "Other" ? (
+                          <div
+                            style={{
+                              marginTop: 7,
+                              color: "#92400E",
+                              fontSize: 12.5,
+                              lineHeight: 1.55,
+                              fontWeight: 800,
+                            }}
+                          >
+                            If your country is not listed, leave this as Other
+                            and explain it in the note below.
+                          </div>
+                        ) : null}
                       </div>
 
                       <div>
@@ -1964,6 +2123,10 @@ export default function CreateEntryPage() {
                           <option value="EUR">EUR</option>
                           <option value="KES">KES</option>
                           <option value="GHS">GHS</option>
+                          <option value="ZAR">ZAR</option>
+                          <option value="UGX">UGX</option>
+                          <option value="TZS">TZS</option>
+                          <option value="RWF">RWF</option>
                         </select>
                       </div>
                     </div>

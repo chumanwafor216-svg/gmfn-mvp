@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import secrets
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from urllib.parse import quote
 
@@ -56,6 +56,29 @@ def _utc_aware(dt: Optional[datetime]) -> Optional[datetime]:
     if dt.tzinfo is None:
         return dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
+
+
+def _minimum_invite_ttl_hours() -> int:
+    raw = str(os.getenv("GMFN_JOIN_INVITE_MIN_TTL_HOURS") or "24").strip()
+    try:
+        hours = int(raw)
+    except ValueError:
+        hours = 24
+    return max(0, min(hours, 24 * 30))
+
+
+def _effective_invite_expires_at(invite: ClanInvite) -> Optional[datetime]:
+    expires_at = _utc_aware(invite.expires_at)
+    created_at = _utc_aware(invite.created_at)
+    min_hours = _minimum_invite_ttl_hours()
+
+    if expires_at is None or created_at is None or min_hours <= 0:
+        return expires_at
+
+    minimum_expires_at = created_at + timedelta(hours=min_hours)
+    if expires_at < minimum_expires_at:
+        return minimum_expires_at
+    return expires_at
 
 
 def _require_member_or_admin(db: Session, *, clan_id: int, user: User) -> None:
@@ -217,7 +240,7 @@ def join_clan_by_invite_code(db: Session, *, code: str, user: User):
     if invite.revoked_at is not None:
         raise HTTPException(status_code=400, detail="Invite revoked")
 
-    expires_at = _utc_aware(invite.expires_at)
+    expires_at = _effective_invite_expires_at(invite)
     if expires_at is not None and expires_at <= now:
         raise HTTPException(status_code=400, detail="Invite expired")
 

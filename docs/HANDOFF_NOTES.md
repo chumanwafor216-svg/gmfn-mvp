@@ -46,6 +46,105 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-22
 
 #### Workstream
+Create-entry recovery after Block 2 bank/wallet failure.
+
+#### Routes/screens affected
+- `/create`
+- `/cover?entry=create` when it routes into create entry
+
+#### Backend routes/endpoints involved
+- `POST /entry/phone/start`
+- `POST /entry/bank-details`
+- `POST /entry/bank/verify`
+
+#### Files in play
+- `gmfn_backend/app/api/routes/entry.py`
+- `gmfn_backend/app/api/routes/entry_verification.py`
+- `gmfn_backend/tests/test_entry_create.py`
+- `frontend/src/pages/CreateEntryPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- A live tester could complete the phone proof, hit trouble around Block 2
+  bank/wallet details, then get stuck on retry with `Phone number already
+  registered`.
+- The safest intended behavior is not to let an unfinished founder entry become
+  a dead end.
+- `/entry/phone/start` now reopens an unconsumed, unexpired entry-phone session
+  for the same phone and matching email/name instead of forcing the tester to
+  start from zero.
+- If the resumed session already has phone proof, the frontend moves directly
+  back to Bank and wallet details.
+- If the resumed session already has bank/wallet details, the frontend moves
+  directly to Community setup.
+- If the phone truly belongs to a completed `User`, the frontend now opens the
+  existing-member guidance and tells the tester to sign in instead of creating
+  another entry.
+- Scotland, England, Wales, and Northern Ireland are normalized as GB for
+  onboarding region checks, and the frontend bank-country helper now tells UK
+  testers to use `United Kingdom` or `GB`.
+- This is a working-tree-only update. It has not been committed and has not
+  been deployed to Render.
+
+#### Verification
+- `python -m compileall app\api\routes\entry.py app\api\routes\entry_verification.py` passed.
+- `python -m pytest tests\test_entry_create.py -q` passed: 12 tests.
+- `npm run build` passed in `frontend`.
+
+#### Next recommended step
+- Phone-test the same failed create-entry path: enter the same phone/name/email
+  again after a Block 2 issue and confirm it resumes to Bank and wallet details
+  or Community setup instead of blocking.
+
+### Previous update
+
+#### Date
+2026-04-22
+
+#### Workstream
+Public join form thinking-load reduction for controlled WhatsApp testing.
+
+#### Routes/screens affected
+- `/join`
+- `/start/join/:code` when it lands in the public join form
+
+#### Backend routes/endpoints involved
+- `POST /clans/join-requests` unchanged
+
+#### Files in play
+- `frontend/src/pages/JoinEntryPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Product-owner feedback from a Nigeria tester showed the public join form
+  still made testers think too much in early fields.
+- The backend join-request payload still expects `business_name` as a string,
+  so this pass keeps the backend contract unchanged.
+- The country field is still a route-local select, but selecting a country now
+  supplies the matching phone dial-code hint and pre-fills the phone field only
+  when doing so will not overwrite an already-entered number.
+- The previous open-ended `Work, business, or trade` text field is now guided
+  by plain categories such as trader, service work, salary/civil-service work,
+  farming, student/apprentice, home/family support, not working yet, and other.
+- Optional work detail is still available when useful, and the frontend
+  combines the category and detail back into the existing `business_name`
+  string before submission.
+- This is a working-tree-only update. It has not been committed and has not
+  been deployed to Render.
+
+#### Verification
+- `npm run build` passed in `frontend`.
+
+#### Next recommended step
+- Phone-test the guided join form locally or after the next intentional Render
+  deploy. If the choices feel right, include this with the next commit bundle.
+
+### Previous update
+
+#### Date
+2026-04-22
+
+#### Workstream
 Public invite/join pilot correction and GSN real-life wedge language.
 
 #### Routes/screens affected
@@ -6867,3 +6966,86 @@ GSN-branded invite composer and invite-entry continuity.
   payout movement, auth, permission, or expected-payment contract was changed.
 - Verification:
   - `npm run build` passed in `frontend`.
+
+### Create-entry bank/wallet pilot stabilization addendum
+
+- Product-owner is actively testing public create-entry links with UK and
+  Nigeria testers, and asked not to commit/deploy this local batch yet.
+- Confirmed current certification level:
+  - The create-entry bank/wallet route is pilot-safe for controlled testing.
+  - It is not production-certified banking yet because live SMS OTP, live bank
+    provider configuration for all regions, and real payout execution are still
+    separate production rails.
+- Updated `gmfn_backend/app/api/routes/entry.py`:
+  - `/entry/phone/start` can now resume an unfinished, unconsumed phone session
+    for the same phone plus matching email/name instead of trapping testers
+    behind `Phone number already registered`.
+  - Resumed sessions extend expiry and report whether the phone and bank/wallet
+    details are already recorded.
+  - Scotland, Wales, and Northern Ireland are now treated as GB country hints.
+- Updated `gmfn_backend/app/api/routes/entry_verification.py`:
+  - Bank and licence verification region names now normalize common country
+    labels such as United Kingdom, Scotland, Nigeria, Ghana, Kenya, and USA
+    before routing to verification providers.
+- Updated `frontend/src/pages/CreateEntryPage.tsx`:
+  - Block 2 now gives country choices instead of a blank bank-country textbox.
+  - Country selection suggests the likely currency.
+  - UK testers are guided to use United Kingdom for Scotland/England/Wales/
+    Northern Ireland.
+  - Bank-verification feedback now explains in plain language when details were
+    recorded but the live provider is unavailable for the pilot region.
+  - If a real completed account already owns the phone number, the page opens
+    the Already-a-member path instead of encouraging a second create entry.
+- Updated `gmfn_backend/tests/test_entry_create.py`:
+  - Added regression coverage for resuming unfinished verified sessions.
+  - Added regression coverage for resuming unfinished sessions after bank/wallet
+    details are already recorded.
+- Verification:
+  - `python -m pytest tests\test_entry_create.py -q` passed: 12 tests.
+  - `python -m compileall app\api\routes\entry.py app\api\routes\entry_verification.py app\services\verification_router.py app\services\verification_adapters\bank_truelayer_gb.py`
+    passed from `gmfn_backend`.
+  - `npm run build` passed in `frontend`.
+  - `git diff --check` passed with only Windows line-ending warnings on edited
+    frontend files.
+- Do not commit or deploy this batch until the product-owner confirms the next
+  testing feedback bundle is ready.
+
+### Daily pilot link/session lifetime addendum
+
+- Product-owner reported that a Nigeria tester returned after more than one
+  hour and saw the public join page reject the invitation as no longer valid or
+  not copied fully.
+- Confirmed from code:
+  - Create-entry phone proof was still one hour by default in pilot preview
+    mode.
+  - Normal clan invite packages are usually seven days, but older/alternate
+    short-lived invite records could still expire too quickly for remote
+    WhatsApp testing.
+- Updated `gmfn_backend/app/api/routes/entry.py`:
+  - Pilot/preview entry phone sessions now default to 24 hours.
+  - Live SMS mode still defaults to the shorter 10-minute window unless
+    `GMFN_ENTRY_PHONE_SESSION_MINUTES` overrides it.
+- Updated `gmfn_backend/app/api/routes/clans.py` and
+  `gmfn_backend/app/services/invites_service.py`:
+  - Added a configurable minimum invite lifetime via
+    `GMFN_JOIN_INVITE_MIN_TTL_HOURS`.
+  - Default is 24 hours for the current controlled pilot.
+  - If an invite code exists but was created with a shorter expiry, the backend
+    treats it as valid until at least 24 hours after creation.
+  - This does not rescue links whose invite code was never created on the
+    active Render database or was copied incompletely.
+- Updated tests:
+  - Entry phone preview lifetime now expects about 24 hours.
+  - Public join request accepts a short-lived package invite during the daily
+    pilot window.
+  - Public join request still rejects that same kind of invite after the daily
+    pilot window.
+- Verification:
+  - `python -m pytest tests\test_entry_create.py tests\test_join_requests.py -q`
+    passed: 16 tests.
+  - `python -m compileall app\api\routes\entry.py app\api\routes\clans.py app\services\invites_service.py`
+    passed from `gmfn_backend`.
+- Later production decision:
+  - Reduce `GMFN_JOIN_INVITE_MIN_TTL_HOURS` and
+    `GMFN_ENTRY_PHONE_SESSION_MINUTES` back toward one or two hours when the
+    outside-circle test moves beyond controlled pilot testing.

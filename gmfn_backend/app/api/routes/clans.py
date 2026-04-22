@@ -232,6 +232,33 @@ def _normalize_invite_max_uses(max_uses: Optional[int]) -> Optional[int]:
     return max_uses
 
 
+def _minimum_invite_ttl_hours() -> int:
+    raw = str(os.getenv("GMFN_JOIN_INVITE_MIN_TTL_HOURS") or "24").strip()
+    try:
+        hours = int(raw)
+    except ValueError:
+        hours = 24
+    return max(0, min(hours, 24 * 30))
+
+
+def _effective_invite_expires_at(
+    *,
+    created_at: Optional[datetime],
+    expires_at: Optional[datetime],
+) -> Optional[datetime]:
+    safe_expires_at = _utc_aware(expires_at)
+    safe_created_at = _utc_aware(created_at)
+    min_hours = _minimum_invite_ttl_hours()
+
+    if safe_expires_at is None or safe_created_at is None or min_hours <= 0:
+        return safe_expires_at
+
+    minimum_expires_at = safe_created_at + timedelta(hours=min_hours)
+    if safe_expires_at < minimum_expires_at:
+        return minimum_expires_at
+    return safe_expires_at
+
+
 def _ensure_invite_expiry(
     db: Session,
     clan: Clan,
@@ -274,14 +301,20 @@ def _utc_aware(dt: Optional[datetime]) -> Optional[datetime]:
 
 
 def _is_invite_expired(clan: Clan) -> bool:
-    expires_at = _utc_aware(getattr(clan, "invite_expires_at", None))
+    expires_at = _effective_invite_expires_at(
+        created_at=getattr(clan, "invite_created_at", None),
+        expires_at=getattr(clan, "invite_expires_at", None),
+    )
     if expires_at is None:
         return False
     return expires_at < datetime.now(timezone.utc)
 
 
 def _is_clan_invite_expired(invite: ClanInvite) -> bool:
-    expires_at = _utc_aware(getattr(invite, "expires_at", None))
+    expires_at = _effective_invite_expires_at(
+        created_at=getattr(invite, "created_at", None),
+        expires_at=getattr(invite, "expires_at", None),
+    )
     if expires_at is None:
         return False
     return expires_at < datetime.now(timezone.utc)
@@ -934,7 +967,10 @@ def join_landing_page(
         clan_name = getattr(clan, "name", "—")
         community_code = _community_code(clan.id)
 
-        expires_at = _utc_aware(getattr(clan, "invite_expires_at", None))
+        expires_at = _effective_invite_expires_at(
+            created_at=getattr(clan, "invite_created_at", None),
+            expires_at=getattr(clan, "invite_expires_at", None),
+        )
         if expires_at is None:
             expires_text = "No expiry"
         else:
