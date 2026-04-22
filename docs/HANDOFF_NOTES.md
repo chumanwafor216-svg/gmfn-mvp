@@ -46,6 +46,48 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-22
 
 #### Workstream
+Join-entry invite precheck for live tester links.
+
+#### Routes/screens affected
+- `/start/join/:inviteCode`
+- Join request form
+
+#### Backend routes/endpoints involved
+- `GET /clans/join-invite/preview`
+- `POST /clans/join-requests`
+
+#### Files in play
+- `gmfn_backend/app/api/routes/clans.py`
+- `gmfn_backend/tests/test_join_requests.py`
+- `frontend/src/lib/api.ts`
+- `frontend/src/pages/JoinEntryPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- A live tester reached the join request form, filled details, and only then
+  saw that the invite link was no longer valid or had not copied fully.
+- The join page now checks the invite code before the tester fills the form.
+- If the invite is missing, expired, inactive, over-used, or not found, the
+  form is blocked and the user is told to ask for a fresh GSN invite link.
+- Valid invite links still allow the normal join-request submission flow.
+- Backend tests now cover both a ready invite preview and an invalid invite
+  preview without forcing a failed form submission first.
+
+#### Open risks or unknowns
+- This does not bypass invite security or recover a broken invite. It only
+  prevents wasted form filling and explains the recovery action earlier.
+- If a tester already has an old/broken link, they still need the latest join
+  link from the inviter.
+
+#### Next recommended step
+After deploy, ask testers with failed join links to refresh or request the
+latest GSN join link, then confirm the page shows the invite status before the
+form is completed.
+
+#### Date
+2026-04-22
+
+#### Workstream
 Admin pilot intake monitor for live onboarding tests.
 
 #### Routes/screens affected

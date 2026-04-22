@@ -263,9 +263,9 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
 
   if (pathname === "/app/build-first-circle") {
     return {
-      title: "Build First Circle",
+      title: "First Circle",
       hint:
-        "Task focus is active. Finish the trusted-circle step first, then return to the wider workspace.",
+        "Task focus is active. Add trusted people, then return to the wider workspace.",
       actions: [
         makeCommunityItem(),
         { label: "Notifications", to: "/app/notifications" },
@@ -352,7 +352,7 @@ function getSpecialRouteMeta(
   if (pathname === "/app/build-first-circle") {
     return {
       section: "Focused task",
-      page: "Build First Circle",
+      page: "First Circle",
     };
   }
 

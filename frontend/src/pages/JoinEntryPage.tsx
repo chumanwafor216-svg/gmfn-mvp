@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { EntryBackLink } from "../components/EntryControls";
 import OriginLink from "../components/OriginLink";
-import { submitJoinRequest } from "../lib/api";
+import { getJoinInvitePreview, submitJoinRequest } from "../lib/api";
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
@@ -474,7 +474,6 @@ function buildInviteLetter(args: {
 }
 
 export default function JoinEntryPage() {
-  const { clanId } = useParams();
   const [searchParams] = useSearchParams();
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
@@ -562,16 +561,6 @@ export default function JoinEntryPage() {
     );
   }, [searchParams]);
 
-  const communityCode = useMemo(() => {
-    return cleanText(searchParams.get("community_code") || "");
-  }, [searchParams]);
-
-  const routeLabel = useMemo(() => {
-    const routeFromPath = cleanText(clanId || "");
-    if (routeFromPath) return routeFromPath;
-    return cleanText(searchParams.get("community_route") || "");
-  }, [clanId, searchParams]);
-
   const inviteLetter = useMemo(() => {
     return buildInviteLetter({
       receiver: intendedReceiver,
@@ -601,13 +590,60 @@ export default function JoinEntryPage() {
     if (typeof window === "undefined") return true;
     return window.innerWidth > 980;
   });
+  const [invitePreview, setInvitePreview] = useState<any>(null);
+  const [inviteChecking, setInviteChecking] = useState(false);
 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [success, setSuccess] = useState<any>(null);
 
+  useEffect(() => {
+    let alive = true;
+
+    if (!inviteCode) {
+      setInviteChecking(false);
+      setInvitePreview({
+        valid: false,
+        status: "missing",
+        message:
+          "This join page does not contain a valid invite code yet. Ask the person who invited you to send the full GSN invite link again.",
+      });
+      return;
+    }
+
+    setInviteChecking(true);
+    setInvitePreview(null);
+
+    getJoinInvitePreview(inviteCode)
+      .then((out) => {
+        if (!alive) return;
+        setInvitePreview(out || null);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setInvitePreview(null);
+      })
+      .finally(() => {
+        if (!alive) return;
+        setInviteChecking(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [inviteCode]);
+
+  const inviteBlocked = Boolean(
+    inviteCode && invitePreview && invitePreview.valid === false
+  );
+  const inviteReady = Boolean(invitePreview && invitePreview.valid === true);
+  const invitePreviewMessage = cleanText(invitePreview?.message);
+  const canOpenForm = Boolean(inviteCode) && !inviteBlocked && !inviteChecking;
+
   const canSubmit =
     !!inviteCode &&
+    !inviteBlocked &&
+    !inviteChecking &&
     !!cleanText(firstName) &&
     !!cleanText(surname) &&
     !!cleanText(phone) &&
@@ -672,6 +708,12 @@ export default function JoinEntryPage() {
 
       if (!safeInviteCode) {
         throw new Error("Invite code is missing from this join link.");
+      }
+      if (inviteBlocked) {
+        throw new Error(invitePreviewMessage || "This invite link is not ready.");
+      }
+      if (inviteChecking) {
+        throw new Error("The app is still checking this invite link. Please wait a moment.");
       }
       if (!safeFirstName) {
         throw new Error("Enter first name.");
@@ -902,17 +944,60 @@ export default function JoinEntryPage() {
 
               <button
                 type="button"
-                onClick={() => setFormOpen((prev) => !prev)}
-                style={secondaryLink()}
+                disabled={!canOpenForm}
+                onClick={() => {
+                  if (!canOpenForm) return;
+                  setFormOpen((prev) => !prev);
+                }}
+                style={{
+                  ...secondaryLink(),
+                  opacity: canOpenForm ? 1 : 0.62,
+                  cursor: canOpenForm ? "pointer" : "not-allowed",
+                }}
               >
-                {formOpen ? "Collapse" : "Open"}
+                {inviteChecking
+                  ? "Checking"
+                  : !canOpenForm
+                    ? "Link needed"
+                    : formOpen
+                      ? "Collapse"
+                      : "Open"}
               </button>
             </div>
+
+            {inviteChecking ? (
+              <div style={{ marginTop: 18, ...noticeStyle("info") }}>
+                Checking this GSN invite link before you fill the form.
+              </div>
+            ) : null}
 
             {!inviteCode ? (
               <div style={{ marginTop: 18, ...noticeStyle("error") }}>
                 This join page does not contain a valid invite code yet. Ask the
                 person who invited you to send the full GSN invite link again.
+              </div>
+            ) : null}
+
+            {inviteBlocked ? (
+              <div style={{ marginTop: 18, ...noticeStyle("error") }}>
+                <div style={{ fontWeight: 1000, marginBottom: 8 }}>
+                  Fresh invite link needed.
+                </div>
+                <div>
+                  {invitePreviewMessage ||
+                    "This invite link is no longer valid or was not copied fully."}
+                </div>
+                <div style={{ marginTop: 10 }}>
+                  Ask the person who invited you to open GSN and send the latest
+                  join link again.
+                </div>
+              </div>
+            ) : null}
+
+            {inviteReady ? (
+              <div style={{ marginTop: 18, ...noticeStyle("success") }}>
+                Invite checked. You can send your join request for community
+                review.
               </div>
             ) : null}
 
@@ -966,7 +1051,7 @@ export default function JoinEntryPage() {
               </div>
             ) : null}
 
-            {formOpen ? (
+            {formOpen && canOpenForm ? (
             <form onSubmit={onSubmit}>
               <div
                 style={{

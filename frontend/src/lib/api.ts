@@ -778,6 +778,15 @@ export async function submitJoinRequest(payload: {
   return httpJson("/clans/join-requests", "POST", payload);
 }
 
+export async function getJoinInvitePreview(code: string): Promise<any> {
+  return httpJson(
+    `/clans/join-invite/preview${buildQuery({ code })}`,
+    "GET",
+    undefined,
+    { quiet: true }
+  );
+}
+
 export async function listJoinRequests(clanId: number): Promise<any> {
   return httpJson(
     `/clans/${encodeURIComponent(String(clanId))}/join-requests`,

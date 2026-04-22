@@ -83,6 +83,49 @@ def test_public_join_request_accepts_clan_invite_record_code(client):
         assert join_request.invite_id == 1
 
 
+def test_public_join_invite_preview_reports_ready_invite(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="package-code",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    res = client.get("/clans/join-invite/preview?code=package-code")
+
+    assert res.status_code == 200, res.text
+    data = res.json()
+    assert data["ok"] is True
+    assert data["valid"] is True
+    assert data["status"] == "ready"
+    assert data["community_name"] == "Aberdeen City ICA"
+    assert data["invite_id"] == 1
+
+
+def test_public_join_invite_preview_reports_invalid_invite_without_throwing(client):
+    _seed_join_context()
+
+    res = client.get("/clans/join-invite/preview?code=missing-code")
+
+    assert res.status_code == 200, res.text
+    data = res.json()
+    assert data["ok"] is True
+    assert data["valid"] is False
+    assert data["status"] == "not_found"
+    assert "fresh GSN invite link" in data["message"]
+
+
 def test_public_join_request_accepts_short_lived_invite_during_daily_pilot_window(client):
     _seed_join_context()
     now = datetime.now(timezone.utc)

@@ -1,6 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { getCurrentClan, getMe, getSelectedClanId, safeCopy } from "../lib/api";
 import * as firstCircle from "../lib/firstCircle";
@@ -869,9 +867,9 @@ export default function BuildFirstCirclePage() {
         }}
       >
         <PageTopNav
-          sectionLabel="Build First Circle"
-          title="Build Your First Circle"
-          subtitle="Loading your first-circle page..."
+          sectionLabel="Focused task"
+          title="First Circle"
+          subtitle="Loading trusted people..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/community"
@@ -906,9 +904,9 @@ export default function BuildFirstCirclePage() {
       }}
     >
       <PageTopNav
-        sectionLabel="Build First Circle"
-        title="Build Your First Circle"
-        subtitle="Start with people you already know in real life. Add them manually or choose from phone contacts where the phone browser supports it."
+        sectionLabel="Focused task"
+        title="First Circle"
+        subtitle="Aim: add real people you already trust."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/community"
@@ -921,14 +919,6 @@ export default function BuildFirstCirclePage() {
           { label: "Marketplace", to: "/app/marketplace" },
           { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
         ]}
-      />
-
-      <ExplainToggle
-        label="What this screen does"
-        what="This screen helps you build the first trusted circle around your account using real people you already know and can stand behind."
-        why="Your first circle shapes the trust, support, and community relationships that the rest of the system will rely on later."
-        next="Start by understanding why the circle matters, check your progress, choose the right role, and then add only serious real contacts."
-        tone="blue"
       />
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
@@ -945,7 +935,7 @@ export default function BuildFirstCirclePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Why this page exists</div>
+            <div style={sectionLabel()}>Aim</div>
 
             <div
               style={{
@@ -956,14 +946,13 @@ export default function BuildFirstCirclePage() {
                 lineHeight: 1.1,
               }}
             >
-              Build your real trusted starting circle
+              Add trusted people
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
-              Keep this focused on the people you already
-              know in real life: buyers, sellers, family-support people, remittance
-              contacts, group officers, suppliers, savings partners, and other
-              trusted working people.
+              Choose people you already know: family, buyers, sellers,
+              suppliers, savings partners, or community officers. Keep it small,
+              serious, and real.
             </div>
 
             <div
@@ -998,7 +987,7 @@ export default function BuildFirstCirclePage() {
             </div>
 
             <div style={{ marginTop: 10, ...helperText() }}>
-              Keep the circle serious, small, and real. It is better to add fewer real people than many weak names.
+              Fewer real people are better than many weak names.
             </div>
           </div>
         </div>
@@ -1017,7 +1006,7 @@ export default function BuildFirstCirclePage() {
           <div>
             <div style={sectionLabel()}>Progress</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              See where your first circle currently stands.
+              Check selected and ready contacts.
             </div>
           </div>
 
@@ -1029,15 +1018,6 @@ export default function BuildFirstCirclePage() {
             {collapsed.progress ? "Open" : "Collapse"}
           </button>
         </div>
-
-        <ExplainToggle
-          label="What this does"
-          what="This progress area shows how far your first circle has moved and which practical step should come next."
-          why="It helps you avoid guessing whether you should add contacts, refine roles, or move toward the invite bundle."
-          next="Open the progress section first, then follow the next-step signal before you spend time elsewhere on the page."
-          tone="light"
-          style={{ marginTop: 14 }}
-        />
 
         {!collapsed.progress ? (
           <div
@@ -1123,7 +1103,7 @@ export default function BuildFirstCirclePage() {
           <div>
             <div style={sectionLabel()}>Choose your role</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Your role helps the app suggest the most likely first-circle relationships.
+              Pick the role closest to what you do.
             </div>
           </div>
 
@@ -1200,7 +1180,7 @@ export default function BuildFirstCirclePage() {
           <div>
             <div style={sectionLabel()}>Add trusted people</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Add manually or choose from phone contacts where supported.
+              Add manually or use phone contacts where supported.
             </div>
           </div>
 
@@ -1301,7 +1281,7 @@ export default function BuildFirstCirclePage() {
                     onChange={(e) =>
                       setManualForm((prev) => ({ ...prev, note: e.target.value }))
                     }
-                    placeholder="Why this person belongs in your first circle..."
+                    placeholder="Why this person matters..."
                     style={{ ...textAreaStyle(), marginTop: 8 }}
                   />
                 </div>
@@ -1326,7 +1306,7 @@ export default function BuildFirstCirclePage() {
                       }))
                     }
                   />
-                  <span>Add this person straight into the selected first circle</span>
+                  <span>Select this person for the first circle</span>
                 </label>
 
                 <div
@@ -1355,7 +1335,7 @@ export default function BuildFirstCirclePage() {
               <div style={sectionLabel()}>Choose from phone contacts</div>
 
               <div style={{ marginTop: 10, ...helperText() }}>
-                On supported phone browsers, this can open the phone contact picker. If the browser does not support it yet, manual add still works here.
+                If your phone browser allows it, choose contacts directly.
               </div>
 
               <div style={{ marginTop: 14 }}>
@@ -1370,7 +1350,7 @@ export default function BuildFirstCirclePage() {
               </div>
 
               <div style={{ marginTop: 14, ...helperText(), fontSize: 13 }}>
-                Best results usually happen on phones where the browser supports the contact picker API.
+                If this does not open, use manual add.
               </div>
             </div>
           </div>
@@ -1390,7 +1370,7 @@ export default function BuildFirstCirclePage() {
           <div>
             <div style={sectionLabel()}>Current first circle</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Review who is selected, who is ready, and who still needs contact details.
+              Review selected people and missing contact details.
             </div>
           </div>
 
@@ -1506,7 +1486,7 @@ export default function BuildFirstCirclePage() {
           <div>
             <div style={sectionLabel()}>Invite bundle</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Copy a ready invite bundle only after the selected trusted people have enough contact detail.
+              Copy when selected people have phone or email details.
             </div>
           </div>
 
@@ -1518,15 +1498,6 @@ export default function BuildFirstCirclePage() {
             {collapsed.invite ? "Open" : "Collapse"}
           </button>
         </div>
-
-        <ExplainToggle
-          label="What this does"
-          what="This invite bundle gathers the trusted people you selected into one ready-to-copy invitation package."
-          why="It helps you move from choosing people to actually inviting the right first-circle contacts in a deliberate way."
-          next="Check that the selected contacts are real trusted people with usable contact details, then copy the bundle when it shows as ready."
-          tone="light"
-          style={{ marginTop: 14 }}
-        />
 
         {!collapsed.invite ? (
           <div
@@ -1597,7 +1568,7 @@ export default function BuildFirstCirclePage() {
                 </div>
 
                 <div style={{ ...helperText(), fontSize: 13 }}>
-                  Copy only when the people selected are real trusted people and their contact details are ready.
+                  Copy only when the list is real and ready.
                 </div>
               </div>
             </div>
