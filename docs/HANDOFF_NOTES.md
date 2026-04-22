@@ -6269,3 +6269,24 @@ GSN-branded invite composer and invite-entry continuity.
   payments, ledger behavior, or backend permissions.
 - Verification:
   - `npm run build` passed in `frontend`.
+
+### Admin command-centre executive surface addendum
+
+- Product-owner liked the deep navy, blue-white, and muted gold executive
+  language on the create-community entry page and asked to replicate that
+  first on the admin side.
+- Updated `frontend/src/pages/TrustCommandCentrePage.tsx` only:
+  - Added a route-local executive admin shell using the same institutional
+    navy, blue-white, and gold surface family.
+  - Restyled command-centre cards, stat tiles, route tiles, badges, input
+    fields, and action/collapse buttons to feel more serious and bank-standard.
+  - Tightened admin buttons with larger hit areas, rounded shapes,
+    tap-highlight removal, and isolated pointer surfaces.
+  - Applied the same shell to the loading state so the admin route does not
+    flash back to the old plain white surface while loading.
+- This is visual-only route-local work for `/app/command-center`. No backend
+  route, admin permission, auth, schema, API contract, member dashboard,
+  Marketplace, Finance, Trust Passport, or frozen Market Wisdom behavior was
+  changed.
+- Verification:
+  - `npm run build` passed in `frontend`.

@@ -220,42 +220,89 @@ function classifyIdentitySignal(row: any): {
   return { level: "green", score };
 }
 
+function adminShell(): React.CSSProperties {
+  return {
+    minHeight: "100vh",
+    padding: "24px 14px 46px",
+    borderRadius: 30,
+    background:
+      "radial-gradient(circle at 12% 0%, rgba(246,215,125,0.16), transparent 30%), radial-gradient(circle at 86% 5%, rgba(76,143,218,0.22), transparent 34%), radial-gradient(circle at 72% 86%, rgba(255,255,255,0.10), transparent 32%), linear-gradient(180deg, #07172B 0%, #10243A 42%, #173654 72%, #26527C 100%)",
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.16), 0 24px 64px rgba(5,16,38,0.18)",
+    boxSizing: "border-box",
+  };
+}
+
+function adminInner(maxWidth = 1180): React.CSSProperties {
+  return {
+    maxWidth,
+    margin: "0 auto",
+    paddingBottom: 4,
+    display: "grid",
+    gap: 18,
+  };
+}
+
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
+  const resolvedBackground =
+    bg === "#FFFFFF"
+      ? "linear-gradient(145deg, rgba(255,255,255,0.97) 0%, rgba(246,251,255,0.96) 48%, rgba(239,247,255,0.92) 100%)"
+      : bg;
+
   return {
     borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: "1px solid rgba(193,207,222,0.62)",
+    background: resolvedBackground,
     padding: 20,
     boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
+      "0 20px 48px rgba(5,16,38,0.12), 0 2px 8px rgba(15,23,42,0.04), inset 0 1px 0 rgba(255,255,255,0.86)",
     overflow: "hidden",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
+  const resolvedBackground =
+    bg === "#FFFFFF"
+      ? "linear-gradient(145deg, rgba(255,255,255,0.98), rgba(246,250,255,0.94))"
+      : bg === "#F8FBFF"
+        ? "linear-gradient(145deg, rgba(248,251,255,0.98), rgba(238,247,255,0.94))"
+        : bg;
+
   return {
     borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: "1px solid rgba(193,207,222,0.58)",
+    background: resolvedBackground,
     padding: 16,
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.82)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
+  const resolvedBackground =
+    bg === "#FFFFFF"
+      ? "linear-gradient(145deg, rgba(255,255,255,0.99), rgba(249,252,255,0.95))"
+      : bg === "#F8FBFF" || bg === "#FCFEFF"
+        ? "linear-gradient(145deg, rgba(248,251,255,0.99), rgba(240,248,255,0.95))"
+        : bg;
+
   return {
     borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: "1px solid rgba(193,207,222,0.56)",
+    background: resolvedBackground,
     padding: 14,
+    boxShadow: "0 8px 20px rgba(5,16,38,0.045), inset 0 1px 0 rgba(255,255,255,0.86)",
   };
 }
 
 function statTile(): React.CSSProperties {
   return {
     borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(193,207,222,0.58)",
+    background:
+      "linear-gradient(145deg, rgba(255,255,255,0.99), rgba(242,248,255,0.96))",
     padding: 14,
+    boxShadow:
+      "0 12px 26px rgba(5,16,38,0.055), inset 0 1px 0 rgba(255,255,255,0.9)",
   };
 }
 
@@ -267,12 +314,20 @@ function routeTile(primary = false): React.CSSProperties {
     minHeight: 110,
     borderRadius: 18,
     border: primary
-      ? "1px solid rgba(11,99,209,0.18)"
-      : "1px solid rgba(11,31,51,0.08)",
-    background: primary ? "#F7FAFF" : "#FFFFFF",
+      ? "1px solid rgba(217,169,65,0.42)"
+      : "1px solid rgba(193,207,222,0.58)",
+    background: primary
+      ? "linear-gradient(145deg, rgba(255,251,235,0.98), rgba(240,248,255,0.96))"
+      : "linear-gradient(145deg, rgba(255,255,255,0.99), rgba(244,249,255,0.96))",
     padding: 16,
     textDecoration: "none",
-    boxShadow: primary ? "0 10px 24px rgba(11,99,209,0.05)" : "none",
+    boxShadow: primary
+      ? "0 14px 30px rgba(134,98,20,0.12), inset 0 1px 0 rgba(255,255,255,0.9)"
+      : "0 8px 20px rgba(5,16,38,0.045), inset 0 1px 0 rgba(255,255,255,0.86)",
+    WebkitTapHighlightColor: "transparent",
+    touchAction: "manipulation",
+    position: "relative",
+    zIndex: 2,
   };
 }
 
@@ -294,8 +349,13 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
+    border: primary
+      ? "1px solid rgba(217,169,65,0.34)"
+      : "1px solid rgba(193,207,222,0.58)",
+    background: primary
+      ? "linear-gradient(180deg, rgba(255,251,235,0.96), rgba(246,215,125,0.26))"
+      : "linear-gradient(180deg, rgba(248,251,255,0.96), rgba(232,241,251,0.72))",
+    color: primary ? "#8A6616" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
@@ -311,12 +371,15 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 42,
-      padding: "10px 14px",
-      borderRadius: 14,
-      border: "none",
-      background: disabled ? "#CBD5E1" : "#0B63D1",
-      color: "#FFFFFF",
+      minHeight: 46,
+      minWidth: 112,
+      padding: "11px 16px",
+      borderRadius: 999,
+      border: disabled ? "1px solid rgba(148,163,184,0.42)" : "1px solid rgba(132,94,12,0.28)",
+      background: disabled
+        ? "linear-gradient(180deg, #E2E8F0, #CBD5E1)"
+        : "linear-gradient(180deg, #F8E49E 0%, #F4D36E 48%, #D9A941 100%)",
+      color: disabled ? "#64748B" : "#0B1F33",
       fontWeight: 900,
       fontSize: 14,
       textDecoration: "none",
@@ -324,6 +387,14 @@ function actionBtn(
       whiteSpace: "normal",
       textAlign: "center",
       opacity: disabled ? 0.86 : 1,
+      boxShadow: disabled
+        ? "none"
+        : "0 14px 28px rgba(134,98,20,0.18), inset 0 1px 0 rgba(255,255,255,0.68)",
+      WebkitTapHighlightColor: "transparent",
+      userSelect: "none",
+      touchAction: "manipulation",
+      position: "relative",
+      zIndex: 2,
     };
   }
 
@@ -332,11 +403,13 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 38,
-      padding: "8px 12px",
-      borderRadius: 12,
-      border: "1px solid rgba(11,31,51,0.08)",
-      background: "#F8FBFF",
+      minHeight: 44,
+      minWidth: 104,
+      padding: "10px 14px",
+      borderRadius: 999,
+      border: "1px solid rgba(193,207,222,0.66)",
+      background:
+        "linear-gradient(180deg, rgba(255,255,255,0.98), rgba(238,247,255,0.94))",
       color: disabled ? "#94A3B8" : "#24415C",
       fontWeight: 800,
       fontSize: 13,
@@ -345,6 +418,13 @@ function actionBtn(
       whiteSpace: "normal",
       textAlign: "center",
       opacity: disabled ? 0.86 : 1,
+      boxShadow:
+        "0 10px 20px rgba(5,16,38,0.055), inset 0 1px 0 rgba(255,255,255,0.86)",
+      WebkitTapHighlightColor: "transparent",
+      userSelect: "none",
+      touchAction: "manipulation",
+      position: "relative",
+      zIndex: 2,
     };
   }
 
@@ -352,11 +432,13 @@ function actionBtn(
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
-    borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    minHeight: 46,
+    minWidth: 112,
+    padding: "11px 16px",
+    borderRadius: 999,
+    border: "1px solid rgba(193,207,222,0.66)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.99), rgba(241,247,253,0.96))",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
@@ -365,6 +447,13 @@ function actionBtn(
     whiteSpace: "normal",
     textAlign: "center",
     opacity: disabled ? 0.86 : 1,
+    boxShadow:
+      "0 10px 20px rgba(5,16,38,0.055), inset 0 1px 0 rgba(255,255,255,0.86)",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    touchAction: "manipulation",
+    position: "relative",
+    zIndex: 2,
   };
 }
 
@@ -373,17 +462,26 @@ function collapseToggle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 38,
-    padding: "8px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    minHeight: 44,
+    minWidth: 104,
+    padding: "10px 14px",
+    borderRadius: 999,
+    border: "1px solid rgba(193,207,222,0.66)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.99), rgba(241,247,253,0.96))",
     color: "#24415C",
-    fontWeight: 800,
+    fontWeight: 900,
     fontSize: 13,
     cursor: "pointer",
     whiteSpace: "normal",
     textAlign: "center",
+    boxShadow:
+      "0 10px 20px rgba(5,16,38,0.055), inset 0 1px 0 rgba(255,255,255,0.86)",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    touchAction: "manipulation",
+    position: "relative",
+    zIndex: 2,
   };
 }
 
@@ -400,8 +498,9 @@ function inputField(multiline = false): React.CSSProperties {
     width: "100%",
     minHeight: multiline ? 110 : 44,
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(193,207,222,0.66)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.99), rgba(247,251,255,0.96))",
     padding: multiline ? "12px 14px" : "10px 14px",
     color: "#0B1F33",
     fontSize: 14,
@@ -1197,63 +1296,50 @@ export default function TrustCommandCentrePage() {
 
   if (loading) {
     return (
-      <div
-        style={{
-          maxWidth: 1180,
-          margin: "0 auto",
-          paddingBottom: 40,
-          display: "grid",
-          gap: 18,
-        }}
-      >
-        <PageTopNav
-          sectionLabel="Command Center"
-          title="Trust Command Centre"
-          subtitle="Loading the command center..."
-          homeTo="/app/dashboard"
-          homeLabel="Dashboard"
-          backTo="/app/dashboard"
-          nextLinks={[
-            { label: "Trust Analytics", to: "/app/command-center/trust-analytics" },
-            { label: "Trust Events", to: "/app/command-center/trust-events" },
-            { label: "System Operations", to: "/app/command-center/system-operations" },
-          ]}
-          utilityLinks={[
-            { label: "Exposure", to: "/app/command-center/exposure" },
-            { label: "Identity Risk", to: "/app/command-center/identity-risk" },
-            { label: "Trust Graph", to: "/app/command-center/trust-graph" },
-          ]}
-        />
+      <div style={adminShell()}>
+        <div style={adminInner(1180)}>
+          <PageTopNav
+            sectionLabel="Command Center"
+            title="Trust Command Centre"
+            subtitle="Loading the command center..."
+            homeTo="/app/dashboard"
+            homeLabel="Dashboard"
+            backTo="/app/dashboard"
+            nextLinks={[
+              { label: "Trust Analytics", to: "/app/command-center/trust-analytics" },
+              { label: "Trust Events", to: "/app/command-center/trust-events" },
+              { label: "System Operations", to: "/app/command-center/system-operations" },
+            ]}
+            utilityLinks={[
+              { label: "Exposure", to: "/app/command-center/exposure" },
+              { label: "Identity Risk", to: "/app/command-center/identity-risk" },
+              { label: "Trust Graph", to: "/app/command-center/trust-graph" },
+            ]}
+          />
 
-        <section style={pageCard("#FFFFFF")}>
-          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-            Loading command center...
-          </div>
-        </section>
+          <section style={pageCard("#FFFFFF")}>
+            <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+              Loading command center...
+            </div>
+          </section>
+        </div>
       </div>
     );
   }
 
   return (
-    <div
-      style={{
-        maxWidth: 1180,
-        margin: "0 auto",
-        paddingBottom: 40,
-        display: "grid",
-        gap: 18,
-      }}
-    >
-      <PageTopNav
-        sectionLabel="Command Center"
-        title="Trust Command Centre"
-        subtitle="Review trust and community operations here, then move into the admin page required for the current task."
-        homeTo="/app/dashboard"
-        homeLabel="Dashboard"
-        backTo="/app/dashboard"
-        nextLinks={pageNextLinks}
-        utilityLinks={pageUtilityLinks}
-      />
+    <div style={adminShell()}>
+      <div style={adminInner(1180)}>
+        <PageTopNav
+          sectionLabel="Command Center"
+          title="Trust Command Centre"
+          subtitle="Review trust and community operations here, then move into the admin page required for the current task."
+          homeTo="/app/dashboard"
+          homeLabel="Dashboard"
+          backTo="/app/dashboard"
+          nextLinks={pageNextLinks}
+          utilityLinks={pageUtilityLinks}
+        />
 
       <ExplainToggle
         label="What this screen does"
@@ -1327,7 +1413,7 @@ export default function TrustCommandCentrePage() {
         </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+        <section style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
@@ -2287,7 +2373,8 @@ export default function TrustCommandCentrePage() {
             </OriginLink>
           ))}
         </div>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }
