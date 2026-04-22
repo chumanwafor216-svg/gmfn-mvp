@@ -5,7 +5,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, List, Optional
-from urllib.parse import quote, urlencode
+from urllib.parse import quote, urlencode, urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
@@ -475,6 +475,40 @@ def _join_request_out(db: Session, req: ClanJoinRequest) -> dict[str, Any]:
         "threshold_ratio": stats["threshold_ratio"],
     }
 
+PUBLIC_FRONTEND_ORIGIN = "https://gmfn-frontend.onrender.com"
+
+
+def _is_private_frontend_host(hostname: str) -> bool:
+    host = _safe_str(hostname).lower()
+    if host in {"localhost", "127.0.0.1", "0.0.0.0", "::1"}:
+        return True
+    if host.startswith("192.168.") or host.startswith("10."):
+        return True
+    parts = host.split(".")
+    if len(parts) >= 2 and parts[0] == "172":
+        try:
+            second = int(parts[1])
+        except ValueError:
+            return False
+        return 16 <= second <= 31
+    return False
+
+
+def _is_public_frontend_origin(origin: str) -> bool:
+    text = _safe_str(origin)
+    if not text:
+        return False
+    try:
+        parsed = urlparse(text)
+    except Exception:
+        return False
+    return (
+        parsed.scheme in {"http", "https"}
+        and bool(parsed.hostname)
+        and not _is_private_frontend_host(parsed.hostname)
+    )
+
+
 def _frontend_origin(request: Request) -> str:
     configured = _safe_str(
         os.getenv("FRONTEND_BASE_URL")
@@ -485,10 +519,10 @@ def _frontend_origin(request: Request) -> str:
         return configured.rstrip("/")
 
     request_origin = _safe_str(request.headers.get("origin"))
-    if request_origin:
+    if _is_public_frontend_origin(request_origin):
         return request_origin.rstrip("/")
 
-    return "https://gmfn-frontend.onrender.com"
+    return PUBLIC_FRONTEND_ORIGIN
 
 
 def _frontend_community_join_link(

@@ -570,11 +570,59 @@ function getPoolCurrency(payload: any): string {
   );
 }
 
+const PUBLIC_FRONTEND_ORIGIN = "https://gmfn-frontend.onrender.com";
+
+function envPublicFrontendOrigin(): string {
+  const env =
+    (typeof import.meta !== "undefined" &&
+      (import.meta as any)?.env &&
+      ((import.meta as any).env.VITE_PUBLIC_FRONTEND_URL ||
+        (import.meta as any).env.VITE_FRONTEND_BASE_URL ||
+        (import.meta as any).env.VITE_FRONTEND_ORIGIN)) ||
+    "";
+
+  return String(env || "").trim().replace(/\/+$/, "");
+}
+
+function isPrivateShareHost(hostname: string): boolean {
+  const host = String(hostname || "").trim().toLowerCase();
+  if (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host === "0.0.0.0" ||
+    host === "::1"
+  ) {
+    return true;
+  }
+  if (host.startsWith("192.168.") || host.startsWith("10.")) {
+    return true;
+  }
+  const parts = host.split(".");
+  if (parts.length >= 2 && parts[0] === "172") {
+    const second = Number(parts[1]);
+    return Number.isInteger(second) && second >= 16 && second <= 31;
+  }
+  return false;
+}
+
 function frontendOrigin(): string {
-  if (typeof window === "undefined") return "https://gmfn-frontend.onrender.com";
-  return String(window.location.origin || "https://gmfn-frontend.onrender.com")
+  const configured = envPublicFrontendOrigin();
+  if (typeof window === "undefined") return configured || PUBLIC_FRONTEND_ORIGIN;
+
+  const origin = String(window.location.origin || "")
     .trim()
     .replace(/\/+$/, "");
+
+  try {
+    const url = new URL(origin);
+    if (!isPrivateShareHost(url.hostname)) {
+      return origin;
+    }
+  } catch {
+    // Fall back below.
+  }
+
+  return configured || PUBLIC_FRONTEND_ORIGIN;
 }
 
 function inviteCodeFromUrl(raw: string): string {

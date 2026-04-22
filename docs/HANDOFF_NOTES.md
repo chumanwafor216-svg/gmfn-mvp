@@ -7240,3 +7240,41 @@ GSN-branded invite composer and invite-entry continuity.
   - `npm run build` passed in `frontend`.
   - `git diff --check -- frontend/src/pages/BuildFirstCirclePage.tsx frontend/src/lib/firstCircle.ts`
     passed with only Windows line-ending warnings.
+
+### Public join-link origin hardening addendum
+
+- Product-owner tested a newly generated Marketplace WhatsApp join link and
+  found it opened on the laptop but not on phones because the copied URL used
+  `http://localhost:5174/start/join/...`.
+- Confirmed root cause:
+  - `localhost` only points to the device opening the link. On a phone, it
+    points to the phone itself, not the laptop or Render.
+  - Public/WhatsApp invite links must not use localhost, 127.0.0.1, or private
+    LAN origins such as 192.168.x.x because remote testers cannot open them.
+- Updated backend link builders:
+  - `gmfn_backend/app/api/routes/clans.py` now uses configured public frontend
+    URL first, then only a public request origin, then
+    `https://gmfn-frontend.onrender.com`.
+  - `gmfn_backend/app/services/invites_service.py` now accepts
+    `FRONTEND_BASE_URL`, `GMFN_FRONTEND_BASE_URL`, or `PUBLIC_FRONTEND_URL`
+    only when the value is public; private/local values fall back to Render.
+- Updated frontend Marketplace link normalization:
+  - `frontend/src/pages/MarketplacePage.tsx` now rewrites generated join links
+    to a public frontend origin when the browser is running on localhost,
+    127.0.0.1, or a private LAN address.
+  - `frontend/.env.production.example` now documents
+    `VITE_PUBLIC_FRONTEND_URL=https://gmfn-frontend.onrender.com`.
+- Added regression coverage:
+  - `gmfn_backend/tests/test_frontend_link_origins.py` verifies that localhost
+    and private LAN origins do not leak into public invite links.
+- No invite-code validity, invite lifetime, join approval, auth, schema,
+  membership, or permission rules were changed.
+- Verification:
+  - `python -m pytest tests\test_frontend_link_origins.py -q` passed: 6 tests.
+  - `python -m pytest tests\test_join_requests.py tests\test_frontend_link_origins.py -q`
+    passed: 12 tests.
+  - `python -m compileall app\api\routes\clans.py app\services\invites_service.py`
+    passed.
+  - `npm run build` passed in `frontend`.
+  - `git diff --check -- frontend/.env.production.example frontend/src/pages/MarketplacePage.tsx gmfn_backend/app/api/routes/clans.py gmfn_backend/app/services/invites_service.py gmfn_backend/tests/test_frontend_link_origins.py`
+    passed with only Windows line-ending warnings.

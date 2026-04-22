@@ -5,7 +5,7 @@ import secrets
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 from fastapi import HTTPException, Request
 from sqlalchemy.exc import IntegrityError
@@ -19,6 +19,7 @@ from app.services.trust_service import log_invite_accepted_event
 
 _INVITE_CREATE_BUCKET: dict[tuple[int, int], list[float]] = {}
 _JOIN_BUCKET: dict[int, list[float]] = {}
+PUBLIC_FRONTEND_ORIGIN = "https://gmfn-frontend.onrender.com"
 
 
 def _bucket_prune(ts_list: list[float], window_seconds: int) -> list[float]:
@@ -81,6 +82,40 @@ def _effective_invite_expires_at(invite: ClanInvite) -> Optional[datetime]:
     return expires_at
 
 
+def _is_private_frontend_host(hostname: str) -> bool:
+    host = str(hostname or "").strip().lower()
+    if host in {"localhost", "127.0.0.1", "0.0.0.0", "::1"}:
+        return True
+    if host.startswith("192.168.") or host.startswith("10."):
+        return True
+    parts = host.split(".")
+    if len(parts) >= 2 and parts[0] == "172":
+        try:
+            second = int(parts[1])
+        except ValueError:
+            return False
+        return 16 <= second <= 31
+    return False
+
+
+def _public_frontend_base_url() -> str:
+    for key in ("FRONTEND_BASE_URL", "GMFN_FRONTEND_BASE_URL", "PUBLIC_FRONTEND_URL"):
+        raw = str(os.getenv(key) or "").strip().rstrip("/")
+        if not raw:
+            continue
+        try:
+            parsed = urlparse(raw)
+        except Exception:
+            continue
+        if (
+            parsed.scheme in {"http", "https"}
+            and parsed.hostname
+            and not _is_private_frontend_host(parsed.hostname)
+        ):
+            return raw
+    return PUBLIC_FRONTEND_ORIGIN
+
+
 def _require_member_or_admin(db: Session, *, clan_id: int, user: User) -> None:
     if (getattr(user, "role", None) or "").lower() == "admin":
         return
@@ -95,8 +130,8 @@ def _require_member_or_admin(db: Session, *, clan_id: int, user: User) -> None:
 
 
 def frontend_join_link(code: str) -> str:
-    base = os.getenv("FRONTEND_BASE_URL", "https://gmfn-frontend.onrender.com")
-    return f"{base.rstrip('/')}/start/join/{quote(str(code or '').strip(), safe='')}"
+    base = _public_frontend_base_url()
+    return f"{base}/start/join/{quote(str(code or '').strip(), safe='')}"
 
 
 def api_join_link(request: Request, code: str) -> str:
