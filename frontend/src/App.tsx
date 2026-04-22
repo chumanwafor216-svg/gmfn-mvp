@@ -392,6 +392,7 @@ export default function App() {
       <Route path="/public-create" element={<RedirectToCover entry="create" />} />
 
       <Route path="/join" element={<JoinEntryPage />} />
+      <Route path="/join/:code" element={<JoinEntryPage />} />
       <Route path="/join/community/:clanId" element={<JoinEntryPage />} />
       <Route path="/invite-composer-preview" element={<InviteComposerPreviewPage />} />
       <Route

@@ -1,8 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { EntryBackLink } from "../components/EntryControls";
 import OriginLink from "../components/OriginLink";
 import { getJoinInvitePreview, submitJoinRequest } from "../lib/api";
+import {
+  ENTRY_INVITE_CODE_KEY,
+  readStorage,
+  writeStorage,
+} from "../lib/entryFlow";
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
@@ -475,6 +480,7 @@ function buildInviteLetter(args: {
 
 export default function JoinEntryPage() {
   const [searchParams] = useSearchParams();
+  const routeParams = useParams<Record<string, string | undefined>>();
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -505,9 +511,18 @@ export default function JoinEntryPage() {
       searchParams.get("invite") ||
         searchParams.get("code") ||
         searchParams.get("invite_code") ||
+        searchParams.get("join_code") ||
+        routeParams.code ||
+        readStorage(ENTRY_INVITE_CODE_KEY) ||
         ""
     );
-  }, [searchParams]);
+  }, [searchParams, routeParams.code]);
+
+  useEffect(() => {
+    if (inviteCode) {
+      writeStorage(ENTRY_INVITE_CODE_KEY, inviteCode);
+    }
+  }, [inviteCode]);
 
   const communityName = useMemo(() => {
     return decodeFriendly(

@@ -7278,3 +7278,26 @@ GSN-branded invite composer and invite-entry continuity.
   - `npm run build` passed in `frontend`.
   - `git diff --check -- frontend/.env.production.example frontend/src/pages/MarketplacePage.tsx gmfn_backend/app/api/routes/clans.py gmfn_backend/app/services/invites_service.py gmfn_backend/tests/test_frontend_link_origins.py`
     passed with only Windows line-ending warnings.
+
+### Join-entry invite-code recovery addendum
+
+- Product-owner shared phone screenshots where the join page opened but showed
+  `Link needed` / `This join page does not contain a valid invite code yet`.
+- Confirmed this was different from backend invite expiry:
+  - the frontend join form had no visible invite code, so it could not even ask
+    the backend to preview the invite.
+  - WhatsApp/copy flows can sometimes preserve `/start/join/{code}` while
+    dropping or damaging the query string.
+- Updated `frontend/src/pages/JoinEntryPage.tsx`:
+  - The join form now accepts invite code from `?invite=`, `?code=`,
+    `?invite_code=`, `?join_code=`, `/join/{code}`, or the saved cover-page
+    handoff storage.
+  - When a code is recovered, the join form writes it back to the same entry
+    handoff storage so later continuation does not lose it.
+- Updated `frontend/src/App.tsx`:
+  - Added `/join/:code` as a direct join-form route for old/manual links that
+    carry the invite code in the path.
+- No backend invite validity, expiry, usage, approval, membership, auth,
+  schema, or permission behavior was changed.
+- Verification:
+  - `npm run build` passed in `frontend`.
