@@ -48,6 +48,16 @@ function mergeTarget(
   return next;
 }
 
+function guardLinkTap(
+  event: React.SyntheticEvent,
+  handler?: (event: any) => void
+) {
+  event.stopPropagation();
+  if (typeof handler === "function") {
+    handler(event);
+  }
+}
+
 export default function OriginLink(props: OriginLinkProps) {
   const {
     to,
@@ -60,19 +70,23 @@ export default function OriginLink(props: OriginLinkProps) {
 
   const location = useLocation();
   const rawTo = String(to || "").trim();
+  const baseStableStyle: React.CSSProperties = {
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    WebkitTapHighlightColor: "transparent",
+    touchAction: "manipulation",
+    userSelect: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
+  };
   const stableStyle =
     rest.style && typeof rest.style === "object"
       ? ({
-          WebkitTapHighlightColor: "transparent",
-          touchAction: "manipulation",
-          userSelect: "none",
+          ...baseStableStyle,
           ...rest.style,
         } as React.CSSProperties)
-      : ({
-          WebkitTapHighlightColor: "transparent",
-          touchAction: "manipulation",
-          userSelect: "none",
-        } as React.CSSProperties);
+      : baseStableStyle;
 
   if (isExternalTarget(rawTo)) {
     return (
@@ -80,6 +94,10 @@ export default function OriginLink(props: OriginLinkProps) {
         href={rawTo}
         {...(rest as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
         style={stableStyle}
+        onPointerDown={(event) => guardLinkTap(event, rest.onPointerDown)}
+        onTouchStart={(event) => guardLinkTap(event, rest.onTouchStart)}
+        onMouseDown={(event) => guardLinkTap(event, rest.onMouseDown)}
+        onClick={(event) => guardLinkTap(event, rest.onClick)}
       >
         {children}
       </a>
@@ -106,7 +124,16 @@ export default function OriginLink(props: OriginLinkProps) {
         };
 
   return (
-    <Link {...rest} to={nextTo} state={nextState} style={stableStyle}>
+    <Link
+      {...rest}
+      to={nextTo}
+      state={nextState}
+      style={stableStyle}
+      onPointerDown={(event) => guardLinkTap(event, rest.onPointerDown)}
+      onTouchStart={(event) => guardLinkTap(event, rest.onTouchStart)}
+      onMouseDown={(event) => guardLinkTap(event, rest.onMouseDown)}
+      onClick={(event) => guardLinkTap(event, rest.onClick)}
+    >
       {children}
     </Link>
   );

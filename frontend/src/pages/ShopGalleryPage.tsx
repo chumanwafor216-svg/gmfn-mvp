@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import {
   getCurrentClan,
+  getMe,
+  isAuthenticated,
   getMarketplaceBroadcasts,
   getMarketplaceProducts,
   getMarketplaceShopByGmfnId,
@@ -58,6 +60,16 @@ type ShopBroadcast = {
   createdAt?: string;
 };
 
+type ViewerProfile = {
+  gmfn_id?: string | null;
+  gmfnId?: string | null;
+  display_name?: string | null;
+  displayName?: string | null;
+  full_name?: string | null;
+  name?: string | null;
+  email?: string | null;
+};
+
 type NoticeTone = "success" | "error";
 
 const GALLERY_SLOTS_TOTAL = 12;
@@ -100,13 +112,6 @@ function rowsOf<T = any>(input: any): T[] {
   if (Array.isArray(input?.results)) return input.results as T[];
   if (Array.isArray(input?.rows)) return input.rows as T[];
   return [];
-}
-
-function initialsOf(value: string): string {
-  const parts = safeStr(value).split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "S";
-  if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
-  return `${parts[0].slice(0, 1)}${parts[1].slice(0, 1)}`.toUpperCase();
 }
 
 function moneyText(value: any, currency: any): string {
@@ -512,12 +517,66 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function primaryBtn(disabled = false): React.CSSProperties {
+const stableTapTarget: React.CSSProperties = {
+  position: "relative",
+  zIndex: 2,
+  isolation: "isolate",
+  WebkitTapHighlightColor: "transparent",
+  touchAction: "manipulation",
+  userSelect: "none",
+  transform: "translateZ(0)",
+};
+
+function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
+  event?.stopPropagation();
+}
+
+function buttonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
   return {
+    onPointerDown: guardButtonPress,
+    onTouchStart: guardButtonPress,
+    onMouseDown: guardButtonPress,
+  };
+}
+
+function navLinkButton(primary = false): React.CSSProperties {
+  return {
+    ...stableTapTarget,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 42,
+    minHeight: 44,
+    padding: "10px 13px",
+    borderRadius: 999,
+    border: primary
+      ? "1px solid rgba(29,78,216,0.22)"
+      : "1px solid rgba(13,95,168,0.14)",
+    background: primary
+      ? "linear-gradient(180deg, #1F5FB7 0%, #174C91 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(235,244,252,0.94) 100%)",
+    color: primary ? "#FFFFFF" : "#0B1F33",
+    fontWeight: 900,
+    fontSize: 13,
+    lineHeight: 1.12,
+    textAlign: "center",
+    textDecoration: "none",
+    cursor: "pointer",
+    boxShadow: primary
+      ? "0 10px 22px rgba(14,73,138,0.18), inset 0 1px 0 rgba(255,255,255,0.24)"
+      : "0 8px 18px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
+  };
+}
+
+function primaryBtn(disabled = false): React.CSSProperties {
+  return {
+    ...stableTapTarget,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 44,
     padding: "10px 14px",
     borderRadius: 14,
     border: disabled
@@ -536,17 +595,16 @@ function primaryBtn(disabled = false): React.CSSProperties {
     boxShadow: disabled
       ? "none"
       : "0 10px 20px rgba(14,73,138,0.18), inset 0 1px 0 rgba(255,255,255,0.26)",
-    WebkitTapHighlightColor: "transparent",
-    touchAction: "manipulation",
   };
 }
 
 function secondaryBtn(disabled = false): React.CSSProperties {
   return {
+    ...stableTapTarget,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 40,
+    minHeight: 44,
     padding: "9px 12px",
     borderRadius: 14,
     border: "1px solid rgba(13,95,168,0.16)",
@@ -561,8 +619,6 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     textAlign: "center",
     boxShadow:
       "0 8px 18px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
-    WebkitTapHighlightColor: "transparent",
-    touchAction: "manipulation",
   };
 }
 
@@ -582,6 +638,7 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
 export default function ShopGalleryPage() {
   const { gmfnId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const selectedClanId = Number(getSelectedClanId() || 0);
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
@@ -602,6 +659,7 @@ export default function ShopGalleryPage() {
     null
   );
   const [error, setError] = useState<string>("");
+  const [viewer, setViewer] = useState<ViewerProfile | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -614,6 +672,32 @@ export default function ShopGalleryPage() {
     window.addEventListener("resize", handleResize);
 
     return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+
+    if (!isAuthenticated()) {
+      setViewer(null);
+      return () => {
+        alive = false;
+      };
+    }
+
+    (async () => {
+      try {
+        const me = await getMe();
+        if (!alive) return;
+        const profile = (me?.user || me?.data?.user || me) as ViewerProfile;
+        setViewer(profile || null);
+      } catch {
+        if (alive) setViewer(null);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -962,13 +1046,6 @@ export default function ShopGalleryPage() {
   const shopWhatsAppText = safeStr(effectiveShop?.whatsapp);
   const shopTelegramText = safeStr(effectiveShop?.telegram);
   const hasShopContact = Boolean(shopWhatsAppText || shopTelegramText);
-  const shopTrustText = firstMeaningful(
-    effectiveShop?.trustBand,
-    effectiveShop?.trustScore
-      ? `Trust score ${safeStr(effectiveShop?.trustScore)}`
-      : "",
-    ""
-  );
   const showOwnerBadge =
     Boolean(shopOwnerText) &&
     shopOwnerText.toUpperCase() !== shopGmfnText.toUpperCase();
@@ -994,6 +1071,39 @@ export default function ShopGalleryPage() {
     value: string;
     primary: boolean;
   }>;
+  const viewerGmfnText = firstMeaningful(
+    viewer?.gmfn_id,
+    viewer?.gmfnId
+  ).toUpperCase();
+  const viewerNameText = firstMeaningful(
+    viewer?.display_name,
+    viewer?.displayName,
+    viewer?.full_name,
+    viewer?.name,
+    viewer?.email,
+    viewerGmfnText
+  );
+  const isSignedInViewer = Boolean(viewerGmfnText);
+  const isShopOwner =
+    Boolean(viewerGmfnText && shopGmfnText) &&
+    viewerGmfnText === shopGmfnText.toUpperCase();
+  const protectedNavItems = [
+    { label: "Dashboard", to: "/app/dashboard", primary: true },
+    { label: "Community", to: "/app/community", primary: false },
+    { label: "Marketplace", to: "/app/marketplace", primary: false },
+    ...(viewerGmfnText
+      ? [
+          {
+            label: isShopOwner ? "This shop" : "My shop",
+            to: `/shop/${encodeURIComponent(viewerGmfnText)}`,
+            primary: false,
+          },
+        ]
+      : []),
+    ...(isShopOwner
+      ? [{ label: "Shop Control", to: "/app/shop-control", primary: true }]
+      : []),
+  ];
 
   async function shareOrCopy(params: {
     title: string;
@@ -1108,6 +1218,17 @@ export default function ShopGalleryPage() {
     });
   }
 
+  function goBackSafely() {
+    guardButtonPress();
+
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+
+    navigate("/cover");
+  }
+
   return (
     <div
       style={{
@@ -1126,6 +1247,103 @@ export default function ShopGalleryPage() {
     >
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
       {error ? <div style={noticeCard("error")}>{error}</div> : null}
+
+      <section
+        style={{
+          ...pageCard(),
+          padding: isCompact ? 12 : 16,
+          border: "1px solid rgba(13,95,168,0.16)",
+          background:
+            "radial-gradient(circle at 8% 0%, rgba(11,99,209,0.15) 0%, transparent 32%), radial-gradient(circle at 94% 10%, rgba(212,175,55,0.12) 0%, transparent 26%), linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(238,247,253,0.96) 100%)",
+          boxShadow:
+            "0 18px 42px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.86)",
+        }}
+        aria-label="Shop navigation"
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+            gap: 12,
+            alignItems: "center",
+          }}
+        >
+          <div style={{ display: "grid", gap: 4 }}>
+            <div style={sectionLabel()}>
+              {isSignedInViewer ? "GSN member navigation" : "Public shop view"}
+            </div>
+            <div
+              style={{
+                color: "#526C84",
+                fontSize: isCompact ? 13 : 14,
+                lineHeight: 1.45,
+                fontWeight: 700,
+              }}
+            >
+              {isSignedInViewer
+                ? `Signed in as ${viewerNameText}. Use these protected doors to return to GSN.`
+                : "Visitors can view, share, or ask the seller. App tools only open after signing in with your own account."}
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+              justifyContent: isCompact ? "stretch" : "flex-end",
+            }}
+          >
+            <button
+              type="button"
+              {...buttonGuardProps()}
+              onClick={goBackSafely}
+              style={{
+                ...navLinkButton(false),
+                flex: isCompact ? "1 1 120px" : "0 0 auto",
+              }}
+            >
+              Back
+            </button>
+
+            {isSignedInViewer
+              ? protectedNavItems.map((item) => (
+                  <OriginLink
+                    key={`${item.label}-${item.to}`}
+                    to={item.to}
+                    style={{
+                      ...navLinkButton(item.primary),
+                      flex: isCompact ? "1 1 132px" : "0 0 auto",
+                    }}
+                  >
+                    {item.label}
+                  </OriginLink>
+                ))
+              : (
+                  <>
+                    <OriginLink
+                      to="/login"
+                      style={{
+                        ...navLinkButton(true),
+                        flex: isCompact ? "1 1 132px" : "0 0 auto",
+                      }}
+                    >
+                      Sign in
+                    </OriginLink>
+                    <OriginLink
+                      to="/cover"
+                      style={{
+                        ...navLinkButton(false),
+                        flex: isCompact ? "1 1 132px" : "0 0 auto",
+                      }}
+                    >
+                      Open GSN
+                    </OriginLink>
+                  </>
+                )}
+          </div>
+        </div>
+      </section>
 
       <section
         style={{
@@ -1567,11 +1785,12 @@ export default function ShopGalleryPage() {
               >
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={askForVaultAccess}
                   style={{
                     ...primaryBtn(false),
-                    minHeight: isCompact ? 38 : 42,
-                    padding: isCompact ? "8px 12px" : "10px 14px",
+                    minHeight: 44,
+                    padding: isCompact ? "10px 12px" : "10px 14px",
                     flex: isCompact ? "1 1 132px" : "0 1 auto",
                   }}
                 >
@@ -1580,11 +1799,12 @@ export default function ShopGalleryPage() {
 
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={shareShop}
                   style={{
                     ...secondaryBtn(false),
-                    minHeight: isCompact ? 38 : 40,
-                    padding: isCompact ? "8px 12px" : "9px 12px",
+                    minHeight: 44,
+                    padding: isCompact ? "10px 12px" : "9px 12px",
                     flex: isCompact ? "1 1 132px" : "0 1 auto",
                   }}
                 >
@@ -1593,11 +1813,12 @@ export default function ShopGalleryPage() {
 
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={copyShopLink}
                   style={{
                     ...secondaryBtn(false),
-                    minHeight: isCompact ? 38 : 40,
-                    padding: isCompact ? "8px 12px" : "9px 12px",
+                    minHeight: 44,
+                    padding: isCompact ? "10px 12px" : "9px 12px",
                     flex: isCompact ? "1 1 132px" : "0 1 auto",
                   }}
                 >
@@ -1792,11 +2013,12 @@ export default function ShopGalleryPage() {
             >
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={askForVaultAccess}
                 style={{
                   ...primaryBtn(false),
-                  minHeight: 38,
-                  padding: "8px 12px",
+                  minHeight: 44,
+                  padding: "10px 12px",
                   fontSize: 12.5,
                   flex: isCompact ? "1 1 132px" : undefined,
                 }}
@@ -1805,11 +2027,12 @@ export default function ShopGalleryPage() {
               </button>
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={copyShopLink}
                 style={{
                   ...secondaryBtn(false),
-                  minHeight: 38,
-                  padding: "8px 12px",
+                  minHeight: 44,
+                  padding: "10px 12px",
                   fontSize: 12.5,
                   flex: isCompact ? "1 1 132px" : undefined,
                 }}
@@ -1945,14 +2168,14 @@ export default function ShopGalleryPage() {
                             display: "inline-flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            minHeight: 20,
-                            padding: "2px 6px",
+                            minHeight: 30,
+                            padding: "5px 9px",
                             borderRadius: 999,
                             border: "1px solid rgba(255,255,255,0.55)",
                             background: "rgba(203,213,225,0.68)",
                             color: "#12263A",
                             fontWeight: 800,
-                            fontSize: 9.5,
+                            fontSize: 10.5,
                             lineHeight: 1,
                             textDecoration: "none",
                             whiteSpace: "nowrap",
@@ -1971,14 +2194,14 @@ export default function ShopGalleryPage() {
                             display: "inline-flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            minHeight: 20,
-                            padding: "2px 6px",
+                            minHeight: 30,
+                            padding: "5px 9px",
                             borderRadius: 999,
                             border: "1px solid rgba(255,255,255,0.5)",
                             background: "rgba(226,232,240,0.54)",
                             color: "#203247",
                             fontWeight: 700,
-                            fontSize: 9.5,
+                            fontSize: 10.5,
                             lineHeight: 1,
                             textDecoration: "none",
                             whiteSpace: "nowrap",
@@ -2320,8 +2543,8 @@ export default function ShopGalleryPage() {
               const dockShareButtonStyle: React.CSSProperties = isCompact
                 ? {
                     ...secondaryBtn(false),
-                    minHeight: 36,
-                    padding: "7px 14px",
+                    minHeight: 44,
+                    padding: "10px 14px",
                     border: "1px solid rgba(13,64,123,0.25)",
                     background:
                       "linear-gradient(180deg, #1F5FB7 0%, #174C91 100%)",
@@ -2617,6 +2840,7 @@ export default function ShopGalleryPage() {
 
                       <button
                         type="button"
+                        {...buttonGuardProps()}
                         onClick={() => shareProduct(product)}
                         aria-label={`Share ${displayTitle}`}
                         style={dockShareButtonStyle}

@@ -151,8 +151,22 @@ function statTile(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
+function stableTapStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
+  };
+}
+
 function routeTile(primary = false): React.CSSProperties {
   return {
+    ...stableTapStyle(),
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
@@ -170,6 +184,7 @@ function routeTile(primary = false): React.CSSProperties {
 
 function primaryBtn(disabled = false): React.CSSProperties {
   return {
+    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -191,6 +206,7 @@ function primaryBtn(disabled = false): React.CSSProperties {
 
 function secondaryBtn(disabled = false): React.CSSProperties {
   return {
+    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -212,6 +228,7 @@ function secondaryBtn(disabled = false): React.CSSProperties {
 
 function filterBtn(active: boolean): React.CSSProperties {
   return {
+    ...stableTapStyle(),
     padding: "10px 12px",
     borderRadius: 14,
     border: active ? "1px solid #BFDBFE" : "1px solid rgba(11,31,51,0.10)",
@@ -227,6 +244,7 @@ function filterBtn(active: boolean): React.CSSProperties {
 
 function collapseToggle(): React.CSSProperties {
   return {
+    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",

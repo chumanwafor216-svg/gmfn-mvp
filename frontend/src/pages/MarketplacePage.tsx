@@ -2339,6 +2339,28 @@ export default function MarketplacePage() {
     event.stopPropagation();
   }
 
+  function marketplacePointerGuardProps(): Pick<
+    React.HTMLAttributes<HTMLElement>,
+    "onPointerDown" | "onTouchStart" | "onMouseDown"
+  > {
+    return {
+      onPointerDown: consumeMarketplacePointerEvent,
+      onTouchStart: consumeMarketplacePointerEvent,
+      onMouseDown: consumeMarketplacePointerEvent,
+    };
+  }
+
+  function marketplaceButtonGuardProps(): Pick<
+    React.HTMLAttributes<HTMLElement>,
+    "onPointerDown" | "onTouchStart" | "onMouseDown"
+  > {
+    return {
+      onPointerDown: consumeMarketplaceButtonEvent,
+      onTouchStart: consumeMarketplaceButtonEvent,
+      onMouseDown: consumeMarketplaceButtonEvent,
+    };
+  }
+
   function toggleProfileDetails(
     event?: React.SyntheticEvent<HTMLElement>
   ) {
@@ -3220,7 +3242,7 @@ export default function MarketplacePage() {
           >
             <button
               type="button"
-              onPointerDown={consumeMarketplacePointerEvent}
+              {...marketplacePointerGuardProps()}
               onClick={(event) => openMarketplaceRoute(event, "/app/community")}
               style={actionBtn("secondary")}
             >
@@ -3228,7 +3250,7 @@ export default function MarketplacePage() {
             </button>
             <button
               type="button"
-              onPointerDown={consumeMarketplacePointerEvent}
+              {...marketplacePointerGuardProps()}
               onClick={(event) => openMarketplaceRoute(event, "/app/dashboard")}
               style={actionBtn("primary")}
             >
@@ -3236,7 +3258,7 @@ export default function MarketplacePage() {
             </button>
             <button
               type="button"
-              onPointerDown={consumeMarketplacePointerEvent}
+              {...marketplacePointerGuardProps()}
               onClick={openFinance}
               style={actionBtn("soft")}
             >
@@ -3244,7 +3266,7 @@ export default function MarketplacePage() {
             </button>
             <button
               type="button"
-              onPointerDown={consumeMarketplacePointerEvent}
+              {...marketplacePointerGuardProps()}
               onClick={(event) => openMarketplaceRoute(event, "/app/notifications")}
               style={actionBtn("soft")}
             >
@@ -3252,7 +3274,7 @@ export default function MarketplacePage() {
             </button>
             <button
               type="button"
-              onPointerDown={consumeMarketplacePointerEvent}
+              {...marketplacePointerGuardProps()}
               onClick={(event) => openMarketplaceRoute(event, "/app/trust")}
               style={actionBtn("soft")}
             >
@@ -3260,7 +3282,7 @@ export default function MarketplacePage() {
             </button>
             <button
               type="button"
-              onPointerDown={consumeMarketplacePointerEvent}
+              {...marketplacePointerGuardProps()}
               onClick={(event) => openMarketplaceRoute(event, "/app/identity")}
               style={actionBtn("soft")}
             >
@@ -3268,7 +3290,7 @@ export default function MarketplacePage() {
             </button>
             <button
               type="button"
-              onPointerDown={consumeMarketplacePointerEvent}
+              {...marketplacePointerGuardProps()}
               onClick={(event) => openMarketplaceRoute(event, "/app/trust-slip")}
               style={actionBtn("soft")}
             >
@@ -3276,7 +3298,7 @@ export default function MarketplacePage() {
             </button>
             <button
               type="button"
-              onPointerDown={consumeMarketplacePointerEvent}
+              {...marketplacePointerGuardProps()}
               onClick={(event) => openMarketplaceRoute(event, "/app/my-gmfn-and-i")}
               style={actionBtn("soft")}
             >
@@ -3380,7 +3402,7 @@ export default function MarketplacePage() {
 
             <button
               type="button"
-              onPointerDown={consumeMarketplacePointerEvent}
+              {...marketplacePointerGuardProps()}
               onClick={togglePictureTools}
               aria-expanded={pictureToolsOpen}
               style={marketplacePictureHandleStyle(
@@ -3397,10 +3419,12 @@ export default function MarketplacePage() {
             {pictureToolsOpen ? (
               <div
                 onClick={(event) => event.stopPropagation()}
-                onPointerDown={consumeMarketplacePointerEvent}
+                {...marketplacePointerGuardProps()}
                 style={marketplacePictureToolsPanelStyle(isCompact)}
               >
                 <label
+                  onClick={(event) => event.stopPropagation()}
+                  {...marketplacePointerGuardProps()}
                   style={marketplacePictureToolButtonStyle(
                     uploadingCommunityPicture
                   )}
@@ -3427,7 +3451,7 @@ export default function MarketplacePage() {
                 {hasCommunityPicture ? (
                   <button
                     type="button"
-                    onPointerDown={consumeMarketplaceButtonEvent}
+                    {...marketplaceButtonGuardProps()}
                     onClick={(event) => {
                       consumeMarketplaceButtonEvent(event);
                       void handleRemoveCommunityPicture();
@@ -3443,7 +3467,7 @@ export default function MarketplacePage() {
 
                 <button
                   type="button"
-                  onPointerDown={consumeMarketplacePointerEvent}
+                  {...marketplacePointerGuardProps()}
                   onClick={togglePictureTools}
                   style={marketplacePictureToolButtonStyle()}
                 >
@@ -3529,7 +3553,7 @@ export default function MarketplacePage() {
 
               <button
                 type="button"
-                onPointerDown={consumeMarketplacePointerEvent}
+                {...marketplacePointerGuardProps()}
                 onClick={toggleProfileDetails}
                 aria-expanded={profileDetailsOpen}
                 style={marketplaceDetailsToggleStyle(isCompact)}
@@ -3602,7 +3626,7 @@ export default function MarketplacePage() {
 
               <button
                 type="button"
-                onPointerDown={consumeMarketplacePointerEvent}
+                {...marketplacePointerGuardProps()}
                 onClick={toggleProfileDetails}
                 aria-expanded={profileDetailsOpen}
                 style={{
@@ -3631,7 +3655,7 @@ export default function MarketplacePage() {
 
           <button
             type="button"
-            onPointerDown={consumeMarketplaceButtonEvent}
+            {...marketplaceButtonGuardProps()}
             onClick={toggleIntentGuide}
             aria-expanded={intentGuideOpen}
             style={actionBtn("soft")}
@@ -3676,7 +3700,7 @@ export default function MarketplacePage() {
 
               <button
                 type="submit"
-                onPointerDown={consumeMarketplacePointerEvent}
+                {...marketplacePointerGuardProps()}
                 style={actionBtn("primary")}
               >
                 {matchedIntent ? `Open ${matchedIntent.label}` : "Find action"}
@@ -3711,7 +3735,7 @@ export default function MarketplacePage() {
                   <button
                     key={item.id}
                     type="button"
-                    onPointerDown={consumeMarketplacePointerEvent}
+                    {...marketplacePointerGuardProps()}
                     onClick={(event) => openMarketplaceIntent(event, item)}
                     style={intentChoiceStyle(item.tone)}
                   >
@@ -3782,7 +3806,7 @@ export default function MarketplacePage() {
 
           <button
             type="button"
-            onPointerDown={consumeMarketplaceButtonEvent}
+            {...marketplaceButtonGuardProps()}
             onClick={(event) => toggleSectionFromButton(event, "money")}
             style={actionBtn("soft")}
           >
@@ -3942,7 +3966,7 @@ export default function MarketplacePage() {
               <div style={{ marginTop: 14 }}>
                 <button
                   type="button"
-                  onPointerDown={consumeMarketplacePointerEvent}
+                  {...marketplacePointerGuardProps()}
                   onClick={(event) => openMarketplaceRoute(event, "/app/payment/pool")}
                   style={actionBtn("primary")}
                 >
@@ -3984,7 +4008,7 @@ export default function MarketplacePage() {
               <div style={{ marginTop: 14 }}>
                 <button
                   type="button"
-                  onPointerDown={consumeMarketplacePointerEvent}
+                  {...marketplacePointerGuardProps()}
                   onClick={(event) =>
                     openMarketplaceRoute(event, "/app/withdrawal-instructions")
                   }
@@ -4027,7 +4051,7 @@ export default function MarketplacePage() {
               <div style={{ marginTop: 14 }}>
                 <button
                   type="button"
-                  onPointerDown={consumeMarketplacePointerEvent}
+                  {...marketplacePointerGuardProps()}
                   onClick={openFinance}
                   style={actionBtn("secondary")}
                 >
@@ -4062,7 +4086,7 @@ export default function MarketplacePage() {
 
           <button
             type="button"
-            onPointerDown={consumeMarketplaceButtonEvent}
+            {...marketplaceButtonGuardProps()}
             onClick={(event) => toggleSectionFromButton(event, "tools")}
             style={actionBtn("soft")}
           >
@@ -4129,7 +4153,7 @@ export default function MarketplacePage() {
                       href={inviteLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      onPointerDown={consumeMarketplacePointerEvent}
+                      {...marketplacePointerGuardProps()}
                       style={highlightedExternalLinkStyle()}
                     >
                       {inviteLink}
@@ -4142,7 +4166,7 @@ export default function MarketplacePage() {
                   <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
                     <button
                       type="button"
-                      onPointerDown={consumeMarketplaceButtonEvent}
+                      {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         consumeMarketplaceButtonEvent(event);
                         void handleCreateInviteLink();
@@ -4154,7 +4178,7 @@ export default function MarketplacePage() {
                     </button>
                     <button
                       type="button"
-                      onPointerDown={consumeMarketplaceButtonEvent}
+                      {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         consumeMarketplaceButtonEvent(event);
                         copyMarketplaceLink(
@@ -4170,7 +4194,7 @@ export default function MarketplacePage() {
                     </button>
                     <button
                       type="button"
-                      onPointerDown={consumeMarketplaceButtonEvent}
+                      {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         consumeMarketplaceButtonEvent(event);
                         handleOpenJoinLink();
@@ -4182,7 +4206,7 @@ export default function MarketplacePage() {
                     </button>
                     <button
                       type="button"
-                      onPointerDown={consumeMarketplaceButtonEvent}
+                      {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         consumeMarketplaceButtonEvent(event);
                         if (!inviteLink) {
@@ -4224,7 +4248,7 @@ export default function MarketplacePage() {
                   <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
                     <button
                       type="button"
-                      onPointerDown={consumeMarketplaceButtonEvent}
+                      {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         consumeMarketplaceButtonEvent(event);
                         copyMarketplaceLink(
@@ -4240,7 +4264,7 @@ export default function MarketplacePage() {
                     </button>
                     <button
                       type="button"
-                      onPointerDown={consumeMarketplaceButtonEvent}
+                      {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         consumeMarketplaceButtonEvent(event);
                         openMarketplaceExternalLink(
@@ -4271,7 +4295,7 @@ export default function MarketplacePage() {
                   <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
                     <button
                       type="button"
-                      onPointerDown={consumeMarketplaceButtonEvent}
+                      {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         consumeMarketplaceButtonEvent(event);
                         copyMarketplaceLink(
@@ -4287,7 +4311,7 @@ export default function MarketplacePage() {
                     </button>
                     <button
                       type="button"
-                      onPointerDown={consumeMarketplaceButtonEvent}
+                      {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         consumeMarketplaceButtonEvent(event);
                         openMarketplaceExternalLink(
@@ -4316,7 +4340,7 @@ export default function MarketplacePage() {
                     {myShopTo ? (
                       <button
                         type="button"
-                        onPointerDown={consumeMarketplacePointerEvent}
+                        {...marketplacePointerGuardProps()}
                         onClick={(event) => openMarketplaceRoute(event, myShopTo)}
                         style={actionBtn("secondary")}
                       >
@@ -4325,7 +4349,7 @@ export default function MarketplacePage() {
                     ) : null}
                     <button
                       type="button"
-                      onPointerDown={consumeMarketplacePointerEvent}
+                      {...marketplacePointerGuardProps()}
                       onClick={(event) =>
                         openMarketplaceRoute(event, "/app/shop-control")
                       }
@@ -4362,7 +4386,7 @@ export default function MarketplacePage() {
 
           <button
             type="button"
-            onPointerDown={consumeMarketplaceButtonEvent}
+            {...marketplaceButtonGuardProps()}
             onClick={(event) => toggleSectionFromButton(event, "members")}
             style={actionBtn("soft")}
           >
@@ -4498,7 +4522,7 @@ export default function MarketplacePage() {
                           {row.shopTo ? (
                             <OriginLink
                               to={row.shopTo}
-                              onPointerDown={consumeMarketplacePointerEvent}
+                              {...marketplacePointerGuardProps()}
                               style={actionBtn("secondary")}
                             >
                               Open shop
@@ -4508,7 +4532,7 @@ export default function MarketplacePage() {
                           {fitSuggestion ? (
                             <button
                               type="button"
-                              onPointerDown={consumeMarketplaceButtonEvent}
+                              {...marketplaceButtonGuardProps()}
                               onClick={(event) => {
                                 consumeMarketplaceButtonEvent(event);
                                 toggleMemberAsSupporter(row);
@@ -4577,7 +4601,7 @@ export default function MarketplacePage() {
 
           <button
             type="button"
-            onPointerDown={consumeMarketplacePointerEvent}
+            {...marketplacePointerGuardProps()}
             onClick={(event) => openMarketplaceRoute(event, "/app/demand-box")}
             style={actionBtn("primary")}
           >
@@ -4611,7 +4635,7 @@ export default function MarketplacePage() {
             <span style={badge(false)}>Active items: {activeLoanCount}</span>
             <button
               type="button"
-              onPointerDown={consumeMarketplaceButtonEvent}
+              {...marketplaceButtonGuardProps()}
               onClick={(event) => toggleSectionFromButton(event, "support")}
               style={actionBtn("soft")}
             >
@@ -4713,7 +4737,7 @@ export default function MarketplacePage() {
               >
                 <button
                   type="button"
-                  onPointerDown={consumeMarketplaceButtonEvent}
+                  {...marketplaceButtonGuardProps()}
                   onClick={(event) => {
                     consumeMarketplaceButtonEvent(event);
                     void handleStartLoanDraft();
@@ -4727,7 +4751,7 @@ export default function MarketplacePage() {
                 {loanDraftId ? (
                   <button
                     type="button"
-                    onPointerDown={consumeMarketplaceButtonEvent}
+                    {...marketplaceButtonGuardProps()}
                     onClick={(event) => {
                       consumeMarketplaceButtonEvent(event);
                       void handleRefreshSuggestions();
@@ -4742,7 +4766,7 @@ export default function MarketplacePage() {
                 {loanDraftId ? (
                   <button
                     type="button"
-                    onPointerDown={consumeMarketplaceButtonEvent}
+                    {...marketplaceButtonGuardProps()}
                     onClick={(event) => {
                       consumeMarketplaceButtonEvent(event);
                       void handleCancelLoanDraft();
@@ -4765,7 +4789,7 @@ export default function MarketplacePage() {
               >
                 <button
                   type="button"
-                  onPointerDown={consumeMarketplacePointerEvent}
+                  {...marketplacePointerGuardProps()}
                   onClick={(event) =>
                     openMarketplaceRoute(event, "/app/loan-readiness")
                   }
@@ -4775,7 +4799,7 @@ export default function MarketplacePage() {
                 </button>
                 <button
                   type="button"
-                  onPointerDown={consumeMarketplacePointerEvent}
+                  {...marketplacePointerGuardProps()}
                   onClick={(event) =>
                     openMarketplaceRoute(event, "/app/loan-suggestions")
                   }
@@ -4785,7 +4809,7 @@ export default function MarketplacePage() {
                 </button>
                 <button
                   type="button"
-                  onPointerDown={consumeMarketplacePointerEvent}
+                  {...marketplacePointerGuardProps()}
                   onClick={(event) =>
                     openMarketplaceRoute(event, "/app/loan-workbench")
                   }
@@ -4795,7 +4819,7 @@ export default function MarketplacePage() {
                 </button>
                 <button
                   type="button"
-                  onPointerDown={consumeMarketplacePointerEvent}
+                  {...marketplacePointerGuardProps()}
                   onClick={openFinance}
                   style={actionBtn("soft")}
                 >
@@ -4803,7 +4827,7 @@ export default function MarketplacePage() {
                 </button>
                 <button
                   type="button"
-                  onPointerDown={consumeMarketplacePointerEvent}
+                  {...marketplacePointerGuardProps()}
                   onClick={(event) => openMarketplaceRoute(event, "/app/loans")}
                   style={actionBtn("soft")}
                 >
@@ -4923,7 +4947,7 @@ export default function MarketplacePage() {
 
                                   <button
                                     type="button"
-                                    onPointerDown={consumeMarketplaceButtonEvent}
+                                    {...marketplaceButtonGuardProps()}
                                     onClick={(event) => {
                                       consumeMarketplaceButtonEvent(event);
                                       toggleSuggestedSupporter(item);
@@ -4968,7 +4992,7 @@ export default function MarketplacePage() {
                               <button
                                 key={item.key}
                                 type="button"
-                                onPointerDown={consumeMarketplaceButtonEvent}
+                                {...marketplaceButtonGuardProps()}
                                 onClick={(event) => {
                                   consumeMarketplaceButtonEvent(event);
                                   toggleSuggestedSupporter(item);
@@ -5001,7 +5025,7 @@ export default function MarketplacePage() {
                       >
                         <button
                           type="button"
-                          onPointerDown={consumeMarketplaceButtonEvent}
+                          {...marketplaceButtonGuardProps()}
                           onClick={(event) => {
                             consumeMarketplaceButtonEvent(event);
                             void handleSendGuarantorRequests();

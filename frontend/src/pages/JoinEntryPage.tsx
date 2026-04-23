@@ -48,6 +48,8 @@ function inputStyle(): React.CSSProperties {
     boxSizing: "border-box",
     boxShadow:
       "inset 0 1px 0 rgba(255,255,255,0.86), 0 6px 14px rgba(10,24,49,0.04)",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
   };
 }
 
@@ -63,6 +65,9 @@ function textareaStyle(): React.CSSProperties {
 
 function primaryBtn(disabled = false): React.CSSProperties {
   return {
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -84,11 +89,22 @@ function primaryBtn(disabled = false): React.CSSProperties {
       ? "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.52)"
       : "0 18px 32px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.58), inset 0 -8px 14px rgba(125,85,10,0.12)",
     textShadow: disabled ? "none" : "0 1px 0 rgba(255,255,255,0.36)",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    pointerEvents: "auto",
+    appearance: "none",
+    WebkitAppearance: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
   };
 }
 
 function secondaryLink(): React.CSSProperties {
   return {
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -105,6 +121,29 @@ function secondaryLink(): React.CSSProperties {
       "0 14px 24px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.82), inset 0 -6px 10px rgba(120,142,170,0.10)",
     textShadow: "0 1px 0 rgba(255,255,255,0.52)",
     cursor: "pointer",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    pointerEvents: "auto",
+    appearance: "none",
+    WebkitAppearance: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
+  };
+}
+
+function guardButtonPress(event: React.SyntheticEvent<HTMLElement>) {
+  event.stopPropagation();
+}
+
+function buttonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: guardButtonPress,
+    onTouchStart: guardButtonPress,
+    onMouseDown: guardButtonPress,
   };
 }
 
@@ -960,6 +999,7 @@ export default function JoinEntryPage() {
               <button
                 type="button"
                 disabled={!canOpenForm}
+                {...buttonGuardProps()}
                 onClick={() => {
                   if (!canOpenForm) return;
                   setFormOpen((prev) => !prev);
@@ -1200,7 +1240,12 @@ export default function JoinEntryPage() {
                   justifyItems: isCompact ? "stretch" : "center",
                 }}
               >
-                <button type="submit" disabled={!canSubmit} style={primaryBtn(!canSubmit)}>
+                <button
+                  type="submit"
+                  disabled={!canSubmit}
+                  {...buttonGuardProps()}
+                  style={primaryBtn(!canSubmit)}
+                >
                   {busy ? "Submitting Request..." : "Submit Join Request"}
                 </button>
               </div>

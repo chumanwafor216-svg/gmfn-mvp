@@ -375,8 +375,22 @@ function statTile(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
+function stableTapStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
+  };
+}
+
 function routeTile(primary = false): React.CSSProperties {
   return {
+    ...stableTapStyle(),
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
@@ -424,6 +438,7 @@ function actionBtn(
 ): React.CSSProperties {
   if (kind === "primary") {
     return {
+      ...stableTapStyle(),
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
@@ -445,6 +460,7 @@ function actionBtn(
 
   if (kind === "soft") {
     return {
+      ...stableTapStyle(),
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
@@ -465,6 +481,7 @@ function actionBtn(
   }
 
   return {
+    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -486,6 +503,7 @@ function actionBtn(
 
 function collapseToggle(): React.CSSProperties {
   return {
+    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",

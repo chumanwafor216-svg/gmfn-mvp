@@ -231,6 +231,19 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
+function stableTapStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
+  };
+}
+
 function actionBtn(
   kind: "primary" | "secondary" | "soft" = "secondary",
   disabled = false
@@ -253,6 +266,7 @@ function actionBtn(
       whiteSpace: "normal",
       textAlign: "center",
       opacity: disabled ? 0.86 : 1,
+      ...stableTapStyle(),
     };
   }
 
@@ -274,6 +288,7 @@ function actionBtn(
       whiteSpace: "normal",
       textAlign: "center",
       opacity: disabled ? 0.86 : 1,
+      ...stableTapStyle(),
     };
   }
 
@@ -294,6 +309,7 @@ function actionBtn(
     whiteSpace: "normal",
     textAlign: "center",
     opacity: disabled ? 0.86 : 1,
+    ...stableTapStyle(),
   };
 }
 
@@ -313,6 +329,7 @@ function collapseToggle(): React.CSSProperties {
     cursor: "pointer",
     whiteSpace: "normal",
     textAlign: "center",
+    ...stableTapStyle(),
   };
 }
 

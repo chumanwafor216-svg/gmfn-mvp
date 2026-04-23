@@ -92,6 +92,19 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
+function stableTapStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
+  };
+}
+
 function primaryBtn(disabled = false): React.CSSProperties {
   return {
     display: "inline-flex",
@@ -110,6 +123,7 @@ function primaryBtn(disabled = false): React.CSSProperties {
     textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
     whiteSpace: "normal",
+    ...stableTapStyle(),
   };
 }
 
@@ -131,6 +145,7 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
     whiteSpace: "normal",
+    ...stableTapStyle(),
   };
 }
 

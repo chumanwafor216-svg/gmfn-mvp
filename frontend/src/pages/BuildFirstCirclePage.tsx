@@ -126,18 +126,25 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function actionBtn(
-  kind: "primary" | "secondary" | "soft" = "secondary",
-  disabled = false
-): React.CSSProperties {
-  const stableTap: React.CSSProperties = {
+function stableTapStyle(): React.CSSProperties {
+  return {
     position: "relative",
     zIndex: 2,
+    isolation: "isolate",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
     boxSizing: "border-box",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
   };
+}
+
+function actionBtn(
+  kind: "primary" | "secondary" | "soft" = "secondary",
+  disabled = false
+): React.CSSProperties {
+  const stableTap = stableTapStyle();
 
   if (kind === "primary") {
     return {
@@ -206,12 +213,7 @@ function actionBtn(
 
 function collapseToggle(): React.CSSProperties {
   return {
-    position: "relative",
-    zIndex: 2,
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    boxSizing: "border-box",
+    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -231,6 +233,17 @@ function collapseToggle(): React.CSSProperties {
 
 function guardButtonPress(event: React.SyntheticEvent) {
   event.stopPropagation();
+}
+
+function buttonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: guardButtonPress,
+    onTouchStart: guardButtonPress,
+    onMouseDown: guardButtonPress,
+  };
 }
 
 function inputStyle(): React.CSSProperties {
@@ -1109,7 +1122,7 @@ export default function BuildFirstCirclePage() {
                   <button
                     key={role}
                     type="button"
-                    onPointerDown={guardButtonPress}
+                    {...buttonGuardProps()}
                     onClick={() => setRole(role)}
                     style={active ? actionBtn("primary") : actionBtn("secondary")}
                   >
@@ -1288,7 +1301,7 @@ export default function BuildFirstCirclePage() {
                 >
                   <button
                     type="button"
-                    onPointerDown={guardButtonPress}
+                    {...buttonGuardProps()}
                     onClick={addManualContact}
                     style={actionBtn("primary")}
                   >
@@ -1297,7 +1310,7 @@ export default function BuildFirstCirclePage() {
 
                   <button
                     type="button"
-                    onPointerDown={guardButtonPress}
+                    {...buttonGuardProps()}
                     onClick={() => setManualForm(defaultManualForm())}
                     style={actionBtn("secondary")}
                   >
@@ -1317,7 +1330,7 @@ export default function BuildFirstCirclePage() {
               <div style={{ marginTop: 14 }}>
                 <button
                   type="button"
-                  onPointerDown={guardButtonPress}
+                  {...buttonGuardProps()}
                   onClick={() => void addFromPhoneContacts()}
                   disabled={pickingContacts}
                   style={actionBtn("secondary", pickingContacts)}
@@ -1372,7 +1385,7 @@ export default function BuildFirstCirclePage() {
             <span style={badge(false)}>{draft.contacts.length} contacts</span>
             <button
               type="button"
-              onPointerDown={guardButtonPress}
+              {...buttonGuardProps()}
               onClick={() => toggleSection("contacts")}
               style={collapseToggle()}
             >
@@ -1448,7 +1461,7 @@ export default function BuildFirstCirclePage() {
                     >
                       <button
                         type="button"
-                        onPointerDown={guardButtonPress}
+                        {...buttonGuardProps()}
                         onClick={() => toggleSelected(item.id)}
                         style={item.selected ? actionBtn("primary") : actionBtn("secondary")}
                       >
@@ -1457,7 +1470,7 @@ export default function BuildFirstCirclePage() {
 
                       <button
                         type="button"
-                        onPointerDown={guardButtonPress}
+                        {...buttonGuardProps()}
                         onClick={() => removeContact(item.id)}
                         style={actionBtn("soft")}
                       >
@@ -1491,7 +1504,7 @@ export default function BuildFirstCirclePage() {
 
           <button
             type="button"
-            onPointerDown={guardButtonPress}
+            {...buttonGuardProps()}
             onClick={() => toggleSection("invite")}
             style={collapseToggle()}
           >
@@ -1551,7 +1564,7 @@ export default function BuildFirstCirclePage() {
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <button
                     type="button"
-                    onPointerDown={guardButtonPress}
+                    {...buttonGuardProps()}
                     onClick={copyInviteBundle}
                     disabled={readyContacts.length === 0}
                     style={actionBtn("primary", readyContacts.length === 0)}
@@ -1561,7 +1574,7 @@ export default function BuildFirstCirclePage() {
 
                   <button
                     type="button"
-                    onPointerDown={guardButtonPress}
+                    {...buttonGuardProps()}
                     onClick={resetDraft}
                     style={actionBtn("secondary")}
                   >

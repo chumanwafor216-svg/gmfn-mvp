@@ -369,12 +369,38 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
+const stableTapTarget: React.CSSProperties = {
+  position: "relative",
+  zIndex: 2,
+  isolation: "isolate",
+  WebkitTapHighlightColor: "transparent",
+  touchAction: "manipulation",
+  userSelect: "none",
+  transform: "translateZ(0)",
+};
+
+function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
+  event?.stopPropagation();
+}
+
+function buttonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: guardButtonPress,
+    onTouchStart: guardButtonPress,
+    onMouseDown: guardButtonPress,
+  };
+}
+
 function actionBtn(
   kind: "primary" | "secondary" | "soft" = "secondary",
   disabled = false
 ): React.CSSProperties {
   if (kind === "primary") {
     return {
+      ...stableTapTarget,
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
@@ -397,14 +423,12 @@ function actionBtn(
         ? "none"
         : "0 7px 0 rgba(92,64,18,0.34), 0 18px 32px rgba(11,31,51,0.20), inset 0 1px 0 rgba(255,255,255,0.72), inset 0 -2px 0 rgba(72,45,4,0.30)",
       lineHeight: 1.15,
-      touchAction: "manipulation",
-      WebkitTapHighlightColor: "transparent",
-      userSelect: "none",
     };
   }
 
   if (kind === "soft") {
     return {
+      ...stableTapTarget,
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
@@ -426,13 +450,11 @@ function actionBtn(
       lineHeight: 1.15,
       boxShadow:
         "0 5px 0 rgba(92,64,18,0.20), 0 13px 24px rgba(7,24,39,0.11), inset 0 1px 0 rgba(255,255,255,0.90), inset 0 -2px 0 rgba(83,56,0,0.14)",
-      touchAction: "manipulation",
-      WebkitTapHighlightColor: "transparent",
-      userSelect: "none",
     };
   }
 
   return {
+    ...stableTapTarget,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -454,9 +476,6 @@ function actionBtn(
     lineHeight: 1.15,
     boxShadow:
       "0 5px 0 rgba(92,64,18,0.18), 0 13px 24px rgba(7,24,39,0.10), inset 0 1px 0 rgba(255,255,255,0.90), inset 0 -2px 0 rgba(83,56,0,0.12)",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
   };
 }
 
@@ -1898,6 +1917,7 @@ export default function ShopControlPage() {
 
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() => {
                   if (publicShopLink) {
                     window.open(publicShopLink, "_blank", "noopener,noreferrer");
@@ -1911,6 +1931,7 @@ export default function ShopControlPage() {
 
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
                 style={fullButton(actionBtn("secondary", !publicShopLink))}
                 disabled={!publicShopLink}
@@ -1992,6 +2013,7 @@ export default function ShopControlPage() {
               ) : recommendedShopMove.kind === "spotlight" ? (
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={openSpotlightTools}
                   style={fullButton(actionBtn("primary"))}
                 >
@@ -2000,6 +2022,7 @@ export default function ShopControlPage() {
               ) : (
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={() => {
                     if (publicShopLink) {
                       window.open(publicShopLink, "_blank", "noopener,noreferrer");
@@ -2084,6 +2107,7 @@ export default function ShopControlPage() {
             <div style={{ marginTop: 12, ...controlGrid(isCompact, 132) }}>
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() => void createVaultInstruction(1)}
                 disabled={shopActionsLocked || creatingVaultInstruction}
                 style={fullButton(actionBtn("primary", shopActionsLocked || creatingVaultInstruction))}
@@ -2096,6 +2120,7 @@ export default function ShopControlPage() {
               </button>
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() => void createVaultInstruction(6)}
                 disabled={shopActionsLocked || creatingVaultInstruction}
                 style={fullButton(actionBtn("secondary", shopActionsLocked || creatingVaultInstruction))}
@@ -2107,6 +2132,7 @@ export default function ShopControlPage() {
               </OriginLink>
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() => void createVaultViewingLink()}
                 disabled={
                   shopActionsLocked ||
@@ -2177,6 +2203,7 @@ export default function ShopControlPage() {
             <div style={{ marginTop: 12, ...controlGrid(isCompact, 132) }}>
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() => void createMerchantVerifyInstruction()}
                 disabled={shopActionsLocked || creatingMerchantVerifyInstruction}
                 style={fullButton(actionBtn(
@@ -2272,6 +2299,7 @@ export default function ShopControlPage() {
             <div style={{ marginTop: 12, ...controlGrid(isCompact, 132) }}>
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() => void createSpotlightInstruction()}
                 disabled={shopActionsLocked || creatingSpotlightInstruction}
                 style={fullButton(actionBtn("primary", shopActionsLocked || creatingSpotlightInstruction))}
@@ -2284,6 +2312,7 @@ export default function ShopControlPage() {
               </button>
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={openSpotlightTools}
                 style={fullButton(actionBtn("secondary"))}
               >
@@ -2443,6 +2472,7 @@ export default function ShopControlPage() {
                 <div style={controlGrid(isCompact, 132)}>
                   <button
                     type="button"
+                    {...buttonGuardProps()}
                     onClick={() => void saveShopDetails({ image_url: imageUrlInput })}
                     disabled={shopActionsLocked || savingShop || uploadingImage}
                     style={fullButton(actionBtn("primary", shopActionsLocked || savingShop || uploadingImage))}
@@ -2458,6 +2488,7 @@ export default function ShopControlPage() {
 
                   <button
                     type="button"
+                    {...buttonGuardProps()}
                     onClick={() => void saveShopDetails({ clear_image: true, image_url: null })}
                     disabled={
                       shopActionsLocked || savingShop || uploadingImage || !safeStr(imageUrlInput)
@@ -2483,6 +2514,7 @@ export default function ShopControlPage() {
 
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={() => {
                     if (publicShopLink) {
                       window.open(publicShopLink, "_blank", "noopener,noreferrer");
@@ -2496,6 +2528,7 @@ export default function ShopControlPage() {
 
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                     onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
                   style={fullButton(actionBtn("soft", !publicShopLink))}
                   disabled={!publicShopLink}
@@ -2563,6 +2596,7 @@ export default function ShopControlPage() {
         <div style={{ marginTop: 16, ...controlGrid(isCompact, 150) }}>
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => void saveShopDetails()}
             disabled={shopActionsLocked || savingShop}
             style={fullButton(actionBtn("primary", shopActionsLocked || savingShop))}
@@ -2735,6 +2769,7 @@ export default function ShopControlPage() {
                   <div style={{ marginTop: 12, ...controlGrid(isCompact, 132) }}>
                     <button
                       type="button"
+                      {...buttonGuardProps()}
                       onClick={() => {
                         if (publicShopLink) {
                           window.open(publicShopLink, "_blank", "noopener,noreferrer");
@@ -2747,6 +2782,7 @@ export default function ShopControlPage() {
                     </button>
                     <button
                       type="button"
+                      {...buttonGuardProps()}
                       onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
                       style={fullButton(actionBtn("soft", !publicShopLink))}
                       disabled={!publicShopLink}
@@ -2770,6 +2806,7 @@ export default function ShopControlPage() {
             <div style={{ ...controlGrid(isCompact, 132), alignItems: "center" }}>
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() => setSpotlightPriorityMode("free")}
                 style={
                   spotlightPriorityMode === "free"
@@ -2781,6 +2818,7 @@ export default function ShopControlPage() {
               </button>
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() => setSpotlightPriorityMode("paid")}
                 disabled={shopActionsLocked || !canStartPaidSpotlight}
                 style={
@@ -2911,6 +2949,7 @@ export default function ShopControlPage() {
             <div style={controlGrid(isCompact, 150)}>
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() => void handleCreateSpotlight()}
                 disabled={
                   shopActionsLocked ||
@@ -2937,7 +2976,7 @@ export default function ShopControlPage() {
 
               <button
                 type="button"
-                onPointerDown={(event) => event.stopPropagation()}
+                {...buttonGuardProps()}
                 onClick={collapseSpotlightTools}
                 style={fullButton(actionBtn("secondary"))}
               >
@@ -3076,6 +3115,7 @@ export default function ShopControlPage() {
                   <div style={{ marginTop: 10, ...controlGrid(isCompact, 120) }}>
                     <button
                       type="button"
+                      {...buttonGuardProps()}
                       onClick={() => copyText(vaultLinkUrl(item), "Vault viewing link copied.")}
                       style={fullButton(actionBtn("soft", !vaultLinkUrl(item)))}
                       disabled={!vaultLinkUrl(item)}
@@ -3084,6 +3124,7 @@ export default function ShopControlPage() {
                     </button>
                     <button
                       type="button"
+                      {...buttonGuardProps()}
                       onClick={() => {
                         const url = vaultLinkUrl(item);
                         if (url) window.open(url, "_blank", "noopener,noreferrer");
@@ -3095,6 +3136,7 @@ export default function ShopControlPage() {
                     </button>
                     <button
                       type="button"
+                      {...buttonGuardProps()}
                       onClick={() => void extendVaultViewingLink(item)}
                       style={fullButton(actionBtn("secondary", busyVaultLinkId === Number(item.id)))}
                       disabled={busyVaultLinkId === Number(item.id)}
@@ -3103,6 +3145,7 @@ export default function ShopControlPage() {
                     </button>
                     <button
                       type="button"
+                      {...buttonGuardProps()}
                       onClick={() => void revokeVaultViewingLink(item)}
                       style={fullButton(actionBtn(
                         "secondary",
@@ -3128,6 +3171,7 @@ export default function ShopControlPage() {
               ) : null}
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() => void createVaultViewingLink()}
                 disabled={
                   shopActionsLocked ||

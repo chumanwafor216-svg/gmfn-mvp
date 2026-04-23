@@ -74,6 +74,8 @@ function input(): React.CSSProperties {
     boxSizing: "border-box",
     background: "#FFFFFF",
     color: "#0B1F33",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
   };
 }
 
@@ -87,6 +89,9 @@ function textArea(): React.CSSProperties {
 
 function primaryBtn(disabled = false): React.CSSProperties {
   return {
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
     width: "100%",
     padding: "14px 18px",
     borderRadius: 16,
@@ -103,11 +108,22 @@ function primaryBtn(disabled = false): React.CSSProperties {
       ? "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.52)"
       : "0 16px 30px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.56)",
     textShadow: disabled ? "none" : "0 1px 0 rgba(255,255,255,0.36)",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    pointerEvents: "auto",
+    appearance: "none",
+    WebkitAppearance: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
   };
 }
 
 function secondaryBtn(): React.CSSProperties {
   return {
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -124,6 +140,14 @@ function secondaryBtn(): React.CSSProperties {
       "0 10px 24px rgba(10,24,49,0.14), inset 0 1px 0 rgba(255,255,255,0.78)",
     whiteSpace: "nowrap",
     textShadow: "0 1px 0 rgba(255,255,255,0.52)",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    pointerEvents: "auto",
+    appearance: "none",
+    WebkitAppearance: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
   };
 }
 
@@ -179,6 +203,21 @@ function feedbackCard(success = false): React.CSSProperties {
     background: success ? "#ECFDF5" : "#FEF2F2",
     color: success ? "#065F46" : "#991B1B",
     fontWeight: 900,
+  };
+}
+
+function guardButtonPress(event: React.SyntheticEvent<HTMLElement>) {
+  event.stopPropagation();
+}
+
+function buttonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: guardButtonPress,
+    onTouchStart: guardButtonPress,
+    onMouseDown: guardButtonPress,
   };
 }
 
@@ -653,6 +692,7 @@ export default function CreateEntryPage() {
 
         <button
           type="button"
+          {...buttonGuardProps()}
           onClick={() => setExistingMemberOpen((current) => !current)}
           style={{
             ...secondaryBtn(),
@@ -692,6 +732,7 @@ export default function CreateEntryPage() {
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button
               type="button"
+              {...buttonGuardProps()}
               onClick={handleExistingMemberLogin}
               style={{
                 ...primaryBtn(false),
@@ -704,6 +745,7 @@ export default function CreateEntryPage() {
             </button>
             <button
               type="button"
+              {...buttonGuardProps()}
               onClick={() => setExistingMemberOpen(false)}
               style={{
                 ...secondaryBtn(),
@@ -1410,6 +1452,7 @@ export default function CreateEntryPage() {
                 >
                   <button
                     type="button"
+                    {...buttonGuardProps()}
                     onClick={() => setProcedureOpen(false)}
                     style={{
                       ...secondaryBtn(),
@@ -1484,6 +1527,7 @@ export default function CreateEntryPage() {
                   </div>
                   <button
                     type="button"
+                    {...buttonGuardProps()}
                     onClick={handleGuideDone}
                     style={{
                       ...primaryBtn(false),
@@ -1550,6 +1594,7 @@ export default function CreateEntryPage() {
 
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={() =>
                     !guideDone
                       ? setProcedureOpen(true)
@@ -1679,6 +1724,7 @@ export default function CreateEntryPage() {
                   >
                     <button
                       type="button"
+                      {...buttonGuardProps()}
                       onClick={clearDetailsBlock}
                       style={{ ...secondaryBtn(), minWidth: 116 }}
                     >
@@ -1686,6 +1732,7 @@ export default function CreateEntryPage() {
                     </button>
                     <button
                       type="button"
+                      {...buttonGuardProps()}
                       onClick={handleStartVerification}
                       style={{
                         ...primaryBtn(!canContinueDetails || busy),
@@ -1744,6 +1791,7 @@ export default function CreateEntryPage() {
 
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={() =>
                     openPanel === "verification"
                       ? setOpenPanel(null)
@@ -2068,6 +2116,7 @@ export default function CreateEntryPage() {
                     >
                       <button
                         type="button"
+                        {...buttonGuardProps()}
                         onClick={clearVerificationBlock}
                         style={{ ...secondaryBtn(), minWidth: 116 }}
                       >
@@ -2075,6 +2124,7 @@ export default function CreateEntryPage() {
                       </button>
                       <button
                         type="button"
+                        {...buttonGuardProps()}
                         onClick={handleConfirmVerification}
                         style={{
                           ...primaryBtn(!canConfirmOtp || busy),
@@ -2276,6 +2326,7 @@ export default function CreateEntryPage() {
                     >
                       <button
                         type="button"
+                        {...buttonGuardProps()}
                         onClick={clearVerificationBlock}
                         style={{ ...secondaryBtn(), minWidth: 116 }}
                       >
@@ -2283,6 +2334,7 @@ export default function CreateEntryPage() {
                       </button>
                       <button
                         type="button"
+                        {...buttonGuardProps()}
                         onClick={handleSaveBankDetails}
                         style={{
                           ...primaryBtn(!canContinueBank || busy),
@@ -2329,6 +2381,7 @@ export default function CreateEntryPage() {
 
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={() =>
                     openPanel === "community"
                       ? setOpenPanel(null)
@@ -2387,6 +2440,7 @@ export default function CreateEntryPage() {
                   >
                     <button
                       type="button"
+                      {...buttonGuardProps()}
                       onClick={clearCommunityBlock}
                       style={{ ...secondaryBtn(), minWidth: 116 }}
                     >
@@ -2394,6 +2448,7 @@ export default function CreateEntryPage() {
                     </button>
                     <button
                       type="submit"
+                      {...buttonGuardProps()}
                       style={{
                         ...primaryBtn(!canContinue || busy),
                         width: "auto",

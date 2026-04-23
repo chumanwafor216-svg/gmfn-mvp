@@ -46,6 +46,251 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 2026-04-22
 
 #### Workstream
+Dashboard phone portrait frame and Community Home tool direction.
+
+#### Routes/screens affected
+- `/app/dashboard`
+
+#### Backend routes/endpoints involved
+- None changed. This is frontend-only dashboard presentation and guidance.
+
+#### Files in play
+- `frontend/src/pages/DashboardPage.tsx`
+
+#### Confirmed facts
+- Testers reported that dashboard profile/DP photos crop poorly on shorter
+  phones, especially heads and necks in portrait-style images.
+- The dashboard phone DP frame height was increased from `146px` to `188px`
+  while keeping the existing frame design and upload behavior.
+- Dashboard guidance now states that Community Home is where the working tools
+  live: invite people, choose a community, manage shop, prepare spotlight, and
+  enter the marketplace from the right context.
+- The Dashboard "Community Home" next-action item now uses the same tool-focused
+  language and keywords.
+- `npm run build` in `frontend/` passed after this change.
+
+#### Open risks or unknowns
+- Market Wisdom presentation and interaction model were not touched.
+- More phone-photo tuning may still be needed if a tester uploads extreme
+  close-crop photos; this change gives the frame more vertical room but does
+  not introduce a crop editor.
+
+#### Next recommended step
+- Retest `/app/dashboard` on a short phone with a portrait photo and confirm
+  that the first-look guide clearly sends users to Community Home for tools.
+
+#### Date
+2026-04-22
+
+#### Workstream
+Inner-page mobile tap tightening during live pilot testing.
+
+#### Routes/screens affected
+- Entry/public routes:
+  `/create`, `/join`, `/start/join/:code`
+- Main domain surfaces:
+  `/app/community-home`, `/app/marketplace`
+- Commerce inner pages:
+  `/app/demand-box`, `/app/shop-gallery`, `/app/shop-assets`,
+  `/app/shop-control`
+
+#### Backend routes/endpoints involved
+- None changed. This is frontend-only tap containment and tap-layer
+  stabilization.
+
+#### Files in play
+- `frontend/src/pages/CreateEntryPage.tsx`
+- `frontend/src/pages/JoinEntryPage.tsx`
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `frontend/src/pages/MarketplacePage.tsx`
+- `frontend/src/pages/DemandBoxPage.tsx`
+- `frontend/src/pages/ShopGalleryPage.tsx`
+- `frontend/src/pages/ShopAssetsPage.tsx`
+- `frontend/src/pages/ShopControlPage.tsx`
+
+#### Confirmed facts
+- Live testers continued to report buttons that felt jumpy on phone,
+  especially inside commerce/community pages.
+- Each affected page now has local button guard props that stop
+  `pointerdown`, `touchstart`, and `mousedown` from leaking into nearby
+  wrappers, cards, links, or overlays.
+- Commerce button styles now keep their own stable tap layer where needed:
+  isolated z-index, transparent mobile tap highlight, manipulation touch
+  action, and no text selection.
+- A guard-coverage check confirmed every local `type="button"` in the listed
+  pages has a guard marker.
+- `npm run build` in `frontend/` passed after this change.
+
+#### Open risks or unknowns
+- This does not change invite expiry, WhatsApp link generation, OTP/SMS,
+  bank rails, loan lifecycle, trust-event generation, auth, or backend data.
+- If testers still see jumps on a specific screen after deployment, inspect
+  that screen for oversized clickable wrappers, fixed overlays, or browser
+  chrome interference around the exact tap location.
+
+#### Next recommended step
+- Deploy this frontend batch, then retest phone taps on `/create`,
+  `/start/join/:code`, `/app/community-home`, `/app/marketplace`,
+  `/app/shop-control`, `/app/shop-assets`, `/shop/:gmfnId`, and
+  `/app/demand-box`.
+
+#### Date
+2026-04-22
+
+#### Workstream
+System-level mobile tap stabilization during live pilot testing.
+
+#### Routes/screens affected
+- App shell controls on authenticated routes:
+  `/app/*`
+- Entry and public onboarding controls:
+  `/create`, `/join`, `/start/join/:code`
+- First-circle pilot route:
+  `/app/build-first-circle`
+- Notifications and money/borrowing/admin surfaces already under live test.
+
+#### Backend routes/endpoints involved
+- None changed. This is frontend-only tap containment and tap-highlight
+  stabilization.
+
+#### Files in play
+- `frontend/src/layout/AppLayout.tsx`
+- `frontend/src/components/OriginLink.tsx`
+- `frontend/src/components/EntryControls.tsx`
+- `frontend/src/pages/BuildFirstCirclePage.tsx`
+- `frontend/src/pages/NotificationsPage.tsx`
+- Borrowing route pages:
+  `LoansPage.tsx`, `LoanReadinessPage.tsx`, `LoanSuggestionsPage.tsx`,
+  `LoanWorkbenchPage.tsx`, `LoanSummaryPage.tsx`, `GuarantorInboxPage.tsx`,
+  `GuarantorEarningsPage.tsx`, `RepaymentPage.tsx`
+- Admin/money pages from the previous checkpoint.
+
+#### Confirmed facts
+- Live testers reported buttons opening the wrong places or showing a blue
+  mobile tap rectangle that did not align with the visible button.
+- Shared internal links now stop pointer/touch/mouse down propagation and carry
+  stable mobile tap styling through `OriginLink`.
+- App shell controls now also guard pointer/touch/mouse down: mobile Menu,
+  Tools, drawer links, page-tool links, desktop side navigation, logout
+  buttons, and bottom navigation.
+- Entry action buttons now guard touch and mouse down in addition to pointer
+  down.
+- `npm run build` in `frontend/` passed after these changes.
+- `git diff --check` only reports expected Windows LF-to-CRLF warnings.
+
+#### Open risks or unknowns
+- This does not change invite expiry, bank rails, OTP/SMS, auth, schemas,
+  loan lifecycle rules, or trust-event rules.
+- If testers still see jumps after deployment, the next suspect is a
+  page-local overlay or an oversized clickable wrapper on the specific page.
+
+#### Next recommended step
+- Deploy this batch, then retest on phone: `/create`, `/start/join/:code`,
+  `/app/build-first-circle`, mobile Menu/Tools, bottom nav, notifications, and
+  the money/borrowing action buttons.
+
+#### Date
+2026-04-22
+
+#### Workstream
+Admin and money-route mobile tap stability during live pilot testing.
+
+#### Routes/screens affected
+- `/app/command-center/system-operations`
+- `/app/command-center/bank-console`
+- `/app/command-center/incomplete-loans`
+- `/app/command-center/trust-analytics`
+- `/app/community/:clanId/join-requests`
+- `/app/payment-rails`
+- `/app/payment/pool`
+- `/app/withdrawal-instructions`
+
+#### Backend routes/endpoints involved
+- None changed. This is frontend-only tap stability on admin and money-route surfaces.
+
+#### Files in play
+- `frontend/src/pages/SystemOperationsPage.tsx`
+- `frontend/src/pages/BankConsolePage.tsx`
+- `frontend/src/pages/AdminIncompleteLoansPage.tsx`
+- `frontend/src/pages/TrustAnalyticsPage.tsx`
+- `frontend/src/pages/CommunityJoinRequestsPage.tsx`
+- `frontend/src/pages/PaymentRailsPage.tsx`
+- `frontend/src/pages/PaymentInstructionsPage.tsx`
+- `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- While external testers are active, the safest useful work is route-local
+  tap stabilization and clarity support rather than changing bank, invite, or
+  trust-event rules.
+- Admin operations, Bank Console, join-request review, incomplete-loans,
+  trust-analytics, and Money In/Money Out/payment-rails pages had polished
+  button styles but did not yet carry the same mobile tap containment added to
+  entry surfaces.
+- Local action/link helpers now include stable mobile tap behavior:
+  `touchAction: manipulation`, transparent tap highlight, stable z-index,
+  isolated button layers, and no accidental text selection.
+- `npm run build` in `frontend/` passed after this change.
+
+#### Open risks or unknowns
+- This does not certify bank rails, SMS/OTP, invite expiry, loan guarantees, or
+  reconciliation logic. It only reduces mobile tap instability on these pages.
+- If testers still report jumps on these pages, inspect page-level overlays and
+  browser UI interference next.
+
+#### Next recommended step
+- Continue live testing. When ready to deploy this batch, retest the admin
+  pilot monitor, Payment Rails, Money In, and Money Out buttons on phone.
+
+#### Date
+2026-04-22
+
+#### Workstream
+Entry and join lead-through tap stability during live pilot testing.
+
+#### Routes/screens affected
+- `/create`
+- `/join`
+- `/start/join/:code`
+- Entry guide launcher surfaces used before public onboarding
+
+#### Backend routes/endpoints involved
+- None changed. This is frontend-only tap stability and interaction containment.
+
+#### Files in play
+- `frontend/src/components/EntryControls.tsx`
+- `frontend/src/pages/CreateEntryPage.tsx`
+- `frontend/src/pages/JoinEntryPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+#### Confirmed facts
+- Live testers are opening GSN from WhatsApp/Render links on phones, where
+  button taps have been reported as jumpy or landing outside the intended
+  visible control.
+- Entry and join surfaces now use stronger mobile tap controls:
+  `touchAction: manipulation`, transparent tap highlight, stable z-index,
+  isolated button layers, and pointer-down propagation guards on key action
+  buttons.
+- The shared entry guide launcher now guards pointer-down events so the guide
+  button does not leak taps to surrounding surfaces.
+- `npm run build` in `frontend/` passed after this change.
+
+#### Open risks or unknowns
+- This does not change invite expiry, create-entry backend behavior, phone
+  verification rules, or bank/wallet verification rules.
+- If testers still see page jumps after this deploy, inspect page-level fixed
+  overlays and mobile browser UI behavior next.
+
+#### Next recommended step
+- Deploy this frontend change when ready, then retest `/create` Block 1/2/3
+  buttons and `/start/join/:code` Request Form / Submit buttons on phone.
+
+### Previous update
+
+#### Date
+2026-04-22
+
+#### Workstream
 Build First Circle mobile simplification and button stability.
 
 #### Routes/screens affected
@@ -6484,6 +6729,112 @@ GSN-branded invite composer and invite-entry continuity.
 - Verification:
   - `npm run build` passed in `frontend`.
 
+### Temporary spotlight capacity quota suspension
+
+- Product-owner requested a short pilot suspension of the Spotlight quota so
+  testers can publish and play short videos today before testing Vault and paid
+  subscription surfaces.
+- Updated `gmfn_backend/app/api/routes/marketplace.py`:
+  - Added `SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_UNTIL = 2026-04-24 23:59:59 UTC`.
+  - Added `_spotlight_capacity_pilot_override_active()`.
+  - Bypassed only the free Spotlight clan-capacity rejection while that dated
+    override is active.
+- What remains protected:
+  - paid Spotlight entitlement checks still run.
+  - one-active-paid-spotlight-per-shop check still runs.
+  - shop ownership, clan membership, media upload, expiry, auth, schema, Vault,
+    subscription, and trust-event logic were not changed.
+- Remove or disable this override before normal outside-circle release.
+
+### Public Shop Gallery safe navigation and tap-target addendum
+
+- Product-owner reported that customer-facing shops trapped signed-in users and
+  did not give a safe way back into the app, while public visitors must not be
+  able to operate internal GSN tools.
+- Updated `frontend/src/pages/ShopGalleryPage.tsx` only:
+  - Added an auth-aware top navigation strip to `/shop/:gmfnId`.
+  - Public visitors now see only safe public exits/actions: Back, Sign in, and
+    Open GSN. They do not see Dashboard, Community, Marketplace, or Shop
+    Control.
+  - Signed-in viewers now see protected return doors to Dashboard, Community,
+    Marketplace, and their own shop.
+  - The Shop Control link appears only when the signed-in viewer's GSN ID
+    matches the public shop GSN ID.
+  - Tightened shop action buttons: public share/copy/Vault request buttons,
+    mini spotlight links, and product Share buttons now have larger stable
+    touch targets and tap containment.
+  - Removed two unused route-local leftovers (`initialsOf`, `shopTrustText`)
+    surfaced by lint.
+- No backend, auth core, permissions, schemas, route contracts, payment, Vault
+  logic, product loading, or Dashboard Market Wisdom changes were made.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx` passed.
+  - `npm run build` passed in `frontend`.
+  - `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx docs/HANDOFF_NOTES.md`
+    passed with only Windows line-ending warnings.
+
+### Main navigation click-bubble hardening addendum
+
+- Product-owner continued live pilot testing and identified jumpy main-domain
+  buttons/navigation as a major remaining weak area while testers were offline.
+- Confirmed from code:
+  - `frontend/src/components/OriginLink.tsx` already stopped pointer, touch,
+    and mouse-down propagation.
+  - It did not stop the final click event from bubbling into surrounding cards,
+    drawers, overlays, or parent link-like blocks.
+  - That can make a correctly tapped link still trigger a parent surface after
+    the link receives the tap, which matches the reported “button falls
+    somewhere else” behaviour.
+- Updated `frontend/src/components/OriginLink.tsx`:
+  - Link and external-anchor clicks now stop propagation before calling their
+    own supplied `onClick` handler.
+  - The link's own handler still runs, so drawer/page-action close handlers and
+    normal navigation continue to work.
+- No route names, route contracts, auth, backend logic, schemas, payments,
+  invites, or permissions were changed.
+- Verification:
+  - `npm exec -- eslint src/components/OriginLink.tsx src/layout/AppLayout.tsx src/components/PageTopNav.tsx`
+    passed.
+  - `npm run build` passed in `frontend`.
+  - `git diff --check -- frontend/src/components/OriginLink.tsx` passed with
+    only Windows line-ending warnings.
+
+### AppLayout main-domain navigation tightening addendum
+
+- Product-owner asked to tighten the main domain buttons and instill proper
+  navigation after repeated phone testing showed jumpy taps and uncertainty
+  around major domain movement.
+- Updated `frontend/src/layout/AppLayout.tsx`:
+  - Main Movement now treats `Loans & Support` as a first-class domain beside
+    Dashboard, Community Home, Marketplace, Shop, Finance, and Trust Passport.
+  - Mobile bottom navigation now includes `Loans` and uses the shorter `Trust`
+    label while preserving the existing `/app/trust` route contract.
+  - Desktop side navigation, mobile drawer links, mobile Tools/page-action
+    links, and mobile bottom navigation now use `OriginLink` so page return
+    context is preserved more consistently.
+  - Shared domain buttons now have stronger touch targets, centered labels,
+    tap-highlight suppression, pointer/touch containment, and horizontal snap
+    behavior on the mobile bottom rail.
+  - Loan summary routes now keep the Loans/Support main-domain highlight active.
+- No backend, auth, schema, environment, permission, route contract, or frozen
+  Dashboard Market Wisdom changes were made.
+- Verification:
+  - `npm exec -- eslint src/layout/AppLayout.tsx` passed.
+  - `npm run build` passed in `frontend`.
+  - `git diff --check -- frontend/src/layout/AppLayout.tsx docs/HANDOFF_NOTES.md`
+    passed with only a Windows line-ending warning.
+
+#### Mobile follow-up
+- Product-owner shared a phone screenshot showing the first-currency headline
+  splitting awkwardly on mobile while looking acceptable on laptop.
+- Adjusted the phone-only Dashboard first-currency headline to use one centered
+  logo, one balanced headline, and one small `GSN` / `Visible. Portable.
+  Usable.` proof line.
+- The laptop/desktop presentation was left intact.
+- Verification:
+  - `npm exec -- eslint src/pages/DashboardPage.tsx` passed.
+  - `npm run build` passed in `frontend`.
+
 ### Create-entry pilot phone-session expiry addendum
 
 - Product-owner tested the Render create-community flow and saw
@@ -7431,4 +7782,108 @@ GSN-branded invite composer and invite-entry continuity.
 - Verification:
   - `npm exec -- eslint src/pages/MarketplacePage.tsx` passed with the two
     pre-existing hook dependency warnings in that file.
+  - `npm run build` passed in `frontend`.
+
+### Live pilot tap-stability checkpoint
+
+- During live phone testing, the product-owner reported recurring button
+  sensitivity / jumpy tap behavior on entry, First Circle, notifications, and
+  admin/money surfaces.
+- Applied route-local mobile tap hardening only. The change adds stronger
+  isolated tap styles and touch/mouse/pointer propagation guards to buttons
+  without changing backend rules, invite validity, permissions, schemas, auth,
+  or route contracts.
+- Affected frontend surfaces:
+  - `frontend/src/components/EntryControls.tsx`
+  - `frontend/src/pages/CreateEntryPage.tsx`
+  - `frontend/src/pages/JoinEntryPage.tsx`
+  - `frontend/src/pages/BuildFirstCirclePage.tsx`
+  - `frontend/src/pages/NotificationsPage.tsx`
+  - `frontend/src/pages/SystemOperationsPage.tsx`
+  - `frontend/src/pages/BankConsolePage.tsx`
+  - `frontend/src/pages/AdminIncompleteLoansPage.tsx`
+  - `frontend/src/pages/TrustAnalyticsPage.tsx`
+  - `frontend/src/pages/CommunityJoinRequestsPage.tsx`
+  - `frontend/src/pages/PaymentRailsPage.tsx`
+  - `frontend/src/pages/PaymentInstructionsPage.tsx`
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+- Routes/screens most directly affected:
+  - `/create`
+  - `/join`
+  - `/app/build-first-circle`
+  - `/app/notifications`
+  - `/app/command-center/system-operations`
+  - `/app/command-center/bank-console`
+  - `/app/command-center/incomplete-loans`
+  - `/app/command-center/trust-analytics`
+  - `/app/community/:clanId/join-requests`
+  - `/app/payment-rails`
+  - `/app/payment/pool`
+  - `/app/withdrawal-instructions`
+- First Circle specifically:
+  - Kept the guided role -> people -> invite structure.
+  - Added the same stronger tap containment to all page buttons.
+  - Did not change the shared First Circle draft model or invite/message logic.
+- Notifications specifically:
+  - Hardened attention/action/collapse buttons.
+  - Did not change notification target normalization, unread behavior, or
+    backend notification APIs.
+- Verification:
+  - `npm exec -- eslint src/pages/BuildFirstCirclePage.tsx` passed.
+  - `npm exec -- eslint src/pages/NotificationsPage.tsx` passed.
+  - `npm run build` passed in `frontend`.
+
+### Dashboard Attention Guide user-scope and tap-target addendum
+
+- Product-owner reported during live pilot testing that the Dashboard
+  `Attention Guide` was disturbing newly created testers and appeared to carry
+  creator/admin pressure into fresh user sessions.
+- Confirmed from code:
+  - Dashboard attention state was stored in one browser-wide key:
+    `gmfn.dashboard.attention.v2`.
+  - The page also used one browser-wide avatar key:
+    `gmfn.member.avatar`.
+  - On shared phones/browsers or repeated test accounts, that can make local
+    Attention Guide state and profile image behavior feel like it belongs to a
+    previous user.
+- Updated `frontend/src/pages/DashboardPage.tsx`:
+  - Dashboard Attention Guide state now uses a scoped localStorage key based on
+    the signed-in user's `gmfn_id`, `id`, email, or phone.
+  - The Attention Guide no longer opens until a user identity is available, so
+    a temporary visitor/default key does not fire a popup during load.
+  - Dashboard avatar storage now uses the same user-scoped key pattern.
+  - The dashboard profile-picture upload control is now a larger real button
+    that triggers the hidden file input, instead of a small label target.
+  - Attention Guide action buttons now use the stronger touch/mouse/pointer
+    guard props used by the safer pilot pages.
+- Updated `frontend/src/pages/MarketplacePage.tsx`:
+  - The marketplace picture-tool upload label now has the same touch/mouse
+    containment as surrounding marketplace buttons.
+- No backend notification APIs, notification ownership rules, auth, schema,
+  route contracts, or the frozen Dashboard Market Wisdom section were changed.
+- Verification:
+  - `npm run build` passed in `frontend`.
+  - `npm exec -- eslint src/pages/DashboardPage.tsx src/pages/MarketplacePage.tsx`
+    passed with the two pre-existing Marketplace hook dependency warnings.
+  - `git diff --check -- frontend/src/pages/DashboardPage.tsx frontend/src/pages/MarketplacePage.tsx`
+    passed with only Windows line-ending warnings.
+
+### Dashboard profile and first-currency visual polish addendum
+
+- Product-owner clarified that the Dashboard profile photo block should stay
+  distinct but feel less detached from the rest of the Dashboard, with fewer
+  empty side spaces around the photo and a more institutional, 3D first
+  currency block.
+- Updated `frontend/src/pages/DashboardPage.tsx` only:
+  - Extended the Dashboard profile photo frame height for shorter phones.
+  - Reworked the profile/photo surface from a very dark isolated block into a
+    softer blue/gold/white institutional blend that connects visually with the
+    surrounding Dashboard cards.
+  - Strengthened the `Trust is the first currency` card with layered
+    blue/gold gradients, inset shadowing, and a more 3D institutional finish.
+  - Replaced the plain inline GSN text treatment in the first-currency headline
+    with the existing `GSNBrandMark` logo seal plus a smaller GSN closing seal.
+- Did not touch backend logic, auth, schemas, notification ownership, route
+  contracts, or the frozen Dashboard Market Wisdom section.
+- Verification:
   - `npm run build` passed in `frontend`.

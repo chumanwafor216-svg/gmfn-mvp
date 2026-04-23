@@ -5,6 +5,21 @@ type EntryActionButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary";
 };
 
+function guardEntryButtonPress(event: React.SyntheticEvent<HTMLElement>) {
+  event.stopPropagation();
+}
+
+function entryTapGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: guardEntryButtonPress,
+    onTouchStart: guardEntryButtonPress,
+    onMouseDown: guardEntryButtonPress,
+  };
+}
+
 export function EntryActionButton({
   variant = "primary",
   style,
@@ -57,7 +72,22 @@ export function EntryActionButton({
         };
 
   return (
-    <button {...props} style={{ ...base, ...variantStyle, ...(style || {}) }}>
+    <button
+      {...props}
+      onPointerDown={(event) => {
+        guardEntryButtonPress(event);
+        props.onPointerDown?.(event);
+      }}
+      onTouchStart={(event) => {
+        guardEntryButtonPress(event);
+        props.onTouchStart?.(event);
+      }}
+      onMouseDown={(event) => {
+        guardEntryButtonPress(event);
+        props.onMouseDown?.(event);
+      }}
+      style={{ ...base, ...variantStyle, ...(style || {}) }}
+    >
       {children}
     </button>
   );
@@ -132,6 +162,7 @@ export function EntryGuideLauncher({
     return (
       <button
         type="button"
+        {...entryTapGuardProps()}
         onClick={onClick}
         style={{
           display: "inline-flex",
@@ -182,6 +213,7 @@ export function EntryGuideLauncher({
     >
       <button
         type="button"
+        {...entryTapGuardProps()}
         onClick={onClick}
         style={{
           display: "inline-flex",

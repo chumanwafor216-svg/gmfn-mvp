@@ -163,6 +163,19 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
+function stableTapStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
+  };
+}
+
 function actionBtn(
   variant: "primary" | "secondary" | "soft",
   disabled = false
@@ -171,6 +184,7 @@ function actionBtn(
   const soft = variant === "soft";
 
   return {
+    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -214,6 +228,7 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
 
 function collapseToggle(): React.CSSProperties {
   return {
+    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",

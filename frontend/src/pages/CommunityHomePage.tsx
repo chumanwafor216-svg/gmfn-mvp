@@ -1715,6 +1715,17 @@ export default function CommunityHomePage() {
     event.stopPropagation();
   }
 
+  function communityButtonGuardProps(): Pick<
+    React.HTMLAttributes<HTMLElement>,
+    "onPointerDown" | "onTouchStart" | "onMouseDown"
+  > {
+    return {
+      onPointerDown: consumeCommunityButtonEvent,
+      onTouchStart: consumeCommunityButtonEvent,
+      onMouseDown: consumeCommunityButtonEvent,
+    };
+  }
+
   function openCommunityRoute(
     event: React.SyntheticEvent<HTMLElement> | undefined,
     to: string
@@ -2218,6 +2229,7 @@ export default function CommunityHomePage() {
             >
               <button
                 type="button"
+                {...communityButtonGuardProps()}
                 onClick={(event) => openCommunityRoute(event, "/app/clans")}
                 style={actionBtn("primary")}
               >
@@ -2225,6 +2237,7 @@ export default function CommunityHomePage() {
               </button>
               <button
                 type="button"
+                {...communityButtonGuardProps()}
                 onClick={(event) =>
                   openCommunityRoute(event, "/app/build-first-circle")
                 }
@@ -2234,6 +2247,7 @@ export default function CommunityHomePage() {
               </button>
               <button
                 type="button"
+                {...communityButtonGuardProps()}
                 onClick={(event) => openCommunityRoute(event, "/app/dashboard")}
                 style={actionBtn("secondary")}
               >
@@ -2441,7 +2455,7 @@ export default function CommunityHomePage() {
 
           <button
             type="button"
-            onPointerDown={consumeCommunityButtonEvent}
+            {...communityButtonGuardProps()}
             onClick={(event) => toggleSectionFromButton(event, "tools")}
             style={collapseHeaderButton(isCompact)}
           >
@@ -2462,6 +2476,7 @@ export default function CommunityHomePage() {
           >
             <button
               type="button"
+              {...communityButtonGuardProps()}
               onClick={(event) => openCommunityRoute(event, "/app/clans")}
               style={actionBtn("primary")}
             >
@@ -2470,6 +2485,7 @@ export default function CommunityHomePage() {
 
             <button
               type="button"
+              {...communityButtonGuardProps()}
               onClick={copyInviteLink}
               style={actionBtn("secondary", !inviteLink)}
               disabled={!inviteLink}
@@ -2479,6 +2495,7 @@ export default function CommunityHomePage() {
 
             <button
               type="button"
+              {...communityButtonGuardProps()}
               onClick={(event) =>
                 openCommunityHomeSection(
                   event,
@@ -2493,6 +2510,7 @@ export default function CommunityHomePage() {
 
             <button
               type="button"
+              {...communityButtonGuardProps()}
               onClick={(event) =>
                 openCommunityHomeSection(
                   event,
@@ -2507,6 +2525,7 @@ export default function CommunityHomePage() {
 
             <button
               type="button"
+              {...communityButtonGuardProps()}
               onClick={openCommunityShopControl}
               style={actionBtn("secondary")}
             >
@@ -2515,6 +2534,7 @@ export default function CommunityHomePage() {
 
             <button
               type="button"
+              {...communityButtonGuardProps()}
               onClick={(event) => openCommunityRoute(event, "/app/notifications")}
               style={actionBtn("secondary")}
             >
@@ -2523,6 +2543,7 @@ export default function CommunityHomePage() {
 
             <button
               type="button"
+              {...communityButtonGuardProps()}
               onClick={(event) => void openSelectedMarketplace(event)}
               disabled={!selectedClanId || changingClanId === selectedClanId}
               style={actionBtn(
@@ -2566,7 +2587,7 @@ export default function CommunityHomePage() {
 
           <button
             type="button"
-            onPointerDown={consumeCommunityButtonEvent}
+            {...communityButtonGuardProps()}
             onClick={(event) => toggleSectionFromButton(event, "circle")}
             style={collapseHeaderButton(isCompact)}
           >
@@ -2646,6 +2667,7 @@ export default function CommunityHomePage() {
               >
                 <button
                   type="button"
+                  {...communityButtonGuardProps()}
                   onClick={(event) =>
                     openCommunityRoute(event, "/app/build-first-circle")
                   }
@@ -2656,6 +2678,7 @@ export default function CommunityHomePage() {
 
                 <button
                   type="button"
+                  {...communityButtonGuardProps()}
                   onClick={copyFirstCircleInviteBundle}
                   disabled={readyFirstCircleContacts.length === 0}
                   style={actionBtn(
@@ -2766,7 +2789,7 @@ export default function CommunityHomePage() {
 
           <button
             type="button"
-            onPointerDown={consumeCommunityButtonEvent}
+            {...communityButtonGuardProps()}
             onClick={(event) => toggleSectionFromButton(event, "spotlight")}
             style={collapseHeaderButton(isCompact)}
           >
@@ -2934,6 +2957,7 @@ export default function CommunityHomePage() {
               >
                 <button
                   type="button"
+                  {...communityButtonGuardProps()}
                   onClick={publishSpotlight}
                   disabled={
                     publishingSpotlight ||
@@ -2956,6 +2980,7 @@ export default function CommunityHomePage() {
 
                 <button
                   type="button"
+                  {...communityButtonGuardProps()}
                   onClick={clearSpotlightDraft}
                   style={actionBtn("secondary")}
                 >
@@ -3197,7 +3222,7 @@ export default function CommunityHomePage() {
           tabIndex={0}
           aria-expanded={!collapsed.communities}
           aria-controls="community-home-communities-panel"
-          onPointerDown={consumeCommunityButtonEvent}
+          {...communityButtonGuardProps()}
           onClick={toggleCommunitiesSectionFromHeader}
           onKeyDown={handleCommunitiesHeaderKeyDown}
           style={communitiesCollapseHeaderLayout(isCompact)}
@@ -3439,6 +3464,7 @@ export default function CommunityHomePage() {
                       {!active ? (
                         <button
                           type="button"
+                          {...communityButtonGuardProps()}
                           onClick={(event) => {
                             consumeCommunityButtonEvent(event);
                             void handleSelectCommunity(clan, false);
@@ -3455,6 +3481,7 @@ export default function CommunityHomePage() {
 
                       <button
                         type="button"
+                        {...communityButtonGuardProps()}
                         onClick={(event) => {
                           consumeCommunityButtonEvent(event);
                           void handleSelectCommunity(clan, true);

@@ -144,12 +144,38 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
+const stableTapTarget: React.CSSProperties = {
+  position: "relative",
+  zIndex: 2,
+  isolation: "isolate",
+  WebkitTapHighlightColor: "transparent",
+  touchAction: "manipulation",
+  userSelect: "none",
+  transform: "translateZ(0)",
+};
+
+function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
+  event?.stopPropagation();
+}
+
+function buttonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: guardButtonPress,
+    onTouchStart: guardButtonPress,
+    onMouseDown: guardButtonPress,
+  };
+}
+
 function actionBtn(
   kind: "primary" | "secondary" | "soft" = "secondary",
   disabled = false
 ): React.CSSProperties {
   if (kind === "primary") {
     return {
+      ...stableTapTarget,
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
@@ -170,6 +196,7 @@ function actionBtn(
 
   if (kind === "soft") {
     return {
+      ...stableTapTarget,
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
@@ -189,6 +216,7 @@ function actionBtn(
   }
 
   return {
+    ...stableTapTarget,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -260,6 +288,7 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
 
 function collapseToggle(): React.CSSProperties {
   return {
+    ...stableTapTarget,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1014,6 +1043,7 @@ export default function ShopAssetsPage() {
 
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() => {
                   if (shopLink) {
                     window.open(shopLink, "_blank", "noopener,noreferrer");
@@ -1027,6 +1057,7 @@ export default function ShopAssetsPage() {
 
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() => copyText(shopLink, "Shop gallery link copied.")}
                 style={actionBtn("secondary", !shopLink)}
                 disabled={!shopLink}
@@ -1126,6 +1157,7 @@ export default function ShopAssetsPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("guidance")}
             style={collapseToggle()}
           >
@@ -1188,6 +1220,7 @@ export default function ShopAssetsPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("signboard")}
             style={collapseToggle()}
           >
@@ -1369,6 +1402,7 @@ export default function ShopAssetsPage() {
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <button
                     type="button"
+                    {...buttonGuardProps()}
                     onClick={() => void saveShopSignboard()}
                     disabled={savingShop || uploadingShopImage}
                     style={actionBtn("primary", savingShop || uploadingShopImage)}
@@ -1378,6 +1412,7 @@ export default function ShopAssetsPage() {
 
                   <button
                     type="button"
+                    {...buttonGuardProps()}
                     onClick={() => {
                       setShopSelectedFile(null);
                       if (shopPreviewUrl.startsWith("blob:")) {
@@ -1393,6 +1428,7 @@ export default function ShopAssetsPage() {
 
                   <button
                     type="button"
+                    {...buttonGuardProps()}
                     onClick={() => void saveShopSignboard({ clear_image: true, image_url: null })}
                     disabled={savingShop || uploadingShopImage || !safeStr(shopPreviewUrl)}
                     style={actionBtn(
@@ -1430,6 +1466,7 @@ export default function ShopAssetsPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("products")}
             style={collapseToggle()}
           >
@@ -1549,6 +1586,7 @@ export default function ShopAssetsPage() {
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={() => void submitProduct()}
                   disabled={savingProduct}
                   style={actionBtn("primary", savingProduct)}
@@ -1564,6 +1602,7 @@ export default function ShopAssetsPage() {
 
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={resetProductForm}
                   style={actionBtn("secondary")}
                 >
@@ -1572,6 +1611,7 @@ export default function ShopAssetsPage() {
 
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={() => copyText(shopLink, "Shop gallery link copied.")}
                   style={actionBtn("soft", !shopLink)}
                   disabled={!shopLink}
@@ -1717,6 +1757,7 @@ export default function ShopAssetsPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("posted")}
             style={collapseToggle()}
           >
@@ -1863,6 +1904,7 @@ export default function ShopAssetsPage() {
                   <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
                     <button
                       type="button"
+                      {...buttonGuardProps()}
                       onClick={() => startEditProduct(item)}
                       style={actionBtn(isHidden ? "secondary" : "primary")}
                     >
@@ -1872,6 +1914,7 @@ export default function ShopAssetsPage() {
                     {isHidden ? (
                       <button
                         type="button"
+                        {...buttonGuardProps()}
                         onClick={() => void restoreProduct(Number(item.id))}
                         disabled={isBusy}
                         style={actionBtn("primary", isBusy)}
@@ -1881,6 +1924,7 @@ export default function ShopAssetsPage() {
                     ) : (
                       <button
                         type="button"
+                        {...buttonGuardProps()}
                         onClick={() => void deleteProduct(Number(item.id))}
                         disabled={isBusy}
                         style={actionBtn("secondary", isBusy)}
@@ -1891,6 +1935,7 @@ export default function ShopAssetsPage() {
 
                     <button
                       type="button"
+                      {...buttonGuardProps()}
                       onClick={() => copyText(productLink, "Product gallery link copied.")}
                       style={actionBtn("soft", !productLink || isHidden)}
                       disabled={!productLink || isHidden}

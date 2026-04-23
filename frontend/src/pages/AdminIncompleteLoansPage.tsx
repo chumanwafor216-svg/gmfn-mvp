@@ -68,6 +68,19 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
+function stableTapStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
+  };
+}
+
 function formatRemaining(seconds: any): string {
   const total = toNum(seconds);
   if (!total) return "No live countdown";
@@ -391,6 +404,7 @@ export default function AdminIncompleteLoansPage() {
                         color: "#FFFFFF",
                         fontWeight: 900,
                         textDecoration: "none",
+                        ...stableTapStyle(),
                       }}
                     >
                       Open Loan Summary

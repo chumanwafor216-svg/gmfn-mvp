@@ -302,11 +302,25 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
+function stableTapStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    userSelect: "none",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
+  };
+}
+
 function actionBtn(
   kind: "primary" | "secondary" | "soft" = "secondary",
   disabled = false
 ): React.CSSProperties {
   const base: React.CSSProperties = {
+    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -324,9 +338,6 @@ function actionBtn(
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     overflowWrap: "anywhere",
-    userSelect: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
     opacity: disabled ? 0.78 : 1,
   };
 
@@ -363,6 +374,7 @@ function actionBtn(
 
 function collapseToggle(): React.CSSProperties {
   return {
+    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -379,11 +391,23 @@ function collapseToggle(): React.CSSProperties {
     textAlign: "center",
     cursor: "pointer",
     whiteSpace: "normal",
-    userSelect: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
     boxShadow:
       "0 8px 18px rgba(12,35,58,0.055), inset 0 1px 0 rgba(255,255,255,0.9)",
+  };
+}
+
+function guardButtonPress(event: React.SyntheticEvent) {
+  event.stopPropagation();
+}
+
+function buttonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: guardButtonPress,
+    onTouchStart: guardButtonPress,
+    onMouseDown: guardButtonPress,
   };
 }
 
@@ -1221,6 +1245,7 @@ export default function NotificationsPage() {
         <div style={{ marginTop: 16, ...actionRow(isPhone) }}>
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() =>
               setCollapsed((prev) => ({
                 ...prev,
@@ -1301,6 +1326,7 @@ export default function NotificationsPage() {
             {onboardingTrustNotice.unread && /^\d+$/.test(safeStr(onboardingTrustNotice.id)) ? (
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() => void markAsRead(safeStr(onboardingTrustNotice.id))}
                 style={actionBtn("soft")}
               >
@@ -1330,6 +1356,7 @@ export default function NotificationsPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("focus")}
             style={collapseToggle()}
           >
@@ -1390,6 +1417,7 @@ export default function NotificationsPage() {
                 <div style={{ marginTop: 16, ...actionRow(isPhone) }}>
                   <button
                     type="button"
+                    {...buttonGuardProps()}
                     onClick={() => void handlePrimaryNoticeAction(operationalFocus)}
                     style={actionBtn("primary")}
                   >
@@ -1484,6 +1512,7 @@ export default function NotificationsPage() {
                 {selectedNotice.unread && /^\d+$/.test(safeStr(selectedNotice.id)) ? (
                   <button
                     type="button"
+                    {...buttonGuardProps()}
                     onClick={() => void markAsRead(safeStr(selectedNotice.id))}
                     style={actionBtn("secondary")}
                   >
@@ -1493,6 +1522,7 @@ export default function NotificationsPage() {
 
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={() => setSelectedNotice(null)}
                   style={actionBtn("soft")}
                 >
@@ -1523,6 +1553,7 @@ export default function NotificationsPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("buckets")}
             style={collapseToggle()}
           >
@@ -1625,6 +1656,7 @@ export default function NotificationsPage() {
                             <div style={{ marginTop: 12, ...actionRow(isPhone) }}>
                               <button
                                 type="button"
+                                {...buttonGuardProps()}
                                 onClick={() => void handlePrimaryNoticeAction(notice)}
                                 style={actionBtn("primary")}
                               >
@@ -1638,6 +1670,7 @@ export default function NotificationsPage() {
                               {notice.unread && /^\d+$/.test(safeStr(notice.id)) ? (
                                 <button
                                   type="button"
+                                  {...buttonGuardProps()}
                                   onClick={() => void markAsRead(safeStr(notice.id))}
                                   style={actionBtn("soft")}
                                 >
@@ -1691,6 +1724,7 @@ export default function NotificationsPage() {
 
             <button
               type="button"
+              {...buttonGuardProps()}
               onClick={() => toggleSection("rawFeed")}
               style={collapseToggle()}
             >
@@ -1784,6 +1818,7 @@ export default function NotificationsPage() {
 
             <button
               type="button"
+              {...buttonGuardProps()}
               onClick={() => toggleSection("reading")}
               style={collapseToggle()}
             >

@@ -44,6 +44,12 @@ SPOTLIGHT_PAID = "paid"
 FEATURE_VAULT_SLOT = "vault_slot"
 FEATURE_SPOTLIGHT_PRIORITY = "spotlight_priority"
 
+# Temporary pilot override requested during live testing on 2026-04-23.
+# It bypasses only the free spotlight clan-capacity quota so video playback,
+# Vault, and paid-subscription surfaces can be tested without waiting for
+# existing spotlights to expire. Remove after 2026-04-24 UTC.
+SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_UNTIL = datetime(2026, 4, 24, 23, 59, 59, tzinfo=timezone.utc)
+
 SHOP_IMAGE_ATTRS = (
     "image_url",
     "photo_url",
@@ -56,6 +62,11 @@ SHOP_IMAGE_ATTRS = (
 
 def _now_utc() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _spotlight_capacity_pilot_override_active(now: Optional[datetime] = None) -> bool:
+    current_time = now or _now_utc()
+    return current_time <= SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_UNTIL
 
 
 def _safe_str(value: Any, default: str = "") -> str:
@@ -1916,7 +1927,7 @@ def create_marketplace_broadcast(
                 status_code=400,
                 detail="A paid spotlight is already active for this shop. Wait for it to end before starting another one.",
             )
-    else:
+    elif not _spotlight_capacity_pilot_override_active(current_time):
         for clan_id in target_clan_ids:
             active_count = _count_active_spotlights_for_clan(
                 db=db,

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { getCurrentClan, getMe, logout } from "../lib/api";
 import {
   getDashboardAppUsageEntryFromLocation,
@@ -7,6 +7,7 @@ import {
 } from "../lib/dashboardAppUsage";
 import WorkspaceSettingsBridge from "../components/WorkspaceSettingsBridge";
 import WorkspaceCompanionBridge from "../components/WorkspaceCompanionBridge";
+import OriginLink from "../components/OriginLink";
 import { gmfnBrand } from "../styles/gmfnBrand";
 
 type NavLinkItem = {
@@ -119,6 +120,22 @@ function makeFinanceItem(): NavLinkItem {
   };
 }
 
+function makeLoansItem(label = "Loans & Support"): NavLinkItem {
+  return {
+    label,
+    to: "/app/loans",
+    match: (pathname) =>
+      pathname === "/app/loans" ||
+      pathname === "/app/loan-readiness" ||
+      pathname === "/app/loan-suggestions" ||
+      pathname === "/app/loan-workbench" ||
+      pathname.startsWith("/app/loan-summary/") ||
+      pathname === "/app/guarantor-earnings" ||
+      pathname === "/app/guarantor-inbox" ||
+      pathname.startsWith("/app/loans/"),
+  };
+}
+
 function makeTrustPassportItem(): NavLinkItem {
   return {
     label: "Trust Passport",
@@ -191,6 +208,7 @@ function buildPrimaryItems(
     makeMarketplaceItem(),
     makeShopGalleryItem(myShopGalleryTo),
     makeFinanceItem(),
+    makeLoansItem(),
     makeTrustPassportItem(),
   ];
 
@@ -229,7 +247,7 @@ function buildFinanceToolsItems(): NavLinkItem[] {
 
 function buildLoansItems(): NavLinkItem[] {
   return [
-    { label: "Loans & Support", to: "/app/loans" },
+    makeLoansItem(),
     { label: "Readiness", to: "/app/loan-readiness" },
     { label: "Suggestions", to: "/app/loan-suggestions" },
     { label: "Workbench", to: "/app/loan-workbench" },
@@ -783,6 +801,15 @@ function groupHeader(active = false): React.CSSProperties {
     gap: 12,
     cursor: "pointer",
     textAlign: "left",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    pointerEvents: "auto",
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
   };
 }
 
@@ -798,12 +825,17 @@ function groupHint(): React.CSSProperties {
 
 function navItem(active = false, disabled = false): React.CSSProperties {
   return {
-    display: "block",
-    padding: "11px 12px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 44,
+    padding: "11px 13px",
     borderRadius: 12,
     textDecoration: "none",
     fontWeight: 800,
     fontSize: 14,
+    lineHeight: 1.16,
+    textAlign: "center",
     color: disabled ? "rgba(255,255,255,0.48)" : "#FFFFFF",
     background: active ? "#0B63D1" : "rgba(255,255,255,0.04)",
     border: active
@@ -811,6 +843,13 @@ function navItem(active = false, disabled = false): React.CSSProperties {
       : "1px solid rgba(255,255,255,0.06)",
     pointerEvents: disabled ? "none" : "auto",
     touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
     opacity: disabled ? 0.7 : 1,
   };
 }
@@ -856,6 +895,16 @@ function mobileIconButton(): React.CSSProperties {
     fontWeight: 900,
     cursor: "pointer",
     touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    pointerEvents: "auto",
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    transform: "translateZ(0)",
+    appearance: "none",
+    WebkitAppearance: "none",
+    outlineOffset: 4,
   };
 }
 
@@ -941,6 +990,17 @@ function overlayCloseButton(dark = false): React.CSSProperties {
     color: dark ? "#FFFFFF" : "#0B1F33",
     fontSize: 18,
     cursor: "pointer",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    pointerEvents: "auto",
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    transform: "translateZ(0)",
+    appearance: "none",
+    WebkitAppearance: "none",
+    outlineOffset: 4,
   };
 }
 
@@ -959,13 +1019,15 @@ function drawerLink(active = false, disabled = false): React.CSSProperties {
   return {
     display: "flex",
     alignItems: "center",
-    minHeight: 34,
-    padding: "7px 10px",
+    justifyContent: "center",
+    minHeight: 44,
+    padding: "10px 11px",
     borderRadius: 12,
     textDecoration: "none",
     fontWeight: 800,
-    fontSize: 12.3,
-    lineHeight: 1.08,
+    fontSize: 12.6,
+    lineHeight: 1.12,
+    textAlign: "center",
     color: disabled ? "rgba(255,255,255,0.48)" : "#FFFFFF",
     background: active ? "#0B63D1" : "rgba(255,255,255,0.05)",
     border: active
@@ -973,6 +1035,13 @@ function drawerLink(active = false, disabled = false): React.CSSProperties {
       : "1px solid rgba(255,255,255,0.08)",
     pointerEvents: disabled ? "none" : "auto",
     touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
     opacity: disabled ? 0.7 : 1,
     overflowWrap: "anywhere",
   };
@@ -1020,12 +1089,17 @@ function actionsTitle(): React.CSSProperties {
 
 function actionsLink(active = false, disabled = false): React.CSSProperties {
   return {
-    display: "block",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 46,
     padding: "12px 13px",
     borderRadius: 14,
     textDecoration: "none",
     fontWeight: 800,
     fontSize: 14,
+    lineHeight: 1.16,
+    textAlign: "center",
     color: disabled ? "#94A3B8" : active ? "#0B63D1" : "#0B1F33",
     background: active ? "rgba(11,99,209,0.08)" : "#F8FBFF",
     border: active
@@ -1033,6 +1107,13 @@ function actionsLink(active = false, disabled = false): React.CSSProperties {
       : "1px solid rgba(11,31,51,0.08)",
     pointerEvents: disabled ? "none" : "auto",
     touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
     opacity: disabled ? 0.7 : 1,
   };
 }
@@ -1050,6 +1131,8 @@ function bottomNav(): React.CSSProperties {
     borderTop: "1px solid rgba(11,31,51,0.08)",
     boxShadow: "0 -10px 28px rgba(15,23,42,0.08)",
     WebkitOverflowScrolling: "touch",
+    overscrollBehaviorX: "contain",
+    scrollSnapType: "x proximity",
   };
 }
 
@@ -1073,9 +1156,32 @@ function bottomNavItem(active = false, disabled = false): React.CSSProperties {
       ? "1px solid rgba(11,99,209,0.14)"
       : "1px solid rgba(11,31,51,0.08)",
     whiteSpace: "nowrap",
+    scrollSnapAlign: "center",
     pointerEvents: disabled ? "none" : "auto",
     touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
     opacity: disabled ? 0.7 : 1,
+  };
+}
+
+function guardLayoutTap(event: React.SyntheticEvent<HTMLElement>) {
+  event.stopPropagation();
+}
+
+function layoutTapGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: guardLayoutTap,
+    onTouchStart: guardLayoutTap,
+    onMouseDown: guardLayoutTap,
   };
 }
 
@@ -1383,7 +1489,11 @@ export default function AppLayout() {
       makeMarketplaceItem(),
       makeShopGalleryItem(myShopGalleryTo),
       makeFinanceItem(),
-      makeTrustPassportItem(),
+      makeLoansItem("Loans"),
+      {
+        ...makeTrustPassportItem(),
+        label: "Trust",
+      },
     ];
 
     if (canUseAdminTools) {
@@ -1451,7 +1561,7 @@ export default function AppLayout() {
     <div style={isMobile ? mobileShell() : desktopShell()}>
       {!isMobile ? (
         <aside style={sidebar()}>
-          <Link
+          <OriginLink
             to="/app/dashboard"
             style={{ textDecoration: "none", color: "inherit" }}
           >
@@ -1463,7 +1573,7 @@ export default function AppLayout() {
                 finance, trust, identity, and support.
               </div>
             </div>
-          </Link>
+          </OriginLink>
 
           <div style={noteCard()}>
             <div style={noteTitle()}>
@@ -1487,6 +1597,7 @@ export default function AppLayout() {
                 <div key={group.key} style={groupCard()}>
                   <button
                     type="button"
+                    {...layoutTapGuardProps()}
                     onClick={() => toggleGroup(group.key)}
                     aria-expanded={expanded}
                     style={groupHeader(groupActive)}
@@ -1512,16 +1623,19 @@ export default function AppLayout() {
                         }}
                       >
                         {group.items.map((item) => (
-                          <Link
+                          <OriginLink
                             key={`${group.key}-${item.label}-${item.to}`}
                             to={item.to}
+                            aria-disabled={item.disabled || undefined}
+                            tabIndex={item.disabled ? -1 : undefined}
+                            {...layoutTapGuardProps()}
                             style={navItem(
                               isItemActive(item, location.pathname, location.search),
                               !!item.disabled
                             )}
                           >
                             {item.label}
-                          </Link>
+                          </OriginLink>
                         ))}
                       </div>
                     </>
@@ -1534,6 +1648,7 @@ export default function AppLayout() {
           <div style={{ marginTop: "auto", paddingTop: 16 }}>
             <button
               type="button"
+              {...layoutTapGuardProps()}
               onClick={handleLogout}
               style={groupHeader(false)}
             >
@@ -1550,6 +1665,7 @@ export default function AppLayout() {
           <header style={mobileTopBar()}>
             <button
               type="button"
+              {...layoutTapGuardProps()}
               onClick={openDrawer}
               aria-label="Open navigation"
               style={mobileIconButton()}
@@ -1564,6 +1680,7 @@ export default function AppLayout() {
 
             <button
               type="button"
+              {...layoutTapGuardProps()}
               onClick={openActions}
               aria-label="Open page actions"
               style={mobileIconButton()}
@@ -1595,6 +1712,7 @@ export default function AppLayout() {
 
               <button
                 type="button"
+                {...layoutTapGuardProps()}
                 onClick={closeDrawer}
                 aria-label="Close navigation"
                 style={overlayCloseButton(true)}
@@ -1637,9 +1755,14 @@ export default function AppLayout() {
 
                 <div style={drawerLinkGrid(group.items.length === 1)}>
                   {group.items.map((item) => (
-                    <Link
+                    <OriginLink
                       key={`${group.title}-${item.label}-${item.to}`}
                       to={item.to}
+                      aria-disabled={item.disabled || undefined}
+                      tabIndex={item.disabled ? -1 : undefined}
+                      onPointerDown={guardLayoutTap}
+                      onTouchStart={guardLayoutTap}
+                      onMouseDown={guardLayoutTap}
                       onClick={closeDrawer}
                       style={drawerLink(
                         isItemActive(item, location.pathname, location.search),
@@ -1647,7 +1770,7 @@ export default function AppLayout() {
                       )}
                     >
                       {item.label}
-                    </Link>
+                    </OriginLink>
                   ))}
                 </div>
               </div>
@@ -1657,6 +1780,7 @@ export default function AppLayout() {
               <div style={drawerSectionTitle()}>Session</div>
               <button
                 type="button"
+                {...layoutTapGuardProps()}
                 onClick={handleLogout}
                 style={drawerLink(false, false)}
               >
@@ -1705,6 +1829,7 @@ export default function AppLayout() {
 
               <button
                 type="button"
+                {...layoutTapGuardProps()}
                 onClick={closeActions}
                 aria-label="Close page actions"
                 style={overlayCloseButton(false)}
@@ -1728,9 +1853,14 @@ export default function AppLayout() {
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {pageActions.map((item) => (
-                <Link
+                <OriginLink
                   key={`page-action-${item.label}-${item.to}`}
                   to={item.to}
+                  aria-disabled={item.disabled || undefined}
+                  tabIndex={item.disabled ? -1 : undefined}
+                  onPointerDown={guardLayoutTap}
+                  onTouchStart={guardLayoutTap}
+                  onMouseDown={guardLayoutTap}
                   onClick={closeActions}
                   style={actionsLink(
                     isItemActive(item, location.pathname, location.search),
@@ -1738,10 +1868,11 @@ export default function AppLayout() {
                   )}
                 >
                   {item.label}
-                </Link>
+                </OriginLink>
               ))}
               <button
                 type="button"
+                {...layoutTapGuardProps()}
                 onClick={handleLogout}
                 style={actionsLink(false, false)}
               >
@@ -1763,16 +1894,19 @@ export default function AppLayout() {
       {isMobile && !taskMode ? (
         <nav style={bottomNav()}>
           {mobileBottomItems.map((item) => (
-            <Link
+            <OriginLink
               key={`bottom-${item.label}-${item.to}`}
               to={item.to}
+              aria-disabled={item.disabled || undefined}
+              tabIndex={item.disabled ? -1 : undefined}
+              {...layoutTapGuardProps()}
               style={bottomNavItem(
                 isItemActive(item, location.pathname, location.search),
                 !!item.disabled
               )}
             >
               {item.label}
-            </Link>
+            </OriginLink>
           ))}
         </nav>
       ) : null}

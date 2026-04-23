@@ -90,6 +90,19 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
   };
 }
 
+function stableTapStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
+  };
+}
+
 function actionBtn(primary = false, disabled = false): React.CSSProperties {
   return {
     display: "inline-flex",
@@ -106,6 +119,7 @@ function actionBtn(primary = false, disabled = false): React.CSSProperties {
     textDecoration: "none",
     opacity: disabled ? 0.78 : 1,
     whiteSpace: "normal",
+    ...stableTapStyle(),
   };
 }
 
