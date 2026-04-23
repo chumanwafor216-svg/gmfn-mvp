@@ -48,6 +48,7 @@ FEATURE_SPOTLIGHT_PRIORITY = "spotlight_priority"
 # It bypasses only the free spotlight clan-capacity quota so video playback,
 # Vault, and paid-subscription surfaces can be tested without waiting for
 # existing spotlights to expire. Remove after 2026-04-24 UTC.
+SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_ENABLED = True
 SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_UNTIL = datetime(2026, 4, 24, 23, 59, 59, tzinfo=timezone.utc)
 
 SHOP_IMAGE_ATTRS = (
@@ -65,6 +66,8 @@ def _now_utc() -> datetime:
 
 
 def _spotlight_capacity_pilot_override_active(now: Optional[datetime] = None) -> bool:
+    if SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_ENABLED:
+        return True
     current_time = now or _now_utc()
     return current_time <= SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_UNTIL
 

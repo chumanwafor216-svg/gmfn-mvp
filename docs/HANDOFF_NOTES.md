@@ -6735,10 +6735,13 @@ GSN-branded invite composer and invite-entry continuity.
   testers can publish and play short videos today before testing Vault and paid
   subscription surfaces.
 - Updated `gmfn_backend/app/api/routes/marketplace.py`:
+  - Added `SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_ENABLED = True` as an explicit
+    pilot switch after testers still hit the old capacity message while Render
+    deploy timing was being verified.
   - Added `SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_UNTIL = 2026-04-24 23:59:59 UTC`.
   - Added `_spotlight_capacity_pilot_override_active()`.
-  - Bypassed only the free Spotlight clan-capacity rejection while that dated
-    override is active.
+  - Bypassed only the free Spotlight clan-capacity rejection while the pilot
+    switch is enabled or the dated override is active.
 - What remains protected:
   - paid Spotlight entitlement checks still run.
   - one-active-paid-spotlight-per-shop check still runs.
