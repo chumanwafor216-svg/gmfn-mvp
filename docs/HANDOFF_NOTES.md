@@ -6729,6 +6729,65 @@ GSN-branded invite composer and invite-entry continuity.
 - Verification:
   - `npm run build` passed in `frontend`.
 
+### Demand Box and Community Home interior-button tightening addendum
+
+- Product-owner reported during live pilot testing that Demand Box and
+  Community Home interior controls still had some "jumpy" button behavior,
+  especially around demand actions and deeper Community Home blocks.
+- Updated `frontend/src/pages/DemandBoxPage.tsx`:
+  - Strengthened the shared tap target layer with higher stacking, pointer
+    containment, browser appearance reset, and larger focus offset.
+  - Increased primary, secondary, and subtle button hit areas.
+  - Added click-level event containment to community selection, create demand,
+    details expansion, mark fulfilled, and cancel demand controls.
+- Updated `frontend/src/pages/CommunityHomePage.tsx`:
+  - Strengthened shared action buttons and collapse buttons with higher
+    stacking, isolation, pointer containment, transform-layer stabilization,
+    tap-highlight removal, and larger hit areas.
+- No backend logic, route contracts, auth, schemas, spotlight quota logic, or
+  the frozen Dashboard Market Wisdom area were changed.
+- Verification:
+  - `npm exec -- eslint src/pages/DemandBoxPage.tsx src/pages/CommunityHomePage.tsx`
+    passed with the existing Demand Box hook dependency warning.
+  - `npm run build` passed in `frontend`.
+  - `git diff --check -- frontend/src/pages/DemandBoxPage.tsx frontend/src/pages/CommunityHomePage.tsx`
+    passed with only Windows line-ending warnings.
+
+### Spotlight pilot quota and 30-second rotation addendum
+
+- Product-owner reported during live pilot testing that spotlight uploads were
+  still returning the old capacity message and that video/spotlight movement was
+  hard to confirm from the phone.
+- Confirmed from code:
+  - The exact `Spotlight capacity reached for clan ...` message exists in the
+    backend marketplace broadcast route only.
+  - The local backend already had the pilot free-capacity override enabled, so
+    any continued live appearance of that exact message strongly suggests the
+    running Render backend had not yet picked up the latest backend build or was
+    still serving an older deploy.
+- Updated `gmfn_backend/app/api/routes/marketplace.py`:
+  - Kept the temporary pilot override enabled.
+  - Extended the override to bypass the paid spotlight one-active-item cap as
+    well as the free clan-capacity cap.
+  - Did not remove paid entitlement checks, shop ownership checks, auth,
+    membership resolution, media upload, or broadcast creation rules.
+- Updated `frontend/src/components/CommunityMarketplaceSpotlight.tsx`:
+  - Live marketplace spotlight refresh now runs every 30 seconds.
+  - Spotlight rotation now runs every 30 seconds instead of 45 seconds.
+- Updated `frontend/src/pages/CommunityHomePage.tsx`:
+  - Live community spotlight state refresh now runs every 30 seconds.
+  - Live community spotlight video now autoplays muted/inline/looped when a
+    video URL is present, while keeping controls available.
+- Verification:
+  - `python -m compileall gmfn_backend\app\api\routes\marketplace.py` passed.
+  - `python -m pytest gmfn_backend\tests\test_marketplace_requests.py -q`
+    passed.
+  - `npm exec -- eslint src/components/CommunityMarketplaceSpotlight.tsx src/pages/CommunityHomePage.tsx`
+    passed.
+  - `npm run build` passed in `frontend`.
+  - `git diff --check -- gmfn_backend/app/api/routes/marketplace.py frontend/src/components/CommunityMarketplaceSpotlight.tsx frontend/src/pages/CommunityHomePage.tsx frontend/src/pages/DemandBoxPage.tsx docs/HANDOFF_NOTES.md`
+    passed with only Windows line-ending warnings.
+
 ### Temporary spotlight capacity quota suspension
 
 - Product-owner requested a short pilot suspension of the Spotlight quota so

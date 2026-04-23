@@ -142,6 +142,7 @@ const SPOTLIGHT_ALLOWED_IMAGE_LABEL = "JPG, PNG, or WebP";
 const SPOTLIGHT_ALLOWED_VIDEO_LABEL = "MP4, WebM, or MOV";
 const SPOTLIGHT_MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const SPOTLIGHT_MAX_VIDEO_BYTES = 10 * 1024 * 1024;
+const SPOTLIGHT_LIVE_REFRESH_MS = 30000;
 const COMMUNITY_BRAND = {
   ink: "#071827",
   navy: "#081E32",
@@ -703,18 +704,30 @@ function actionBtn(
   kind: "primary" | "secondary" | "soft" = "secondary",
   disabled = false
 ): React.CSSProperties {
+  const stableActionLayer: React.CSSProperties = {
+    position: "relative",
+    zIndex: 20,
+    isolation: "isolate",
+    transform: "translateZ(0)",
+    pointerEvents: "auto",
+    outlineOffset: 4,
+    appearance: "none",
+    WebkitAppearance: "none",
+    WebkitTapHighlightColor: "transparent",
+    touchAction: "manipulation",
+  };
+
   if (kind === "primary") {
     return {
-      position: "relative",
-      zIndex: 1,
+      ...stableActionLayer,
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
       minWidth: 0,
       maxWidth: "100%",
       boxSizing: "border-box",
-      minHeight: 40,
-      padding: "9px 13px",
+      minHeight: 48,
+      padding: "12px 15px",
       borderRadius: 14,
       border: disabled
         ? "1px solid rgba(148,163,184,0.26)"
@@ -737,23 +750,21 @@ function actionBtn(
         : "0 5px 0 rgba(7,24,39,0.28), 0 16px 30px rgba(10,24,49,0.18), inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -10px 18px rgba(7,24,39,0.10)",
       touchAction: "manipulation",
       lineHeight: 1.18,
-      WebkitTapHighlightColor: "transparent",
       userSelect: "none",
     };
   }
 
   if (kind === "soft") {
     return {
-      position: "relative",
-      zIndex: 1,
+      ...stableActionLayer,
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
       minWidth: 0,
       maxWidth: "100%",
       boxSizing: "border-box",
-      minHeight: 38,
-      padding: "8px 12px",
+      minHeight: 46,
+      padding: "11px 14px",
       borderRadius: 12,
       border: "1px solid rgba(13,95,168,0.12)",
       background:
@@ -772,22 +783,20 @@ function actionBtn(
         "0 4px 0 rgba(79,97,120,0.14), 0 10px 20px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -8px 14px rgba(15,59,116,0.08)",
       touchAction: "manipulation",
       lineHeight: 1.18,
-      WebkitTapHighlightColor: "transparent",
       userSelect: "none",
     };
   }
 
   return {
-    position: "relative",
-    zIndex: 1,
+    ...stableActionLayer,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     minWidth: 0,
     maxWidth: "100%",
     boxSizing: "border-box",
-    minHeight: 38,
-    padding: "8px 12px",
+    minHeight: 46,
+    padding: "11px 14px",
     borderRadius: 14,
     border: "1px solid rgba(16,37,59,0.14)",
     background:
@@ -807,7 +816,6 @@ function actionBtn(
       : "0 4px 0 rgba(79,97,120,0.16), 0 12px 24px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -8px 14px rgba(15,59,116,0.08)",
     touchAction: "manipulation",
     lineHeight: 1.18,
-    WebkitTapHighlightColor: "transparent",
     userSelect: "none",
   };
 }
@@ -815,7 +823,8 @@ function actionBtn(
 function collapseToggle(): React.CSSProperties {
   return {
     position: "relative",
-    zIndex: 5,
+    zIndex: 30,
+    isolation: "isolate",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -841,11 +850,13 @@ function collapseToggle(): React.CSSProperties {
     touchAction: "manipulation",
     lineHeight: 1.18,
     outline: "none",
-    outlineOffset: 0,
+    outlineOffset: 4,
     appearance: "none",
     WebkitAppearance: "none",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
+    pointerEvents: "auto",
+    transform: "translateZ(0)",
   };
 }
 
@@ -1559,7 +1570,7 @@ export default function CommunityHomePage() {
 
     const timer = window.setInterval(() => {
       void loadIfAlive();
-    }, 60000);
+    }, SPOTLIGHT_LIVE_REFRESH_MS);
 
     function handleFocusRefresh() {
       void loadIfAlive();
@@ -3023,6 +3034,9 @@ export default function CommunityHomePage() {
                         showVideoControls={Boolean(
                           activeCommunitySpotlight.videoUrl
                         )}
+                        autoPlayVideo={Boolean(activeCommunitySpotlight.videoUrl)}
+                        mutedVideo={Boolean(activeCommunitySpotlight.videoUrl)}
+                        loopVideo={Boolean(activeCommunitySpotlight.videoUrl)}
                         fallback={
                           <div
                             style={{

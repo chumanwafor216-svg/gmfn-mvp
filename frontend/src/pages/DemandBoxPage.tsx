@@ -124,12 +124,17 @@ function statTile(): React.CSSProperties {
 
 const stableTapTarget: React.CSSProperties = {
   position: "relative",
-  zIndex: 2,
+  zIndex: 10,
   isolation: "isolate",
   WebkitTapHighlightColor: "transparent",
   touchAction: "manipulation",
   userSelect: "none",
+  pointerEvents: "auto",
   transform: "translateZ(0)",
+  outlineOffset: 4,
+  boxSizing: "border-box",
+  appearance: "none",
+  WebkitAppearance: "none",
 };
 
 function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
@@ -153,8 +158,8 @@ function primaryBtn(disabled = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
+    minHeight: 48,
+    padding: "12px 15px",
     borderRadius: 14,
     border: "none",
     background: disabled ? "#CBD5E1" : "#0B63D1",
@@ -165,6 +170,8 @@ function primaryBtn(disabled = false): React.CSSProperties {
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
+    overflowWrap: "anywhere",
+    lineHeight: 1.2,
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -175,8 +182,8 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
+    minHeight: 48,
+    padding: "12px 15px",
     borderRadius: 14,
     border: "1px solid rgba(11,31,51,0.10)",
     background: "#FFFFFF",
@@ -187,6 +194,8 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
+    overflowWrap: "anywhere",
+    lineHeight: 1.2,
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -197,8 +206,8 @@ function subtleBtn(disabled = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 38,
-    padding: "8px 12px",
+    minHeight: 46,
+    padding: "11px 14px",
     borderRadius: 12,
     border: "1px solid rgba(11,31,51,0.10)",
     background: "#F8FBFF",
@@ -208,6 +217,8 @@ function subtleBtn(disabled = false): React.CSSProperties {
     textAlign: "center",
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
+    overflowWrap: "anywhere",
+    lineHeight: 1.2,
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -790,7 +801,10 @@ export default function DemandBoxPage() {
                     key={`${clanId || index}`}
                     type="button"
                     {...buttonGuardProps()}
-                    onClick={() => void handleChooseDemandCommunity(community)}
+                    onClick={(event) => {
+                      guardButtonPress(event);
+                      void handleChooseDemandCommunity(community);
+                    }}
                     disabled={busy || !clanId}
                     style={communityChoiceBtn(false, busy || !clanId)}
                   >
@@ -909,7 +923,10 @@ export default function DemandBoxPage() {
                   key={`${clanId || index}`}
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={() => void handleChooseDemandCommunity(community)}
+                  onClick={(event) => {
+                    guardButtonPress(event);
+                    void handleChooseDemandCommunity(community);
+                  }}
                   disabled={busy || !clanId}
                   style={communityChoiceBtn(active, busy || !clanId)}
                 >
@@ -1029,7 +1046,10 @@ export default function DemandBoxPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={scrollToDemandCreate}
+                onClick={(event) => {
+                  guardButtonPress(event);
+                  scrollToDemandCreate();
+                }}
                 style={whiteActionBtn(false)}
               >
                 Create demand
@@ -1249,7 +1269,10 @@ export default function DemandBoxPage() {
                     key={`${clanId || index}`}
                     type="button"
                     {...buttonGuardProps()}
-                    onClick={() => void handleChooseDemandCommunity(community)}
+                    onClick={(event) => {
+                      guardButtonPress(event);
+                      void handleChooseDemandCommunity(community);
+                    }}
                     disabled={busy || !clanId}
                     style={communityChoiceBtn(active, busy || !clanId)}
                   >
@@ -1430,7 +1453,10 @@ export default function DemandBoxPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={() => void handleCreateDemand()}
+                onClick={(event) => {
+                  guardButtonPress(event);
+                  void handleCreateDemand();
+                }}
                 disabled={creating || !safeStr(title)}
                 style={{
                   ...primaryBtn(creating || !safeStr(title)),
@@ -1452,7 +1478,11 @@ export default function DemandBoxPage() {
 
           <div style={detailsShell()}>
             <details>
-              <summary style={detailsSummary()}>
+              <summary
+                {...buttonGuardProps()}
+                onClick={guardButtonPress}
+                style={detailsSummary()}
+              >
                 <span>More detail</span>
                 <span style={{ color: "#64748B", fontSize: 13 }}>Optional</span>
               </summary>
@@ -1614,7 +1644,10 @@ export default function DemandBoxPage() {
                       <button
                         type="button"
                         {...buttonGuardProps()}
-                        onClick={() => void handleUpdateDemandStatus(row, "fulfilled")}
+                        onClick={(event) => {
+                          guardButtonPress(event);
+                          void handleUpdateDemandStatus(row, "fulfilled");
+                        }}
                         disabled={busy}
                         style={secondaryBtn(busy)}
                       >
@@ -1624,7 +1657,10 @@ export default function DemandBoxPage() {
                       <button
                         type="button"
                         {...buttonGuardProps()}
-                        onClick={() => void handleUpdateDemandStatus(row, "cancelled")}
+                        onClick={(event) => {
+                          guardButtonPress(event);
+                          void handleUpdateDemandStatus(row, "cancelled");
+                        }}
                         disabled={busy}
                         style={subtleBtn(busy)}
                       >

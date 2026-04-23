@@ -106,6 +106,9 @@ type SpotlightItem =
     feed: MarketplaceFeedItem;
   };
 
+const SPOTLIGHT_REFRESH_MS = 30000;
+const SPOTLIGHT_ROTATION_MS = 30000;
+
 function spotlightFeedKey(item: MarketplaceFeedItem | null): string {
   if (!item) return "";
 
@@ -218,7 +221,7 @@ export default function CommunityMarketplaceSpotlight() {
 
     const timer = window.setInterval(() => {
       void loadSpotlight();
-    }, 60000);
+    }, SPOTLIGHT_REFRESH_MS);
 
     function handleFocusRefresh() {
       void loadSpotlight();
@@ -311,7 +314,7 @@ export default function CommunityMarketplaceSpotlight() {
 
     const timer = window.setInterval(() => {
       setSpotlightIndex((prev) => (prev + 1) % spotlightItems.length);
-    }, 45000);
+    }, SPOTLIGHT_ROTATION_MS);
 
     return () => window.clearInterval(timer);
   }, [spotlightItems.length]);
