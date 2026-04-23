@@ -7949,3 +7949,61 @@ GSN-branded invite composer and invite-entry continuity.
   contracts, or the frozen Dashboard Market Wisdom section.
 - Verification:
   - `npm run build` passed in `frontend`.
+
+### Community Home shop-control cleanup checkpoint
+
+- Product-owner reported that Community Home had accumulated several old and
+  new Shop Control / Spotlight layers: repeated shop identity, repeated owner
+  contact facts, repeated visible-item counts, and repeated shop/spotlight tool
+  explanations.
+- Audited Community Home against the canonical skeleton:
+  - Community Home may hold owner-side shop control and spotlight apparatus.
+  - Shop Gallery owns customer-facing product visibility truth.
+  - Marketplace remains the operational nucleus for one selected community.
+- Updated `frontend/src/components/CommunityShopControlPanel.tsx`:
+  - Removed the repeated owner/contact/stat tile row from the expanded Shop
+    Control panel.
+  - Removed all visible-item count display from Community Home Shop Control.
+    The public Shop Gallery is now the surface that should show product reality.
+  - Replaced the verbose repeated shop-tool explanation with four compact
+    owner lanes: Public shop, Spotlight, Paid spotlight, and Vault.
+  - Added stronger pointer/touch/mouse containment to every button in the panel
+    to reduce jumpy taps on phone browsers.
+  - Removed the extra "How your shop works" explanation block because the same
+    concept was already explained in the main shop identity summary.
+- Updated `frontend/src/pages/ShopGalleryPage.tsx`:
+  - Public Shop Gallery now accepts the same extra shop image aliases used by
+    Community Home/backend shop payloads: `photo_url`, `logo_url`, and
+    `shop_logo_url`.
+- No backend rules, auth, permissions, schemas, payment logic, invite logic, or
+  Dashboard Market Wisdom code were changed.
+- Verification:
+  - `npm exec -- eslint src/components/CommunityShopControlPanel.tsx src/pages/ShopGalleryPage.tsx` passed.
+  - `git diff --check -- frontend/src/components/CommunityShopControlPanel.tsx frontend/src/pages/ShopGalleryPage.tsx` passed with only Windows line-ending warnings.
+  - `npm run build` passed in `frontend`.
+
+### Community Home spotlight pilot panel cleanup
+
+- Product-owner reported that Community Home Spotlight still looked confusing
+  during video testing and live attempts were still surfacing the old backend
+  capacity message:
+  `Spotlight capacity reached for clan 3. Wait for an active spotlight to expire.`
+- Confirmed current source state:
+  - `gmfn_backend/app/api/routes/marketplace.py` already has the temporary
+    pilot capacity override enabled in source.
+  - With that source active, the exact capacity rejection is bypassed for the
+    pilot. If the message appears on Render, the live backend is still serving
+    an older deploy or has not restarted onto the current code.
+- Updated `frontend/src/pages/CommunityHomePage.tsx`:
+  - Shortened the Spotlight block title and helper copy.
+  - Replaced the long accepted-media paragraph with simpler image/video rules.
+  - Added wrapping for selected media filenames so long WebM filenames do not
+    stretch the mobile card.
+  - Translated the old capacity rejection into a pilot-friendly message telling
+    the tester to reload after the latest backend deploy finishes while keeping
+    their selected media in place.
+- No backend rules, auth, schemas, media validators, spotlight creation payloads,
+  or Dashboard Market Wisdom code were changed in this checkpoint.
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityHomePage.tsx` passed.
+  - `python -m compileall gmfn_backend\app\api\routes\marketplace.py` passed.

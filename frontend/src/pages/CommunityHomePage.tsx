@@ -1602,6 +1602,18 @@ export default function CommunityHomePage() {
     showNotice(tone, text);
   }
 
+  function friendlySpotlightUploadError(rawError: unknown): string {
+    const message = safeStr(
+      (rawError as any)?.message || rawError || "Spotlight upload failed."
+    );
+
+    if (/spotlight capacity reached/i.test(message)) {
+      return "Spotlight testing capacity is being refreshed on the live server. Please reload after the latest backend deploy finishes, then publish again. Your selected image or video can remain here.";
+    }
+
+    return message || "Spotlight upload failed.";
+  }
+
   function toggleSection(key: CollapseKey) {
     setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
   }
@@ -2123,10 +2135,7 @@ export default function CommunityHomePage() {
           : "Spotlight uploaded successfully. It should now appear on the dashboard spotlight screen."
       );
     } catch (err: any) {
-      showSpotlightNotice(
-        "error",
-        safeStr(err?.message) || "Spotlight upload failed."
-      );
+      showSpotlightNotice("error", friendlySpotlightUploadError(err));
     } finally {
       setPublishingSpotlight(false);
     }
@@ -2784,7 +2793,7 @@ export default function CommunityHomePage() {
           style={collapseHeaderLayout(isCompact)}
         >
           <div style={collapseHeaderText("center")}>
-            <div style={sectionLabel("center")}>Spotlight management</div>
+            <div style={sectionLabel("center")}>Spotlight</div>
             <div
               style={{
                 marginTop: 8,
@@ -2794,7 +2803,7 @@ export default function CommunityHomePage() {
                 textAlign: "center",
               }}
             >
-              Prepare one image or short video before publishing.
+              Publish one short message, picture, or video for this community.
             </div>
           </div>
 
@@ -2822,6 +2831,18 @@ export default function CommunityHomePage() {
           >
             <div style={innerCard("#FCFEFF")}>
               <div style={sectionLabel()}>Prepare spotlight</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#5F7287",
+                  fontSize: 13,
+                  lineHeight: 1.65,
+                }}
+              >
+                Add the story first, then choose a picture or short video. If
+                both are added, the video goes live and the picture stays as the
+                cover.
+              </div>
 
               <div style={{ marginTop: 14 }}>
                 <div style={sectionLabel()}>Product description</div>
@@ -2881,9 +2902,8 @@ export default function CommunityHomePage() {
                     lineHeight: 1.7,
                   }}
                 >
-                  Accepted image types: {SPOTLIGHT_ALLOWED_IMAGE_LABEL}. Maximum
-                  size: 10 MB. If a photo is heavier than that, the app will try
-                  to prepare a lighter copy automatically before upload.
+                  Use {SPOTLIGHT_ALLOWED_IMAGE_LABEL}, up to 10 MB. Heavy photos
+                  are prepared into a lighter spotlight copy before upload.
                 </div>
                 {spotlightImageFile ? (
                   <div
@@ -2893,6 +2913,8 @@ export default function CommunityHomePage() {
                       fontSize: 13,
                       fontWeight: 700,
                       lineHeight: 1.6,
+                      overflowWrap: "anywhere",
+                      wordBreak: "break-word",
                     }}
                   >
                     Selected image: {safeStr(spotlightImageFile.name) || "image"} |{" "}
@@ -2921,12 +2943,9 @@ export default function CommunityHomePage() {
                     lineHeight: 1.7,
                   }}
                 >
-                  Accepted video types: {SPOTLIGHT_ALLOWED_VIDEO_LABEL}. Maximum
-                  size: 10 MB. If a clip is too heavy or too long, the app will
-                  try to prepare a shorter spotlight-ready version
-                  automatically. If you add both image and video, the video
-                  becomes the live spotlight media and the image stays as the
-                  fallback cover.
+                  Use {SPOTLIGHT_ALLOWED_VIDEO_LABEL}, up to 10 MB. Short clips
+                  work best. If a clip is heavy, GSN will try to prepare a
+                  spotlight-ready version before upload.
                 </div>
                 {spotlightVideoFile ? (
                   <div
@@ -2936,6 +2955,8 @@ export default function CommunityHomePage() {
                       fontSize: 13,
                       fontWeight: 700,
                       lineHeight: 1.6,
+                      overflowWrap: "anywhere",
+                      wordBreak: "break-word",
                     }}
                   >
                     Selected video: {safeStr(spotlightVideoFile.name) || "video"} |{" "}

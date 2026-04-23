@@ -297,7 +297,10 @@ function normalizeShop(
       src?.profile_image_url ||
       src?.shop_image_url ||
       src?.cover_image_url ||
-      src?.banner_url
+      src?.banner_url ||
+      src?.photo_url ||
+      src?.logo_url ||
+      src?.shop_logo_url
   );
 
   return {

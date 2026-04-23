@@ -15,7 +15,6 @@ type ShopSummary = {
   communityName: string;
   trustBand: string;
   imageUrl: string;
-  visibleBlocks: number;
   whatsapp: string;
   telegram: string;
 };
@@ -183,7 +182,6 @@ function normalizeShop(raw: any, fallbackGmfnId: string, currentClan: any): Shop
     communityName,
     trustBand: firstTruthy(src?.trust_band, src?.owner_trust_band, "Visible seller"),
     imageUrl,
-    visibleBlocks: 0,
     whatsapp: firstTruthy(src?.whatsapp_number, src?.whatsapp),
     telegram: firstTruthy(src?.telegram_handle, src?.telegram),
   };
@@ -252,24 +250,6 @@ function gearCard(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
-function statTile(bg = "#FFFFFF", border = "1px solid rgba(11,31,51,0.08)"): React.CSSProperties {
-  const resolvedBg =
-    bg === "#FFFFFF"
-      ? "linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)"
-      : bg === "#F8FBFF"
-      ? "linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%)"
-      : bg;
-
-  return {
-    borderRadius: 16,
-    border,
-    background: resolvedBg,
-    padding: 14,
-    boxShadow:
-      "inset 0 1px 0 rgba(255,255,255,0.84), 0 10px 22px rgba(10,24,49,0.04)",
-  };
-}
-
 function mediaBox(minHeight = 220): React.CSSProperties {
   return {
     width: "100%",
@@ -324,10 +304,22 @@ function actionBtn(
   kind: "primary" | "secondary" = "secondary",
   disabled = false
 ): React.CSSProperties {
+  const stableTapLayer: React.CSSProperties = {
+    position: "relative",
+    zIndex: 10,
+    isolation: "isolate",
+    transform: "translateZ(0)",
+    pointerEvents: "auto",
+    appearance: "none",
+    WebkitAppearance: "none",
+    WebkitTapHighlightColor: "transparent",
+    touchAction: "manipulation",
+    userSelect: "none",
+  };
+
   if (kind === "primary") {
     return {
-      position: "relative",
-      zIndex: 1,
+      ...stableTapLayer,
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
@@ -353,9 +345,6 @@ function actionBtn(
       whiteSpace: "normal",
       overflowWrap: "anywhere",
       opacity: disabled ? 0.86 : 1,
-      touchAction: "manipulation",
-      WebkitTapHighlightColor: "transparent",
-      userSelect: "none",
       boxShadow: disabled
         ? "none"
         : "0 5px 0 rgba(7,24,39,0.28), 0 16px 30px rgba(10,24,49,0.18), inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -10px 18px rgba(7,24,39,0.10)",
@@ -364,8 +353,7 @@ function actionBtn(
   }
 
   return {
-    position: "relative",
-    zIndex: 1,
+    ...stableTapLayer,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -388,9 +376,6 @@ function actionBtn(
     whiteSpace: "normal",
     overflowWrap: "anywhere",
     opacity: disabled ? 0.86 : 1,
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
     lineHeight: 1.18,
     boxShadow: disabled
       ? "none"
@@ -401,7 +386,7 @@ function actionBtn(
 function collapseToggle(): React.CSSProperties {
   return {
     position: "relative",
-    zIndex: 5,
+    zIndex: 10,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -479,6 +464,17 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
 
 function stopPanelTap(event: React.SyntheticEvent) {
   event.stopPropagation();
+}
+
+function panelButtonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: stopPanelTap,
+    onTouchStart: stopPanelTap,
+    onMouseDown: stopPanelTap,
+  };
 }
 
 export default function CommunityShopControlPanel({
@@ -589,23 +585,6 @@ export default function CommunityShopControlPanel({
 
         const normalizedShop = normalizeShop(shopRes, gmfnId, clanRes);
 
-        let visibleBlocks = 0;
-
-        if (normalizedShop?.id) {
-          const productsRes = await api
-            .getMarketplaceProducts({
-              shop_id: normalizedShop.id,
-              clan_id: selectedClanId || undefined,
-              header_clan_id: selectedClanId || undefined,
-              only_active: true,
-              include_reposted: true,
-              limit: 200,
-            })
-            .catch(() => null);
-
-          visibleBlocks = rowsOf<any>(productsRes).length;
-        }
-
         if (!alive) return;
 
         setCommunityLabel(
@@ -617,14 +596,7 @@ export default function CommunityShopControlPanel({
           )
         );
 
-        setShop(
-          normalizedShop
-            ? {
-                ...normalizedShop,
-                visibleBlocks,
-              }
-            : null
-        );
+        setShop(normalizedShop);
       } finally {
         if (alive) setLoading(false);
       }
@@ -711,7 +683,7 @@ export default function CommunityShopControlPanel({
 
         <button
           type="button"
-          onPointerDown={stopPanelTap}
+          {...panelButtonGuardProps()}
           onClick={togglePanelFromButton}
           style={collapseHeaderButton(isCompact)}
         >
@@ -782,9 +754,6 @@ export default function CommunityShopControlPanel({
                   >
                     <span style={badge(true)}>Community Home</span>
                     <span style={badge(false)}>Owner tools</span>
-                    <span style={badge(false)}>
-                      Visible items: {positiveNumber(shop?.visibleBlocks)}
-                    </span>
                   </div>
 
                   <div
@@ -825,6 +794,7 @@ export default function CommunityShopControlPanel({
                   >
                     <button
                       type="button"
+                      {...panelButtonGuardProps()}
                       onClick={(event) =>
                         openPanelRoute(event, "/app/shop-control#shop-control-summary")
                       }
@@ -836,19 +806,26 @@ export default function CommunityShopControlPanel({
                     {publicShopTo ? (
                       <button
                         type="button"
+                        {...panelButtonGuardProps()}
                         onClick={(event) => openPanelRoute(event, publicShopTo)}
                         style={actionBtn("secondary")}
                       >
                         Open Public Shop
                       </button>
                     ) : (
-                      <button type="button" disabled style={actionBtn("secondary", true)}>
+                      <button
+                        type="button"
+                        {...panelButtonGuardProps()}
+                        disabled
+                        style={actionBtn("secondary", true)}
+                      >
                         Open Public Shop
                       </button>
                     )}
 
                     <button
                       type="button"
+                      {...panelButtonGuardProps()}
                       onClick={(event) => {
                         stopPanelTap(event);
                         copyShopLink();
@@ -860,6 +837,7 @@ export default function CommunityShopControlPanel({
 
                     <button
                       type="button"
+                      {...panelButtonGuardProps()}
                       onClick={(event) => openPanelRoute(event, "/app/marketplace")}
                       style={actionBtn("secondary")}
                     >
@@ -872,97 +850,15 @@ export default function CommunityShopControlPanel({
 
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr 1fr"
-                  : "repeat(5, minmax(0, 1fr))",
-                gap: 10,
-              }}
-            >
-              <div style={statTile("#F8FBFF", "1px solid rgba(11,99,209,0.10)")}>
-                <div style={sectionLabel()}>Owner</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    lineHeight: 1.35,
-                  }}
-                >
-                  {safeStr(shop?.ownerName || "Shop owner")}
-                </div>
-              </div>
-
-              <div style={statTile("#FFFFFF")}>
-                <div style={sectionLabel()}>WhatsApp</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    lineHeight: 1.35,
-                  }}
-                >
-                  {safeStr(shop?.whatsapp || "Not set")}
-                </div>
-              </div>
-
-              <div style={statTile("#FFFFFF")}>
-                <div style={sectionLabel()}>Telegram</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    lineHeight: 1.35,
-                  }}
-                >
-                  {safeStr(shop?.telegram || "Not set")}
-                </div>
-              </div>
-
-              <div style={statTile("#FFFFFF")}>
-                <div style={sectionLabel()}>Public shop</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    lineHeight: 1.35,
-                  }}
-                >
-                  {publicShopTo ? "Ready" : "Pending"}
-                </div>
-              </div>
-
-              <div style={statTile("#FFFFFF")}>
-                <div style={sectionLabel()}>Visible items</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    fontSize: 20,
-                    lineHeight: 1.2,
-                  }}
-                >
-                  {positiveNumber(shop?.visibleBlocks)}
-                </div>
-              </div>
-            </div>
-
-            <div
-              style={{
                 ...innerCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
                 border: "1px solid rgba(11,99,209,0.10)",
               }}
             >
               <div>
-                <div style={sectionLabel()}>Shop control tools</div>
+                <div style={sectionLabel()}>Owner tool lanes</div>
                 <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-                  Four shop areas sit here. Each area has its own heading and its own
-                  tools, so public gallery, ordinary spotlight, paid spotlight, and Vault
-                  do not get mixed together.
+                  One shop follows your GSN ID. Choose the lane you need; the detailed
+                  work opens in Shop Control so Community Home stays clean.
                 </div>
               </div>
 
@@ -976,7 +872,7 @@ export default function CommunityShopControlPanel({
               >
                 <div style={gearCard("#FFFFFF")}>
                   <div>
-                    <div style={sectionLabel()}>1. Public shop gallery</div>
+                    <div style={sectionLabel()}>Public shop</div>
                     <div
                       style={{
                         marginTop: 8,
@@ -986,29 +882,30 @@ export default function CommunityShopControlPanel({
                         lineHeight: 1.2,
                       }}
                     >
-                      Picture and ordinary products
+                      Picture and products
                     </div>
                     <div style={{ marginTop: 8, ...helperText() }}>
-                      Use this for the normal public shop: shop picture, shop details,
-                      and public products people are allowed to see.
+                      Update the shop picture and manage the ordinary products people can
+                      see from the public shop.
                     </div>
                     <div style={{ marginTop: 10, display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      <span style={badge(true)}>Visible items: {positiveNumber(shop?.visibleBlocks)}</span>
                       <span style={badge(false)}>{publicShopTo ? "Public link ready" : "Public link pending"}</span>
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <button
                       type="button"
+                      {...panelButtonGuardProps()}
                       onClick={(event) =>
                         openPanelRoute(event, "/app/shop-control#shop-control-picture-gallery")
                       }
                       style={actionBtn("primary")}
                     >
-                      Open Gallery Tools
+                      Shop Picture
                     </button>
                     <button
                       type="button"
+                      {...panelButtonGuardProps()}
                       onClick={(event) => openPanelRoute(event, "/app/shop-assets")}
                       style={actionBtn("secondary")}
                     >
@@ -1019,7 +916,7 @@ export default function CommunityShopControlPanel({
 
                 <div style={gearCard("#FFFFFF")}>
                   <div>
-                    <div style={sectionLabel()}>2. Ordinary spotlight</div>
+                    <div style={sectionLabel()}>Spotlight</div>
                     <div
                       style={{
                         marginTop: 8,
@@ -1029,27 +926,27 @@ export default function CommunityShopControlPanel({
                         lineHeight: 1.2,
                       }}
                     >
-                      Free shop visibility
+                      Free visibility
                     </div>
                     <div style={{ marginTop: 8, ...helperText() }}>
-                      Publish the normal spotlight with a picture, short video, or message.
-                      This is separate from paid priority.
+                      Prepare the normal spotlight with a picture, short video, or message.
                     </div>
                   </div>
                   <button
                     type="button"
+                    {...panelButtonGuardProps()}
                     onClick={(event) =>
                       openPanelRoute(event, "/app/shop-control#shop-control-spotlight")
                     }
                     style={actionBtn("primary")}
                   >
-                    Open Ordinary Spotlight
+                    Prepare Spotlight
                   </button>
                 </div>
 
                 <div style={gearCard("#FFF9E7")}>
                   <div>
-                    <div style={sectionLabel()}>3. Paid spotlight subscription</div>
+                    <div style={sectionLabel()}>Paid spotlight</div>
                     <div
                       style={{
                         marginTop: 8,
@@ -1062,12 +959,12 @@ export default function CommunityShopControlPanel({
                       Priority spotlight
                     </div>
                     <div style={{ marginTop: 8, ...helperText() }}>
-                      Start or check the paid spotlight subscription here. After
-                      confirmation, the spotlight publisher can use paid priority.
+                      Start or check paid priority when the shop needs stronger exposure.
                     </div>
                   </div>
                   <button
                     type="button"
+                    {...panelButtonGuardProps()}
                     onClick={(event) =>
                       openPanelRoute(event, "/app/shop-control#shop-control-paid-spotlight")
                     }
@@ -1079,7 +976,7 @@ export default function CommunityShopControlPanel({
 
                 <div style={gearCard("#FFF9E7")}>
                   <div>
-                    <div style={sectionLabel()}>4. Vault and private gallery</div>
+                    <div style={sectionLabel()}>Vault</div>
                     <div
                       style={{
                         marginTop: 8,
@@ -1089,16 +986,17 @@ export default function CommunityShopControlPanel({
                         lineHeight: 1.2,
                       }}
                     >
-                      Private subscription access
+                      Private gallery
                     </div>
                     <div style={{ marginTop: 8, ...helperText() }}>
-                      Vault is for private offers and controlled access links. Keep its
-                      subscription and private gallery tools inside this lane.
+                      Keep private offers and controlled viewing links separate from the
+                      public shop.
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <button
                       type="button"
+                      {...panelButtonGuardProps()}
                       onClick={(event) =>
                         openPanelRoute(
                           event,
@@ -1107,10 +1005,11 @@ export default function CommunityShopControlPanel({
                       }
                       style={actionBtn("primary")}
                     >
-                      Open Vault Subscription
+                      Vault Subscription
                     </button>
                     <button
                       type="button"
+                      {...panelButtonGuardProps()}
                       onClick={(event) =>
                         openPanelRoute(event, "/app/shop-control#shop-control-vault")
                       }
@@ -1120,25 +1019,6 @@ export default function CommunityShopControlPanel({
                     </button>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            <div
-              style={{
-                ...innerCard("#FFFFFF"),
-                border: "1px solid rgba(11,99,209,0.10)",
-              }}
-            >
-              <div style={sectionLabel()}>How your shop works</div>
-              <div
-                style={{
-                  marginTop: 10,
-                  ...helperText(),
-                  maxWidth: 900,
-                }}
-              >
-                Your GSN ID owns one shop. Manage that shop here, then open Marketplace
-                when you want to work inside one selected community.
               </div>
             </div>
           </div>
