@@ -43,6 +43,162 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-23
+
+#### Workstream
+Join-link stabilization for phone/WhatsApp sharing, plus institutional surface alignment across Finance/Trust/Loans inner pages.
+
+#### Routes/screens affected
+- `/start/join/:code`
+- `/app/clans`
+- Shared join-link generation used by Community Home / Marketplace / Workspace invite surfaces
+- `/app/finance`
+- `/app/trust-score`
+- `/app/loans`
+- `/app/loan-readiness`
+- `/app/loan-suggestions`
+- `/app/loan-workbench`
+- `/app/loan-summary`
+- `/app/repayment`
+- `/app/revenue-allocation`
+- `/app/borrower-preflight`
+- `/app/loan-decision`
+- `/app/guarantor-inbox`
+- `/app/guarantor-earnings`
+
+#### Backend routes/endpoints involved
+- `POST /clans/{clan_id}/invite`
+- `GET /clans/{clan_id}/invite-link`
+- `GET /clans/join-invite/preview`
+- `POST /clans/join-requests`
+
+#### Files in play
+- `frontend/src/lib/joinLinks.ts`
+- `frontend/src/lib/api.ts`
+- `frontend/src/pages/JoinEntryPage.tsx`
+- `frontend/src/pages/ClansPage.tsx`
+- `frontend/src/lib/institutionalSurface.ts`
+- `frontend/src/pages/FinancePage.tsx`
+- `frontend/src/pages/TrustScorePage.tsx`
+- `frontend/src/pages/LoansPage.tsx`
+- `frontend/src/pages/LoanReadinessPage.tsx`
+- `frontend/src/pages/LoanSuggestionsPage.tsx`
+- `frontend/src/pages/LoanWorkbenchPage.tsx`
+- `frontend/src/pages/LoanSummaryPage.tsx`
+- `frontend/src/pages/RepaymentPage.tsx`
+- `frontend/src/pages/RevenueAllocationPage.tsx`
+- `frontend/src/pages/BorrowerPreflightPage.tsx`
+- `frontend/src/pages/LoanDecisionPage.tsx`
+- `frontend/src/pages/GuarantorInboxPage.tsx`
+- `frontend/src/pages/GuarantorEarningsPage.tsx`
+- `gmfn_backend/app/api/routes/clans.py`
+
+#### Confirmed facts
+- The join-entry red failure state is shown when `GET /clans/join-invite/preview` returns `valid: false`.
+- Generated join links now carry the invite code in both places:
+  - path: `/start/join/:code`
+  - query: `?invite=:code`
+  This makes phone/chat copying more resilient.
+- Generated join links now also carry `community_code`, `community_name`, `marketplace_name`, and `inviter_name` so the join screen keeps context when phones open the link.
+- `ClansPage` no longer falls back to stale selected-community data if fresh invite creation fails. It now fails safe instead of packaging an old-looking link.
+- `GET /clans/{clan_id}/invite-link` now creates a live `ClanInvite` whenever no usable live invite exists, instead of drifting back to legacy outward invite sharing.
+- `GET /clans/join-invite/preview` now self-heals a known stale invite when the code resolves to the same community but the specific invite is inactive, expired, or usage-limited and a newer live invite already exists for that community.
+- The preview route does **not** auto-recover a completely unknown code just from `community_code`. This is intentional because `community_code` is predictable and should not become a substitute secret for invite access.
+- Finance/Trust/Loans inner pages now use a shared institutional surface helper instead of the older faded-paper styling. The goal is visual parity with the stronger dashboard profile-block quality without touching the frozen Market Wisdom area.
+
+#### Open risks or unknowns
+- Already-shared dead links that contain a completely unknown code may still need to be resent after deploy. The new logic heals stale known invites, but it does not guess a community from `community_code` alone.
+- `frontend/src/lib/api.ts` still has unrelated pre-existing ESLint `no-empty` and unused-variable issues elsewhere in the file. The build still passes, but a full-file lint clean-up was not part of this invite fix.
+- Community Home / Marketplace / Workspace pages still need their broader duplication/button tightening audit, but the invite-generation foundation is now safer.
+
+#### Verification
+- `python -m py_compile gmfn_backend/app/api/routes/clans.py` passed.
+- `npm run build` in `frontend/` passed after the invite-link changes.
+- `npm exec -- eslint ...` on the touched frontend invite/institutional files passed with warnings only on existing hook-dependency issues in:
+  - `GuarantorInboxPage.tsx`
+  - `LoanSuggestionsPage.tsx`
+  - `LoanSummaryPage.tsx`
+  - `LoanWorkbenchPage.tsx`
+  - `TrustScorePage.tsx`
+- A separate lint run that included `src/lib/api.ts` still reported pre-existing file-wide issues not introduced by this patch:
+  - empty block statements
+  - one unused `_payload` variable
+
+#### Next recommended step
+- Deploy both backend and frontend so the repaired invite format and recovery logic reach Render.
+- After deploy, open GSN and send one newly generated join link from the current app state, then retest on phone/WhatsApp.
+- If the link still fails after a fresh resend, capture the exact shared URL so the next session can tell whether the failure is path loss, query loss, host mismatch, or stale frontend cache.
+
+#### Date
+2026-04-23
+
+#### Workstream
+Spotlight pilot freeze and shared control points.
+
+#### Routes/screens affected
+- `/app/community-home`
+- `/app/dashboard`
+- `/app/marketplace`
+- `/app/shop-control`
+- `/shop/:gmfnId`
+
+#### Backend routes/endpoints involved
+- `POST /marketplace/broadcasts`
+- `GET /marketplace/broadcasts`
+- `POST /marketplace/media/video`
+- `POST /marketplace/media/image`
+
+#### Files in play
+- `frontend/src/lib/spotlightPilot.ts`
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `frontend/src/pages/DashboardPage.tsx`
+- `frontend/src/pages/ShopControlPage.tsx`
+- `frontend/src/pages/ShopGalleryPage.tsx`
+- `frontend/src/components/CommunityMarketplaceSpotlight.tsx`
+- `frontend/src/components/SpotlightMediaFrame.tsx`
+- `frontend/src/lib/spotlightMediaPrep.ts`
+- `gmfn_backend/app/api/routes/marketplace.py`
+- `gmfn_backend/app/api/routes/marketplace_media.py`
+
+#### Confirmed facts
+- The live pilot spotlight process is intentionally open for testing so the
+  product owner can load many spotlights and watch image/video rotation.
+- A shared frontend pilot control file now owns the test values:
+  `SPOTLIGHT_PILOT_REFRESH_MS`, `SPOTLIGHT_PILOT_ROTATION_MS`,
+  `SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS`, `SPOTLIGHT_MAX_IMAGE_BYTES`, and
+  `SPOTLIGHT_MAX_VIDEO_BYTES`.
+- Community Home, Dashboard, Shop Gallery, Shop Control, and the marketplace
+  spotlight component now read the rotation/video cap from that shared file
+  instead of carrying scattered hard-coded values.
+- The backend quota bypass remains deliberately isolated in
+  `gmfn_backend/app/api/routes/marketplace.py` through
+  `SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_ENABLED`.
+- The backend video media ceiling remains 15 MB in
+  `gmfn_backend/app/api/routes/marketplace_media.py`, with a 10-second
+  duration rule when the frontend supplies a duration.
+- The Dashboard Market Wisdom frozen area was not changed.
+
+#### Open risks or unknowns
+- The pilot quota override should be restored after testing by switching the
+  backend quota flag back to normal enforcement.
+- The 30-second rotation/refresh cadence is for pilot visibility. If production
+  needs slower spotlight movement, change it in `frontend/src/lib/spotlightPilot.ts`.
+- Existing local SQLite spotlight row revival was a local pilot-data action
+  only; Render needs its own live data state.
+
+#### Verification
+- `npm exec -- eslint src/lib/spotlightPilot.ts src/pages/CommunityHomePage.tsx src/pages/ShopControlPage.tsx src/pages/DashboardPage.tsx src/pages/ShopGalleryPage.tsx src/components/CommunityMarketplaceSpotlight.tsx src/components/SpotlightMediaFrame.tsx`
+  passed with only two pre-existing Shop Control hook dependency warnings.
+- `python -m compileall gmfn_backend\app\api\routes\marketplace.py gmfn_backend\app\api\routes\marketplace_media.py`
+  passed.
+- `npm run build` in `frontend/` passed.
+
+#### Next recommended step
+- Continue testing spotlight uploads and rotation. If the owner confirms it is
+  stable, move next to Vault testing and paid subscription testing while
+  leaving the spotlight pilot controls frozen.
+
+#### Date
 2026-04-22
 
 #### Workstream
@@ -7769,6 +7925,56 @@ GSN-branded invite composer and invite-entry continuity.
     points to the phone itself, not the laptop or Render.
   - Public/WhatsApp invite links must not use localhost, 127.0.0.1, or private
     LAN origins such as 192.168.x.x because remote testers cannot open them.
+
+### Spotlight pilot video/queue test checkpoint
+
+- Product-owner requested a temporary pilot path to test many Community Home
+  spotlights, including video and image rotation, without the marketplace
+  capacity cap blocking uploads during the day.
+- Confirmed and preserved the backend source-level pilot override in
+  `gmfn_backend/app/api/routes/marketplace.py`:
+  - normal spotlight capacity checks are bypassed while the pilot override is
+    active.
+  - the API now reports queue/count metadata from `GET /marketplace/broadcasts`:
+    `matching_total`, `active_total`, `video_total`, `image_total`, and
+    `spotlight_capacity_pilot_override_active`.
+  - `POST /marketplace/broadcasts` also reports
+    `spotlight_capacity_pilot_override_active` so the frontend/admin can see
+    the pilot state.
+- Kept video guardrails instead of removing them:
+  - `gmfn_backend/app/api/routes/marketplace_media.py` now accepts marketplace
+    video uploads up to 15 MB.
+  - Uploaded spotlight videos must be 10 seconds or shorter by the time they
+    reach the backend.
+  - Frontend preparation still automatically creates a spotlight-ready clip
+    when the selected file is too long or too heavy.
+- Updated frontend video preparation:
+  - `frontend/src/lib/spotlightMediaPrep.ts` defaults to 15 MB / 10 seconds.
+  - `frontend/src/pages/CommunityHomePage.tsx` and
+    `frontend/src/pages/ShopControlPage.tsx` use the same 15 MB / 10 second
+    pilot limits.
+- Updated live spotlight visibility:
+  - Community Home now keeps the active spotlight list, shows live/queued
+    counts, and rotates through active spotlight items every 30 seconds.
+  - Dashboard spotlight data refreshes every 30 seconds, shows the live/queued
+    count, and rotates every 30 seconds. The frozen Dashboard Market Wisdom
+    section was not changed.
+  - Shop Gallery mini spotlight rotation is now 30 seconds.
+  - `frontend/src/components/SpotlightMediaFrame.tsx` now shows a small visible
+    message if a video fails to play and the fallback cover is shown.
+- Important deploy note:
+  - If Render still returns `Spotlight capacity reached for clan 3...`, the live
+    backend is still serving an older deploy or has not restarted onto the
+    current source.
+- Verification:
+  - `python -m compileall gmfn_backend\app\api\routes\marketplace.py gmfn_backend\app\api\routes\marketplace_media.py`
+    passed.
+  - `npm exec -- eslint src/pages/CommunityHomePage.tsx src/pages/ShopControlPage.tsx src/pages/ShopGalleryPage.tsx src/pages/DashboardPage.tsx src/components/SpotlightMediaFrame.tsx src/lib/spotlightMediaPrep.ts`
+    passed with two pre-existing Shop Control hook dependency warnings.
+  - `git diff --check -- frontend/src/pages/CommunityHomePage.tsx frontend/src/pages/ShopControlPage.tsx frontend/src/pages/ShopGalleryPage.tsx frontend/src/pages/DashboardPage.tsx frontend/src/components/SpotlightMediaFrame.tsx frontend/src/lib/spotlightMediaPrep.ts gmfn_backend/app/api/routes/marketplace.py gmfn_backend/app/api/routes/marketplace_media.py`
+    passed with only Windows line-ending warnings.
+  - `npm run build` passed in `frontend`.
+
 - Updated backend link builders:
   - `gmfn_backend/app/api/routes/clans.py` now uses configured public frontend
     URL first, then only a public request origin, then
@@ -8007,3 +8213,599 @@ GSN-branded invite composer and invite-entry continuity.
 - Verification:
   - `npm exec -- eslint src/pages/CommunityHomePage.tsx` passed.
   - `python -m compileall gmfn_backend\app\api\routes\marketplace.py` passed.
+
+### Admin pilot intake monitor triage cleanup
+
+- While waiting for Render to pick up the spotlight pilot update, the
+  product-owner asked what other safe work could continue besides button
+  checking.
+- Confirmed `gmfn_backend/app/api/routes/admin.py` already exposes the
+  admin-only, read-only `/admin/pilot-intake` endpoint with create-entry and
+  join-request stages plus `next_action` guidance.
+- Updated `frontend/src/pages/SystemOperationsPage.tsx` only:
+  - Added human labels for pilot intake stages such as `Bank/wallet needed`,
+    `Ready for community`, `Sign in instead`, and `Activation missing`.
+  - Sorted create-entry and join-request rows so records needing help appear
+    first instead of being buried by newest-only order.
+  - Added a `First support action` card that tells the admin what to check
+    first during live testing.
+  - Renamed summary tiles from raw wording such as `Ready setup` and
+    `Awaiting bank` to clearer pilot-support language.
+- No backend routes, schemas, permissions, auth, invite validity, or business
+  rules were changed.
+- Verification:
+  - `npm exec -- eslint src/pages/SystemOperationsPage.tsx` passed.
+
+### Spotlight pilot media/debug checkpoint
+
+- Product-owner is actively testing Community Home Spotlight and asked to
+  suspend the community spotlight quota for one day so many image/video
+  spotlights can be loaded during the pilot.
+- Confirmed source state:
+  - `gmfn_backend/app/api/routes/marketplace.py` has
+    `SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_ENABLED = True`.
+  - With current backend source running, `/marketplace/broadcasts` returns
+    `spotlight_capacity_pilot_override_active: true`.
+  - `gmfn_backend/app/api/routes/marketplace_media.py` allows videos up to
+    `15MB` and only rejects videos over `10s` when a duration is explicitly
+    submitted.
+- Updated frontend spotlight media behavior:
+  - `frontend/src/lib/spotlightMediaPrep.ts` keeps the 15MB / 10s preparation
+    target.
+  - `frontend/src/pages/CommunityHomePage.tsx` and
+    `frontend/src/pages/ShopControlPage.tsx` now fall back to the original
+    selected video when phone-browser trimming fails, as long as the file is
+    accepted and no larger than 15MB.
+  - `frontend/src/components/SpotlightMediaFrame.tsx` now accepts
+    `maxVideoSeconds` and loops/pauses video playback at that limit, so pilot
+    videos behave as 10-second spotlight clips even when the uploaded file was
+    not physically trimmed by the browser.
+  - Community Home, Shop Control, Dashboard, Shop Gallery, and Marketplace
+    spotlight frames pass the 10-second playback cap where relevant.
+- Updated frontend refresh behavior:
+  - Community Home and Dashboard no longer clear the visible spotlight while
+    the 30-second background refresh is running, reducing the "blink" effect.
+- Runtime finding from local audit:
+  - Local backend had previously been running old code without reload; it was
+    restarted on 2026-04-23 with current source.
+  - After restart, backend logs showed repeated GETs for
+    `/marketplace/broadcasts?clan_id=3&active_only=true&limit=20`, but no new
+    POST to `/marketplace/media/video`, `/marketplace/media/image`, or
+    `/marketplace/broadcasts`.
+  - Local SQLite `marketplace_broadcasts` for `clan_id=3` still had only one
+    active row, id `59`, so the UI's `1 live / queued` count was reflecting
+    backend state rather than a hard-coded counter.
+  - Local Vite was running on `127.0.0.1:5174`, so phones on the LAN will not
+    see local HMR changes unless the frontend is restarted with a LAN host
+    such as `0.0.0.0`, or the changes are deployed to Render.
+- Local pilot data action:
+  - Backed up local SQLite database to
+    `gmfn_backend/gmfn.db.backup_spotlight_pilot_20260423_112949`.
+  - Extended `expires_at` to `2026-04-24 23:59:59.000000` for existing
+    clan `3` spotlight rows that already had image or video media.
+  - This revived 17 existing image spotlights for local pilot rotation testing
+    without requiring the product-owner to upload more images.
+  - Confirmed local API now returns `total: 17`, `active_total: 17`,
+    `image_total: 17`, `video_total: 0`, and
+    `spotlight_capacity_pilot_override_active: true`.
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityHomePage.tsx src/pages/ShopControlPage.tsx src/pages/DashboardPage.tsx src/pages/ShopGalleryPage.tsx src/components/CommunityMarketplaceSpotlight.tsx src/components/SpotlightMediaFrame.tsx` passed with only the existing Shop Control hook dependency warnings.
+  - `python -m compileall gmfn_backend\app\api\routes\marketplace.py gmfn_backend\app\api\routes\marketplace_media.py` passed.
+  - `npm run build` passed in `frontend`.
+
+### Shop Gallery spotlight frame and loaded-shelf checkpoint
+
+- Product-owner asked for the Shop Gallery mini spotlight frame to look
+  distinct from normal shop/customer cards without changing its structure.
+- Updated `frontend/src/pages/ShopGalleryPage.tsx` only:
+  - Gave the mini spotlight a darker amber/teal broadcast-style frame while
+    preserving the same media frame size, playback, rotation, and page flow.
+  - Kept the shared spotlight pilot rotation and 10-second playback cap wired
+    through `frontend/src/lib/spotlightPilot.ts`.
+  - Confirmed the "loaded but not showing" product issue was caused by the
+    gallery rendering only the first 12 products while the API can return more.
+  - Added a visible status plus a route-local `Show all loaded items` switch so
+    extra returned products can be opened during testing without changing
+    backend product-slot rules.
+  - Added pointer-event protection on decorative hero overlays so they cannot
+    intercept taps over the first shop blocks.
+- No backend routes, schemas, auth, product-slot limits, or payment/trust logic
+  were changed.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx` passed.
+  - `npm run build` passed in `frontend`.
+
+### Shop Gallery public product slot open/close checkpoint
+
+- Product-owner clarified that the issue was not only extra loaded products:
+  the first two public product slots themselves needed to be openable.
+- Updated `frontend/src/pages/ShopGalleryPage.tsx` only:
+  - Added route-local open/close state for public product cards.
+  - Every visible product slot, including Slot 01 and Slot 02, now exposes an
+    `Open item` / `Close` control.
+  - Opening a slot reveals a public-safe detail panel with the product cue,
+    price, shop source, and freshness signal where available.
+  - On compact phones, opening a slot changes the card from a bottom-overlay
+    dock into a downward-flowing detail card so the slot visibly opens instead
+    of remaining a static image/share panel.
+  - Kept owner/admin controls out of the public Shop Gallery product detail
+    panel.
+- No backend routes, schemas, product-slot rules, auth, payment, trust, or
+  invite logic were changed.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx` passed.
+  - `npm run build` passed in `frontend`.
+
+### Shop Gallery broken product media checkpoint
+
+- Product-owner clarified that Slot 01 and Slot 02 were still not showing
+  pictures at all.
+- Checked the running local backend and SQLite product rows:
+  - The backend was running.
+  - The current shop product API was returning product rows for shop `1`.
+  - The newest two community-visible rows had `image_url` values pointing to
+    missing upload files:
+    `/uploads/marketplace/images/20260412163112_b3deb91a22a05cbf.jpg` and
+    `/uploads/marketplace/images/20260326220342_6364908345ab88a4.jpg`.
+  - Backend logs confirmed repeated `404 Not Found` responses for those image
+    files.
+- Updated `frontend/src/pages/ShopGalleryPage.tsx` only:
+  - Added a route-local broken-media registry for public product images/videos.
+  - If a product image/video fails to load, the gallery marks that media URL as
+    broken and moves that product out of the public photo-ready shelf so it no
+    longer occupies Slot 01 or Slot 02.
+  - The shelf then refills from the next usable products, so the first visible
+    slots are picture-bearing slots instead of empty broken-image cards.
+  - Added a small status badge when old missing-photo links have been moved
+    aside.
+- No backend data was edited, and no backend routes, schemas, auth,
+  permissions, invite, trust, or payment logic were changed.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx` passed.
+  - `npm run build` passed in `frontend`.
+
+### Shop Gallery backend media availability checkpoint
+
+- Follow-up audit showed the first two product rows were still being returned
+  by the backend with upload URLs whose files no longer exist locally, so a
+  refresh could still surface dead media before the frontend had a chance to
+  react.
+- Updated `gmfn_backend/app/api/routes/marketplace.py` only:
+  - Added a small upload-path availability guard for `/uploads/...` media
+    returned by marketplace product and broadcast serializers.
+  - Local upload URLs now return `None` when the underlying file is missing;
+    external, data, and blob URLs are left untouched.
+  - Product responses now include `image_url_available` and
+    `video_url_available` booleans so the frontend can reason about stale
+    media without guessing.
+- Confirmed locally that:
+  - `/uploads/marketplace/images/20260321190614_2456fdda238a248a.jpg` still
+    resolves as available.
+  - `/uploads/marketplace/images/20260412163112_b3deb91a22a05cbf.jpg` and
+    `/uploads/marketplace/images/20260326220342_6364908345ab88a4.jpg` resolve
+    to `None` because the files are missing.
+- Restarted the local backend on `127.0.0.1:8012` with `GMFN_DEV_MODE=1`.
+- Verification:
+  - `python -m compileall app/api/routes/marketplace.py` passed in
+    `gmfn_backend`.
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx` passed.
+  - `npm run build` passed in `frontend`.
+
+### Community Home spotlight duplication cleanup checkpoint
+
+- Product-owner asked to continue the page-by-page cleanup, especially around
+  Community Home, Marketplace, Shop Control, and duplicated Spotlight handling.
+- Updated `frontend/src/pages/CommunityHomePage.tsx` only:
+  - Removed the duplicate full Spotlight upload/publish composer from
+    Community Home.
+  - Community Home now keeps Spotlight as a read-only live-status and guidance
+    surface.
+  - The "What do you want to do next?" result and Spotlight section now route
+    the user to `/app/shop-control#shop-control-spotlight` for actual
+    publishing work.
+  - Removed the extra Spotlight button from the general "Your main actions"
+    grid because the page already has a dedicated Spotlight status/launcher.
+  - This preserves the route responsibility split: Community Home explains
+    and shows state; Shop Control owns picture, product, Vault, and Spotlight
+    operations.
+- Updated `frontend/src/components/CommunityShopControlPanel.tsx`:
+  - Compressed the embedded Community Home shop panel by replacing the large
+    second "owner tool lanes" block with a compact Shop Control shortcut strip.
+  - This keeps quick routes to picture/products, Spotlight, paid Spotlight,
+    and Vault without making Community Home behave like a second Shop Control
+    page.
+- Updated `frontend/src/pages/MarketplacePage.tsx`:
+  - Removed repeated "Marketplace-owned links" wording inside the outward link
+    section and replaced it with clearer "Outgoing links" copy.
+  - Link behavior was not changed.
+- No backend routes, schemas, auth, payment, invite, trust, quota, or product
+  media rules were changed in this cleanup.
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityHomePage.tsx src/components/CommunityShopControlPanel.tsx` passed.
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx src/pages/CommunityHomePage.tsx src/components/CommunityShopControlPanel.tsx` passed with only pre-existing Marketplace hook dependency warnings.
+  - `npm run build` passed in `frontend`.
+
+### Demand Box and First Circle button-tightening checkpoint
+
+- Product-owner asked to continue inner-page cleanup while remote testing
+  continues, with special concern around jumpy buttons and repeated guidance.
+- Updated `frontend/src/pages/BuildFirstCirclePage.tsx` only:
+  - Strengthened all route-local button styles with larger tap targets,
+    pointer-event protection, appearance reset, and safer text wrapping.
+  - Guarded click handlers as well as pointer/touch/mouse-down handlers on
+    role, contact, collapse, include/remove, copy, and reset buttons.
+  - Simplified the user path language from repeated step/role wording to
+    "Aim", "People", and "Invite" so the screen is more direct for first-time
+    users.
+- Updated `frontend/src/pages/DemandBoxPage.tsx` only:
+  - Removed a repeated top navigation cluster from the create-demand card
+    because the route already has navigation at the hero and page top.
+  - Tightened the optional details summary opener with the same route-local tap
+    protection used by other buttons.
+  - Simplified the Demand Box explainer tiles to shorter wording.
+  - Fixed the route-local `loadPage` hook dependency warning with
+    `useCallback`; no API contract changed.
+- No backend routes, schemas, auth, payment, invite, quota, trust, or product
+  media logic were changed.
+- Verification:
+  - `npm exec -- eslint src/pages/BuildFirstCirclePage.tsx src/pages/DemandBoxPage.tsx` passed.
+  - `npm run build` passed in `frontend`.
+
+### Shop Control button-tightening checkpoint
+
+- Continued the safe inner-page cleanup lane after Community Home was made a
+  status/launcher surface and Shop Control became the main working page for
+  picture, product, Spotlight, paid Spotlight, and Vault actions.
+- Updated `frontend/src/pages/ShopControlPage.tsx` only:
+  - Strengthened the route-local button/tap target style with larger minimum
+    height, higher stacking, pointer-event protection, appearance reset,
+    line wrapping, and stable full-width alignment.
+  - Added a small route-local guarded click helper and applied it to shop
+    gallery open/copy actions, picture save/remove, shop details save,
+    paid-feature instruction buttons, Spotlight mode/publish buttons, and
+    Vault link copy/open/extend/revoke/create buttons.
+  - Made `openSpotlightTools` consume the triggering tap before opening and
+    scrolling to the Spotlight publisher.
+  - Fixed the route-local `loadPage` and hash-scroll hook dependency warnings
+    with `useCallback`; no API contract changed.
+- No backend routes, schemas, auth, payment, invite, quota, trust, product
+  media, or Spotlight business rules were changed in this pass.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopControlPage.tsx` passed.
+  - `npm run build` passed in `frontend`.
+
+### Shop Assets and Shop Gallery button-tightening checkpoint
+
+- Continued the same safe button-stability pass into the shop owner asset page
+  and the public shop/gallery page.
+- Updated `frontend/src/pages/ShopAssetsPage.tsx` only:
+  - Strengthened route-local button styles with larger tap targets,
+    pointer-event protection, appearance reset, stable text wrapping, and
+    guarded click handling.
+  - Applied the guarded click path to shop gallery/copy actions, guidance and
+    section toggles, signboard save/reset/remove, product submit/clear/copy,
+    and product edit/restore/delete actions.
+  - Fixed the route-local `loadPage` hook dependency warning with
+    `useCallback`; no API contract changed.
+- Updated `frontend/src/pages/ShopGalleryPage.tsx` only:
+  - Strengthened public-shop navigation and shop/product action buttons with
+    the same route-local tap-target hardening.
+  - Guarded Back, Vault request, shop share/copy, show-all-products, product
+    open/close, and product share actions.
+  - Preserved the visitor/member split: visitors can view/share/request/sign
+    in, while protected GSN app doors remain signed-in member navigation.
+- Updated `frontend/src/components/CommunityShopControlPanel.tsx` only:
+  - Raised the embedded Community Home shop shortcut buttons to the same
+    mobile tap-target standard as the main shop pages.
+  - Tightened the panel collapse and copy-shop-link actions with stronger
+    event guards so the summary panel behaves like a launcher, not a second
+    shop-control workflow.
+- No backend routes, schemas, auth, payment, invite, quota, trust, product
+  media, or Spotlight business rules were changed in this pass.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopAssetsPage.tsx` passed.
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx` passed.
+  - `npm exec -- eslint src/components/CommunityShopControlPanel.tsx` passed.
+
+### Loans domain audit/refinement checkpoint
+
+- Audited the loans/support domain across frontend pages and backend route
+  ownership without changing backend business rules.
+- Confirmed the backend remains the source of truth for loan lifecycle,
+  guarantor decisions, repayment claims, repayment completion, trust proof,
+  and guarantor lock release.
+- Updated these frontend pages only:
+  - `frontend/src/pages/LoansPage.tsx`
+  - `frontend/src/pages/LoanReadinessPage.tsx`
+  - `frontend/src/pages/LoanSuggestionsPage.tsx`
+  - `frontend/src/pages/LoanWorkbenchPage.tsx`
+  - `frontend/src/pages/LoanSummaryPage.tsx`
+  - `frontend/src/pages/GuarantorInboxPage.tsx`
+  - `frontend/src/pages/GuarantorEarningsPage.tsx`
+  - `frontend/src/pages/RepaymentPage.tsx`
+  - `frontend/src/pages/BorrowerPreflightPage.tsx`
+  - `frontend/src/pages/LoanDecisionPage.tsx`
+- Route-level changes:
+  - Tightened loan-domain action and collapse buttons with larger tap targets,
+    stronger stacking, pointer-event protection, mobile appearance reset, and
+    safer wrapping.
+  - Corrected `LoanDecisionPage` navigation so the workbench and loans return
+    buttons point to `/app/loan-workbench` and `/app/loans`.
+- No backend routes, schemas, auth, payment, invite, quota, trust, repayment,
+  guarantor, or loan lifecycle rules were changed.
+- Verification:
+  - `npm exec -- eslint src/pages/LoansPage.tsx src/pages/LoanReadinessPage.tsx src/pages/LoanSuggestionsPage.tsx src/pages/LoanWorkbenchPage.tsx src/pages/LoanSummaryPage.tsx src/pages/GuarantorInboxPage.tsx src/pages/GuarantorEarningsPage.tsx src/pages/RepaymentPage.tsx src/pages/BorrowerPreflightPage.tsx src/pages/LoanDecisionPage.tsx` passed with existing hook-dependency warnings only.
+  - `npm run build` passed in `frontend`.
+
+### Loan polish continuation and join-link refresh fix
+
+- Continued the loan/support polish so the last rough support screens now match
+  the stronger finance-adjacent loan pages.
+- Updated frontend only:
+  - `frontend/src/pages/LoanDecisionPage.tsx`
+  - `frontend/src/pages/BorrowerPreflightPage.tsx`
+- Route-level changes:
+  - Rebuilt both screens with the same institutional surfaces, stronger tap
+    targets, calmer navigation, and simpler guidance language already used in
+    the main loans pages.
+  - Reduced paper-flat presentation and removed broken symbol/encoding style
+    output from borrower preflight.
+- Blocking outside-test fix:
+  - Updated `gmfn_backend/app/api/routes/clans.py` so
+    `GET /clans/{clan_id}/invite-link` now prefers the latest still-active
+    `ClanInvite` row for the community instead of falling back to an older
+    legacy clan invite after a page refresh.
+  - If no usable invite row exists and the legacy clan invite is expired or
+    exhausted, the route now creates a fresh active invite and returns that
+    link instead of surfacing a stale expired one.
+  - This is meant to stop Marketplace and Workspace screens from showing a
+    link that looks ready locally but fails on phone with expired/invalid
+    messages after refresh or resend.
+- No join-request approval rules, vote thresholds, auth contracts, schemas, or
+  trust-event business rules were changed in this pass.
+- Verification:
+  - `python -m py_compile gmfn_backend/app/api/routes/clans.py` passed.
+  - `npm exec -- eslint src/pages/LoanDecisionPage.tsx src/pages/BorrowerPreflightPage.tsx` passed.
+  - `npm run build` passed in `frontend`.
+
+### Loans and finance strategic alignment pass
+
+- Continued the frontend-only cleanup so Finance and Loans & Support now speak
+  more clearly as adjacent domains instead of sounding like duplicate money
+  consoles.
+- Updated these frontend pages only:
+  - `frontend/src/pages/FinancePage.tsx`
+  - `frontend/src/pages/LoansPage.tsx`
+  - `frontend/src/pages/LoanReadinessPage.tsx`
+  - `frontend/src/pages/LoanSuggestionsPage.tsx`
+  - `frontend/src/pages/LoanWorkbenchPage.tsx`
+  - `frontend/src/pages/LoanSummaryPage.tsx`
+  - `frontend/src/pages/RepaymentPage.tsx`
+  - `frontend/src/pages/RevenueAllocationPage.tsx`
+- Route/screen alignment changes:
+  - Finance now presents itself as the wider finance file and evidence record,
+    while Loans & Support is described as the live one-community workflow.
+  - Finance utility links and support CTAs now consistently use the
+    `Loans & Support` label.
+  - Loan readiness, suggestions, workbench, summary, repayment, and revenue
+    allocation now use the same “This page is one step inside Loans & Support”
+    framing or equivalent route-local support wording.
+  - Cross-links from loan pages back into finance were softened from action
+    language like `Open Finance` to evidence language like `See this in
+    Finance` where appropriate.
+  - Remaining “support continuation routes” wording was normalized into
+    `Next support routes` so the loans stack no longer mixes three route-label
+    styles.
+- Mobile polish / button tightening:
+  - Strengthened route-local tap targets, collapse toggles, and action buttons
+    across the touched loan/support pages.
+  - Extended the institutional surface treatment to repayment, readiness,
+    suggestions, and revenue allocation so the inner pages read less like
+    paper forms and more like the rest of the product.
+  - Added guarded pointer/touch handlers on the touched loan/support pages so
+    nested cards behave more predictably on phones.
+- No backend routes, schemas, auth, invite contracts, quota rules, finance
+  calculations, repayment rules, guarantor rules, or trust-event business
+  logic were changed in this pass.
+- Verification:
+  - `npm exec -- eslint src/pages/FinancePage.tsx src/pages/LoansPage.tsx src/pages/LoanReadinessPage.tsx src/pages/LoanSuggestionsPage.tsx src/pages/LoanWorkbenchPage.tsx src/pages/LoanSummaryPage.tsx src/pages/RepaymentPage.tsx src/pages/RevenueAllocationPage.tsx` passed with existing hook-dependency warnings only.
+  - `npm run build` passed in `frontend`.
+- Residual risk / follow-up:
+  - Some loan pages still carry existing React hook dependency warnings that
+    predate this pass.
+  - The remaining cleanup work in this domain is mostly experiential:
+    broader mobile testing, further de-duplication if the product owner wants
+    even fewer helper layers, and aligning any untouched support-adjacent
+    screens to the same institutional visual standard.
+
+### Join-link normalization and phone testing follow-up
+
+- Continued the invite-link stabilization work so phone/WhatsApp testing is not
+  forced to depend only on Render timing.
+- Added shared frontend join-link normalization:
+  - `frontend/src/lib/joinLinks.ts`
+- Updated invite/share surfaces to use that shared normalizer:
+  - `frontend/src/pages/MarketplacePage.tsx`
+  - `frontend/src/pages/CommunityHomePage.tsx`
+  - `frontend/src/pages/MarketplaceWorkspacePage.tsx`
+  - `frontend/src/pages/ClansPage.tsx`
+- Updated the backend clan invite link helper to emit the short canonical
+  frontend path:
+  - `gmfn_backend/app/api/routes/clans.py`
+  - Canonical outward invite now prefers `/start/join/{code}` instead of the
+    older long query-heavy format.
+- Tightened the join request screen:
+  - `frontend/src/pages/JoinEntryPage.tsx`
+  - Missing/expired invite now reads more clearly.
+  - The page no longer reuses `ENTRY_INVITE_CODE_KEY` from storage as a silent
+    fallback when the current URL does not contain a fresh invite code.
+  - Invalid-link state was simplified so the page can move toward one guided
+    warning path instead of a dead launcher plus a second warning.
+  - Invite expiry badges and invite letter fallback now accept preview expiry
+    data too.
+- Small cleanup:
+  - `frontend/src/pages/ClansPage.tsx`
+  - Removed an empty `catch` lint error in clipboard copy fallback.
+- Invite-path audit findings from parallel explorers:
+  - Frontend:
+    - old invite codes can become sticky if they are read back from storage;
+      this was fixed in `JoinEntryPage`.
+    - public-origin normalization may still preserve older public hosts instead
+      of forcing one canonical frontend origin.
+  - Backend:
+    - `GET /clans/{clan_id}/invite-link` still does not behave like a true
+      hard refresh when a usable `ClanInvite` row already exists; it can return
+      the existing row unchanged.
+    - legacy clan-invite fallback paths still exist and can create mismatch
+      with newer `ClanInvite.code`-based flows.
+    - `community_integrity_service.join_clan_via_invite()` appears to query
+      `ClanInvite.invite_code` even though the model uses `ClanInvite.code`;
+      this route should be audited before relying on it.
+- Local phone testing setup:
+  - Backend confirmed listening on `127.0.0.1:8012`.
+  - Frontend Vite dev server was started on LAN host `0.0.0.0:5173`.
+  - Current local network test URL:
+    - `http://192.168.1.38:5173`
+  - This lets a phone on the same Wi-Fi test the app without waiting for
+    Render deploys; Vite proxies the backend locally.
+- Verification:
+  - `npm exec -- eslint src/lib/joinLinks.ts src/pages/JoinEntryPage.tsx src/pages/MarketplacePage.tsx src/pages/CommunityHomePage.tsx src/pages/MarketplaceWorkspacePage.tsx src/pages/ClansPage.tsx`
+    passed with only 2 pre-existing warnings in `MarketplacePage.tsx`.
+  - `npm run build` passed in `frontend`.
+- Most necessary next step after this checkpoint:
+  1. Make `GET /clans/{clan_id}/invite-link` perform a real refresh or clearly
+     separate `create` from `refresh`, so resend never hands back an older code.
+  2. Audit and possibly remove remaining legacy clan-invite fallback paths once
+     product-owner confirms that `ClanInvite.code` is now the single source of
+     truth for outward join links.
+
+### Community Home vs Marketplace boundary alignment
+
+- Continued the route-purpose cleanup so Community Home, Marketplace, and the
+  supporting community workspace layers stop sounding like copies of the same
+  domain.
+- Updated:
+  - `frontend/src/pages/CommunityHomePage.tsx`
+  - `frontend/src/pages/MarketplacePage.tsx`
+  - `frontend/src/pages/MarketplaceWorkspacePage.tsx`
+  - `frontend/src/components/CommunityShopControlPanel.tsx`
+- Boundary decisions now reflected in frontend copy:
+  - Community Home is the cross-community index and owner launcher layer.
+  - Marketplace is the live one-community operating surface.
+  - Marketplace-owned links remain owned by Marketplace, not by Community Home.
+  - Community workspace/access surfaces are described as utility/access layers,
+    not as a second Marketplace or a second Community Home.
+  - Shop Control is described as the owner-side tool panel for the one global
+    shop, while Marketplace remains the place where that shop meets one
+    selected community.
+- Concrete cleanup in this pass:
+  - Community Home owner-launcher text now more clearly says Marketplace keeps
+    outward links and live local work.
+  - Marketplace workspace top-level language was rewritten from
+    `Community Workspace` / general work wording toward `Community Access` /
+    invite-visibility-alert-member mapping wording.
+  - Marketplace workspace route-handoff copy now says those buttons return the
+    user into live community routes instead of acting like a replacement
+    Marketplace.
+  - `CommunityShopControlPanel` button label `Marketplace` was clarified to
+    `Open Marketplace`.
+- Parallel explorer audit (read-only) confirmed the main remaining overlap risk
+  is not backend logic but wording and ownership drift across:
+  - `frontend/src/pages/MarketplaceWorkspacePage.tsx`
+  - `frontend/src/components/CommunityShopControlPanel.tsx`
+  - residual Community Home spotlight/launcher wording
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityHomePage.tsx src/pages/MarketplacePage.tsx src/pages/MarketplaceWorkspacePage.tsx src/components/CommunityShopControlPanel.tsx`
+    passed with only the 2 pre-existing hook-dependency warnings in
+    `MarketplacePage.tsx`.
+  - `npm run build` passed in `frontend`.
+- Residual risk / next recommended step:
+  1. Continue a smaller wording-and-layout cleanup on `MarketplaceWorkspacePage`
+     if the product owner wants that surface to become even more clearly a
+     support/admin utility layer rather than a semi-public marketplace face.
+  2. After the invite-link refresh issue is stabilized on the backend, do a
+     fresh phone audit of Community Home -> Marketplace -> outward links so the
+     boundary can be validated in real navigation, not only in copy.
+
+### Invite-link stabilization checkpoint (2026-04-24)
+
+- Purpose:
+  - reduce the repeated outside-testing failure where phone/WhatsApp opens land
+    on the Join Entry red state:
+    - `Fresh invite link needed.`
+    - `This invitation link is no longer valid or was not copied fully.`
+
+- Files changed in this pass:
+  - `frontend/src/lib/joinLinks.ts`
+  - `frontend/src/pages/MarketplaceWorkspacePage.tsx`
+  - `gmfn_backend/app/api/routes/clans.py`
+  - `gmfn_backend/app/services/community_integrity_service.py`
+  - `gmfn_backend/tests/test_join_requests.py`
+
+- Confirmed frontend cleanup:
+  - `normalizedJoinInviteUrl()` now prefers the invite code extracted from the
+    actual outward share link first, then `payload.code`, and only then the
+    older `payload.invite_code` field.
+  - `MarketplaceWorkspacePage` now prefers `inviteInfo.code` before
+    `inviteInfo.invite_code`.
+  - This reduces the chance that a stale legacy code keeps being copied after a
+    newer shareable invite already exists.
+
+- Confirmed backend cleanup:
+  - `GET /clans/{clan_id}/invite-link`
+    - now works from `ClanInvite.code` as the shareable outward source of
+      truth.
+    - uses a reusable default max-uses value of `100` when no stricter value is
+      requested.
+    - reuses the latest still-usable invite when it already matches the share
+      policy, otherwise creates a new live invite.
+  - `GET /clans/join-invite/preview`
+    - no longer treats legacy `Clan.invite_code` as a live outward join link.
+    - can recover the latest usable community invite when a stale or missing
+      code is opened together with a valid `community_code`.
+  - `community_integrity_service.join_clan_via_invite()`
+    - now queries `ClanInvite.code` instead of the wrong legacy
+      `ClanInvite.invite_code`.
+  - `community_integrity_service.audit_invite()`
+    - now reports `invite.code`.
+
+- New tests added:
+  - preview does **not** accept legacy clan-level invite codes as live outward
+    share links
+  - preview **does** recover the newest usable invite from `community_code`
+  - reusable shareable invite default max uses is `100`
+  - requested max-uses still overrides the default when explicitly provided
+
+- Verification run:
+  - `python -m pytest gmfn_backend/tests/test_join_requests.py -q`
+    - `10 passed`
+  - `python -m py_compile gmfn_backend/app/api/routes/clans.py gmfn_backend/app/services/community_integrity_service.py`
+    passed
+  - `npm exec -- eslint src/lib/joinLinks.ts src/pages/MarketplaceWorkspacePage.tsx`
+    passed when run from `frontend/`
+  - `npm run build`
+    passed in `frontend/`
+
+- Practical meaning:
+  - stale outward join links should no longer stay "sticky" as easily across
+    frontend copy paths
+  - preview should no longer silently validate an old legacy clan code
+  - if a person opens an older link but the community code is still present, the
+    backend can now hand them forward to the latest live invite for that same
+    community
+
+- Remaining risk / next recommended step:
+  1. Deploy backend and frontend together so Render uses the new invite-source
+     rules and the newer join-link normalizer.
+  2. From the live app, generate one fresh join link again from the community
+     that should be tested.
+  3. Retest the exact generated link on:
+     - laptop browser
+     - phone browser directly
+     - WhatsApp open-from-message
+  4. If the red state still appears after deployment, capture the **exact full
+     URL** that was opened on the phone so the remaining break can be traced as
+     either:
+     - a malformed shared URL
+     - an old cached URL
+     - a producer screen still emitting legacy data

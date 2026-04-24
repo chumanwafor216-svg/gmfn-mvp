@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
+import { normalizedJoinInviteUrl } from "../lib/joinLinks";
 import { navigateWithOrigin } from "../lib/nav";
 import { publicFrontendUrl } from "../lib/publicLinks";
 import {
@@ -258,14 +259,9 @@ function buildInviteState(
   selectedCommunityName: string
 ): InviteState {
   const code = safeStr(raw?.code || raw?.invite_code || "");
-  const rawLink = safeStr(raw?.link || raw?.invite_link || raw?.invite_url || "");
-  const link = rawLink
-    ? publicFrontendUrl(rawLink)
-    : code
-      ? publicFrontendUrl(
-          `/start/join/${encodeURIComponent(code)}?invite=${encodeURIComponent(code)}`
-        )
-      : "";
+  const link =
+    normalizedJoinInviteUrl(raw) ||
+    (code ? publicFrontendUrl(`/start/join/${encodeURIComponent(code)}`) : "");
   const expiresAt = safeStr(raw?.expires_at || raw?.expiry || "");
   const guideUrl = buildGuideUrl();
   const fallbackGuideUrl = buildGuideFallbackUrl();
@@ -387,19 +383,28 @@ export default function ClansPage() {
 
     setInviteLoading(true);
     try {
-      const res = await createClanInvite(selectedCommunityId).catch(() => null);
+      const res = await createClanInvite(selectedCommunityId);
+      const source = res || {};
+      const nextInviteState = buildInviteState(
+        source,
+        senderName,
+        inviteReceiver,
+        inviteMessage,
+        communityName(selectedCommunity)
+      );
 
-      const source = res || selectedCommunity || {};
+      if (!safeStr(nextInviteState.link) || !safeStr(nextInviteState.code)) {
+        throw new Error(
+          "GSN could not prepare a fresh join link yet. Please try again."
+        );
+      }
+
       setInviteState(
-        buildInviteState(
-          source,
-          senderName,
-          inviteReceiver,
-          inviteMessage,
-          communityName(selectedCommunity)
-        )
+        nextInviteState
       );
       setInviteComposerOpen(false);
+    } catch {
+      setInviteState(null);
     } finally {
       setInviteLoading(false);
     }
@@ -416,7 +421,9 @@ export default function ClansPage() {
         window.setTimeout(() => setCopied(""), 1400);
         return;
       }
-    } catch {}
+    } catch {
+      // Clipboard may be unavailable on some phones/browsers; prompt fallback below.
+    }
 
     window.prompt("Copy this text:", text);
   }

@@ -5,7 +5,6 @@ import OriginLink from "../components/OriginLink";
 import { getJoinInvitePreview, submitJoinRequest } from "../lib/api";
 import {
   ENTRY_INVITE_CODE_KEY,
-  readStorage,
   writeStorage,
 } from "../lib/entryFlow";
 
@@ -552,7 +551,6 @@ export default function JoinEntryPage() {
         searchParams.get("invite_code") ||
         searchParams.get("join_code") ||
         routeParams.code ||
-        readStorage(ENTRY_INVITE_CODE_KEY) ||
         ""
     );
   }, [searchParams, routeParams.code]);
@@ -569,6 +567,10 @@ export default function JoinEntryPage() {
         searchParams.get("clan_name") ||
         "this GSN community"
     );
+  }, [searchParams]);
+
+  const communityCode = useMemo(() => {
+    return cleanText(searchParams.get("community_code") || "");
   }, [searchParams]);
 
   const marketplaceName = useMemo(() => {
@@ -615,24 +617,6 @@ export default function JoinEntryPage() {
     );
   }, [searchParams]);
 
-  const inviteLetter = useMemo(() => {
-    return buildInviteLetter({
-      receiver: intendedReceiver,
-      communityName,
-      inviter: inviterLabel,
-      marketplaceName,
-      expiresAt: inviteExpiry,
-      customMessage: inviteMessage,
-    });
-  }, [
-    intendedReceiver,
-    communityName,
-    inviterLabel,
-    marketplaceName,
-    inviteExpiry,
-    inviteMessage,
-  ]);
-
   const [firstName, setFirstName] = useState("");
   const [surname, setSurname] = useState("");
   const [phone, setPhone] = useState("");
@@ -647,6 +631,45 @@ export default function JoinEntryPage() {
   const [invitePreview, setInvitePreview] = useState<any>(null);
   const [inviteChecking, setInviteChecking] = useState(false);
 
+  const resolvedCommunityName = useMemo(() => {
+    const queryName = cleanText(communityName);
+    if (queryName && queryName.toLowerCase() !== "this gsn community") {
+      return queryName;
+    }
+    return (
+      decodeFriendly(invitePreview?.community_name || "") || "this GSN community"
+    );
+  }, [communityName, invitePreview]);
+
+  const resolvedMarketplaceName = useMemo(() => {
+    return (
+      decodeFriendly(marketplaceName || "") ||
+      decodeFriendly(invitePreview?.marketplace_name || "")
+    );
+  }, [marketplaceName, invitePreview]);
+
+  const resolvedInviteExpiry = useMemo(() => {
+    return inviteExpiry || cleanText(invitePreview?.expires_at || "");
+  }, [inviteExpiry, invitePreview]);
+
+  const inviteLetter = useMemo(() => {
+    return buildInviteLetter({
+      receiver: intendedReceiver,
+      communityName: resolvedCommunityName,
+      inviter: inviterLabel,
+      marketplaceName: resolvedMarketplaceName,
+      expiresAt: resolvedInviteExpiry,
+      customMessage: inviteMessage,
+    });
+  }, [
+    intendedReceiver,
+    resolvedCommunityName,
+    inviterLabel,
+    resolvedMarketplaceName,
+    resolvedInviteExpiry,
+    inviteMessage,
+  ]);
+
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [success, setSuccess] = useState<any>(null);
@@ -660,7 +683,7 @@ export default function JoinEntryPage() {
         valid: false,
         status: "missing",
         message:
-          "This join page does not contain a valid invite code yet. Ask the person who invited you to send the full GSN invite link again.",
+          "This page opened without a usable GSN invite code. Ask the person who invited you to send the latest join link again.",
       });
       return;
     }
@@ -668,7 +691,9 @@ export default function JoinEntryPage() {
     setInviteChecking(true);
     setInvitePreview(null);
 
-    getJoinInvitePreview(inviteCode)
+    getJoinInvitePreview(inviteCode, {
+      community_code: communityCode || undefined,
+    })
       .then((out) => {
         if (!alive) return;
         setInvitePreview(out || null);
@@ -685,7 +710,11 @@ export default function JoinEntryPage() {
     return () => {
       alive = false;
     };
-  }, [inviteCode]);
+  }, [inviteCode, communityCode]);
+
+  const effectiveInviteCode = useMemo(() => {
+    return cleanText(invitePreview?.invite_code || inviteCode);
+  }, [invitePreview, inviteCode]);
 
   const inviteBlocked = Boolean(
     inviteCode && invitePreview && invitePreview.valid === false
@@ -693,9 +722,14 @@ export default function JoinEntryPage() {
   const inviteReady = Boolean(invitePreview && invitePreview.valid === true);
   const invitePreviewMessage = cleanText(invitePreview?.message);
   const canOpenForm = Boolean(inviteCode) && !inviteBlocked && !inviteChecking;
+  const showInviteLauncher = Boolean(inviteCode) && !inviteBlocked;
+  const inviteHelpMessage = inviteBlocked
+    ? invitePreviewMessage ||
+      "This invitation link is no longer valid or was not copied fully. Ask the person who invited you to send a fresh GSN invite link."
+    : "This page opened without a usable GSN invite code. Ask the person who invited you to send the latest join link again.";
 
   const canSubmit =
-    !!inviteCode &&
+    !!effectiveInviteCode &&
     !inviteBlocked &&
     !inviteChecking &&
     !!cleanText(firstName) &&
@@ -752,7 +786,7 @@ export default function JoinEntryPage() {
     setSuccess(null);
 
     try {
-      const safeInviteCode = cleanText(inviteCode);
+      const safeInviteCode = cleanText(effectiveInviteCode);
       const safeFirstName = cleanText(firstName);
       const safeSurname = cleanText(surname);
       const safePhone = cleanText(phone);
@@ -922,10 +956,12 @@ export default function JoinEntryPage() {
               >
                 <span style={badge(true)}>Invited by {inviterLabel}</span>
                 <span style={badge(false)}>
-                  {communityName || "This GSN community"}
+                  {resolvedCommunityName || "This GSN community"}
                 </span>
-                {inviteExpiry ? (
-                  <span style={badge(false)}>Expires {safeDateTime(inviteExpiry)}</span>
+                {resolvedInviteExpiry ? (
+                  <span style={badge(false)}>
+                    Expires {safeDateTime(resolvedInviteExpiry)}
+                  </span>
                 ) : null}
               </div>
               <div
@@ -975,50 +1011,47 @@ export default function JoinEntryPage() {
               protected.
             </div>
 
-            <div
-              style={{
-                marginTop: 14,
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 12,
-                alignItems: "center",
-                flexWrap: "wrap",
-                borderRadius: 16,
-                border: "1px solid rgba(11,31,51,0.08)",
-                background: "rgba(255,255,255,0.74)",
-                padding: 14,
-              }}
-            >
-              <div>
-                <div style={{ ...labelText(), marginBottom: 4 }}>Request form</div>
-                <div style={{ color: "#35516B", fontSize: 14, lineHeight: 1.6 }}>
-                  Open this when you are ready to return your request to the community.
-                </div>
-              </div>
-
-              <button
-                type="button"
-                disabled={!canOpenForm}
-                {...buttonGuardProps()}
-                onClick={() => {
-                  if (!canOpenForm) return;
-                  setFormOpen((prev) => !prev);
-                }}
+            {showInviteLauncher ? (
+              <div
                 style={{
-                  ...secondaryLink(),
-                  opacity: canOpenForm ? 1 : 0.62,
-                  cursor: canOpenForm ? "pointer" : "not-allowed",
+                  marginTop: 14,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  borderRadius: 16,
+                  border: "1px solid rgba(11,31,51,0.08)",
+                  background: "rgba(255,255,255,0.74)",
+                  padding: 14,
                 }}
               >
-                {inviteChecking
-                  ? "Checking"
-                  : !canOpenForm
-                    ? "Link needed"
-                    : formOpen
-                      ? "Collapse"
-                      : "Open"}
-              </button>
-            </div>
+                <div>
+                  <div style={{ ...labelText(), marginBottom: 4 }}>Request form</div>
+                  <div style={{ color: "#35516B", fontSize: 14, lineHeight: 1.6 }}>
+                    Open this when you are ready to return your request to the
+                    community.
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={!canOpenForm}
+                  {...buttonGuardProps()}
+                  onClick={() => {
+                    if (!canOpenForm) return;
+                    setFormOpen((prev) => !prev);
+                  }}
+                  style={{
+                    ...secondaryLink(),
+                    opacity: canOpenForm ? 1 : 0.62,
+                    cursor: canOpenForm ? "pointer" : "not-allowed",
+                  }}
+                >
+                  {inviteChecking ? "Checking" : formOpen ? "Collapse" : "Open"}
+                </button>
+              </div>
+            ) : null}
 
             {inviteChecking ? (
               <div style={{ marginTop: 18, ...noticeStyle("info") }}>
@@ -1026,26 +1059,12 @@ export default function JoinEntryPage() {
               </div>
             ) : null}
 
-            {!inviteCode ? (
-              <div style={{ marginTop: 18, ...noticeStyle("error") }}>
-                This join page does not contain a valid invite code yet. Ask the
-                person who invited you to send the full GSN invite link again.
-              </div>
-            ) : null}
-
-            {inviteBlocked ? (
+            {!inviteCode || inviteBlocked ? (
               <div style={{ marginTop: 18, ...noticeStyle("error") }}>
                 <div style={{ fontWeight: 1000, marginBottom: 8 }}>
-                  Fresh invite link needed.
+                  {inviteBlocked ? "Fresh invite link needed." : "Join link needed."}
                 </div>
-                <div>
-                  {invitePreviewMessage ||
-                    "This invite link is no longer valid or was not copied fully."}
-                </div>
-                <div style={{ marginTop: 10 }}>
-                  Ask the person who invited you to open GSN and send the latest
-                  join link again.
-                </div>
+                <div>{inviteHelpMessage}</div>
               </div>
             ) : null}
 
@@ -1084,7 +1103,7 @@ export default function JoinEntryPage() {
                   {String(
                     success?.community_name ||
                       success?.request?.clan_name ||
-                      communityName ||
+                      resolvedCommunityName ||
                       "Community not stated yet"
                   )}
                 </div>

@@ -244,7 +244,7 @@ def join_clan_via_invite(
 
     invite = (
         db.query(ClanInvite)
-        .filter(ClanInvite.invite_code == code)
+        .filter(ClanInvite.code == code)
         .first()
     )
     if invite is None:
@@ -305,7 +305,7 @@ def audit_invite(
         "clan_id": int(invite.clan_id),
         "clan_name": getattr(clan, "name", None) if clan else None,
         "created_by_user_id": getattr(invite, "created_by_user_id", None),
-        "invite_code": str(getattr(invite, "invite_code", "")),
+        "invite_code": str(getattr(invite, "code", "")),
         "created_at": created_at.isoformat(),
         "expires_at": expires_at.isoformat(),
         "is_expired": is_invite_expired(invite),

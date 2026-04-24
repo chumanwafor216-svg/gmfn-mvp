@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
+from app.api.routes import clans as clans_route
 from app.db.database import SessionLocal
 from app.db.models import Clan, ClanInvite, ClanJoinRequest, ClanMembership, User
 
@@ -124,6 +125,63 @@ def test_public_join_invite_preview_reports_invalid_invite_without_throwing(clie
     assert data["valid"] is False
     assert data["status"] == "not_found"
     assert "fresh GSN invite link" in data["message"]
+
+
+def test_public_join_invite_preview_does_not_treat_legacy_clan_invite_code_as_live_share_link(client):
+    _seed_join_context(invite_code="legacy-code")
+
+    res = client.get("/clans/join-invite/preview?code=legacy-code")
+
+    assert res.status_code == 200, res.text
+    data = res.json()
+    assert data["ok"] is True
+    assert data["valid"] is False
+    assert data["status"] == "not_found"
+    assert "fresh GSN invite link" in data["message"]
+
+
+def test_public_join_invite_preview_recovers_latest_invite_from_community_code(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="latest-live-code",
+                is_active=True,
+                max_uses=100,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    res = client.get(
+        "/clans/join-invite/preview?code=missing-code&community_code=GMFN-C-000001"
+    )
+
+    assert res.status_code == 200, res.text
+    data = res.json()
+    assert data["ok"] is True
+    assert data["valid"] is True
+    assert data["status"] == "ready"
+    assert data["invite_code"] == "latest-live-code"
+    assert "latest live invitation" in data["message"].lower()
+
+
+def test_shareable_join_invite_max_uses_defaults_to_reusable_value():
+    clan = Clan(id=1, invite_max_uses=None)
+
+    assert clans_route._shareable_join_invite_max_uses(clan, None) == 100
+
+
+def test_shareable_join_invite_max_uses_respects_requested_value():
+    clan = Clan(id=1, invite_max_uses=None)
+
+    assert clans_route._shareable_join_invite_max_uses(clan, 5) == 5
 
 
 def test_public_join_request_accepts_short_lived_invite_during_daily_pilot_window(client):

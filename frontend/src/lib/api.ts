@@ -782,9 +782,17 @@ export async function submitJoinRequest(payload: {
   return httpJson("/clans/join-requests", "POST", payload);
 }
 
-export async function getJoinInvitePreview(code: string): Promise<any> {
+export async function getJoinInvitePreview(
+  code: string,
+  options?: {
+    community_code?: string | null;
+  }
+): Promise<any> {
   return httpJson(
-    `/clans/join-invite/preview${buildQuery({ code })}`,
+    `/clans/join-invite/preview${buildQuery({
+      code,
+      community_code: options?.community_code ?? undefined,
+    })}`,
     "GET",
     undefined,
     { quiet: true }

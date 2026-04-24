@@ -11,6 +11,7 @@ import {
   safeCopy,
   setSelectedClanId,
 } from "../lib/api";
+import { normalizedJoinInviteUrl } from "../lib/joinLinks";
 import { navigateWithOrigin } from "../lib/nav";
 import { publicFrontendUrl } from "../lib/publicLinks";
 
@@ -331,7 +332,7 @@ export default function MarketplaceWorkspacePage() {
         if (inviteRes.status === "fulfilled") {
           setInviteInfo(inviteRes.value || null);
         } else {
-          throw new Error("Unable to load community workspace.");
+          throw new Error("Unable to load community access view.");
         }
 
         if (joinRes.status === "fulfilled") {
@@ -354,7 +355,7 @@ export default function MarketplaceWorkspacePage() {
           setPrivateBlocksLocked(true);
         }
       } catch (e: any) {
-        setErr(String(e?.message || e || "Unable to load community page."));
+        setErr(String(e?.message || e || "Unable to load community access page."));
       } finally {
         setBusy(false);
       }
@@ -401,19 +402,11 @@ export default function MarketplaceWorkspacePage() {
   }, [inviteInfo]);
 
   const inviteLink = useMemo(() => {
-    return publicFrontendUrl(
-      safeStr(
-        inviteInfo?.invite_url ||
-          inviteInfo?.url ||
-          inviteInfo?.link ||
-          inviteInfo?.invite_link ||
-          ""
-      )
-    );
+    return normalizedJoinInviteUrl(inviteInfo);
   }, [inviteInfo]);
 
   const inviteCode = useMemo(() => {
-    return safeStr(inviteInfo?.invite_code || inviteInfo?.code || "");
+    return safeStr(inviteInfo?.code || inviteInfo?.invite_code || "");
   }, [inviteInfo]);
 
   const shopViewLink = useMemo(() => {
@@ -551,13 +544,17 @@ export default function MarketplaceWorkspacePage() {
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", paddingBottom: 36 }}>
-      <PageTopNav sectionLabel="Community Workspace" title={communityName} subtitle="Community workspace." />
+      <PageTopNav
+        sectionLabel="Community Access"
+        title={communityName}
+        subtitle="Invite and visibility tools for one community."
+      />
 
       <ExplainToggle
         label="What this screen does"
-        what="This screen keeps one community's working picture together, including member visibility, invites, demand, spotlight, and shop mapping."
-        why="It gives you a focused community workspace instead of pushing you straight into the wider marketplace."
-        next="Start with the community profile, then move into the specific community action or route you need from here."
+        what="This screen keeps one community's access, visibility, alerts, and member-to-shop picture together."
+        why="It supports one community's access layer. Marketplace still remains the live trade, money, and support surface for that same community."
+        next="Use this page for invite, visibility, alert, or member mapping tasks, then return to Marketplace when the job becomes live community work."
         tone="light"
         style={{ marginTop: 18 }}
       />
@@ -595,9 +592,9 @@ export default function MarketplaceWorkspacePage() {
 
         <ExplainToggle
           label="What this does"
-          what="This community profile block shows the core identity of the current community before you move into invites, demand, shops, or member work."
-          why="It helps you stay grounded in the right community context instead of treating the workspace like a generic marketplace page."
-          next="Read the community profile first, then choose the specific community route you need."
+          what="This community profile block shows the core identity of the current community before you move into access, alerts, shares, or member mapping."
+          why="It keeps this page anchored to one community instead of behaving like a generic second Marketplace."
+          next="Read the community profile first, then choose the exact access or visibility task you need."
           tone="light"
           style={{ marginTop: 14 }}
         />
@@ -653,9 +650,9 @@ export default function MarketplaceWorkspacePage() {
 
             <ExplainToggle
               label="What this does"
-              what="This identity block keeps the community name, counts, and description visible while you work inside this one community."
-              why="It helps you stay anchored in the right community before you move into invites, alerts, demand, or shop routes."
-              next="Read this identity block first if you need to confirm where you are working."
+              what="This identity block keeps the community name, counts, and description visible while you work on this community's access and visibility layer."
+              why="It helps you stay anchored in the right community before you move into invite, alert, member, or shop-facing tasks."
+              next="Read this identity block first whenever you need to confirm which community this access view belongs to."
               tone="light"
               style={{ marginTop: 12, marginBottom: 12 }}
             />
@@ -697,7 +694,7 @@ export default function MarketplaceWorkspacePage() {
               }}
             >
               {communityDescription ||
-                "This keeps one community's invite links, money and support routes, demand, spotlight, and member-to-shop mapping clear."}
+                "This keeps one community's invite, alert, member, and shop-facing visibility tasks together without turning this page into the full Marketplace."}
             </div>
 
             <div
@@ -709,10 +706,10 @@ export default function MarketplaceWorkspacePage() {
               }}
             >
               <OriginLink to={communityHomeLink} style={btn(false)}>
-                Community Home
+                Back to Community Home
               </OriginLink>
               <OriginLink to="/app/marketplace" style={btn(false)}>
-                Marketplace
+                Open Marketplace
               </OriginLink>
               <OriginLink to="/app/clans" style={btn(false)}>
                 Create Community
@@ -812,7 +809,7 @@ export default function MarketplaceWorkspacePage() {
             flexWrap: "wrap",
           }}
         >
-          <div style={sectionTitle()}>Action layer</div>
+          <div style={sectionTitle()}>Access & sharing</div>
           <button
             type="button"
             onClick={() => setInviteOpen((v) => !v)}
@@ -911,7 +908,18 @@ export default function MarketplaceWorkspacePage() {
 
             <div style={softCard("#F8FBFF")}>
               <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>
-                Localized routes
+                Route handoff
+              </div>
+
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#64748B",
+                  lineHeight: 1.7,
+                }}
+              >
+                These buttons hand you back into the live community routes.
+                They do not replace Marketplace.
               </div>
 
               <div
@@ -923,10 +931,10 @@ export default function MarketplaceWorkspacePage() {
                 }}
               >
                 <OriginLink to="/app/demand-box" style={btn(false)}>
-                  Demand
+                  Open Demand
                 </OriginLink>
                 <OriginLink to="/app/marketplace" style={btn(false)}>
-                  Spotlight
+                  Open Marketplace
                 </OriginLink>
                 <OriginLink to="/app/clans" style={btn(false)}>
                   Create Community
@@ -1001,7 +1009,7 @@ export default function MarketplaceWorkspacePage() {
             flexWrap: "wrap",
           }}
         >
-          <div style={sectionTitle()}>Money & Support</div>
+          <div style={sectionTitle()}>Money & support handoff</div>
           <button
             type="button"
             onClick={() => setMoneyOpen((v) => !v)}

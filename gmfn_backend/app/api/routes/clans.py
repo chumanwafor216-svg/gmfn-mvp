@@ -32,6 +32,7 @@ from app.services.invites_service import (
 router = APIRouter(prefix="/clans", tags=["clans"])
 
 JOIN_APPROVAL_RATIO = Decimal("0.40")
+DEFAULT_SHAREABLE_JOIN_INVITE_MAX_USES = 100
 JOIN_INVITATION_NOT_FOUND = (
     "This invitation link is no longer valid or was not copied fully. "
     "Ask the person who invited you to send a fresh GSN invite link."
@@ -283,6 +284,21 @@ def _normalize_invite_max_uses(max_uses: Optional[int]) -> Optional[int]:
     return max_uses
 
 
+def _shareable_join_invite_max_uses(
+    clan: Clan,
+    requested_max_uses: Optional[int],
+) -> int:
+    requested = _normalize_invite_max_uses(requested_max_uses)
+    if requested is not None:
+        return int(requested)
+
+    clan_setting = _normalize_invite_max_uses(getattr(clan, "invite_max_uses", None))
+    if clan_setting is not None:
+        return int(clan_setting)
+
+    return DEFAULT_SHAREABLE_JOIN_INVITE_MAX_USES
+
+
 def _minimum_invite_ttl_hours() -> int:
     raw = str(os.getenv("GMFN_JOIN_INVITE_MIN_TTL_HOURS") or "24").strip()
     try:
@@ -369,6 +385,77 @@ def _is_clan_invite_expired(invite: ClanInvite) -> bool:
     if expires_at is None:
         return False
     return expires_at < datetime.now(timezone.utc)
+
+
+def _is_clan_invite_used_up(invite: ClanInvite) -> bool:
+    max_uses = getattr(invite, "max_uses", None)
+    uses = int(getattr(invite, "uses", 0) or 0)
+    return max_uses is not None and uses >= int(max_uses)
+
+
+def _latest_usable_clan_invite(
+    db: Session,
+    *,
+    clan_id: int,
+) -> Optional[ClanInvite]:
+    rows = (
+        db.query(ClanInvite)
+        .filter(ClanInvite.clan_id == int(clan_id))
+        .order_by(ClanInvite.created_at.desc(), ClanInvite.id.desc())
+        .all()
+    )
+
+    for invite in rows:
+        if not bool(getattr(invite, "is_active", True)):
+            continue
+        if getattr(invite, "revoked_at", None) is not None:
+            continue
+        if _is_clan_invite_expired(invite):
+            continue
+        if _is_clan_invite_used_up(invite):
+            continue
+        return invite
+
+    return None
+
+
+def _invite_matches_share_policy(
+    invite: ClanInvite,
+    *,
+    desired_max_uses: int,
+    strict: bool,
+) -> bool:
+    current_max_uses = getattr(invite, "max_uses", None)
+    try:
+        current_value = int(current_max_uses)
+    except (TypeError, ValueError):
+        return False
+
+    desired_value = int(desired_max_uses)
+    if strict:
+        return current_value == desired_value
+    return current_value >= desired_value
+
+
+def _clan_from_community_code(
+    db: Session,
+    community_code: Optional[str],
+) -> Optional[Clan]:
+    safe_code = _safe_str(community_code).upper()
+    if not safe_code:
+        return None
+
+    clan = db.query(Clan).filter(Clan.community_code == safe_code).first()
+    if clan is not None:
+        return clan
+
+    prefix = "GMFN-C-"
+    if safe_code.startswith(prefix):
+        suffix = safe_code[len(prefix) :].strip()
+        if suffix.isdigit():
+            return db.get(Clan, int(suffix))
+
+    return None
 
 
 def _ensure_user_gmfn_id(db: Session, user: User) -> User:
@@ -533,23 +620,65 @@ def _frontend_community_join_link(
     inviter: Optional[User] = None,
 ) -> str:
     origin = _frontend_origin(request)
-
-    params = {
-        "invite": invite_code,
-        "community_name": _safe_str(clan.name),
-        "community_code": _community_code(clan.id),
-    }
-
-    marketplace_name = _safe_str(getattr(clan, "marketplace_name", None))
-    if marketplace_name:
-        params["marketplace_name"] = marketplace_name
-
-    inviter_name = _member_display(inviter)
-    if inviter_name:
-        params["inviter_name"] = inviter_name
-
     safe_invite_code = quote(str(invite_code or "").strip(), safe="")
-    return f"{origin}/start/join/{safe_invite_code}?{urlencode(params)}"
+    query_params = {
+        "invite": str(invite_code or "").strip(),
+        "community_code": _community_code(clan.id, clan=clan),
+        "community_name": _safe_str(getattr(clan, "name", None)),
+        "marketplace_name": _safe_str(getattr(clan, "marketplace_name", None)),
+        "inviter_name": _member_display(inviter),
+    }
+    query = urlencode({k: v for k, v in query_params.items() if _safe_str(v)})
+    return f"{origin}/start/join/{safe_invite_code}?{query}" if query else f"{origin}/start/join/{safe_invite_code}"
+
+
+def _ready_join_preview_for_clan(
+    db: Session,
+    *,
+    clan: Clan,
+    message: str,
+) -> Optional[dict[str, Any]]:
+    latest_invite = _latest_usable_clan_invite(db, clan_id=int(clan.id))
+    if latest_invite is not None:
+        invited_by_user_id = getattr(latest_invite, "created_by_user_id", None)
+        return _invite_preview_payload(
+            valid=True,
+            status="ready",
+            message=message,
+            clan=clan,
+            invite_row=latest_invite,
+            invited_by_user_id=(
+                int(invited_by_user_id) if invited_by_user_id is not None else None
+            ),
+        )
+
+    clan = _ensure_invite_expiry(db, clan, days=None)
+    invite_max_uses = getattr(clan, "invite_max_uses", None)
+    invite_uses = int(getattr(clan, "invite_uses", 0) or 0)
+    if _is_invite_expired(clan):
+        return None
+    if invite_max_uses is not None and invite_uses >= int(invite_max_uses):
+        return None
+
+    inviter_membership = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.clan_id == int(clan.id),
+            ClanMembership.left_at.is_(None),
+        )
+        .order_by(ClanMembership.created_at.asc(), ClanMembership.id.asc())
+        .first()
+    )
+
+    return _invite_preview_payload(
+        valid=True,
+        status="ready",
+        message=message,
+        clan=clan,
+        invited_by_user_id=(
+            int(inviter_membership.user_id) if inviter_membership else None
+        ),
+    )
 
 
 def _frontend_activation_link(request: Request, gmfn_id: str) -> str:
@@ -921,7 +1050,7 @@ def create_invite(
         raise HTTPException(status_code=403, detail="Not allowed")
 
     days_n = _normalize_invite_days(days)
-    max_uses_n = _normalize_invite_max_uses(max_uses)
+    max_uses_n = _shareable_join_invite_max_uses(clan, max_uses)
 
     now = datetime.now(timezone.utc)
     expires_at = now + timedelta(days=days_n)
@@ -983,53 +1112,79 @@ def get_invite_link(
     if int(clan.id) != int(clan_id):
         raise HTTPException(status_code=403, detail="Not allowed")
 
-    clan = _ensure_invite_expiry(db, clan, days=days)
-
-    max_uses_norm = _normalize_invite_max_uses(max_uses)
+    max_uses_norm = _shareable_join_invite_max_uses(clan, max_uses)
+    strict_max_uses = max_uses is not None
     if max_uses is not None:
+        clan = _ensure_invite_expiry(db, clan, days=days)
         clan.invite_max_uses = max_uses_norm
         if clan.invite_uses is None:
             clan.invite_uses = 0
         db.commit()
         db.refresh(clan)
 
-    share_link = _frontend_community_join_link(
-        request,
-        clan=clan,
-        invite_code=clan.invite_code,
-        inviter=current_user,
-    )
+    latest_invite = _latest_usable_clan_invite(db, clan_id=int(clan.id))
 
-    return {
-        "clan_id": int(clan.id),
-        "community_code": _community_code(clan.id),
-        "community_name": clan.name,
-        "marketplace_name": getattr(clan, "marketplace_name", None),
-        "invited_by_user_id": int(current_user.id),
-        "invited_by_email": getattr(current_user, "email", None),
-        "invited_by_display": _member_display(current_user),
-        "invite_code": clan.invite_code,
-        "invite_created_at": clan.invite_created_at,
-        "invite_expires_at": clan.invite_expires_at,
-        "invite_max_uses": clan.invite_max_uses,
-        "invite_uses": int(getattr(clan, "invite_uses", 0) or 0),
-        "invite_link": share_link,
-        "invite_url": share_link,
-        "url": share_link,
-        "link": share_link,
-        "share_link": share_link,
-        "api_link": api_join_link(request, clan.invite_code),
-        "invite_text": _build_invite_text(
+    if latest_invite is not None and not _invite_matches_share_policy(
+        latest_invite,
+        desired_max_uses=max_uses_norm,
+        strict=strict_max_uses,
+    ):
+        latest_invite = None
+
+    if latest_invite is None:
+        days_n = _normalize_invite_days(days)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=days_n)
+        latest_invite = create_clan_invite(
+            db,
+            clan_id=int(clan.id),
+            created_by_user=current_user,
+            expires_at=expires_at,
+            max_uses=max_uses_norm,
+        )
+
+    if latest_invite is not None:
+        share_link = _frontend_community_join_link(
+            request,
             clan=clan,
-            invite_link=share_link,
+            invite_code=latest_invite.code,
             inviter=current_user,
-        ),
-    }
+        )
+
+        return {
+            "clan_id": int(clan.id),
+            "community_code": _community_code(clan.id),
+            "community_name": clan.name,
+            "marketplace_name": getattr(clan, "marketplace_name", None),
+            "invited_by_user_id": int(current_user.id),
+            "invited_by_email": getattr(current_user, "email", None),
+            "invited_by_display": _member_display(current_user),
+            "invite_code": latest_invite.code,
+            "invite_created_at": latest_invite.created_at,
+            "invite_expires_at": latest_invite.expires_at,
+            "invite_max_uses": latest_invite.max_uses,
+            "invite_uses": int(getattr(latest_invite, "uses", 0) or 0),
+            "invite_status": "ready",
+            "invite_source": "clan_invite",
+            "invite_link": share_link,
+            "invite_url": share_link,
+            "url": share_link,
+            "link": share_link,
+            "share_link": share_link,
+            "api_link": api_join_link(request, latest_invite.code),
+            "invite_text": _build_invite_text(
+                clan=clan,
+                invite_link=share_link,
+                inviter=current_user,
+            ),
+        }
+
+    raise HTTPException(status_code=500, detail="Could not prepare a live GSN invite link")
 
 
 @router.get("/join-invite/preview", response_model=dict[str, Any])
 def preview_join_invite(
     code: str,
+    community_code: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
     invite_code = (code or "").strip()
@@ -1057,6 +1212,13 @@ def preview_join_invite(
             )
 
         if not bool(invite_row.is_active) or invite_row.revoked_at is not None:
+            recovered = _ready_join_preview_for_clan(
+                db,
+                clan=clan,
+                message="A newer live invitation was found for this community. You can continue with your join request.",
+            )
+            if recovered and _safe_str(recovered.get("invite_code")) != invite_code:
+                return recovered
             return _invite_preview_payload(
                 valid=False,
                 status="inactive",
@@ -1067,6 +1229,13 @@ def preview_join_invite(
             )
 
         if _is_clan_invite_expired(invite_row):
+            recovered = _ready_join_preview_for_clan(
+                db,
+                clan=clan,
+                message="A newer live invitation was found for this community. You can continue with your join request.",
+            )
+            if recovered and _safe_str(recovered.get("invite_code")) != invite_code:
+                return recovered
             return _invite_preview_payload(
                 valid=False,
                 status="expired",
@@ -1079,6 +1248,13 @@ def preview_join_invite(
         invite_max_uses = getattr(invite_row, "max_uses", None)
         invite_uses = int(getattr(invite_row, "uses", 0) or 0)
         if invite_max_uses is not None and invite_uses >= int(invite_max_uses):
+            recovered = _ready_join_preview_for_clan(
+                db,
+                clan=clan,
+                message="A newer live invitation was found for this community. You can continue with your join request.",
+            )
+            if recovered and _safe_str(recovered.get("invite_code")) != invite_code:
+                return recovered
             return _invite_preview_payload(
                 valid=False,
                 status="usage_limit",
@@ -1097,52 +1273,20 @@ def preview_join_invite(
             invited_by_user_id=int(invite_row.created_by_user_id),
         )
 
-    clan = db.query(Clan).filter(Clan.invite_code == invite_code).first()
-    if not clan:
-        return _invite_preview_payload(
-            valid=False,
-            status="not_found",
-            message=JOIN_INVITATION_NOT_FOUND,
+    community_clan = _clan_from_community_code(db, community_code)
+    if community_clan is not None:
+        recovered = _ready_join_preview_for_clan(
+            db,
+            clan=community_clan,
+            message="We found the latest live invitation for this community. You can continue with your join request.",
         )
-
-    clan = _ensure_invite_expiry(db, clan, days=None)
-
-    if _is_invite_expired(clan):
-        return _invite_preview_payload(
-            valid=False,
-            status="expired",
-            message="This invitation has expired. Ask for a fresh GSN invite link.",
-            clan=clan,
-        )
-
-    invite_max_uses = getattr(clan, "invite_max_uses", None)
-    invite_uses = int(getattr(clan, "invite_uses", 0) or 0)
-    if invite_max_uses is not None and invite_uses >= int(invite_max_uses):
-        return _invite_preview_payload(
-            valid=False,
-            status="usage_limit",
-            message="This invitation has already been used enough times. Ask for a fresh GSN invite link.",
-            clan=clan,
-        )
-
-    inviter_membership = (
-        db.query(ClanMembership)
-        .filter(
-            ClanMembership.clan_id == int(clan.id),
-            ClanMembership.left_at.is_(None),
-        )
-        .order_by(ClanMembership.created_at.asc(), ClanMembership.id.asc())
-        .first()
-    )
+        if recovered is not None:
+            return recovered
 
     return _invite_preview_payload(
-        valid=True,
-        status="ready",
-        message="Invite is ready. You can send your join request for community review.",
-        clan=clan,
-        invited_by_user_id=(
-            int(inviter_membership.user_id) if inviter_membership else None
-        ),
+        valid=False,
+        status="not_found",
+        message=JOIN_INVITATION_NOT_FOUND,
     )
 
 

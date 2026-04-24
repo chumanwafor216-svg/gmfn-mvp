@@ -3,6 +3,7 @@ import DomainIntroToggle from "../components/DomainIntroToggle";
 import ExplainToggle from "../components/ExplainToggle";
 import GSNBrandMark from "../components/GSNBrandMark";
 import SystemPictureFrame from "../components/SystemPictureFrame";
+import { normalizedJoinInviteUrl } from "../lib/joinLinks";
 import { navigateWithOrigin } from "../lib/nav";
 import { publicFrontendUrl } from "../lib/publicLinks";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -218,22 +219,19 @@ const DEFAULT_SECTION_STATE: SectionState = {
 };
 
 const MARKETPLACE_HELP_BODY =
-  "Before GSN, my shop only moved as far as people knew me. If somebody trusted me, business was easier. If somebody knew my family, my group, my church, my market people, or someone who could speak for me, I had a chance. But once I moved outside that circle, I had to start explaining myself again. GSN changes that.";
+  "Marketplace is where one selected community becomes active. After Community Home helps me choose where I am, this is the place where the local shop face, member list, outward links, money rails, and support routes for that one community should work together.";
 
 const MARKETPLACE_HELP_BULLETS = [
-  "Now my shop is not just a name in one place. My shop can carry my community identity, my GSN ID, and my trust record with it.",
-  "When I show my Shop Gallery, people can see what I sell and where I belong. They are not just seeing pictures. They are seeing a shop connected to a real person, a real community, and a trust record that can be checked.",
-  "If I want to show something openly, I can use my shop. If I want to show something privately, I can use Vault. I do not have to expose everything to everybody. A serious buyer can ask for access, and I can decide what to show.",
-  "If I want more people to notice my goods or services, Spotlight can help. Paid Spotlight can push the right product further, especially when I need attention beyond ordinary browsing.",
-  "If people are looking for something, Demand Box helps the need come to the surface. Instead of waiting and hoping, the marketplace can show what people are asking for and who may be able to answer.",
-  "If I want my shop to travel outside my first circle, repost links can help. The link can move, but it still carries the right shop and marketplace identity back with it.",
-  "The most important part is trust. In normal life, people buy on credit or release goods because someone says, 'I know this person.' But that person may not always be there to speak for me. With GSN, my TrustSlip can speak with me.",
-  "Before someone releases goods, gives support, or accepts risk, they can check my TrustSlip. They can see that I am not just a stranger talking. I have a record. I have a community. I have proof that follows me.",
-  "So Marketplace is not only for displaying goods. It helps my shop travel with trust. It helps people see me, check me, and deal with me with more confidence.",
+  "Community Home gathers my groups. Marketplace lets me work inside the one group I have opened.",
+  "The links here belong to this marketplace only. If I invite someone, show the public marketplace face, or share my shop from here, the link should still return to this same community context.",
+  "The member and shop readings here are local. They tell me who is visible in this marketplace now, not across every community I belong to.",
+  "The money and support blocks here are the lighter operating surface. I can confirm readiness here, then continue into the deeper Finance or Loans records when needed.",
+  "Shop Control prepares the owner side of my one GSN shop, but Marketplace is where that shop meets this selected community.",
+  "Demand, Spotlight, Vault, and outward links all make more sense when they stay tied to one marketplace instead of mixing every group together.",
 ];
 
 const MARKETPLACE_HELP_NOTE =
-  "GSN turns informal community vouching into portable, verifiable trust evidence, especially for people who are normally invisible to formal credit systems.";
+  "Simple rule: Community Home chooses the group. Marketplace runs the live work inside that chosen group.";
 
 const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
   {
@@ -257,7 +255,7 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
   {
     id: "finance",
     label: "Check money record",
-    detail: "Review this marketplace's money picture.",
+    detail: "Review the money picture for this selected marketplace.",
     technical: "Finance",
     to: "/app/finance",
     tone: "secondary",
@@ -284,7 +282,7 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
   {
     id: "invite",
     label: "Invite people",
-    detail: "Create or use marketplace-owned links.",
+    detail: "Open links owned by this marketplace.",
     technical: "Marketplace links",
     to: "#marketplace-owned-links",
     tone: "soft",
@@ -330,8 +328,8 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
   },
   {
     id: "community",
-    label: "Choose my group",
-    detail: "Return to the community list.",
+    label: "Switch community",
+    detail: "Return to Community Home and choose another group.",
     technical: "Community Home",
     to: "/app/community",
     tone: "soft",
@@ -572,162 +570,8 @@ function getPoolCurrency(payload: any): string {
   );
 }
 
-const PUBLIC_FRONTEND_ORIGIN = "https://gmfn-frontend.onrender.com";
-
-function envPublicFrontendOrigin(): string {
-  const env =
-    (typeof import.meta !== "undefined" &&
-      (import.meta as any)?.env &&
-      ((import.meta as any).env.VITE_PUBLIC_FRONTEND_URL ||
-        (import.meta as any).env.VITE_FRONTEND_BASE_URL ||
-        (import.meta as any).env.VITE_FRONTEND_ORIGIN)) ||
-    "";
-
-  return String(env || "").trim().replace(/\/+$/, "");
-}
-
-function isPrivateShareHost(hostname: string): boolean {
-  const host = String(hostname || "").trim().toLowerCase();
-  if (
-    host === "localhost" ||
-    host === "127.0.0.1" ||
-    host === "0.0.0.0" ||
-    host === "::1"
-  ) {
-    return true;
-  }
-  if (host.startsWith("192.168.") || host.startsWith("10.")) {
-    return true;
-  }
-  const parts = host.split(".");
-  if (parts.length >= 2 && parts[0] === "172") {
-    const second = Number(parts[1]);
-    return Number.isInteger(second) && second >= 16 && second <= 31;
-  }
-  return false;
-}
-
-function frontendOrigin(): string {
-  const configured = envPublicFrontendOrigin();
-  if (typeof window === "undefined") return configured || PUBLIC_FRONTEND_ORIGIN;
-
-  const origin = String(window.location.origin || "")
-    .trim()
-    .replace(/\/+$/, "");
-
-  try {
-    const url = new URL(origin);
-    if (!isPrivateShareHost(url.hostname)) {
-      return origin;
-    }
-  } catch {
-    // Fall back below.
-  }
-
-  return configured || PUBLIC_FRONTEND_ORIGIN;
-}
-
-function inviteCodeFromUrl(raw: string): string {
-  const text = safeStr(raw);
-  if (!text) return "";
-
-  try {
-    const url = new URL(text, frontendOrigin());
-    const queryCode = firstTruthy(
-      url.searchParams.get("invite_code"),
-      url.searchParams.get("invite"),
-      url.searchParams.get("join_code"),
-      url.searchParams.get("code")
-    );
-    if (queryCode) return queryCode;
-
-    const parts = url.pathname.split("/").filter(Boolean);
-    const startIndex = parts.findIndex(
-      (part, index) =>
-        part === "join" &&
-        (parts[index - 1] === "start" || parts[index - 1] === "get-invite")
-    );
-    if (startIndex >= 0 && parts[startIndex + 1]) {
-      return decodeURIComponent(parts[startIndex + 1]);
-    }
-
-    const inviteIndex = parts.findIndex(
-      (part) => part === "invite" || part === "get-invite"
-    );
-    if (inviteIndex >= 0 && parts[inviteIndex + 1]) {
-      return decodeURIComponent(parts[inviteIndex + 1]);
-    }
-  } catch {
-    // Fall through to payload-based fallback.
-  }
-
-  return "";
-}
-
-function buildMarketplaceStartJoinLink(payload: any, directLink: string): string {
-  const code = firstTruthy(
-    payload?.code,
-    payload?.invite_code,
-    inviteCodeFromUrl(directLink)
-  );
-
-  if (!code) return safeStr(directLink);
-
-  const params = new URLSearchParams();
-
-  try {
-    if (directLink) {
-      const url = new URL(directLink, frontendOrigin());
-      url.searchParams.forEach((value, key) => {
-        if (key !== "entry" && key !== "flow" && key !== "mode") {
-          params.set(key, value);
-        }
-      });
-    }
-  } catch {
-    // Keep going with payload fields below.
-  }
-
-  const payloadFields: Array<[string, string]> = [
-    ["invite", code],
-    ["community_name", firstTruthy(payload?.community_name, payload?.clan_name)],
-    ["community_code", firstTruthy(payload?.community_code, payload?.clan_code)],
-    ["marketplace_name", safeStr(payload?.marketplace_name)],
-    [
-      "inviter_name",
-      firstTruthy(payload?.invited_by_display, payload?.inviter_name),
-    ],
-  ];
-
-  payloadFields.forEach(([key, value]) => {
-    if (value && !params.has(key)) {
-      params.set(key, value);
-    }
-  });
-
-  const query = params.toString();
-  return `${frontendOrigin()}/start/join/${encodeURIComponent(code)}${
-    query ? `?${query}` : ""
-  }`;
-}
-
 function getInviteUrl(payload: any): string {
-  const direct = firstTruthy(
-    payload?.share_link,
-    payload?.invite_url,
-    payload?.invite_link,
-    payload?.url,
-    payload?.link
-  );
-
-  if (direct) return buildMarketplaceStartJoinLink(payload, direct);
-
-  const code = firstTruthy(payload?.code, payload?.invite_code);
-  if (code) {
-    return buildMarketplaceStartJoinLink(payload, "");
-  }
-
-  return "";
+  return normalizedJoinInviteUrl(payload);
 }
 
 function apiBase(): string {
@@ -2685,6 +2529,28 @@ export default function MarketplacePage() {
     return () => window.clearTimeout(timer);
   }, [location.hash, activeCommunityId, currentGmfnId, loanAmount, loanPurpose]);
 
+  useEffect(() => {
+    const hash = safeStr(location.hash).replace(/^#/, "");
+    if (hash !== "marketplace-owned-links") return;
+
+    setSectionsOpen((prev) => {
+      if (prev.tools) return prev;
+      return {
+        ...prev,
+        tools: true,
+      };
+    });
+
+    const timer = window.setTimeout(() => {
+      document.getElementById("marketplace-owned-links")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [location.hash]);
+
   const memberName = useMemo(() => {
     return (
       firstTruthy(
@@ -3315,7 +3181,7 @@ export default function MarketplacePage() {
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <DomainIntroToggle
-        title="How Marketplace Helps Your Shop Travel"
+        title="How Marketplace works inside one community"
         body={MARKETPLACE_HELP_BODY}
         bullets={MARKETPLACE_HELP_BULLETS}
         note={MARKETPLACE_HELP_NOTE}
@@ -3642,16 +3508,16 @@ export default function MarketplacePage() {
       </section>
 
       <section style={{ ...pageCard("#FFFFFF"), order: 2 }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
             gap: 12,
             alignItems: "center",
             flexWrap: "wrap",
           }}
         >
-          <div style={sectionLabel()}>What do you want to do next?</div>
+          <div style={sectionLabel()}>Marketplace routes</div>
 
           <button
             type="button"
@@ -3672,8 +3538,9 @@ export default function MarketplacePage() {
                 marginBottom: 12,
               }}
             >
-              Say it simply, like loan, deposit, withdraw, shop, invite, or
-              trust. GSN will point you to the closest place.
+              Say the job you want to do inside this one marketplace, like
+              loan, deposit, withdraw, shop, invite, or trust. GSN will point
+              you to the closest place.
             </div>
 
             <form
@@ -3690,7 +3557,7 @@ export default function MarketplacePage() {
               <input
                 value={intentQuery}
                 onChange={(event) => setIntentQuery(event.target.value)}
-                placeholder="Try: loan, deposit, withdraw, shop, invite..."
+                placeholder="Try: loan, deposit, withdraw, shop, invite in this marketplace..."
                 aria-label="Type what you want to do next"
                 style={{
                   ...inputStyle(),
@@ -3799,8 +3666,8 @@ export default function MarketplacePage() {
           <div>
             <div style={sectionLabel()}>Money route detail</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              A slower view of pay-in, payout, and Finance readiness for this
-              marketplace.
+              This marketplace's local money rails and the handoff into the
+              fuller Finance record.
             </div>
           </div>
 
@@ -4118,11 +3985,11 @@ export default function MarketplacePage() {
               }}
             >
               <div>
-                <div style={sectionLabel()}>Marketplace-owned links</div>
+                <div style={sectionLabel()}>Outgoing links</div>
                 <div style={{ marginTop: 8, ...helperText() }}>
-                  These links carry this community identity outward. If someone
-                  opens the join link from WhatsApp, the link still knows which
-                  marketplace invited them.
+                  Use one clear link for each job: invite someone to join, show
+                  this marketplace, or show your shop. Each link carries this
+                  community identity back home.
                 </div>
               </div>
 
