@@ -1422,18 +1422,21 @@ export default function CommunityHomePage() {
   }
 
   function openCommunityShopControl(
-    event: React.SyntheticEvent<HTMLElement> | undefined
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    targetId = "community-home-shop-control"
   ) {
     consumeCommunityButtonEvent(event);
     setShopControlOpenSignal((prev) => prev + 1);
 
     if (typeof document !== "undefined") {
       window.setTimeout(() => {
-        const el = document.getElementById("community-home-shop-control");
+        const el =
+          document.getElementById(targetId) ||
+          document.getElementById("community-home-shop-control");
         if (el && typeof el.scrollIntoView === "function") {
           el.scrollIntoView({ behavior: "smooth", block: "start" });
         }
-      }, 0);
+      }, targetId === "community-home-shop-control" ? 0 : 48);
     }
   }
 
@@ -2508,22 +2511,40 @@ function communityButtonGuardProps(): Pick<
                   type="button"
                   {...communityButtonGuardProps()}
                   onClick={(event) =>
+                    openCommunityShopControl(
+                      event,
+                      "community-shop-control-owner-shortcuts"
+                    )
+                  }
+                  style={actionBtn("primary")}
+                >
+                  Open Owner Spotlight Here
+                </button>
+                <button
+                  type="button"
+                  {...communityButtonGuardProps()}
+                  onClick={(event) =>
                     openCommunityRoute(
                       event,
                       "/app/shop-control#shop-control-spotlight"
                     )
                   }
-                  style={actionBtn("primary")}
+                  style={actionBtn("secondary")}
                 >
-                  Open Owner Spotlight Tools
+                  Open Full Spotlight Publisher
                 </button>
                 <button
                   type="button"
                   {...communityButtonGuardProps()}
-                  onClick={openCommunityShopControl}
+                  onClick={(event) =>
+                    openCommunityRoute(
+                      event,
+                      "/app/shop-control#shop-control-paid-spotlight"
+                    )
+                  }
                   style={actionBtn("secondary")}
                 >
-                  Open Shop Summary
+                  Open Paid Spotlight
                 </button>
               </div>
             </div>

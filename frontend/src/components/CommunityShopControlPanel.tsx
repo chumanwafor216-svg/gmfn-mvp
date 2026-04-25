@@ -848,6 +848,7 @@ export default function CommunityShopControlPanel({
             </div>
 
             <div
+              id="community-shop-control-owner-shortcuts"
               style={{
                 ...innerCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"),
                 border: "1px solid rgba(11,99,209,0.10)",

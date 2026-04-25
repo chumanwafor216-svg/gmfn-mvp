@@ -43,6 +43,55 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-25 16:18
+
+#### Workstream
+Community Home spotlight launcher stabilization.
+
+#### Routes/screens affected
+- `/app/community`
+- embedded Community Home shop-control panel
+- launcher path into `/app/shop-control#shop-control-spotlight`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `frontend/src/components/CommunityShopControlPanel.tsx`
+
+#### Confirmed facts
+- The product owner reported that Community Home spotlight buttons were still feeling jumpy on phone, even though spotlight behavior itself was already working correctly on the dedicated shop-control side.
+- Audit confirmed the spotlight engine and hash-handling in `ShopControlPage.tsx` were already present and should not be changed:
+  - `#shop-control-spotlight` already auto-opens the spotlight publisher
+  - hash scroll logic already retries until the target appears
+- The weak point was the Community Home launcher layer, not spotlight publish logic.
+- Community Home spotlight actions now split into clearer, steadier paths:
+  - `Open Owner Spotlight Here`
+    - opens the embedded `CommunityShopControlPanel`
+    - scrolls directly to the owner-shortcuts area inside that panel
+    - keeps the person on Community Home instead of jumping away immediately
+  - `Open Full Spotlight Publisher`
+    - opens `/app/shop-control#shop-control-spotlight`
+  - `Open Paid Spotlight`
+    - opens `/app/shop-control#shop-control-paid-spotlight`
+- `CommunityShopControlPanel.tsx` now exposes `id="community-shop-control-owner-shortcuts"` so Community Home can scroll reliably into the correct owner area before the user chooses the next spotlight action.
+- This pass keeps spotlight publishing logic untouched and focuses only on launcher stability and route completeness.
+- Verification after this pass:
+  - `npm run build`
+
+#### Open risks or unknowns
+- Phone retest is still needed on the Community Home spotlight block itself.
+- If the owner wants the embedded Community Home panel to open the full spotlight publisher inline rather than route into `/app/shop-control`, that would be a separate design change. This pass deliberately avoided changing spotlight business logic.
+
+#### Next recommended step
+- Deploy the current branch, then phone-test the three Community Home spotlight actions:
+  - `Open Owner Spotlight Here`
+  - `Open Full Spotlight Publisher`
+  - `Open Paid Spotlight`
+- If those behave steadily, freeze the Community Home spotlight launcher layer.
+
+#### Date
 2026-04-25 15:54
 
 #### Workstream
