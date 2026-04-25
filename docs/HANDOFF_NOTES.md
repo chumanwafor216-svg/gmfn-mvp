@@ -10991,3 +10991,52 @@ GSN-branded invite composer and invite-entry continuity.
   - if owners still report that uploads disappear after this fix, the next
     audit target is persistent upload storage / file survival rather than the
     public read route itself
+
+### Shop control free spotlight flow simplified in-place (2026-04-25)
+
+- Product-owner concern:
+  - free spotlight still felt like multiple pages doing the same work
+  - after choosing media on phone, the page could appear to jump back to the
+    beginning instead of staying inside the same spotlight draft flow
+  - the desired behavior is:
+    - open free spotlight
+    - choose picture and/or video
+    - see draft preview immediately
+    - publish from the same section
+- Re-audited the real route:
+  - `frontend/src/pages/ShopControlPage.tsx`
+  - owner-side spotlight publish logic was already real, but the UX had two
+    weak points:
+    - background focus / visibility refresh could push the whole page into a
+      top-level loading state when the phone file picker closed
+    - the free composer carried too many mode switches and optional paths,
+      making it feel duplicated against the separate paid spotlight card
+- Applied the smallest safe fix:
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - `loadPage(...)` now supports background refresh without replacing the
+      whole page with the loading screen during file-picker return
+    - periodic, focus, and visibility refreshes now run in background mode
+    - spotlight open handler now accepts an explicit mode:
+      - free
+      - paid
+    - main recommendation button now opens free spotlight directly
+    - paid spotlight card now opens the publisher already in paid mode
+    - free/publisher section copy now states clearly that everything happens in
+      one section
+    - free composer layout now keeps:
+      - message
+      - picture picker
+      - short video picker
+      - live draft preview
+      - publish
+      in one in-place block
+    - visible manual URL fields were removed from the main draft surface to
+      reduce duplication and confusion
+- Verification:
+  - frontend build: `npm run build`
+- Result:
+  - frontend build passed
+- Important remaining product note:
+  - this simplifies the route shape and removes the strongest phone jump-back
+    cause, but it should still be phone-tested once deployed to confirm the
+    picker return now feels steady in real use

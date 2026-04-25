@@ -819,8 +819,11 @@ export default function ShopControlPage() {
     setSpotlightPriorityMode("free");
   }
 
-  const loadPage = useCallback(async () => {
-    setLoading(true);
+  const loadPage = useCallback(async (options?: { background?: boolean }) => {
+    const background = Boolean(options?.background);
+    if (!background) {
+      setLoading(true);
+    }
 
     try {
       const [meRes, riskRes] = await Promise.all([
@@ -918,7 +921,9 @@ export default function ShopControlPage() {
         setTrustSlipFeature(null);
       }
     } finally {
-      setLoading(false);
+      if (!background) {
+        setLoading(false);
+      }
     }
   }, [selectedClanId]);
 
@@ -953,16 +958,16 @@ export default function ShopControlPage() {
     void loadPage();
 
     const timer = window.setInterval(() => {
-      void loadPage();
+      void loadPage({ background: true });
     }, 60000);
 
     function handleFocusRefresh() {
-      void loadPage();
+      void loadPage({ background: true });
     }
 
     function handleVisibilityRefresh() {
       if (typeof document !== "undefined" && document.visibilityState === "visible") {
-        void loadPage();
+        void loadPage({ background: true });
       }
     }
 
@@ -1399,8 +1404,12 @@ export default function ShopControlPage() {
     }
   }
 
-  function openSpotlightTools(event?: React.SyntheticEvent<HTMLElement>) {
+  function openSpotlightTools(
+    event?: React.SyntheticEvent<HTMLElement>,
+    mode: "free" | "paid" = "free"
+  ) {
     guardButtonPress(event);
+    setSpotlightPriorityMode(mode);
     setSpotlightOpen(true);
 
     window.setTimeout(() => {
@@ -2068,10 +2077,10 @@ export default function ShopControlPage() {
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={openSpotlightTools}
+                  onClick={(event) => openSpotlightTools(event, "free")}
                   style={fullButton(actionBtn("primary"))}
                 >
-                  Open Spotlight Publisher
+                  Open Free Spotlight
                 </button>
               ) : (
                 <button
@@ -2383,10 +2392,10 @@ export default function ShopControlPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={openSpotlightTools}
+                onClick={(event) => openSpotlightTools(event, "paid")}
                 style={fullButton(actionBtn("secondary"))}
               >
-                Open Spotlight Backstage
+                Open Paid Spotlight Publisher
               </button>
             </div>
           </div>
@@ -2772,7 +2781,9 @@ export default function ShopControlPage() {
           id="shop-control-spotlight"
           style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 82%, #FFF7D8 100%)")}
         >
-          <div style={sectionLabel()}>Spotlight publisher</div>
+          <div style={sectionLabel()}>
+            {spotlightPriorityMode === "paid" ? "Paid spotlight publisher" : "Free spotlight publisher"}
+          </div>
 
           <div
             style={{
@@ -2781,7 +2792,7 @@ export default function ShopControlPage() {
               maxWidth: 860,
             }}
           >
-            Prepare the message, image, or short video the public shop and community spotlight will show. Close this section when the publish draft is ready.
+            Keep everything here in one place: choose the media, check the preview, then publish from this same section.
           </div>
 
           <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
@@ -2896,157 +2907,165 @@ export default function ShopControlPage() {
               )}
             </div>
 
-            <div style={{ ...controlGrid(isCompact, 132), alignItems: "center" }}>
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={(event) =>
-                  runGuardedButtonAction(event, () =>
-                    setSpotlightPriorityMode("free")
-                  )
-                }
-                style={
-                  spotlightPriorityMode === "free"
-                    ? fullButton(actionBtn("primary"))
-                    : fullButton(actionBtn("secondary"))
-                }
-              >
-                Free community spotlight
-              </button>
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={(event) =>
-                  runGuardedButtonAction(event, () =>
-                    setSpotlightPriorityMode("paid")
-                  )
-                }
-                disabled={shopActionsLocked || !canStartPaidSpotlight}
-                style={
-                  spotlightPriorityMode === "paid"
-                    ? fullButton(actionBtn("primary", shopActionsLocked || !canStartPaidSpotlight))
-                    : fullButton(actionBtn("secondary", shopActionsLocked || !canStartPaidSpotlight))
-                }
-              >
-                Paid priority spotlight
-              </button>
-              <span style={badge(false)}>
-                Publishing as: {spotlightPriorityMode === "paid" ? "paid priority" : "free"}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <span style={badge(true)}>
+                {spotlightPriorityMode === "paid" ? "Paid priority spotlight" : "Free community spotlight"}
               </span>
+              {spotlightPriorityMode === "paid" ? (
+                <button
+                  type="button"
+                  {...buttonGuardProps()}
+                  onClick={(event) =>
+                    runGuardedButtonAction(event, () => setSpotlightPriorityMode("free"))
+                  }
+                  style={actionBtn("secondary")}
+                >
+                  Switch back to free
+                </button>
+              ) : canStartPaidSpotlight ? (
+                <button
+                  type="button"
+                  {...buttonGuardProps()}
+                  onClick={(event) =>
+                    runGuardedButtonAction(event, () => setSpotlightPriorityMode("paid"))
+                  }
+                  style={actionBtn("secondary")}
+                >
+                  Use paid spotlight instead
+                </button>
+              ) : null}
             </div>
 
             <div style={{ ...helperText(), fontSize: 13 }}>
               {spotlightPriorityMode === "paid"
-                ? "This publish will use your confirmed paid spotlight for priority community visibility."
-                : canStartPaidSpotlight
-                ? "A paid spotlight is available, but you can still publish a normal free community spotlight if you prefer."
-                : safeStr(latestSpotlightPayment?.confirmed_at)
-                ? "A paid spotlight is already active for this shop. Start another one only after the current paid run ends."
-                : "Free community spotlight is available now. Paid spotlight opens after payment confirmation."}
+                ? "This publish will use your confirmed paid spotlight. Add the message and media here, preview it here, then publish from this same panel."
+                : "Choose a picture, a short video, or both. GSN previews the draft here first, then you publish from this same panel."}
             </div>
 
-            <textarea
-              value={spotlightMessage}
-              onChange={(e) => setSpotlightMessage(e.target.value)}
-              placeholder="Spotlight message"
-              style={textAreaStyle()}
-            />
-
-            <div style={{ ...helperText(), fontSize: 13 }}>
-              Upload a picture, a short video, or both. The picture stays as the cover when
-              a short video is live.
-            </div>
-
-            <input
-              key={spotlightImageInputKey}
-              type="file"
-              accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/jpg,image/png,image/webp"
-              disabled={shopActionsLocked}
-              onChange={(e) => {
-                const file = e.target.files?.[0] || null;
-                void handleSpotlightImagePicked(file);
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.15fr) minmax(280px, 360px)",
+                gap: 14,
+                alignItems: "start",
               }}
-              style={inputStyle()}
-            />
-            {spotlightImageFile ? (
-              <div style={{ ...helperText(), fontSize: 12 }}>
-                Selected image: {safeStr(spotlightImageFile.name) || "image"} |{" "}
-                {formatFileSize(spotlightImageFile.size)} |{" "}
-                {safeStr(spotlightImageFile.type) || "unknown type"}
-              </div>
-            ) : null}
+            >
+              <div style={{ display: "grid", gap: 12 }}>
+                <textarea
+                  value={spotlightMessage}
+                  onChange={(e) => setSpotlightMessage(e.target.value)}
+                  placeholder="Spotlight message"
+                  style={textAreaStyle()}
+                />
 
-            <input
-              value={spotlightImageUrl}
-              onChange={(e) => setSpotlightImageUrl(e.target.value)}
-              placeholder="Spotlight image URL (optional)"
-              style={inputStyle()}
-            />
-
-            <input
-              key={spotlightVideoInputKey}
-              type="file"
-              accept=".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime,video/mov"
-              disabled={shopActionsLocked}
-              onChange={(e) => {
-                const file = e.target.files?.[0] || null;
-                void handleSpotlightVideoPicked(file);
-              }}
-              style={inputStyle()}
-            />
-            {spotlightVideoFile ? (
-              <div style={{ ...helperText(), fontSize: 12 }}>
-                Selected video: {safeStr(spotlightVideoFile.name) || "video"} |{" "}
-                {formatFileSize(spotlightVideoFile.size)} |{" "}
-                {safeStr(spotlightVideoFile.type) || "unknown type"}
-                {spotlightVideoDurationSeconds != null
-                  ? ` | ${spotlightVideoDurationSeconds.toFixed(1)}s`
-                  : ""}
-              </div>
-            ) : null}
-
-            <input
-              value={spotlightVideoUrl}
-              onChange={(e) => setSpotlightVideoUrl(e.target.value)}
-              placeholder="Spotlight video URL (optional)"
-              style={inputStyle()}
-            />
-
-            {spotlightImagePreviewUrl || spotlightVideoPreviewUrl || spotlightImageUrl || spotlightVideoUrl ? (
-              <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 100%)")}>
-                <div style={sectionLabel()}>Draft media preview</div>
-                <div style={{ marginTop: 10 }}>
-                  <SpotlightMediaFrame
-                    imageUrl={
-                      spotlightImagePreviewUrl ||
-                      resolveSpotlightAssetUrl(spotlightImageUrl)
-                    }
-                    videoUrl={
-                      spotlightVideoPreviewUrl ||
-                      resolveSpotlightAssetUrl(spotlightVideoUrl)
-                    }
-                    videoPoster={
-                      spotlightImagePreviewUrl ||
-                      resolveSpotlightAssetUrl(spotlightImageUrl)
-                    }
-                    alt="Draft spotlight preview"
-                    frameStyle={{
-                      minHeight: 220,
-                      height: 220,
-                      borderRadius: 16,
+                <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
+                  <div style={sectionLabel()}>Choose spotlight picture</div>
+                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                    Pick the picture people should first notice.
+                  </div>
+                  <input
+                    key={spotlightImageInputKey}
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/jpg,image/png,image/webp"
+                    disabled={shopActionsLocked}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      void handleSpotlightImagePicked(file);
                     }}
-                    mediaStyle={{
-                      width: "100%",
-                      height: "100%",
-                    }}
-                    autoPlayVideo={Boolean(spotlightVideoPreviewUrl || spotlightVideoUrl)}
-                    mutedVideo={Boolean(spotlightVideoPreviewUrl || spotlightVideoUrl)}
-                    loopVideo={Boolean(spotlightVideoPreviewUrl || spotlightVideoUrl)}
-                    maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
+                    style={{ ...inputStyle(), marginTop: 10 }}
                   />
+                  {spotlightImageFile ? (
+                    <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
+                      Selected image: {safeStr(spotlightImageFile.name) || "image"} |{" "}
+                      {formatFileSize(spotlightImageFile.size)} |{" "}
+                      {safeStr(spotlightImageFile.type) || "unknown type"}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
+                  <div style={sectionLabel()}>Choose short spotlight video</div>
+                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                    Add a short video when you want motion. The picture remains the cover.
+                  </div>
+                  <input
+                    key={spotlightVideoInputKey}
+                    type="file"
+                    accept=".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime,video/mov"
+                    disabled={shopActionsLocked}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      void handleSpotlightVideoPicked(file);
+                    }}
+                    style={{ ...inputStyle(), marginTop: 10 }}
+                  />
+                  {spotlightVideoFile ? (
+                    <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
+                      Selected video: {safeStr(spotlightVideoFile.name) || "video"} |{" "}
+                      {formatFileSize(spotlightVideoFile.size)} |{" "}
+                      {safeStr(spotlightVideoFile.type) || "unknown type"}
+                      {spotlightVideoDurationSeconds != null
+                        ? ` | ${spotlightVideoDurationSeconds.toFixed(1)}s`
+                        : ""}
+                    </div>
+                  ) : null}
                 </div>
               </div>
-            ) : null}
+
+              <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 100%)")}>
+                <div style={sectionLabel()}>Draft preview</div>
+                <div style={{ marginTop: 10 }}>
+                  {spotlightImagePreviewUrl || spotlightVideoPreviewUrl ? (
+                    <SpotlightMediaFrame
+                      imageUrl={spotlightImagePreviewUrl}
+                      videoUrl={spotlightVideoPreviewUrl}
+                      videoPoster={spotlightImagePreviewUrl}
+                      alt="Draft spotlight preview"
+                      frameStyle={{
+                        minHeight: 220,
+                        height: 220,
+                        borderRadius: 16,
+                      }}
+                      mediaStyle={{
+                        width: "100%",
+                        height: "100%",
+                      }}
+                      autoPlayVideo={Boolean(spotlightVideoPreviewUrl)}
+                      mutedVideo={Boolean(spotlightVideoPreviewUrl)}
+                      loopVideo={Boolean(spotlightVideoPreviewUrl)}
+                      maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        minHeight: 220,
+                        borderRadius: 16,
+                        border: "1px solid rgba(13,95,168,0.12)",
+                        background: "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
+                        display: "grid",
+                        placeItems: "center",
+                        textAlign: "center",
+                        padding: 16,
+                      }}
+                    >
+                      <div>
+                        <div style={{ color: "#0B1F33", fontSize: 16, fontWeight: 900 }}>
+                          Draft preview appears here
+                        </div>
+                        <div style={{ marginTop: 8, ...helperText(), fontSize: 13, maxWidth: 220 }}>
+                          Choose the picture or short video first, then check it here before you publish.
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                  {spotlightMessage
+                    ? `Message ready: ${spotlightMessage}`
+                    : "You can publish with media only, or add a short message too."}
+                </div>
+              </div>
+            </div>
 
             <div style={controlGrid(isCompact, 150)}>
               <button
