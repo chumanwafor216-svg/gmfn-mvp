@@ -11084,3 +11084,32 @@ GSN-branded invite composer and invite-entry continuity.
     fails after this routing fix, the next audit target is the live frontend
     error surfacing around the publish response, not the community targeting
     rule itself
+
+### Shop control spotlight publish now uploads media against the shop's own community (2026-04-25)
+
+- Product-owner concern:
+  - even after the community-targeting fix, the publish button still did not
+    feel reliable in the live shop spotlight flow
+- Re-audited the frontend publish path:
+  - `frontend/src/pages/ShopControlPage.tsx`
+- Confirmed weak point before this fix:
+  - spotlight media upload during publish still used `selectedClanId`
+  - final spotlight publish already used the shop's own community truth
+  - if the selected clan state was stale, empty, or different from the shop's
+    real community, media upload could fail before the broadcast was created
+- Applied the smallest safe frontend fix:
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - added `effectiveShopClanId`
+    - shop picture upload now uses the shop's real community id
+    - spotlight image upload now uses the shop's real community id
+    - spotlight video upload now uses the shop's real community id
+    - final broadcast publish also uses the same `effectiveShopClanId`
+    - this keeps upload and publish on one consistent route truth
+- Verification:
+  - frontend build: `npm run build`
+- Result:
+  - frontend build passed
+- Important remaining product note:
+  - if publish still fails after this deploy, the next step should be to keep
+    a persistent inline publish error block in the spotlight composer so the
+    exact backend rejection stays visible instead of fading as a short notice

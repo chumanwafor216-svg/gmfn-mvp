@@ -751,6 +751,7 @@ export default function ShopControlPage() {
 
   const selectedClanId = Number(getSelectedClanId() || 0);
   const shopActionsLocked = Boolean(continuityReview.blocked);
+  const effectiveShopClanId = Number(shop?.clan_id || selectedClanId || 0);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1584,7 +1585,22 @@ export default function ShopControlPage() {
 
     setUploadingImage(true);
     try {
-      const uploadedUrl = await uploadShopImageFile(file);
+      const uploaded = await uploadMarketplaceImageFile(file, effectiveShopClanId || null);
+      const uploadedUrl =
+        firstTruthy(
+          uploaded?.image_url,
+          uploaded?.url,
+          uploaded?.path,
+          uploaded?.item?.image_url,
+          uploaded?.item?.url,
+          uploaded?.data?.image_url,
+          uploaded?.data?.url
+        ) || "";
+      if (!uploadedUrl) {
+        throw new Error(
+          "We could not prepare an image from that upload. Paste an image URL instead and continue."
+        );
+      }
       setImageUrlInput(uploadedUrl);
       await saveShopDetails({ image_url: uploadedUrl });
       showNotice("success", "Shop picture uploaded.");
@@ -1769,7 +1785,10 @@ export default function ShopControlPage() {
       let videoUrl = manualVideoUrl;
 
       if (spotlightImageFile) {
-        const uploadRes = await uploadMarketplaceImageFile(spotlightImageFile, selectedClanId || null);
+        const uploadRes = await uploadMarketplaceImageFile(
+          spotlightImageFile,
+          effectiveShopClanId || null
+        );
         imageUrl = firstTruthy(
           uploadRes?.image_url,
           uploadRes?.url,
@@ -1793,7 +1812,7 @@ export default function ShopControlPage() {
             spotlightVideoDurationSeconds <= SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS
             ? spotlightVideoDurationSeconds
             : null,
-          selectedClanId || null
+          effectiveShopClanId || null
         );
         videoUrl = firstTruthy(
           uploadRes?.video_url,
@@ -1814,7 +1833,7 @@ export default function ShopControlPage() {
       await apiJson<any>("/api/marketplace/broadcasts", {
         method: "POST",
         body: JSON.stringify({
-          clan_id: Number(shop?.clan_id || selectedClanId || 0),
+          clan_id: effectiveShopClanId,
           shop_id: Number(shop.id),
           message: message || "Spotlight update",
           image_url: imageUrl || null,
