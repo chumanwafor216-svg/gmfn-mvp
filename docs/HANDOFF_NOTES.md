@@ -43,6 +43,56 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-25 16:52
+
+#### Workstream
+Community Home spotlight-button hardening and dashboard picture persistence compatibility.
+
+#### Routes/screens affected
+- `/app/community`
+- `/app/dashboard`
+- cross-page dashboard picture reuse where other pages still read the legacy avatar key
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `frontend/src/pages/DashboardPage.tsx`
+
+#### Confirmed facts
+- The product owner reported that Community Home spotlight buttons could still drift into the wrong route, including Finance, instead of staying on the spotlight path.
+- Audit confirmed that the dedicated spotlight publisher in `ShopControlPage.tsx` was still the correct working engine and should remain unchanged.
+- The weak point was still the Community Home launcher layer:
+  - the `spotlight` quick action in `handleCommunityNextAction(...)` still routed directly to `/app/shop-control#shop-control-spotlight`
+  - the embedded shop-control launcher relied on one short delayed scroll, which could miss on phone if the embedded panel had not rendered yet
+- `CommunityHomePage.tsx` now hardens the launcher layer by:
+  - adding retry-based scroll targeting in `openCommunityShopControl(...)`
+  - routing the Community Home `spotlight` quick action into the embedded owner spotlight workspace instead of sending it straight away into another route
+  - making `Open Owner Spotlight Here` use that same unified helper path
+- This means the main Community Home spotlight entry now behaves as:
+  - keep the user on Community Home
+  - open the embedded owner panel
+  - scroll repeatedly until the owner-shortcuts spotlight target is actually present
+- The product owner also reported that the dashboard picture was still not steady enough.
+- Audit confirmed the dashboard picture had already been widened to multiple scoped storage keys, but some other pages still read only the legacy base key `gmfn.member.avatar`.
+- `DashboardPage.tsx` now writes and reads the avatar through:
+  - the legacy base key `gmfn.member.avatar`
+  - the current scoped key
+  - the wider identity-derived scoped keys
+- This keeps the dashboard picture more stable across page moves while still preserving the newer scoped storage model.
+
+#### Open risks or unknowns
+- The dashboard picture is still device-level persistence, not a backend-synced profile photo.
+- Phone retest is still needed on Community Home to confirm the spotlight launcher no longer drifts into Finance or another route.
+
+#### Next recommended step
+- Deploy this batch and phone-test:
+  - the Community Home spotlight quick action
+  - `Open Owner Spotlight Here`
+  - dashboard picture upload -> leave dashboard -> return -> open another identity-facing page
+
+#### Date
 2026-04-25 16:18
 
 #### Workstream

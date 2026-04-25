@@ -1429,15 +1429,34 @@ export default function CommunityHomePage() {
     setShopControlOpenSignal((prev) => prev + 1);
 
     if (typeof document !== "undefined") {
-      window.setTimeout(() => {
+      const scrollToCommunityTarget = (attempt = 0) => {
         const el =
           document.getElementById(targetId) ||
           document.getElementById("community-home-shop-control");
         if (el && typeof el.scrollIntoView === "function") {
           el.scrollIntoView({ behavior: "smooth", block: "start" });
+          return;
         }
+
+        if (attempt < 8) {
+          window.setTimeout(() => {
+            scrollToCommunityTarget(attempt + 1);
+          }, 80);
+        }
+      };
+
+      window.setTimeout(() => {
+        scrollToCommunityTarget();
       }, targetId === "community-home-shop-control" ? 0 : 48);
     }
+  }
+
+  function openCommunitySpotlightWorkspace(
+    event: React.SyntheticEvent<HTMLElement> | undefined
+  ) {
+    consumeCommunityButtonEvent(event);
+    setCollapsed((prev) => ({ ...prev, spotlight: false }));
+    openCommunityShopControl(undefined, "community-shop-control-owner-shortcuts");
   }
 
   async function handleSelectCommunity(clan: ClanItem, openAfter = false) {
@@ -1526,7 +1545,7 @@ function communityButtonGuardProps(): Pick<
         openCommunityShopControl(event);
         break;
       case "spotlight":
-        openCommunityRoute(event, "/app/shop-control#shop-control-spotlight");
+        openCommunitySpotlightWorkspace(event);
         break;
       case "finance":
         openCommunityRoute(event, "/app/finance");
@@ -2510,12 +2529,7 @@ function communityButtonGuardProps(): Pick<
                 <button
                   type="button"
                   {...communityButtonGuardProps()}
-                  onClick={(event) =>
-                    openCommunityShopControl(
-                      event,
-                      "community-shop-control-owner-shortcuts"
-                    )
-                  }
+                  onClick={(event) => openCommunitySpotlightWorkspace(event)}
                   style={actionBtn("primary")}
                 >
                   Open Owner Spotlight Here

@@ -2430,7 +2430,13 @@ export default function DashboardPage() {
   );
   const dashboardAvatarStorageKeys = useMemo(() => {
     const keys = dashboardAvatarStorageKeysForUser(me);
-    return Array.from(new Set([dashboardAvatarStorageKey, ...keys]));
+    return Array.from(
+      new Set([
+        DASHBOARD_AVATAR_STORAGE_KEY,
+        dashboardAvatarStorageKey,
+        ...keys,
+      ])
+    );
   }, [dashboardAvatarStorageKey, me]);
   const dashboardAttentionStorageKeyRef = useRef(dashboardAttentionStorageKey);
 
