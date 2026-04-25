@@ -118,6 +118,8 @@ type ContinuityReviewState = {
 type NoticeTone = "success" | "error" | "info";
 
 type SpotlightFeedbackState = { tone: NoticeTone; text: string } | null;
+type SpotlightFlowStep = "upload" | "preview";
+type SpotlightMediaChoice = "image" | "video" | "both";
 
 const SHOP_BRAND = {
   ink: "#0B1F33",
@@ -727,12 +729,16 @@ export default function ShopControlPage() {
   const [spotlightPriorityMode, setSpotlightPriorityMode] = useState<"free" | "paid">("free");
   const [spotlightPublishFeedback, setSpotlightPublishFeedback] =
     useState<SpotlightFeedbackState>(null);
+  const [spotlightFlowStep, setSpotlightFlowStep] = useState<SpotlightFlowStep>("upload");
+  const [spotlightMediaChoice, setSpotlightMediaChoice] =
+    useState<SpotlightMediaChoice>("image");
   const spotlightImagePrepJobRef = useRef(0);
   const spotlightVideoPrepJobRef = useRef(0);
   const lastAutoScrolledHashRef = useRef("");
   const hashScrollTimerRef = useRef<number | null>(null);
   const hashScrollRetryTimersRef = useRef<number[]>([]);
   const spotlightCollapseTimerRef = useRef<number | null>(null);
+  const spotlightIdleTimerRef = useRef<number | null>(null);
 
   const selectedClanId = Number(getSelectedClanId() || 0);
   const shopActionsLocked = Boolean(continuityReview.blocked);
@@ -789,6 +795,49 @@ export default function ShopControlPage() {
     hashScrollRetryTimersRef.current = [];
   }, []);
 
+  const resetSpotlightIdleTimer = useCallback(() => {
+    if (typeof window === "undefined") return;
+    if (spotlightIdleTimerRef.current !== null) {
+      window.clearTimeout(spotlightIdleTimerRef.current);
+      spotlightIdleTimerRef.current = null;
+    }
+
+    if (!spotlightOpen) return;
+
+    spotlightIdleTimerRef.current = window.setTimeout(() => {
+      spotlightIdleTimerRef.current = null;
+      setSpotlightOpen(false);
+      setSpotlightPublishFeedback({
+        tone: "info",
+        text: "Spotlight portal closed after inactivity. Open it again when you are ready to continue.",
+      });
+      showNotice(
+        "info",
+        "Spotlight portal closed after inactivity. Open it again when you are ready to continue."
+      );
+    }, 5 * 60 * 1000);
+  }, [spotlightOpen]);
+
+  useEffect(() => {
+    resetSpotlightIdleTimer();
+
+    return () => {
+      if (spotlightIdleTimerRef.current !== null) {
+        window.clearTimeout(spotlightIdleTimerRef.current);
+        spotlightIdleTimerRef.current = null;
+      }
+    };
+  }, [
+    resetSpotlightIdleTimer,
+    spotlightOpen,
+    spotlightFlowStep,
+    spotlightPriorityMode,
+    spotlightMediaChoice,
+    spotlightMessage,
+    spotlightImageFile,
+    spotlightVideoFile,
+  ]);
+
   function clearSpotlightDraft() {
     spotlightImagePrepJobRef.current += 1;
     spotlightVideoPrepJobRef.current += 1;
@@ -803,6 +852,9 @@ export default function ShopControlPage() {
     setSpotlightImageInputKey((prev) => prev + 1);
     setSpotlightVideoInputKey((prev) => prev + 1);
     setSpotlightPriorityMode("free");
+    setSpotlightFlowStep("upload");
+    setSpotlightMediaChoice("image");
+    setSpotlightPublishFeedback(null);
   }
 
   const loadPage = useCallback(async (options?: { background?: boolean; preferredClanId?: number | null }) => {
@@ -1012,11 +1064,13 @@ export default function ShopControlPage() {
 
     if (targetId === "shop-control-spotlight") {
       setSpotlightPriorityMode("free");
+      setSpotlightFlowStep("upload");
       setSpotlightOpen(true);
     }
 
     if (targetId === "shop-control-paid-spotlight") {
       setSpotlightPriorityMode("paid");
+      setSpotlightFlowStep("upload");
       setSpotlightOpen(true);
     }
 
@@ -1202,6 +1256,17 @@ export default function ShopControlPage() {
   const canStartPaidSpotlight = Boolean(
     safeStr(latestSpotlightPayment?.confirmed_at) && activePaidSpotlights.length === 0
   );
+
+  const spotlightHasImage = Boolean(spotlightImageFile);
+  const spotlightHasVideo = Boolean(spotlightVideoFile);
+  const spotlightHasChosenMedia =
+    spotlightHasImage || spotlightHasVideo;
+  const spotlightCanContinueToPreview =
+    spotlightMediaChoice === "both"
+      ? spotlightHasChosenMedia
+      : spotlightMediaChoice === "image"
+      ? spotlightHasImage
+      : spotlightHasVideo;
 
   const spotlightNextAction = useMemo(() => {
     if (activePaidSpotlights.length > 0) {
@@ -1407,6 +1472,8 @@ export default function ShopControlPage() {
   ) {
     guardButtonPress(event);
     setSpotlightPublishFeedback(null);
+    setSpotlightFlowStep("upload");
+    setSpotlightMediaChoice("image");
     setSpotlightPriorityMode(mode);
     setSpotlightOpen(true);
 
@@ -1426,6 +1493,7 @@ export default function ShopControlPage() {
     spotlightCollapseTimerRef.current = window.setTimeout(() => {
       spotlightCollapseTimerRef.current = null;
       setSpotlightOpen(false);
+      setSpotlightFlowStep("upload");
     }, 24);
   }
 
@@ -1646,6 +1714,9 @@ export default function ShopControlPage() {
 
       setSpotlightImageFile(prepared.file);
       setSpotlightPublishFeedback(null);
+      if (spotlightMediaChoice === "image") {
+        setSpotlightFlowStep("preview");
+      }
       if (prepared.message) {
         showNotice("info", prepared.message);
       } else {
@@ -1705,6 +1776,9 @@ export default function ShopControlPage() {
       setSpotlightVideoFile(prepared.file);
       setSpotlightVideoDurationSeconds(prepared.durationSeconds ?? null);
       setSpotlightPublishFeedback(null);
+      if (spotlightMediaChoice === "video") {
+        setSpotlightFlowStep("preview");
+      }
       if (prepared.message) {
         showNotice("info", prepared.message);
       } else {
@@ -1724,6 +1798,9 @@ export default function ShopControlPage() {
         setSpotlightVideoFile(file);
         setSpotlightVideoDurationSeconds(null);
         setSpotlightPublishFeedback(null);
+        if (spotlightMediaChoice === "video") {
+          setSpotlightFlowStep("preview");
+        }
         showNotice(
           "info",
           "This phone could not trim the video automatically, so GSN will use the uploaded file for today's pilot and play it as a 10-second spotlight clip."
@@ -1880,6 +1957,374 @@ export default function ShopControlPage() {
     }
   }
 
+  const spotlightWorkflowSection = spotlightOpen ? (
+    <section
+      id="shop-control-spotlight"
+      style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 82%, #FFF7D8 100%)")}
+    >
+      <div style={sectionLabel()}>
+        {spotlightPriorityMode === "paid" ? "Paid spotlight portal" : "Free spotlight portal"}
+      </div>
+
+      <div
+        style={{
+          marginTop: 10,
+          color: "#0B1F33",
+          fontSize: isCompact ? 20 : 24,
+          fontWeight: 900,
+          lineHeight: 1.25,
+        }}
+      >
+        Stay here until this spotlight is ready.
+      </div>
+
+      <div style={{ marginTop: 10, ...helperText(), maxWidth: 860 }}>
+        GSN now leads this process one step at a time. Choose the spotlight type,
+        add the media, check the preview, then publish from this same portal.
+      </div>
+
+      <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <span style={badge(spotlightFlowStep === "upload")}>1. Add media</span>
+        <span style={badge(spotlightFlowStep === "preview")}>2. Preview and publish</span>
+        <span style={badge(false)}>Community: {communityName}</span>
+      </div>
+
+      {currentActiveSpotlight ? (
+        <div
+          style={{
+            marginTop: 14,
+            ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
+            border: "1px solid rgba(11,31,51,0.08)",
+          }}
+        >
+          <div style={sectionLabel()}>Current live spotlight</div>
+          <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900, fontSize: 16 }}>
+            {firstTruthy(currentActiveSpotlight?.message, "Live spotlight is active.")}
+          </div>
+          <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+            If you publish now, this new spotlight replaces the current live one for this shop.
+          </div>
+        </div>
+      ) : null}
+
+      {spotlightPublishFeedback ? (
+        <div style={{ marginTop: 14, ...noticeCard(spotlightPublishFeedback.tone) }}>
+          {spotlightPublishFeedback.text}
+        </div>
+      ) : null}
+
+      <div
+        style={{
+          marginTop: 16,
+          display: "grid",
+          gap: 14,
+        }}
+      >
+        {spotlightFlowStep === "upload" ? (
+          <>
+            <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
+              <div style={sectionLabel()}>Choose spotlight type</div>
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                Start with the exact spotlight you want to prepare.
+              </div>
+              <div style={{ marginTop: 12, ...controlGrid(isCompact, 150) }}>
+                <button
+                  type="button"
+                  {...buttonGuardProps()}
+                  onClick={(event) =>
+                    runGuardedButtonAction(event, () => setSpotlightPriorityMode("free"))
+                  }
+                  style={fullButton(actionBtn("primary", spotlightPriorityMode === "free"))}
+                >
+                  Free spotlight
+                </button>
+                <button
+                  type="button"
+                  {...buttonGuardProps()}
+                  onClick={(event) =>
+                    runGuardedButtonAction(event, () => {
+                      if (canStartPaidSpotlight) {
+                        setSpotlightPriorityMode("paid");
+                      }
+                    })
+                  }
+                  disabled={!canStartPaidSpotlight}
+                  style={fullButton(actionBtn("secondary", !canStartPaidSpotlight))}
+                >
+                  Paid spotlight
+                </button>
+              </div>
+              {!canStartPaidSpotlight ? (
+                <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                  Paid spotlight stays locked until the spotlight subscription payment is confirmed.
+                </div>
+              ) : null}
+            </div>
+
+            <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
+              <div style={sectionLabel()}>Choose what to add</div>
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                Pick the media you want to prepare in this run.
+              </div>
+              <div style={{ marginTop: 12, ...controlGrid(isCompact, 150) }}>
+                <button
+                  type="button"
+                  {...buttonGuardProps()}
+                  onClick={(event) =>
+                    runGuardedButtonAction(event, () => setSpotlightMediaChoice("image"))
+                  }
+                  style={fullButton(actionBtn("secondary", spotlightMediaChoice === "image"))}
+                >
+                  Picture only
+                </button>
+                <button
+                  type="button"
+                  {...buttonGuardProps()}
+                  onClick={(event) =>
+                    runGuardedButtonAction(event, () => setSpotlightMediaChoice("video"))
+                  }
+                  style={fullButton(actionBtn("secondary", spotlightMediaChoice === "video"))}
+                >
+                  Video only
+                </button>
+                <button
+                  type="button"
+                  {...buttonGuardProps()}
+                  onClick={(event) =>
+                    runGuardedButtonAction(event, () => setSpotlightMediaChoice("both"))
+                  }
+                  style={fullButton(actionBtn("secondary", spotlightMediaChoice === "both"))}
+                >
+                  Picture and video
+                </button>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+                gap: 14,
+              }}
+            >
+              {spotlightMediaChoice !== "video" ? (
+                <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
+                  <div style={sectionLabel()}>Upload picture</div>
+                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                    Pick the picture people should notice first.
+                  </div>
+                  <input
+                    key={spotlightImageInputKey}
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/jpg,image/png,image/webp"
+                    disabled={shopActionsLocked}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      void handleSpotlightImagePicked(file);
+                    }}
+                    style={{ ...inputStyle(), marginTop: 10 }}
+                  />
+                  {spotlightImageFile ? (
+                    <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
+                      Ready: {safeStr(spotlightImageFile.name) || "image"} |{" "}
+                      {formatFileSize(spotlightImageFile.size)}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {spotlightMediaChoice !== "image" ? (
+                <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
+                  <div style={sectionLabel()}>Upload short video</div>
+                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                    Add a short video when you want movement in the spotlight.
+                  </div>
+                  <input
+                    key={spotlightVideoInputKey}
+                    type="file"
+                    accept=".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime,video/mov"
+                    disabled={shopActionsLocked}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      void handleSpotlightVideoPicked(file);
+                    }}
+                    style={{ ...inputStyle(), marginTop: 10 }}
+                  />
+                  {spotlightVideoFile ? (
+                    <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
+                      Ready: {safeStr(spotlightVideoFile.name) || "video"} |{" "}
+                      {formatFileSize(spotlightVideoFile.size)}
+                      {spotlightVideoDurationSeconds != null
+                        ? ` | ${spotlightVideoDurationSeconds.toFixed(1)}s`
+                        : ""}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+
+            <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 100%)")}>
+              <div style={sectionLabel()}>Message</div>
+              <textarea
+                value={spotlightMessage}
+                onChange={(e) => setSpotlightMessage(e.target.value)}
+                placeholder="Add a short spotlight message"
+                style={{ ...textAreaStyle(), marginTop: 10 }}
+              />
+            </div>
+
+            <div style={controlGrid(isCompact, 150)}>
+              <button
+                type="button"
+                {...buttonGuardProps()}
+                onClick={(event) =>
+                  runGuardedButtonAction(event, () => setSpotlightFlowStep("preview"))
+                }
+                disabled={
+                  shopActionsLocked ||
+                  preparingSpotlightImage ||
+                  preparingSpotlightVideo ||
+                  !spotlightCanContinueToPreview
+                }
+                style={fullButton(
+                  actionBtn(
+                    "primary",
+                    shopActionsLocked ||
+                      preparingSpotlightImage ||
+                      preparingSpotlightVideo ||
+                      !spotlightCanContinueToPreview
+                  )
+                )}
+              >
+                {preparingSpotlightImage || preparingSpotlightVideo
+                  ? "Preparing media..."
+                  : "Continue to preview"}
+              </button>
+              <button
+                type="button"
+                {...buttonGuardProps()}
+                onClick={collapseSpotlightTools}
+                style={fullButton(actionBtn("secondary"))}
+              >
+                Cancel spotlight
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 100%)")}>
+              <div style={sectionLabel()}>Preview before publish</div>
+              <div style={{ marginTop: 10 }}>
+                {spotlightImagePreviewUrl || spotlightVideoPreviewUrl ? (
+                  <SpotlightMediaFrame
+                    imageUrl={spotlightImagePreviewUrl}
+                    videoUrl={spotlightVideoPreviewUrl}
+                    videoPoster={spotlightImagePreviewUrl}
+                    alt="Draft spotlight preview"
+                    frameStyle={{
+                      minHeight: isCompact ? 240 : 280,
+                      height: isCompact ? 240 : 280,
+                      borderRadius: 18,
+                    }}
+                    mediaStyle={{
+                      width: "100%",
+                      height: "100%",
+                    }}
+                    autoPlayVideo={Boolean(spotlightVideoPreviewUrl)}
+                    mutedVideo={Boolean(spotlightVideoPreviewUrl)}
+                    loopVideo={Boolean(spotlightVideoPreviewUrl)}
+                    maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      minHeight: 220,
+                      borderRadius: 16,
+                      border: "1px solid rgba(13,95,168,0.12)",
+                      background: "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
+                      display: "grid",
+                      placeItems: "center",
+                      textAlign: "center",
+                      padding: 16,
+                    }}
+                  >
+                    <div>
+                      <div style={{ color: "#0B1F33", fontSize: 16, fontWeight: 900 }}>
+                        No media is ready yet
+                      </div>
+                      <div style={{ marginTop: 8, ...helperText(), fontSize: 13, maxWidth: 260 }}>
+                        Go back and add the picture or short video first.
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div style={{ marginTop: 12, color: "#0B1F33", fontWeight: 900, fontSize: 16 }}>
+                {spotlightMessage || "Media-only spotlight"}
+              </div>
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                {spotlightPriorityMode === "paid"
+                  ? "This publish uses the confirmed paid spotlight lane."
+                  : "This publish uses the free community spotlight lane."}
+              </div>
+            </div>
+
+            <div style={controlGrid(isCompact, 150)}>
+              <button
+                type="button"
+                {...buttonGuardProps()}
+                onClick={(event) =>
+                  runGuardedButtonAction(event, () => setSpotlightFlowStep("upload"))
+                }
+                style={fullButton(actionBtn("secondary"))}
+              >
+                Back to upload
+              </button>
+              <button
+                type="button"
+                {...buttonGuardProps()}
+                onClick={(event) =>
+                  runGuardedButtonAction(event, () => void handleCreateSpotlight())
+                }
+                disabled={
+                  shopActionsLocked ||
+                  creatingSpotlight ||
+                  preparingSpotlightImage ||
+                  preparingSpotlightVideo ||
+                  !spotlightHasChosenMedia
+                }
+                style={fullButton(
+                  actionBtn(
+                    "primary",
+                    shopActionsLocked ||
+                      creatingSpotlight ||
+                      preparingSpotlightImage ||
+                      preparingSpotlightVideo ||
+                      !spotlightHasChosenMedia
+                  )
+                )}
+              >
+                {shopActionsLocked
+                  ? "Review Identity First"
+                  : creatingSpotlight
+                  ? "Publishing..."
+                  : "Publish spotlight"}
+              </button>
+              <button
+                type="button"
+                {...buttonGuardProps()}
+                onClick={collapseSpotlightTools}
+                style={fullButton(actionBtn("secondary"))}
+              >
+                Cancel spotlight
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </section>
+  ) : null;
+
   if (loading) {
     return (
       <div style={{ maxWidth: 1180, margin: "0 auto", display: "grid", gap: 18 }}>
@@ -1895,6 +2340,37 @@ export default function ShopControlPage() {
         <section style={pageCard()}>
           <div style={helperText()}>Loading shop control...</div>
         </section>
+      </div>
+    );
+  }
+
+  if (spotlightWorkflowSection) {
+    return (
+      <div
+        style={{
+          maxWidth: 1180,
+          margin: "0 auto",
+          padding: isCompact ? "0 10px 40px" : "0 18px 44px",
+          display: "grid",
+          gap: 16,
+          background:
+            "radial-gradient(circle at 9% 3%, rgba(217,172,51,0.26) 0%, rgba(217,172,51,0) 30%), radial-gradient(circle at 94% 4%, rgba(38,132,205,0.24) 0%, rgba(38,132,205,0) 32%), linear-gradient(90deg, #071827 0%, #0B2942 4%, #EAF4FF 4.1%, #F8FBFF 12%, #F8FBFF 88%, #EAF4FF 95.9%, #0B2942 96%, #071827 100%)",
+          borderRadius: isCompact ? 26 : 36,
+          boxShadow:
+            "inset 16px 0 28px rgba(7,24,39,0.14), inset -16px 0 28px rgba(7,24,39,0.14)",
+        }}
+      >
+        <PageTopNav
+          sectionLabel="Spotlight Portal"
+          title={spotlightPriorityMode === "paid" ? "Paid Spotlight Portal" : "Free Spotlight Portal"}
+          subtitle="GSN is leading this spotlight process step by step. Finish it here or cancel and return to normal shop tools."
+          homeTo="/app/dashboard"
+          homeLabel="Dashboard"
+          backTo="/app/shop-control"
+          backLabel="Shop Control"
+        />
+        {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
+        {spotlightWorkflowSection}
       </div>
     );
   }

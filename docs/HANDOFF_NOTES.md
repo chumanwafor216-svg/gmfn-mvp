@@ -11176,3 +11176,47 @@ GSN-branded invite composer and invite-entry continuity.
     - confirm the draft preview stays in place
     - publish from the same panel
     - confirm the inline result stays visible and the live spotlight card updates
+
+### Free spotlight now runs inside a guided portal instead of leaving the user inside full shop control (2026-04-25)
+
+- Product-owner expectation:
+  - once the user chooses spotlight, the app should suspend the rest of the page
+    and lead the person through one deterministic flow:
+    - choose free or paid spotlight
+    - choose picture, video, or both
+    - upload
+    - preview
+    - publish
+    - finish or cancel
+- Applied route-local guidance changes:
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - when spotlight opens, Shop Control now switches into a dedicated
+      spotlight portal view instead of leaving the whole shop page on screen
+    - free and paid spotlight both enter the same guided portal
+    - the portal now shows step progress:
+      - `Add media`
+      - `Preview and publish`
+    - users can now choose:
+      - free spotlight
+      - paid spotlight
+      - picture only
+      - video only
+      - picture and video
+    - once media is ready, the portal moves into preview/publish instead of
+      making the user keep navigating around the wider page
+    - spotlight portal now includes an inactivity timeout:
+      - after 5 minutes without interaction, the portal closes and tells the
+        user to reopen it when ready
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/ShopControlPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed
+- Product note:
+  - this portal behavior is now the best reference for later process-led lanes
+    such as votes, payment-in, payment-out, withdrawal, and other subscription
+    actions that should lead the user step by step instead of leaving the whole
+    page active underneath
