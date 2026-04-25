@@ -544,7 +544,7 @@ export default function NextActionGuide({
                 onMouseDown={(event) => stopGuideEvent(event)}
                 onTouchStart={(event) => stopGuideEvent(event)}
                 onClick={(event) => {
-                  void chooseItem(item, event);
+                  void chooseItem(item, event, { requireConfirmation: true });
                 }}
                 style={{
                   ...guideButtonStyle(item.tone || "secondary", item.disabled),

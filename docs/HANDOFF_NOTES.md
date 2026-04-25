@@ -11335,3 +11335,23 @@ GSN-branded invite composer and invite-entry continuity.
 - Result:
   - frontend lint passed
   - frontend build passed
+
+### Shared next-action quick-choice buttons now also stop on confirmation first (2026-04-25)
+
+- Product-owner complaint:
+  - the new next-action buttons still felt too quick and too jumpy
+  - even when typing was improved, a clicked quick choice could still feel like
+    it fired too fast
+- Applied the smallest safe shared fix:
+  - `frontend/src/components/NextActionGuide.tsx`
+    - quick-choice buttons now behave like typed requests
+    - they open the confirmation / explanation card first
+    - only the second confirm action continues into the route
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/components/NextActionGuide.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed
