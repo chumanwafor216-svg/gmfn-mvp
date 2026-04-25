@@ -49,6 +49,46 @@ function normalizeText(value: string): string {
   return value.trim().toLowerCase();
 }
 
+const GUIDE_STOP_WORDS = new Set([
+  "a",
+  "an",
+  "and",
+  "at",
+  "can",
+  "close",
+  "do",
+  "for",
+  "go",
+  "i",
+  "in",
+  "into",
+  "it",
+  "me",
+  "my",
+  "now",
+  "of",
+  "on",
+  "open",
+  "please",
+  "show",
+  "take",
+  "that",
+  "the",
+  "this",
+  "to",
+  "want",
+  "what",
+  "with",
+  "you",
+]);
+
+function meaningfulTokens(value: string): string[] {
+  return normalizeText(value)
+    .split(/[^a-z0-9]+/)
+    .map((part) => part.trim())
+    .filter((part) => part.length >= 2 && !GUIDE_STOP_WORDS.has(part));
+}
+
 function stopGuideEvent(
   event?: React.SyntheticEvent<HTMLElement>,
   preventDefault = false
@@ -89,27 +129,71 @@ function matchGuideItem(
   const needle = normalizeText(query);
   if (!needle) return null;
 
-  const tokens = needle.split(/\s+/).filter(Boolean);
+  const queryTokens = meaningfulTokens(needle);
+  if (queryTokens.length === 0) return null;
+
+  let best: { item: NextActionGuideItem; score: number } | null = null;
+  let runnerUp: { item: NextActionGuideItem; score: number } | null = null;
 
   for (const item of items) {
-    const haystack = normalizeText(
-      [
-        item.label,
-        item.detail,
-        item.technical,
-        ...(item.keywords || []),
-      ]
-        .filter(Boolean)
-        .join(" ")
-    );
+    const label = normalizeText(item.label);
+    const technical = normalizeText(item.technical || "");
+    const keywords = (item.keywords || []).map((value) => normalizeText(value));
+    const detail = normalizeText(item.detail || "");
+    const labelTokens = meaningfulTokens(item.label);
+    const technicalTokens = meaningfulTokens(item.technical || "");
+    const keywordTokens = keywords.flatMap((value) => meaningfulTokens(value));
+    const detailTokens = meaningfulTokens(item.detail || "");
 
-    if (haystack.includes(needle)) return item;
-    if (tokens.length > 0 && tokens.every((token) => haystack.includes(token))) {
-      return item;
+    let score = 0;
+
+    if (label === needle) score += 120;
+    if (technical && technical === needle) score += 100;
+    if (keywords.some((keyword) => keyword === needle)) score += 110;
+    if (label.includes(needle)) score += 70;
+    if (technical && technical.includes(needle)) score += 55;
+    if (keywords.some((keyword) => keyword.includes(needle))) score += 60;
+    if (detail.includes(needle)) score += 18;
+
+    for (const token of queryTokens) {
+      if (labelTokens.includes(token)) score += 28;
+      if (technicalTokens.includes(token)) score += 18;
+      if (keywordTokens.includes(token)) score += 24;
+      if (detailTokens.includes(token)) score += 6;
+    }
+
+    const strongCoverage = queryTokens.filter(
+      (token) =>
+        labelTokens.includes(token) ||
+        technicalTokens.includes(token) ||
+        keywordTokens.includes(token)
+    ).length;
+    score += strongCoverage * 12;
+
+    if (!best || score > best.score) {
+      runnerUp = best;
+      best = { item, score };
+      continue;
+    }
+
+    if (!runnerUp || score > runnerUp.score) {
+      runnerUp = { item, score };
     }
   }
 
-  return null;
+  if (!best) return null;
+  if (best.score < 55) return null;
+  if (runnerUp && best.score - runnerUp.score < 16) return null;
+  return best.item;
+}
+
+function buildDefaultResolution(item: NextActionGuideItem): NextActionGuideResolution {
+  return {
+    title: item.label,
+    detail: item.detail,
+    continueLabel: `Open ${item.label}`,
+    continueTone: item.tone === "soft" ? "secondary" : item.tone || "primary",
+  };
 }
 
 function cardStyle(): React.CSSProperties {
@@ -276,7 +360,8 @@ export default function NextActionGuide({
 
   async function chooseItem(
     item: NextActionGuideItem | null,
-    event?: React.SyntheticEvent<HTMLElement>
+    event?: React.SyntheticEvent<HTMLElement>,
+    options?: { requireConfirmation?: boolean }
   ) {
     stopGuideEvent(event, true);
 
@@ -297,7 +382,14 @@ export default function NextActionGuide({
 
     setNotice("");
 
+    const requireConfirmation = Boolean(options?.requireConfirmation);
+
     if (!resolveSelection) {
+      if (requireConfirmation) {
+        setSelection({ item, resolution: buildDefaultResolution(item) });
+        return;
+      }
+
       setSelection(null);
       onSelect(item, event, null);
       return;
@@ -321,7 +413,7 @@ export default function NextActionGuide({
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    void chooseItem(matchedItem, event);
+    void chooseItem(matchedItem, event, { requireConfirmation: true });
   }
 
   return (

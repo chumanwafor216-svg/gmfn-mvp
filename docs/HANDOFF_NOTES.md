@@ -11311,3 +11311,27 @@ GSN-branded invite composer and invite-entry continuity.
 - Result:
   - frontend lint passed
   - frontend build passed
+
+### Shared next-action typing is now stricter and no longer auto-jumps on weak guesses (2026-04-25)
+
+- Product-owner complaint:
+  - typing a request such as spotlight-related text could still jump into the
+    wrong route
+  - weak keyword overlap was too willing to open unrelated pages
+- Applied the smallest safe shared fix:
+  - `frontend/src/components/NextActionGuide.tsx`
+    - guide matching now strips filler words such as `want`, `open`, `close`,
+      `please`, and similar low-signal tokens
+    - matching now scores labels, technical names, and keywords much more
+      strongly than long descriptive body text
+    - weak or ambiguous matches are now rejected instead of guessed
+    - typed submit now stops on a confirmation card before routing, even on
+      pages that do not use the newer resolver hook yet
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/components/NextActionGuide.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed
