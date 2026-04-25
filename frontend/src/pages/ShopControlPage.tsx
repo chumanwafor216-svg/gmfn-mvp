@@ -406,13 +406,12 @@ function runGuardedButtonAction(
 
 function buttonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown" | "onClickCapture"
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
 > {
   return {
     onPointerDown: guardButtonPress,
     onTouchStart: guardButtonPress,
     onMouseDown: guardButtonPress,
-    onClickCapture: guardButtonPress,
   };
 }
 
@@ -2030,24 +2029,24 @@ export default function ShopControlPage() {
               <div style={{ marginTop: 12, ...controlGrid(isCompact, 150) }}>
                 <button
                   type="button"
-                  {...buttonGuardProps()}
-                  onClick={(event) =>
-                    runGuardedButtonAction(event, () => setSpotlightPriorityMode("free"))
-                  }
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setSpotlightPriorityMode("free");
+                  }}
                   style={fullButton(actionBtn("primary", spotlightPriorityMode === "free"))}
                 >
                   Free spotlight
                 </button>
                 <button
                   type="button"
-                  {...buttonGuardProps()}
-                  onClick={(event) =>
-                    runGuardedButtonAction(event, () => {
-                      if (canStartPaidSpotlight) {
-                        setSpotlightPriorityMode("paid");
-                      }
-                    })
-                  }
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    if (canStartPaidSpotlight) {
+                      setSpotlightPriorityMode("paid");
+                    }
+                  }}
                   disabled={!canStartPaidSpotlight}
                   style={fullButton(actionBtn("secondary", !canStartPaidSpotlight))}
                 >
@@ -2069,30 +2068,33 @@ export default function ShopControlPage() {
               <div style={{ marginTop: 12, ...controlGrid(isCompact, 150) }}>
                 <button
                   type="button"
-                  {...buttonGuardProps()}
-                  onClick={(event) =>
-                    runGuardedButtonAction(event, () => setSpotlightMediaChoice("image"))
-                  }
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setSpotlightMediaChoice("image");
+                  }}
                   style={fullButton(actionBtn("secondary", spotlightMediaChoice === "image"))}
                 >
                   Picture only
                 </button>
                 <button
                   type="button"
-                  {...buttonGuardProps()}
-                  onClick={(event) =>
-                    runGuardedButtonAction(event, () => setSpotlightMediaChoice("video"))
-                  }
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setSpotlightMediaChoice("video");
+                  }}
                   style={fullButton(actionBtn("secondary", spotlightMediaChoice === "video"))}
                 >
                   Video only
                 </button>
                 <button
                   type="button"
-                  {...buttonGuardProps()}
-                  onClick={(event) =>
-                    runGuardedButtonAction(event, () => setSpotlightMediaChoice("both"))
-                  }
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setSpotlightMediaChoice("both");
+                  }}
                   style={fullButton(actionBtn("secondary", spotlightMediaChoice === "both"))}
                 >
                   Picture and video
@@ -2176,10 +2178,11 @@ export default function ShopControlPage() {
             <div style={controlGrid(isCompact, 150)}>
               <button
                 type="button"
-                {...buttonGuardProps()}
-                onClick={(event) =>
-                  runGuardedButtonAction(event, () => setSpotlightFlowStep("preview"))
-                }
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setSpotlightFlowStep("preview");
+                }}
                 disabled={
                   shopActionsLocked ||
                   preparingSpotlightImage ||
@@ -2202,7 +2205,6 @@ export default function ShopControlPage() {
               </button>
               <button
                 type="button"
-                {...buttonGuardProps()}
                 onClick={collapseSpotlightTools}
                 style={fullButton(actionBtn("secondary"))}
               >
@@ -2272,20 +2274,22 @@ export default function ShopControlPage() {
             <div style={controlGrid(isCompact, 150)}>
               <button
                 type="button"
-                {...buttonGuardProps()}
-                onClick={(event) =>
-                  runGuardedButtonAction(event, () => setSpotlightFlowStep("upload"))
-                }
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setSpotlightFlowStep("upload");
+                }}
                 style={fullButton(actionBtn("secondary"))}
               >
                 Back to upload
               </button>
               <button
                 type="button"
-                {...buttonGuardProps()}
-                onClick={(event) =>
-                  runGuardedButtonAction(event, () => void handleCreateSpotlight())
-                }
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  void handleCreateSpotlight();
+                }}
                 disabled={
                   shopActionsLocked ||
                   creatingSpotlight ||
@@ -2312,7 +2316,6 @@ export default function ShopControlPage() {
               </button>
               <button
                 type="button"
-                {...buttonGuardProps()}
                 onClick={collapseSpotlightTools}
                 style={fullButton(actionBtn("secondary"))}
               >

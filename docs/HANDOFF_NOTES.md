@@ -11220,3 +11220,30 @@ GSN-branded invite composer and invite-entry continuity.
     such as votes, payment-in, payment-out, withdrawal, and other subscription
     actions that should lead the user step by step instead of leaving the whole
     page active underneath
+
+### Spotlight portal action buttons restored for mobile taps (2026-04-25)
+
+- Product-owner complaint:
+  - inside the new spotlight portal, these buttons still felt dead:
+    - `Publish spotlight`
+    - `Cancel spotlight`
+    - `Back to upload`
+- Confirmed weak point:
+  - the portal buttons were still using the heavier shop-control guard layer,
+    which could swallow taps before the actual button action fired reliably on
+    mobile
+- Applied smallest safe fix:
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - removed the extra click-capture guard from `buttonGuardProps()`
+    - changed the spotlight portal action buttons to plain direct click
+      handlers with local `preventDefault()` / `stopPropagation()`
+    - this keeps the buttons protected from layout interference without blocking
+      the actual action
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/ShopControlPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed
