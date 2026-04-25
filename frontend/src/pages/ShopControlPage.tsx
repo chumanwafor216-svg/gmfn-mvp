@@ -4,6 +4,7 @@ import OriginLink from "../components/OriginLink";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import PageTopNav from "../components/PageTopNav";
 import {
+  createMarketplaceShop,
   getMe,
   getMarketplaceShopByGmfnId,
   getMyIdentityRisk,
@@ -118,7 +119,7 @@ type ContinuityReviewState = {
 type NoticeTone = "success" | "error" | "info";
 
 type SpotlightFeedbackState = { tone: NoticeTone; text: string } | null;
-type SpotlightFlowStep = "upload" | "preview";
+type SpotlightFlowStep = "setup" | "upload" | "preview";
 type SpotlightMediaChoice = "image" | "video" | "both";
 
 const SHOP_BRAND = {
@@ -725,6 +726,7 @@ export default function ShopControlPage() {
   const [preparingSpotlightImage, setPreparingSpotlightImage] = useState(false);
   const [preparingSpotlightVideo, setPreparingSpotlightVideo] = useState(false);
   const [creatingSpotlight, setCreatingSpotlight] = useState(false);
+  const [creatingSpotlightShop, setCreatingSpotlightShop] = useState(false);
   const [spotlightPriorityMode, setSpotlightPriorityMode] = useState<"free" | "paid">("free");
   const [spotlightPublishFeedback, setSpotlightPublishFeedback] =
     useState<SpotlightFeedbackState>(null);
@@ -1063,13 +1065,13 @@ export default function ShopControlPage() {
 
     if (targetId === "shop-control-spotlight") {
       setSpotlightPriorityMode("free");
-      setSpotlightFlowStep("upload");
+      setSpotlightFlowStep(shop?.id ? "upload" : "setup");
       setSpotlightOpen(true);
     }
 
     if (targetId === "shop-control-paid-spotlight") {
       setSpotlightPriorityMode("paid");
-      setSpotlightFlowStep("upload");
+      setSpotlightFlowStep(shop?.id ? "upload" : "setup");
       setSpotlightOpen(true);
     }
 
@@ -1086,7 +1088,7 @@ export default function ShopControlPage() {
       hashScrollTimerRef.current = null;
       scrollToControlTarget(targetId);
     }, targetId === "shop-control-spotlight" ? 140 : 40);
-  }, [loading, location.hash, scrollToControlTarget]);
+  }, [loading, location.hash, scrollToControlTarget, shop?.id]);
 
   const publicProducts = useMemo(
     () =>
@@ -1471,7 +1473,7 @@ export default function ShopControlPage() {
   ) {
     guardButtonPress(event);
     setSpotlightPublishFeedback(null);
-    setSpotlightFlowStep("upload");
+    setSpotlightFlowStep(shop?.id ? "upload" : "setup");
     setSpotlightMediaChoice("image");
     setSpotlightPriorityMode(mode);
     setSpotlightOpen(true);
@@ -1641,6 +1643,65 @@ export default function ShopControlPage() {
       showNotice("error", safeStr(err?.message) || "Shop details could not be saved.");
     } finally {
       setSavingShop(false);
+    }
+  }
+
+  async function ensureSpotlightShopRecord() {
+    if (shop?.id) {
+      setSpotlightFlowStep("upload");
+      return;
+    }
+
+    const clanId = Number(selectedClanId || 0);
+    if (clanId <= 0) {
+      const message =
+        "Select the community first, then GSN can create the shop record that spotlight belongs to.";
+      setSpotlightPublishFeedback({ tone: "error", text: message });
+      showNotice("error", message);
+      return;
+    }
+
+    const preparedShopName =
+      safeStr(shopName) ||
+      firstTruthy(me?.display_name, me?.email).replace(/@.*$/, "").trim() ||
+      "My GSN Shop";
+
+    setCreatingSpotlightShop(true);
+    setSpotlightPublishFeedback(null);
+
+    try {
+      const res = await createMarketplaceShop({
+        clan_id: clanId,
+        name: preparedShopName,
+        description: safeStr(shopDescription) || null,
+        whatsapp_number: safeStr(whatsApp) || null,
+        telegram_handle: safeStr(telegramHandle) || null,
+      });
+
+      const created = (res?.item || null) as ShopRecord | null;
+      if (!created?.id) {
+        throw new Error("GSN could not prepare the shop record for spotlight yet.");
+      }
+
+      setShop(created);
+      setShopName(firstTruthy(created?.name, preparedShopName));
+      setShopDescription(firstTruthy(created?.description, shopDescription));
+      setWhatsApp(firstTruthy(created?.whatsapp_number, whatsApp));
+      setTelegramHandle(firstTruthy(created?.telegram_handle, telegramHandle));
+      setImageUrlInput(firstTruthy(created?.image_url));
+      setSpotlightFlowStep("upload");
+      const successMessage =
+        "Shop record is now ready. Continue with the spotlight upload step.";
+      setSpotlightPublishFeedback({ tone: "success", text: successMessage });
+      showNotice("success", successMessage);
+      await loadPage({ background: true, preferredClanId: Number(created?.clan_id || clanId) });
+    } catch (err: any) {
+      const errorMessage =
+        safeStr(err?.message) || "GSN could not create the shop record yet.";
+      setSpotlightPublishFeedback({ tone: "error", text: errorMessage });
+      showNotice("error", errorMessage);
+    } finally {
+      setCreatingSpotlightShop(false);
     }
   }
 
@@ -1983,8 +2044,9 @@ export default function ShopControlPage() {
       </div>
 
       <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <span style={badge(spotlightFlowStep === "upload")}>1. Add media</span>
-        <span style={badge(spotlightFlowStep === "preview")}>2. Preview and publish</span>
+        <span style={badge(spotlightFlowStep === "setup")}>1. Prepare shop</span>
+        <span style={badge(spotlightFlowStep === "upload")}>2. Add media</span>
+        <span style={badge(spotlightFlowStep === "preview")}>3. Preview and publish</span>
         <span style={badge(false)}>Community: {communityName}</span>
       </div>
 
@@ -2019,7 +2081,88 @@ export default function ShopControlPage() {
           gap: 14,
         }}
       >
-        {spotlightFlowStep === "upload" ? (
+        {spotlightFlowStep === "setup" ? (
+          <>
+            <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
+              <div style={sectionLabel()}>Prepare the shop record first</div>
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                Spotlight belongs to your shop. Before the first spotlight can go live,
+                GSN needs one clean shop record attached to this community.
+              </div>
+
+              <div
+                style={{
+                  marginTop: 14,
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                  gap: 12,
+                }}
+              >
+                <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
+                  <div style={sectionLabel()}>Shop name</div>
+                  <input
+                    value={shopName}
+                    onChange={(e) => setShopName(e.target.value)}
+                    placeholder="Shop name"
+                    style={{ ...inputStyle(), marginTop: 8 }}
+                  />
+                </div>
+
+                <div>
+                  <div style={sectionLabel()}>WhatsApp</div>
+                  <input
+                    value={whatsApp}
+                    onChange={(e) => setWhatsApp(e.target.value)}
+                    placeholder="WhatsApp number"
+                    style={{ ...inputStyle(), marginTop: 8 }}
+                  />
+                </div>
+
+                <div>
+                  <div style={sectionLabel()}>Telegram</div>
+                  <input
+                    value={telegramHandle}
+                    onChange={(e) => setTelegramHandle(e.target.value)}
+                    placeholder="Telegram handle"
+                    style={{ ...inputStyle(), marginTop: 8 }}
+                  />
+                </div>
+
+                <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
+                  <div style={sectionLabel()}>Description</div>
+                  <textarea
+                    value={shopDescription}
+                    onChange={(e) => setShopDescription(e.target.value)}
+                    placeholder="Tell people what this shop offers..."
+                    style={{ ...textAreaStyle(), marginTop: 8 }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginTop: 14, ...controlGrid(isCompact, 150) }}>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    void ensureSpotlightShopRecord();
+                  }}
+                  disabled={creatingSpotlightShop}
+                  style={fullButton(actionBtn("primary", creatingSpotlightShop))}
+                >
+                  {creatingSpotlightShop ? "Preparing shop..." : "Continue to shop spotlight"}
+                </button>
+                <button
+                  type="button"
+                  onClick={collapseSpotlightTools}
+                  style={fullButton(actionBtn("secondary"))}
+                >
+                  Cancel spotlight
+                </button>
+              </div>
+            </div>
+          </>
+        ) : spotlightFlowStep === "upload" ? (
           <>
             <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
               <div style={sectionLabel()}>Choose spotlight type</div>

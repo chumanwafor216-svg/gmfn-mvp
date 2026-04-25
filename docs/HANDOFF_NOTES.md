@@ -11247,3 +11247,32 @@ GSN-branded invite composer and invite-entry continuity.
 - Result:
   - frontend lint passed
   - frontend build passed
+
+### Spotlight now leads through first shop setup instead of failing with "shop record is not available" (2026-04-25)
+
+- Product-owner complaint:
+  - opening spotlight before the shop was fully prepared could still lead to
+    `"Shop record is not available."`
+  - this left the user inside the process without the app guiding the missing
+    prerequisite first
+- Applied smallest safe guidance fix:
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - spotlight portal now starts with a `Prepare shop` step whenever no real
+      shop record exists yet
+    - the same spotlight portal lets the user complete the basic shop identity:
+      - shop name
+      - WhatsApp
+      - Telegram
+      - description
+    - GSN then creates the first canonical shop record from inside the portal
+      and automatically advances the user into the upload step
+    - if the community is not selected yet, the portal explains that selection
+      must happen first instead of letting the later spotlight publish fail
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/ShopControlPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed
