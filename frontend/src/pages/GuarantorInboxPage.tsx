@@ -3,6 +3,12 @@ import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
+  institutionalInnerCard,
+  institutionalPageCard,
+  institutionalSoftCard,
+  institutionalStatTile,
+} from "../lib/institutionalSurface";
+import {
   decideLoanGuarantor,
   getCurrentClan,
   getLoanGuarantorInbox,
@@ -115,52 +121,83 @@ function safeDateTime(x: any): string {
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
+    ...institutionalPageCard(bg),
     padding: 22,
-    overflow: "hidden",
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F3F8FF 100%)"
+        : bg,
+    border: "1px solid rgba(108,138,184,0.18)",
+    boxShadow: "0 24px 52px rgba(15,23,42,0.08)",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
-    borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 16,
+    ...institutionalSoftCard(bg),
+    background:
+      bg === "#F8FBFF"
+        ? "linear-gradient(180deg, #FCFEFF 0%, #EDF5FF 100%)"
+        : bg,
+    border: "1px solid rgba(123,153,197,0.18)",
+    boxShadow: "0 18px 40px rgba(15,23,42,0.06)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 14,
+    ...institutionalInnerCard(bg),
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"
+        : bg,
+    border: "1px solid rgba(125,154,196,0.18)",
+    boxShadow: "0 16px 34px rgba(15,23,42,0.05)",
   };
 }
 
 function statTile(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 14,
+    ...institutionalStatTile(bg),
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)"
+        : bg,
+    border: "1px solid rgba(122,152,195,0.18)",
+    boxShadow: "0 14px 30px rgba(15,23,42,0.05)",
   };
 }
 
 function stableTapStyle(): React.CSSProperties {
   return {
     position: "relative",
-    zIndex: 2,
+    zIndex: 20,
     isolation: "isolate",
+    pointerEvents: "auto",
+    boxSizing: "border-box",
+    appearance: "none",
+    WebkitAppearance: "none",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
     transform: "translateZ(0)",
     outlineOffset: 4,
+    lineHeight: 1.2,
+  };
+}
+
+function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
+  event?.stopPropagation();
+}
+
+function buttonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: guardButtonPress,
+    onTouchStart: guardButtonPress,
+    onMouseDown: guardButtonPress,
   };
 }
 
@@ -171,14 +208,19 @@ function routeTile(primary = false): React.CSSProperties {
     flexDirection: "column",
     justifyContent: "space-between",
     minHeight: 104,
+    minWidth: 0,
     borderRadius: 18,
     border: primary
-      ? "1px solid rgba(11,99,209,0.18)"
-      : "1px solid rgba(11,31,51,0.08)",
-    background: primary ? "#F7FAFF" : "#FFFFFF",
+      ? "1px solid rgba(29,95,212,0.22)"
+      : "1px solid rgba(122,152,195,0.18)",
+    background: primary
+      ? "linear-gradient(180deg, #F7FBFF 0%, #E9F2FF 100%)"
+      : "linear-gradient(180deg, #FFFDF9 0%, #F3F8FF 100%)",
     padding: 16,
     textDecoration: "none",
-    boxShadow: primary ? "0 10px 24px rgba(11,99,209,0.05)" : "none",
+    boxShadow: primary
+      ? "0 16px 34px rgba(29,95,212,0.10)"
+      : "0 14px 30px rgba(15,23,42,0.05)",
   };
 }
 
@@ -189,10 +231,13 @@ function primaryBtn(disabled = false): React.CSSProperties {
     alignItems: "center",
     justifyContent: "center",
     padding: "11px 14px",
-    minHeight: 42,
+    minHeight: 48,
+    minWidth: 120,
     borderRadius: 14,
     border: "none",
-    background: disabled ? "#CBD5E1" : "#0B63D1",
+    background: disabled
+      ? "#CBD5E1"
+      : "linear-gradient(180deg, #255FCE 0%, #1B4FBF 100%)",
     color: "#FFFFFF",
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
@@ -201,6 +246,8 @@ function primaryBtn(disabled = false): React.CSSProperties {
     textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
     whiteSpace: "normal",
+    overflowWrap: "anywhere",
+    boxShadow: disabled ? "none" : "0 14px 30px rgba(29,95,212,0.26)",
   };
 }
 
@@ -211,10 +258,11 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     alignItems: "center",
     justifyContent: "center",
     padding: "11px 14px",
-    minHeight: 42,
+    minHeight: 48,
+    minWidth: 120,
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(124,154,196,0.18)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F1F7FF 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
@@ -223,6 +271,8 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
     whiteSpace: "normal",
+    overflowWrap: "anywhere",
+    boxShadow: "0 12px 24px rgba(15,23,42,0.06)",
   };
 }
 
@@ -230,15 +280,23 @@ function filterBtn(active: boolean): React.CSSProperties {
   return {
     ...stableTapStyle(),
     padding: "10px 12px",
+    minHeight: 46,
+    minWidth: 108,
     borderRadius: 14,
-    border: active ? "1px solid #BFDBFE" : "1px solid rgba(11,31,51,0.10)",
-    background: active ? "#EFF6FF" : "#FFFFFF",
+    border: active ? "1px solid #BFDBFE" : "1px solid rgba(148,163,184,0.16)",
+    background: active
+      ? "linear-gradient(180deg, #EFF6FF 0%, #DBEAFE 100%)"
+      : "linear-gradient(180deg, #FFFFFF 0%, #F7FAFE 100%)",
     color: active ? "#1D4ED8" : "#0B1F33",
     fontWeight: 1000,
     cursor: "pointer",
     fontSize: 14,
     textAlign: "center",
     whiteSpace: "normal",
+    overflowWrap: "anywhere",
+    boxShadow: active
+      ? "0 10px 22px rgba(29,78,216,0.14)"
+      : "0 8px 18px rgba(15,23,42,0.04)",
   };
 }
 
@@ -248,17 +306,20 @@ function collapseToggle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 38,
-    padding: "8px 12px",
+    minHeight: 44,
+    minWidth: 116,
+    padding: "9px 13px",
     borderRadius: 12,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(124,154,196,0.18)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F1F7FF 100%)",
     color: "#24415C",
     fontWeight: 800,
     fontSize: 13,
     textAlign: "center",
     cursor: "pointer",
     whiteSpace: "normal",
+    overflowWrap: "anywhere",
+    boxShadow: "0 10px 22px rgba(15,23,42,0.06)",
   };
 }
 
@@ -278,7 +339,7 @@ function noticeCard(tone: Notice["tone"]): React.CSSProperties {
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#4F6B8A",
+    color: "#39526C",
     fontWeight: 1000,
     letterSpacing: 0.45,
     textTransform: "uppercase",
@@ -289,11 +350,16 @@ function badge(primary = false): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
-    minHeight: 30,
-    padding: "6px 10px",
+    minHeight: 32,
+    padding: "7px 12px",
     borderRadius: 999,
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#475569",
+    background: primary
+      ? "linear-gradient(180deg, rgba(29,95,212,0.14) 0%, rgba(29,95,212,0.09) 100%)"
+      : "linear-gradient(180deg, rgba(130,146,172,0.16) 0%, rgba(130,146,172,0.10) 100%)",
+    border: primary
+      ? "1px solid rgba(29,95,212,0.16)"
+      : "1px solid rgba(130,146,172,0.14)",
+    color: primary ? "#164AAE" : "#445C75",
     fontSize: 12,
     fontWeight: 1000,
     whiteSpace: "normal",
@@ -302,8 +368,8 @@ function badge(primary = false): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#5F7287",
-    fontSize: 14,
+    color: "#4F657B",
+    fontSize: 14.5,
     lineHeight: 1.75,
   };
 }
@@ -720,7 +786,7 @@ export default function GuarantorInboxPage() {
   }
 
   return (
-    <div style={{ maxWidth: 1180, margin: "0 auto", paddingBottom: 40 }}>
+    <div style={{ maxWidth: 1180, margin: "0 auto", paddingBottom: isCompact ? 40 : 60 }}>
       <PageTopNav
         sectionLabel="Incoming Guarantor Requests"
         title="Incoming Guarantor Requests"
@@ -743,7 +809,7 @@ export default function GuarantorInboxPage() {
       <ExplainToggle
         label="What this screen does"
         what="This page is the incoming queue for guarantor requests that need your response."
-        why="It helps you see what is waiting in your community before you move into the deeper support workbench."
+        why="Finance keeps the money record. Guarantor Inbox keeps the live response queue so you can act clearly without mixing it with borrower work."
         next="Read the queue context first, then open the request or route that needs your next guarantor decision."
         tone="blue"
         style={{ marginTop: 18 }}
@@ -890,7 +956,12 @@ export default function GuarantorInboxPage() {
                 {nextStep.ctaLabel}
               </OriginLink>
 
-              <button type="button" onClick={copyQueueSummary} style={secondaryBtn(false)}>
+              <button
+                type="button"
+                {...buttonGuardProps()}
+                onClick={copyQueueSummary}
+                style={secondaryBtn(false)}
+              >
                 Copy Queue Summary
               </button>
             </div>
@@ -945,6 +1016,7 @@ export default function GuarantorInboxPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("overview")}
             style={collapseToggle()}
           >
@@ -1039,6 +1111,7 @@ export default function GuarantorInboxPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("queue")}
             style={collapseToggle()}
           >
@@ -1053,6 +1126,7 @@ export default function GuarantorInboxPage() {
                 <button
                   key={x}
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={() => setFilter(x)}
                   style={filterBtn(filter === x)}
                 >
@@ -1168,6 +1242,7 @@ export default function GuarantorInboxPage() {
                           <>
                             <button
                               type="button"
+                              {...buttonGuardProps()}
                               onClick={() => void handleDecision(row, "approved")}
                               disabled={Boolean(busyDecisionKey)}
                               style={primaryBtn(Boolean(busyDecisionKey))}
@@ -1178,6 +1253,7 @@ export default function GuarantorInboxPage() {
                             </button>
                             <button
                               type="button"
+                              {...buttonGuardProps()}
                               onClick={() => void handleDecision(row, "declined")}
                               disabled={Boolean(busyDecisionKey)}
                               style={secondaryBtn(Boolean(busyDecisionKey))}
@@ -1223,6 +1299,7 @@ export default function GuarantorInboxPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("guidance")}
             style={collapseToggle()}
           >
@@ -1295,6 +1372,7 @@ export default function GuarantorInboxPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("routes")}
             style={collapseToggle()}
           >
@@ -1409,6 +1487,7 @@ export default function GuarantorInboxPage() {
           </div>
         ) : null}
       </section>
+
     </div>
   );
 }

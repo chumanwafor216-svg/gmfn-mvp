@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from decimal import Decimal
 from typing import Optional, Tuple
-import secrets
 
 from fastapi import Depends, Header, HTTPException
 from sqlalchemy.orm import Session
@@ -12,21 +11,33 @@ from app.db.database import get_db
 from app.db.models import Clan, ClanMembership, User
 from app.core.auth import get_current_user
 
+DEFAULT_CLAN_NAME = "Default Clan"
+LEGACY_DEFAULT_CLAN_NAME = "GMFN Default Clan"
 
-def get_or_create_default_clan(*, db: Session) -> Clan:
-    """
-    Returns the default clan, creating it if missing.
-    """
-    clan = db.query(Clan).filter(Clan.name == "Default Clan").first()
-    if clan:
-        return clan
 
-    # ✅ invite_code is NOT NULL, so always set it
-    clan = Clan(name="Default Clan", invite_code=secrets.token_urlsafe(16))
-    db.add(clan)
-    db.commit()
-    db.refresh(clan)
-    return clan
+def _is_default_clan_name(name: str | None) -> bool:
+    normalized = (name or "").strip().lower()
+    return normalized in {
+        DEFAULT_CLAN_NAME.lower(),
+        LEGACY_DEFAULT_CLAN_NAME.lower(),
+    }
+
+
+def list_visible_user_clans(*, db: Session, user: User) -> list[Clan]:
+    clans = (
+        db.query(Clan)
+        .join(ClanMembership, ClanMembership.clan_id == Clan.id)
+        .filter(
+            ClanMembership.user_id == user.id,
+            ClanMembership.left_at.is_(None),
+        )
+        .order_by(Clan.id.desc())
+        .all()
+    )
+    real_clans = [
+        clan for clan in clans if not _is_default_clan_name(getattr(clan, "name", None))
+    ]
+    return real_clans
 
 
 def ensure_membership(*, db: Session, clan: Clan, user: User, role: str = "user") -> ClanMembership:
@@ -38,6 +49,7 @@ def ensure_membership(*, db: Session, clan: Clan, user: User, role: str = "user"
         .filter(
             ClanMembership.clan_id == clan.id,
             ClanMembership.user_id == user.id,
+            ClanMembership.left_at.is_(None),
         )
         .first()
     )
@@ -48,6 +60,24 @@ def ensure_membership(*, db: Session, clan: Clan, user: User, role: str = "user"
             db.commit()
             db.refresh(m)
         return m
+
+    archived = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.clan_id == clan.id,
+            ClanMembership.user_id == user.id,
+            ClanMembership.left_at.isnot(None),
+        )
+        .order_by(ClanMembership.id.desc())
+        .first()
+    )
+    if archived:
+        archived.left_at = None
+        if role == "admin" or (archived.role or "").lower() != "admin":
+            archived.role = role
+        db.commit()
+        db.refresh(archived)
+        return archived
 
     m = ClanMembership(
         clan_id=clan.id,
@@ -69,15 +99,22 @@ def get_current_clan_membership(
     """
     Gets (clan, membership, current_user).
     - If X-Clan-Id header is provided, use that clan (must exist).
-    - Else use/create the default clan.
-    - Always ensure membership exists.
+    - Else use the first real active clan the user already belongs to.
+    - Do not auto-create or auto-assign a default clan.
+    - Only ensure membership for a real chosen clan.
     """
     if x_clan_id is not None:
         clan = db.get(Clan, x_clan_id)
         if not clan:
             raise HTTPException(status_code=404, detail="Clan not found")
     else:
-        clan = get_or_create_default_clan(db=db)
+        visible_clans = list_visible_user_clans(db=db, user=current_user)
+        if not visible_clans:
+            raise HTTPException(
+                status_code=404,
+                detail="No community selected. Create or join a community first.",
+            )
+        clan = visible_clans[0]
 
     # If user is admin, make them clan-admin as well
     role = "admin" if (current_user.role or "").lower() == "admin" else "user"

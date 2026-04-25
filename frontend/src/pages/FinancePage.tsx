@@ -12,6 +12,11 @@ import {
   type CommunityMoneySurface,
   type GuarantorExposureSummary,
 } from "../lib/communityMoney";
+import {
+  institutionalInnerCard,
+  institutionalPageCard,
+  institutionalSoftCard,
+} from "../lib/institutionalSurface";
 import { navigateWithOrigin } from "../lib/nav";
 
 type CollapseState = {
@@ -439,39 +444,21 @@ function isBorrowerLoan(row: LoanRow): boolean {
 }
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
-  return {
-    borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 20,
-    boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
-    overflow: "hidden",
-  };
+  return institutionalPageCard(bg);
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
-  return {
-    borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 16,
-  };
+  return institutionalSoftCard(bg);
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
-  return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 14,
-  };
+  return institutionalInnerCard(bg);
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#5D7389",
+    color: "#435A72",
     fontWeight: 900,
     letterSpacing: 0.35,
     textTransform: "uppercase",
@@ -486,8 +473,10 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? "rgba(29,78,216,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#1D4ED8" : "#51657A",
+    background: primary
+      ? "linear-gradient(180deg, rgba(29,78,216,0.16) 0%, rgba(29,78,216,0.09) 100%)"
+      : "linear-gradient(180deg, rgba(100,116,139,0.16) 0%, rgba(100,116,139,0.10) 100%)",
+    color: primary ? "#164AAE" : "#455D75",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
@@ -497,8 +486,9 @@ function badge(primary = false): React.CSSProperties {
 function tapSafeButtonBase(): React.CSSProperties {
   return {
     position: "relative",
-    zIndex: 2,
+    zIndex: 20,
     boxSizing: "border-box",
+    pointerEvents: "auto",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
@@ -506,6 +496,8 @@ function tapSafeButtonBase(): React.CSSProperties {
     WebkitAppearance: "none",
     isolation: "isolate",
     transform: "translateZ(0)",
+    outlineOffset: 4,
+    lineHeight: 1.2,
   };
 }
 
@@ -523,7 +515,9 @@ function actionBtn(
       padding: "11px 15px",
       borderRadius: 14,
       border: "none",
-      background: disabled ? "#CBD5E1" : "#1D4ED8",
+      background: disabled
+        ? "linear-gradient(180deg, #D5DEE8 0%, #C6D1DE 100%)"
+        : "linear-gradient(180deg, #2A6AF3 0%, #154EBB 100%)",
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
@@ -532,6 +526,9 @@ function actionBtn(
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
+      boxShadow: disabled
+        ? "none"
+        : "0 14px 28px rgba(21,78,187,0.24), inset 0 1px 0 rgba(255,255,255,0.22)",
     };
   }
 
@@ -541,11 +538,11 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 44,
-      padding: "10px 13px",
+      minHeight: 46,
+      padding: "10px 14px",
       borderRadius: 12,
-      border: "1px solid rgba(29,78,216,0.10)",
-      background: "#F5FAFF",
+      border: "1px solid rgba(29,78,216,0.18)",
+      background: "linear-gradient(180deg, #FBFDFF 0%, #EBF4FF 100%)",
       color: disabled ? "#94A3B8" : "#1E4063",
       fontWeight: 800,
       fontSize: 13,
@@ -554,6 +551,9 @@ function actionBtn(
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
+      boxShadow: disabled
+        ? "none"
+        : "0 12px 24px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
     };
   }
 
@@ -562,11 +562,11 @@ function actionBtn(
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 46,
+    minHeight: 48,
     padding: "11px 15px",
     borderRadius: 14,
-    border: "1px solid rgba(29,78,216,0.12)",
-    background: "#FDFEFF",
+    border: "1px solid rgba(29,78,216,0.18)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
@@ -575,6 +575,9 @@ function actionBtn(
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
+    boxShadow: disabled
+      ? "none"
+      : "0 12px 24px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.84)",
   };
 }
 
@@ -588,8 +591,8 @@ function collapseToggle(): React.CSSProperties {
     minWidth: 106,
     padding: "10px 16px",
     borderRadius: 14,
-    border: "1px solid rgba(29,78,216,0.12)",
-    background: "#FDFEFF",
+    border: "1px solid rgba(29,78,216,0.18)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #EDF5FF 100%)",
     color: "#1E4063",
     fontWeight: 900,
     fontSize: 13.5,
@@ -597,7 +600,7 @@ function collapseToggle(): React.CSSProperties {
     textAlign: "center",
     whiteSpace: "normal",
     boxShadow:
-      "0 9px 18px rgba(10,24,49,0.075), inset 0 1px 0 rgba(255,255,255,0.78)",
+      "0 12px 24px rgba(10,24,49,0.085), inset 0 1px 0 rgba(255,255,255,0.82)",
   };
 }
 
@@ -607,7 +610,7 @@ function stopFinanceTap(event: React.SyntheticEvent<HTMLElement>) {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#5F7287",
+    color: "#4E657C",
     fontSize: 14,
     lineHeight: 1.75,
   };
@@ -1367,8 +1370,8 @@ export default function FinancePage() {
       {
         id: "support",
         label: "Borrow / lend / support",
-        detail: "Open the wider support and loan workspace.",
-        technical: "Loans / Support",
+        detail: "Open the live Loans & Support workspace for this community.",
+        technical: "Loans & Support",
         to: "/app/loans",
         keywords: ["loan", "borrow", "lend", "support", "guarantor", "repay"],
       },
@@ -1401,7 +1404,7 @@ export default function FinancePage() {
       {
         id: "readiness",
         label: "Check loan readiness",
-        detail: "Review support position and readiness signals.",
+        detail: "Review whether the live support path looks ready to continue.",
         technical: "Loan readiness",
         to: "/app/loan-readiness",
         keywords: ["ready", "readiness", "eligible", "clean", "trust"],
@@ -1556,14 +1559,14 @@ export default function FinancePage() {
           { label: "Payment Rails", to: "/app/payment-rails" },
           { label: "Payout Details", to: "/app/payout-details" },
           { label: "Commitment Builder", to: "/app/dashboard#focus-commitments" },
-          { label: "Loans", to: "/app/loans" },
+          { label: "Loans & Support", to: "/app/loans" },
           { label: "Notifications", to: "/app/notifications" },
         ]}
       />
 
       <DomainIntroToggle
         title="How Finance Helps You"
-        body="Finance is not here to judge trust by how much money someone already has. It helps a member build visible reliability from how they behave around money: borrowing honestly, repaying properly, supporting others responsibly, and avoiding pressure across too many communities."
+        body="Finance is not here to judge trust by how much money someone already has. It helps a member build visible reliability from how they behave around money: borrowing honestly, repaying properly, supporting others responsibly, and avoiding pressure across too many communities. Finance keeps the wider record. Loans & Support handles the live workflow inside one community."
         bullets={[
           "A member without formal bank history can still build proof through small completed repayments, confirmed payments, and responsible support.",
           "If the member belongs to five communities, Finance keeps one GSN finance file with each community shown as its own simple finance unit.",
@@ -1628,7 +1631,7 @@ export default function FinancePage() {
                 lineHeight: 1.05,
               }}
             >
-              Cross-community finance file
+              Wider finance file
             </div>
 
             <div
@@ -1640,7 +1643,7 @@ export default function FinancePage() {
                 maxWidth: 760,
               }}
             >
-              Combined finance view for {memberName}. The same GSN ID is read
+              Wider finance view for {memberName}. The same GSN ID is read
               across communities, with each local finance unit kept separate so
               GSN can see whether money behaviour is helping, needs watching,
               or creating pressure.
@@ -1951,7 +1954,7 @@ export default function FinancePage() {
           <div>
             <div style={sectionLabel()}>Balances and exposure</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Main figures from the selected community pool file and active exposure records.
+              Main figures from the selected community unit inside the wider finance file.
             </div>
           </div>
 
@@ -2116,9 +2119,9 @@ export default function FinancePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Borrowing and support exposure</div>
+            <div style={sectionLabel()}>Support exposure in this community</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Loan summaries, support exposure, guarantor earnings, and community liquidity context.
+              Finance shows the money effect here. Loans & Support handles the live workflow and decisions.
             </div>
           </div>
 
@@ -2308,7 +2311,7 @@ export default function FinancePage() {
 
             <div>
               <OriginLink to="/app/loans" style={actionBtn("secondary")}>
-                Open Loans and Support
+                Open Loans & Support
               </OriginLink>
             </div>
           </div>

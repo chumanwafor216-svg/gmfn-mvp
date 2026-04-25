@@ -4,6 +4,10 @@ import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import { getJoinApprovalStatus } from "../lib/api";
+import {
+  institutionalPageCard,
+  institutionalSoftCard,
+} from "../lib/institutionalSurface";
 import { navigateWithOrigin, withOriginState } from "../lib/nav";
 
 type ApprovalStatus = {
@@ -24,19 +28,16 @@ type NormalizedStatus = "approved" | "pending" | "rejected" | "unknown";
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
+    ...institutionalPageCard(bg),
     border: "1px solid rgba(11,31,51,0.08)",
-    borderRadius: 20,
-    background: bg,
     padding: 18,
-    boxShadow: "0 12px 30px rgba(15,23,42,0.05)",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
+    ...institutionalSoftCard(bg),
     border: "1px solid rgba(11,31,51,0.08)",
-    borderRadius: 16,
-    background: bg,
     padding: 14,
   };
 }
@@ -46,18 +47,33 @@ function actionBtn(primary = false, disabled = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "10px 14px",
-    borderRadius: 12,
-    border: primary ? "none" : "1px solid rgba(11,31,51,0.12)",
-    background: disabled ? "#CBD5E1" : primary ? "#1D4ED8" : "#FFFFFF",
+    minHeight: 48,
+    padding: "12px 16px",
+    borderRadius: 14,
+    border: primary
+      ? "1px solid rgba(11,80,170,0.22)"
+      : "1px solid rgba(37,78,119,0.20)",
+    background: disabled
+      ? "linear-gradient(180deg, #CBD5E1 0%, #B8C4D4 100%)"
+      : primary
+      ? "linear-gradient(180deg, #1A6BE1 0%, #0B63D1 58%, #09479C 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(241,247,253,0.98) 62%, rgba(224,234,244,0.98) 100%)",
     color: primary ? "#FFFFFF" : "#0B1F33",
     fontWeight: 900,
     textAlign: "center",
     cursor: disabled ? "not-allowed" : "pointer",
     textDecoration: "none",
     opacity: disabled ? 0.75 : 1,
-    minHeight: 42,
+    boxShadow: disabled
+      ? "none"
+      : primary
+      ? "0 16px 30px rgba(11,99,209,0.22), inset 0 1px 0 rgba(255,255,255,0.24)"
+      : "0 12px 24px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.84)",
     whiteSpace: "normal",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    transform: "translateZ(0)",
   };
 }
 
@@ -276,7 +292,7 @@ export default function JoinApprovalPage() {
     }
 
     if (status === "pending") {
-      return "Your request is still under review. Check back again later.";
+      return "Your request is still under review. If the community currently requires more than one approval, it can remain pending until the remaining review decision arrives.";
     }
 
     if (status === "rejected") {
@@ -287,9 +303,11 @@ export default function JoinApprovalPage() {
   }, [data?.message, status]);
 
   const communityLabel = useMemo(() => {
-    return safeStr(
-      data?.community_name || data?.marketplace_name || "Not available yet"
-    );
+    return safeStr(data?.community_name || "Not available yet");
+  }, [data]);
+
+  const marketplaceLabel = useMemo(() => {
+    return safeStr(data?.marketplace_name || "");
   }, [data]);
 
   const requestLabel = useMemo(() => {
@@ -451,6 +469,11 @@ export default function JoinApprovalPage() {
                 {communityLabel !== "Not available yet" ? (
                   <span style={badge(false)}>Community: {communityLabel}</span>
                 ) : null}
+                {marketplaceLabel ? (
+                  <span style={badge(false)}>
+                    Community / Market: {marketplaceLabel}
+                  </span>
+                ) : null}
                 {safeStr(data?.community_code) ? (
                   <span style={badge(false)}>
                     Community ID: {safeStr(data?.community_code)}
@@ -499,6 +522,22 @@ export default function JoinApprovalPage() {
                     {communityLabel}
                   </div>
                 </div>
+
+                {marketplaceLabel ? (
+                  <div style={softCard()}>
+                    <div style={sectionLabel()}>Community / Market</div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#0B1F33",
+                        fontWeight: 1000,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      {marketplaceLabel}
+                    </div>
+                  </div>
+                ) : null}
 
                 {safeStr(data?.community_code) ? (
                   <div style={softCard()}>

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from math import floor
+import os
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
@@ -77,6 +79,50 @@ def _safe_str(value: Any, default: str = "") -> str:
         return default
     s = str(value).strip()
     return s if s else default
+
+
+def _uploads_root() -> Path:
+    raw = str(os.getenv("GMFN_UPLOADS_DIR", "uploads") or "").strip()
+    return Path(raw or "uploads").expanduser()
+
+
+def _local_upload_exists(media_url: Any) -> bool:
+    value = _safe_str(media_url)
+    if not value:
+        return False
+
+    lowered = value.lower()
+    if (
+        lowered.startswith("http://")
+        or lowered.startswith("https://")
+        or lowered.startswith("blob:")
+        or lowered.startswith("data:")
+    ):
+        return True
+
+    if not value.startswith("/uploads/"):
+        return True
+
+    cleaned = value.split("?", 1)[0].split("#", 1)[0].replace("\\", "/")
+    relative = cleaned[len("/uploads/") :].lstrip("/")
+    if not relative:
+        return False
+
+    try:
+        root = _uploads_root().resolve()
+        candidate = (root / relative).resolve()
+        candidate.relative_to(root)
+    except Exception:
+        return False
+
+    return candidate.is_file()
+
+
+def _available_media_url(media_url: Any) -> Optional[str]:
+    value = _safe_str(media_url)
+    if not value:
+        return None
+    return value if _local_upload_exists(value) else None
 
 
 def _safe_int(value: Any, default: int = 0) -> int:
@@ -580,6 +626,8 @@ def _product_out(db: Session, product: MarketplaceProduct) -> Dict[str, Any]:
         getattr(product, "visibility_mode", None),
         VISIBILITY_COMMUNITY,
     )
+    image_url = _available_media_url(getattr(product, "image_url", None))
+    video_url = _available_media_url(getattr(product, "video_url", None))
 
     return {
         "id": int(product.id),
@@ -591,8 +639,10 @@ def _product_out(db: Session, product: MarketplaceProduct) -> Dict[str, Any]:
         "description": product.description,
         "price": product.price,
         "currency": product.currency,
-        "image_url": product.image_url,
-        "video_url": getattr(product, "video_url", None),
+        "image_url": image_url,
+        "video_url": video_url,
+        "image_url_available": bool(image_url),
+        "video_url_available": bool(video_url),
         "visibility_mode": visibility_mode,
         "is_active": bool(product.is_active),
         "created_at": product.created_at.isoformat() if product.created_at else None,
@@ -670,8 +720,8 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
         "author_gmfn_id": author_gmfn_id,
         "shop_id": int(item.shop_id) if getattr(item, "shop_id", None) is not None else None,
         "message": item.message,
-        "image_url": item.image_url,
-        "video_url": getattr(item, "video_url", None),
+        "image_url": _available_media_url(getattr(item, "image_url", None)),
+        "video_url": _available_media_url(getattr(item, "video_url", None)),
         "priority_mode": _safe_str(getattr(item, "priority_mode", None), SPOTLIGHT_FREE),
         "visibility_scope": _safe_str(
             getattr(item, "visibility_scope", None),
@@ -1828,6 +1878,16 @@ def list_marketplace_broadcasts(
             | (MarketplaceBroadcast.expires_at > now)
         )
 
+    matching_total = q.count()
+    video_total = q.filter(
+        MarketplaceBroadcast.video_url.isnot(None),
+        MarketplaceBroadcast.video_url != "",
+    ).count()
+    image_total = q.filter(
+        MarketplaceBroadcast.image_url.isnot(None),
+        MarketplaceBroadcast.image_url != "",
+    ).count()
+
     items = (
         q.order_by(MarketplaceBroadcast.created_at.desc(), MarketplaceBroadcast.id.desc())
         .limit(int(limit))
@@ -1837,7 +1897,12 @@ def list_marketplace_broadcasts(
     return {
         "items": [_broadcast_out(db, x) for x in items],
         "total": len(items),
+        "matching_total": matching_total,
+        "active_total": matching_total if active_only else None,
+        "video_total": video_total,
+        "image_total": image_total,
         "clan_id": selected_clan_id,
+        "spotlight_capacity_pilot_override_active": _spotlight_capacity_pilot_override_active(),
     }
 
 
@@ -2017,6 +2082,7 @@ def create_marketplace_broadcast(
         "items": [_broadcast_out(db, x) for x in created_items],
         "propagated_clan_ids": target_clan_ids,
         "propagated_count": len(created_items),
+        "spotlight_capacity_pilot_override_active": _spotlight_capacity_pilot_override_active(),
     }
 
 

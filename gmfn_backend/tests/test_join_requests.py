@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 
 from app.api.routes import clans as clans_route
+from app.core import clan_auth
 from app.db.database import SessionLocal
 from app.db.models import Clan, ClanInvite, ClanJoinRequest, ClanMembership, User
+from app.db.notification_models import Notification
+from app.main import app
 
 
 def _seed_join_context(*, invite_code: str = "legacy-code") -> None:
@@ -127,7 +131,7 @@ def test_public_join_invite_preview_reports_invalid_invite_without_throwing(clie
     assert "fresh GSN invite link" in data["message"]
 
 
-def test_public_join_invite_preview_does_not_treat_legacy_clan_invite_code_as_live_share_link(client):
+def test_public_join_invite_preview_accepts_legacy_clan_invite_code_when_no_live_share_link_exists(client):
     _seed_join_context(invite_code="legacy-code")
 
     res = client.get("/clans/join-invite/preview?code=legacy-code")
@@ -135,9 +139,40 @@ def test_public_join_invite_preview_does_not_treat_legacy_clan_invite_code_as_li
     assert res.status_code == 200, res.text
     data = res.json()
     assert data["ok"] is True
-    assert data["valid"] is False
-    assert data["status"] == "not_found"
-    assert "fresh GSN invite link" in data["message"]
+    assert data["valid"] is True
+    assert data["status"] == "ready"
+    assert data["invite_code"] == "legacy-code"
+    assert data["community_name"] == "Aberdeen City ICA"
+
+
+def test_public_join_invite_preview_recovers_latest_live_invite_from_legacy_clan_invite_code(client):
+    _seed_join_context(invite_code="legacy-code")
+
+    with SessionLocal() as db:
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="latest-live-code",
+                is_active=True,
+                max_uses=100,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    res = client.get("/clans/join-invite/preview?code=legacy-code")
+
+    assert res.status_code == 200, res.text
+    data = res.json()
+    assert data["ok"] is True
+    assert data["valid"] is True
+    assert data["status"] == "ready"
+    assert data["invite_code"] == "latest-live-code"
+    assert "latest live invitation" in data["message"].lower()
 
 
 def test_public_join_invite_preview_recovers_latest_invite_from_community_code(client):
@@ -212,6 +247,194 @@ def test_public_join_request_accepts_short_lived_invite_during_daily_pilot_windo
     assert data["request"]["invite_id"] == 1
 
 
+def test_public_join_request_notifies_all_active_reviewers_not_only_admins(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        reviewer = User(
+            id=2,
+            email="reviewer@example.com",
+            hashed_password="hashed",
+            role="user",
+        )
+        db.add(reviewer)
+        db.flush()
+        db.add(
+            ClanMembership(
+                id=2,
+                clan_id=1,
+                user_id=2,
+                role="user",
+                personal_pool_balance=0,
+            )
+        )
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="package-code",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    res = client.post("/clans/join-requests", json=_join_payload("package-code"))
+
+    assert res.status_code == 201, res.text
+
+    with SessionLocal() as db:
+        notifications = (
+            db.query(Notification)
+            .filter(Notification.kind == "approval_request")
+            .order_by(Notification.user_id.asc(), Notification.id.asc())
+            .all()
+        )
+
+        assert [int(row.user_id) for row in notifications] == [1, 2]
+        assert all(
+            row.action_url == "/app/community/1/join-requests?request_id=1&community_code=GMFN-C-000001"
+            for row in notifications
+        )
+        assert all("GMFN-C-000001" in row.message for row in notifications)
+
+
+def test_list_join_requests_reports_admin_reviewer_override_capability(
+    client,
+    override_clan_ctx_admin,
+):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        applicant = User(
+            id=2,
+            email="pending@example.com",
+            hashed_password="hashed",
+            role="user",
+        )
+        db.add(applicant)
+        db.flush()
+        db.add(
+            ClanJoinRequest(
+                id=1,
+                clan_id=1,
+                applicant_user_id=2,
+                invited_by_user_id=1,
+                status="pending",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    res = client.get("/clans/1/join-requests", headers={"X-Clan-Id": "1"})
+
+    assert res.status_code == 200, res.text
+    data = res.json()
+    assert data["reviewer_role"] == "admin"
+    assert data["reviewer_can_pilot_approve"] is True
+    assert len(data["items"]) == 1
+
+
+def test_admin_can_pilot_approve_join_request_without_waiting_for_threshold(
+    client,
+    override_clan_ctx_admin,
+    override_current_user,
+):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        applicant = User(
+            id=2,
+            email="pending@example.com",
+            hashed_password="hashed",
+            role="user",
+        )
+        reviewer = User(
+            id=3,
+            email="reviewer@example.com",
+            hashed_password="hashed",
+            role="user",
+        )
+        db.add_all([applicant, reviewer])
+        db.flush()
+        db.add(
+            ClanMembership(
+                id=2,
+                clan_id=1,
+                user_id=3,
+                role="user",
+                personal_pool_balance=0,
+            )
+        )
+        db.add(
+            ClanJoinRequest(
+                id=1,
+                clan_id=1,
+                applicant_user_id=2,
+                invited_by_user_id=1,
+                status="pending",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    res = client.post(
+        "/clans/1/join-requests/1/pilot-approve",
+        headers={"X-Clan-Id": "1"},
+    )
+
+    assert res.status_code == 200, res.text
+    data = res.json()
+    assert data["ok"] is True
+    assert data["pilot_override"] is True
+    assert data["approved_now"] is True
+    assert data["approval_result"]["status"] == "approved"
+    assert data["approval_result"]["gmfn_id"].startswith("GMFN-U-")
+
+    with SessionLocal() as db:
+        req = db.get(ClanJoinRequest, 1)
+        applicant = db.get(User, 2)
+        votes = (
+            db.query(clans_route.ClanJoinVote)
+            .filter(clans_route.ClanJoinVote.join_request_id == 1)
+            .all()
+        )
+        membership = (
+            db.query(ClanMembership)
+            .filter(
+                ClanMembership.clan_id == 1,
+                ClanMembership.user_id == 2,
+                ClanMembership.left_at.is_(None),
+            )
+            .first()
+        )
+
+        assert req is not None
+        assert req.status == "approved"
+        assert applicant is not None
+        assert applicant.gmfn_id is not None
+        assert membership is not None
+        assert len(votes) == 1
+        assert votes[0].vote == "approve"
+
+        approval_notice = (
+            db.query(Notification)
+            .filter(
+                Notification.user_id == 2,
+                Notification.kind == "approval_success",
+            )
+            .order_by(Notification.id.desc())
+            .first()
+        )
+
+        assert approval_notice is not None
+        assert approval_notice.action_url == f"/activate-membership?gmfn_id={applicant.gmfn_id}&request_id=1"
+
+
 def test_public_join_request_rejects_short_lived_invite_after_daily_pilot_window(client):
     _seed_join_context()
     now = datetime.now(timezone.utc)
@@ -253,3 +476,54 @@ def test_public_join_request_still_accepts_legacy_community_invite_code(client):
         clan = db.get(Clan, 1)
         assert clan is not None
         assert clan.invite_uses == 1
+
+
+def test_create_invite_route_refreshes_by_retiring_older_live_invites(
+    client,
+):
+    _seed_join_context()
+
+    def fake_clan_ctx():
+        clan = SimpleNamespace(
+            id=1,
+            name="Aberdeen City ICA",
+            marketplace_name="Aberdeen city marketplace",
+        )
+        membership = SimpleNamespace(role="admin", clan_id=1, user_id=1)
+        current_user = SimpleNamespace(id=1, email="admin@example.com")
+        return clan, membership, current_user
+
+    app.dependency_overrides[clan_auth.get_current_clan_membership] = fake_clan_ctx
+
+    try:
+        first = client.post("/clans/1/invite")
+        assert first.status_code == 200, first.text
+        first_data = first.json()
+        first_code = first_data["invite_code"]
+        assert first_data["retired_live_invites"] == 0
+
+        second = client.post("/clans/1/invite")
+        assert second.status_code == 200, second.text
+        second_data = second.json()
+        second_code = second_data["invite_code"]
+
+        assert second_code != first_code
+        assert second_data["retired_live_invites"] == 1
+
+        with SessionLocal() as db:
+            invites = (
+                db.query(ClanInvite)
+                .filter(ClanInvite.clan_id == 1)
+                .order_by(ClanInvite.created_at.asc(), ClanInvite.id.asc())
+                .all()
+            )
+
+            assert len(invites) == 2
+            assert invites[0].code == first_code
+            assert invites[0].is_active is False
+            assert invites[0].revoked_at is not None
+            assert invites[1].code == second_code
+            assert invites[1].is_active is True
+            assert invites[1].revoked_at is None
+    finally:
+        app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)

@@ -940,6 +940,7 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     let alive = true;
+    let intervalId: number | null = null;
 
     async function loadAll() {
       setGuidanceLoading(true);
@@ -976,13 +977,38 @@ export default function NotificationsPage() {
 
     void loadAll();
 
-    const intervalId = window.setInterval(() => {
+    function handleVisibilityRefresh() {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
+
       void loadAll();
-    }, 60000);
+    }
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("focus", handleVisibilityRefresh);
+      intervalId = window.setInterval(() => {
+        void loadAll();
+      }, 15000);
+    }
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityRefresh);
+    }
 
     return () => {
       alive = false;
-      window.clearInterval(intervalId);
+
+      if (typeof window !== "undefined") {
+        window.removeEventListener("focus", handleVisibilityRefresh);
+        if (intervalId !== null) {
+          window.clearInterval(intervalId);
+        }
+      }
+
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityRefresh);
+      }
     };
   }, []);
 

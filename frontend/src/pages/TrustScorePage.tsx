@@ -11,6 +11,12 @@ import {
   type GuidanceSnapshot,
 } from "../lib/guidance";
 import { buildDashboardTrustJourneyCopy } from "../lib/dashboardUserGuidance";
+import {
+  institutionalInnerCard,
+  institutionalPageCard,
+  institutionalSoftCard,
+  institutionalStatTile,
+} from "../lib/institutionalSurface";
 import { navigateWithOrigin } from "../lib/nav";
 import { publicApiUrl } from "../lib/publicLinks";
 
@@ -551,47 +557,26 @@ function normalizeTrustSlipSummary(raw: any): TrustSlipSummary | null {
 }
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
-  const resolvedBg =
-    bg === "#FFFFFF"
-      ? "linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(247,251,255,0.95) 62%, rgba(239,247,253,0.92) 100%)"
-      : bg;
-
   return {
+    ...institutionalPageCard(bg),
     borderRadius: 28,
-    border: "1px solid rgba(37,78,119,0.13)",
-    background: resolvedBg,
     padding: "clamp(16px, 4vw, 22px)",
-    boxShadow:
-      "0 20px 44px rgba(10,24,49,0.075), 0 3px 10px rgba(10,24,49,0.025), inset 0 1px 0 rgba(255,255,255,0.82)",
-    overflow: "hidden",
     backdropFilter: "blur(7px)",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
+    ...institutionalSoftCard(bg),
     borderRadius: 20,
-    border: "1px solid rgba(37,78,119,0.12)",
-    background: bg,
-    padding: 16,
-    boxShadow:
-      "0 12px 28px rgba(10,24,49,0.055), inset 0 1px 0 rgba(255,255,255,0.76)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
-  const resolvedBg =
-    bg === "#FFFFFF"
-      ? "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,251,254,0.94) 100%)"
-      : bg;
-
   return {
+    ...institutionalInnerCard(bg),
     borderRadius: 18,
-    border: "1px solid rgba(37,78,119,0.12)",
-    background: resolvedBg,
     padding: 15,
-    boxShadow:
-      "0 12px 24px rgba(10,24,49,0.045), inset 0 1px 0 rgba(255,255,255,0.78)",
   };
 }
 
@@ -599,30 +584,23 @@ function statTile(
   bg = "#FFFFFF",
   border = "1px solid rgba(11,31,51,0.08)"
 ): React.CSSProperties {
-  const resolvedBg =
-    bg === "#FFFFFF"
-      ? "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,251,254,0.95) 100%)"
-      : bg;
-
   return {
-    borderRadius: 18,
-    border:
+    ...institutionalStatTile(
+      bg,
       border === "1px solid rgba(11,31,51,0.08)"
         ? "1px solid rgba(37,78,119,0.12)"
         : border,
-    background: resolvedBg,
-    padding: 14,
-    boxShadow:
-      "0 10px 22px rgba(10,24,49,0.04), inset 0 1px 0 rgba(255,255,255,0.76)",
+    ),
+    borderRadius: 18,
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#5D7389",
-    fontWeight: 900,
-    letterSpacing: 0.35,
+    color: "#39526C",
+    fontWeight: 1000,
+    letterSpacing: 0.45,
     textTransform: "uppercase",
   };
 }
@@ -775,8 +753,8 @@ function stopTrustTap(event: React.SyntheticEvent<HTMLElement>) {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#5F7287",
-    fontSize: 14,
+    color: "#526579",
+    fontSize: 14.5,
     lineHeight: 1.75,
   };
 }

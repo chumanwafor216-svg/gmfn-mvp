@@ -169,11 +169,14 @@ function eventTone(category: EventCategory) {
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: "1px solid rgba(108,138,184,0.18)",
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F3F8FF 100%)"
+        : bg,
     padding: 20,
     boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
+      "0 24px 52px rgba(15,23,42,0.08), 0 3px 10px rgba(15,23,42,0.03)",
     overflow: "hidden",
   };
 }
@@ -181,36 +184,48 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: "1px solid rgba(123,153,197,0.18)",
+    background:
+      bg === "#F8FBFF"
+        ? "linear-gradient(180deg, #FCFEFF 0%, #EDF5FF 100%)"
+        : bg,
     padding: 16,
+    boxShadow: "0 18px 40px rgba(15,23,42,0.06)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 14,
+    borderRadius: 18,
+    border: "1px solid rgba(125,154,196,0.18)",
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"
+        : bg,
+    padding: 16,
+    boxShadow: "0 16px 34px rgba(15,23,42,0.05)",
   };
 }
 
 function statTile(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    borderRadius: 18,
+    border: "1px solid rgba(125,154,196,0.18)",
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"
+        : bg,
     padding: 14,
+    boxShadow: "0 14px 28px rgba(15,23,42,0.045)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#5D7389",
-    fontWeight: 900,
-    letterSpacing: 0.35,
+    color: "#39526C",
+    fontWeight: 1000,
+    letterSpacing: 0.45,
     textTransform: "uppercase",
   };
 }
@@ -220,13 +235,18 @@ function badge(primary = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     gap: 6,
-    minHeight: 30,
+    minHeight: 32,
     borderRadius: 999,
-    padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
+    padding: "7px 12px",
+    background: primary
+      ? "linear-gradient(180deg, rgba(29,95,212,0.14) 0%, rgba(29,95,212,0.09) 100%)"
+      : "linear-gradient(180deg, rgba(130,146,172,0.16) 0%, rgba(130,146,172,0.10) 100%)",
+    border: primary
+      ? "1px solid rgba(29,95,212,0.16)"
+      : "1px solid rgba(130,146,172,0.14)",
+    color: primary ? "#164AAE" : "#445C75",
     fontSize: 12,
-    fontWeight: 900,
+    fontWeight: 1000,
     whiteSpace: "normal",
   };
 }
@@ -234,13 +254,18 @@ function badge(primary = false): React.CSSProperties {
 function stableTapStyle(): React.CSSProperties {
   return {
     position: "relative",
-    zIndex: 2,
+    zIndex: 20,
     isolation: "isolate",
+    pointerEvents: "auto",
+    boxSizing: "border-box",
+    appearance: "none",
+    WebkitAppearance: "none",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
     transform: "translateZ(0)",
     outlineOffset: 4,
+    lineHeight: 1.2,
   };
 }
 
@@ -253,13 +278,18 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 42,
-      padding: "10px 14px",
-      borderRadius: 14,
-      border: "none",
-      background: disabled ? "#CBD5E1" : "#0B63D1",
+      minHeight: 46,
+      padding: "12px 16px",
+      borderRadius: 15,
+      border: disabled
+        ? "1px solid rgba(148,163,184,0.24)"
+        : "1px solid rgba(18,77,176,0.22)",
+      background: disabled
+        ? "linear-gradient(180deg, #D9E2EC 0%, #C7D2DE 100%)"
+        : "linear-gradient(180deg, #2A6AF3 0%, #134FBF 100%)",
       color: "#FFFFFF",
-      fontWeight: 900,
+      boxShadow: disabled ? "none" : "0 14px 28px rgba(19,79,191,0.22)",
+      fontWeight: 1000,
       fontSize: 14,
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
@@ -275,13 +305,14 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 38,
-      padding: "8px 12px",
-      borderRadius: 12,
-      border: "1px solid rgba(11,31,51,0.08)",
-      background: "#F8FBFF",
+      minHeight: 40,
+      padding: "9px 13px",
+      borderRadius: 13,
+      border: "1px solid rgba(121,149,190,0.18)",
+      background: "linear-gradient(180deg, #FBFDFF 0%, #EAF3FF 100%)",
       color: disabled ? "#94A3B8" : "#24415C",
-      fontWeight: 800,
+      boxShadow: disabled ? "none" : "0 10px 22px rgba(15,23,42,0.06)",
+      fontWeight: 900,
       fontSize: 13,
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
@@ -296,13 +327,14 @@ function actionBtn(
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
-    borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    minHeight: 46,
+    padding: "12px 16px",
+    borderRadius: 15,
+    border: "1px solid rgba(121,149,190,0.18)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F2F7FF 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
-    fontWeight: 800,
+    boxShadow: disabled ? "none" : "0 12px 26px rgba(15,23,42,0.07)",
+    fontWeight: 1000,
     fontSize: 14,
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
@@ -318,13 +350,14 @@ function collapseToggle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 38,
-    padding: "8px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    minHeight: 40,
+    padding: "9px 13px",
+    borderRadius: 13,
+    border: "1px solid rgba(121,149,190,0.18)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F2F7FF 100%)",
     color: "#24415C",
-    fontWeight: 800,
+    boxShadow: "0 10px 22px rgba(15,23,42,0.06)",
+    fontWeight: 900,
     fontSize: 13,
     cursor: "pointer",
     whiteSpace: "normal",
@@ -335,8 +368,8 @@ function collapseToggle(): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#5F7287",
-    fontSize: 14,
+    color: "#4F657B",
+    fontSize: 14.5,
     lineHeight: 1.75,
   };
 }

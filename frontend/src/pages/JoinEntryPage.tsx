@@ -1,7 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { EntryBackLink } from "../components/EntryControls";
 import OriginLink from "../components/OriginLink";
+import {
+  institutionalInnerCard,
+  institutionalPageCard,
+  institutionalSoftCard,
+} from "../lib/institutionalSurface";
 import { getJoinInvitePreview, submitJoinRequest } from "../lib/api";
 import {
   ENTRY_INVITE_CODE_KEY,
@@ -10,26 +15,25 @@ import {
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 24,
-    background: bg,
-    border: "1px solid rgba(11,31,51,0.08)",
-    boxShadow:
-      "0 20px 44px rgba(5,16,38,0.10), inset 0 1px 0 rgba(255,255,255,0.62)",
+    ...institutionalPageCard(bg),
+    border: "1px solid rgba(37,78,119,0.20)",
     padding: 24,
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
-    borderRadius: 18,
-    background:
-      bg === "#F8FBFF"
-        ? "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(242,247,252,0.90) 100%)"
-        : bg,
-    border: "1px solid rgba(11,31,51,0.08)",
-    boxShadow:
-      "inset 0 1px 0 rgba(255,255,255,0.84), 0 8px 18px rgba(10,24,49,0.05)",
+    ...institutionalSoftCard(bg),
+    border: "1px solid rgba(37,78,119,0.18)",
     padding: 18,
+  };
+}
+
+function innerCard(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    ...institutionalInnerCard(bg),
+    border: "1px solid rgba(37,78,119,0.16)",
+    padding: 14,
   };
 }
 
@@ -133,6 +137,21 @@ function secondaryLink(): React.CSSProperties {
 
 function guardButtonPress(event: React.SyntheticEvent<HTMLElement>) {
   event.stopPropagation();
+}
+
+function mergeSearchIntoPath(to: string, currentSearch: string): string {
+  const [basePath, baseQueryRaw = ""] = String(to || "").split("?");
+  const merged = new URLSearchParams(baseQueryRaw);
+  const current = new URLSearchParams(currentSearch);
+
+  current.forEach((value, key) => {
+    if (!merged.has(key)) {
+      merged.append(key, value);
+    }
+  });
+
+  const finalQuery = merged.toString();
+  return finalQuery ? `${basePath}?${finalQuery}` : basePath;
 }
 
 function buttonGuardProps(): Pick<
@@ -414,10 +433,54 @@ function friendlyJoinError(value: any): string {
   }
 
   if (lower.includes("pending join request already exists")) {
-    return "Your join request is already waiting for community review. You do not need to submit it again.";
+    return (
+      "Your join request is already waiting for community review. " +
+      "You do not need to submit it again. Because this is not a new request, " +
+      "the community will not receive a second review notification."
+    );
   }
 
   return raw || "Unable to submit your join request.";
+}
+
+function joinInviteHelpMessage(
+  rawMessage: string,
+  blocked: boolean
+): string {
+  const raw = cleanText(rawMessage);
+  const lower = raw.toLowerCase();
+
+  if (!blocked) {
+    return (
+      "This page opened without a usable GSN invite code. Ask the person who invited you to send the latest GSN join link again."
+    );
+  }
+
+  if (
+    !raw ||
+    lower.includes("not copied fully") ||
+    lower.includes("fresh gsn invite link") ||
+    lower.includes("invitation not found") ||
+    lower.includes("invite not found")
+  ) {
+    return (
+      "This invitation link is no longer valid or was not copied fully. Ask the person who invited you to send a fresh GSN join link."
+    );
+  }
+
+  if (lower.includes("expired")) {
+    return (
+      "This invitation has expired. Ask the person who invited you to send a fresh GSN join link."
+    );
+  }
+
+  if (lower.includes("use limit") || lower.includes("usage limit")) {
+    return (
+      "This invitation has already reached its use limit. Ask the person who invited you to send a fresh GSN join link."
+    );
+  }
+
+  return raw;
 }
 
 function looksLikeSystemId(value: string): boolean {
@@ -517,6 +580,8 @@ function buildInviteLetter(args: {
 }
 
 export default function JoinEntryPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const routeParams = useParams<Record<string, string | undefined>>();
 
@@ -723,10 +788,10 @@ export default function JoinEntryPage() {
   const invitePreviewMessage = cleanText(invitePreview?.message);
   const canOpenForm = Boolean(inviteCode) && !inviteBlocked && !inviteChecking;
   const showInviteLauncher = Boolean(inviteCode) && !inviteBlocked;
-  const inviteHelpMessage = inviteBlocked
-    ? invitePreviewMessage ||
-      "This invitation link is no longer valid or was not copied fully. Ask the person who invited you to send a fresh GSN invite link."
-    : "This page opened without a usable GSN invite code. Ask the person who invited you to send the latest join link again.";
+  const inviteHelpMessage = joinInviteHelpMessage(
+    invitePreviewMessage,
+    inviteBlocked
+  );
 
   const canSubmit =
     !!effectiveInviteCode &&
@@ -741,6 +806,11 @@ export default function JoinEntryPage() {
   const submittedRequestId = cleanText(
     success?.request?.id || success?.request_id || ""
   );
+
+  useEffect(() => {
+    if (!inviteReady || !canOpenForm || success) return;
+    setFormOpen(true);
+  }, [inviteReady, canOpenForm, success]);
 
   const selectedDialCode = useMemo(() => {
     return dialCodeForCountry(country);
@@ -835,6 +905,34 @@ export default function JoinEntryPage() {
       setWorkDetail("");
       setNote("");
       setFormOpen(false);
+
+      const nextRequestId = cleanText(res?.request?.id || res?.request_id || "");
+      const nextCommunityName = cleanText(
+        res?.community_name || res?.request?.clan_name || resolvedCommunityName
+      );
+
+      if (nextRequestId) {
+        const pendingTo = mergeSearchIntoPath(
+          `/pending-approval?request_id=${encodeURIComponent(nextRequestId)}`,
+          location.search
+        );
+
+        navigate(pendingTo, {
+          replace: true,
+          state: {
+            request_id: nextRequestId,
+            community_name: nextCommunityName,
+            clan_name: nextCommunityName,
+            status: cleanText(res?.request?.status || res?.status || "pending"),
+            submitted_at: cleanText(
+              res?.request?.created_at ||
+                res?.submitted_at ||
+                new Date().toISOString()
+            ),
+          },
+        });
+        return;
+      }
     } catch (e: any) {
       setErr(friendlyJoinError(e?.message));
     } finally {
@@ -1014,16 +1112,13 @@ export default function JoinEntryPage() {
             {showInviteLauncher ? (
               <div
                 style={{
+                  ...innerCard("#FFFFFF"),
                   marginTop: 14,
                   display: "flex",
                   justifyContent: "space-between",
                   gap: 12,
                   alignItems: "center",
                   flexWrap: "wrap",
-                  borderRadius: 16,
-                  border: "1px solid rgba(11,31,51,0.08)",
-                  background: "rgba(255,255,255,0.74)",
-                  padding: 14,
                 }}
               >
                 <div>

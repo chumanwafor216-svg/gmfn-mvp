@@ -3,6 +3,12 @@ import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
+  institutionalInnerCard,
+  institutionalPageCard,
+  institutionalSoftCard,
+  institutionalStatTile,
+} from "../lib/institutionalSurface";
+import {
   getCurrentClan,
   getMe,
   getRevenueAllocation,
@@ -134,70 +140,126 @@ function moneyText(value: any): string {
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    ...institutionalPageCard(bg),
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F3F8FF 100%)"
+        : bg,
+    border: "1px solid rgba(108,138,184,0.22)",
     boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
-    padding: 20,
-    overflow: "hidden",
+      "0 28px 58px rgba(15,23,42,0.10), 0 6px 14px rgba(15,23,42,0.04)",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
-    borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 16,
+    ...institutionalSoftCard(bg),
+    background:
+      bg === "#F8FBFF"
+        ? "linear-gradient(180deg, #FCFEFF 0%, #EDF5FF 100%)"
+        : bg,
+    border: "1px solid rgba(123,153,197,0.21)",
+    boxShadow:
+      "0 20px 42px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 14,
+    ...institutionalInnerCard(bg),
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"
+        : bg,
+    border: "1px solid rgba(125,154,196,0.20)",
+    boxShadow:
+      "0 18px 36px rgba(15,23,42,0.065), inset 0 1px 0 rgba(255,255,255,0.80)",
   };
 }
 
 function statTile(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 14,
+    ...institutionalStatTile(bg),
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)"
+        : bg,
+    border: "1px solid rgba(122,152,195,0.20)",
+    boxShadow:
+      "0 16px 32px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.80)",
+  };
+}
+
+function stableTapStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 20,
+    isolation: "isolate",
+    pointerEvents: "auto",
+    boxSizing: "border-box",
+    appearance: "none",
+    WebkitAppearance: "none",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
+    lineHeight: 1.2,
+  };
+}
+
+function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
+  event?.stopPropagation();
+}
+
+function buttonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: guardButtonPress,
+    onTouchStart: guardButtonPress,
+    onMouseDown: guardButtonPress,
   };
 }
 
 function routeTile(primary = false): React.CSSProperties {
   return {
+    ...stableTapStyle(),
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
     minHeight: 104,
+    minWidth: 0,
     borderRadius: 18,
     border: primary
-      ? "1px solid rgba(11,99,209,0.18)"
-      : "1px solid rgba(11,31,51,0.08)",
-    background: primary ? "#F7FAFF" : "#FFFFFF",
+      ? "1px solid rgba(29,95,212,0.24)"
+      : "1px solid rgba(122,152,195,0.20)",
+    background: primary
+      ? "linear-gradient(180deg, #F8FCFF 0%, #E5F0FF 100%)"
+      : "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
     padding: 16,
     textDecoration: "none",
-    boxShadow: primary ? "0 10px 24px rgba(11,99,209,0.05)" : "none",
+    boxShadow: primary
+      ? "0 18px 38px rgba(29,95,212,0.12)"
+      : "0 16px 32px rgba(15,23,42,0.065)",
   };
 }
 
 function primaryBtn(disabled = false): React.CSSProperties {
   return {
+    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "11px 14px",
-    minHeight: 42,
+    padding: "11px 16px",
+    minHeight: 48,
+    minWidth: 132,
     borderRadius: 14,
     border: "none",
-    background: disabled ? "#CBD5E1" : "#0B63D1",
+    background: disabled
+      ? "linear-gradient(180deg, #D5DEE8 0%, #C7D2DE 100%)"
+      : "linear-gradient(180deg, #255FCE 0%, #1B4FBF 100%)",
     color: "#FFFFFF",
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
@@ -206,19 +268,24 @@ function primaryBtn(disabled = false): React.CSSProperties {
     opacity: disabled ? 0.72 : 1,
     whiteSpace: "normal",
     textAlign: "center",
+    boxShadow: disabled
+      ? "none"
+      : "0 16px 32px rgba(29,95,212,0.28), inset 0 1px 0 rgba(255,255,255,0.22)",
   };
 }
 
 function secondaryBtn(disabled = false): React.CSSProperties {
   return {
+    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "11px 14px",
-    minHeight: 42,
+    padding: "11px 16px",
+    minHeight: 48,
+    minWidth: 132,
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(124,154,196,0.20)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #EDF5FF 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
@@ -227,47 +294,56 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     opacity: disabled ? 0.72 : 1,
     whiteSpace: "normal",
     textAlign: "center",
+    boxShadow: disabled
+      ? "none"
+      : "0 14px 28px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.84)",
   };
 }
 
 function collapseToggle(): React.CSSProperties {
   return {
+    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 38,
-    padding: "8px 12px",
+    minHeight: 46,
+    minWidth: 128,
+    padding: "11px 15px",
     borderRadius: 12,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(124,154,196,0.20)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #EDF5FF 100%)",
     color: "#24415C",
     fontWeight: 800,
     fontSize: 13,
     cursor: "pointer",
     whiteSpace: "normal",
     textAlign: "center",
+    boxShadow:
+      "0 12px 24px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
   };
 }
 
 function inputStyle(): React.CSSProperties {
   return {
     width: "100%",
-    minHeight: 44,
+    minHeight: 46,
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(11,31,51,0.12)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F9FCFF 100%)",
     padding: "11px 12px",
     fontSize: 14,
     color: "#0B1F33",
     outline: "none",
     boxSizing: "border-box",
+    boxShadow:
+      "0 12px 24px rgba(15,23,42,0.05), inset 0 1px 0 rgba(255,255,255,0.82)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#5D7389",
+    color: "#334F69",
     fontWeight: 900,
     letterSpacing: 0.35,
     textTransform: "uppercase",
@@ -279,21 +355,27 @@ function badge(primary = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     gap: 6,
-    minHeight: 30,
+    minHeight: 32,
     borderRadius: 999,
-    padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
+    padding: "7px 12px",
+    background: primary
+      ? "linear-gradient(180deg, rgba(29,95,212,0.14) 0%, rgba(29,95,212,0.09) 100%)"
+      : "linear-gradient(180deg, rgba(130,146,172,0.16) 0%, rgba(130,146,172,0.10) 100%)",
+    border: primary
+      ? "1px solid rgba(29,95,212,0.16)"
+      : "1px solid rgba(130,146,172,0.14)",
+    color: primary ? "#164AAE" : "#445C75",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.60)",
   };
 }
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#5F7287",
-    fontSize: 14,
+    color: "#425C74",
+    fontSize: 14.5,
     lineHeight: 1.75,
   };
 }
@@ -556,7 +638,7 @@ export default function RevenueAllocationPage() {
         backTo="/app/loan-workbench"
         backLabel="Loan Workbench"
         nextLinks={[
-          { label: "Loans", to: "/app/loans" },
+          { label: "Loans & Support", to: "/app/loans" },
           { label: "Loan Summary", to: currentLoanId ? `/app/loan-summary/${currentLoanId}` : "/app/loans" },
           { label: "Finance", to: "/app/finance" },
         ]}
@@ -568,8 +650,8 @@ export default function RevenueAllocationPage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="This screen explains how one support item distributes service fee, platform revenue, guarantor pool, pool use, and net disbursement."
-        why="It helps you read the financial split clearly instead of treating the allocation as a raw finance dump."
+        what="This page is one step inside Loans & Support. It explains how one support item distributes service fee, platform revenue, guarantor pool, pool use, and net disbursement."
+        why="Finance records the wider money effect. Revenue Allocation shows the split inside one support item so the fee story stays readable."
         next="Start with the allocation summary, then move into meaning and detailed fields if you need a deeper finance-support reading."
         tone="light"
       />
@@ -727,6 +809,7 @@ export default function RevenueAllocationPage() {
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={() => void load()}
                   disabled={busy}
                   style={primaryBtn(busy)}
@@ -736,6 +819,7 @@ export default function RevenueAllocationPage() {
 
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={copySummary}
                   disabled={!allocation}
                   style={secondaryBtn(!allocation)}
@@ -767,6 +851,7 @@ export default function RevenueAllocationPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("summary")}
             style={collapseToggle()}
           >
@@ -932,6 +1017,7 @@ export default function RevenueAllocationPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("details")}
             style={collapseToggle()}
           >
@@ -1006,6 +1092,7 @@ export default function RevenueAllocationPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("context")}
             style={collapseToggle()}
           >
@@ -1052,14 +1139,15 @@ export default function RevenueAllocationPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Next routes</div>
+            <div style={sectionLabel()}>Next support routes</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Move from allocation reading into the next page you need.
+              Move from allocation reading into the next support or finance page you need.
             </div>
           </div>
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("routes")}
             style={collapseToggle()}
           >
@@ -1174,6 +1262,7 @@ export default function RevenueAllocationPage() {
           </div>
         ) : null}
       </section>
+
     </div>
   );
 }

@@ -5,6 +5,11 @@ import {
   getMarketplaceBroadcasts,
   getSelectedClanId,
 } from "../lib/api";
+import {
+  SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+  SPOTLIGHT_PILOT_REFRESH_MS,
+  SPOTLIGHT_PILOT_ROTATION_MS,
+} from "../lib/spotlightPilot";
 
 type MarketplaceFeedItem = {
   id?: number;
@@ -105,9 +110,6 @@ type SpotlightItem =
     key: string;
     feed: MarketplaceFeedItem;
   };
-
-const SPOTLIGHT_REFRESH_MS = 30000;
-const SPOTLIGHT_ROTATION_MS = 30000;
 
 function spotlightFeedKey(item: MarketplaceFeedItem | null): string {
   if (!item) return "";
@@ -221,7 +223,7 @@ export default function CommunityMarketplaceSpotlight() {
 
     const timer = window.setInterval(() => {
       void loadSpotlight();
-    }, SPOTLIGHT_REFRESH_MS);
+    }, SPOTLIGHT_PILOT_REFRESH_MS);
 
     function handleFocusRefresh() {
       void loadSpotlight();
@@ -314,7 +316,7 @@ export default function CommunityMarketplaceSpotlight() {
 
     const timer = window.setInterval(() => {
       setSpotlightIndex((prev) => (prev + 1) % spotlightItems.length);
-    }, SPOTLIGHT_ROTATION_MS);
+    }, SPOTLIGHT_PILOT_ROTATION_MS);
 
     return () => window.clearInterval(timer);
   }, [spotlightItems.length]);
@@ -430,6 +432,7 @@ export default function CommunityMarketplaceSpotlight() {
                 autoPlayVideo={Boolean(activeItemView.heroVideoSrc)}
                 mutedVideo={Boolean(activeItemView.heroVideoSrc)}
                 loopVideo={Boolean(activeItemView.heroVideoSrc)}
+                maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
               />
             ) : (
               <div

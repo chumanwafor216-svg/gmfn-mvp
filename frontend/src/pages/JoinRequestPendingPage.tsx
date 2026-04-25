@@ -1,8 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { getJoinApprovalStatus } from "../lib/api";
+import {
+  institutionalInnerCard,
+  institutionalPageCard,
+  institutionalSoftCard,
+} from "../lib/institutionalSurface";
 
 function safeStr(x: any, fallback = ""): string {
   const s = String(x ?? "").trim();
@@ -11,19 +17,16 @@ function safeStr(x: any, fallback = ""): string {
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
+    ...institutionalPageCard(bg),
     border: "1px solid rgba(11,31,51,0.08)",
-    borderRadius: 20,
-    background: bg,
     padding: 18,
-    boxShadow: "0 12px 30px rgba(15,23,42,0.05)",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
+    ...institutionalSoftCard(bg),
     border: "1px solid rgba(11,31,51,0.08)",
-    borderRadius: 16,
-    background: bg,
     padding: 14,
   };
 }
@@ -33,17 +36,28 @@ function actionBtn(primary = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "10px 14px",
-    borderRadius: 12,
-    border: primary ? "none" : "1px solid rgba(11,31,51,0.12)",
-    background: primary ? "#1D4ED8" : "#FFFFFF",
+    minHeight: 48,
+    padding: "12px 16px",
+    borderRadius: 14,
+    border: primary
+      ? "1px solid rgba(11,80,170,0.22)"
+      : "1px solid rgba(37,78,119,0.20)",
+    background: primary
+      ? "linear-gradient(180deg, #1A6BE1 0%, #0B63D1 58%, #09479C 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(241,247,253,0.98) 62%, rgba(224,234,244,0.98) 100%)",
     color: primary ? "#FFFFFF" : "#0B1F33",
     fontWeight: 900,
     textAlign: "center",
     textDecoration: "none",
     cursor: "pointer",
-    minHeight: 42,
+    boxShadow: primary
+      ? "0 16px 30px rgba(11,99,209,0.22), inset 0 1px 0 rgba(255,255,255,0.24)"
+      : "0 12px 24px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.84)",
     whiteSpace: "normal",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    transform: "translateZ(0)",
   };
 }
 
@@ -85,6 +99,7 @@ function badge(primary = false): React.CSSProperties {
 
 function pendingNotice(): React.CSSProperties {
   return {
+    ...institutionalInnerCard("#F8FBFF"),
     borderRadius: 16,
     background: "#F8FBFF",
     border: "1px solid rgba(11,31,51,0.08)",
@@ -97,6 +112,7 @@ function pendingNotice(): React.CSSProperties {
 
 function infoTile(): React.CSSProperties {
   return {
+    ...institutionalInnerCard("#FFFFFF"),
     borderRadius: 16,
     background: "#FFFFFF",
     border: "1px solid rgba(11,31,51,0.08)",
@@ -121,7 +137,10 @@ function mergeSearchIntoPath(to: string, currentSearch: string): string {
 
 export default function JoinRequestPendingPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const [liveStatus, setLiveStatus] = useState<any>(null);
+  const [handoffStarted, setHandoffStarted] = useState(false);
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -147,41 +166,91 @@ export default function JoinRequestPendingPage() {
     }
   }, []);
 
-  const state =
-    (location.state as {
-      request_id?: string | number;
-      community_name?: string;
-      clan_name?: string;
-      status?: string;
-      submitted_at?: string;
-    }) || {};
+  const state = useMemo(
+    () =>
+      ((location.state as {
+        request_id?: string | number;
+        community_name?: string;
+        clan_name?: string;
+        status?: string;
+        submitted_at?: string;
+      }) || {}),
+    [location.state]
+  );
 
   const requestId = useMemo(
     () => safeStr(state.request_id || searchParams.get("request_id") || ""),
     [state, searchParams]
   );
 
+  useEffect(() => {
+    let alive = true;
+
+    async function loadStatus() {
+      if (!requestId) {
+        setLiveStatus(null);
+        return;
+      }
+
+      try {
+        const res = await getJoinApprovalStatus(requestId);
+        if (!alive) return;
+        setLiveStatus(res || null);
+      } catch {
+        if (!alive) return;
+        setLiveStatus(null);
+      }
+    }
+
+    void loadStatus();
+    const intervalId = window.setInterval(() => {
+      void loadStatus();
+    }, 8000);
+
+    return () => {
+      alive = false;
+      window.clearInterval(intervalId);
+    };
+  }, [requestId]);
+
   const communityName = useMemo(
     () =>
       safeStr(
-        state.community_name ||
+        liveStatus?.community_name ||
+          state.community_name ||
           state.clan_name ||
           searchParams.get("community_name") ||
           searchParams.get("clan_name") ||
           "the community",
         "the community"
       ),
-    [state, searchParams]
+    [liveStatus, state, searchParams]
+  );
+
+  const marketplaceName = useMemo(
+    () =>
+      safeStr(
+        liveStatus?.marketplace_name || searchParams.get("marketplace_name") || ""
+      ),
+    [liveStatus, searchParams]
   );
 
   const statusText = useMemo(
-    () => safeStr(state.status || searchParams.get("status") || "pending"),
-    [state, searchParams]
+    () =>
+      safeStr(
+        liveStatus?.status || state.status || searchParams.get("status") || "pending"
+      ),
+    [liveStatus, state, searchParams]
   );
 
   const submittedAt = useMemo(
     () => safeStr(state.submitted_at || searchParams.get("submitted_at") || ""),
     [state, searchParams]
+  );
+
+  const communityCode = useMemo(
+    () => safeStr(liveStatus?.community_code || searchParams.get("community_code") || ""),
+    [liveStatus, searchParams]
   );
 
   const approvalTo = useMemo(() => {
@@ -191,6 +260,51 @@ export default function JoinRequestPendingPage() {
       location.search
     );
   }, [requestId, location.search]);
+
+  const activationTo = useMemo(() => {
+    const activationPath = safeStr(liveStatus?.activation_path || "");
+    if (activationPath) {
+      return mergeSearchIntoPath(activationPath, location.search);
+    }
+
+    const activationLink = safeStr(liveStatus?.activation_link || "");
+    if (activationLink && typeof window !== "undefined") {
+      try {
+        const url = new URL(activationLink, window.location.origin);
+        return `${url.pathname}${url.search}${url.hash}`;
+      } catch {}
+    }
+
+    const gmfnId = safeStr(liveStatus?.gmfn_id || "");
+    if (!gmfnId) return "";
+
+    const params = new URLSearchParams();
+    params.set("gmfn_id", gmfnId);
+    if (requestId) params.set("request_id", requestId);
+    return mergeSearchIntoPath(`/activate-membership?${params.toString()}`, location.search);
+  }, [liveStatus, location.search, requestId]);
+
+  useEffect(() => {
+    if (!requestId || handoffStarted || !liveStatus) return;
+
+    const lowerStatus = safeStr(liveStatus?.status).toLowerCase();
+    if (lowerStatus === "approved" && activationTo) {
+      setHandoffStarted(true);
+      navigate(activationTo, {
+        replace: true,
+        state: {
+          gmfn_id: safeStr(liveStatus?.gmfn_id || ""),
+          request_id: requestId,
+        },
+      });
+      return;
+    }
+
+    if (lowerStatus === "rejected" && approvalTo) {
+      setHandoffStarted(true);
+      navigate(approvalTo, { replace: true });
+    }
+  }, [activationTo, approvalTo, handoffStarted, liveStatus, navigate, requestId]);
 
   return (
     <div
@@ -253,18 +367,22 @@ export default function JoinRequestPendingPage() {
           your request.
         </div>
 
-        <div
+          <div
           style={{
             marginTop: 16,
             display: "flex",
             gap: 8,
             flexWrap: "wrap",
           }}
-        >
-          <span style={badge(true)}>Status: {statusText}</span>
-          <span style={badge(false)}>Community: {communityName}</span>
-          {requestId ? <span style={badge(false)}>Request ID: {requestId}</span> : null}
-        </div>
+          >
+            <span style={badge(true)}>Status: {statusText}</span>
+            <span style={badge(false)}>Community: {communityName}</span>
+            {marketplaceName ? (
+              <span style={badge(false)}>Community / Market: {marketplaceName}</span>
+            ) : null}
+            {communityCode ? <span style={badge(false)}>Community ID: {communityCode}</span> : null}
+            {requestId ? <span style={badge(false)}>Request ID: {requestId}</span> : null}
+          </div>
 
         <ExplainToggle
           label="What this does"
@@ -300,7 +418,13 @@ export default function JoinRequestPendingPage() {
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
                 Members review your request according to the approval rule
-                already in place.
+                already in place. If more than one active member currently
+                counts in that community, more than one approval may still be
+                required before activation opens.
+                If you reopen the same join path before a decision is made, the
+                app can show that your request is already waiting. That does
+                not create a second review notification because the first
+                request is still the live one on record.
               </div>
             </div>
 
@@ -387,6 +511,40 @@ export default function JoinRequestPendingPage() {
                       }}
                     >
                       {submittedAt}
+                    </div>
+                  </div>
+                ) : null}
+
+                {communityCode ? (
+                  <div style={{ marginTop: 14, ...infoTile() }}>
+                    <div style={sectionLabel()}>Community ID</div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#0B1F33",
+                        fontWeight: 900,
+                        lineHeight: 1.55,
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {communityCode}
+                    </div>
+                  </div>
+                ) : null}
+
+                {marketplaceName ? (
+                  <div style={{ marginTop: 14, ...infoTile() }}>
+                    <div style={sectionLabel()}>Community / Market</div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#0B1F33",
+                        fontWeight: 900,
+                        lineHeight: 1.55,
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {marketplaceName}
                     </div>
                   </div>
                 ) : null}

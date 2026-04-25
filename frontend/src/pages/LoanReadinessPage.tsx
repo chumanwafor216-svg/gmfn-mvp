@@ -3,6 +3,12 @@ import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
+import {
+  institutionalInnerCard,
+  institutionalPageCard,
+  institutionalSoftCard,
+  institutionalStatTile,
+} from "../lib/institutionalSurface";
 
 type LoanRow = {
   id?: number;
@@ -255,54 +261,87 @@ function getLoanAmountText(row: LoanRow | null): string {
 }
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
+  const base = institutionalPageCard(bg);
   return {
-    borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 20,
-    boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
-    overflow: "hidden",
+    ...base,
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)"
+        : bg,
+    border: "1px solid rgba(88,116,148,0.18)",
+    boxShadow: "0 20px 46px rgba(15,23,42,0.08)",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
+  const base = institutionalSoftCard(bg);
   return {
-    borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 16,
+    ...base,
+    background:
+      bg === "#F8FBFF"
+        ? "linear-gradient(180deg, #F8FBFF 0%, #EDF6FF 100%)"
+        : bg,
+    border: "1px solid rgba(88,116,148,0.18)",
+    boxShadow: "0 16px 36px rgba(15,23,42,0.08)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
+  const base = institutionalInnerCard(bg);
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 14,
+    ...base,
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"
+        : bg,
+    border: "1px solid rgba(88,116,148,0.17)",
+    boxShadow: "0 14px 28px rgba(15,23,42,0.07)",
   };
 }
 
 function statTile(bg = "#FFFFFF"): React.CSSProperties {
+  const base = institutionalStatTile(bg);
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 14,
+    ...base,
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)"
+        : bg,
+    border: "1px solid rgba(88,116,148,0.17)",
+    boxShadow: "0 12px 24px rgba(15,23,42,0.07)",
   };
 }
 
 function stableTapStyle(): React.CSSProperties {
   return {
     position: "relative",
-    zIndex: 2,
+    zIndex: 20,
     isolation: "isolate",
+    pointerEvents: "auto",
+    boxSizing: "border-box",
+    appearance: "none",
+    WebkitAppearance: "none",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
     transform: "translateZ(0)",
     outlineOffset: 4,
+    lineHeight: 1.2,
+  };
+}
+
+function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
+  event?.stopPropagation();
+}
+
+function buttonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: guardButtonPress,
+    onTouchStart: guardButtonPress,
+    onMouseDown: guardButtonPress,
   };
 }
 
@@ -313,21 +352,26 @@ function routeTile(primary = false): React.CSSProperties {
     flexDirection: "column",
     justifyContent: "space-between",
     minHeight: 104,
+    minWidth: 0,
     borderRadius: 18,
     border: primary
-      ? "1px solid rgba(29,78,216,0.16)"
-      : "1px solid rgba(11,31,51,0.08)",
-    background: primary ? "linear-gradient(180deg, #F7FAFF 0%, #FFFFFF 100%)" : "#FFFFFF",
+      ? "1px solid rgba(29,95,212,0.24)"
+      : "1px solid rgba(88,116,148,0.18)",
+    background: primary
+      ? "linear-gradient(180deg, #F5FAFF 0%, #E4F0FF 100%)"
+      : "linear-gradient(180deg, #FFFDF9 0%, #F1F7FF 100%)",
     padding: 16,
     textDecoration: "none",
-    boxShadow: primary ? "0 10px 24px rgba(29,78,216,0.05)" : "none",
+    boxShadow: primary
+      ? "0 16px 34px rgba(29,95,212,0.12)"
+      : "0 14px 30px rgba(15,23,42,0.07)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#5D7389",
+    color: "#38516B",
     fontWeight: 900,
     letterSpacing: 0.35,
     textTransform: "uppercase",
@@ -339,83 +383,19 @@ function badge(primary = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     gap: 6,
-    minHeight: 30,
+    minHeight: 32,
     borderRadius: 999,
-    padding: "6px 10px",
-    background: primary ? "rgba(29,78,216,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#1D4ED8" : "#51657A",
+    padding: "7px 12px",
+    background: primary
+      ? "linear-gradient(180deg, rgba(29,95,212,0.16) 0%, rgba(29,95,212,0.10) 100%)"
+      : "linear-gradient(180deg, rgba(92,114,138,0.16) 0%, rgba(92,114,138,0.10) 100%)",
+    border: primary
+      ? "1px solid rgba(29,95,212,0.14)"
+      : "1px solid rgba(88,116,148,0.14)",
+    color: primary ? "#0F56BF" : "#44596F",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
-  };
-}
-
-function actionBtn(
-  kind: "primary" | "secondary" | "soft" = "secondary",
-  disabled = false
-): React.CSSProperties {
-  if (kind === "primary") {
-    return {
-      ...stableTapStyle(),
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 42,
-      padding: "10px 14px",
-      borderRadius: 14,
-      border: "none",
-      background: disabled ? "#CBD5E1" : "#1D4ED8",
-      color: "#FFFFFF",
-      fontWeight: 900,
-      fontSize: 14,
-      textAlign: "center",
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      opacity: disabled ? 0.86 : 1,
-    };
-  }
-
-  if (kind === "soft") {
-    return {
-      ...stableTapStyle(),
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 38,
-      padding: "8px 12px",
-      borderRadius: 12,
-      border: "1px solid rgba(29,78,216,0.10)",
-      background: "#F5FAFF",
-      color: disabled ? "#94A3B8" : "#1E4063",
-      fontWeight: 800,
-      fontSize: 13,
-      textAlign: "center",
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      opacity: disabled ? 0.86 : 1,
-    };
-  }
-
-  return {
-    ...stableTapStyle(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
-    borderRadius: 14,
-    border: "1px solid rgba(29,78,216,0.12)",
-    background: "#FDFEFF",
-    color: disabled ? "#94A3B8" : "#0B1F33",
-    fontWeight: 800,
-    fontSize: 14,
-    textAlign: "center",
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    opacity: disabled ? 0.86 : 1,
   };
 }
 
@@ -425,24 +405,27 @@ function collapseToggle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 38,
-    padding: "8px 12px",
+    minHeight: 48,
+    minWidth: 124,
+    padding: "10px 14px",
     borderRadius: 12,
-    border: "1px solid rgba(29,78,216,0.12)",
-    background: "#FDFEFF",
-    color: "#1E4063",
+    border: "1px solid rgba(88,116,148,0.18)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
+    color: "#173A60",
     fontWeight: 800,
     fontSize: 13,
     textAlign: "center",
     cursor: "pointer",
     whiteSpace: "normal",
+    overflowWrap: "anywhere",
+    boxShadow: "0 10px 22px rgba(15,23,42,0.08)",
   };
 }
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#5F7287",
-    fontSize: 14,
+    color: "#4F647A",
+    fontSize: 14.5,
     lineHeight: 1.75,
   };
 }
@@ -1046,7 +1029,7 @@ export default function LoanReadinessPage() {
       style={{
         maxWidth: 1180,
         margin: "0 auto",
-        paddingBottom: 40,
+        paddingBottom: isCompact ? 40 : 60,
         display: "grid",
         gap: 18,
       }}
@@ -1066,7 +1049,7 @@ export default function LoanReadinessPage() {
         utilityLinks={
           readinessSupportActive
             ? [
-                { label: "Loans", to: "/app/loans" },
+                { label: "Loans & Support", to: "/app/loans" },
                 {
                   label: "Commitment Builder",
                   to: "/app/dashboard#focus-commitments",
@@ -1074,7 +1057,7 @@ export default function LoanReadinessPage() {
               ]
             : [
                 { label: "Marketplace", to: "/app/marketplace" },
-                { label: "Loans", to: "/app/loans" },
+                { label: "Loans & Support", to: "/app/loans" },
                 {
                   label: "Commitment Builder",
                   to: "/app/dashboard#focus-commitments",
@@ -1085,9 +1068,9 @@ export default function LoanReadinessPage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="This page checks whether the next support move is ready to continue or whether another pressure should be settled first."
-        why="It stops you from pushing forward blindly when borrower load, guarantor decisions, or money-out handoff pressure are still active."
-        next="Read the current readiness message first, then use the summary and readiness reading below to decide whether to continue or pause."
+        what="This page is one step inside Loans & Support. It tests whether the current community support item is calm enough to move forward right now."
+        why="Finance records the wider money story. Readiness decides whether this one support path should continue, pause, or clear another pressure first."
+        next="Read the main readiness message first, then use the summary and blockers below to decide whether to continue into suggestions or workbench."
         tone="blue"
       />
 
@@ -1238,6 +1221,7 @@ export default function LoanReadinessPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("overview")}
             style={collapseToggle()}
           >
@@ -1437,6 +1421,7 @@ export default function LoanReadinessPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("reading")}
             style={collapseToggle()}
           >
@@ -1558,6 +1543,7 @@ export default function LoanReadinessPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("blockers")}
             style={collapseToggle()}
           >
@@ -1679,17 +1665,18 @@ export default function LoanReadinessPage() {
         >
           <div>
             <div style={sectionLabel()}>
-              {readinessSupportActive ? "Support continuation routes" : "Next routes"}
+              {readinessSupportActive ? "Next support routes" : "Next routes"}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {readinessSupportActive
-                ? "Stay inside the support flow and move only to the next continuation step."
+                ? "Stay inside Loans & Support and move only to the next step that matches this support item."
                 : "Move from readiness reading into the next page you need."}
             </div>
           </div>
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("routes")}
             style={collapseToggle()}
           >
@@ -1848,6 +1835,7 @@ export default function LoanReadinessPage() {
           </div>
         ) : null}
       </section>
+
     </div>
   );
 }

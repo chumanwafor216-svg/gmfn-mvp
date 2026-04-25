@@ -1,6 +1,7 @@
 // frontend/src/pages/TrustPage.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
+import PageTopNav from "../components/PageTopNav";
 
 import {
   getMe,
@@ -8,8 +9,8 @@ import {
   getTrustWhyMe,
   listTrustEvents,
   safeCopy,
-  TrustEventsQuery,
 } from "../lib/api";
+import type { TrustEventsQuery } from "../lib/api";
 
 type Me = {
   id: number;
@@ -181,6 +182,95 @@ function proofTile(enabled: boolean): React.CSSProperties {
   };
 }
 
+function pageCard(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    marginTop: 16,
+    padding: 18,
+    borderRadius: 24,
+    border: "1px solid rgba(108,138,184,0.18)",
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F3F8FF 100%)"
+        : bg,
+    boxShadow:
+      "0 24px 52px rgba(15,23,42,0.08), 0 3px 10px rgba(15,23,42,0.03)",
+  };
+}
+
+function innerCard(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    borderRadius: 18,
+    border: "1px solid rgba(125,154,196,0.18)",
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"
+        : bg,
+    padding: 16,
+    boxShadow: "0 16px 34px rgba(15,23,42,0.05)",
+  };
+}
+
+function sectionLabel(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#39526C",
+    fontWeight: 1000,
+    letterSpacing: 0.45,
+    textTransform: "uppercase",
+  };
+}
+
+function helperText(): React.CSSProperties {
+  return {
+    color: "#526579",
+    fontSize: 14.5,
+    lineHeight: 1.75,
+  };
+}
+
+function actionBtn(kind: "primary" | "secondary" = "secondary"): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 46,
+    padding: kind === "primary" ? "12px 18px" : "11px 17px",
+    borderRadius: 16,
+    border:
+      kind === "primary"
+        ? "1px solid rgba(11,99,209,0.18)"
+        : "1px solid rgba(124,153,196,0.22)",
+    background:
+      kind === "primary"
+        ? "linear-gradient(180deg, #0C63D2 0%, #084A9A 100%)"
+        : "linear-gradient(180deg, #FFFFFF 0%, #EEF4FF 100%)",
+    color: kind === "primary" ? "#FFFFFF" : "#0B1F33",
+    fontWeight: 900,
+    fontSize: 15,
+    textDecoration: "none",
+    whiteSpace: "normal",
+    boxShadow:
+      kind === "primary"
+        ? "0 18px 34px rgba(11,99,209,0.22)"
+        : "0 12px 28px rgba(15,23,42,0.10)",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+  };
+}
+
+function fieldInput(): React.CSSProperties {
+  return {
+    minHeight: 46,
+    borderRadius: 14,
+    border: "1px solid rgba(126,154,195,0.22)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)",
+    padding: "10px 12px",
+    fontSize: 14,
+    color: "#0B1F33",
+    boxShadow: "inset 0 1px 2px rgba(15,23,42,0.03)",
+  };
+}
+
 export default function TrustPage() {
   const [me, setMe] = useState<Me | null>(null);
   const [score, setScore] = useState<TrustScoreExplained | null>(null);
@@ -336,20 +426,59 @@ export default function TrustPage() {
     "The score is explainable. Verified onboarding proofs can establish a starter base before later transactions deepen or weaken it.";
 
   return (
-    <div style={{ maxWidth: 980, margin: "0 auto", padding: 16 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-        <h2 style={{ margin: 0 }}>Trust</h2>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <button onClick={loadAll} disabled={loading}>
-            {loading ? "Loading…" : "Refresh"}
+    <div style={{ maxWidth: 1040, margin: "0 auto", padding: "0 0 28px" }}>
+      <PageTopNav
+        sectionLabel="Trust Passport"
+        title="Trust"
+        subtitle="Read the live trust score, starter trust base, explainability pack, and trust-event ledger together."
+        homeTo="/app/dashboard"
+        homeLabel="Dashboard"
+        backTo="/app/community"
+        backLabel="Community Home"
+        nextLinks={[
+          { label: "TrustSlip", to: "/app/trust-slip" },
+          { label: "Open Trust", to: "/app/open-trust-reading" },
+        ]}
+      />
+
+      <div style={pageCard("linear-gradient(180deg, #0D2237 0%, #163A5C 100%)")}>
+        <div style={sectionLabel()}>Trust passport</div>
+        <div
+          style={{
+            marginTop: 8,
+            fontSize: 34,
+            fontWeight: 1000,
+            lineHeight: 1.02,
+            color: "#F8FBFF",
+            letterSpacing: -0.9,
+          }}
+        >
+          Trust remains one explainable record.
+        </div>
+        <div
+          style={{
+            marginTop: 12,
+            color: "#D6E2F1",
+            fontSize: 15,
+            lineHeight: 1.8,
+            maxWidth: 760,
+          }}
+        >
+          This page keeps the trust score, the reason behind the score, and the
+          event trail in one place so people do not mistake one number for the
+          full trust story.
+        </div>
+        <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button onClick={loadAll} disabled={loading} style={actionBtn("primary")}>
+            {loading ? "Loading..." : "Refresh Trust"}
           </button>
-          <button onClick={exportCsv} disabled={loading}>
-            Export CSV
+          <button onClick={exportCsv} disabled={loading} style={actionBtn("secondary")}>
+            Export Trust CSV
           </button>
         </div>
       </div>
 
-      <div style={{ marginTop: 14 }}>
+      <div style={{ marginTop: 16 }}>
         <ExplainToggle
           label="What this screen does"
           what="Trust shows your current trust score, trust band, supporting explanation, and the event trail behind it."
@@ -360,13 +489,19 @@ export default function TrustPage() {
       </div>
 
       {err && (
-        <div style={{ marginTop: 12, padding: 10, borderRadius: 10, background: "#ffecec", color: "#900" }}>
+        <div
+          style={{
+            ...pageCard("linear-gradient(180deg, #FFF6F6 0%, #FFE8E8 100%)"),
+            color: "#991B1B",
+            border: "1px solid rgba(239,68,68,0.18)",
+          }}
+        >
           {err}
         </div>
       )}
 
-      <div style={{ marginTop: 14, padding: 14, border: "1px solid #ddd", borderRadius: 12 }}>
-        <div style={{ fontSize: 13, color: "#666" }}>Account</div>
+      <div style={pageCard()}>
+        <div style={sectionLabel()}>Account</div>
         <div style={{ marginTop: 8 }}>
           <div><b>ID:</b> {me?.id ?? "—"}</div>
           <div><b>Email:</b> {me?.email ?? "—"}</div>
@@ -374,36 +509,33 @@ export default function TrustPage() {
         </div>
       </div>
 
-      <div style={{ marginTop: 14, padding: 14, border: "1px solid #ddd", borderRadius: 12 }}>
+      <div style={pageCard()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <div>
-              <div style={{ fontSize: 13, color: "#666" }}>Trust score</div>
+              <div style={sectionLabel()}>Trust score</div>
               <div style={{ marginTop: 6, fontSize: 22, fontWeight: 800 }}>
                 {scoreValue} {band ? <span style={{ ...pill("blue") }}>{String(band)}</span> : null}
               </div>
             </div>
 
-          <button onClick={() => setShowExplain((v) => !v)}>
+          <button onClick={() => setShowExplain((v) => !v)} style={actionBtn("secondary")}>
             {showExplain ? "Hide explainability" : "Show explainability"}
           </button>
         </div>
 
         {showExplain && (
-          <div style={{ marginTop: 12, padding: 12, borderRadius: 10, background: "#f7f7f7" }}>
+          <div style={{ ...innerCard("linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%)"), marginTop: 14 }}>
             {hasStarterProof ? (
               <div
                 style={{
                   marginBottom: 12,
-                  padding: 12,
-                  borderRadius: 12,
-                  background: "#fff",
-                  border: "1px solid #e2e8f0",
+                  ...innerCard(),
                 }}
               >
                 <div style={{ fontWeight: 800, marginBottom: 8 }}>
                   Starter trust now has a visible base
                 </div>
-                <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.7 }}>
+                <div style={helperText()}>
                   {latestReason}
                 </div>
 
@@ -423,53 +555,56 @@ export default function TrustPage() {
                         </span>
                         <span style={{ fontWeight: 800 }}>{item.label}</span>
                       </div>
-                      <div style={{ marginTop: 8, fontSize: 13, color: "#475569", lineHeight: 1.6 }}>
+                      <div style={{ ...helperText(), marginTop: 8, fontSize: 13.5 }}>
                         {item.detail}
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <div style={{ marginTop: 10, fontSize: 13, color: "#475569", lineHeight: 1.7 }}>
+                <div style={{ ...helperText(), marginTop: 10 }}>
                   {trustExplanation}
                 </div>
               </div>
             ) : null}
 
             <div style={{ fontWeight: 800, marginBottom: 8 }}>Why did my trust change?</div>
-            <div style={{ fontSize: 13, color: "#666" }}>
+            <div style={{ ...helperText(), fontSize: 13.5 }}>
               This uses the deterministic TrustEvent ledger. For low-bandwidth users, we only show the latest few.
             </div>
 
             {why?.events?.length ? (
               <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                 {why.events.slice(0, 8).map((e: any) => (
-                  <div key={String(e.id ?? Math.random())} style={{ padding: 10, borderRadius: 10, background: "#fff", border: "1px solid #eee" }}>
+                  <div key={String(e.id ?? Math.random())} style={innerCard()}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                       <div style={{ fontWeight: 800 }}>
                         {humanizeEventType(e.event_type)}
                       </div>
-                      <div style={{ fontSize: 12, color: "#666" }}>{timeAgo(e.created_at)} • {e.created_at || ""}</div>
+                      <div style={{ fontSize: 12, color: "#526579" }}>{timeAgo(e.created_at)} • {e.created_at || ""}</div>
                     </div>
                     <div style={{ marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                       {e.delta ? <span style={pill("green")}>Δ {String(e.delta)}</span> : <span style={pill("gray")}>Δ 0</span>}
                       {e.loan_id ? <span style={pill("blue")}>Loan {String(e.loan_id)}</span> : null}
                       {e.reason ? <span style={pill("gray")}>Reason: {String(e.reason)}</span> : null}
                     </div>
-                    {e.note ? <div style={{ marginTop: 6, fontSize: 13 }}>{String(e.note)}</div> : null}
+                    {e.note ? <div style={{ ...helperText(), marginTop: 6, fontSize: 13.5 }}>{String(e.note)}</div> : null}
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{ marginTop: 10, fontSize: 13, color: "#666" }}>No trust events yet.</div>
+              <div style={{ ...helperText(), marginTop: 10, fontSize: 13.5 }}>No trust events yet.</div>
             )}
 
             {why?.pack_id || why?.checksum ? (
-              <div style={{ marginTop: 10, fontSize: 12, color: "#666" }}>
+              <div style={{ ...helperText(), marginTop: 10, fontSize: 12.5 }}>
                 <div><b>Pack ID:</b> {why.pack_id || "—"}</div>
                 <div style={{ wordBreak: "break-all" }}><b>Checksum:</b> {why.checksum || "—"}</div>
                 <div><b>Based on:</b> {why.based_on_event_at || "—"}</div>
-                <button style={{ marginTop: 8 }} onClick={() => safeCopy(JSON.stringify(why, null, 2))}>
+                <button
+                  style={{ ...actionBtn("secondary"), marginTop: 10 }}
+                  onClick={() => safeCopy(JSON.stringify(why, null, 2))}
+                >
                   Copy explainability JSON
                 </button>
               </div>
@@ -478,38 +613,42 @@ export default function TrustPage() {
         )}
       </div>
 
-      <div style={{ marginTop: 14, padding: 14, border: "1px solid #ddd", borderRadius: 12 }}>
-        <div style={{ fontSize: 13, color: "#666" }}>Filters</div>
+      <div style={pageCard()}>
+        <div style={sectionLabel()}>Filters</div>
         <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "160px 1fr", gap: 10 }}>
-          <div style={{ color: "#666" }}>Limit</div>
-          <input value={String(limit)} onChange={(e) => setLimit(Number(e.target.value || 50))} />
+          <div style={{ color: "#526579" }}>Limit</div>
+          <input style={fieldInput()} value={String(limit)} onChange={(e) => setLimit(Number(e.target.value || 50))} />
 
-          <div style={{ color: "#666" }}>Loan ID</div>
-          <input value={loanId} onChange={(e) => setLoanId(e.target.value)} placeholder="e.g. 12" />
+          <div style={{ color: "#526579" }}>Loan ID</div>
+          <input style={fieldInput()} value={loanId} onChange={(e) => setLoanId(e.target.value)} placeholder="e.g. 12" />
 
-          <div style={{ color: "#666" }}>Actor user ID</div>
-          <input value={actorId} onChange={(e) => setActorId(e.target.value)} placeholder="e.g. 1" />
+          <div style={{ color: "#526579" }}>Actor user ID</div>
+          <input style={fieldInput()} value={actorId} onChange={(e) => setActorId(e.target.value)} placeholder="e.g. 1" />
 
-          <div style={{ color: "#666" }}>Subject user ID</div>
-          <input value={subjectId} onChange={(e) => setSubjectId(e.target.value)} placeholder="e.g. 1" />
+          <div style={{ color: "#526579" }}>Subject user ID</div>
+          <input style={fieldInput()} value={subjectId} onChange={(e) => setSubjectId(e.target.value)} placeholder="e.g. 1" />
 
-          <div style={{ color: "#666" }}>Event type</div>
-          <input value={eventType} onChange={(e) => setEventType(e.target.value)} placeholder="repayment / guarantor / ..." />
+          <div style={{ color: "#526579" }}>Event type</div>
+          <input style={fieldInput()} value={eventType} onChange={(e) => setEventType(e.target.value)} placeholder="repayment / guarantor / ..." />
         </div>
 
         <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <button onClick={loadAll} disabled={loading}>Apply filters</button>
-          <button onClick={() => { setLoanId(""); setActorId(""); setSubjectId(""); setEventType(""); }} disabled={loading}>
+          <button onClick={loadAll} disabled={loading} style={actionBtn("primary")}>Apply filters</button>
+          <button
+            onClick={() => { setLoanId(""); setActorId(""); setSubjectId(""); setEventType(""); }}
+            disabled={loading}
+            style={actionBtn("secondary")}
+          >
             Clear filters
           </button>
         </div>
       </div>
 
-      <div style={{ marginTop: 14, padding: 14, border: "1px solid #ddd", borderRadius: 12 }}>
+      <div style={pageCard()}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
           <div>
-            <div style={{ fontSize: 13, color: "#666" }}>Trust events</div>
-            <div style={{ fontSize: 13, color: "#666" }}>{filtered.length} shown</div>
+            <div style={sectionLabel()}>Trust events</div>
+            <div style={{ ...helperText(), fontSize: 13.5 }}>{filtered.length} shown</div>
           </div>
           {latest?.event_type ? (
             <span style={pill(eventTone(latest.event_type) as any)}>
@@ -520,12 +659,12 @@ export default function TrustPage() {
 
         <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
           {filtered.slice(0, 200).map((ev) => (
-            <div key={String(ev.id ?? Math.random())} style={{ padding: 12, border: "1px solid #eee", borderRadius: 12, background: "#fff" }}>
+            <div key={String(ev.id ?? Math.random())} style={innerCard()}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                 <div style={{ fontWeight: 800 }}>
                   {humanizeEventType(ev.event_type)}
                 </div>
-                <div style={{ fontSize: 12, color: "#666" }}>{ev.created_at || ""} {timeAgo(ev.created_at)}</div>
+                <div style={{ fontSize: 12, color: "#526579" }}>{ev.created_at || ""} {timeAgo(ev.created_at)}</div>
               </div>
               <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {ev.loan_id != null ? <span style={pill("blue")}>Loan {String(ev.loan_id)}</span> : null}
@@ -533,7 +672,7 @@ export default function TrustPage() {
                 {ev.subject_user_id != null ? <span style={pill("gray")}>Subject {String(ev.subject_user_id)}</span> : null}
               </div>
               {ev.meta != null ? (
-                <div style={{ marginTop: 8, fontSize: 12, color: "#555", wordBreak: "break-word" }}>
+                <div style={{ marginTop: 8, fontSize: 12.5, color: "#526579", wordBreak: "break-word", lineHeight: 1.6 }}>
                   {safeJson(ev.meta)}
                 </div>
               ) : null}
@@ -542,7 +681,7 @@ export default function TrustPage() {
         </div>
       </div>
 
-      <div style={{ marginTop: 14, fontSize: 12, color: "#666" }}>
+      <div style={{ marginTop: 16, ...helperText(), fontSize: 12.5 }}>
         Note: Optimized for low-end devices: small payloads, minimal rendering, deterministic sources.
       </div>
     </div>

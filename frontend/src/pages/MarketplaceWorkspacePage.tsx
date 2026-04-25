@@ -4,6 +4,11 @@ import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
+  institutionalInnerCard,
+  institutionalPageCard,
+  institutionalSoftCard,
+} from "../lib/institutionalSurface";
+import {
   getClanInviteLink,
   getSelectedClanId,
   listClanMembers,
@@ -75,10 +80,8 @@ function resolveImageSrc(src?: string | null): string {
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 22,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    boxShadow: "0 12px 30px rgba(15,23,42,0.05)",
+    ...institutionalPageCard(bg),
+    border: "1px solid rgba(37,78,119,0.20)",
     padding: 18,
     overflow: "hidden",
   };
@@ -86,9 +89,8 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    ...institutionalSoftCard(bg),
+    border: "1px solid rgba(37,78,119,0.18)",
     padding: 14,
   };
 }
@@ -98,10 +100,17 @@ function btn(primary = false, disabled = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "10px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: disabled ? "#CBD5E1" : primary ? "#0B63D1" : "#FFFFFF",
+    minHeight: 48,
+    padding: "12px 16px",
+    borderRadius: 14,
+    border: primary
+      ? "1px solid rgba(11,80,170,0.24)"
+      : "1px solid rgba(37,78,119,0.20)",
+    background: disabled
+      ? "linear-gradient(180deg, #CBD5E1 0%, #B8C4D4 100%)"
+      : primary
+      ? "linear-gradient(180deg, #1A6BE1 0%, #0B63D1 58%, #09479C 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(241,247,253,0.98) 62%, rgba(224,234,244,0.98) 100%)",
     color: primary ? "#FFFFFF" : "#0B1F33",
     fontWeight: 900,
     cursor: disabled ? "not-allowed" : "pointer",
@@ -109,6 +118,44 @@ function btn(primary = false, disabled = false): React.CSSProperties {
     textDecoration: "none",
     gap: 8,
     opacity: disabled ? 0.72 : 1,
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    appearance: "none",
+    WebkitAppearance: "none",
+    position: "relative",
+    isolation: "isolate",
+    zIndex: 2,
+    transform: "translateZ(0)",
+    outlineOffset: 4,
+    boxShadow: disabled
+      ? "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.52)"
+      : primary
+      ? "0 16px 30px rgba(11,99,209,0.20), inset 0 1px 0 rgba(255,255,255,0.20)"
+      : "0 14px 28px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.88)",
+  };
+}
+
+function innerCard(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    ...institutionalInnerCard(bg),
+    border: "1px solid rgba(37,78,119,0.16)",
+    padding: 14,
+  };
+}
+
+function guardWorkspacePress(event: React.SyntheticEvent<HTMLElement>) {
+  event.stopPropagation();
+}
+
+function buttonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: guardWorkspacePress,
+    onTouchStart: guardWorkspacePress,
+    onMouseDown: guardWorkspacePress,
   };
 }
 
@@ -119,17 +166,23 @@ function badge(primary = false): React.CSSProperties {
     gap: 6,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#475569",
+    background: primary
+      ? "linear-gradient(180deg, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0.08) 100%)"
+      : "linear-gradient(180deg, rgba(100,116,139,0.12) 0%, rgba(100,116,139,0.08) 100%)",
+    color: primary ? "#0B63D1" : "#415B73",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
+    border: primary
+      ? "1px solid rgba(11,99,209,0.14)"
+      : "1px solid rgba(148,163,184,0.14)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.74)",
   };
 }
 
 function muted(): React.CSSProperties {
   return {
-    color: "#64748B",
+    color: "#4D647A",
     lineHeight: 1.7,
     fontSize: 14,
   };
@@ -146,9 +199,9 @@ function sectionTitle(): React.CSSProperties {
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#4F6B8A",
+    color: "#2E587E",
     fontWeight: 1000,
-    letterSpacing: 0.45,
+    letterSpacing: 0.55,
     textTransform: "uppercase",
   };
 }
@@ -514,7 +567,7 @@ export default function MarketplaceWorkspacePage() {
   function copyShopViewLink() {
     if (!shopViewLink) return;
     safeCopy(shopViewLink);
-    setMsg("Community shop-view link copied.");
+    setMsg("Community public shop link copied.");
   }
 
   function copyShopViewMessage() {
@@ -528,7 +581,7 @@ export default function MarketplaceWorkspacePage() {
       .join("\n\n");
 
     safeCopy(text);
-    setMsg("Community shop-view message copied.");
+    setMsg("Community public shop message copied.");
   }
 
   function openShopForMember(member: any) {
@@ -545,16 +598,16 @@ export default function MarketplaceWorkspacePage() {
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", paddingBottom: 36 }}>
       <PageTopNav
-        sectionLabel="Community Access"
+        sectionLabel="Community Access Desk"
         title={communityName}
-        subtitle="Invite and visibility tools for one community."
+        subtitle="Owner-side links, visibility, and member-to-shop mapping for one community."
       />
 
       <ExplainToggle
         label="What this screen does"
-        what="This screen keeps one community's access, visibility, alerts, and member-to-shop picture together."
-        why="It supports one community's access layer. Marketplace still remains the live trade, money, and support surface for that same community."
-        next="Use this page for invite, visibility, alert, or member mapping tasks, then return to Marketplace when the job becomes live community work."
+        what="This screen is the access desk for one community. It keeps join links, alerts, visibility, and member-to-shop mapping together."
+        why="It supports one community's access layer only. Marketplace still remains the operating surface for that same community."
+        next="Use this page when the job is invite, alert, visibility, or member mapping. Open Marketplace when the work becomes live community activity."
         tone="light"
         style={{ marginTop: 18 }}
       />
@@ -592,9 +645,9 @@ export default function MarketplaceWorkspacePage() {
 
         <ExplainToggle
           label="What this does"
-          what="This community profile block shows the core identity of the current community before you move into access, alerts, shares, or member mapping."
-          why="It keeps this page anchored to one community instead of behaving like a generic second Marketplace."
-          next="Read the community profile first, then choose the exact access or visibility task you need."
+          what="This community profile block confirms which one community this access desk belongs to before you move into invites, alerts, shares, or member mapping."
+          why="It keeps this page anchored to one community instead of drifting into a duplicate Marketplace."
+          next="Read the community profile first, then choose the exact access or visibility task you need here."
           tone="light"
           style={{ marginTop: 14 }}
         />
@@ -650,9 +703,9 @@ export default function MarketplaceWorkspacePage() {
 
             <ExplainToggle
               label="What this does"
-              what="This identity block keeps the community name, counts, and description visible while you work on this community's access and visibility layer."
+              what="This identity block keeps the community name, counts, and description visible while you work on this community's access desk."
               why="It helps you stay anchored in the right community before you move into invite, alert, member, or shop-facing tasks."
-              next="Read this identity block first whenever you need to confirm which community this access view belongs to."
+              next="Read this identity block first whenever you need to confirm which community this access desk belongs to."
               tone="light"
               style={{ marginTop: 12, marginBottom: 12 }}
             />
@@ -694,7 +747,7 @@ export default function MarketplaceWorkspacePage() {
               }}
             >
               {communityDescription ||
-                "This keeps one community's invite, alert, member, and shop-facing visibility tasks together without turning this page into the full Marketplace."}
+                "This keeps one community's owner-side invite, alert, member, and shop-facing visibility tasks together without turning this desk into the full Marketplace."}
             </div>
 
             <div
@@ -706,13 +759,13 @@ export default function MarketplaceWorkspacePage() {
               }}
             >
               <OriginLink to={communityHomeLink} style={btn(false)}>
-                Back to Community Home
+                Open Community Home
               </OriginLink>
               <OriginLink to="/app/marketplace" style={btn(false)}>
                 Open Marketplace
               </OriginLink>
-              <OriginLink to="/app/clans" style={btn(false)}>
-                Create Community
+              <OriginLink to="/app/community" style={btn(false)}>
+                Community List
               </OriginLink>
             </div>
           </div>
@@ -783,6 +836,7 @@ export default function MarketplaceWorkspacePage() {
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button
               type="button"
+              {...buttonGuardProps()}
               onClick={() => setAlertsOpen((v) => !v)}
               style={btn(false)}
             >
@@ -790,6 +844,7 @@ export default function MarketplaceWorkspacePage() {
             </button>
             <button
               type="button"
+              {...buttonGuardProps()}
               onClick={() => setMembersOpen((v) => !v)}
               style={btn(false)}
             >
@@ -812,6 +867,7 @@ export default function MarketplaceWorkspacePage() {
           <div style={sectionTitle()}>Access & sharing</div>
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => setInviteOpen((v) => !v)}
             style={btn(false)}
           >
@@ -821,7 +877,7 @@ export default function MarketplaceWorkspacePage() {
 
         {inviteOpen ? (
           <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
-            <div style={softCard("#F8FBFF")}>
+            <div style={innerCard("#F8FBFF")}>
               <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>
                 Invite package
               </div>
@@ -877,6 +933,7 @@ export default function MarketplaceWorkspacePage() {
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <button
                     type="button"
+                    {...buttonGuardProps()}
                     onClick={() => {
                       safeCopy(inviteLink);
                       setMsg("Community invite link copied.");
@@ -889,6 +946,7 @@ export default function MarketplaceWorkspacePage() {
 
                   <button
                     type="button"
+                    {...buttonGuardProps()}
                     onClick={copyInviteMessage}
                     style={btn(false)}
                   >
@@ -897,6 +955,7 @@ export default function MarketplaceWorkspacePage() {
 
                   <button
                     type="button"
+                    {...buttonGuardProps()}
                     onClick={shareWhatsAppJoin}
                     style={btn(false)}
                   >
@@ -906,7 +965,7 @@ export default function MarketplaceWorkspacePage() {
               </div>
             </div>
 
-            <div style={softCard("#F8FBFF")}>
+            <div style={innerCard("#F8FBFF")}>
               <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>
                 Route handoff
               </div>
@@ -918,8 +977,8 @@ export default function MarketplaceWorkspacePage() {
                   lineHeight: 1.7,
                 }}
               >
-                These buttons hand you back into the live community routes.
-                They do not replace Marketplace.
+                These buttons return you to the community's operating routes.
+                This desk does not replace Marketplace.
               </div>
 
               <div
@@ -931,18 +990,18 @@ export default function MarketplaceWorkspacePage() {
                 }}
               >
                 <OriginLink to="/app/demand-box" style={btn(false)}>
-                  Open Demand
+                  Open Demand Box
                 </OriginLink>
                 <OriginLink to="/app/marketplace" style={btn(false)}>
                   Open Marketplace
                 </OriginLink>
-                <OriginLink to="/app/clans" style={btn(false)}>
-                  Create Community
+                <OriginLink to={communityHomeLink} style={btn(false)}>
+                  Open Community Home
                 </OriginLink>
               </div>
             </div>
 
-            <div style={softCard("#F8FBFF")}>
+            <div style={innerCard("#F8FBFF")}>
               <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>
                 View shop from this community
               </div>
@@ -954,7 +1013,7 @@ export default function MarketplaceWorkspacePage() {
                   lineHeight: 1.7,
                 }}
               >
-                Share the viewing link for this community's shop-facing page.
+                Share the public shop-face link tied to this community context.
               </div>
 
               <div
@@ -965,7 +1024,7 @@ export default function MarketplaceWorkspacePage() {
                   wordBreak: "break-word",
                 }}
               >
-                {shopViewLink || "Shop view link not available yet."}
+                {shopViewLink || "Public shop link not available yet."}
               </div>
 
               <div
@@ -978,20 +1037,22 @@ export default function MarketplaceWorkspacePage() {
               >
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={copyShopViewLink}
                   style={btn(false)}
                   disabled={!shopViewLink}
                 >
-                  Copy Shop View Link
+                  Copy Public Shop Link
                 </button>
 
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={copyShopViewMessage}
                   style={btn(false)}
                   disabled={!shopViewLink}
                 >
-                  Copy Shop View Message
+                  Copy Public Shop Message
                 </button>
               </div>
             </div>
@@ -1012,6 +1073,7 @@ export default function MarketplaceWorkspacePage() {
           <div style={sectionTitle()}>Money & support handoff</div>
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => setMoneyOpen((v) => !v)}
             style={btn(false)}
           >
@@ -1030,6 +1092,7 @@ export default function MarketplaceWorkspacePage() {
           >
             <button
               type="button"
+              {...buttonGuardProps()}
               style={btn(false)}
               onClick={() => navigateWithOrigin(navigate, "/app/payment/pool", location)}
             >
@@ -1037,6 +1100,7 @@ export default function MarketplaceWorkspacePage() {
             </button>
             <button
               type="button"
+              {...buttonGuardProps()}
               style={btn(false)}
               onClick={() => navigateWithOrigin(navigate, "/app/withdrawal-instructions", location)}
             >
@@ -1044,6 +1108,7 @@ export default function MarketplaceWorkspacePage() {
             </button>
             <button
               type="button"
+              {...buttonGuardProps()}
               style={btn(false)}
               onClick={() => navigateWithOrigin(navigate, "/app/loans", location)}
             >
@@ -1051,6 +1116,7 @@ export default function MarketplaceWorkspacePage() {
             </button>
             <button
               type="button"
+              {...buttonGuardProps()}
               style={btn(false)}
               onClick={() => navigateWithOrigin(navigate, "/app/loan-readiness", location)}
             >
@@ -1058,6 +1124,7 @@ export default function MarketplaceWorkspacePage() {
             </button>
             <button
               type="button"
+              {...buttonGuardProps()}
               style={btn(false)}
               onClick={() => navigateWithOrigin(navigate, "/app/loan-workbench", location)}
             >
@@ -1065,6 +1132,7 @@ export default function MarketplaceWorkspacePage() {
             </button>
             <button
               type="button"
+              {...buttonGuardProps()}
               style={btn(false)}
               onClick={() => navigateWithOrigin(navigate, "/app/guarantor-earnings", location)}
             >
@@ -1072,6 +1140,7 @@ export default function MarketplaceWorkspacePage() {
             </button>
             <button
               type="button"
+              {...buttonGuardProps()}
               style={btn(false)}
               onClick={() => navigateWithOrigin(navigate, "/app/loan-suggestions", location)}
             >
@@ -1113,6 +1182,7 @@ export default function MarketplaceWorkspacePage() {
           <div style={sectionTitle()}>Community alerts</div>
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => setAlertsOpen((v) => !v)}
             style={btn(false)}
           >
@@ -1174,6 +1244,7 @@ export default function MarketplaceWorkspacePage() {
           <div style={sectionTitle()}>Members to shop mapping</div>
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => setMembersOpen((v) => !v)}
             style={btn(false)}
           >
@@ -1190,10 +1261,7 @@ export default function MarketplaceWorkspacePage() {
                 <div
                   key={member.key || idx}
                   style={{
-                    borderRadius: 14,
-                    border: "1px solid rgba(11,31,51,0.08)",
-                    background: "#FFFFFF",
-                    padding: 14,
+                    ...innerCard("#FFFFFF"),
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
@@ -1233,6 +1301,7 @@ export default function MarketplaceWorkspacePage() {
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <button
                       type="button"
+                      {...buttonGuardProps()}
                       onClick={() => setSelectedMember(member.raw)}
                       style={btn(false)}
                     >
@@ -1241,6 +1310,7 @@ export default function MarketplaceWorkspacePage() {
 
                     <button
                       type="button"
+                      {...buttonGuardProps()}
                       onClick={() => openShopForMember(member.raw)}
                       style={btn(true)}
                     >
@@ -1252,7 +1322,7 @@ export default function MarketplaceWorkspacePage() {
             )}
 
             {selectedMember ? (
-              <div style={{ ...softCard("#F8FBFF"), marginTop: 4 }}>
+              <div style={{ ...innerCard("#F8FBFF"), marginTop: 4 }}>
                 <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
                   Selected member
                 </div>

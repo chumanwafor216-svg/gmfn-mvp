@@ -46,12 +46,20 @@ import {
 } from "../lib/dashboardAppUsage";
 import {
   buildDashboardAttentionSignal,
+  type DashboardAttentionStoredState,
   defaultDashboardAttentionStoredState,
   markDashboardAttentionActed,
   markDashboardAttentionDismissed,
   markDashboardAttentionShown,
   normalizeDashboardAttentionStoredState,
 } from "../lib/dashboardAttentionEngine";
+import { prepareSpotlightImageFile } from "../lib/spotlightMediaPrep";
+import {
+  SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+  SPOTLIGHT_PILOT_REFRESH_MS,
+  SPOTLIGHT_PILOT_ROTATION_MS,
+  SPOTLIGHT_PILOT_ROTATION_SECONDS_LABEL,
+} from "../lib/spotlightPilot";
 
 type SpotlightItem = {
   id?: number;
@@ -267,6 +275,8 @@ const DASHBOARD_FOCUS_COMMITMENTS_STORAGE_KEY =
   "gmfn.dashboard.focus-commitments.v1";
 const DASHBOARD_FOCUS_EVENTS_STORAGE_KEY =
   "gmfn.dashboard.focus-events.v1";
+const DASHBOARD_AVATAR_MAX_BYTES = 360 * 1024;
+const DASHBOARD_AVATAR_MAX_DIMENSION = 1280;
 const MARKET_WISDOM_ROTATION_MS = 45000;
 
 const DASHBOARD_HELP_BODY =
@@ -728,12 +738,80 @@ function positiveNumber(value: unknown): number {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
-function readStoredImage(key: string): string {
+function dashboardAvatarStorageKeysForUser(user: any): string[] {
+  const identityKeys = [
+    user?.gmfn_id,
+    user?.id,
+    user?.email,
+    user?.phone_e164,
+    user?.phone_number,
+    user?.phone,
+    "visitor",
+  ]
+    .map((value) => storageIdentitySegment(value))
+    .filter(Boolean);
+
+  return Array.from(new Set(identityKeys)).map((identity) =>
+    scopedDashboardStorageKey(DASHBOARD_AVATAR_STORAGE_KEY, identity)
+  );
+}
+
+function readStoredImage(key: string | string[]): string {
   try {
-    return localStorage.getItem(key) || "";
+    const keys = Array.isArray(key) ? key : [key];
+    for (const item of keys) {
+      const value = localStorage.getItem(item) || "";
+      if (value) return value;
+    }
+    return "";
   } catch {
     return "";
   }
+}
+
+function writeStoredImage(key: string | string[], value: string): boolean {
+  try {
+    const keys = Array.isArray(key) ? key : [key];
+    let wrote = false;
+    for (const item of Array.from(new Set(keys)).filter(Boolean)) {
+      localStorage.setItem(item, value);
+      wrote = true;
+    }
+    return wrote;
+  } catch {
+    return false;
+  }
+}
+
+function readFileAsDataUrl(file: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || "");
+      if (!result) {
+        reject(new Error("Picture preparation failed right now."));
+        return;
+      }
+      resolve(result);
+    };
+    reader.onerror = () =>
+      reject(new Error("Picture preparation failed right now."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function parseDashboardTimeMs(value: string): number {
+  const ms = new Date(String(value || "")).getTime();
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+function latestDashboardAttentionQuietMs(
+  state: DashboardAttentionStoredState
+): number {
+  return Math.max(
+    parseDashboardTimeMs(state.lastDismissedAt),
+    parseDashboardTimeMs(state.lastActedAt)
+  );
 }
 
 function readLocalString(key: string): string {
@@ -2350,13 +2428,20 @@ export default function DashboardPage() {
       ),
     [dashboardStorageIdentity]
   );
+  const dashboardAvatarStorageKeys = useMemo(() => {
+    const keys = dashboardAvatarStorageKeysForUser(me);
+    return Array.from(new Set([dashboardAvatarStorageKey, ...keys]));
+  }, [dashboardAvatarStorageKey, me]);
   const dashboardAttentionStorageKeyRef = useRef(dashboardAttentionStorageKey);
 
   const [spotlights, setSpotlights] = useState<SpotlightItem[]>([]);
   const [spotlightLoading, setSpotlightLoading] = useState<boolean>(false);
   const [spotlightIndex, setSpotlightIndex] = useState<number>(0);
+  const [spotlightQueueTotal, setSpotlightQueueTotal] = useState<number>(0);
   const [latestSpotlightSnapshot, setLatestSpotlightSnapshot] =
     useState<SpotlightItem | null>(null);
+  const spotlightsRef = useRef<SpotlightItem[]>([]);
+  const latestSpotlightSnapshotRef = useRef<SpotlightItem | null>(null);
 
   const [pendingRequests, setPendingRequests] = useState<JoinRequestItem[]>([]);
   const [notices, setNotices] = useState<NoticeItem[]>([]);
@@ -2377,6 +2462,10 @@ export default function DashboardPage() {
   const [demandGuideOpen, setDemandGuideOpen] = useState<boolean>(false);
 
   const [avatarSrc, setAvatarSrc] = useState<string>("");
+  const [avatarStatus, setAvatarStatus] = useState<{
+    tone: "success" | "error";
+    text: string;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [appUsage] = useState<AppUseRecord[]>(() => readDashboardAppUsage());
@@ -2454,8 +2543,14 @@ export default function DashboardPage() {
   }, [dashboardAttentionStorageKey, attentionState]);
 
   useEffect(() => {
-    setAvatarSrc(readStoredImage(dashboardAvatarStorageKey));
-  }, [dashboardAvatarStorageKey]);
+    setAvatarStatus(null);
+    const storedAvatar = readStoredImage(dashboardAvatarStorageKeys);
+    setAvatarSrc(storedAvatar);
+
+    if (storedAvatar && !readStoredImage(dashboardAvatarStorageKey)) {
+      writeStoredImage(dashboardAvatarStorageKey, storedAvatar);
+    }
+  }, [dashboardAvatarStorageKey, dashboardAvatarStorageKeys]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -2521,11 +2616,25 @@ export default function DashboardPage() {
   }, [selectedClanId]);
 
   useEffect(() => {
+    spotlightsRef.current = spotlights;
+  }, [spotlights]);
+
+  useEffect(() => {
+    latestSpotlightSnapshotRef.current = latestSpotlightSnapshot;
+  }, [latestSpotlightSnapshot]);
+
+  useEffect(() => {
     let alive = true;
+    let refreshTimer: number | null = null;
 
     async function refreshSpotlights() {
       if (!alive) return;
-      setSpotlightLoading(true);
+      if (
+        spotlightsRef.current.length === 0 &&
+        !latestSpotlightSnapshotRef.current
+      ) {
+        setSpotlightLoading(true);
+      }
 
       try {
         const res = await getMarketplaceBroadcasts({
@@ -2540,8 +2649,19 @@ export default function DashboardPage() {
           : Array.isArray((res as any)?.items)
           ? (res as any).items
           : [];
+        const reportedTotal = Number(
+          (res as any)?.active_total ??
+            (res as any)?.matching_total ??
+            (res as any)?.total ??
+            items.length
+        );
 
         setSpotlights(items);
+        setSpotlightQueueTotal(
+          Number.isFinite(reportedTotal)
+            ? Math.max(items.length, reportedTotal)
+            : items.length
+        );
 
         if (items.length > 0) {
           setLatestSpotlightSnapshot(items[0] || null);
@@ -2562,6 +2682,7 @@ export default function DashboardPage() {
           : [];
 
         setLatestSpotlightSnapshot(recentItems[0] || null);
+        setSpotlightQueueTotal(0);
       } catch {
         // Keep the current spotlight state if the refresh fails temporarily.
       } finally {
@@ -2583,6 +2704,9 @@ export default function DashboardPage() {
 
     if (typeof window !== "undefined") {
       window.addEventListener("focus", handleVisibilityRefresh);
+      refreshTimer = window.setInterval(() => {
+        void refreshSpotlights();
+      }, SPOTLIGHT_PILOT_REFRESH_MS);
     }
 
     if (typeof document !== "undefined") {
@@ -2594,6 +2718,9 @@ export default function DashboardPage() {
 
       if (typeof window !== "undefined") {
         window.removeEventListener("focus", handleVisibilityRefresh);
+        if (refreshTimer !== null) {
+          window.clearInterval(refreshTimer);
+        }
       }
 
       if (typeof document !== "undefined") {
@@ -2603,7 +2730,12 @@ export default function DashboardPage() {
   }, [selectedClanId]);
 
   useEffect(() => {
-    (async () => {
+    let alive = true;
+    let refreshTimer: number | null = null;
+
+    async function refreshPendingRequests() {
+      if (!alive) return;
+
       if (!selectedClanId) {
         setPendingRequests([]);
         return;
@@ -2613,6 +2745,8 @@ export default function DashboardPage() {
         const res = await getCommunityJoinRequests(selectedClanId).catch(() => ({
           items: [],
         }));
+
+        if (!alive) return;
 
         const rows: JoinRequestItem[] = Array.isArray(res)
           ? res
@@ -2626,18 +2760,64 @@ export default function DashboardPage() {
 
         setPendingRequests(pending);
       } catch {
-        setPendingRequests([]);
+        if (alive) {
+          setPendingRequests([]);
+        }
       }
-    })();
+    }
+
+    void refreshPendingRequests();
+
+    function handleVisibilityRefresh() {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
+
+      void refreshPendingRequests();
+    }
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("focus", handleVisibilityRefresh);
+      refreshTimer = window.setInterval(() => {
+        void refreshPendingRequests();
+      }, 15000);
+    }
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityRefresh);
+    }
+
+    return () => {
+      alive = false;
+
+      if (typeof window !== "undefined") {
+        window.removeEventListener("focus", handleVisibilityRefresh);
+        if (refreshTimer !== null) {
+          window.clearInterval(refreshTimer);
+        }
+      }
+
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityRefresh);
+      }
+    };
   }, [selectedClanId]);
 
   useEffect(() => {
-    (async () => {
+    let alive = true;
+    let refreshTimer: number | null = null;
+
+    async function refreshNotices() {
+      if (!alive) return;
+
       setNoticesLoading(true);
+
       try {
         const res = await getMyNotifications(12, false).catch(() => ({
           items: [],
         }));
+
+        if (!alive) return;
 
         const rows: NoticeItem[] = Array.isArray((res as any)?.items)
           ? (res as any).items
@@ -2647,9 +2827,47 @@ export default function DashboardPage() {
 
         setNotices(rows);
       } finally {
-        setNoticesLoading(false);
+        if (alive) {
+          setNoticesLoading(false);
+        }
       }
-    })();
+    }
+
+    void refreshNotices();
+
+    function handleVisibilityRefresh() {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
+
+      void refreshNotices();
+    }
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("focus", handleVisibilityRefresh);
+      refreshTimer = window.setInterval(() => {
+        void refreshNotices();
+      }, 15000);
+    }
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityRefresh);
+    }
+
+    return () => {
+      alive = false;
+
+      if (typeof window !== "undefined") {
+        window.removeEventListener("focus", handleVisibilityRefresh);
+        if (refreshTimer !== null) {
+          window.clearInterval(refreshTimer);
+        }
+      }
+
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityRefresh);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -2669,7 +2887,7 @@ export default function DashboardPage() {
 
     const timer = window.setInterval(() => {
       setSpotlightIndex((prev) => (prev + 1) % spotlights.length);
-    }, 15000);
+    }, SPOTLIGHT_PILOT_ROTATION_MS);
 
     return () => window.clearInterval(timer);
   }, [spotlights.length]);
@@ -4335,6 +4553,29 @@ export default function DashboardPage() {
     };
   }, [attentionSignal, trustAttentionCore]);
 
+  const attentionQuietUntilMs = useMemo(() => {
+    const lastQuietMs = latestDashboardAttentionQuietMs(attentionState);
+    if (!lastQuietMs || !attentionDisplaySignal.active) return 0;
+    return lastQuietMs + attentionDisplaySignal.intervalHours * 3600000;
+  }, [
+    attentionDisplaySignal.active,
+    attentionDisplaySignal.intervalHours,
+    attentionState,
+  ]);
+
+  const attentionQuietActive =
+    attentionQuietUntilMs > 0 && attentionQuietUntilMs > attentionClockMs;
+
+  const attentionSurfaceVisible =
+    attentionDisplaySignal.active &&
+    (attentionPopupVisible ||
+      (attentionDisplaySignal.shouldShow && !attentionQuietActive));
+
+  const attentionPillShouldPulse =
+    !attentionPopupVisible &&
+    attentionDisplaySignal.shouldShow &&
+    !attentionQuietActive;
+
   const mostUsedAppFallback = useMemo(
     () =>
       buildMostUsedAppFallback({
@@ -4371,6 +4612,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!dashboardIdentityReady) return;
     if (!attentionSignal.active || !attentionSignal.shouldShow) return;
+    if (attentionQuietActive) return;
     if (
       typeof document !== "undefined" &&
       document.visibilityState !== "visible"
@@ -4396,6 +4638,7 @@ export default function DashboardPage() {
     attentionPopupVisible,
     attentionState.signature,
     attentionClockMs,
+    attentionQuietActive,
     dashboardIdentityReady,
   ]);
 
@@ -4428,17 +4671,6 @@ export default function DashboardPage() {
     }
 
     event.stopPropagation();
-  }
-
-  function dashboardPointerGuardProps(): Pick<
-    React.HTMLAttributes<HTMLElement>,
-    "onPointerDown" | "onTouchStart" | "onMouseDown"
-  > {
-    return {
-      onPointerDown: consumeDashboardPointerEvent,
-      onTouchStart: consumeDashboardPointerEvent,
-      onMouseDown: consumeDashboardPointerEvent,
-    };
   }
 
   function dashboardButtonGuardProps(): Pick<
@@ -4590,26 +4822,51 @@ export default function DashboardPage() {
     openDashboardRoute(event, `/app/trust-slip${query}`);
   }
 
-  function onAvatarSelected(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  async function onAvatarSelected(event: React.ChangeEvent<HTMLInputElement>) {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
 
-    const reader = new FileReader();
+    if (!file) {
+      input.value = "";
+      return;
+    }
 
-    reader.onload = () => {
-      const result = String(reader.result || "");
-      if (!result) return;
+    try {
+      const prepared = await prepareSpotlightImageFile(file, {
+        maxBytes: DASHBOARD_AVATAR_MAX_BYTES,
+        maxDimension: DASHBOARD_AVATAR_MAX_DIMENSION,
+      });
+      const result = await readFileAsDataUrl(prepared.file);
 
-      try {
-        localStorage.setItem(dashboardAvatarStorageKey, result);
-      } catch {
-        // ignore
+      if (
+        writeStoredImage(dashboardAvatarStorageKeys, result)
+      ) {
+        setAvatarStatus({
+          tone: "success",
+          text:
+            prepared.message ||
+            "Picture saved on this device and ready for your dashboard.",
+        });
+      } else {
+        setAvatarStatus({
+          tone: "error",
+          text:
+            "Picture is visible now, but it could not be saved on this device yet. Try a smaller photo.",
+        });
       }
 
       setAvatarSrc(result);
-    };
-
-    reader.readAsDataURL(file);
+    } catch (error) {
+      setAvatarStatus({
+        tone: "error",
+        text:
+          error instanceof Error
+            ? error.message
+            : "Picture could not be prepared right now.",
+      });
+    } finally {
+      input.value = "";
+    }
   }
 
   function resetFocusDraft() {
@@ -5141,7 +5398,7 @@ export default function DashboardPage() {
         background: DASHBOARD_BRAND.pageWash,
       }}
     >
-      {attentionDisplaySignal.active ? (
+      {attentionSurfaceVisible ? (
         <>
           <style>
             {`
@@ -5656,10 +5913,9 @@ export default function DashboardPage() {
                 fontWeight: 900,
                 fontSize: 12,
                 boxShadow: "0 12px 28px rgba(15,59,116,0.16)",
-                animation:
-                  attentionDisplaySignal.shouldShow || attentionDisplaySignal.stage !== "early"
-                    ? "dashboardAttentionPillPulse 1.8s ease-in-out infinite"
-                    : undefined,
+                animation: attentionPillShouldPulse
+                  ? "dashboardAttentionPillPulse 1.8s ease-in-out infinite"
+                  : undefined,
                 backdropFilter: "blur(12px)",
                 pointerEvents: "auto",
                 touchAction: "manipulation",
@@ -5993,11 +6249,10 @@ export default function DashboardPage() {
                     </span>
                     <span
                       style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 7,
-                        width: "fit-content",
+                        display: "grid",
+                        justifyItems: "center",
+                        gap: 4,
+                        width: "100%",
                         maxWidth: "100%",
                       }}
                     >
@@ -6025,11 +6280,16 @@ export default function DashboardPage() {
                       <span
                         style={{
                           color: "rgba(16,37,59,0.58)",
-                          fontSize: 9.5,
+                          display: "inline-block",
+                          maxWidth: "100%",
+                          padding: "0 8px",
+                          fontSize: 10.2,
                           fontWeight: 850,
                           letterSpacing: 0.16,
-                          lineHeight: 1,
-                          whiteSpace: "nowrap",
+                          lineHeight: 1.15,
+                          whiteSpace: "normal",
+                          textAlign: "center",
+                          textWrap: "balance",
                         }}
                       >
                         Visible. Portable. Usable.
@@ -6238,7 +6498,7 @@ export default function DashboardPage() {
                       consumeDashboardButtonEvent(event);
                       fileInputRef.current?.click();
                     }}
-                    {...dashboardPointerGuardProps()}
+                    {...dashboardButtonGuardProps()}
                     style={{
                       position: "absolute",
                       right: isPhone ? 10 : 12,
@@ -6246,19 +6506,19 @@ export default function DashboardPage() {
                       display: "inline-flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      minHeight: isPhone ? 44 : 42,
-                      minWidth: isPhone ? 110 : 126,
+                      minHeight: isPhone ? 46 : 44,
+                      minWidth: isPhone ? 116 : 132,
                       maxWidth: "calc(100% - 20px)",
-                      padding: isPhone ? "10px 15px" : "9px 16px",
+                      padding: isPhone ? "11px 16px" : "10px 17px",
                       borderRadius: 999,
-                      border: "1px solid rgba(255,255,255,0.72)",
+                      border: "1px solid rgba(255,255,255,0.82)",
                       background:
-                        "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(238,244,252,0.90) 100%)",
+                        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(240,247,255,0.94) 54%, rgba(220,232,246,0.94) 100%)",
                       color: DASHBOARD_BRAND.accentDeep,
                       boxShadow:
-                        "0 12px 24px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.92)",
+                        "0 16px 28px rgba(2,12,27,0.28), inset 0 1px 0 rgba(255,255,255,0.94), inset 0 -8px 14px rgba(120,142,170,0.10)",
                       fontWeight: 900,
-                      fontSize: isPhone ? 12.2 : 12.5,
+                      fontSize: isPhone ? 12.3 : 12.7,
                       lineHeight: 1,
                       letterSpacing: 0.08,
                       cursor: "pointer",
@@ -6269,7 +6529,10 @@ export default function DashboardPage() {
                       appearance: "none",
                       userSelect: "none",
                       isolation: "isolate",
-                      zIndex: 3,
+                      zIndex: 4,
+                      pointerEvents: "auto",
+                      transform: "translateZ(0)",
+                      outlineOffset: 4,
                     }}
                   >
                     {avatarSrc
@@ -6298,6 +6561,33 @@ export default function DashboardPage() {
                   pointerEvents: "none",
                 }}
               />
+
+              {avatarStatus ? (
+                <div
+                  style={{
+                    marginTop: 8,
+                    padding: "8px 10px",
+                    borderRadius: 12,
+                    border:
+                      avatarStatus.tone === "error"
+                        ? "1px solid rgba(185,28,28,0.18)"
+                        : "1px solid rgba(11,99,209,0.14)",
+                    background:
+                      avatarStatus.tone === "error"
+                        ? "linear-gradient(180deg, rgba(254,242,242,0.96) 0%, rgba(255,255,255,0.98) 100%)"
+                        : "linear-gradient(180deg, rgba(239,246,255,0.96) 0%, rgba(255,255,255,0.98) 100%)",
+                    color:
+                      avatarStatus.tone === "error"
+                        ? "#991B1B"
+                        : "#0D4A7C",
+                    fontSize: isPhone ? 11.5 : 12,
+                    lineHeight: 1.45,
+                    fontWeight: 700,
+                  }}
+                >
+                  {avatarStatus.text}
+                </div>
+              ) : null}
 
             </div>
 
@@ -6619,10 +6909,25 @@ export default function DashboardPage() {
             alignItems: "center",
             flexWrap: "wrap",
           }}
-        >
-          <div>
-            <div style={sectionLabel()}>Spotlight</div>
-          </div>
+          >
+            <div>
+              <div style={sectionLabel()}>Spotlight</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 8,
+                }}
+              >
+                <span style={badge(true)}>
+                  {spotlightQueueTotal || spotlights.length} live / queued
+                </span>
+                <span style={badge(false)}>
+                  Rotates every {SPOTLIGHT_PILOT_ROTATION_SECONDS_LABEL} seconds
+                </span>
+              </div>
+            </div>
 
           <div
             style={{
@@ -6835,6 +7140,7 @@ export default function DashboardPage() {
                   autoPlayVideo={Boolean(spotlightVideoCandidate)}
                   mutedVideo={Boolean(spotlightVideoCandidate)}
                   loopVideo={Boolean(spotlightVideoCandidate)}
+                  maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
                   fallback={
                     <div
                       style={{
@@ -7299,6 +7605,7 @@ export default function DashboardPage() {
                   autoPlayVideo={Boolean(spotlightVideoCandidate)}
                   mutedVideo={Boolean(spotlightVideoCandidate)}
                   loopVideo={Boolean(spotlightVideoCandidate)}
+                  maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
                   fallback={
                     <div
                       style={{

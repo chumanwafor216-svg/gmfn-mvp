@@ -13,6 +13,10 @@ import {
   safeCopy,
 } from "../lib/api";
 import { publicFrontendUrl } from "../lib/publicLinks";
+import {
+  SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+  SPOTLIGHT_PILOT_ROTATION_MS,
+} from "../lib/spotlightPilot";
 
 type ShopProfile = {
   id?: number;
@@ -480,6 +484,19 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
+function spotlightShowcaseCard(): React.CSSProperties {
+  return {
+    borderRadius: 22,
+    border: "1px solid rgba(246,196,83,0.42)",
+    background:
+      "radial-gradient(circle at 8% 0%, rgba(246,196,83,0.30) 0%, transparent 31%), radial-gradient(circle at 93% 10%, rgba(20,184,166,0.20) 0%, transparent 29%), radial-gradient(circle at 76% 90%, rgba(244,114,182,0.13) 0%, transparent 30%), linear-gradient(145deg, rgba(37,24,10,0.98) 0%, rgba(13,38,56,0.98) 48%, rgba(6,18,32,0.99) 100%)",
+    padding: 9,
+    boxShadow:
+      "0 24px 48px rgba(7,24,39,0.20), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -18px 34px rgba(0,0,0,0.20)",
+    overflow: "hidden",
+  };
+}
+
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
@@ -522,26 +539,40 @@ function badge(primary = false): React.CSSProperties {
 
 const stableTapTarget: React.CSSProperties = {
   position: "relative",
-  zIndex: 2,
+  zIndex: 10,
   isolation: "isolate",
   WebkitTapHighlightColor: "transparent",
   touchAction: "manipulation",
   userSelect: "none",
   transform: "translateZ(0)",
+  pointerEvents: "auto",
+  appearance: "none",
+  WebkitAppearance: "none",
+  boxSizing: "border-box",
+  outlineOffset: 4,
 };
 
 function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
   event?.stopPropagation();
 }
 
+function runGuardedButtonAction(
+  event: React.SyntheticEvent<HTMLElement>,
+  action: () => void
+) {
+  guardButtonPress(event);
+  action();
+}
+
 function buttonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown"
+  "onPointerDown" | "onTouchStart" | "onMouseDown" | "onClickCapture"
 > {
   return {
     onPointerDown: guardButtonPress,
     onTouchStart: guardButtonPress,
     onMouseDown: guardButtonPress,
+    onClickCapture: guardButtonPress,
   };
 }
 
@@ -551,7 +582,7 @@ function navLinkButton(primary = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 44,
+    minHeight: 48,
     padding: "10px 13px",
     borderRadius: 999,
     border: primary
@@ -565,6 +596,7 @@ function navLinkButton(primary = false): React.CSSProperties {
     fontSize: 13,
     lineHeight: 1.12,
     textAlign: "center",
+    overflowWrap: "anywhere",
     textDecoration: "none",
     cursor: "pointer",
     boxShadow: primary
@@ -579,7 +611,7 @@ function primaryBtn(disabled = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 44,
+    minHeight: 48,
     padding: "10px 14px",
     borderRadius: 14,
     border: disabled
@@ -595,6 +627,7 @@ function primaryBtn(disabled = false): React.CSSProperties {
     opacity: disabled ? 0.86 : 1,
     whiteSpace: "normal",
     textAlign: "center",
+    overflowWrap: "anywhere",
     boxShadow: disabled
       ? "none"
       : "0 10px 20px rgba(14,73,138,0.18), inset 0 1px 0 rgba(255,255,255,0.26)",
@@ -607,7 +640,7 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 44,
+    minHeight: 48,
     padding: "9px 12px",
     borderRadius: 14,
     border: "1px solid rgba(13,95,168,0.16)",
@@ -620,6 +653,7 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     opacity: disabled ? 0.86 : 1,
     whiteSpace: "normal",
     textAlign: "center",
+    overflowWrap: "anywhere",
     boxShadow:
       "0 8px 18px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
   };
@@ -657,6 +691,11 @@ export default function ShopGalleryPage() {
   const communitySpotlightsRef = useRef<ShopBroadcast[]>([]);
   const miniSpotlightIndexRef = useRef(0);
   const [products, setProducts] = useState<ShopProduct[]>([]);
+  const [openProductId, setOpenProductId] = useState<number | null>(null);
+  const [brokenProductMediaUrls, setBrokenProductMediaUrls] = useState<
+    Record<string, boolean>
+  >({});
+  const [showAllProducts, setShowAllProducts] = useState(false);
   const [currentClan, setCurrentClan] = useState<any>(null);
   const [notice, setNotice] = useState<{ tone: NoticeTone; text: string } | null>(
     null
@@ -897,7 +936,7 @@ export default function ShopGalleryPage() {
 
     const timer = window.setInterval(() => {
       setMiniSpotlightIndex((prev) => (prev + 1) % communitySpotlights.length);
-    }, 45000);
+    }, SPOTLIGHT_PILOT_ROTATION_MS);
 
     return () => window.clearInterval(timer);
   }, [communitySpotlights.length]);
@@ -981,7 +1020,68 @@ export default function ShopGalleryPage() {
     };
   }, [shop, broadcast, gmfnId, currentClan]);
 
-  const visibleProducts = useMemo(() => products.slice(0, GALLERY_SLOTS_TOTAL), [products]);
+  useEffect(() => {
+    if (products.length <= GALLERY_SLOTS_TOTAL && showAllProducts) {
+      setShowAllProducts(false);
+    }
+  }, [products.length, showAllProducts]);
+
+  useEffect(() => {
+    if (
+      openProductId !== null &&
+      !products.some((product) => (product.id ?? product.slotNumber) === openProductId)
+    ) {
+      setOpenProductId(null);
+    }
+  }, [openProductId, products]);
+
+  const visibleProducts = useMemo(
+    () => {
+      const productsWithUsableMedia = products.filter((product) => {
+        const imageUrl = safeStr(product.imageUrl);
+        const videoUrl = safeStr(product.videoUrl);
+        const imageBroken = Boolean(imageUrl && brokenProductMediaUrls[imageUrl]);
+        const videoBroken = Boolean(videoUrl && brokenProductMediaUrls[videoUrl]);
+
+        if (videoUrl && !videoBroken) return true;
+        if (imageUrl && !imageBroken) return true;
+        return false;
+      });
+      const displayableProducts =
+        productsWithUsableMedia.length > 0
+          ? productsWithUsableMedia
+          : products.filter((product) => {
+              const imageUrl = safeStr(product.imageUrl);
+              const videoUrl = safeStr(product.videoUrl);
+              const imageBroken = Boolean(imageUrl && brokenProductMediaUrls[imageUrl]);
+              const videoBroken = Boolean(videoUrl && brokenProductMediaUrls[videoUrl]);
+
+              if (videoUrl && videoBroken) return false;
+              if (imageUrl && imageBroken) return false;
+              return true;
+            });
+
+      return showAllProducts
+        ? displayableProducts
+        : displayableProducts.slice(0, GALLERY_SLOTS_TOTAL);
+    },
+    [brokenProductMediaUrls, products, showAllProducts]
+  );
+  const usableProductCount =
+    products.filter((product) => {
+      const imageUrl = safeStr(product.imageUrl);
+      const videoUrl = safeStr(product.videoUrl);
+      const imageBroken = Boolean(imageUrl && brokenProductMediaUrls[imageUrl]);
+      const videoBroken = Boolean(videoUrl && brokenProductMediaUrls[videoUrl]);
+      if (videoUrl && !videoBroken) return true;
+      if (imageUrl && !imageBroken) return true;
+      return false;
+    }).length || visibleProducts.length;
+  const brokenProductMediaCount = products.length - usableProductCount;
+  const overflowProductCount = Math.max(0, usableProductCount - GALLERY_SLOTS_TOTAL);
+  const hiddenProductCount = showAllProducts
+    ? 0
+    : Math.max(0, usableProductCount - visibleProducts.length);
 
   const heroImage = useMemo(() => {
     return effectiveShop?.imageUrl || "";
@@ -1009,10 +1109,10 @@ export default function ShopGalleryPage() {
       : "";
 
     return {
-      title: firstMeaningful(miniSpotlight?.sourceShopName, "Mini Spotlight"),
+      title: firstMeaningful(miniSpotlight?.sourceShopName, "Live Spotlight"),
       detail: firstMeaningful(
         messageParts.summary,
-        "Live promoted visibility from the current community spotlight source."
+        "Live community promo from the current spotlight source."
       ),
       tagLabel: messageParts.tagLabel,
       communityName: firstMeaningful(miniSpotlight?.sourceClanName, effectiveShop?.communityName),
@@ -1029,8 +1129,8 @@ export default function ShopGalleryPage() {
       helperLine: isCurrentShop
         ? "This live spotlight currently belongs to the shop you are already viewing."
         : shopTo
-        ? "Open the shop owner behind the current live spotlight item."
-        : "This live spotlight item does not currently expose a linked shop owner.",
+        ? "Open the shop behind the current live spotlight item."
+        : "This live spotlight item does not currently expose a linked shop.",
     };
   }, [miniSpotlight, effectiveShop]);
 
@@ -1041,7 +1141,7 @@ export default function ShopGalleryPage() {
   const shopNameText = safeStr(effectiveShop?.shopName || "Shop");
   const shopDescriptionText = safeStr(
     effectiveShop?.description ||
-      "Public shop page for trusted products. Selected offers can open by Vault viewing link."
+      "Public shop face for trusted products. Private Vault offers open only through a trust link."
   );
   const shopGmfnText = safeStr(effectiveShop?.gmfnId);
   const shopOwnerText = safeStr(effectiveShop?.ownerName);
@@ -1063,11 +1163,11 @@ export default function ShopGalleryPage() {
       ? "1 public item live"
       : `${visibleProducts.length} public items live`;
   const buyerConfidenceText = shopCommunityText
-    ? `This shop is visible through ${shopCommunityText}. Public products are open to browse and share; Vault items stay private until the shop sends a trust link.`
-    : "Public products are open to browse and share. Vault items stay private until the shop sends a trust link.";
+    ? `This shop is visible through ${shopCommunityText}. Public shelf products are open to browse and share; private Vault offers stay hidden until the shop sends a trust link.`
+    : "Public shelf products are open to browse and share. Private Vault offers stay hidden until the shop sends a trust link.";
   const confidenceSignals = [
     { label: "Public shelf", value: publicShelfText, primary: true },
-    { label: "Vault", value: "Private view by trust link", primary: false },
+    { label: "Private Vault", value: "Hidden until trust link", primary: false },
     { label: "Seller contact", value: sellerContactText, primary: false },
   ] satisfies Array<{
     label: string;
@@ -1092,19 +1192,19 @@ export default function ShopGalleryPage() {
     viewerGmfnText === shopGmfnText.toUpperCase();
   const protectedNavItems = [
     { label: "Dashboard", to: "/app/dashboard", primary: true },
-    { label: "Community", to: "/app/community", primary: false },
-    { label: "Marketplace", to: "/app/marketplace", primary: false },
+    { label: "Community Home", to: "/app/community", primary: false },
+    { label: "Community Marketplace", to: "/app/marketplace", primary: false },
     ...(viewerGmfnText
       ? [
           {
-            label: isShopOwner ? "This shop" : "My shop",
+            label: isShopOwner ? "This public shop" : "My public shop",
             to: `/shop/${encodeURIComponent(viewerGmfnText)}`,
             primary: false,
           },
         ]
       : []),
     ...(isShopOwner
-      ? [{ label: "Shop Control", to: "/app/shop-control", primary: true }]
+      ? [{ label: "Owner Shop Control", to: "/app/shop-control", primary: true }]
       : []),
   ];
 
@@ -1137,7 +1237,7 @@ export default function ShopGalleryPage() {
 
   function copyShopLink() {
     safeCopy(absoluteShopLink);
-    setNotice({ tone: "success", text: "Shop link copied." });
+    setNotice({ tone: "success", text: "Public shop link copied." });
   }
 
   function shareShop() {
@@ -1159,7 +1259,7 @@ export default function ShopGalleryPage() {
       title: shopTitle,
       text: shopText,
       url: absoluteShopLink,
-      successText: "Shop share ready.",
+      successText: "Public shop share ready.",
     });
   }
 
@@ -1188,7 +1288,7 @@ export default function ShopGalleryPage() {
       "this shop"
     );
 
-    const requestText = `Hello, I would like to request a private Vault viewing link for ${shopTitle}. Please share any selected offers you do not show on the public page.`;
+    const requestText = `Hello, I would like to request a private Vault access link for ${shopTitle}. Please share any selected offers you do not show on the public page.`;
 
     const whatsapp = safeStr(effectiveShop?.whatsapp).replace(/[^\d+]/g, "");
     if (whatsapp && typeof window !== "undefined") {
@@ -1209,7 +1309,7 @@ export default function ShopGalleryPage() {
       );
       setNotice({
         tone: "success",
-        text: "Telegram opened. Ask the owner for a Vault viewing link there.",
+        text: "Telegram opened. Ask the owner for a private Vault access link there.",
       });
       return;
     }
@@ -1217,7 +1317,7 @@ export default function ShopGalleryPage() {
     safeCopy(`${requestText}\n${absoluteShopLink}`);
     setNotice({
       tone: "success",
-      text: "Vault viewing request copied. Send it to the shop owner.",
+      text: "Vault access request copied. Send it to the shop owner.",
     });
   }
 
@@ -1284,8 +1384,8 @@ export default function ShopGalleryPage() {
               }}
             >
               {isSignedInViewer
-                ? `Signed in as ${viewerNameText}. Use these protected doors to return to GSN.`
-                : "Visitors can view, share, or ask the seller. App tools only open after signing in with your own account."}
+                ? `Signed in as ${viewerNameText}. This page remains the public shop face; these protected return paths take you back into GSN.`
+                : "Visitors can view, share, or ask the seller from here. Protected GSN tools still require signing in with your own account."}
             </div>
           </div>
 
@@ -1300,7 +1400,7 @@ export default function ShopGalleryPage() {
             <button
               type="button"
               {...buttonGuardProps()}
-              onClick={goBackSafely}
+              onClick={(event) => runGuardedButtonAction(event, goBackSafely)}
               style={{
                 ...navLinkButton(false),
                 flex: isCompact ? "1 1 120px" : "0 0 auto",
@@ -1382,6 +1482,7 @@ export default function ShopGalleryPage() {
                 objectFit: "cover",
                 objectPosition: "center",
                 display: "block",
+                pointerEvents: "none",
               }}
             />
           ) : null}
@@ -1393,6 +1494,7 @@ export default function ShopGalleryPage() {
               borderRadius: 22,
               background:
                 "linear-gradient(145deg, rgba(6,24,43,0.20) 0%, rgba(8,36,64,0.12) 28%, rgba(7,25,46,0.70) 100%)",
+              pointerEvents: "none",
             }}
           />
 
@@ -1588,7 +1690,7 @@ export default function ShopGalleryPage() {
                     textAlign: "center",
                   }}
                 >
-                  Trade with confidence
+                  Public shop front
                 </div>
               </div>
 
@@ -1789,43 +1891,44 @@ export default function ShopGalleryPage() {
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={askForVaultAccess}
+                  onClick={(event) =>
+                    runGuardedButtonAction(event, askForVaultAccess)
+                  }
                   style={{
                     ...primaryBtn(false),
-                    minHeight: 44,
                     padding: isCompact ? "10px 12px" : "10px 14px",
                     flex: isCompact ? "1 1 132px" : "0 1 auto",
                   }}
                 >
-                  Ask seller
+                  Ask seller privately
                 </button>
 
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={shareShop}
+                  onClick={(event) => runGuardedButtonAction(event, shareShop)}
                   style={{
                     ...secondaryBtn(false),
-                    minHeight: 44,
                     padding: isCompact ? "10px 12px" : "9px 12px",
                     flex: isCompact ? "1 1 132px" : "0 1 auto",
                   }}
                 >
-                  Share shop
+                  Share public shop
                 </button>
 
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={copyShopLink}
+                  onClick={(event) =>
+                    runGuardedButtonAction(event, copyShopLink)
+                  }
                   style={{
                     ...secondaryBtn(false),
-                    minHeight: 44,
                     padding: isCompact ? "10px 12px" : "9px 12px",
                     flex: isCompact ? "1 1 132px" : "0 1 auto",
                   }}
                 >
-                  Copy link
+                  Copy public link
                 </button>
               </div>
             </div>
@@ -2017,30 +2120,32 @@ export default function ShopGalleryPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={askForVaultAccess}
+                onClick={(event) =>
+                  runGuardedButtonAction(event, askForVaultAccess)
+                }
                 style={{
                   ...primaryBtn(false),
-                  minHeight: 44,
                   padding: "10px 12px",
                   fontSize: 12.5,
                   flex: isCompact ? "1 1 132px" : undefined,
                 }}
               >
-                Ask for Vault view
+                Ask for Private Vault view
               </button>
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={copyShopLink}
+                onClick={(event) =>
+                  runGuardedButtonAction(event, copyShopLink)
+                }
                 style={{
                   ...secondaryBtn(false),
-                  minHeight: 44,
                   padding: "10px 12px",
                   fontSize: 12.5,
                   flex: isCompact ? "1 1 132px" : undefined,
                 }}
               >
-                Copy shop link
+                Copy public shop link
               </button>
             </div>
           </div>
@@ -2054,14 +2159,7 @@ export default function ShopGalleryPage() {
             <div
               style={{
                 position: "relative",
-                ...innerCard(
-                  "radial-gradient(circle at 4% 0%, rgba(11,99,209,0.18) 0%, transparent 33%), radial-gradient(circle at 100% 8%, rgba(212,175,55,0.10) 0%, transparent 28%), linear-gradient(180deg, rgba(255,255,255,0.985) 0%, rgba(235,247,253,0.96) 100%)"
-                ),
-                border: "1px solid rgba(13,95,168,0.18)",
-                boxShadow:
-                  "0 22px 46px rgba(8,38,67,0.12), inset 0 1px 0 rgba(255,255,255,0.86)",
-                padding: 9,
-                overflow: "hidden",
+                ...spotlightShowcaseCard(),
                 display: "grid",
                 gap: 6,
               }}
@@ -2074,7 +2172,7 @@ export default function ShopGalleryPage() {
                   right: 0,
                   height: 4,
                   background:
-                    "linear-gradient(90deg, rgba(212,175,55,0.78) 0%, rgba(29,78,216,0.72) 52%, rgba(244,114,182,0.44) 100%)",
+                    "linear-gradient(90deg, rgba(255,224,139,0.92) 0%, rgba(20,184,166,0.72) 52%, rgba(255,255,255,0.34) 100%)",
                 }}
               />
 
@@ -2094,9 +2192,10 @@ export default function ShopGalleryPage() {
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
+                    color: "#F8E7AE",
                   }}
                 >
-                  Mini Spotlight
+                  Community Spotlight
                 </div>
                 <span
                   style={{
@@ -2106,12 +2205,13 @@ export default function ShopGalleryPage() {
                     fontSize: 10,
                     whiteSpace: "nowrap",
                     flexShrink: 0,
-                    border: "1px solid rgba(29,78,216,0.16)",
+                    border: "1px solid rgba(255,236,178,0.36)",
                     background:
-                      "linear-gradient(180deg, rgba(238,246,255,0.98) 0%, rgba(220,235,250,0.88) 100%)",
+                      "linear-gradient(180deg, rgba(255,244,204,0.96) 0%, rgba(244,196,83,0.78) 100%)",
+                    color: "#1C2C34",
                   }}
                 >
-                  Live promo
+                  Live community promo
                 </span>
               </div>
 
@@ -2134,11 +2234,11 @@ export default function ShopGalleryPage() {
                         minHeight: isCompact ? 284 : 310,
                         height: isCompact ? 284 : 310,
                         borderRadius: 16,
-                        border: "1px solid rgba(13,95,168,0.18)",
+                        border: "1px solid rgba(255,226,160,0.32)",
                         background:
-                          "radial-gradient(circle at 0% 0%, rgba(77,160,255,0.24) 0%, transparent 36%), linear-gradient(180deg, rgba(10,35,58,0.99) 0%, rgba(26,76,116,0.98) 100%)",
+                          "radial-gradient(circle at 0% 0%, rgba(246,196,83,0.20) 0%, transparent 34%), linear-gradient(180deg, rgba(7,22,33,0.99) 0%, rgba(21,56,76,0.98) 100%)",
                         boxShadow:
-                          "0 16px 34px rgba(8,38,67,0.14), inset 0 1px 0 rgba(255,255,255,0.10)",
+                          "0 16px 34px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.12)",
                       }}
                       mediaStyle={{
                         width: "100%",
@@ -2150,6 +2250,7 @@ export default function ShopGalleryPage() {
                       autoPlayVideo={Boolean(miniSpotlightView.videoUrl)}
                       mutedVideo={Boolean(miniSpotlightView.videoUrl)}
                       loopVideo={Boolean(miniSpotlightView.videoUrl)}
+                      maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
                     />
 
                     <div
@@ -2242,7 +2343,7 @@ export default function ShopGalleryPage() {
                           flexShrink: 0,
                         }}
                       >
-                        Community spotlight
+                        Live community promo
                       </span>
                       {miniSpotlightView.videoUrl ? (
                         <span
@@ -2291,7 +2392,7 @@ export default function ShopGalleryPage() {
                     }}
                   >
                     {miniSpotlight
-                      ? "Live community spotlight is active here, but this current item has no image."
+                      ? "Live community promo is active here, but this current item has no image."
                       : "No live community spotlight is visible right now."}
                   </div>
                     )}
@@ -2453,15 +2554,50 @@ export default function ShopGalleryPage() {
             </div>
             <div style={{ marginTop: 10, ...helperText(), maxWidth: 760 }}>
               Public products appear here. Vault offers stay separate, so selected items
-              are not mixed into the public gallery.
+              are not mixed into the public shop face.
             </div>
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <span style={badge(true)}>
-              {visibleProducts.length} public products live
+              {showAllProducts && overflowProductCount > 0
+                ? `All ${usableProductCount} photo-ready products showing`
+                : hiddenProductCount > 0
+                ? `${visibleProducts.length} of ${usableProductCount} photo-ready products showing`
+                : `${visibleProducts.length} public products live`}
             </span>
-            <span style={badge(false)}>Up to {GALLERY_SLOTS_TOTAL} public slots</span>
+            <span style={badge(false)}>
+              {showAllProducts && overflowProductCount > 0
+                ? "Full loaded shelf open"
+                : hiddenProductCount > 0
+                ? `${hiddenProductCount} loaded beyond the public shelf`
+                : `Up to ${GALLERY_SLOTS_TOTAL} public slots`}
+            </span>
+            {brokenProductMediaCount > 0 ? (
+              <span style={badge(false)}>
+                {brokenProductMediaCount} old photo link moved aside
+              </span>
+            ) : null}
+            {overflowProductCount > 0 ? (
+              <button
+                type="button"
+                {...buttonGuardProps()}
+                onClick={(event) =>
+                  runGuardedButtonAction(event, () =>
+                    setShowAllProducts((current) => !current)
+                  )
+                }
+                style={{
+                  ...secondaryBtn(false),
+                  minHeight: 44,
+                  padding: "6px 10px",
+                  borderRadius: 999,
+                  fontSize: 12,
+                }}
+              >
+                {showAllProducts ? "Return to 12-slot shelf" : "Show all loaded items"}
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -2486,7 +2622,7 @@ export default function ShopGalleryPage() {
             </div>
             <div style={{ marginTop: 10, ...helperText(), maxWidth: 760 }}>
               Check back later for public offers. If you want to see selected items, use the
-              Vault card above to ask the owner for a link.
+              Private Vault card above to ask the owner for an access link.
             </div>
           </div>
         ) : (
@@ -2502,7 +2638,15 @@ export default function ShopGalleryPage() {
           >
             {visibleProducts.map((product, index) => {
               const slotNumber = String(index + 1).padStart(2, "0");
-              const hasVideoStory = Boolean(safeStr(product.videoUrl));
+              const rawProductImageUrl = safeStr(product.imageUrl);
+              const productImageUrl = brokenProductMediaUrls[rawProductImageUrl]
+                ? ""
+                : rawProductImageUrl;
+              const rawProductVideoUrl = safeStr(product.videoUrl);
+              const productVideoUrl = brokenProductMediaUrls[rawProductVideoUrl]
+                ? ""
+                : rawProductVideoUrl;
+              const hasVideoStory = Boolean(productVideoUrl);
               const sourceShopName = firstMeaningful(
                 product.originShopName,
                 effectiveShop?.shopName,
@@ -2515,6 +2659,15 @@ export default function ShopGalleryPage() {
                 : firstMeaningful(freshnessLabel, "Community shop");
               const displayTitle = productDisplayTitle(product);
               const buyerCue = productBuyerCue(product, sourceShopName);
+              const productOpenId = product.id ?? product.slotNumber;
+              const isProductOpen = openProductId === productOpenId;
+              const itemDetailText = firstMeaningful(
+                product.description,
+                buyerCue,
+                hasVideoStory
+                  ? "Open the product story, then share it with someone who may want this offer."
+                  : "Open this public offer, then share it with someone who may want it."
+              );
               const dockBadgeStyle: React.CSSProperties = isCompact
                 ? {
                     ...badge(false),
@@ -2578,7 +2731,11 @@ export default function ShopGalleryPage() {
                       isCompact
                         ? "0 26px 56px rgba(8,38,67,0.13), 0 9px 20px rgba(8,38,67,0.07), inset 0 1px 0 rgba(255,255,255,0.82)"
                         : "0 26px 54px rgba(8,38,67,0.12), 0 8px 20px rgba(8,38,67,0.06), inset 0 1px 0 rgba(255,255,255,0.72)",
-                    minHeight: isCompact ? "calc(100svh - 18px)" : 430,
+                    minHeight: isCompact
+                      ? isProductOpen
+                        ? "calc(100svh + 112px)"
+                        : "calc(100svh - 18px)"
+                      : 430,
                     display: "flex",
                     flexDirection: "column",
                     scrollSnapAlign: isCompact ? "start" : undefined,
@@ -2588,8 +2745,16 @@ export default function ShopGalleryPage() {
                   <div
                     style={{
                       position: "relative",
-                      height: isCompact ? "calc(100svh - 18px)" : 360,
-                      minHeight: isCompact ? "calc(100svh - 18px)" : undefined,
+                      height: isCompact
+                        ? isProductOpen
+                          ? "min(64svh, 560px)"
+                          : "calc(100svh - 18px)"
+                        : 360,
+                      minHeight: isCompact
+                        ? isProductOpen
+                          ? "min(64svh, 560px)"
+                          : "calc(100svh - 18px)"
+                        : undefined,
                       background:
                         isCompact
                           ? "linear-gradient(180deg, rgba(236,248,253,0.98) 0%, rgba(218,236,248,0.96) 56%, rgba(205,227,244,0.96) 100%)"
@@ -2628,11 +2793,18 @@ export default function ShopGalleryPage() {
                     </div>
                     {hasVideoStory ? (
                       <video
-                        src={product.videoUrl}
-                        poster={safeStr(product.imageUrl) || undefined}
+                        src={productVideoUrl}
+                        poster={productImageUrl || undefined}
                         controls
                         playsInline
                         preload="metadata"
+                        onError={() => {
+                          if (!productVideoUrl) return;
+                          setBrokenProductMediaUrls((current) => ({
+                            ...current,
+                            [productVideoUrl]: true,
+                          }));
+                        }}
                         style={{
                           width: "100%",
                           height: "100%",
@@ -2649,10 +2821,17 @@ export default function ShopGalleryPage() {
                           background: "#0B1F33",
                         }}
                       />
-                    ) : safeStr(product.imageUrl) ? (
+                    ) : productImageUrl ? (
                       <img
-                        src={product.imageUrl}
+                        src={productImageUrl}
                         alt={displayTitle}
+                        onError={() => {
+                          if (!productImageUrl) return;
+                          setBrokenProductMediaUrls((current) => ({
+                            ...current,
+                            [productImageUrl]: true,
+                          }));
+                        }}
                         style={{
                           width: "100%",
                           height: "100%",
@@ -2726,10 +2905,10 @@ export default function ShopGalleryPage() {
 
                   <div
                     style={{
-                      position: isCompact ? "absolute" : "relative",
+                      position: isCompact && !isProductOpen ? "absolute" : "relative",
                       left: isCompact ? 14 : undefined,
                       right: isCompact ? 14 : undefined,
-                      bottom: isCompact ? 14 : undefined,
+                      bottom: isCompact && !isProductOpen ? 14 : undefined,
                       zIndex: isCompact ? 4 : undefined,
                       padding: isCompact ? "10px 10px 11px" : 14,
                       display: "grid",
@@ -2788,7 +2967,7 @@ export default function ShopGalleryPage() {
                         fontSize: isCompact ? 16.5 : 17,
                         lineHeight: 1.22,
                         display: "-webkit-box",
-                        WebkitLineClamp: isCompact ? 1 : 2,
+                        WebkitLineClamp: isProductOpen ? 2 : isCompact ? 1 : 2,
                         WebkitBoxOrient: "vertical" as any,
                         overflow: "hidden",
                         textAlign: "center",
@@ -2819,7 +2998,7 @@ export default function ShopGalleryPage() {
                             ? "none"
                             : "0 10px 22px rgba(8,38,67,0.055), inset 0 1px 0 rgba(255,255,255,0.88)",
                         display: "-webkit-box",
-                        WebkitLineClamp: isCompact ? 1 : 2,
+                        WebkitLineClamp: isProductOpen ? 3 : isCompact ? 1 : 2,
                         WebkitBoxOrient: "vertical" as any,
                         overflow: "hidden",
                         textAlign: "center",
@@ -2828,10 +3007,63 @@ export default function ShopGalleryPage() {
                       {safeStr(buyerCue)}
                     </div>
 
+                    {isProductOpen ? (
+                      <div
+                        style={{
+                          display: "grid",
+                          gap: 8,
+                          padding: isCompact ? "9px 10px" : "11px 12px",
+                          borderRadius: 18,
+                          border: "1px solid rgba(13,95,168,0.13)",
+                          background:
+                            "radial-gradient(circle at 0% 0%, rgba(11,99,209,0.075) 0%, transparent 34%), radial-gradient(circle at 100% 0%, rgba(212,175,55,0.065) 0%, transparent 30%), linear-gradient(180deg, rgba(255,255,255,0.93) 0%, rgba(242,248,253,0.84) 100%)",
+                          boxShadow:
+                            "0 10px 22px rgba(8,38,67,0.07), inset 0 1px 0 rgba(255,255,255,0.84)",
+                          textAlign: "left",
+                        }}
+                      >
+                        <div
+                          style={{
+                            ...sectionLabel(),
+                            color: "#315A7C",
+                            letterSpacing: 1.8,
+                            fontSize: 10,
+                          }}
+                        >
+                          Open item
+                        </div>
+                        <div
+                          style={{
+                            color: "#334E68",
+                            fontSize: isCompact ? 12.5 : 13,
+                            lineHeight: 1.55,
+                          }}
+                        >
+                          {itemDetailText}
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 7,
+                            flexWrap: "wrap",
+                            justifyContent: "flex-start",
+                          }}
+                        >
+                          <span style={dockBadgeStyle}>{product.priceText}</span>
+                          {sourceShopName ? (
+                            <span style={dockBadgeStyle}>{sourceShopName}</span>
+                          ) : null}
+                          {freshnessLabel ? (
+                            <span style={dockBadgeStyle}>{freshnessLabel}</span>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : null}
+
                     <div
                       style={{
                         display: isCompact ? "grid" : "flex",
-                        gridTemplateColumns: isCompact ? "minmax(0, 1fr) auto" : undefined,
+                        gridTemplateColumns: isCompact ? "1fr 1fr" : undefined,
                         justifyContent: isCompact ? undefined : "center",
                         gap: isCompact ? 8 : 10,
                         alignItems: "center",
@@ -2839,12 +3071,46 @@ export default function ShopGalleryPage() {
                         paddingTop: isCompact ? 2 : undefined,
                       }}
                     >
-                      <span style={dockPriceStyle}>{product.priceText}</span>
+                      <span
+                        style={{
+                          ...dockPriceStyle,
+                          gridColumn: isCompact ? "1 / -1" : undefined,
+                        }}
+                      >
+                        {product.priceText}
+                      </span>
 
                       <button
                         type="button"
                         {...buttonGuardProps()}
-                        onClick={() => shareProduct(product)}
+                        onClick={(event) =>
+                          runGuardedButtonAction(event, () =>
+                            setOpenProductId((current) =>
+                              current === productOpenId ? null : productOpenId
+                            )
+                          )
+                        }
+                        aria-expanded={isProductOpen}
+                        aria-controls={
+                          product.id ? `product-${product.id}` : undefined
+                        }
+                        style={{
+                          ...dockShareButtonStyle,
+                          background: isProductOpen
+                            ? "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(237,244,251,0.94) 100%)"
+                            : dockShareButtonStyle.background,
+                          color: isProductOpen ? "#0B1F33" : dockShareButtonStyle.color,
+                        }}
+                      >
+                        {isProductOpen ? "Close" : "Open item"}
+                      </button>
+
+                      <button
+                        type="button"
+                        {...buttonGuardProps()}
+                        onClick={(event) =>
+                          runGuardedButtonAction(event, () => shareProduct(product))
+                        }
                         aria-label={`Share ${displayTitle}`}
                         style={dockShareButtonStyle}
                       >

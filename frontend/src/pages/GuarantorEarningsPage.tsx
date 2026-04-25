@@ -3,6 +3,12 @@ import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
+  institutionalInnerCard,
+  institutionalPageCard,
+  institutionalSoftCard,
+  institutionalStatTile,
+} from "../lib/institutionalSurface";
+import {
   getCurrentClan,
   getMe,
   getMyGuarantorEarnings,
@@ -146,51 +152,85 @@ function normalizeCollapseState(raw: any): CollapseState {
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: bg,
-    boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
+    ...institutionalPageCard(bg),
     padding: 22,
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F3F8FF 100%)"
+        : bg,
+    border: "1px solid rgba(108,138,184,0.18)",
+    boxShadow: "0 24px 52px rgba(15,23,42,0.08)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
+    ...institutionalInnerCard(bg),
     borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
     padding: 16,
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"
+        : bg,
+    border: "1px solid rgba(125,154,196,0.18)",
+    boxShadow: "0 16px 34px rgba(15,23,42,0.05)",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
-    borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 16,
+    ...institutionalSoftCard(bg),
+    background:
+      bg === "#F8FBFF"
+        ? "linear-gradient(180deg, #FCFEFF 0%, #EDF5FF 100%)"
+        : bg,
+    border: "1px solid rgba(123,153,197,0.18)",
+    boxShadow: "0 18px 40px rgba(15,23,42,0.06)",
   };
 }
 
 function statTile(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 14,
+    ...institutionalStatTile(bg),
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)"
+        : bg,
+    border: "1px solid rgba(122,152,195,0.18)",
+    boxShadow: "0 14px 30px rgba(15,23,42,0.05)",
   };
 }
 
 function stableTapStyle(): React.CSSProperties {
   return {
     position: "relative",
-    zIndex: 2,
+    zIndex: 20,
     isolation: "isolate",
+    pointerEvents: "auto",
+    boxSizing: "border-box",
+    appearance: "none",
+    WebkitAppearance: "none",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
     transform: "translateZ(0)",
     outlineOffset: 4,
+    lineHeight: 1.2,
+  };
+}
+
+function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
+  event?.stopPropagation();
+}
+
+function buttonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: guardButtonPress,
+    onTouchStart: guardButtonPress,
+    onMouseDown: guardButtonPress,
   };
 }
 
@@ -201,14 +241,19 @@ function routeTile(primary = false): React.CSSProperties {
     flexDirection: "column",
     justifyContent: "space-between",
     minHeight: 104,
+    minWidth: 0,
     borderRadius: 18,
     border: primary
-      ? "1px solid rgba(11,99,209,0.18)"
-      : "1px solid rgba(11,31,51,0.08)",
-    background: primary ? "#F7FAFF" : "#FFFFFF",
+      ? "1px solid rgba(29,95,212,0.22)"
+      : "1px solid rgba(122,152,195,0.18)",
+    background: primary
+      ? "linear-gradient(180deg, #F7FBFF 0%, #E9F2FF 100%)"
+      : "linear-gradient(180deg, #FFFDF9 0%, #F3F8FF 100%)",
     padding: 16,
     textDecoration: "none",
-    boxShadow: primary ? "0 10px 24px rgba(11,99,209,0.05)" : "none",
+    boxShadow: primary
+      ? "0 16px 34px rgba(29,95,212,0.10)"
+      : "0 14px 30px rgba(15,23,42,0.05)",
   };
 }
 
@@ -219,10 +264,13 @@ function primaryBtn(disabled = false): React.CSSProperties {
     alignItems: "center",
     justifyContent: "center",
     padding: "11px 14px",
-    minHeight: 42,
+    minHeight: 48,
+    minWidth: 120,
     borderRadius: 14,
     border: "none",
-    background: disabled ? "#CBD5E1" : "#0B63D1",
+    background: disabled
+      ? "#CBD5E1"
+      : "linear-gradient(180deg, #255FCE 0%, #1B4FBF 100%)",
     color: "#FFFFFF",
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
@@ -231,6 +279,8 @@ function primaryBtn(disabled = false): React.CSSProperties {
     textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
     whiteSpace: "normal",
+    overflowWrap: "anywhere",
+    boxShadow: disabled ? "none" : "0 14px 30px rgba(29,95,212,0.26)",
   };
 }
 
@@ -241,10 +291,11 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     alignItems: "center",
     justifyContent: "center",
     padding: "11px 14px",
-    minHeight: 42,
+    minHeight: 48,
+    minWidth: 120,
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(124,154,196,0.18)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F1F7FF 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
@@ -253,6 +304,8 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
     whiteSpace: "normal",
+    overflowWrap: "anywhere",
+    boxShadow: "0 12px 24px rgba(15,23,42,0.06)",
   };
 }
 
@@ -262,24 +315,27 @@ function collapseToggle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 38,
-    padding: "8px 12px",
+    minHeight: 44,
+    minWidth: 116,
+    padding: "9px 13px",
     borderRadius: 12,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(124,154,196,0.18)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F1F7FF 100%)",
     color: "#24415C",
     fontWeight: 800,
     fontSize: 13,
     textAlign: "center",
     cursor: "pointer",
     whiteSpace: "normal",
+    overflowWrap: "anywhere",
+    boxShadow: "0 10px 22px rgba(15,23,42,0.06)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#4F6B8A",
+    color: "#39526C",
     fontWeight: 1000,
     letterSpacing: 0.45,
     textTransform: "uppercase",
@@ -290,11 +346,16 @@ function badge(primary = false): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
-    minHeight: 30,
-    padding: "6px 10px",
+    minHeight: 32,
+    padding: "7px 12px",
     borderRadius: 999,
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#475569",
+    background: primary
+      ? "linear-gradient(180deg, rgba(29,95,212,0.14) 0%, rgba(29,95,212,0.09) 100%)"
+      : "linear-gradient(180deg, rgba(130,146,172,0.16) 0%, rgba(130,146,172,0.10) 100%)",
+    border: primary
+      ? "1px solid rgba(29,95,212,0.16)"
+      : "1px solid rgba(130,146,172,0.14)",
+    color: primary ? "#164AAE" : "#445C75",
     fontSize: 12,
     fontWeight: 1000,
     whiteSpace: "normal",
@@ -303,8 +364,8 @@ function badge(primary = false): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#5F7287",
-    fontSize: 14,
+    color: "#4F657B",
+    fontSize: 14.5,
     lineHeight: 1.75,
   };
 }
@@ -704,7 +765,7 @@ export default function GuarantorEarningsPage() {
   }
 
   return (
-    <div style={{ maxWidth: 1120, margin: "0 auto", paddingBottom: 30 }}>
+    <div style={{ maxWidth: 1120, margin: "0 auto", paddingBottom: isCompact ? 40 : 60 }}>
       <PageTopNav
         sectionLabel="Guarantor Earnings"
         title="Guarantor Earnings"
@@ -727,7 +788,7 @@ export default function GuarantorEarningsPage() {
       <ExplainToggle
         label="What this screen does"
         what="This screen separates potential support reward from value that is actually earned after the loan is fully repaid."
-        why="It keeps guarantor contribution honest: support can be visible early, but GSN should only call it earned when the support cycle closes properly."
+        why="It keeps guarantor contribution honest: support can be visible early, but GSN should only call it earned when the support cycle closes properly. Finance records the money history; this page explains the earnings meaning."
         next="Read the fixed context first, then open the earnings overview and recent earnings sections to see the current picture."
         tone="light"
         style={{ marginTop: 18 }}
@@ -879,7 +940,12 @@ export default function GuarantorEarningsPage() {
               }}
             >
               {renderStepAction(nextStep)}
-              <button type="button" onClick={copySummary} style={secondaryBtn(false)}>
+              <button
+                type="button"
+                {...buttonGuardProps()}
+                onClick={copySummary}
+                style={secondaryBtn(false)}
+              >
                 Copy Earnings Summary
               </button>
             </div>
@@ -968,6 +1034,7 @@ export default function GuarantorEarningsPage() {
 
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() => toggleSection("overview")}
                 style={collapseToggle()}
               >
@@ -1071,6 +1138,7 @@ export default function GuarantorEarningsPage() {
 
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() => toggleSection("meaning")}
                 style={collapseToggle()}
               >
@@ -1164,6 +1232,7 @@ export default function GuarantorEarningsPage() {
                 ) : null}
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={() => toggleSection("recent")}
                   style={collapseToggle()}
                 >
@@ -1313,6 +1382,7 @@ export default function GuarantorEarningsPage() {
 
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() => toggleSection("routes")}
                 style={collapseToggle()}
               >
@@ -1427,6 +1497,7 @@ export default function GuarantorEarningsPage() {
               </div>
             ) : null}
           </section>
+
         </>
       )}
     </div>

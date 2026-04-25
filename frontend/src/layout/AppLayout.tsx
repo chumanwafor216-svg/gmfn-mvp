@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { getCurrentClan, getMe, logout } from "../lib/api";
 import {
@@ -346,6 +346,26 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
   }
 
   return null;
+}
+
+function shouldKeepBottomRailInTaskMode(pathname: string): boolean {
+  return (
+    pathname === "/app/loans" ||
+    pathname === "/app/loan-readiness" ||
+    pathname === "/app/loan-suggestions" ||
+    pathname === "/app/loan-workbench" ||
+    pathname.startsWith("/app/loan-summary/") ||
+    pathname === "/app/guarantor-inbox" ||
+    pathname === "/app/guarantor-earnings" ||
+    pathname === "/app/revenue-allocation" ||
+    pathname === "/app/borrower-preflight" ||
+    pathname === "/app/loan-decision" ||
+    pathname === "/app/payment/pool" ||
+    pathname === "/app/payment-rails" ||
+    pathname === "/app/payout-details" ||
+    pathname.startsWith("/app/payment/loans/") ||
+    pathname === "/app/withdrawal-instructions"
+  );
 }
 
 function getSpecialRouteMeta(
@@ -859,8 +879,8 @@ function mainContent(isMobile: boolean, taskMode: boolean): React.CSSProperties 
     minWidth: 0,
     padding: isMobile
       ? taskMode
-        ? "16px 16px 28px"
-        : "16px 16px 28px"
+        ? "16px 16px calc(94px + env(safe-area-inset-bottom, 0px))"
+        : "16px 16px calc(94px + env(safe-area-inset-bottom, 0px))"
       : "24px 28px 34px",
     overflowX: "hidden",
     flex: isMobile ? "1 1 auto" : undefined,
@@ -1120,41 +1140,50 @@ function actionsLink(active = false, disabled = false): React.CSSProperties {
 
 function bottomNav(): React.CSSProperties {
   return {
-    position: "static",
-    zIndex: 18,
+    position: "fixed",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 24,
     display: "flex",
     gap: 8,
+    justifyContent: "flex-start",
     overflowX: "auto",
-    padding: "10px 10px calc(10px + env(safe-area-inset-bottom, 0px))",
-    background: "rgba(255,255,255,0.98)",
+    padding: "8px 10px calc(10px + env(safe-area-inset-bottom, 0px))",
+    background:
+      "linear-gradient(180deg, rgba(245,249,255,0.98) 0%, rgba(232,240,255,0.99) 100%)",
     backdropFilter: "blur(10px)",
-    borderTop: "1px solid rgba(11,31,51,0.08)",
-    boxShadow: "0 -10px 28px rgba(15,23,42,0.08)",
+    borderTop: "1px solid rgba(29,95,212,0.16)",
+    boxShadow: "0 -14px 36px rgba(15,23,42,0.12)",
     WebkitOverflowScrolling: "touch",
     overscrollBehaviorX: "contain",
     scrollSnapType: "x proximity",
+    scrollbarWidth: "none",
+    msOverflowStyle: "none",
   };
 }
 
 function bottomNavItem(active = false, disabled = false): React.CSSProperties {
   return {
     flex: "0 0 auto",
-    minWidth: 86,
+    minWidth: 62,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 44,
-    padding: "8px 10px",
-    borderRadius: 14,
+    minHeight: 40,
+    padding: "7px 10px",
+    borderRadius: 13,
     textDecoration: "none",
     textAlign: "center",
-    fontSize: 12,
+    fontSize: 11.1,
     fontWeight: active ? 900 : 800,
-    color: disabled ? "#94A3B8" : active ? "#0B63D1" : "#4E6278",
-    background: active ? "rgba(11,99,209,0.10)" : "transparent",
+    color: disabled ? "#94A3B8" : active ? "#0A4FB5" : "#27435F",
+    background: active
+      ? "linear-gradient(180deg, rgba(233,244,255,0.96) 0%, rgba(212,229,255,0.98) 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(244,248,255,0.98) 100%)",
     border: active
-      ? "1px solid rgba(11,99,209,0.14)"
-      : "1px solid rgba(11,31,51,0.08)",
+      ? "1px solid rgba(29,95,212,0.24)"
+      : "1px solid rgba(76,111,146,0.18)",
     whiteSpace: "nowrap",
     scrollSnapAlign: "center",
     pointerEvents: disabled ? "none" : "auto",
@@ -1166,6 +1195,9 @@ function bottomNavItem(active = false, disabled = false): React.CSSProperties {
     isolation: "isolate",
     transform: "translateZ(0)",
     outlineOffset: 4,
+    boxShadow: active
+      ? "0 10px 24px rgba(29,95,212,0.16)"
+      : "0 8px 18px rgba(15,23,42,0.08)",
     opacity: disabled ? 0.7 : 1,
   };
 }
@@ -1188,6 +1220,7 @@ function layoutTapGuardProps(): Pick<
 export default function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const mobileBottomNavRef = useRef<HTMLElement | null>(null);
 
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -1304,7 +1337,9 @@ export default function AppLayout() {
         key: "primary",
         label: "Main movement",
         hint:
-          "The main routes stay simple: Dashboard, Community Home, Marketplace, Shop, Finance, and Trust Passport.",
+          canUseAdminTools
+            ? "The main routes stay simple: Dashboard, Community Home, Marketplace, Shop, Finance, Loans, Trust, and Admin."
+            : "The main routes stay simple: Dashboard, Community Home, Marketplace, Shop, Finance, Loans, and Trust.",
         items: primaryItems,
       },
       {
@@ -1345,6 +1380,7 @@ export default function AppLayout() {
     ];
   }, [
     primaryItems,
+    canUseAdminTools,
     commerceItems,
     financeToolsItems,
     trustPassportItems,
@@ -1414,6 +1450,27 @@ export default function AppLayout() {
       document.body.style.overflow = previousOverflow;
     };
   }, [isDrawerOpen, isActionsOpen, isMobile]);
+
+  useEffect(() => {
+    if (!isMobile) return;
+    if (!mobileBottomNavRef.current) return;
+
+    const activeItem = mobileBottomNavRef.current.querySelector<HTMLElement>(
+      '[data-bottom-nav-active="true"]'
+    );
+
+    if (!activeItem) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      activeItem.scrollIntoView({
+        behavior: "smooth",
+        inline: "center",
+        block: "nearest",
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [isMobile, location.pathname, location.search, canUseAdminTools]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1891,13 +1948,18 @@ export default function AppLayout() {
         <Outlet />
       </main>
 
-      {isMobile && !taskMode ? (
-        <nav style={bottomNav()}>
+      {isMobile && (!taskMode || shouldKeepBottomRailInTaskMode(location.pathname)) ? (
+        <nav ref={mobileBottomNavRef} style={bottomNav()}>
           {mobileBottomItems.map((item) => (
             <OriginLink
               key={`bottom-${item.label}-${item.to}`}
               to={item.to}
               aria-disabled={item.disabled || undefined}
+              data-bottom-nav-active={
+                isItemActive(item, location.pathname, location.search)
+                  ? "true"
+                  : "false"
+              }
               tabIndex={item.disabled ? -1 : undefined}
               {...layoutTapGuardProps()}
               style={bottomNavItem(

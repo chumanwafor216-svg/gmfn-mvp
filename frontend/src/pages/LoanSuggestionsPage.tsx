@@ -3,6 +3,12 @@ import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
+import {
+  institutionalInnerCard,
+  institutionalPageCard,
+  institutionalSoftCard,
+  institutionalStatTile,
+} from "../lib/institutionalSurface";
 
 type LoanRow = {
   id?: number;
@@ -338,53 +344,82 @@ function readWithdrawalTask(clanId: number, gmfnId: string): PersistedWithdrawal
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 20,
-    boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
-    overflow: "hidden",
+    ...institutionalPageCard(bg),
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F3F8FF 100%)"
+        : bg,
+    border: "1px solid rgba(108,138,184,0.18)",
+    boxShadow: "0 24px 52px rgba(15,23,42,0.08)",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
-    borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 16,
+    ...institutionalSoftCard(bg),
+    background:
+      bg === "#F8FBFF"
+        ? "linear-gradient(180deg, #FCFEFF 0%, #EDF5FF 100%)"
+        : bg,
+    border: "1px solid rgba(123,153,197,0.18)",
+    boxShadow: "0 18px 40px rgba(15,23,42,0.06)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 14,
+    ...institutionalInnerCard(bg),
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"
+        : bg,
+    border: "1px solid rgba(125,154,196,0.18)",
+    boxShadow: "0 16px 34px rgba(15,23,42,0.05)",
   };
 }
 
 function statTile(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 14,
+    ...institutionalStatTile(bg),
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)"
+        : bg,
+    border: "1px solid rgba(122,152,195,0.18)",
+    boxShadow: "0 14px 30px rgba(15,23,42,0.05)",
   };
 }
 
 function stableTapStyle(): React.CSSProperties {
   return {
     position: "relative",
-    zIndex: 2,
+    zIndex: 20,
     isolation: "isolate",
+    pointerEvents: "auto",
+    boxSizing: "border-box",
+    appearance: "none",
+    WebkitAppearance: "none",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
     transform: "translateZ(0)",
     outlineOffset: 4,
+    lineHeight: 1.2,
+  };
+}
+
+function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
+  event?.stopPropagation();
+}
+
+function buttonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: guardButtonPress,
+    onTouchStart: guardButtonPress,
+    onMouseDown: guardButtonPress,
   };
 }
 
@@ -395,21 +430,26 @@ function routeTile(primary = false): React.CSSProperties {
     flexDirection: "column",
     justifyContent: "space-between",
     minHeight: 104,
+    minWidth: 0,
     borderRadius: 18,
     border: primary
-      ? "1px solid rgba(11,99,209,0.18)"
-      : "1px solid rgba(11,31,51,0.08)",
-    background: primary ? "#F7FAFF" : "#FFFFFF",
+      ? "1px solid rgba(29,95,212,0.22)"
+      : "1px solid rgba(122,152,195,0.18)",
+    background: primary
+      ? "linear-gradient(180deg, #F7FBFF 0%, #E9F2FF 100%)"
+      : "linear-gradient(180deg, #FFFDF9 0%, #F3F8FF 100%)",
     padding: 16,
     textDecoration: "none",
-    boxShadow: primary ? "0 10px 24px rgba(11,99,209,0.05)" : "none",
+    boxShadow: primary
+      ? "0 16px 34px rgba(29,95,212,0.10)"
+      : "0 14px 30px rgba(15,23,42,0.05)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#5D7389",
+    color: "#39526C",
     fontWeight: 900,
     letterSpacing: 0.35,
     textTransform: "uppercase",
@@ -421,11 +461,16 @@ function badge(primary = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     gap: 6,
-    minHeight: 30,
+    minHeight: 32,
     borderRadius: 999,
-    padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
+    padding: "7px 12px",
+    background: primary
+      ? "linear-gradient(180deg, rgba(29,95,212,0.14) 0%, rgba(29,95,212,0.09) 100%)"
+      : "linear-gradient(180deg, rgba(130,146,172,0.16) 0%, rgba(130,146,172,0.10) 100%)",
+    border: primary
+      ? "1px solid rgba(29,95,212,0.16)"
+      : "1px solid rgba(130,146,172,0.14)",
+    color: primary ? "#164AAE" : "#445C75",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
@@ -442,11 +487,14 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 42,
-      padding: "10px 14px",
+      minHeight: 52,
+      minWidth: 132,
+      padding: "12px 17px",
       borderRadius: 14,
       border: "none",
-      background: disabled ? "#CBD5E1" : "#0B63D1",
+      background: disabled
+        ? "#CBD5E1"
+        : "linear-gradient(180deg, #255FCE 0%, #1B4FBF 100%)",
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
@@ -454,7 +502,9 @@ function actionBtn(
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
+      overflowWrap: "anywhere",
       opacity: disabled ? 0.86 : 1,
+      boxShadow: disabled ? "none" : "0 14px 30px rgba(29,95,212,0.26)",
     };
   }
 
@@ -464,11 +514,12 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 38,
-      padding: "8px 12px",
+      minHeight: 48,
+      minWidth: 128,
+      padding: "11px 15px",
       borderRadius: 12,
-      border: "1px solid rgba(11,31,51,0.08)",
-      background: "#F8FBFF",
+      border: "1px solid rgba(124,154,196,0.18)",
+      background: "linear-gradient(180deg, #FEFFFF 0%, #EEF5FF 100%)",
       color: disabled ? "#94A3B8" : "#24415C",
       fontWeight: 800,
       fontSize: 13,
@@ -476,7 +527,9 @@ function actionBtn(
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
+      overflowWrap: "anywhere",
       opacity: disabled ? 0.86 : 1,
+      boxShadow: "0 10px 22px rgba(15,23,42,0.06)",
     };
   }
 
@@ -485,11 +538,12 @@ function actionBtn(
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
+    minHeight: 52,
+    minWidth: 132,
+    padding: "12px 17px",
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(124,154,196,0.18)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F1F7FF 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
@@ -497,7 +551,9 @@ function actionBtn(
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
+    overflowWrap: "anywhere",
     opacity: disabled ? 0.86 : 1,
+    boxShadow: "0 12px 24px rgba(15,23,42,0.06)",
   };
 }
 
@@ -507,24 +563,27 @@ function collapseToggle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 38,
-    padding: "8px 12px",
+    minHeight: 48,
+    minWidth: 128,
+    padding: "11px 15px",
     borderRadius: 12,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(124,154,196,0.18)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F1F7FF 100%)",
     color: "#24415C",
     fontWeight: 800,
     fontSize: 13,
     textAlign: "center",
     cursor: "pointer",
     whiteSpace: "normal",
+    overflowWrap: "anywhere",
+    boxShadow: "0 10px 22px rgba(15,23,42,0.06)",
   };
 }
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#5F7287",
-    fontSize: 14,
+    color: "#4F657B",
+    fontSize: 14.5,
     lineHeight: 1.75,
   };
 }
@@ -1036,7 +1095,7 @@ export default function LoanSuggestionsPage() {
       style={{
         maxWidth: 1180,
         margin: "0 auto",
-        paddingBottom: 40,
+        paddingBottom: isCompact ? 40 : 60,
         display: "grid",
         gap: 18,
       }}
@@ -1065,8 +1124,8 @@ export default function LoanSuggestionsPage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="This page reads the current support item and shows whether the visible fit signals are strong enough to continue into the deeper workbench."
-        why="It gives you a recommendation layer before you commit time to supporter selection and detailed workbench actions."
+        what="This page reads the current support item and shows which people or signals look strongest for the next move."
+        why="Finance keeps the money record. Suggestions keeps the fit reading, so you can judge this support path before deeper action."
         next="Read the suggestion summary first, then use the fit reading and suggested supporters below to decide whether to continue."
         tone="blue"
       />
@@ -1191,6 +1250,7 @@ export default function LoanSuggestionsPage() {
               <div style={{ marginTop: 12 }}>
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={() => void handleRefresh()}
                   disabled={refreshing}
                   style={actionBtn("secondary", refreshing)}
@@ -1222,6 +1282,7 @@ export default function LoanSuggestionsPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("overview")}
             style={collapseToggle()}
           >
@@ -1414,6 +1475,7 @@ export default function LoanSuggestionsPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("reading")}
             style={collapseToggle()}
           >
@@ -1527,6 +1589,7 @@ export default function LoanSuggestionsPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("supporters")}
             style={collapseToggle()}
           >
@@ -1639,17 +1702,18 @@ export default function LoanSuggestionsPage() {
         >
           <div>
             <div style={sectionLabel()}>
-              {suggestionsSupportActive ? "Support continuation routes" : "Next routes"}
+              {suggestionsSupportActive ? "Next support routes" : "Next routes"}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {suggestionsSupportActive
-                ? "Stay inside the support flow and move only to the next continuation step."
+                ? "Stay inside Loans & Support and move only to the next step that matches this support item."
                 : "Move into the next page you need."}
             </div>
           </div>
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("routes")}
             style={collapseToggle()}
           >
@@ -1791,6 +1855,7 @@ export default function LoanSuggestionsPage() {
           </div>
         ) : null}
       </section>
+
     </div>
   );
 }

@@ -11,6 +11,12 @@ import {
   buildGuidanceSnapshot,
   type GuidanceSnapshot,
 } from "../lib/guidance";
+import {
+  institutionalInnerCard,
+  institutionalPageCard,
+  institutionalSoftCard,
+  institutionalStatTile,
+} from "../lib/institutionalSurface";
 import { navigateWithOrigin } from "../lib/nav";
 
 type LoanRow = {
@@ -206,54 +212,87 @@ function getPoolCurrency(payload: any): string {
 }
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
+  const base = institutionalPageCard(bg);
   return {
-    borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 20,
-    boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
-    overflow: "hidden",
+    ...base,
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)"
+        : bg,
+    border: "1px solid rgba(88,116,148,0.18)",
+    boxShadow: "0 20px 46px rgba(15,23,42,0.08)",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
+  const base = institutionalSoftCard(bg);
   return {
-    borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 16,
+    ...base,
+    background:
+      bg === "#F8FBFF"
+        ? "linear-gradient(180deg, #F8FBFF 0%, #EDF6FF 100%)"
+        : bg,
+    border: "1px solid rgba(88,116,148,0.18)",
+    boxShadow: "0 16px 36px rgba(15,23,42,0.08)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
+  const base = institutionalInnerCard(bg);
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 14,
+    ...base,
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"
+        : bg,
+    border: "1px solid rgba(88,116,148,0.17)",
+    boxShadow: "0 14px 28px rgba(15,23,42,0.07)",
   };
 }
 
 function statTile(bg = "#FFFFFF"): React.CSSProperties {
+  const base = institutionalStatTile(bg);
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 14,
+    ...base,
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)"
+        : bg,
+    border: "1px solid rgba(88,116,148,0.17)",
+    boxShadow: "0 12px 24px rgba(15,23,42,0.07)",
   };
 }
 
 function stableTapStyle(): React.CSSProperties {
   return {
     position: "relative",
-    zIndex: 2,
+    zIndex: 20,
     isolation: "isolate",
+    pointerEvents: "auto",
+    boxSizing: "border-box",
+    appearance: "none",
+    WebkitAppearance: "none",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
     transform: "translateZ(0)",
     outlineOffset: 4,
+    lineHeight: 1.2,
+  };
+}
+
+function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
+  event?.stopPropagation();
+}
+
+function buttonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: guardButtonPress,
+    onTouchStart: guardButtonPress,
+    onMouseDown: guardButtonPress,
   };
 }
 
@@ -264,21 +303,26 @@ function routeTile(primary = false): React.CSSProperties {
     flexDirection: "column",
     justifyContent: "space-between",
     minHeight: 104,
+    minWidth: 0,
     borderRadius: 18,
     border: primary
-      ? "1px solid rgba(29,78,216,0.16)"
-      : "1px solid rgba(11,31,51,0.08)",
-    background: primary ? "linear-gradient(180deg, #F7FAFF 0%, #FFFFFF 100%)" : "#FFFFFF",
+      ? "1px solid rgba(29,95,212,0.24)"
+      : "1px solid rgba(88,116,148,0.18)",
+    background: primary
+      ? "linear-gradient(180deg, #F5FAFF 0%, #E4F0FF 100%)"
+      : "linear-gradient(180deg, #FFFDF9 0%, #F1F7FF 100%)",
     padding: 16,
     textDecoration: "none",
-    boxShadow: primary ? "0 10px 24px rgba(29,78,216,0.05)" : "none",
+    boxShadow: primary
+      ? "0 16px 34px rgba(29,95,212,0.12)"
+      : "0 14px 30px rgba(15,23,42,0.07)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#5D7389",
+    color: "#38516B",
     fontWeight: 900,
     letterSpacing: 0.35,
     textTransform: "uppercase",
@@ -290,11 +334,16 @@ function badge(primary = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     gap: 6,
-    minHeight: 30,
+    minHeight: 32,
     borderRadius: 999,
-    padding: "6px 10px",
-    background: primary ? "rgba(29,78,216,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#1D4ED8" : "#51657A",
+    padding: "7px 12px",
+    background: primary
+      ? "linear-gradient(180deg, rgba(29,95,212,0.16) 0%, rgba(29,95,212,0.10) 100%)"
+      : "linear-gradient(180deg, rgba(92,114,138,0.16) 0%, rgba(92,114,138,0.10) 100%)",
+    border: primary
+      ? "1px solid rgba(29,95,212,0.14)"
+      : "1px solid rgba(88,116,148,0.14)",
+    color: primary ? "#0F56BF" : "#44596F",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
@@ -311,11 +360,14 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 42,
-      padding: "10px 14px",
+      minHeight: 50,
+      minWidth: 124,
+      padding: "10px 15px",
       borderRadius: 14,
       border: "none",
-      background: disabled ? "#CBD5E1" : "#1D4ED8",
+      background: disabled
+        ? "#CBD5E1"
+        : "linear-gradient(180deg, #1659CF 0%, #103F99 100%)",
       color: "#FFFFFF",
       fontWeight: 900,
       fontSize: 14,
@@ -323,7 +375,9 @@ function actionBtn(
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
+      overflowWrap: "anywhere",
       opacity: disabled ? 0.86 : 1,
+      boxShadow: disabled ? "none" : "0 14px 30px rgba(22,89,207,0.28)",
     };
   }
 
@@ -333,19 +387,22 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 38,
-      padding: "8px 12px",
+      minHeight: 46,
+      minWidth: 120,
+      padding: "9px 13px",
       borderRadius: 12,
-      border: "1px solid rgba(29,78,216,0.10)",
-      background: "#F5FAFF",
-      color: disabled ? "#94A3B8" : "#1E4063",
+      border: "1px solid rgba(88,116,148,0.18)",
+      background: "linear-gradient(180deg, #FFFFFF 0%, #EDF5FF 100%)",
+      color: disabled ? "#94A3B8" : "#173A60",
       fontWeight: 800,
       fontSize: 13,
       textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
+      overflowWrap: "anywhere",
       opacity: disabled ? 0.86 : 1,
+      boxShadow: "0 10px 22px rgba(15,23,42,0.08)",
     };
   }
 
@@ -354,19 +411,22 @@ function actionBtn(
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
+    minHeight: 50,
+    minWidth: 124,
+    padding: "10px 15px",
     borderRadius: 14,
-    border: "1px solid rgba(29,78,216,0.12)",
-    background: "#FDFEFF",
-    color: disabled ? "#94A3B8" : "#0B1F33",
+    border: "1px solid rgba(88,116,148,0.18)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
+    color: disabled ? "#94A3B8" : "#0D2743",
     fontWeight: 800,
     fontSize: 14,
     textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
+    overflowWrap: "anywhere",
     opacity: disabled ? 0.86 : 1,
+    boxShadow: "0 10px 22px rgba(15,23,42,0.08)",
   };
 }
 
@@ -376,24 +436,27 @@ function collapseToggle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 38,
-    padding: "8px 12px",
+    minHeight: 46,
+    minWidth: 114,
+    padding: "9px 13px",
     borderRadius: 12,
-    border: "1px solid rgba(29,78,216,0.12)",
-    background: "#FDFEFF",
-    color: "#1E4063",
+    border: "1px solid rgba(88,116,148,0.18)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
+    color: "#173A60",
     fontWeight: 800,
     fontSize: 13,
     textAlign: "center",
     cursor: "pointer",
     whiteSpace: "normal",
+    overflowWrap: "anywhere",
+    boxShadow: "0 10px 22px rgba(15,23,42,0.08)",
   };
 }
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#5F7287",
-    fontSize: 14,
+    color: "#4F647A",
+    fontSize: 14.5,
     lineHeight: 1.75,
   };
 }
@@ -629,15 +692,15 @@ export default function LoansPage() {
 
     if (guarantorLoans.length > 0) {
       const first = guarantorLoans[0];
-      return {
-        title: "You have guarantor-side support responsibility",
-        detail: safeStr(first.title)
-          ? `${safeStr(first.title)} is still active and should be watched closely.`
-          : "A guarantor-side support item is still active and should be watched closely.",
-        ctaLabel: "Open Loans",
-        ctaTo: "/app/loans",
-      };
-    }
+        return {
+          title: "You have guarantor-side support responsibility",
+          detail: safeStr(first.title)
+            ? `${safeStr(first.title)} is still active and should be watched closely.`
+            : "A guarantor-side support item is still active and should be watched closely.",
+          ctaLabel: "Open Loans & Support",
+          ctaTo: "/app/loans",
+        };
+      }
 
     if (
       safeStr(guidance?.nextBestStep?.kind).toLowerCase().includes("loan") ||
@@ -646,7 +709,7 @@ export default function LoansPage() {
       return {
         title: safeStr(guidance?.nextBestStep?.title),
         detail: safeStr(guidance?.nextBestStep?.detail),
-        ctaLabel: safeStr(guidance?.nextBestStep?.ctaLabel || "Open Loans"),
+        ctaLabel: safeStr(guidance?.nextBestStep?.ctaLabel || "Open Loans & Support"),
         ctaTo: safeStr(guidance?.nextBestStep?.ctaTo || "/app/loans"),
       };
     }
@@ -768,9 +831,9 @@ export default function LoansPage() {
       },
       {
         id: "finance",
-        label: "Open Finance",
-        detail: "See the wider money record across communities.",
-        technical: "Finance",
+        label: "See this in Finance",
+        detail: "Open the wider finance record across communities.",
+        technical: "Finance record",
         to: "/app/finance",
         keywords: ["finance", "money record", "balance"],
       },
@@ -886,7 +949,7 @@ export default function LoansPage() {
       style={{
         maxWidth: 1180,
         margin: "0 auto",
-        paddingBottom: 40,
+        paddingBottom: isCompact ? 40 : 60,
         display: "grid",
         gap: 18,
       }}
@@ -894,7 +957,7 @@ export default function LoansPage() {
       <PageTopNav
         sectionLabel="Loans & Support"
         title="Loans & Support"
-        subtitle="A calmer page for borrower-side steps, guarantor-side requests, and the money routes around them."
+        subtitle="The live one-community workspace for borrower-side steps, guarantor requests, repayment movement, and the support routes around them."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
@@ -928,9 +991,9 @@ export default function LoansPage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="This page keeps the borrowing and support flow together: borrower-side items, guarantor requests, and the next routes around them."
-        why="It helps you see the full support load before you jump into readiness, guarantor work, or money routes."
-        next="Start with the support overview and summary, then open the next page that matches the task you need to handle now."
+        what="This page runs the live Loans & Support workflow for this community: borrower-side steps, guarantor requests, repayment movement, and the next support route."
+        why="Finance keeps the wider money history across communities. Loans keeps the active support work for this one community so the story stays clear."
+        next="Start with the support summary here, then move into readiness, suggestions, workbench, or repayment depending on the pressure you need to handle now."
         tone="blue"
       />
 
@@ -1032,6 +1095,7 @@ export default function LoansPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("overview")}
             style={collapseToggle()}
           >
@@ -1152,6 +1216,7 @@ export default function LoansPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("focus")}
             style={collapseToggle()}
           >
@@ -1241,6 +1306,7 @@ export default function LoansPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("borrower")}
             style={collapseToggle()}
           >
@@ -1345,6 +1411,7 @@ export default function LoansPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("guarantor")}
             style={collapseToggle()}
           >
@@ -1466,17 +1533,18 @@ export default function LoansPage() {
         >
           <div>
             <div style={sectionLabel()}>
-              {supportFlowActive ? "Support continuation routes" : "Next routes"}
+              {supportFlowActive ? "Next support routes" : "Next routes"}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {supportFlowActive
-                ? "Stay inside the support lifecycle and move only to the next support step."
+                ? "Stay inside Loans & Support and move only to the next support step."
                 : "Move from this overview into the next page you need."}
             </div>
           </div>
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("routes")}
             style={collapseToggle()}
           >
@@ -1678,6 +1746,7 @@ export default function LoansPage() {
           </div>
         ) : null}
       </section>
+
     </div>
   );
 }

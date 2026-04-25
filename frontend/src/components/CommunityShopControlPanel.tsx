@@ -240,16 +240,6 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
-function gearCard(bg = "#FFFFFF"): React.CSSProperties {
-  return {
-    ...innerCard(bg),
-    display: "grid",
-    gap: 10,
-    alignContent: "space-between",
-    minHeight: 168,
-  };
-}
-
 function mediaBox(minHeight = 220): React.CSSProperties {
   return {
     width: "100%",
@@ -306,7 +296,7 @@ function actionBtn(
 ): React.CSSProperties {
   const stableTapLayer: React.CSSProperties = {
     position: "relative",
-    zIndex: 10,
+    zIndex: 20,
     isolation: "isolate",
     transform: "translateZ(0)",
     pointerEvents: "auto",
@@ -315,6 +305,7 @@ function actionBtn(
     WebkitTapHighlightColor: "transparent",
     touchAction: "manipulation",
     userSelect: "none",
+    outlineOffset: 4,
   };
 
   if (kind === "primary") {
@@ -326,8 +317,8 @@ function actionBtn(
       minWidth: 0,
       maxWidth: "100%",
       boxSizing: "border-box",
-      minHeight: 42,
-      padding: "10px 14px",
+      minHeight: 48,
+      padding: "12px 14px",
       borderRadius: 14,
       border: disabled
         ? "1px solid rgba(148,163,184,0.45)"
@@ -360,8 +351,8 @@ function actionBtn(
     minWidth: 0,
     maxWidth: "100%",
     boxSizing: "border-box",
-    minHeight: 42,
-    padding: "10px 14px",
+      minHeight: 48,
+      padding: "12px 14px",
     borderRadius: 14,
     border: "1px solid rgba(11,31,51,0.10)",
     background:
@@ -386,7 +377,8 @@ function actionBtn(
 function collapseToggle(): React.CSSProperties {
   return {
     position: "relative",
-    zIndex: 10,
+    zIndex: 30,
+    isolation: "isolate",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -413,11 +405,13 @@ function collapseToggle(): React.CSSProperties {
     boxShadow:
       "0 5px 0 rgba(79,97,120,0.16), 0 13px 26px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -9px 16px rgba(15,59,116,0.08)",
     outline: "none",
-    outlineOffset: 0,
+    outlineOffset: 4,
     appearance: "none",
     WebkitAppearance: "none",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
+    pointerEvents: "auto",
+    transform: "translateZ(0)",
   };
 }
 
@@ -463,17 +457,22 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
 }
 
 function stopPanelTap(event: React.SyntheticEvent) {
+  if (event.type === "click" || event.type === "submit") {
+    event.preventDefault();
+  }
+
   event.stopPropagation();
 }
 
 function panelButtonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown"
+  "onPointerDown" | "onTouchStart" | "onMouseDown" | "onClickCapture"
 > {
   return {
     onPointerDown: stopPanelTap,
     onTouchStart: stopPanelTap,
     onMouseDown: stopPanelTap,
+    onClickCapture: stopPanelTap,
   };
 }
 
@@ -617,10 +616,10 @@ export default function CommunityShopControlPanel({
   }, [shop]);
 
   const topLine = useMemo(() => {
-    if (!shop) return "Shop control is ready inside Community Home.";
+    if (!shop) return "Community Home can still launch the owner shop desk while the shop record is loading.";
     return firstTruthy(
       shop.description,
-      "Manage the owner page here, then keep the public shop page clean for visitors."
+      "Use this owner desk to prepare the one shop here, then let Marketplace carry the live community-facing side."
     );
   }, [shop]);
 
@@ -653,7 +652,7 @@ export default function CommunityShopControlPanel({
     collapseToggleTimerRef.current = window.setTimeout(() => {
       collapseToggleTimerRef.current = null;
       setOpen((prev) => !prev);
-    }, 90);
+    }, 24);
   }
 
   return (
@@ -666,7 +665,7 @@ export default function CommunityShopControlPanel({
         style={collapseHeaderLayout(isCompact)}
       >
         <div style={collapseHeaderText("center")}>
-          <div style={sectionLabel("center")}>Shop control</div>
+          <div style={sectionLabel("center")}>Owner shop control</div>
           <div
             style={{
               marginTop: 8,
@@ -677,7 +676,7 @@ export default function CommunityShopControlPanel({
               textAlign: "center",
             }}
           >
-            Manage shop tools. Keep the public gallery clean.
+            Manage the one GSN shop from Community Home. Keep the public shop face clear for visitors.
           </div>
         </div>
 
@@ -752,8 +751,8 @@ export default function CommunityShopControlPanel({
                       alignItems: "center",
                     }}
                   >
-                    <span style={badge(true)}>Community Home</span>
-                    <span style={badge(false)}>Owner tools</span>
+                    <span style={badge(true)}>Owner launcher</span>
+                    <span style={badge(false)}>One-shop owner work</span>
                   </div>
 
                   <div
@@ -779,9 +778,9 @@ export default function CommunityShopControlPanel({
                     <span style={badge(true)}>
                       GSN ID: {safeStr(shop?.gmfnId || "Pending")}
                     </span>
-                    <span style={badge(false)}>Community: {communityLabel}</span>
+                    <span style={badge(false)}>Selected community: {communityLabel}</span>
                     <span style={badge(false)}>
-                      Trust: {safeStr(shop?.trustBand || "Visible seller")}
+                      Shop trust: {safeStr(shop?.trustBand || "Visible seller")}
                     </span>
                   </div>
 
@@ -800,7 +799,7 @@ export default function CommunityShopControlPanel({
                       }
                       style={actionBtn("primary")}
                     >
-                      Open Shop Tools
+                      Open Owner Shop Control
                     </button>
 
                     {publicShopTo ? (
@@ -810,7 +809,7 @@ export default function CommunityShopControlPanel({
                         onClick={(event) => openPanelRoute(event, publicShopTo)}
                         style={actionBtn("secondary")}
                       >
-                        Open Public Shop
+                        Open Public Shop Face
                       </button>
                     ) : (
                       <button
@@ -819,7 +818,7 @@ export default function CommunityShopControlPanel({
                         disabled
                         style={actionBtn("secondary", true)}
                       >
-                        Open Public Shop
+                        Open Public Shop Face
                       </button>
                     )}
 
@@ -832,7 +831,7 @@ export default function CommunityShopControlPanel({
                       }}
                       style={actionBtn("secondary")}
                     >
-                      Copy Shop Link
+                      Copy Public Shop Link
                     </button>
 
                     <button
@@ -841,7 +840,7 @@ export default function CommunityShopControlPanel({
                       onClick={(event) => openPanelRoute(event, "/app/marketplace")}
                       style={actionBtn("secondary")}
                     >
-                      Marketplace
+                      Open Community Marketplace
                     </button>
                   </div>
                 </div>
@@ -854,171 +853,62 @@ export default function CommunityShopControlPanel({
                 border: "1px solid rgba(11,99,209,0.10)",
               }}
             >
-              <div>
-                <div style={sectionLabel()}>Owner tool lanes</div>
-                <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-                  One shop follows your GSN ID. Choose the lane you need; the detailed
-                  work opens in Shop Control so Community Home stays clean.
-                </div>
+              <div style={sectionLabel()}>Owner shortcuts</div>
+              <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
+                Community Home launches one-shop owner work. Marketplace
+                carries the live community-facing activity, member movement,
+                and outward links.
               </div>
-
               <div
                 style={{
-                  marginTop: 14,
+                  marginTop: 12,
                   display: "grid",
-                  gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
-                  gap: 12,
+                  gridTemplateColumns: isCompact
+                    ? "1fr"
+                    : "repeat(4, minmax(0, 1fr))",
+                  gap: 10,
                 }}
               >
-                <div style={gearCard("#FFFFFF")}>
-                  <div>
-                    <div style={sectionLabel()}>Public shop</div>
-                    <div
-                      style={{
-                        marginTop: 8,
-                        color: "#0B1F33",
-                        fontWeight: 900,
-                        fontSize: 20,
-                        lineHeight: 1.2,
-                      }}
-                    >
-                      Picture and products
-                    </div>
-                    <div style={{ marginTop: 8, ...helperText() }}>
-                      Update the shop picture and manage the ordinary products people can
-                      see from the public shop.
-                    </div>
-                    <div style={{ marginTop: 10, display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      <span style={badge(false)}>{publicShopTo ? "Public link ready" : "Public link pending"}</span>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <button
-                      type="button"
-                      {...panelButtonGuardProps()}
-                      onClick={(event) =>
-                        openPanelRoute(event, "/app/shop-control#shop-control-picture-gallery")
-                      }
-                      style={actionBtn("primary")}
-                    >
-                      Shop Picture
-                    </button>
-                    <button
-                      type="button"
-                      {...panelButtonGuardProps()}
-                      onClick={(event) => openPanelRoute(event, "/app/shop-assets")}
-                      style={actionBtn("secondary")}
-                    >
-                      Manage Products
-                    </button>
-                  </div>
-                </div>
-
-                <div style={gearCard("#FFFFFF")}>
-                  <div>
-                    <div style={sectionLabel()}>Spotlight</div>
-                    <div
-                      style={{
-                        marginTop: 8,
-                        color: "#0B1F33",
-                        fontWeight: 900,
-                        fontSize: 20,
-                        lineHeight: 1.2,
-                      }}
-                    >
-                      Free visibility
-                    </div>
-                    <div style={{ marginTop: 8, ...helperText() }}>
-                      Prepare the normal spotlight with a picture, short video, or message.
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    {...panelButtonGuardProps()}
-                    onClick={(event) =>
-                      openPanelRoute(event, "/app/shop-control#shop-control-spotlight")
-                    }
-                    style={actionBtn("primary")}
-                  >
-                    Prepare Spotlight
-                  </button>
-                </div>
-
-                <div style={gearCard("#FFF9E7")}>
-                  <div>
-                    <div style={sectionLabel()}>Paid spotlight</div>
-                    <div
-                      style={{
-                        marginTop: 8,
-                        color: "#0B1F33",
-                        fontWeight: 900,
-                        fontSize: 20,
-                        lineHeight: 1.2,
-                      }}
-                    >
-                      Priority spotlight
-                    </div>
-                    <div style={{ marginTop: 8, ...helperText() }}>
-                      Start or check paid priority when the shop needs stronger exposure.
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    {...panelButtonGuardProps()}
-                    onClick={(event) =>
-                      openPanelRoute(event, "/app/shop-control#shop-control-paid-spotlight")
-                    }
-                    style={actionBtn("primary")}
-                  >
-                    Open Paid Spotlight
-                  </button>
-                </div>
-
-                <div style={gearCard("#FFF9E7")}>
-                  <div>
-                    <div style={sectionLabel()}>Vault</div>
-                    <div
-                      style={{
-                        marginTop: 8,
-                        color: "#0B1F33",
-                        fontWeight: 900,
-                        fontSize: 20,
-                        lineHeight: 1.2,
-                      }}
-                    >
-                      Private gallery
-                    </div>
-                    <div style={{ marginTop: 8, ...helperText() }}>
-                      Keep private offers and controlled viewing links separate from the
-                      public shop.
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <button
-                      type="button"
-                      {...panelButtonGuardProps()}
-                      onClick={(event) =>
-                        openPanelRoute(
-                          event,
-                          "/app/shop-control#shop-control-vault-subscription"
-                        )
-                      }
-                      style={actionBtn("primary")}
-                    >
-                      Vault Subscription
-                    </button>
-                    <button
-                      type="button"
-                      {...panelButtonGuardProps()}
-                      onClick={(event) =>
-                        openPanelRoute(event, "/app/shop-control#shop-control-vault")
-                      }
-                      style={actionBtn("secondary")}
-                    >
-                      Open Vault Gallery
-                    </button>
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  {...panelButtonGuardProps()}
+                  onClick={(event) =>
+                    openPanelRoute(event, "/app/shop-control#shop-control-picture-gallery")
+                  }
+                  style={actionBtn("secondary")}
+                >
+                  Pictures & Products
+                </button>
+                <button
+                  type="button"
+                  {...panelButtonGuardProps()}
+                  onClick={(event) =>
+                    openPanelRoute(event, "/app/shop-control#shop-control-spotlight")
+                  }
+                  style={actionBtn("secondary")}
+                >
+                  Owner Spotlight
+                </button>
+                <button
+                  type="button"
+                  {...panelButtonGuardProps()}
+                  onClick={(event) =>
+                    openPanelRoute(event, "/app/shop-control#shop-control-paid-spotlight")
+                  }
+                  style={actionBtn("secondary")}
+                >
+                  Paid Spotlight
+                </button>
+                <button
+                  type="button"
+                  {...panelButtonGuardProps()}
+                  onClick={(event) =>
+                    openPanelRoute(event, "/app/shop-control#shop-control-vault")
+                  }
+                  style={actionBtn("secondary")}
+                >
+                  Private Vault Access
+                </button>
               </div>
             </div>
           </div>

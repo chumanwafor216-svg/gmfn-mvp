@@ -368,6 +368,50 @@ function stageTone(stage: string): {
   return { bg: "#F8FBFF", text: "#0B63D1", label: "Visible" };
 }
 
+function normalizedStage(stage: any): string {
+  return safeStr(stage).toLowerCase();
+}
+
+function pilotStageLabel(stage: any): string {
+  const normalized = normalizedStage(stage);
+
+  if (normalized === "awaiting_phone") return "Awaiting phone";
+  if (normalized === "awaiting_bank") return "Bank/wallet needed";
+  if (normalized === "ready_for_community") return "Ready for community";
+  if (normalized === "account_exists") return "Sign in instead";
+  if (normalized === "expired") return "Expired session";
+  if (normalized === "completed") return "Completed";
+  if (normalized === "approved_activation_ready") return "Activation ready";
+  if (normalized === "approved_missing_activation") return "Activation missing";
+  if (normalized === "pending") return "Pending review";
+  if (normalized === "rejected") return "Rejected";
+
+  return safeStr(stage || "Visible").replace(/_/g, " ");
+}
+
+function pilotCreatePriority(row: any): number {
+  const stage = normalizedStage(row?.stage);
+
+  if (stage === "account_exists" || stage === "expired") return 0;
+  if (stage === "ready_for_community") return 1;
+  if (stage === "awaiting_bank") return 2;
+  if (stage === "awaiting_phone") return 3;
+  if (stage === "completed") return 8;
+
+  return 4;
+}
+
+function pilotJoinPriority(row: any): number {
+  const stage = normalizedStage(row?.stage);
+
+  if (stage === "approved_missing_activation") return 0;
+  if (stage === "pending") return 1;
+  if (stage === "approved_activation_ready") return 2;
+  if (stage === "rejected") return 7;
+
+  return 4;
+}
+
 function identitySignalLevel(row: any): "high" | "medium" | "low" {
   const severity = toNum(row?.severity);
   if (severity >= 6) return "high";
@@ -541,12 +585,20 @@ export default function SystemOperationsPage() {
   }, [bankRecent, bankUnmatched, expectedPayments, identityRisk, incompleteLoans, pendingPool]);
 
   const pilotCreateRows = useMemo(
-    () => rowsOf<any>(pilotIntake?.create_entries).slice(0, 8),
+    () =>
+      rowsOf<any>(pilotIntake?.create_entries)
+        .slice()
+        .sort((a, b) => pilotCreatePriority(a) - pilotCreatePriority(b))
+        .slice(0, 8),
     [pilotIntake]
   );
 
   const pilotJoinRows = useMemo(
-    () => rowsOf<any>(pilotIntake?.join_requests).slice(0, 6),
+    () =>
+      rowsOf<any>(pilotIntake?.join_requests)
+        .slice()
+        .sort((a, b) => pilotJoinPriority(a) - pilotJoinPriority(b))
+        .slice(0, 6),
     [pilotIntake]
   );
 
@@ -568,6 +620,34 @@ export default function SystemOperationsPage() {
       joinActivationMissing: toNum(joinByStage.approved_missing_activation),
     };
   }, [pilotIntake]);
+
+  const pilotTriageMessage = useMemo(() => {
+    if (!pilotIntake) {
+      return "When testers begin, this monitor will show who is still entering, who is ready to finish, and who needs admin help.";
+    }
+
+    if (pilotIntakeSummary.needsAttention > 0) {
+      return "Start with Needs help. Those rows usually mean sign in instead, expired session, or missing activation link.";
+    }
+
+    if (pilotIntakeSummary.createReady > 0) {
+      return "Some creators are ready for community setup. Guide them to finish the community name and first-circle path.";
+    }
+
+    if (pilotIntakeSummary.createAwaitingBank > 0) {
+      return "Some creators have phone proof ready and only need bank or wallet details recorded for the pilot.";
+    }
+
+    if (pilotIntakeSummary.joinPending > 0) {
+      return "Some invited people are waiting for community review. Check join requests before asking them to start again.";
+    }
+
+    if (pilotIntakeSummary.joinApproved > 0) {
+      return "Some join requests are approved. Confirm the tester received and opened the activation link.";
+    }
+
+    return "No urgent pilot intake problem is visible now. Keep watching new create and join rows as testers continue.";
+  }, [pilotIntake, pilotIntakeSummary]);
 
   const operationalFocus = useMemo(() => {
     if (pilotIntakeSummary.needsAttention > 0) {
@@ -1130,6 +1210,26 @@ export default function SystemOperationsPage() {
           <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
             <div
               style={{
+                ...innerCard("linear-gradient(135deg, #F8FBFF 0%, #EEF6FF 55%, #FFFBEF 100%)"),
+                border: "1px solid rgba(11,99,209,0.14)",
+              }}
+            >
+              <div style={sectionLabel()}>First support action</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 16,
+                  fontWeight: 900,
+                  lineHeight: 1.45,
+                }}
+              >
+                {pilotTriageMessage}
+              </div>
+            </div>
+
+            <div
+              style={{
                 display: "grid",
                 gridTemplateColumns: isCompact
                   ? "1fr 1fr"
@@ -1152,14 +1252,14 @@ export default function SystemOperationsPage() {
               </div>
 
               <div style={statTile("#FFFBEF")}>
-                <div style={sectionLabel()}>Ready setup</div>
+                <div style={sectionLabel()}>Ready community</div>
                 <div style={{ marginTop: 8, color: "#92400E", fontSize: 24, fontWeight: 900 }}>
                   {pilotIntakeSummary.createReady}
                 </div>
               </div>
 
               <div style={statTile("#FFFBEF")}>
-                <div style={sectionLabel()}>Awaiting bank</div>
+                <div style={sectionLabel()}>Bank/wallet</div>
                 <div style={{ marginTop: 8, color: "#92400E", fontSize: 24, fontWeight: 900 }}>
                   {pilotIntakeSummary.createAwaitingBank}
                 </div>
@@ -1236,11 +1336,18 @@ export default function SystemOperationsPage() {
                             </div>
 
                             <span style={{ ...badge(false), color: tone.text, background: "#FFFFFF" }}>
-                              {safeStr(row?.stage || "visible").replace(/_/g, " ")}
+                              {pilotStageLabel(row?.stage)}
                             </span>
                           </div>
 
-                          <div style={{ marginTop: 10, ...helperText() }}>
+                          <div
+                            style={{
+                              marginTop: 10,
+                              color: "#0B1F33",
+                              fontWeight: 900,
+                              lineHeight: 1.45,
+                            }}
+                          >
                             {firstTruthy(row?.next_action, "Review this tester record.")}
                           </div>
 
@@ -1313,11 +1420,18 @@ export default function SystemOperationsPage() {
                             </div>
 
                             <span style={{ ...badge(false), color: tone.text, background: "#FFFFFF" }}>
-                              {safeStr(row?.stage || row?.status || "visible").replace(/_/g, " ")}
+                              {pilotStageLabel(row?.stage || row?.status)}
                             </span>
                           </div>
 
-                          <div style={{ marginTop: 8, ...helperText() }}>
+                          <div
+                            style={{
+                              marginTop: 8,
+                              color: "#0B1F33",
+                              fontWeight: 900,
+                              lineHeight: 1.45,
+                            }}
+                          >
                             {firstTruthy(row?.next_action, "Review this join request.")}
                           </div>
 

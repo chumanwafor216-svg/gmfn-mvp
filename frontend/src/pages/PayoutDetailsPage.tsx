@@ -52,9 +52,13 @@ const LOCAL_PAYOUT_KEY = "gmfn_payout_account";
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: bg,
-    boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
+    border: "1px solid rgba(108,138,184,0.22)",
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F3F8FF 100%)"
+        : bg,
+    boxShadow:
+      "0 28px 58px rgba(15,23,42,0.09), 0 6px 14px rgba(15,23,42,0.04)",
     padding: 22,
   };
 }
@@ -62,9 +66,49 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: "1px solid rgba(123,153,197,0.21)",
+    background:
+      bg === "#F8FBFF"
+        ? "linear-gradient(180deg, #FCFEFF 0%, #EDF5FF 100%)"
+        : bg,
     padding: 16,
+    boxShadow:
+      "0 22px 44px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.58)",
+  };
+}
+
+function stableTapStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 20,
+    isolation: "isolate",
+    pointerEvents: "auto",
+    boxSizing: "border-box",
+    appearance: "none",
+    WebkitAppearance: "none",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
+    lineHeight: 1.2,
+  };
+}
+
+function guardButtonPress(
+  event:
+    | React.PointerEvent<HTMLElement>
+    | React.MouseEvent<HTMLElement>
+    | React.TouchEvent<HTMLElement>
+) {
+  event.stopPropagation();
+}
+
+function buttonGuardProps() {
+  return {
+    onPointerDown: guardButtonPress,
+    onMouseDown: guardButtonPress,
+    onTouchStart: guardButtonPress,
   };
 }
 
@@ -73,12 +117,19 @@ function primaryBtn(disabled = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "11px 14px",
-    minHeight: 42,
-    borderRadius: 14,
-    border: "none",
-    background: disabled ? "#CBD5E1" : "#0B63D1",
+    padding: "12px 16px",
+    minHeight: 48,
+    borderRadius: 15,
+    border: disabled
+      ? "1px solid rgba(148,163,184,0.24)"
+      : "1px solid rgba(18,77,176,0.22)",
+    background: disabled
+      ? "linear-gradient(180deg, #D5DEE8 0%, #C6D1DD 100%)"
+      : "linear-gradient(180deg, #255FCE 0%, #1B4FBF 100%)",
     color: "#FFFFFF",
+    boxShadow: disabled
+      ? "none"
+      : "0 18px 34px rgba(19,79,191,0.24), inset 0 1px 0 rgba(255,255,255,0.18)",
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
@@ -86,6 +137,7 @@ function primaryBtn(disabled = false): React.CSSProperties {
     textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
     whiteSpace: "normal",
+    ...stableTapStyle(),
   };
 }
 
@@ -94,12 +146,15 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "11px 14px",
-    minHeight: 42,
-    borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    padding: "12px 16px",
+    minHeight: 48,
+    borderRadius: 15,
+    border: "1px solid rgba(121,149,190,0.20)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #EDF5FF 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
+    boxShadow: disabled
+      ? "none"
+      : "0 16px 30px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.68)",
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
@@ -107,17 +162,21 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
     whiteSpace: "normal",
+    ...stableTapStyle(),
   };
 }
 
 function inputStyle(): React.CSSProperties {
   return {
-    padding: 12,
-    borderRadius: 12,
-    border: "1px solid #CBD5E1",
-    background: "#FFFFFF",
+    padding: "11px 12px",
+    borderRadius: 14,
+    border: "1px solid rgba(11,31,51,0.12)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F9FCFF 100%)",
     width: "100%",
     boxSizing: "border-box",
+    minHeight: 46,
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.52), 0 12px 24px rgba(15,23,42,0.05)",
     outline: "none",
     fontSize: 14,
   };
@@ -126,7 +185,7 @@ function inputStyle(): React.CSSProperties {
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#4F6B8A",
+    color: "#334F69",
     fontWeight: 1000,
     letterSpacing: 0.45,
     textTransform: "uppercase",
@@ -137,14 +196,20 @@ function badge(primary = false): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
-    minHeight: 30,
-    padding: "6px 10px",
+    minHeight: 32,
+    padding: "7px 12px",
     borderRadius: 999,
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#475569",
+    background: primary
+      ? "linear-gradient(180deg, rgba(29,95,212,0.14) 0%, rgba(29,95,212,0.09) 100%)"
+      : "linear-gradient(180deg, rgba(130,146,172,0.16) 0%, rgba(130,146,172,0.10) 100%)",
+    border: primary
+      ? "1px solid rgba(29,95,212,0.16)"
+      : "1px solid rgba(130,146,172,0.14)",
+    color: primary ? "#164AAE" : "#445C75",
     fontSize: 12,
     fontWeight: 1000,
     whiteSpace: "normal",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.52)",
   };
 }
 
@@ -731,6 +796,7 @@ export default function PayoutDetailsPage() {
           }}
         >
           <button
+            {...buttonGuardProps()}
             onClick={() => {
               void savePayout();
             }}
@@ -739,11 +805,19 @@ export default function PayoutDetailsPage() {
             Save Payout Details
           </button>
 
-          <button onClick={copySummary} style={secondaryBtn(false)}>
+          <button
+            {...buttonGuardProps()}
+            onClick={copySummary}
+            style={secondaryBtn(false)}
+          >
             Copy Summary
           </button>
 
-          <button onClick={clearLocal} style={secondaryBtn(false)}>
+          <button
+            {...buttonGuardProps()}
+            onClick={clearLocal}
+            style={secondaryBtn(false)}
+          >
             Clear Local Details
           </button>
         </div>

@@ -706,7 +706,19 @@ export async function getPendingApprovalStatus(
    ========================= */
 
 export async function listMyClans(): Promise<any> {
-  return httpJson("/clans/me", "GET");
+  const res = await httpJson("/clans/me", "GET");
+  const rows = Array.isArray(res) ? res : Array.isArray(res?.items) ? res.items : [];
+  const normalizedRows = normalizeVisibleMyClans(rows);
+
+  if (Array.isArray(res)) {
+    return normalizedRows;
+  }
+
+  return {
+    ...(res && typeof res === "object" ? res : {}),
+    items: normalizedRows,
+    total: normalizedRows.length,
+  };
 }
 
 export async function getCurrentClan(): Promise<any> {
@@ -723,7 +735,25 @@ export async function getCurrentClan(): Promise<any> {
     if (match) return match;
   }
 
-  return rows[0] || null;
+  const fallback = rows[0] || null;
+  const fallbackId = Number(fallback?.id || fallback?.clan_id || 0);
+
+  if (fallbackId > 0 && fallbackId !== Number(selectedClanId || 0)) {
+    setSelectedClanId(fallbackId);
+  }
+
+  return fallback;
+}
+
+function normalizeVisibleMyClans(rows: any[]): any[] {
+  if (!Array.isArray(rows)) return [];
+
+  const realRows = rows.filter((row: any) => {
+    const name = String(row?.name ?? row?.clan_name ?? "").trim().toLowerCase();
+    return name !== "default clan" && name !== "gmfn default clan";
+  });
+
+  return realRows;
 }
 
 export async function createClan(payload: {
@@ -767,7 +797,12 @@ export async function createClanInvite(clanId: number): Promise<any> {
 }
 
 export async function listClanMembers(clanId: number): Promise<any> {
-  return httpJson(`/clans/${encodeURIComponent(String(clanId))}/members`, "GET");
+  return httpJson(
+    `/clans/${encodeURIComponent(String(clanId))}/members`,
+    "GET",
+    undefined,
+    { header_clan_id: clanId }
+  );
 }
 
 export async function submitJoinRequest(payload: {
@@ -802,7 +837,9 @@ export async function getJoinInvitePreview(
 export async function listJoinRequests(clanId: number): Promise<any> {
   return httpJson(
     `/clans/${encodeURIComponent(String(clanId))}/join-requests`,
-    "GET"
+    "GET",
+    undefined,
+    { header_clan_id: clanId }
   );
 }
 
@@ -830,7 +867,8 @@ export async function voteJoinRequest(
       String(joinRequestId)
     )}/vote`,
     "POST",
-    { vote }
+    { vote },
+    { header_clan_id: clanId }
   );
 }
 
@@ -2241,6 +2279,10 @@ export async function getMarketplaceBroadcasts(params?: {
 }): Promise<any> {
   const effectiveClanId =
     params?.clan_id === undefined ? getSelectedClanId() : params?.clan_id;
+  const clanWasImplicit =
+    params?.clan_id === undefined &&
+    Number.isFinite(Number(effectiveClanId)) &&
+    Number(effectiveClanId) > 0;
 
   const options =
     params && Object.prototype.hasOwnProperty.call(params, "clan_id")
@@ -2277,7 +2319,20 @@ export async function getMarketplaceBroadcasts(params?: {
       );
     } catch (err) {
       lastError = err;
-      if (!(err instanceof HttpStatusError) || err.status !== 400) {
+      const tryingClanScopedAttempt =
+        Object.prototype.hasOwnProperty.call(queryParams, "clan_id") &&
+        Number.isFinite(Number((queryParams as any)?.clan_id)) &&
+        Number((queryParams as any)?.clan_id) > 0;
+      const canRecoverFromImplicitStaleClan =
+        clanWasImplicit &&
+        tryingClanScopedAttempt &&
+        err instanceof HttpStatusError &&
+        err.status === 403;
+
+      if (
+        !(err instanceof HttpStatusError) ||
+        (err.status !== 400 && !canRecoverFromImplicitStaleClan)
+      ) {
         throw err;
       }
     }
@@ -2887,7 +2942,9 @@ export async function getJoinApprovalStatus(requestId: number | string) {
 export async function getCommunityJoinRequests(clanId: number): Promise<any> {
   return httpJson(
     `/clans/${encodeURIComponent(String(clanId))}/join-requests`,
-    "GET"
+    "GET",
+    undefined,
+    { header_clan_id: clanId }
   );
 }
 
@@ -2906,7 +2963,25 @@ export async function voteOnJoinRequest(
       String(id)
     )}/vote`,
     "POST",
-    { vote }
+    { vote },
+    { header_clan_id: clanId }
+  );
+}
+
+export async function pilotApproveJoinRequest(id: number): Promise<any> {
+  const clanId = getSelectedClanId();
+
+  if (!clanId) {
+    throw new Error("No selected community");
+  }
+
+  return httpJson(
+    `/clans/${encodeURIComponent(String(clanId))}/join-requests/${encodeURIComponent(
+      String(id)
+    )}/pilot-approve`,
+    "POST",
+    undefined,
+    { header_clan_id: clanId }
   );
 }
 

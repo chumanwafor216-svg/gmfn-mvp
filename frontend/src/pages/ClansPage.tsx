@@ -458,10 +458,26 @@ export default function ClansPage() {
         setSelectedCommunityId(newId);
       }
 
+      const createdCommunityName = name;
       setCommunityNameInput("");
       setCommunityDescriptionInput("");
       setInviteState(null);
-      setCreateMessage("Community created. Continue below with next steps.");
+
+      if (newId) {
+        navigateWithOrigin(navigate, "/app/build-first-circle", location, {
+          replace: false,
+          state: {
+            created_clan_id: newId,
+            created_clan_name: createdCommunityName,
+            next_action: "invite-trusted-people",
+          },
+        });
+        return;
+      }
+
+      setCreateMessage(
+        "Community created. The app could not open the next route automatically, so choose the new community below and continue into your next step."
+      );
     } finally {
       setCreatingCommunity(false);
     }

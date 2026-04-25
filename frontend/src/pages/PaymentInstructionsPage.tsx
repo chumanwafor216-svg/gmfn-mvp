@@ -128,11 +128,14 @@ function resolveMediaUrl(src: string): string {
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: "1px solid rgba(108,138,184,0.22)",
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F3F8FF 100%)"
+        : bg,
     padding: 20,
     boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
+      "0 28px 58px rgba(15,23,42,0.10), 0 6px 14px rgba(15,23,42,0.04)",
     overflow: "hidden",
   };
 }
@@ -140,36 +143,51 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: "1px solid rgba(123,153,197,0.21)",
+    background:
+      bg === "#F8FBFF"
+        ? "linear-gradient(180deg, #FCFEFF 0%, #EDF5FF 100%)"
+        : bg,
     padding: 16,
+    boxShadow:
+      "0 20px 42px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: "1px solid rgba(125,154,196,0.20)",
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"
+        : bg,
     padding: 14,
+    boxShadow:
+      "0 18px 36px rgba(15,23,42,0.065), inset 0 1px 0 rgba(255,255,255,0.80)",
   };
 }
 
 function statTile(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: "1px solid rgba(122,152,195,0.20)",
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)"
+        : bg,
     padding: 14,
+    boxShadow:
+      "0 16px 32px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.80)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#5D7389",
-    fontWeight: 900,
-    letterSpacing: 0.35,
+    color: "#334F69",
+    fontWeight: 1000,
+    letterSpacing: 0.45,
     textTransform: "uppercase",
   };
 }
@@ -179,27 +197,53 @@ function badge(primary = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     gap: 6,
-    minHeight: 30,
+    minHeight: 32,
     borderRadius: 999,
-    padding: "6px 10px",
-    background: primary ? "rgba(29,78,216,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#1D4ED8" : "#51657A",
+    padding: "7px 12px",
+    background: primary
+      ? "linear-gradient(180deg, rgba(29,95,212,0.14) 0%, rgba(29,95,212,0.09) 100%)"
+      : "linear-gradient(180deg, rgba(130,146,172,0.16) 0%, rgba(130,146,172,0.10) 100%)",
+    border: primary
+      ? "1px solid rgba(29,95,212,0.16)"
+      : "1px solid rgba(130,146,172,0.14)",
+    color: primary ? "#164AAE" : "#445C75",
     fontSize: 12,
-    fontWeight: 900,
+    fontWeight: 1000,
     whiteSpace: "normal",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.60)",
   };
 }
 
 function stableTapStyle(): React.CSSProperties {
   return {
     position: "relative",
-    zIndex: 2,
+    zIndex: 20,
     isolation: "isolate",
+    pointerEvents: "auto",
+    boxSizing: "border-box",
+    appearance: "none",
+    WebkitAppearance: "none",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
     transform: "translateZ(0)",
     outlineOffset: 4,
+    lineHeight: 1.2,
+  };
+}
+
+function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
+  event?.stopPropagation();
+}
+
+function buttonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: guardButtonPress,
+    onTouchStart: guardButtonPress,
+    onMouseDown: guardButtonPress,
   };
 }
 
@@ -212,13 +256,20 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 42,
-      padding: "10px 14px",
-      borderRadius: 14,
-      border: "none",
-      background: disabled ? "#CBD5E1" : "#1D4ED8",
+      minHeight: 48,
+      padding: "12px 16px",
+      borderRadius: 15,
+      border: disabled
+        ? "1px solid rgba(148,163,184,0.24)"
+        : "1px solid rgba(18,77,176,0.22)",
+      background: disabled
+        ? "linear-gradient(180deg, #D5DEE8 0%, #C7D2DE 100%)"
+        : "linear-gradient(180deg, #255FCE 0%, #1B4FBF 100%)",
       color: "#FFFFFF",
-      fontWeight: 900,
+      boxShadow: disabled
+        ? "none"
+        : "0 16px 32px rgba(29,95,212,0.28), inset 0 1px 0 rgba(255,255,255,0.22)",
+      fontWeight: 1000,
       fontSize: 14,
       textAlign: "center",
       textDecoration: "none",
@@ -234,13 +285,16 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 38,
-      padding: "8px 12px",
-      borderRadius: 12,
-      border: "1px solid rgba(11,31,51,0.08)",
-      background: "#F8FBFF",
+      minHeight: 42,
+      padding: "10px 14px",
+      borderRadius: 13,
+      border: "1px solid rgba(121,149,190,0.20)",
+      background: "linear-gradient(180deg, #FBFDFF 0%, #EAF3FF 100%)",
       color: disabled ? "#94A3B8" : "#24415C",
-      fontWeight: 800,
+      boxShadow: disabled
+        ? "none"
+        : "0 12px 24px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
+      fontWeight: 900,
       fontSize: 13,
       textAlign: "center",
       textDecoration: "none",
@@ -255,13 +309,16 @@ function actionBtn(
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
-    borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    minHeight: 48,
+    padding: "12px 16px",
+    borderRadius: 15,
+    border: "1px solid rgba(121,149,190,0.20)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #EDF5FF 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
-    fontWeight: 800,
+    boxShadow: disabled
+      ? "none"
+      : "0 14px 28px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.84)",
+    fontWeight: 900,
     fontSize: 14,
     textAlign: "center",
     textDecoration: "none",
@@ -277,13 +334,16 @@ function collapseToggle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 38,
-    padding: "8px 12px",
+    minHeight: 46,
+    minWidth: 128,
+    padding: "11px 15px",
     borderRadius: 12,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(124,154,196,0.20)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #EDF5FF 100%)",
     color: "#24415C",
-    fontWeight: 800,
+    boxShadow:
+      "0 12px 24px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
+    fontWeight: 900,
     fontSize: 13,
     cursor: "pointer",
     textAlign: "center",
@@ -295,13 +355,15 @@ function collapseToggle(): React.CSSProperties {
 function inputStyle(): React.CSSProperties {
   return {
     width: "100%",
-    minHeight: 44,
+    minHeight: 46,
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(11,31,51,0.12)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F9FCFF 100%)",
     padding: "11px 12px",
     fontSize: 14,
     color: "#0B1F33",
+    boxShadow:
+      "0 12px 24px rgba(15,23,42,0.05), inset 0 1px 0 rgba(255,255,255,0.82)",
     outline: "none",
     boxSizing: "border-box" as const,
   };
@@ -309,8 +371,8 @@ function inputStyle(): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#5F7287",
-    fontSize: 14,
+    color: "#425C74",
+    fontSize: 14.5,
     lineHeight: 1.75,
   };
 }
@@ -1207,6 +1269,7 @@ export default function PaymentInstructionsPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("overview")}
             style={collapseToggle()}
           >
@@ -1317,6 +1380,7 @@ export default function PaymentInstructionsPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("warning")}
             style={collapseToggle()}
           >
@@ -1371,6 +1435,7 @@ export default function PaymentInstructionsPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("amount")}
             style={collapseToggle()}
           >
@@ -1420,6 +1485,7 @@ export default function PaymentInstructionsPage() {
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <button
                     type="button"
+                    {...buttonGuardProps()}
                     onClick={() => void handleGenerateInstruction()}
                     disabled={generatingInstruction}
                     style={actionBtn("primary", generatingInstruction)}
@@ -1429,6 +1495,7 @@ export default function PaymentInstructionsPage() {
 
                   <button
                     type="button"
+                    {...buttonGuardProps()}
                     onClick={() => void handleRefreshRoute()}
                     disabled={refreshingRoute}
                     style={actionBtn("secondary", refreshingRoute)}
@@ -1469,6 +1536,7 @@ export default function PaymentInstructionsPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("instruction")}
             style={collapseToggle()}
           >
@@ -1567,6 +1635,7 @@ export default function PaymentInstructionsPage() {
                 <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                   <button
                     type="button"
+                    {...buttonGuardProps()}
                     onClick={handleCopyReference}
                     style={actionBtn("primary")}
                   >
@@ -1575,6 +1644,7 @@ export default function PaymentInstructionsPage() {
 
                   <button
                     type="button"
+                    {...buttonGuardProps()}
                     onClick={handleCopyInstruction}
                     style={actionBtn("secondary")}
                   >
@@ -1583,6 +1653,7 @@ export default function PaymentInstructionsPage() {
 
                   <button
                     type="button"
+                    {...buttonGuardProps()}
                     onClick={handleConfirmPaymentMade}
                     style={actionBtn("secondary")}
                   >
@@ -1614,6 +1685,7 @@ export default function PaymentInstructionsPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("result")}
             style={collapseToggle()}
           >
@@ -1734,6 +1806,7 @@ export default function PaymentInstructionsPage() {
 
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={handleResetTask}
                   style={actionBtn("soft")}
                 >
@@ -1768,6 +1841,7 @@ export default function PaymentInstructionsPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("routes")}
             style={collapseToggle()}
           >

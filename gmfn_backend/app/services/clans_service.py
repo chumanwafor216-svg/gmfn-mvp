@@ -10,6 +10,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.db.models import Clan, ClanMembership, User
+from app.core.clan_auth import _is_default_clan_name
 
 
 def _is_last_admin(db: Session, *, clan_id: int) -> bool:
@@ -65,13 +66,22 @@ def create_clan(
 
 
 def list_my_clans(db: Session, *, user: User) -> list[Clan]:
-    q = (
+    clans = (
         db.query(Clan)
         .join(ClanMembership, ClanMembership.clan_id == Clan.id)
-        .filter(ClanMembership.user_id == user.id)
+        .filter(
+            ClanMembership.user_id == user.id,
+            ClanMembership.left_at.is_(None),
+        )
         .order_by(Clan.id.desc())
+        .all()
     )
-    return q.all()
+    real_clans = [
+        clan
+        for clan in clans
+        if not _is_default_clan_name(getattr(clan, "name", None))
+    ]
+    return real_clans
 
 
 def join_clan(db: Session, *, user: User, clan_id: int) -> ClanMembership:

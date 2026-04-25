@@ -1216,16 +1216,23 @@ export default function CreateEntryPage() {
     const out = await createEntry(buildCreateEntryPayload(activeVerificationId));
     const me = await getMe().catch(() => null);
 
+    const nextStep = safeStr(out?.next_step).toLowerCase();
     const issuedGmfnId = resolveIssuedGmfnId(out, me);
     const requestId = resolveActivationRequestId(out);
     const authenticatedNow = isAuthenticated();
 
-    if (authenticatedNow) {
+    if (nextStep === "build-first-circle" && authenticatedNow) {
       await openCreatedWorkspace(out);
       return;
     }
 
-    if (issuedGmfnId || requestId) {
+    if (nextStep === "activate-membership" || issuedGmfnId || requestId) {
+      if (!issuedGmfnId && !requestId) {
+        throw new Error(
+          "GSN created the community but did not return the activation reference. Please retry this step or ask the community helper to check the intake monitor."
+        );
+      }
+
       clearPublicEntryState();
 
       const next = new URLSearchParams();
@@ -1247,11 +1254,11 @@ export default function CreateEntryPage() {
       return;
     }
 
-    setSuccess(
+    throw new Error(
       safeStr(
         out?.detail ||
           out?.message ||
-          "Founder entry was submitted successfully. Continue when activation details are available."
+          "GSN could not determine the next route after creating this community. Please retry this step so the app can continue the journey properly."
       )
     );
   }

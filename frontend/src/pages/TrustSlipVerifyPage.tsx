@@ -4,6 +4,12 @@ import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
+import {
+  institutionalInnerCard,
+  institutionalPageCard,
+  institutionalSoftCard,
+  institutionalStatTile,
+} from "../lib/institutionalSurface";
 import { publicFrontendUrl } from "../lib/publicLinks";
 
 type TrustSlipVerifyRecord = {
@@ -75,31 +81,25 @@ function safeDateTime(x: any): string {
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    ...institutionalPageCard(bg),
+    borderRadius: 26,
     padding: 20,
-    boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
-    overflow: "hidden",
+    backdropFilter: "blur(6px)",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
-    borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 16,
+    ...institutionalSoftCard(bg),
+    borderRadius: 20,
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 14,
+    ...institutionalInnerCard(bg),
+    borderRadius: 18,
+    padding: 15,
   };
 }
 
@@ -108,19 +108,22 @@ function statTile(
   border = "1px solid rgba(11,31,51,0.08)"
 ): React.CSSProperties {
   return {
-    borderRadius: 16,
-    border,
-    background: bg,
-    padding: 14,
+    ...institutionalStatTile(
+      bg,
+      border === "1px solid rgba(11,31,51,0.08)"
+        ? "1px solid rgba(37,78,119,0.12)"
+        : border,
+    ),
+    borderRadius: 18,
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#5D7389",
-    fontWeight: 900,
-    letterSpacing: 0.35,
+    color: "#39526C",
+    fontWeight: 1000,
+    letterSpacing: 0.45,
     textTransform: "uppercase",
   };
 }
@@ -133,8 +136,13 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
+    border: primary
+      ? "1px solid rgba(11,99,209,0.14)"
+      : "1px solid rgba(108,138,184,0.18)",
+    background: primary
+      ? "linear-gradient(180deg, rgba(11,99,209,0.11) 0%, rgba(11,99,209,0.06) 100%)"
+      : "linear-gradient(180deg, rgba(245,249,255,0.96) 0%, rgba(232,240,249,0.94) 100%)",
+    color: primary ? "#0B63D1" : "#415A72",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
@@ -147,70 +155,98 @@ function actionBtn(
 ): React.CSSProperties {
   if (kind === "primary") {
     return {
+      position: "relative",
+      zIndex: 2,
+      boxSizing: "border-box",
+      appearance: "none",
+      WebkitAppearance: "none",
+      touchAction: "manipulation",
+      WebkitTapHighlightColor: "transparent",
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 42,
-      padding: "10px 14px",
-      borderRadius: 14,
-      border: "none",
-      background: disabled ? "#CBD5E1" : "#0B63D1",
+      minHeight: 48,
+      padding: "12px 16px",
+      borderRadius: 16,
+      border: disabled
+        ? "1px solid rgba(148,163,184,0.22)"
+        : "1px solid rgba(9,83,176,0.24)",
+      background: disabled
+        ? "linear-gradient(180deg, #CBD5E1 0%, #B8C4D2 100%)"
+        : "linear-gradient(180deg, #1D75E8 0%, #0B63D1 100%)",
       color: "#FFFFFF",
       fontWeight: 900,
+      fontSize: 15,
+      textAlign: "center",
+      textDecoration: "none",
+      cursor: disabled ? "not-allowed" : "pointer",
+      whiteSpace: "normal",
+      opacity: disabled ? 0.86 : 1,
+      boxShadow: disabled ? "none" : "0 12px 28px rgba(15,23,42,0.12)",
+    };
+  }
+
+  if (kind === "soft") {
+    return {
+      position: "relative",
+      zIndex: 2,
+      boxSizing: "border-box",
+      appearance: "none",
+      WebkitAppearance: "none",
+      touchAction: "manipulation",
+      WebkitTapHighlightColor: "transparent",
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 44,
+      padding: "10px 14px",
+      borderRadius: 14,
+      border: "1px solid rgba(124,153,196,0.22)",
+      background: "linear-gradient(180deg, #F6FAFF 0%, #EAF2FF 100%)",
+      color: disabled ? "#94A3B8" : "#24415C",
+      fontWeight: 800,
       fontSize: 14,
       textAlign: "center",
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
-    };
-  }
-
-  if (kind === "soft") {
-    return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 38,
-      padding: "8px 12px",
-      borderRadius: 12,
-      border: "1px solid rgba(11,31,51,0.08)",
-      background: "#F8FBFF",
-      color: disabled ? "#94A3B8" : "#24415C",
-      fontWeight: 800,
-      fontSize: 13,
-      textAlign: "center",
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      opacity: disabled ? 0.86 : 1,
+      boxShadow: "0 12px 28px rgba(15,23,42,0.08)",
     };
   }
 
   return {
+    position: "relative",
+    zIndex: 2,
+    boxSizing: "border-box",
+    appearance: "none",
+    WebkitAppearance: "none",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
-    borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    minHeight: 48,
+    padding: "12px 16px",
+    borderRadius: 16,
+    border: "1px solid rgba(124,153,196,0.22)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF4FF 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
-    fontWeight: 800,
-    fontSize: 14,
+    fontWeight: 900,
+    fontSize: 15,
     textAlign: "center",
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
+    boxShadow: "0 12px 28px rgba(15,23,42,0.10)",
   };
 }
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#5F7287",
-    fontSize: 14,
+    color: "#526579",
+    fontSize: 14.5,
     lineHeight: 1.75,
   };
 }
@@ -320,39 +356,6 @@ function documentFooterLabel(): React.CSSProperties {
     textTransform: "uppercase",
     color: "#64748B",
   };
-}
-
-function apiBase(): string {
-  const raw =
-    (typeof import.meta !== "undefined" &&
-      (import.meta as any)?.env &&
-      (import.meta as any).env.VITE_API_BASE_URL) ||
-    "/api";
-  return String(raw || "").trim().replace(/\/+$/, "");
-}
-
-function apiOrigin(): string {
-  const base = apiBase();
-
-  if (base.startsWith("http://") || base.startsWith("https://")) {
-    try {
-      const u = new URL(base);
-      return `${u.protocol}//${u.host}`;
-    } catch {
-      return browserOrigin();
-    }
-  }
-
-  return browserOrigin();
-}
-
-function browserOrigin(): string {
-  try {
-    if (typeof window === "undefined") return "";
-    return String(window.location.origin || "").trim().replace(/\/+$/, "");
-  } catch {
-    return "";
-  }
 }
 
 function normalizeTrustSlipVerification(raw: any, fallbackCode: string): TrustSlipVerifyRecord | null {

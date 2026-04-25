@@ -43,6 +43,1289 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-25 15:54
+
+#### Workstream
+Default community cleanup widened to cover legacy seeded names and stale local data.
+
+#### Routes/screens affected
+- `/app/community`
+- `/app/clans`
+- any frontend route using `listMyClans()` or selected-clan visibility
+
+#### Backend routes/endpoints involved
+- `GET /clans/me`
+- `POST /clans/{clan_id}/join`
+- `POST /clans/{clan_id}/select`
+
+#### Files in play
+- `gmfn_backend/app/core/clan_auth.py`
+- `gmfn_backend/app/services/clans_service.py`
+- `gmfn_backend/app/api/routes/clans.py`
+- `gmfn_backend/app/db/seed_dev.py`
+- `frontend/src/lib/api.ts`
+- `gmfn_backend/tests/test_default_clan_removal.py`
+- local dev DB: `gmfn_backend/gmfn.db`
+
+#### Confirmed facts
+- The earlier default-community removal had blocked the exact backend/frontend name `Default Clan`, but an older dev seed still used `GMFN Default Clan`.
+- System-level default-community detection now blocks both legacy names:
+  - `Default Clan`
+  - `GMFN Default Clan`
+- `seed_dev.py` is now a no-op for default-community creation. Dev startup no longer creates or assigns any default community.
+- Frontend clan normalization now filters out both default-community name variants.
+- Backend join/select guards now reject both default-community name variants.
+- Local database inspection found one stale `Default Clan` row in `gmfn_backend/gmfn.db` with:
+  - `0` active memberships
+  - `2` total archived memberships
+- That stale row and its archived memberships were removed locally so the current render does not keep picking it up from old local data.
+- Verification after this pass:
+  - `npm run build`
+  - `.\.venv\Scripts\python -m pytest tests/test_default_clan_removal.py`
+
+#### Open risks or unknowns
+- This local DB cleanup fixes the current machine. If another environment already has legacy default-community rows, the broadened code guards will hide them, but those rows would still need cleanup there too if the owner wants them fully deleted.
+
+#### Next recommended step
+- Refresh the running frontend/backend and retest the community lists. If default community is gone from the visible routes, continue with the next frozen-lane audit.
+
+#### Date
+2026-04-25 15:22
+
+#### Workstream
+Create-community lane audit and deterministic handoff tightening.
+
+#### Routes/screens affected
+- `/create`
+- `/app/clans`
+- `/app/build-first-circle`
+- `/activate-membership`
+
+#### Backend routes/endpoints involved
+- `POST /entry/phone/start`
+- `POST /entry/phone/confirm`
+- `POST /entry/bank-details`
+- `POST /entry/create`
+- `POST /clans`
+
+#### Files in play
+- `frontend/src/pages/CreateEntryPage.tsx`
+- `frontend/src/pages/ClansPage.tsx`
+- `gmfn_backend/app/api/routes/entry.py`
+- `gmfn_backend/tests/test_entry_create.py`
+
+#### Confirmed facts
+- The product owner wanted the create-community lane audited from backend truth, not only from page polish, for both:
+  - the public founder path (`Create your own community`)
+  - the already-inside member path (create a new community after entering the system)
+- Backend truth from `POST /entry/create` is already stronger than the old frontend behavior suggested:
+  - phone verification is required first
+  - bank details are required before create can finish
+  - backend returns `next_step: "build-first-circle"` only when an access token has already been issued
+  - backend returns `next_step: "activate-membership"` when the person must still complete activation
+- `frontend/src/pages/ClansPage.tsx` no longer leaves the already-inside member on a passive "community created" message:
+  - after successful `POST /clans`
+  - the new community is selected
+  - the app now moves straight into `/app/build-first-circle`
+  - location state carries:
+    - `created_clan_id`
+    - `created_clan_name`
+    - `next_action: "invite-trusted-people"`
+- `frontend/src/pages/CreateEntryPage.tsx` was tightened so the public founder path now trusts backend route truth more directly:
+  - if backend says `build-first-circle` and auth is live, the app opens `/app/build-first-circle`
+  - if backend says `activate-membership`, the app now requires a real activation reference and moves into `/activate-membership`
+  - the old passive success fallback was removed for unresolved create completion; the page now raises an explicit error instead of silently leaving the user stranded
+- This means the create lane is now app-led in both main create scenarios:
+  - public founder create -> verify phone -> record bank -> create -> activate or enter workspace
+  - existing member create -> create community -> auto-open first-circle/invite next step
+- Verification after this create-lane pass:
+  - `npm run build`
+  - `.\.venv\Scripts\python -m pytest tests/test_entry_create.py`
+
+#### Open risks or unknowns
+- This pass is local only until deployed.
+- `BuildFirstCirclePage.tsx` is now the next active handoff for newly created communities. If the owner wants even stronger guided language there, that is now the next route-local polish target.
+- No backend business rule was changed in this pass for founder create itself; this was mainly a route-handoff and determinism correction on the frontend.
+
+#### Next recommended step
+- Deploy this batch, then phone-test both create routes:
+  - public `Create your own community`
+  - already-inside member creates a new community from `/app/clans`
+- If both are steady, freeze the create lane and move next to existing-member sign-in lane audit.
+
+#### Date
+2026-04-25 13:22
+
+#### Workstream
+Dashboard avatar persistence hardening and Community Home spotlight-button guard cleanup.
+
+#### Routes/screens affected
+- `/app/dashboard`
+- `/app/community`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/DashboardPage.tsx`
+- `frontend/src/pages/CommunityHomePage.tsx`
+
+#### Confirmed facts
+- The product owner reported two linked phone issues:
+  - dashboard profile pictures could disappear after upload once the user moved away and came back
+  - the spotlight button inside `Community Home` could drift into the wrong route such as Finance or Demand Box
+- Re-confirmed from code before changes:
+  - the dashboard avatar had no backend persistence route; it was still saved only in local storage
+  - the dashboard avatar storage key was scoped only to one current identity string, which made it vulnerable to identity-key drift when the same person later resolved as `gmfn_id`, `id`, email, or phone
+  - `CommunityHomePage.tsx` still used the heavier button-guard pattern with `onClickCapture`, which matched the same class of tap-interference already seen earlier on Marketplace
+- `DashboardPage.tsx` now:
+  - computes a fuller set of dashboard-avatar storage keys for the same user from:
+    - `gmfn_id`
+    - `id`
+    - email
+    - phone variants
+    - fallback `visitor`
+  - reads the first stored avatar found across those keys
+  - backfills the current scoped key when an older identity key already holds the picture
+  - writes the uploaded avatar across the known identity keys instead of one key only
+  - surfaces a success/error note directly under the profile block after upload attempts
+- Important scope for dashboard avatar:
+  - there is still **no confirmed backend user-profile image save path** in the current auth/user flow
+  - this means the dashboard picture remains a device-level persistence feature for now, not a cross-device backend-synced profile picture
+- `CommunityHomePage.tsx` now has the lighter shared button guard:
+  - `onClickCapture` was removed from `communityButtonGuardProps()`
+  - only the earlier pointer/touch/mouse down propagation shield remains
+  - this mirrors the safer Marketplace button fix that reduced route drift on phone
+- Verification passed after this pass:
+  - `npm exec -- eslint src/pages/DashboardPage.tsx src/pages/CommunityHomePage.tsx`
+  - `npm run build`
+
+#### Open risks or unknowns
+- This pass is local only until deployed.
+- The dashboard picture should now hold more reliably for the same person on the same device even if identity storage keys shift, but it will still not follow the user across devices until a true backend profile-image route exists.
+- The Community Home spotlight button should now interfere less with parent route surfaces, but phone retest is still needed on the exact spotlight launcher inside `/app/community`.
+
+#### Next recommended step
+- Deploy this batch, then retest:
+  - dashboard picture upload -> leave dashboard -> return
+  - Community Home spotlight launcher -> confirm it lands in the intended spotlight/shop-control path instead of drifting into Finance or Demand Box
+
+#### Date
+2026-04-24 23:36
+
+#### Workstream
+Join review surface cleanup and approval-threshold explanation pass.
+
+#### Routes/screens affected
+- `/app/community/:id/join-requests`
+- `/join-request/pending`
+- `/join-approval/:requestId`
+
+#### Backend routes/endpoints involved
+- None changed in this pass. This was frontend-only.
+
+#### Files in play
+- `frontend/src/pages/CommunityJoinRequestsPage.tsx`
+- `frontend/src/pages/JoinRequestPendingPage.tsx`
+- `frontend/src/pages/JoinApprovalPage.tsx`
+
+#### Confirmed facts
+- The join-review path still used lighter older card surfaces than the newer money / trust / marketplace pages, and it did not explain the approval threshold strongly enough for users who had already approved once and expected immediate entry.
+- `CommunityJoinRequestsPage.tsx` now uses richer institutional page/soft/stat surfaces, stronger button chrome, route-local press shielding on the live action buttons, and a new `Approval rule` explanation block.
+- Pending request cards on `CommunityJoinRequestsPage.tsx` now explicitly state that a request remains pending until the approval count reaches the community threshold.
+- `JoinRequestPendingPage.tsx` now uses richer institutional surfaces and stronger buttons, and its `What happens next` flow now explains that more than one approval may still be required if multiple active members count in the community.
+- `JoinApprovalPage.tsx` now uses richer institutional surfaces and stronger buttons, and its pending-state helper text now explains that a request can remain pending until the remaining approval decision arrives.
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/CommunityJoinRequestsPage.tsx src/pages/JoinRequestPendingPage.tsx src/pages/JoinApprovalPage.tsx`
+  - `npm run build`
+- Current lint state from that targeted run:
+  - 1 pre-existing hook-dependency warning in `CommunityJoinRequestsPage.tsx`
+  - 4 pre-existing `useMemo` dependency warnings in `JoinRequestPendingPage.tsx`
+  - no errors
+
+#### Open risks or unknowns
+- This pass is local only until deployed.
+- The approval-threshold explanation is now clearer, but the backend rule itself was not changed. If the product owner wants approved-but-not-activated placeholder memberships excluded from threshold counts, that is still a separate backend/business-rule task.
+- Phone retest is still needed on the Approve / Reject action buttons inside `CommunityJoinRequestsPage.tsx`.
+
+#### Next recommended step
+- Deploy the current local batch, then retest the join-review path on phone. If tester confusion shifts from visibility to threshold policy, audit `_current_join_status(...)` next.
+
+#### Date
+2026-04-24 23:18
+
+#### Workstream
+Marketplace / community join-path clan-header correction and approval-threshold audit.
+
+#### Routes/screens affected
+- `/app/marketplace`
+- `/app/marketplace-workspace`
+- `/app/community/:id/join-requests`
+
+#### Backend routes/endpoints involved
+- `GET /clans/{clan_id}/members`
+- `GET /clans/{clan_id}/join-requests`
+- `POST /clans/{clan_id}/join-requests/{join_request_id}/vote`
+- `POST /clans/{clan_id}/invite`
+
+#### Files in play
+- `frontend/src/lib/api.ts`
+
+#### Confirmed facts
+- The user reported that Marketplace still showed `No members are visible in this marketplace yet.` even though Aberdeen city ICA / marketplace should at least show the admin member.
+- The user also reported a join request remaining pending after their own approval and expected that, if they were the only active member, one approval should have been enough.
+- Clan-scoped Marketplace and join-request calls were still relying on whichever clan happened to be selected globally inside the shared API client. This created a timing / wrong-context risk on first load when a route had already resolved a specific community id but the shared selected-clan state was still stale or unset.
+- `frontend/src/lib/api.ts` was tightened so these clan-scoped calls now always send the explicit `header_clan_id` for the target community:
+  - `listClanMembers(clanId)`
+  - `listJoinRequests(clanId)`
+  - `voteJoinRequest(clanId, ...)`
+  - `getCommunityJoinRequests(clanId)`
+  - `voteOnJoinRequest(...)`
+- Local database inspection confirmed that clan `3` currently has **three** active `ClanMembership` rows:
+  - admin user `GMFN-U-9867079C`
+  - `447903165266@pending.gmfn.local`
+  - `447881119883@pending.gmfn.local`
+- Because `_current_join_status(...)` in `gmfn_backend/app/api/routes/clans.py` calculates required approvals from active memberships, `Approvals: 1` and `Required approvals: 2` is currently expected behavior for that clan. The visible-member bug and the approval-threshold number are related in user perception but are not the same backend rule.
+- Verification after the header-correction pass:
+  - `npm run build` passed
+- File-targeted lint on `frontend/src/lib/api.ts` is currently blocked by pre-existing file-wide eslint errors unrelated to this pass (`no-empty`, one unused variable).
+
+#### Open risks or unknowns
+- This pass is local only until deployed.
+- Phone retest is still needed on:
+  - Marketplace member row
+  - Marketplace Workspace member row
+  - community join-request review after refresh / vote
+- The approved-but-not-activated placeholder memberships in clan `3` are still being counted as active members by the backend approval rule. That is now a confirmed business-rule behavior, not just a UI glitch, and may need a separate product decision if the owner wants only fully activated members to count.
+
+#### Next recommended step
+- Deploy the current local batch, then retest Marketplace member visibility and join-request review on phone first. If the owner wants one-member communities to auto-approve with a single vote even when placeholder approved users exist, audit `_current_join_status(...)` and the approval / activation lifecycle next.
+
+#### Date
+2026-04-24 22:24
+
+#### Workstream
+Marketplace live-button repair and shared mobile bottom-domain rail restoration.
+
+#### Routes/screens affected
+- `/app/marketplace`
+- Shared app shell mobile bottom-domain rail on loan/support task routes
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/MarketplacePage.tsx`
+- `frontend/src/layout/AppLayout.tsx`
+
+#### Confirmed facts
+- The user reported that Marketplace invite controls such as `Create / Refresh` were still misfiring or feeling stiff on phone, which made it hard to know whether a fresh invite was actually created or copied.
+- The user also reported that the true app-base domain rail was missing on the loan/support task routes; this turned out to be a shared-shell issue, not a Loans-page issue.
+- `AppLayout.tsx` was tightened so the real shared mobile bottom-domain rail stays visible on the focused loan/support routes and auto-centers the active item on mobile. The rail still keeps `Admin` permission-controlled via the existing access logic.
+- `MarketplacePage.tsx` button handling was hardened:
+  - invite / refresh / copy / send / outward-link actions now route through a shared `runMarketplaceAction(...)` helper
+  - the shared Marketplace click consumer now stops propagation and prevents the browser's default click behavior on those real action buttons
+  - this was done to reduce button drift into nearby routes or parent surfaces on phone
+- Verification passed after the Marketplace/AppLayout pass:
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx`
+  - `npm run build`
+- Current lint state from that targeted run:
+  - only the same two pre-existing hook-dependency warnings remain in `MarketplacePage.tsx`
+
+#### Open risks or unknowns
+- This pass is local only until deployed.
+- Phone retest is still needed specifically on:
+  - `Create / Refresh`
+  - `Copy WhatsApp Message`
+  - `Open Join Link`
+  - `Send WhatsApp`
+  - public marketplace/shop open-copy buttons
+- A join request that shows `Approvals: 1` and `Required approvals: 2` is still expected to remain pending until the second approval arrives; that part is business-rule behavior, not a button bug.
+
+#### Next recommended step
+- Retest Marketplace on phone first, then continue route-local button hardening only where testers still report instability.
+
+#### Date
+2026-04-24 21:06
+
+#### Workstream
+Withdrawal Instructions route-local hardening and button stabilization.
+
+#### Routes/screens affected
+- `/app/withdrawal-instructions`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+
+#### Confirmed facts
+- The withdrawal-instructions route now uses stronger route-local page, soft, inner, and stat-card surfaces; darker section labels and helper text; richer badges; stronger buttons; and stronger inputs so it matches the rest of the money-route family more closely.
+- A route-local press guard was added to the main collapse, decision, save, copy, refresh, and route-switch buttons so taps should feel steadier on phone.
+- No withdrawal backend contracts, payout rules, or support-branch business logic changed.
+- `npm exec -- eslint src/pages/WithdrawalInstructionsPage.tsx` passed with the same single pre-existing hook-dependency warning for `loadPage`.
+- `npm run build` passed.
+
+#### Open risks or unknowns
+- This pass is local only until deployed.
+- Phone review is still needed to confirm the many live buttons on this route now feel stable enough during testing.
+
+#### Next recommended step
+- Continue deep cleaning in the next tester-facing inner route that still feels faded or soft outside the money-route family, or return to the most stubborn live button surface if testers surface one again.
+
+#### Date
+2026-04-24 20:53
+
+#### Workstream
+Payout Details inner-page hardening and button stabilization.
+
+#### Routes/screens affected
+- `/app/payout-details`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/PayoutDetailsPage.tsx`
+
+#### Confirmed facts
+- The payout-details route now uses stronger route-local surfaces, darker section labels, richer badges, stronger input styling, and firmer primary/secondary buttons so it better matches the rest of the money-route family.
+- A local press guard was added to the real save/copy/clear buttons so taps should feel steadier on phone.
+- No payout backend contracts, payment logic, or withdrawal rules changed.
+- `npm exec -- eslint src/pages/PayoutDetailsPage.tsx` passed.
+- `npm run build` passed.
+
+#### Open risks or unknowns
+- This pass is local only until deployed.
+- Phone review is still needed to confirm the payout route now feels fully aligned with `Money In` and `Payment Rails`.
+
+#### Next recommended step
+- Continue with the next remaining money-out inner page that still feels lighter or softer than the rest of the route family.
+
+#### Date
+2026-04-24 20:40
+
+#### Workstream
+Payment Rails inner-page hardening and button stabilization.
+
+#### Routes/screens affected
+- `/app/payment-rails`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/PaymentRailsPage.tsx`
+
+#### Confirmed facts
+- `PaymentRailsPage.tsx` was still using the older lighter card/button helper set after the recent money-route strengthening on Finance, Revenue Allocation, and Money In.
+- The page now has stronger page/soft/inner surfaces, darker section labels and helper text, richer badges, stronger primary/secondary/soft button chrome, and stronger route tiles.
+- The page's local raw-response toggle button now also uses the same light press guard on pointer/touch/mouse down to reduce parent-surface interference on phone.
+- `npm exec -- eslint src/pages/PaymentRailsPage.tsx` passed.
+- `npm run build` passed.
+
+#### Open risks or unknowns
+- This is local only until deployed.
+- No backend rail visibility logic or route contracts changed.
+- Phone review is still needed to confirm the strengthened rail actions now feel consistent with the rest of the money-route family.
+
+#### Next recommended step
+- Continue down the same money-route family and harden `Payout Details` next, then reassess whether `Money Out` still needs another route-local pass.
+
+#### Date
+2026-04-24 20:31
+
+#### Workstream
+Money In / Payment Instructions inner-page hardening and button stabilization.
+
+#### Routes/screens affected
+- `/app/payment/pool`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/PaymentInstructionsPage.tsx`
+
+#### Confirmed facts
+- `PaymentInstructionsPage.tsx` still used its own lighter card/button helpers instead of the richer money-route styling now present on Finance and Revenue Allocation.
+- The page now has stronger page/soft/inner/stat surfaces, darker section labels and helper text, stronger badges, richer button gradients, and firmer input styling.
+- Local page buttons now also use a light press guard on pointer/touch/mouse down to reduce parent-surface interference on phone.
+- `npm exec -- eslint src/pages/PaymentInstructionsPage.tsx` passed.
+- `npm run build` passed.
+
+#### Open risks or unknowns
+- This is local only until deployed.
+- No backend payment route, settlement logic, or reconciliation logic changed.
+- Phone review is still needed to confirm the Money In buttons now feel as steady as the stronger finance/support pages.
+
+#### Next recommended step
+- Continue down the same money-route family and harden the next inner route that still feels visually lighter than Finance/Revenue Allocation, or switch back to the most tester-reported jumpy inner page if new live feedback arrives first.
+
+#### Date
+2026-04-24 20:14
+
+#### Workstream
+Revenue Allocation inner-page hardening after Finance surface strengthening.
+
+#### Routes/screens affected
+- `/app/revenue-allocation`
+- Indirect visual enrichment on routes already using shared institutional surfaces
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/RevenueAllocationPage.tsx`
+
+#### Confirmed facts
+- `RevenueAllocationPage.tsx` was still reading slightly softer than the newly-strengthened Finance main surface even after the shared institutional surface deepening.
+- Route-local hardening completed on `RevenueAllocationPage.tsx`:
+  - page / soft / inner / stat cards now use firmer borders and stronger shadows
+  - route tiles now use stronger gradients and slightly deeper emphasis
+  - primary / secondary / collapse buttons now use stronger gradients, borders, and shadows
+  - the allocation input field now uses a stronger staged surface and firmer border/shadow
+  - section labels and helper text were darkened slightly
+  - badges were given a slight inner highlight so they read less flat
+- Verification passed:
+  - `npm exec -- eslint src/pages/RevenueAllocationPage.tsx src/lib/institutionalSurface.ts`
+  - `npm run build`
+
+#### Open risks or unknowns
+- This pass is local only until deployed.
+- Phone review is still needed to confirm the Revenue Allocation route now feels fully aligned with Finance and the stronger inner money pages.
+- Some other route-local pages with their own custom button helpers may still need the same hardening later.
+
+#### Next recommended step
+- Continue the same route-local tightening on the next still-soft tester-facing money/support page, or switch back to button-stability tightening on the most frequently touched shaky route if testers surface another hotspot.
+
+#### Date
+2026-04-24 20:02
+
+#### Workstream
+Shared institutional-surface color enrichment and Finance main-surface button hardening.
+
+#### Routes/screens affected
+- Shared institutional surfaces used across multiple inner pages
+- `/app/finance`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/lib/institutionalSurface.ts`
+- `frontend/src/pages/FinancePage.tsx`
+
+#### Confirmed facts
+- Many of the already-cleaned inner routes were now relying on the shared `institutionalSurface.ts` helpers, so a small shared visual deepening could enrich multiple pages consistently without route-by-route rewrites.
+- `institutionalSurface.ts` was deepened carefully:
+  - page / soft / inner / stat gradients now use richer blue-gold institutional blends
+  - surface borders were darkened slightly
+  - card shadows were strengthened slightly
+- This affects routes that consume those helpers, including Finance, Loans, Trust-linked pages, and several support/payment routes that already spread those shared styles.
+- `FinancePage.tsx` was hardened locally on top of the shared surface pass:
+  - darker section labels and helper text
+  - richer pill/badge backgrounds
+  - stronger tap-safe button base
+  - deeper primary / secondary / soft button gradients, borders, and shadows
+  - stronger collapse-toggle chrome
+- Verification passed:
+  - `npm exec -- eslint src/lib/institutionalSurface.ts src/pages/FinancePage.tsx`
+  - `npm run build`
+
+#### Open risks or unknowns
+- This pass is local only until deployed.
+- Because `institutionalSurface.ts` is shared, the enrichment reaches multiple pages at once; phone review is still needed to confirm the deepened surfaces feel richer without becoming too heavy.
+- Button strengthening in this pass was only applied directly to `FinancePage.tsx`; other pages with local button helpers may still need route-local tightening later.
+
+#### Next recommended step
+- Review Finance and one or two shared-surface inner pages on phone, then continue the same route-local button hardening on the next still-soft money/trust/support page that testers touch most.
+
+#### Date
+2026-04-24 19:08
+
+#### Workstream
+Trust inner-surface institutional cleanup and Timeline warning removal.
+
+#### Routes/screens affected
+- `/app/open-trust-reading`
+- `/app/trust-slip/verify`
+- `/app/trust-score`
+- `/app/trust-timeline`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/OpenTrustPage.tsx`
+- `frontend/src/pages/TrustSlipVerifyPage.tsx`
+- `frontend/src/pages/TrustScorePage.tsx`
+- `frontend/src/pages/TrustTimelinePage.tsx`
+
+#### Confirmed facts
+- `OpenTrustPage.tsx` and `TrustSlipVerifyPage.tsx` were still using older thin helper surfaces after the main Trust page had already been strengthened.
+- `OpenTrustPage.tsx` now uses richer institutional `pageCard` and `innerCard` wrappers, stronger section labels, darker helper text, stronger badges, and firmer action-button chrome.
+- `TrustSlipVerifyPage.tsx` now uses institutional page/soft/inner/stat surfaces, darker section labels, darker helper text, stronger badges, and richer action-button styling.
+- `TrustScorePage.tsx` already used institutional surfaces in parts of the route, but its section labels and helper text were still lighter than the stronger Trust family; they were darkened and aligned.
+- `TrustTimelinePage.tsx` no longer suppresses the old `react-hooks/exhaustive-deps` warning with an unused eslint-disable comment:
+  - `loadAll` is now wrapped in `useCallback`
+  - the effect now depends on `loadAll`
+- Dead helper cleanup completed during verification:
+  - removed unused `positiveNumber` from `OpenTrustPage.tsx`
+  - removed unused `apiOrigin`, `apiBase`, and `browserOrigin` leftovers from `TrustSlipVerifyPage.tsx`
+- Verification passed:
+  - `npm exec -- eslint src/pages/OpenTrustPage.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/TrustScorePage.tsx src/pages/TrustTimelinePage.tsx`
+  - `npm run build`
+- Current lint status from that targeted run:
+  - only one remaining warning in `TrustScorePage.tsx` for a pre-existing `loadAll` dependency in another effect
+
+#### Open risks or unknowns
+- This pass is local only until deployed.
+- `TrustScorePage.tsx` still has one older hook-dependency warning that was not refactored in this pass.
+- Phone review is still needed to confirm the richer Trust inner pages now feel consistent with `/app/trust`.
+
+#### Next recommended step
+- Continue the same deep-cleaning pass into the next still-faded inner route outside Trust, or return to targeted phone-button tightening on any route testers still call jumpy.
+
+#### Date
+2026-04-24 18:34
+
+#### Workstream
+Shared mobile bottom-rail tightening and Trust page institutional cleanup.
+
+#### Routes/screens affected
+- Shared mobile app shell on task routes that keep the bottom rail
+- `/app/trust`
+- Existing trust routes already cleaned earlier in this branch:
+  - `/app/trust-slip`
+  - `/app/trust-timeline`
+  - `/app/trust-leaderboard`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/layout/AppLayout.tsx`
+- `frontend/src/pages/TrustPage.tsx`
+- `frontend/src/pages/TrustTimelinePage.tsx`
+- `frontend/src/pages/TrustLeaderboardPage.tsx`
+
+#### Confirmed facts
+- The real mobile bottom-domain rail already contained the correct app-wide domains, including conditional `Admin`, but it was behaving too much like trailing page content on phone.
+- `AppLayout.tsx` was tightened so the shared mobile bottom rail now behaves more like a true app-base rail:
+  - `bottomNav()` now uses fixed positioning at the phone base
+  - `mainContent()` now reserves larger bottom padding for that rail
+  - bottom rail item chrome was made slightly more compact so more of the major-domain row is visible at once
+- `TrustPage.tsx` was still materially plainer than the newer trust routes, so it was upgraded route-locally:
+  - added `PageTopNav`
+  - added richer `pageCard`, `innerCard`, `sectionLabel`, `helperText`, `actionBtn`, and `fieldInput` helpers
+  - restyled the hero, trust score surface, explainability area, filters, and event ledger to match the stronger institutional trust family
+- `TrustTimelinePage.tsx` and `TrustLeaderboardPage.tsx` were corrected to use `PageTopNav`'s `subtitle` prop instead of the invalid `description` prop.
+- `TrustPage.tsx` now imports `TrustEventsQuery` as a type-only import to satisfy eslint.
+- Verification passed:
+  - `npm exec -- eslint src/layout/AppLayout.tsx src/pages/TrustPage.tsx src/pages/TrustTimelinePage.tsx src/pages/TrustLeaderboardPage.tsx`
+  - `npm run build`
+- Current lint status from that targeted run:
+  - only one remaining warning in `TrustTimelinePage.tsx` for an unused `eslint-disable` directive
+
+#### Open risks or unknowns
+- The bottom rail now stays available at the phone base, but `Admin` still remains permission-controlled; it will not appear for users who do not qualify for admin tools.
+- Because the major-domain row is long, some phones may still require a horizontal swipe to reach the far-right items even after compaction.
+- This pass is local only until deployed.
+
+#### Next recommended step
+- Carry the same institutional cleanup into the next plain trust-linked inner surface or continue the phone button-stability pass on any route testers still call jumpy.
+
+#### Date
+2026-04-24
+
+#### Workstream
+Demand Box and Marketplace Workspace inner-surface enrichment.
+
+#### Routes/screens affected
+- `/app/demand-box`
+- `/app/marketplace-workspace`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/DemandBoxPage.tsx`
+- `frontend/src/pages/MarketplaceWorkspacePage.tsx`
+
+#### Confirmed facts
+- After Marketplace shell strengthening, the next visible mismatch was that the linked inner pages still carried older, paler card and button helpers.
+- `DemandBoxPage.tsx` was deepened route-locally:
+  - `pageCard`, `softCard`, `innerCard`, `detailsShell`, `statTile`, and `recordCard` now use stronger blue-framed borders, richer gradients, and firmer shadows
+  - `primaryBtn`, `secondaryBtn`, and `subtleBtn` now use slightly taller button bodies, richer gradients, and stronger shadows
+  - inputs, badges, helper text, and section labels were darkened so the page reads less like faded paper
+- `MarketplaceWorkspacePage.tsx` was deepened route-locally:
+  - `pageCard` and `softCard` now use richer gradients, stronger borders, and firmer shadows
+  - shared `btn` and `badge` styles now have stronger chrome and contrast
+  - muted/body support text and section labels were darkened to match the Marketplace page more closely
+- No business logic, backend invite logic, permissions, or route ownership changed.
+- Verification passed:
+  - `npm exec -- eslint src/pages/DemandBoxPage.tsx src/pages/MarketplaceWorkspacePage.tsx`
+  - `npm run build`
+
+#### Open risks or unknowns
+- These visual enrichments are local until deployed.
+- Phone review is still needed to confirm whether the stronger gradients and button chrome are sufficient, especially on Demand Box action clusters.
+- `ShopControlPage.tsx` already has a stronger shell than these two pages, but it may still need one later consistency pass if it looks lighter than Marketplace after fresh phone review.
+
+#### Next recommended step
+- Continue the same deep-cleaning pattern into the next inner route that still feels pale on phone, likely `ShopControlPage.tsx` or the next Marketplace-linked operating page that testers touch most often.
+
+### Previous update
+
+#### Date
+2026-04-24
+
+#### Workstream
+Marketplace inner-surface color enrichment and button strengthening.
+- If Marketplace now looks sufficiently rich, the next likely visual weak point is no longer the card palette but individual image staging/cropping or other route-local pages outside Marketplace.
+
+#### Next recommended step
+- Recheck `/app/marketplace` on phone, especially the lower inner sections and repeated action buttons.
+- If this looks good, continue the same color/button strengthening pattern into the next most faded inner route only, instead of broad global restyling.
+
+#### Date
+2026-04-24
+
+#### Workstream
+Marketplace mobile link-deck cleanup.
+
+#### Routes/screens affected
+- `/app/marketplace`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/MarketplacePage.tsx`
+
+#### Confirmed facts
+- The newer local Marketplace build already replaced the old raw-link display from the older Render version, but phone review still showed two mobile issues:
+  - on-screen message preview still displayed the full raw URL, which made the preview feel technical even though copied/sent WhatsApp text was being humanized
+  - Marketplace link-deck action rows could still feel cramped or cut off on phone widths
+- Marketplace now has separate route-local preview builders for join/create:
+  - copied and sent WhatsApp messages still include the full real live link
+  - on-screen `Message preview` now shows the human note plus the masked label instead of the full raw URL
+- The main Marketplace link-deck action rows now switch to a single-column mobile stack on compact screens, so join/create/public-shop/public-marketplace/private-access buttons read more cleanly on phone.
+- This pass stayed frontend-only and did not change invite generation, copied message payloads, backend routes, or link contracts.
+- Verification passed:
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx`
+  - `npm run build`
+- ESLint still reports only the same two pre-existing `MarketplacePage.tsx` hook-dependency warnings and no new errors.
+
+#### Open risks or unknowns
+- This is still local until deployed.
+- The old Render screenshot with `Copy WhatsApp Link` / `Open Link` is still from the earlier live build and should not be used as the current reference once the newer Marketplace page is deployed.
+- If the user still sees raw computer-language output inside WhatsApp after this pass, the next check should be whether they are copying from the browser/address bar instead of using the Marketplace copy/send controls.
+
+#### Next recommended step
+- Review the local Marketplace link deck on phone again and confirm:
+  - preview cards no longer show raw URLs on-screen
+  - action buttons stack cleanly on compact screens
+  - copied/sent WhatsApp output still contains the real live link
+- If that is confirmed, the next pass can focus on remaining Marketplace image staging and residual faint separators only.
+
+#### Date
+2026-04-24
+
+#### Workstream
+Marketplace visual-deepening and profile-surface polish.
+
+#### Routes/screens affected
+- `/app/marketplace`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/MarketplacePage.tsx`
+
+#### Confirmed facts
+- Marketplace route-local chrome was deepened again to reduce the washed-out, paper-like feel without changing page ownership or backend behavior.
+- The following Marketplace-specific surfaces were strengthened:
+  - outer shell gradients and border/shadow depth
+  - page card, soft card, and inner card borders/shadows
+  - Marketplace identity / DP block background and scrim
+  - market picture frame outer/inner chrome
+  - Marketplace identity stats panel
+  - picture handle / picture tools overlay chrome
+  - details toggle chrome
+  - Marketplace action button gradients
+  - section labels and the main outgoing-links deck wrapper
+- This pass stayed frontend-only and route-local. No invite generation, join preview, auth, permissions, shared contracts, or backend routes changed.
+- Verification passed:
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx`
+  - `npm run build`
+- ESLint still reports only the same two pre-existing `MarketplacePage.tsx` hook-dependency warnings and no new errors.
+
+#### Open risks or unknowns
+- This polish is still local until deployed.
+- Phone visual confirmation is still needed, especially on the Marketplace identity/DP block and the link-deck surfaces.
+- If the market DP image itself still feels unprofessional after this chrome pass, the next likely issue is image staging/cropping rather than page-surface color.
+
+#### Next recommended step
+- Review `/app/marketplace` on phone and compare the Marketplace identity/DP block against the dashboard-quality reference.
+- If needed, do one focused follow-up on market-image staging/cropping and the remaining faint separators only, without touching Marketplace logic.
+
+#### Date
+2026-04-24
+
+#### Workstream
+Marketplace button-stiffness relief.
+
+#### Routes/screens affected
+- `/app/marketplace`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/MarketplacePage.tsx`
+
+#### Confirmed facts
+- The Marketplace page had an aggressive button/link guard pattern that attached `onClickCapture` handlers directly on the same button/link elements.
+- That guard has been reduced so Marketplace button and link helpers now stop propagation on pointer/touch/mouse down only, without intercepting click capture on the same control.
+- This change was applied to the shared Marketplace guard helpers, so it affects the repeated Marketplace controls consistently instead of patching one button at a time.
+- This pass did not alter route targets, invite logic, card ownership, or page architecture.
+
+#### Open risks or unknowns
+- This is still local until deployed.
+- It should reduce stiff/dead taps, but live phone confirmation is still needed on the Marketplace link desk and the main Marketplace action blocks.
+- The same kind of stiff-button pattern may still exist on other pages outside Marketplace.
+
+#### Next recommended step
+- Retest the Marketplace `Create / Refresh`, `Copy`, `Open`, and other main action buttons on phone.
+- If this improves the link desk, continue the same lighter guard cleanup on the next most troublesome inner pages.
+
+#### Date
+2026-04-24
+
+#### Workstream
+Marketplace invite refresh hardening and surface polish.
+
+#### Routes/screens affected
+- `/app/marketplace`
+- `POST /clans/{clan_id}/invite`
+
+#### Backend routes/endpoints involved
+- `POST /clans/{clan_id}/invite`
+
+#### Files in play
+- `frontend/src/pages/MarketplacePage.tsx`
+- `gmfn_backend/app/api/routes/clans.py`
+- `gmfn_backend/tests/test_join_requests.py`
+
+#### Confirmed facts
+- The Marketplace `Create / Refresh` button already used `POST /clans/{clan_id}/invite`, but that backend route previously behaved more like `create another active invite` than a true refresh.
+- `POST /clans/{clan_id}/invite` now retires older live `ClanInvite` rows for that same community before issuing the next one, so the button now behaves like a real refresh.
+- The route now returns `retired_live_invites` so the frontend can show clearer feedback about whether an older live invite was replaced.
+- `MarketplacePage` now reports:
+  - `Fresh join invite created and copied.` when there was no older live invite
+  - `Fresh join invite created, copied, and older live link retired.` when refresh replaced a previous live invite
+- `MarketplacePage` also received a light visual polish only on its own surfaces:
+  - stronger card borders and shadows
+  - darker section labels
+  - firmer button borders, height, and contrast
+  - no route logic or page ownership changed in this polish pass
+- New backend coverage confirms refresh semantics:
+  - two consecutive `POST /clans/1/invite` calls now produce different invite codes
+  - the first invite becomes inactive with `revoked_at`
+  - the second invite remains active
+
+#### Open risks or unknowns
+- This improves refresh semantics for Marketplace/Clans invite creation, but already-shared stale live links on Render still need retesting after deployment.
+- This does not yet finish the wider jumpy-button cleanup outside Marketplace.
+- This does not yet address the remaining user concern that some Marketplace surfaces still look less institutional than the dashboard profile block.
+
+#### Next recommended step
+- Deploy this refresh hardening, generate one new Marketplace join link on Render, and retest that exact fresh link on phone/WhatsApp.
+- After that, continue the Marketplace-only button-stability pass so outside testing can proceed without tap friction.
+
+#### Date
+2026-04-24
+
+#### Workstream
+Community Home versus Marketplace outward-link wording separation.
+
+#### Routes/screens affected
+- `/app/community`
+- `/app/marketplace`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `frontend/src/pages/MarketplacePage.tsx`
+
+#### Confirmed facts
+- `CommunityHomePage` now hands off more clearly into Marketplace without sounding like it owns Marketplace internals:
+  - the owner-action helper now says Marketplace keeps one community's live operating lanes together while the marketplace link desk carries outward links
+  - `Open Marketplace Links` now reads `Open Marketplace Link Desk`
+  - community summary pills now say `Private Vault` instead of the shorter ambiguous `Vault`
+- `MarketplacePage` now uses the same language family as the newer shop and workspace pages:
+  - the outward-link explainer now distinguishes `public marketplace face`, `public shop face`, and `private Vault-style access`
+  - the main helper copy now says `marketplace face`, `public shop face`, and `private-Vault route` instead of older mixed wording like `show this marketplace` / `show your shop`
+  - the marketplace link card now reads `Public marketplace face`, with `Public marketplace link ready`, `Copy Marketplace Link`, and `Open Marketplace Face`
+  - the shop link card now reads `Public shop face`, with `Public shop link ready`, `Copy Shop Link`, and `Open Shop Face`
+  - the controlled-link card now reads `Private and controlled outward links`, with `Private Vault access is conditional` and `Open Public Shop Face`
+  - the shared controlled-link note now says `Private Vault access and other controlled outward links`
+
+#### Open risks or unknowns
+- This pass was frontend-only; it does not change invite generation, preview, or backend link validity.
+- This does not yet resolve the live Render reports about stale/expired join links.
+- Jumpy-button cleanup remains a separate ongoing pass.
+
+#### Next recommended step
+- Continue low-risk deep cleaning on the remaining launcher/descriptive surfaces that still blur Marketplace and Community Home, then return to the larger button-stability pass once wording ownership is fully consistent.
+
+#### Date
+2026-04-24
+
+#### Workstream
+Shop/vault/public-surface deep cleaning.
+
+#### Routes/screens affected
+- `/app/shop-control`
+- `/shop/:gmfnId`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/ShopControlPage.tsx`
+- `frontend/src/pages/ShopGalleryPage.tsx`
+- `frontend/src/components/CommunityShopControlPanel.tsx`
+- `frontend/src/pages/MarketplaceWorkspacePage.tsx`
+
+#### Confirmed facts
+- `ShopControlPage` now speaks more clearly as owner backstage:
+  - repeated `Open Public Shop` actions were renamed to `Open Public Shop Face`
+  - repeated generic public-link copy was renamed to `Copy Public Shop Face Link` / `Copy Public Shop Link`
+  - the ordinary spotlight launcher now reads `Open Spotlight Publisher`
+  - the Vault purchase/setup card now reads more clearly as selective private access instead of a second public gallery
+  - `Verify shop` now reads `TrustSlip verification`, with `Visitor verification` and `Open public verification`
+  - the picture/gallery section now reads as the public shop face rather than a generic gallery
+  - the lower Vault area now reads `Private Vault access`, with `Public shelf products`, `Private Vault offers`, `Copy Vault link`, and `Open Vault link`
+- `ShopGalleryPage` now speaks more clearly as the public shop face:
+  - fallback copy now says the public shop face is public while private Vault offers need a trust link
+  - confidence and helper text now consistently distinguish `public shelf` from `private Vault`
+  - public-share/copy notices now explicitly say `Public shop`
+  - the Vault request path now asks for a `private Vault access link`
+  - signed-in helper text now describes protected routes as returns back into GSN rather than internal shop controls
+  - the Vault explainer and empty-state copy now more clearly tell the visitor that private items require a separate access link from the owner
+- `CommunityShopControlPanel` and `MarketplaceWorkspacePage` were also brought onto the same language:
+  - Community Home's owner launcher now says `Open Public Shop Face` and `Private Vault Access`
+  - Marketplace Workspace now says `public shop` instead of older `shop-view` wording in its copy and copy/share actions
+- This pass stayed frontend-only and wording-only. No backend rules, auth, schemas, or route contracts were changed.
+- Verification passed:
+  - `npm exec -- eslint src/pages/ShopControlPage.tsx src/pages/ShopGalleryPage.tsx`
+  - `npm run build`
+
+#### Open risks or unknowns
+- This pass improves clarity, but it does not itself fix the broader jumpy-button reports on other pages.
+- This pass does not fix live Render invite-link failures or already-issued stale links.
+- Some internal success/error notices still use the older phrase `Vault viewing link`; those are operational notices rather than surface ownership language and can be normalized later if needed.
+
+#### Next recommended step
+- Continue the same low-risk deep-cleaning pass on the remaining outward-link surfaces so Marketplace remains the community link desk, Shop Control remains owner backstage, and public-facing links remain clearly separated from Vault/private access.
+- Keep the next verification focused on phone tap behavior and public/share/back buttons while outside testing continues.
+
+#### Date
+2026-04-24
+
+#### Workstream
+Dashboard friction cleanup plus Marketplace link-lane separation and button tightening.
+
+#### Routes/screens affected
+- `/app/dashboard`
+- `/app/marketplace`
+- `/app/marketplace-workspace`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/DashboardPage.tsx`
+- `frontend/src/pages/MarketplacePage.tsx`
+- `frontend/src/pages/MarketplaceWorkspacePage.tsx`
+
+#### Confirmed facts
+- Dashboard avatar upload was using raw `FileReader` storage only, which made large phone photos vulnerable to silent local-storage failure. The dashboard now prepares a lighter image before saving, keeps the current-session preview even if storage fails, resets the input cleanly, and shows a visible success/error note under the profile block.
+- Dashboard attention-guide behavior now respects a quiet window after dismissal or action. That quiet window is route-local in the dashboard and reduces repeated interruption during testing without changing backend logic or touching the frozen Market Wisdom section.
+- The phone presentation of the `Trust is the first currency` block was tightened so `Visible. Portable. Usable.` sits on its own centered line with more width, making it less likely to disappear on narrow phones.
+- Marketplace action buttons were tightened further by reducing the section-toggle delay from `24ms` to `12ms`, extending pointer capture guards to click-capture on pointer-only controls, and hardening the shared Marketplace button style with stronger mobile button traits (`touchAction`, `WebkitAppearance`, isolation, z-index, and pointerEvents).
+- Marketplace now separates link lanes more clearly for testing:
+  - WhatsApp join link = enter this exact community
+  - GSN create link = start a new community
+  - Marketplace view link = public marketplace face
+  - Shop view link = public storefront
+  - controlled links = vault/private outward access
+- Marketplace labels and helper copy now explain that create and join are different actions and should not be treated as the same link.
+- `MarketplaceWorkspacePage` also received a smaller button-style tightening pass so its access-desk buttons behave more like the hardened Marketplace controls.
+- Frontend verification passed:
+  - `npm exec -- eslint src/pages/DashboardPage.tsx src/pages/MarketplacePage.tsx src/pages/MarketplaceWorkspacePage.tsx`
+  - `npm run build`
+- ESLint still reports only the same 2 existing `MarketplacePage.tsx` hook-dependency warnings and no new errors.
+
+#### Open risks or unknowns
+- This pass improves local/frontend behavior but does not itself fix already-issued stale join links on live Render. Fresh links still need to be generated after the invite-link backend fix is live.
+- The broader request to make other domains visually match the more institutional dashboard profile block is still open.
+- Wider shop/vault/view link auditing across every outward path is still incomplete; this pass focused on Marketplace’s public/tester-facing link desk first.
+
+#### Next recommended step
+- Retest Marketplace on phone first: section toggles, join/create/public-marketplace/public-shop buttons, and WhatsApp send buttons.
+- If that feels materially steadier, deploy this frontend pass so testers can continue, then audit the remaining outward links (`vault`, `shop gallery`, and other controlled-access links) from the same one-place testing mindset.
+
+#### Date
+2026-04-24
+
+#### Workstream
+Community and shop button-stability pass.
+
+#### Routes/screens affected
+- `/app/community`
+- `/app/marketplace`
+- Community shop-control panel surfaces launched from Community Home
+- `/app/shop-control`
+- `/shop/:gmfnId`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `frontend/src/pages/MarketplacePage.tsx`
+- `frontend/src/components/CommunityShopControlPanel.tsx`
+- `frontend/src/pages/ShopControlPage.tsx`
+- `frontend/src/pages/ShopGalleryPage.tsx`
+
+#### Confirmed facts
+- The main button instability pattern on these surfaces was not button size alone; the pages were mixing pointer-down guards with click-time actions, which left room for taps to bubble into parent cards and feel jumpy on mobile.
+- The shared guard props on Community Home, Marketplace, Shop Control, Shop Gallery, and the Community Shop Control panel now also stop propagation during `onClickCapture`, so button taps are intercepted earlier before parent surfaces can react.
+- The open/collapse controls on Community Home, Marketplace, Shop Control Spotlight, and the Community Shop Control panel no longer wait the old ~90ms delay; those waits were reduced to 24ms so taps feel more immediate while still giving React time to settle state changes.
+- This pass stayed route-local and did not change backend contracts, permissions, schemas, or global navigation.
+- Frontend verification passed:
+  - `npm exec -- eslint src/pages/CommunityHomePage.tsx src/pages/MarketplacePage.tsx src/pages/ShopControlPage.tsx src/pages/ShopGalleryPage.tsx src/components/CommunityShopControlPanel.tsx`
+  - `npm run build`
+- ESLint still reports only the same 2 existing `MarketplacePage.tsx` hook-dependency warnings and no new errors.
+
+#### Open risks or unknowns
+- This pass should reduce misfires and bubbling-based jumps, but it does not yet address every dashboard complaint the user listed, including the profile-picture save issue, the repeating attention guide, or the missing `Visible. Portable. Usable.` line.
+- This pass does not fix the remaining live invite-link failure reports on Render.
+- Additional jumpy-button cleanup may still be needed on pages outside this community/shop cluster after the next live test round.
+
+#### Next recommended step
+- Re-test the main community/shop flow on phone first:
+  - Community Home open/collapse buttons
+  - Marketplace section toggles and action buttons
+  - Shop Control spotlight and vault buttons
+  - Shop Gallery back/share/private-access buttons
+- After that, tackle the next highest-friction live issues in order: invite-link reliability on Render, dashboard profile-picture persistence, and the attention-guide noise.
+
+### Previous update
+
+#### Date
+2026-04-24
+
+#### Workstream
+Spotlight and shop-surface route-purpose cleanup.
+
+#### Routes/screens affected
+- `/app/marketplace`
+- `/app/shop-control`
+- `/shop/:gmfnId`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/MarketplacePage.tsx`
+- `frontend/src/pages/ShopControlPage.tsx`
+- `frontend/src/pages/ShopGalleryPage.tsx`
+
+#### Confirmed facts
+- Marketplace, Shop Control, and Shop Gallery were already functionally distinct, but Spotlight and shop-facing copy still leaked backstage language into the public shop and blurred owner-vs-live-community responsibility.
+- Marketplace outward-link copy now reads more plainly:
+  - controlled-link note now says links are issued as `approved live links`
+  - outward-link explainer now says `public shop view` and `controlled private-access links`
+  - Marketplace button now says `Open Owner Shop Control`
+- Shop Control now speaks more clearly as the owner-side Spotlight publisher:
+  - paid spotlight helper now says this is about priority in `community-facing visibility`
+  - button now says `Open Spotlight Backstage`
+  - spotlight section label now says `Spotlight publisher`
+  - live state copy now says `Current live spotlight`
+  - live-route buttons now say `Open public shop face` and `Copy public shop link`
+  - mode buttons now say `Free community spotlight` and `Paid priority spotlight`
+- Shop Gallery now speaks more clearly as the public-facing live-promo surface:
+  - fallback title now says `Live Spotlight`
+  - top card label now says `Community Spotlight`
+  - badge now says `Live community promo`
+  - helper line now says `Open the shop behind the current live spotlight item`
+  - no-image fallback now says `Live community promo is active here...`
+- Frontend verification passed:
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx src/pages/ShopControlPage.tsx src/pages/ShopGalleryPage.tsx`
+  - `npm run build`
+- ESLint still reports only the same 2 existing `MarketplacePage.tsx` hook-dependency warnings and no new errors.
+
+#### Open risks or unknowns
+- This pass still does not address the broader jumpy-button complaints.
+- This pass does not change live Render deployment or the remaining live invite-link failure reports.
+- More overlap may still remain in dashboard-to-marketplace guidance and in some community-home launch language around shop/spotlight work.
+
+#### Next recommended step
+- Return to the button-stability pass on the main and inner community/shop surfaces, then continue any remaining wording cleanup only where user testing still shows route-purpose confusion.
+
+### Previous update
+
+#### Date
+2026-04-24
+
+#### Workstream
+Marketplace owner-tool alignment cleanup.
+
+#### Routes/screens affected
+- `/app/marketplace-workspace`
+- shop control panel surfaces launched from Community Home / Marketplace
+- `/app/shop-control`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/MarketplaceWorkspacePage.tsx`
+- `frontend/src/components/CommunityShopControlPanel.tsx`
+- `frontend/src/pages/ShopControlPage.tsx`
+
+#### Confirmed facts
+- Marketplace Workspace, the Community Shop Control panel, and Shop Control were already separate screens, but some wording still made them sound like partial duplicates of Marketplace.
+- Marketplace Workspace now speaks more clearly as the one-community access desk:
+  - top subtitle now says `Owner-side links, visibility, and member-to-shop mapping for one community`
+  - helper copy now says Marketplace is the one-community `operating surface`
+  - fallback copy now refers to `owner-side invite, alert, member, and shop-facing visibility tasks`
+  - launcher buttons now say `Open Marketplace` and `Community List`
+- Community Shop Control panel now speaks more clearly as the owner launcher / owner desk:
+  - loading fallback now says Community Home launches the `owner shop desk`
+  - default helper line now says `Use this owner desk to prepare the one shop here, then let Marketplace carry the live community-facing side`
+  - badge now says `Owner launcher`
+  - handoff button now says `Open Community Marketplace`
+  - owner-shortcuts helper now points to Marketplace as the live community-facing activity and outward-link surface
+- Shop Control now speaks more clearly as owner backstage:
+  - top subtitle now says `Owner backstage for your one GSN shop`
+  - top nav label now says `Public Shop Face`
+  - nav return label now says `Community Marketplace`
+  - action buttons now say `Open Public Shop` and `Open TrustSlip`
+  - fallback control-status button now also says `Open Public Shop`
+- Frontend verification passed:
+  - `npm exec -- eslint src/pages/MarketplaceWorkspacePage.tsx src/components/CommunityShopControlPanel.tsx src/pages/ShopControlPage.tsx`
+  - `npm run build`
+
+#### Open risks or unknowns
+- This pass improves route-purpose clarity only. It does not address the broader jumpy-button complaints yet.
+- This pass does not resolve the live join-link / expired-link problem on Render.
+- More overlap may still remain in Spotlight and other shop-operating copy deeper inside Marketplace and Shop Control.
+
+#### Next recommended step
+- Continue the same low-risk cleanup through Spotlight and the remaining shop-operating surfaces so Marketplace owns live community/shop activity, while Community Home and Shop Control stay owner-launcher / backstage only.
+
+### Previous update
+
+#### Date
+2026-04-24
+
+#### Workstream
+Community Home vs Marketplace route-purpose cleanup.
+
+#### Routes/screens affected
+- `/app/community`
+- `/app/marketplace`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `frontend/src/pages/MarketplacePage.tsx`
+
+#### Confirmed facts
+- Community Home and Marketplace were already functionally separate, but some owner-launcher and intro copy still blurred page ownership.
+- Community Home was still using phrases like `live work` and `Go To Marketplace Links`, which made it sound like it partly owned Marketplace internals.
+- Marketplace still needed stronger wording that it is the one-community operating surface, not the combined group index.
+- This pass tightened only route-purpose wording and launcher labels:
+  - Community Home now speaks more clearly as the cross-community chooser and owner surface.
+  - Marketplace now speaks more clearly as the one-community operating surface.
+  - Community Home owner launchers now say `Owner actions from Community Home`, `Open Marketplace Links`, and `Open Selected Marketplace`.
+  - Marketplace empty state now says no community is active yet and points users back to Community Home first.
+  - Marketplace route wording now favors `Marketplace actions` and `See this in Finance` rather than making Finance look like a local sub-widget.
+- Frontend verification passed:
+  - `npm exec -- eslint src/pages/CommunityHomePage.tsx src/pages/MarketplacePage.tsx`
+  - `npm run build`
+- ESLint still reports the same 2 existing `MarketplacePage.tsx` hook-dependency warnings and no new errors.
+
+#### Open risks or unknowns
+- This pass does not resolve the broader jumpy-button complaints yet.
+- This pass does not change the live Render deployment or the remaining invite-link deployment gap.
+- More overlap may still remain in deeper owner-tool surfaces such as Shop Control, workspace, and spotlight controls.
+
+#### Next recommended step
+- Continue the same low-risk cleanup pattern through the remaining owner-tool surfaces that sit between Community Home and Marketplace.
+- After that, return to the broader button-stability pass so outside testing is less blocked by tap instability.
+
+#### Date
+2026-04-24
+
+#### Workstream
+Join invite recovery + dashboard testing blocker stabilization.
+
+#### Routes/screens affected
+- `/start/join/:code`
+- `/app/dashboard`
+
+#### Backend routes/endpoints involved
+- `GET /clans/join-invite/preview`
+
+#### Files in play
+- `gmfn_backend/app/api/routes/clans.py`
+- `gmfn_backend/tests/test_join_requests.py`
+- `frontend/src/pages/DashboardPage.tsx`
+
+#### Confirmed facts
+- Join preview previously accepted only `ClanInvite.code` as a live outward link. Older shared links that still carried legacy `Clan.invite_code` could reach the join page but be blocked at preview with the red `Fresh invite link needed` state before the user could continue.
+- `preview_join_invite` now recovers from a legacy `Clan.invite_code`:
+  - if a newer usable `ClanInvite` exists for that community, preview returns that live invite
+  - if no live `ClanInvite` exists but the legacy clan invite is still valid, preview returns a ready state instead of a hard failure
+- Backend verification passed:
+  - `python -m pytest gmfn_backend/tests/test_join_requests.py -q` -> `11 passed`
+  - `python -m py_compile gmfn_backend/app/api/routes/clans.py`
+- Dashboard avatar persistence issue was confirmed to be a storage-key transition problem:
+  - uploads were stored under a visitor-scoped local-storage key before `me` finished loading
+  - once the signed-in identity resolved, the dashboard read from a user-scoped key and the just-uploaded picture appeared to disappear
+  - dashboard now migrates the visitor avatar into the signed-in scoped key on first identity resolution
+- Dashboard attention interference was reduced:
+  - the floating `Attention Guide` reminder pill now stays hidden after dismissal until the guide is actually due to show again
+- The phone version of the `Visible. Portable. Usable.` slogan in the `Trust is the first currency` profile header was tightened so it can wrap instead of disappearing on narrow screens.
+- Frontend verification passed:
+  - `npm exec -- eslint src/pages/DashboardPage.tsx`
+  - `npm run build`
+
+#### Open risks or unknowns
+- These fixes are local until explicitly deployed.
+- Already-shared stale links may still keep failing until a fresh join link is generated from the updated live app.
+- General jumpy-button complaints across deeper pages are not fully resolved in this pass. This pass only removed one likely dashboard interference source.
+
+#### Next recommended step
+- Deploy this safe blocker-fix set, then generate one fresh join link and retest on phone/WhatsApp.
+- After that, continue the broader button-stability pass on the inner pages where testing is still being blocked.
+
+#### Date
+2026-04-24
+
+#### Workstream
+Marketplace workspace / Shop Control / Shop Gallery strategic separation continuation.
+
+#### Routes/screens affected
+- `/app/marketplace-workspace`
+- `/app/shop-control`
+- `/app/shop/:gmfnId`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/MarketplaceWorkspacePage.tsx`
+- `frontend/src/pages/ShopControlPage.tsx`
+- `frontend/src/pages/ShopGalleryPage.tsx`
+
+#### Confirmed facts
+- Marketplace workspace now reads more clearly as a one-community access desk rather than a second Marketplace:
+  - `Community Access` -> `Community Access Desk`
+  - route-handoff copy now says this desk does not replace Marketplace
+  - handoff buttons now favor `Return to Marketplace` / `Open Community Home`
+- Shop Control now reads more clearly as owner backstage rather than a public or mixed workspace:
+  - `Shop Control` -> `Owner Shop Control` / `Shop Owner Control`
+  - top subtitle now explicitly says the public Shop Gallery stays visitor-facing
+  - the top launcher now says `Public Shop`, and it is disabled when no public link exists yet
+  - top helper copy now says `Use this owner page...`
+- Shop Gallery now reads more clearly as the outward public shop face:
+  - protected return paths now say `Community Home`, `Community Marketplace`, and `Owner Shop Control`
+  - the viewer guidance now explains that this page remains the public shop face even when a member is signed in
+  - buyer-facing action labels now say `Ask seller privately`, `Share public shop`, and `Copy public link`
+  - the confidence headline now says `Public shop front`
+
+#### Open risks or unknowns
+- This was a copy/ownership pass only. It does not solve the separate invite-link deployment/retest problem by itself.
+- `ShopControlPage.tsx` and `ShopGalleryPage.tsx` still contain broader local visual/tap-target work from earlier sessions; this checkpoint only records the route-boundary refinements added in this pass.
+- Further visual harmonization may still be needed if the product owner wants these pages to inherit more of the dashboard profile-block institutional color mood.
+
+#### Verification
+- `npm exec -- eslint src/pages/MarketplaceWorkspacePage.tsx src/pages/ShopControlPage.tsx src/pages/ShopGalleryPage.tsx` passed.
+- `npm run build` in `frontend/` passed.
+
+#### Next recommended step
+- Continue with a deeper route-boundary cleanup of any remaining duplicate or blurred CTA language between:
+  - Marketplace
+  - Marketplace workspace
+  - Shop Control
+  - Shop Gallery
+- After that, do a phone-first pass specifically on the public join-link retest and the public shop navigation/tap behavior.
+
+#### Date
+2026-04-24
+
+#### Workstream
+Community Home vs Marketplace strategic separation pass, with read-only parallel audits to confirm remaining wording overlap.
+
+#### Routes/screens affected
+- `/app/community`
+- `/app/marketplace`
+- Community Home embedded owner shop-control launcher panel
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `frontend/src/pages/MarketplacePage.tsx`
+- `frontend/src/components/CommunityShopControlPanel.tsx`
+
+#### Confirmed facts
+- Community Home is now phrased more clearly as the cross-community owner/index surface:
+  - launcher wording now leans toward handoff language such as entering Marketplace rather than sounding like Home owns live marketplace work
+  - finance/trust wording now reads as wider cross-community records
+  - spotlight wording now reads as owner spotlight status on Home, with preparation in Shop Control and live visibility meeting the selected community in Marketplace
+- The embedded shop panel on Community Home now reads more clearly as one-shop owner work:
+  - `Owner shop control`
+  - `Community Home launcher`
+  - `One-shop owner work`
+  - `Open Selected Community Marketplace`
+- Marketplace copy was tightened to reinforce that Community Home chooses the group first and Marketplace runs one-community work after that.
+- Marketplace’s no-community-selected state was reduced to the correct handoff surface instead of acting like a generic app launcher. It now mainly sends the user back to Community Home or Dashboard rather than offering multiple unrelated domain jumps before a community is chosen.
+- Two read-only parallel audits agreed that the main remaining blur is wording/launcher overlap, not backend business logic confusion.
+
+#### Open risks or unknowns
+- Community Home still contains many launchers by design, so further tightening may still be needed if the product owner wants an even stricter owner/index feel.
+- `MarketplacePage.tsx` still has two pre-existing React hook dependency warnings unrelated to this pass.
+- Broader duplication/button-tightening work across other domains is still outstanding.
+
+#### Verification
+- `npm exec -- eslint src/pages/CommunityHomePage.tsx src/pages/MarketplacePage.tsx src/components/CommunityShopControlPanel.tsx`
+  passed with only 2 pre-existing warnings in `MarketplacePage.tsx`.
+- `npm run build` in `frontend/` passed.
+
+#### Next recommended step
+- Continue the same strategic-alignment pass on the next highest-overlap surfaces:
+  - `frontend/src/pages/MarketplaceWorkspacePage.tsx`
+  - `frontend/src/pages/ShopControlPage.tsx`
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+- Keep the same rule: Community Home = owner/index across communities, Marketplace = one-community operating surface, Shop Control = one-shop owner preparation, Shop Gallery = outward visitor-facing surface.
+
+#### Date
 2026-04-23
 
 #### Workstream
@@ -8809,3 +10092,751 @@ GSN-branded invite composer and invite-entry continuity.
      - a malformed shared URL
      - an old cached URL
      - a producer screen still emitting legacy data
+
+### Marketplace button-stability audit checkpoint (2026-04-24)
+
+- Purpose:
+  - reduce the current phone-testing blocker where Marketplace buttons feel
+    jumpy, stiff, or dead, especially on:
+    - `Create / Refresh`
+    - `Copy WhatsApp Link`
+    - `Open Join Link`
+    - outward link copy/open actions
+
+- Files changed in this pass:
+  - `frontend/src/pages/MarketplacePage.tsx`
+
+- Confirmed Marketplace interaction cleanup:
+  - `consumeMarketplaceButtonEvent()` no longer calls `preventDefault()` for
+    click/submit events. It now only stops propagation.
+  - `marketplaceButtonGuardProps()` now uses the lighter
+    `consumeMarketplacePointerEvent()` on pointer/touch/mouse down instead of
+    the heavier button event helper.
+  - The duplicate `consumeMarketplaceButtonEvent(event)` calls were removed
+    from Marketplace button `onClick` bodies where the same controls already
+    use `marketplaceButtonGuardProps()`.
+  - Affected Marketplace action clusters include:
+    - invite creation / copy / open / WhatsApp send
+    - create-link copy / open / WhatsApp send
+    - public marketplace/shop outward link buttons
+    - picture tool remove button
+    - support-draft start / refresh / cancel
+    - chosen supporter / guarantor selection buttons
+    - guarantor-request send button
+
+- Practical meaning:
+  - Marketplace buttons should no longer be double-guarded on the same tap.
+  - Phone taps should feel steadier because buttons are no longer being asked
+    to stop/guard the same interaction both on pointer-down and again inside
+    the click body.
+
+- Verification:
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx`
+    - passed with only the 2 pre-existing hook-dependency warnings
+  - `npm run build`
+    - passed in `frontend/`
+
+- Recommended next test:
+  1. Retest Marketplace on phone, starting with:
+     - `Create / Refresh`
+     - `Copy WhatsApp Link`
+     - `Open Join Link`
+     - `Copy Create Link`
+     - `Open Marketplace Face`
+     - `Open Shop Face`
+  2. If these are steadier, carry the same button-lightening audit into the
+     next most troublesome inner route instead of broad restyling first.
+
+### Marketplace link-humanization checkpoint (2026-04-24)
+
+- Purpose:
+  - reduce the "computer language" feel in the Marketplace link desk so
+    outward links look more human and WhatsApp sends carry a real GSN message
+    instead of a bare raw URL.
+
+- Files changed in this pass:
+  - `frontend/src/pages/MarketplacePage.tsx`
+
+- Confirmed Marketplace link-desk cleanup:
+  - Added masked outward-link labels so the page no longer shows the full raw
+    join URL directly in the visible card.
+  - Added helper builders for:
+    - masked outward link codes / labels
+    - short GSN share-message text
+  - Join-link card now shows a humanized label like:
+    - `Secure GSN join link for <community> • code <shortened>`
+  - Create-link area now shows a short message preview and a masked founder
+    entry label.
+  - Public marketplace face and public shop face now show short masked labels
+    under their readiness pills.
+  - `Send WhatsApp` for join/create now sends a short GSN message plus the real
+    live link, instead of sending only the raw URL.
+  - `Copy WhatsApp Link` / `Copy Create Link` behavior was then corrected again:
+    - the button text now reads:
+      - `Copy WhatsApp Message`
+      - `Copy Create Message`
+    - these copy actions now copy the short human GSN message plus the live
+      link, not the bare raw URL alone.
+
+- Practical meaning:
+  - the underlying link is unchanged and still works normally
+  - the page looks less technical
+  - WhatsApp recipients receive a short human note before the link
+  - if a user copies directly from the browser address bar or from a raw URL
+    source, WhatsApp will still show the technical link; the human result
+    depends on using the message-copy or WhatsApp-send actions from
+    Marketplace itself
+
+- Verification:
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx`
+    - passed with only the 2 pre-existing hook-dependency warnings
+  - `npm run build`
+    - passed in `frontend/`
+
+- Recommended next review:
+  1. Open Marketplace on phone and review the new message preview language.
+  2. If the owner wants it stronger, shorten or deepen only the text layer;
+     do not change the underlying invite route again unless the business
+     behavior itself needs to change.
+
+### Loans page base-domain shortcut restoration (2026-04-24)
+
+- Purpose:
+  - restore the missing main-domain shortcut strip at the base of the Loans page
+    so the page does not end abruptly after the final route cards on phone.
+
+- Files changed in this pass:
+  - `frontend/src/pages/LoansPage.tsx`
+
+- Confirmed change:
+  - Added a new `Main domain shortcuts` section at the end of `/app/loans`.
+  - Added shortcut chips for:
+    - `Dashboard`
+    - `Community`
+    - `Marketplace`
+    - `Shop`
+    - `Finance`
+    - `Loans`
+  - Increased bottom padding on the loaded Loans page so the new footer strip has
+    room on compact/mobile screens.
+
+- Practical meaning:
+  - the loan overview now finishes with a clear return path into the wider GSN domains
+  - this is frontend-only and route-local; no backend business logic or contracts changed
+
+- Verification:
+  - `npm exec -- eslint src/pages/LoansPage.tsx`
+    - passed
+  - `npm run build`
+    - passed in `frontend/`
+
+### Loan inner-page domain shortcut restoration (2026-04-24)
+
+- Purpose:
+  - restore the missing main-domain shortcut strip at the base of the main
+    inner loan pages so phone users do not get trapped inside route cards with
+    no wider-domain return path.
+
+- Files changed in this pass:
+  - `frontend/src/components/MainDomainShortcutStrip.tsx`
+  - `frontend/src/pages/LoanWorkbenchPage.tsx`
+  - `frontend/src/pages/LoanReadinessPage.tsx`
+  - `frontend/src/pages/LoanSuggestionsPage.tsx`
+  - `frontend/src/pages/LoanSummaryPage.tsx`
+  - `frontend/src/pages/RepaymentPage.tsx`
+  - `frontend/src/pages/GuarantorInboxPage.tsx`
+  - `frontend/src/pages/GuarantorEarningsPage.tsx`
+  - `frontend/src/pages/RevenueAllocationPage.tsx`
+  - `frontend/src/pages/BorrowerPreflightPage.tsx`
+  - `frontend/src/pages/LoanDecisionPage.tsx`
+
+- Confirmed change:
+  - Added a shared `MainDomainShortcutStrip` component for loan-domain pages.
+  - Added the base shortcut strip to these routes/screens:
+    - `/app/loan-workbench`
+    - `/app/loan-readiness`
+    - `/app/loan-suggestions`
+    - `/app/loan-summary/:id`
+    - `/app/payment/loans/:loanId`
+    - `/app/guarantor-inbox`
+    - `/app/guarantor-earnings`
+    - `/app/revenue-allocation`
+    - `/app/borrower-preflight`
+    - `/app/loan-decision`
+  - Shortcut strip includes:
+    - `Dashboard`
+    - `Community`
+    - `Marketplace`
+    - `Shop`
+    - `Finance`
+    - `Loans`
+  - Increased bottom padding on these pages so the shortcut strip has stable
+    room on compact/mobile screens.
+
+- Practical meaning:
+  - the inner loan pages now finish with a consistent wider-domain return path
+  - this is frontend-only and route-local; no backend business logic or
+    contracts changed
+
+- Verification:
+  - `npm exec -- eslint src/components/MainDomainShortcutStrip.tsx src/pages/LoanWorkbenchPage.tsx src/pages/LoanReadinessPage.tsx src/pages/LoanSuggestionsPage.tsx src/pages/LoanSummaryPage.tsx src/pages/RepaymentPage.tsx src/pages/GuarantorInboxPage.tsx src/pages/GuarantorEarningsPage.tsx src/pages/RevenueAllocationPage.tsx src/pages/BorrowerPreflightPage.tsx src/pages/LoanDecisionPage.tsx`
+    - passed with 4 pre-existing hook-dependency warnings only
+  - `npm run build`
+    - passed in `frontend/`
+
+### Loan domain footer correction to shared app rail (2026-04-24)
+
+- Purpose:
+  - replace the temporary loan-page shortcut strip with the real shared
+    app-wide bottom movement rail, so Loans uses the same base domain line as
+    the rest of the mobile workspace.
+
+- Files changed in this pass:
+  - `frontend/src/layout/AppLayout.tsx`
+  - `frontend/src/pages/LoansPage.tsx`
+  - `frontend/src/pages/LoanWorkbenchPage.tsx`
+  - `frontend/src/pages/LoanReadinessPage.tsx`
+  - `frontend/src/pages/LoanSuggestionsPage.tsx`
+  - `frontend/src/pages/LoanSummaryPage.tsx`
+  - `frontend/src/pages/RepaymentPage.tsx`
+  - `frontend/src/pages/GuarantorInboxPage.tsx`
+  - `frontend/src/pages/GuarantorEarningsPage.tsx`
+  - `frontend/src/pages/RevenueAllocationPage.tsx`
+  - `frontend/src/pages/BorrowerPreflightPage.tsx`
+  - `frontend/src/pages/LoanDecisionPage.tsx`
+  - deleted `frontend/src/components/MainDomainShortcutStrip.tsx`
+
+- Confirmed change:
+  - The shared mobile bottom rail in `AppLayout` is now allowed to remain
+    visible on the focused Loans / Support task routes instead of being hidden
+    just because those pages are in task-focus mode.
+  - Removed the temporary page-local loan shortcut strip from the loan domain
+    pages so there is one source of truth for the base navigation again.
+  - Reduced the extra bottom padding that had only been added to make the
+    temporary strip fit.
+  - `Admin` remains permission-based through the existing `canUseAdminTools`
+    logic in `AppLayout`; it is not forced on for non-admin users.
+
+- Routes/screens affected:
+  - `/app/loans`
+  - `/app/loan-readiness`
+  - `/app/loan-suggestions`
+  - `/app/loan-workbench`
+  - `/app/guarantor-earnings`
+  - `/app/payment/pool`
+  - `/app/payment-rails`
+  - `/app/payout-details`
+  - `/app/payment/loans/:loanId`
+  - `/app/withdrawal-instructions`
+  - plus the page-local cleanup on:
+    - `/app/loan-summary/:id`
+    - `/app/guarantor-inbox`
+    - `/app/revenue-allocation`
+    - `/app/borrower-preflight`
+    - `/app/loan-decision`
+
+- Practical meaning:
+  - Loans now returns to the same app-wide domain rail already used elsewhere,
+    including `Trust` and, where permitted, `Admin`.
+  - This keeps the major-domain movement in the shared shell rather than inside
+    route-local substitute cards.
+
+- Verification:
+  - `npm exec -- eslint src/layout/AppLayout.tsx src/pages/LoansPage.tsx src/pages/LoanWorkbenchPage.tsx src/pages/LoanReadinessPage.tsx src/pages/LoanSuggestionsPage.tsx src/pages/LoanSummaryPage.tsx src/pages/RepaymentPage.tsx src/pages/GuarantorInboxPage.tsx src/pages/GuarantorEarningsPage.tsx src/pages/RevenueAllocationPage.tsx src/pages/BorrowerPreflightPage.tsx src/pages/LoanDecisionPage.tsx`
+    - passed with 4 pre-existing hook-dependency warnings only
+  - `npm run build`
+    - passed in `frontend/`
+
+### Loan/support color strengthening and real rail enrichment (2026-04-24)
+
+- Continued the safe deep-cleaning pass after restoring the real shared bottom rail.
+- Strengthened the real app-wide mobile bottom rail in `frontend/src/layout/AppLayout.tsx`:
+  - richer blue-white gradient
+  - stronger borders and shadows
+  - firmer active-state fill and contrast
+- Deepened the first loan/support pages so they stop reading as washed out compared with Marketplace:
+  - `frontend/src/pages/LoansPage.tsx`
+  - `frontend/src/pages/LoanWorkbenchPage.tsx`
+  - `frontend/src/pages/LoanReadinessPage.tsx`
+- Tightened:
+  - route cards
+  - helper text contrast
+  - status pills
+  - collapse buttons
+  - secondary/soft action buttons
+  - outer and inner card surfaces
+- Route behavior and backend logic were not changed in this pass.
+- Verification:
+  - `npm exec -- eslint src/layout/AppLayout.tsx src/pages/LoansPage.tsx src/pages/LoanWorkbenchPage.tsx src/pages/LoanReadinessPage.tsx`
+  - `npm run build`
+
+### Loan/support shared rail completion and inner-page strengthening (2026-04-24)
+
+- Continued the safe frontend-only cleanup in the loan/support domain.
+- Completed the shared-shell bottom-rail allowlist in `frontend/src/layout/AppLayout.tsx` for the remaining focused routes:
+  - `/app/loan-summary/:loanId`
+  - `/app/guarantor-inbox`
+  - `/app/revenue-allocation`
+  - `/app/borrower-preflight`
+  - `/app/loan-decision`
+- Deepened the next flatter inner loan/support pages so they match the richer institutional direction already applied to Loans, Workbench, and Readiness:
+  - `frontend/src/pages/LoanSuggestionsPage.tsx`
+  - `frontend/src/pages/RevenueAllocationPage.tsx`
+  - `frontend/src/pages/BorrowerPreflightPage.tsx`
+  - `frontend/src/pages/LoanDecisionPage.tsx`
+- Strengthened:
+  - outer cards
+  - inner cards
+  - stat tiles
+  - route tiles
+  - helper text contrast
+  - section labels
+  - pills/badges
+  - action buttons / links
+- Corrected one route-local navigation typo in `LoanDecisionPage.tsx`:
+  - `Guarantor Inbox` utility link now points to `/app/guarantor-inbox`
+- No backend logic, auth, permissions, schemas, or business rules changed.
+
+### Guarantor-side visual strengthening pass (2026-04-24)
+
+- Continued the same route-local deep-cleaning pattern into the guarantor inner pages:
+  - `frontend/src/pages/GuarantorInboxPage.tsx`
+  - `frontend/src/pages/GuarantorEarningsPage.tsx`
+- Deepened:
+  - outer cards
+  - inner cards
+  - stat tiles
+  - route tiles
+  - action buttons
+  - filter / collapse controls
+  - helper text contrast
+  - section labels
+  - status badges
+- Kept the work frontend-only with no backend or business-rule changes.
+
+### Repayment and loan-summary strengthening pass (2026-04-24)
+
+- Continued the same safe frontend-only tightening into the remaining lighter loan inner pages:
+  - `frontend/src/pages/RepaymentPage.tsx`
+  - `frontend/src/pages/LoanSummaryPage.tsx`
+- Deepened:
+  - page cards
+  - soft cards
+  - inner cards
+  - stat tiles
+  - route tiles
+  - badges
+  - helper text contrast
+  - section labels
+  - primary / secondary / soft action buttons
+  - collapse controls
+- Purpose of the pass:
+  - keep the loan/support inner pages visually aligned with the richer Marketplace and updated loan pages
+  - make buttons feel firmer and less washed out on phone without touching business logic
+- Verification:
+  - `npm exec -- eslint src/pages/RepaymentPage.tsx src/pages/LoanSummaryPage.tsx src/pages/GuarantorInboxPage.tsx src/pages/GuarantorEarningsPage.tsx`
+  - `npm run build`
+- Current lint warnings still present but pre-existing / not introduced in this pass:
+  - `frontend/src/pages/GuarantorInboxPage.tsx` missing dependency warning for `loadInbox`
+  - `frontend/src/pages/LoanSummaryPage.tsx` missing dependency warning for `refreshAll`
+
+### Payment and payout inner-page strengthening pass (2026-04-24)
+
+- Continued the same safe frontend-only deep-cleaning pass into the money-path inner pages:
+  - `frontend/src/pages/PaymentInstructionsPage.tsx`
+  - `frontend/src/pages/PaymentRailsPage.tsx`
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+  - `frontend/src/pages/PayoutDetailsPage.tsx`
+- Strengthened:
+  - page cards
+  - soft cards
+  - inner cards
+  - stat tiles
+  - route tiles where present
+  - helper text contrast
+  - section labels
+  - status pills/badges
+  - primary / secondary / soft action buttons
+  - collapse controls
+  - input fields
+- Purpose of the pass:
+  - bring the payment and payout path up to the richer institutional standard already applied to loans and marketplace
+  - make the button rows and input controls feel firmer on phone without touching route behavior or money logic
+- Verification:
+  - `npm exec -- eslint src/pages/PaymentInstructionsPage.tsx src/pages/PaymentRailsPage.tsx src/pages/WithdrawalInstructionsPage.tsx src/pages/PayoutDetailsPage.tsx`
+  - `npm run build`
+- Current lint warnings still present but pre-existing / not introduced in this pass:
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx` missing dependency warning for `loadPage`
+
+### Dashboard upload button stabilization and targeted inner-page cleanup (2026-04-25)
+
+- Tightened the dashboard profile-picture upload/change control in
+  `frontend/src/pages/DashboardPage.tsx` without touching the frozen Market
+  Wisdom area.
+- The dashboard avatar action button now uses the proper action-button guard
+  path, with firmer chrome for phone taps:
+  - stronger border
+  - richer white/blue gradient
+  - deeper shadow
+  - slightly larger tap target
+  - `translateZ(0)` / `pointerEvents: auto` / stronger z-index
+- Removed the now-unused `dashboardPointerGuardProps()` helper after switching
+  the avatar button fully onto `dashboardButtonGuardProps()`.
+- Continued the same safe frontend-only strengthening into the marketplace/join
+  inner route family:
+  - `frontend/src/pages/MarketplaceWorkspacePage.tsx`
+  - `frontend/src/pages/JoinEntryPage.tsx`
+- Marketplace Workspace updates:
+  - switched local surfaces onto the shared institutional surface helpers
+  - deepened the main inner cards
+  - strengthened the shared button chrome
+  - applied local press guards to the real action buttons so taps feel steadier
+    on phone
+- Join Entry updates:
+  - switched the request-launcher card onto the shared institutional inner-card
+    surface so it no longer reads flatter than the newer pages
+- Verification:
+  - `npm exec -- eslint src/pages/DashboardPage.tsx src/pages/MarketplaceWorkspacePage.tsx src/pages/JoinEntryPage.tsx`
+  - `npm run build`
+- Result:
+  - targeted eslint passed cleanly
+  - frontend build passed
+
+### Spotlight recovery for stale community selection (2026-04-25)
+
+- Investigated the report that some invited members could reach the dashboard
+  but could not see the admin's live spotlight or same-community shop
+  experience.
+- Confirmed from local data that clan `3` already has active members, an active
+  shop, active community-visible products, and active marketplace broadcasts, so
+  the missing spotlight was not caused by missing source data.
+- Traced the likely break to stale `gmfn_selected_clan_id` state on some phones:
+  `getMarketplaceBroadcasts(...)` was implicitly reusing that stored clan id and
+  throwing a `403` before it could fall back to broader active-community data.
+- Applied the smallest safe recovery in
+  `frontend/src/lib/api.ts`:
+  - `getMarketplaceBroadcasts(...)` now treats `403` on an implicitly inherited
+    stored clan the same way it already treated `400` on the scoped attempts
+    and continues to the fallback attempts instead of hard-failing immediately
+  - explicit caller-provided clan ids still keep their normal stricter behavior
+  - `getCurrentClan()` now self-heals a stale stored clan id back to the first
+    active clan row returned by `/clans/me`, so later route loads can recover
+    cleanly instead of preserving the dead selection forever
+- Purpose of the pass:
+  - restore spotlight visibility on phones carrying stale community selection
+    without changing backend rules or broad selection behavior
+  - reduce one concrete same-community visibility lapse before auditing
+    notifications or deeper membership activation paths
+- Verification:
+  - `npm run build`
+- Current lint state:
+  - `npm exec -- eslint src/lib/api.ts` still reports pre-existing file-wide
+    errors unrelated to this change (`no-empty`, unused `_payload`)
+
+### Join-review notifications now reach all active reviewers (2026-04-25)
+
+- Investigated the report that one community member could approve a join request
+  but the second active person did not receive the join-review notification.
+- Confirmed from code that the mismatch was real and system-level:
+  - `vote_join_request(...)` already allows any active clan member to vote
+  - `create_join_request(...)` was only notifying memberships with role
+    `"admin"`
+- Applied the smallest safe backend fix in
+  `gmfn_backend/app/api/routes/clans.py`:
+  - new join requests now notify all active memberships in the clan, not only
+    admins
+  - recipients are deduplicated by `user_id` before notifications are created
+- Added a focused regression test in
+  `gmfn_backend/tests/test_join_requests.py` to prove that a normal active
+  member receives the `approval_request` notification alongside the admin.
+- Purpose of the pass:
+  - align the join-review notification audience with the actual voting rule
+  - remove the product mismatch where the system could require multiple
+    approvals but only alert admins
+- Verification:
+  - `python -m py_compile app/api/routes/clans.py tests/test_join_requests.py`
+  - `python -m pytest tests/test_join_requests.py -q`
+- Result:
+  - compile passed
+  - join-request suite passed: `13 passed`
+
+### Join status pages now keep community and marketplace identity separate (2026-04-25)
+
+- Investigated the report that a join-status screen could show a request tied to
+  `GMFN-C-000003` while displaying an unexpected community name, creating the
+  impression that lineage was being mixed together.
+- Confirmed from local backend data that community code and community name can
+  already be returned separately from the status endpoint, but the frontend
+  status surfaces were still blending `community_name` and `marketplace_name`
+  together in places.
+- Updated:
+  - `frontend/src/pages/JoinRequestPendingPage.tsx`
+  - `frontend/src/pages/JoinApprovalPage.tsx`
+- Changes made:
+  - `JoinRequestPendingPage` now loads live backend status by `request_id`
+    through `getJoinApprovalStatus(...)` instead of relying only on carried
+    route state or query params
+  - both pending and approval pages now treat:
+    - `community_name`
+    - `community_code`
+    - `marketplace_name`
+    as separate identity fields instead of collapsing community and marketplace
+    into one fallback label
+  - both pages now show `Community`, `Community ID`, and `Community / Market`
+    separately whenever those values are available
+- Purpose of the pass:
+  - make request lineage easier to audit visually
+  - reduce confusion when a request is being traced across invite, pending, and
+    approval surfaces
+- Verification:
+  - `npm exec -- eslint src/pages/JoinRequestPendingPage.tsx src/pages/JoinApprovalPage.tsx`
+  - `npm run build`
+- Result:
+  - frontend build passed
+  - targeted eslint passed cleanly after memoizing the carried route state on
+    `JoinRequestPendingPage`
+
+### Reviewer notifications now refresh faster on Dashboard and Notifications (2026-04-25)
+
+- Investigated the report that testers could submit a join request and see the
+  pending state on their side, but reviewer phones were not seeing the review
+  notification quickly enough.
+- Confirmed from code that the backend notification audience mismatch had
+  already been fixed earlier in the day; the next practical gap was frontend
+  refresh cadence:
+  - `frontend/src/pages/DashboardPage.tsx` was loading notice items only once
+    on mount
+  - `frontend/src/pages/NotificationsPage.tsx` was polling every `60000ms`
+    with no `focus` / `visibilitychange` recovery
+- Applied the smallest safe reviewer-facing refresh fix:
+  - `DashboardPage.tsx`
+    - pending join requests now refresh on:
+      - initial load
+      - `window.focus`
+      - `document.visibilitychange`
+      - a `15000ms` interval
+    - notice items now refresh on:
+      - initial load
+      - `window.focus`
+      - `document.visibilitychange`
+      - a `15000ms` interval
+  - `NotificationsPage.tsx`
+    - full notification/guidance load now refreshes on:
+      - initial load
+      - `window.focus`
+      - `document.visibilitychange`
+      - a `15000ms` interval instead of `60000ms`
+- Purpose of the pass:
+  - make reviewer phones pick up newly created join-review notifications sooner
+    without adding a broader real-time channel
+  - reduce the gap between backend notification creation and visible reviewer UI
+- Verification:
+  - `npm exec -- eslint src/pages/DashboardPage.tsx src/pages/NotificationsPage.tsx`
+  - `npm run build`
+- Result:
+  - targeted eslint passed cleanly
+  - frontend build passed
+
+### Pilot admin override added for blocked join approvals (2026-04-25)
+
+- Investigated the product-owner request to let a tester continue when a join
+  request is blocked waiting for an unknown second reviewer.
+- Confirmed the existing backend rule was still valid:
+  - active community members can vote on a join request
+  - required approvals can remain greater than one when the community already
+    has multiple active memberships
+- Added a **pilot-only admin override** so the community admin can approve a
+  pending join request without waiting for the second reviewer during testing.
+- Backend changes:
+  - `gmfn_backend/app/api/routes/clans.py`
+  - `gmfn_backend/tests/test_join_requests.py`
+- Frontend changes:
+  - `frontend/src/lib/api.ts`
+  - `frontend/src/pages/CommunityJoinRequestsPage.tsx`
+- New behavior:
+  - `GET /clans/{clan_id}/join-requests` now returns:
+    - `reviewer_role`
+    - `reviewer_can_pilot_approve`
+  - new backend route:
+    - `POST /clans/{clan_id}/join-requests/{join_request_id}/pilot-approve`
+  - the community join-requests page now shows:
+    - reviewer-role context
+    - a pilot explanation card for admins
+    - `Approve Now (Pilot)` on pending requests when the signed-in reviewer is
+      an admin
+- Important scope:
+  - this does **not** remove the normal multi-reviewer rule for everyone
+  - it adds a reversible pilot-unblock path for admins only
+  - the override reuses the existing approval flow, so GMFN/GSN ID issuance,
+    membership activation, and approval-result payloads stay aligned with the
+    normal approval path
+- Extra hardening:
+  - `list_join_requests(...)` now reads community name safely from a slim clan
+    object during tests instead of assuming `clan.name` is always present
+  - `CommunityJoinRequestsPage.tsx` now uses a real local reviewer-role badge
+    style instead of the missing `badge(...)` helper that had broken the build
+- Verification:
+  - `python -m pytest tests/test_join_requests.py -q`
+  - `npm exec -- eslint src/pages/CommunityJoinRequestsPage.tsx`
+  - `npm run build`
+- Result:
+  - backend join-request suite passed: `15 passed`
+  - targeted eslint on `CommunityJoinRequestsPage.tsx` now has only one
+    pre-existing hook-dependency warning for `load`
+  - frontend build passed
+
+### Local testing data cleanup for community `GMFN-C-000003` (2026-04-25)
+
+- The product owner confirmed that:
+  - `GMFN-U-A66CF7C0`
+  - `GMFN-U-38EAA738`
+  belonged to older duplicate-community testing and should no longer appear in
+  the active membership line for `Aberdeen city ICA` /
+  `Aberdeen city marketplace`.
+- Confirmed from local DB before cleanup:
+  - both users still had active `clan_memberships` rows in clan `3`
+  - their older memberships in deleted/older clans were already closed with
+    `left_at`
+- Applied the smallest reversible cleanup in the local testing DB only:
+  - set `left_at` on the active clan-`3` memberships for those two users
+  - did **not** hard-delete users or historical join-request rows
+- Resulting local state for community `GMFN-C-000003`:
+  - active members: `1`
+  - remaining active member:
+    - `admin@test.com` / `GMFN-U-9867079C`
+- Important:
+  - this was a **local data cleanup**, not a backend code change
+  - approved historical join-request rows for those users still exist in local
+    DB for traceability
+  - if the same cleanup is needed on live Render, it must be done against the
+    live production data separately
+
+### `Default Clan` hidden when a real community exists (2026-04-25)
+
+- The product owner flagged that `Default Clan` was still appearing in
+  `Community Home` like a normal created community, which was confusing because
+  it is a system fallback rather than a real user-intended community.
+- Re-confirmed from backend code:
+  - `gmfn_backend/app/core/clan_auth.py`
+  - `get_or_create_default_clan()` creates `Default Clan` automatically
+  - `get_current_clan_membership()` can still fall back into that clan when a
+    request arrives without an explicit clan header
+- Applied the smallest safe frontend fix in:
+  - `frontend/src/lib/api.ts`
+- New behavior:
+  - `listMyClans()` now filters `Default Clan` out of the visible community list
+    whenever the user already has at least one real community
+  - if `Default Clan` is the only clan available, it is still returned so the
+    app keeps its fallback context
+  - this improves:
+    - `Community Home`
+    - any screen using `listMyClans()` or `getCurrentClan()`
+- Important scope:
+  - this does **not** remove the backend fallback itself
+  - this is a presentation/selection cleanup so `Default Clan` stops posing as a
+    normal user community in the frontend
+- Verification:
+  - `npm run build`
+- Result:
+  - frontend build passed
+
+### Invite join lane audit and steadier activation handoff (2026-04-25)
+
+- The product owner asked for a route-truth audit of the public invite flow for
+  joining an already existing community because the lane was feeling unstable
+  and not app-led enough.
+- Audited the real chain across backend and frontend:
+  - frontend:
+    - `frontend/src/pages/JoinEntryPage.tsx`
+    - `frontend/src/pages/JoinRequestPendingPage.tsx`
+    - `frontend/src/pages/JoinApprovalPage.tsx`
+    - `frontend/src/pages/MemberActivationPage.tsx`
+    - `frontend/src/lib/api.ts`
+  - backend:
+    - `gmfn_backend/app/api/routes/clans.py`
+    - `gmfn_backend/tests/test_join_requests.py`
+- Confirmed backend truth before changes:
+  - public invite preview exists
+  - join request submission exists
+  - reviewers are notified on submission
+  - approval generates `GMFN ID`, activation message, and activation link
+  - status route already exposes approval status and activation details
+- Confirmed weak points before changes:
+  - `JoinEntryPage` still left too much manual movement after submit
+  - `JoinRequestPendingPage` only checked approval status once, so a person
+    could sit there without a steady continuation
+  - approval notification used a generic `/activate-membership` route instead
+    of the exact activation path the backend already knew
+- Applied the smallest system-level fixes:
+  - backend `gmfn_backend/app/api/routes/clans.py`
+    - added `_frontend_activation_path(...)`
+    - activation package now carries both:
+      - `activation_path`
+      - `activation_link`
+    - approval-success notification now points to the exact activation route
+      with `gmfn_id` and `request_id`
+    - join-request status fallback now rebuilds activation path/link with
+      `request_id` included
+  - frontend `frontend/src/pages/JoinEntryPage.tsx`
+    - when a live invite is ready, the request form now opens automatically
+    - after successful join submission, the user is pushed directly into the
+      pending-review lane instead of being left to decide what to do next
+  - frontend `frontend/src/pages/JoinRequestPendingPage.tsx`
+    - approval status now polls every 8 seconds
+    - when approved, the page forwards the user into activation with the exact
+      activation path / identity context
+    - when rejected, the page forwards into the approval-status page instead of
+      leaving the user in a stale pending screen
+- Verification:
+  - frontend build: `npm run build`
+  - backend tests: `.\\.venv\\Scripts\\python -m pytest tests/test_join_requests.py`
+- Result:
+  - frontend build passed
+  - backend join-request suite passed: `15 passed`
+
+### Forced `Default Clan` fallback removed (2026-04-25)
+
+- The product owner confirmed that nobody should be forced into a default
+  community and that `Default Clan` should stop appearing as the first
+  community option.
+- Re-audited the real system-level behavior:
+  - `gmfn_backend/app/core/clan_auth.py`
+  - `gmfn_backend/app/api/routes/clans.py`
+  - `gmfn_backend/app/services/clans_service.py`
+  - `frontend/src/lib/api.ts`
+- Confirmed backend truth before this pass:
+  - `get_current_clan_membership()` still fell back to `Default Clan` when a
+    user had no real active community
+  - visible clan filtering still allowed `Default Clan` through when it was the
+    only membership
+  - normal clan join/select routes did not block `Default Clan`
+- Applied the smallest safe system-level change:
+  - backend `gmfn_backend/app/core/clan_auth.py`
+    - removed automatic fallback to `Default Clan`
+    - `list_visible_user_clans()` now returns only real communities
+    - `get_current_clan_membership()` now raises a clear
+      `No community selected. Create or join a community first.` error when the
+      user has no real community instead of auto-assigning one
+  - backend `gmfn_backend/app/services/clans_service.py`
+    - `list_my_clans()` now excludes `Default Clan` completely
+  - backend `gmfn_backend/app/api/routes/clans.py`
+    - normal `join` and `select` routes now refuse `Default Clan`
+  - frontend `frontend/src/lib/api.ts`
+    - `listMyClans()` filtering now excludes `Default Clan` even when it is the
+      only row returned
+- Local database check:
+  - local DB still contains an old `Default Clan` row
+  - active memberships in that clan are now `0`
+  - no additional local data cleanup was needed because there were no active
+    forced memberships left
+- Verification:
+  - frontend build: `npm run build`
+  - backend tests:
+    - `.\\.venv\\Scripts\\python -m pytest tests/test_join_requests.py tests/test_default_clan_removal.py`
+- Result:
+  - frontend build passed
+  - backend tests passed: `17 passed`
+- Important remaining product note:
+  - the lane is now steadier and more app-led, but the user-facing copy can
+    still be simplified further if the product owner wants an even stronger
+    “the app leads every next step” tone before freezing this route

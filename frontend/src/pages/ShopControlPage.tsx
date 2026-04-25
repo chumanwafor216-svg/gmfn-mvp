@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
@@ -18,6 +18,11 @@ import {
   prepareSpotlightImageFile,
   prepareSpotlightVideoFile,
 } from "../lib/spotlightMediaPrep";
+import {
+  SPOTLIGHT_MAX_IMAGE_BYTES,
+  SPOTLIGHT_MAX_VIDEO_BYTES,
+  SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+} from "../lib/spotlightPilot";
 import { publicFrontendUrl } from "../lib/publicLinks";
 
 type ShopRecord = {
@@ -148,8 +153,6 @@ const SPOTLIGHT_ALLOWED_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
 const SPOTLIGHT_ALLOWED_VIDEO_EXTENSIONS = [".mp4", ".webm", ".mov"];
 const SPOTLIGHT_ALLOWED_IMAGE_LABEL = "JPG, PNG, or WebP";
 const SPOTLIGHT_ALLOWED_VIDEO_LABEL = "MP4, WebM, or MOV";
-const SPOTLIGHT_MAX_IMAGE_BYTES = 10 * 1024 * 1024;
-const SPOTLIGHT_MAX_VIDEO_BYTES = 10 * 1024 * 1024;
 
 function firstTruthy(...values: unknown[]): string {
   for (const value of values) {
@@ -226,7 +229,7 @@ function validateSpotlightVideoFile(
   if (enforceSize && Number(file.size || 0) > SPOTLIGHT_MAX_VIDEO_BYTES) {
     return `Video is ${formatFileSize(
       file.size
-    )}. Spotlight videos must be 10 MB or smaller.`;
+    )}. Spotlight videos must be 15 MB or smaller.`;
   }
 
   return "";
@@ -371,11 +374,16 @@ function badge(primary = false): React.CSSProperties {
 
 const stableTapTarget: React.CSSProperties = {
   position: "relative",
-  zIndex: 2,
+  zIndex: 10,
   isolation: "isolate",
+  pointerEvents: "auto",
   WebkitTapHighlightColor: "transparent",
   touchAction: "manipulation",
   userSelect: "none",
+  appearance: "none",
+  WebkitAppearance: "none",
+  boxSizing: "border-box",
+  outlineOffset: 4,
   transform: "translateZ(0)",
 };
 
@@ -383,14 +391,23 @@ function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
   event?.stopPropagation();
 }
 
+function runGuardedButtonAction(
+  event: React.SyntheticEvent<HTMLElement>,
+  action: () => void
+) {
+  guardButtonPress(event);
+  action();
+}
+
 function buttonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown"
+  "onPointerDown" | "onTouchStart" | "onMouseDown" | "onClickCapture"
 > {
   return {
     onPointerDown: guardButtonPress,
     onTouchStart: guardButtonPress,
     onMouseDown: guardButtonPress,
+    onClickCapture: guardButtonPress,
   };
 }
 
@@ -404,7 +421,7 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 44,
+      minHeight: 48,
       padding: "10px 16px",
       borderRadius: 16,
       border: disabled ? "1px solid rgba(148,163,184,0.45)" : "1px solid rgba(112,74,14,0.52)",
@@ -418,6 +435,7 @@ function actionBtn(
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
+      overflowWrap: "anywhere",
       opacity: disabled ? 0.86 : 1,
       boxShadow: disabled
         ? "none"
@@ -432,7 +450,7 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 40,
+      minHeight: 48,
       padding: "9px 13px",
       borderRadius: 14,
       border: disabled ? "1px solid rgba(148,163,184,0.38)" : "1px solid rgba(212,175,55,0.32)",
@@ -446,6 +464,7 @@ function actionBtn(
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
+      overflowWrap: "anywhere",
       opacity: disabled ? 0.86 : 1,
       lineHeight: 1.15,
       boxShadow:
@@ -458,7 +477,7 @@ function actionBtn(
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 42,
+    minHeight: 48,
     padding: "10px 14px",
     borderRadius: 15,
     border: disabled ? "1px solid rgba(148,163,184,0.38)" : "1px solid rgba(212,175,55,0.30)",
@@ -472,6 +491,7 @@ function actionBtn(
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
+    overflowWrap: "anywhere",
     opacity: disabled ? 0.86 : 1,
     lineHeight: 1.15,
     boxShadow:
@@ -495,6 +515,7 @@ function fullButton(style: React.CSSProperties): React.CSSProperties {
     ...style,
     width: "100%",
     minWidth: 0,
+    alignSelf: "stretch",
   };
 }
 
@@ -775,12 +796,12 @@ export default function ShopControlPage() {
     setNotice({ tone, text });
   }
 
-  function clearHashScrollRetryTimers() {
+  const clearHashScrollRetryTimers = useCallback(() => {
     hashScrollRetryTimersRef.current.forEach((timerId) => {
       window.clearTimeout(timerId);
     });
     hashScrollRetryTimersRef.current = [];
-  }
+  }, []);
 
   function clearSpotlightDraft() {
     spotlightImagePrepJobRef.current += 1;
@@ -798,7 +819,7 @@ export default function ShopControlPage() {
     setSpotlightPriorityMode("free");
   }
 
-  async function loadPage() {
+  const loadPage = useCallback(async () => {
     setLoading(true);
 
     try {
@@ -899,9 +920,12 @@ export default function ShopControlPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [selectedClanId]);
 
-  function scrollToControlTarget(targetId: string, attempt = 0) {
+  const scrollToControlTarget = useCallback(function scrollToControlTarget(
+    targetId: string,
+    attempt = 0
+  ) {
     if (typeof window === "undefined" || typeof document === "undefined") return;
 
     const target = document.getElementById(targetId);
@@ -923,7 +947,7 @@ export default function ShopControlPage() {
       }, 100);
       hashScrollRetryTimersRef.current.push(retryTimer);
     }
-  }
+  }, [clearHashScrollRetryTimers]);
 
   useEffect(() => {
     void loadPage();
@@ -950,7 +974,7 @@ export default function ShopControlPage() {
       window.removeEventListener("focus", handleFocusRefresh);
       document.removeEventListener("visibilitychange", handleVisibilityRefresh);
     };
-  }, [selectedClanId]);
+  }, [loadPage]);
 
   useEffect(() => {
     return () => {
@@ -1007,7 +1031,7 @@ export default function ShopControlPage() {
       hashScrollTimerRef.current = null;
       scrollToControlTarget(targetId);
     }, targetId === "shop-control-spotlight" ? 140 : 40);
-  }, [loading, location.hash]);
+  }, [loading, location.hash, scrollToControlTarget]);
 
   const publicProducts = useMemo(
     () =>
@@ -1375,12 +1399,13 @@ export default function ShopControlPage() {
     }
   }
 
-  function openSpotlightTools() {
+  function openSpotlightTools(event?: React.SyntheticEvent<HTMLElement>) {
+    guardButtonPress(event);
     setSpotlightOpen(true);
 
     window.setTimeout(() => {
       scrollToControlTarget("shop-control-spotlight");
-    }, 80);
+    }, 24);
   }
 
   function collapseSpotlightTools(event?: React.SyntheticEvent<HTMLElement>) {
@@ -1394,7 +1419,7 @@ export default function ShopControlPage() {
     spotlightCollapseTimerRef.current = window.setTimeout(() => {
       spotlightCollapseTimerRef.current = null;
       setSpotlightOpen(false);
-    }, 90);
+    }, 24);
   }
 
   async function createVaultInstruction(quantityTotal: 1 | 6) {
@@ -1645,7 +1670,7 @@ export default function ShopControlPage() {
       setPreparingSpotlightVideo(true);
       const prepared = await prepareSpotlightVideoFile(file, {
         maxBytes: SPOTLIGHT_MAX_VIDEO_BYTES,
-        maxDurationSeconds: 5,
+        maxDurationSeconds: SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
       });
 
       if (spotlightVideoPrepJobRef.current !== prepJob) return;
@@ -1669,6 +1694,21 @@ export default function ShopControlPage() {
       }
     } catch (err: any) {
       if (spotlightVideoPrepJobRef.current !== prepJob) return;
+
+      const canUseOriginalForPilot =
+        Number(file.size || 0) <= SPOTLIGHT_MAX_VIDEO_BYTES &&
+        !validateSpotlightVideoFile(file, true);
+
+      if (canUseOriginalForPilot) {
+        setSpotlightVideoFile(file);
+        setSpotlightVideoDurationSeconds(null);
+        showNotice(
+          "info",
+          "This phone could not trim the video automatically, so GSN will use the uploaded file for today's pilot and play it as a 10-second spotlight clip."
+        );
+        return;
+      }
+
       showNotice(
         "error",
         safeStr(err?.message) || "This video could not be prepared for spotlight publish."
@@ -1740,7 +1780,10 @@ export default function ShopControlPage() {
       if (spotlightVideoFile) {
         const uploadRes = await uploadMarketplaceVideoFile(
           spotlightVideoFile,
-          spotlightVideoDurationSeconds,
+          spotlightVideoDurationSeconds != null &&
+            spotlightVideoDurationSeconds <= SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS
+            ? spotlightVideoDurationSeconds
+            : null,
           selectedClanId || null
         );
         videoUrl = firstTruthy(
@@ -1824,17 +1867,22 @@ export default function ShopControlPage() {
       }}
     >
       <PageTopNav
-        sectionLabel="Shop Control"
-        title="Shop Control"
-        subtitle="Keep your shop picture, products, Vault, and spotlight together under your GSN ID."
+        sectionLabel="Owner Shop Control"
+        title="Shop Owner Control"
+        subtitle="Owner backstage for your one GSN shop. The public Shop Gallery stays visitor-facing."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/marketplace"
         backLabel="Marketplace"
         nextLinks={[
           { label: "Shop Assets", to: "/app/shop-assets" },
+          {
+            label: "Public Shop Face",
+            to: publicShopLink || "/app/marketplace",
+            disabled: !publicShopLink,
+          },
           { label: "TrustSlip", to: "/app/trust-slip" },
-          { label: "Marketplace", to: "/app/marketplace" },
+          { label: "Community Marketplace", to: "/app/marketplace" },
         ]}
         utilityLinks={[
           { label: "Community Home", to: "/app/community" },
@@ -1859,7 +1907,7 @@ export default function ShopControlPage() {
           }}
         >
           <div>
-            <div style={{ ...sectionLabel(), color: "#F6D77A" }}>Your shop room</div>
+            <div style={{ ...sectionLabel(), color: "#F6D77A" }}>Owner backstage</div>
 
             <div
               style={{
@@ -1881,8 +1929,9 @@ export default function ShopControlPage() {
                 color: "#D7E3F1",
               }}
             >
-              Use this page to update your shop face, manage products, prepare spotlight,
-              and keep Vault private until you choose to open it.
+              Use this owner page to shape the public shop face, manage products,
+              prepare live spotlight, and keep Vault private until you deliberately
+              release selected access.
             </div>
 
             <div
@@ -1918,7 +1967,8 @@ export default function ShopControlPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={() => {
+                onClick={(event) => {
+                  guardButtonPress(event);
                   if (publicShopLink) {
                     window.open(publicShopLink, "_blank", "noopener,noreferrer");
                   }
@@ -1926,21 +1976,25 @@ export default function ShopControlPage() {
                 style={fullButton(actionBtn("secondary", !publicShopLink))}
                 disabled={!publicShopLink}
               >
-                View Public Shop
+                Open Public Shop Face
               </button>
 
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
+                onClick={(event) =>
+                  runGuardedButtonAction(event, () =>
+                    copyText(publicShopLink, "Shop gallery link copied.")
+                  )
+                }
                 style={fullButton(actionBtn("secondary", !publicShopLink))}
                 disabled={!publicShopLink}
               >
-                Copy Shop Link
+                Copy Public Shop Face Link
               </button>
 
               <OriginLink to="/app/trust-slip" style={fullButton(actionBtn("soft"))}>
-                Verify Shop
+                Open TrustSlip
               </OriginLink>
             </div>
           </div>
@@ -2017,13 +2071,14 @@ export default function ShopControlPage() {
                   onClick={openSpotlightTools}
                   style={fullButton(actionBtn("primary"))}
                 >
-                  Open Ordinary Spotlight
+                  Open Spotlight Publisher
                 </button>
               ) : (
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={() => {
+                  onClick={(event) => {
+                    guardButtonPress(event);
                     if (publicShopLink) {
                       window.open(publicShopLink, "_blank", "noopener,noreferrer");
                     }
@@ -2031,7 +2086,7 @@ export default function ShopControlPage() {
                   style={fullButton(actionBtn("primary", !publicShopLink))}
                   disabled={!publicShopLink}
                 >
-                  View Shop
+                  Open Public Shop Face
                 </button>
               )}
 
@@ -2067,12 +2122,13 @@ export default function ShopControlPage() {
               boxShadow: "0 16px 34px rgba(2,12,27,0.10)",
             }}
           >
-            <div style={sectionLabel()}>Vault</div>
+            <div style={sectionLabel()}>Private Vault</div>
             <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 18, fontWeight: 900 }}>
-              Private shop gallery
+              Private viewing by trust link
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-              Activate Vault when you want selected people to see private offers.
+              Activate Vault when you want selected people to open private offers
+              through a trusted access link.
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(true)}>Vault items: {vaultProducts.length} / 6</span>
@@ -2108,7 +2164,9 @@ export default function ShopControlPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={() => void createVaultInstruction(1)}
+                onClick={(event) =>
+                  runGuardedButtonAction(event, () => void createVaultInstruction(1))
+                }
                 disabled={shopActionsLocked || creatingVaultInstruction}
                 style={fullButton(actionBtn("primary", shopActionsLocked || creatingVaultInstruction))}
               >
@@ -2121,7 +2179,9 @@ export default function ShopControlPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={() => void createVaultInstruction(6)}
+                onClick={(event) =>
+                  runGuardedButtonAction(event, () => void createVaultInstruction(6))
+                }
                 disabled={shopActionsLocked || creatingVaultInstruction}
                 style={fullButton(actionBtn("secondary", shopActionsLocked || creatingVaultInstruction))}
               >
@@ -2133,7 +2193,9 @@ export default function ShopControlPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={() => void createVaultViewingLink()}
+                onClick={(event) =>
+                  runGuardedButtonAction(event, () => void createVaultViewingLink())
+                }
                 disabled={
                   shopActionsLocked ||
                   creatingVaultLink ||
@@ -2148,15 +2210,15 @@ export default function ShopControlPage() {
                   ? "Review Identity First"
                   : creatingVaultLink
                   ? "Creating..."
-                  : "Create Vault link"}
+                  : "Create Vault access link"}
               </button>
             </div>
           </div>
 
           <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
-            <div style={sectionLabel()}>Verify shop</div>
+            <div style={sectionLabel()}>TrustSlip verification</div>
             <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 18, fontWeight: 900 }}>
-              Public verification
+              Visitor verification
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
               Let visitors confirm this shop through your TrustSlip verification page.
@@ -2204,7 +2266,11 @@ export default function ShopControlPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={() => void createMerchantVerifyInstruction()}
+                onClick={(event) =>
+                  runGuardedButtonAction(event, () =>
+                    void createMerchantVerifyInstruction()
+                  )
+                }
                 disabled={shopActionsLocked || creatingMerchantVerifyInstruction}
                 style={fullButton(actionBtn(
                   "primary",
@@ -2227,7 +2293,7 @@ export default function ShopControlPage() {
                   rel="noreferrer"
                   style={fullButton(actionBtn("secondary"))}
                 >
-                  Open verification link
+                  Open public verification
                 </a>
               ) : null}
             </div>
@@ -2242,7 +2308,7 @@ export default function ShopControlPage() {
               Paid spotlight
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-              Use paid spotlight when you want priority visibility after confirmation.
+              Use paid spotlight when you want this shop to take priority in community-facing visibility after confirmation.
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(true)}>Active paid spotlights: {activePaidSpotlights.length}</span>
@@ -2300,7 +2366,11 @@ export default function ShopControlPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={() => void createSpotlightInstruction()}
+                onClick={(event) =>
+                  runGuardedButtonAction(event, () =>
+                    void createSpotlightInstruction()
+                  )
+                }
                 disabled={shopActionsLocked || creatingSpotlightInstruction}
                 style={fullButton(actionBtn("primary", shopActionsLocked || creatingSpotlightInstruction))}
               >
@@ -2316,7 +2386,7 @@ export default function ShopControlPage() {
                 onClick={openSpotlightTools}
                 style={fullButton(actionBtn("secondary"))}
               >
-                Open Spotlight Publisher
+                Open Spotlight Backstage
               </button>
             </div>
           </div>
@@ -2327,7 +2397,7 @@ export default function ShopControlPage() {
         id="shop-control-picture-gallery"
         style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 82%, #FFF7D8 100%)")}
       >
-        <div style={sectionLabel()}>Picture and public gallery</div>
+        <div style={sectionLabel()}>Public shop face</div>
 
         <div
           style={{
@@ -2473,7 +2543,11 @@ export default function ShopControlPage() {
                   <button
                     type="button"
                     {...buttonGuardProps()}
-                    onClick={() => void saveShopDetails({ image_url: imageUrlInput })}
+                    onClick={(event) =>
+                      runGuardedButtonAction(event, () =>
+                        void saveShopDetails({ image_url: imageUrlInput })
+                      )
+                    }
                     disabled={shopActionsLocked || savingShop || uploadingImage}
                     style={fullButton(actionBtn("primary", shopActionsLocked || savingShop || uploadingImage))}
                   >
@@ -2489,7 +2563,14 @@ export default function ShopControlPage() {
                   <button
                     type="button"
                     {...buttonGuardProps()}
-                    onClick={() => void saveShopDetails({ clear_image: true, image_url: null })}
+                    onClick={(event) =>
+                      runGuardedButtonAction(event, () =>
+                        void saveShopDetails({
+                          clear_image: true,
+                          image_url: null,
+                        })
+                      )
+                    }
                     disabled={
                       shopActionsLocked || savingShop || uploadingImage || !safeStr(imageUrlInput)
                     }
@@ -2505,7 +2586,7 @@ export default function ShopControlPage() {
             </div>
 
             <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
-              <div style={sectionLabel()}>Gallery</div>
+              <div style={sectionLabel()}>Public shop links</div>
 
               <div style={{ marginTop: 12, ...controlGrid(isCompact, 132) }}>
                 <OriginLink to="/app/shop-assets" style={fullButton(actionBtn("secondary"))}>
@@ -2515,7 +2596,8 @@ export default function ShopControlPage() {
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={() => {
+                  onClick={(event) => {
+                    guardButtonPress(event);
                     if (publicShopLink) {
                       window.open(publicShopLink, "_blank", "noopener,noreferrer");
                     }
@@ -2523,17 +2605,21 @@ export default function ShopControlPage() {
                   style={fullButton(actionBtn("secondary", !publicShopLink))}
                   disabled={!publicShopLink}
                 >
-                  View Public Shop
+                  Open Public Shop Face
                 </button>
 
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                    onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
+                  onClick={(event) =>
+                    runGuardedButtonAction(event, () =>
+                      copyText(publicShopLink, "Shop gallery link copied.")
+                    )
+                  }
                   style={fullButton(actionBtn("soft", !publicShopLink))}
                   disabled={!publicShopLink}
                 >
-                  Copy Link
+                  Copy Public Shop Link
                 </button>
               </div>
             </div>
@@ -2597,7 +2683,9 @@ export default function ShopControlPage() {
           <button
             type="button"
             {...buttonGuardProps()}
-            onClick={() => void saveShopDetails()}
+            onClick={(event) =>
+              runGuardedButtonAction(event, () => void saveShopDetails())
+            }
             disabled={shopActionsLocked || savingShop}
             style={fullButton(actionBtn("primary", shopActionsLocked || savingShop))}
           >
@@ -2684,7 +2772,7 @@ export default function ShopControlPage() {
           id="shop-control-spotlight"
           style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 82%, #FFF7D8 100%)")}
         >
-          <div style={sectionLabel()}>Spotlight</div>
+          <div style={sectionLabel()}>Spotlight publisher</div>
 
           <div
             style={{
@@ -2693,8 +2781,7 @@ export default function ShopControlPage() {
               maxWidth: 860,
             }}
           >
-            Prepare the message, image, or short video people will see. Close this section
-            when the spotlight is ready.
+            Prepare the message, image, or short video the public shop and community spotlight will show. Close this section when the publish draft is ready.
           </div>
 
           <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
@@ -2704,7 +2791,7 @@ export default function ShopControlPage() {
                 border: "1px solid rgba(11,31,51,0.08)",
               }}
             >
-              <div style={sectionLabel()}>Live spotlight</div>
+              <div style={sectionLabel()}>Current live spotlight</div>
               {currentActiveSpotlight ? (
                 <>
                   <div
@@ -2760,17 +2847,19 @@ export default function ShopControlPage() {
                         autoPlayVideo={Boolean(safeStr(currentActiveSpotlight?.video_url))}
                         mutedVideo={Boolean(safeStr(currentActiveSpotlight?.video_url))}
                         loopVideo={Boolean(safeStr(currentActiveSpotlight?.video_url))}
+                        maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
                       />
                     </div>
                   ) : null}
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    This spotlight stays visible until it expires or is replaced.
+                    This live community spotlight stays visible until it expires or is replaced.
                   </div>
                   <div style={{ marginTop: 12, ...controlGrid(isCompact, 132) }}>
                     <button
                       type="button"
                       {...buttonGuardProps()}
-                      onClick={() => {
+                      onClick={(event) => {
+                        guardButtonPress(event);
                         if (publicShopLink) {
                           window.open(publicShopLink, "_blank", "noopener,noreferrer");
                         }
@@ -2778,26 +2867,30 @@ export default function ShopControlPage() {
                       style={fullButton(actionBtn("secondary", !publicShopLink))}
                       disabled={!publicShopLink}
                     >
-                      Open live shop view
+                      Open public shop face
                     </button>
                     <button
                       type="button"
                       {...buttonGuardProps()}
-                      onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
+                      onClick={(event) =>
+                        runGuardedButtonAction(event, () =>
+                          copyText(publicShopLink, "Shop gallery link copied.")
+                        )
+                      }
                       style={fullButton(actionBtn("soft", !publicShopLink))}
                       disabled={!publicShopLink}
                     >
-                      Copy live link
+                      Copy public shop link
                     </button>
                   </div>
                 </>
               ) : (
                 <>
                   <div style={{ marginTop: 10, ...helperText() }}>
-                    No spotlight is live for this shop right now.
+                    No live community spotlight is active for this shop right now.
                   </div>
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    Publish a free spotlight now, or start paid spotlight after payment confirmation.
+                    Publish a free spotlight now, or start a paid spotlight after payment confirmation.
                   </div>
                 </>
               )}
@@ -2807,19 +2900,27 @@ export default function ShopControlPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={() => setSpotlightPriorityMode("free")}
+                onClick={(event) =>
+                  runGuardedButtonAction(event, () =>
+                    setSpotlightPriorityMode("free")
+                  )
+                }
                 style={
                   spotlightPriorityMode === "free"
                     ? fullButton(actionBtn("primary"))
                     : fullButton(actionBtn("secondary"))
                 }
               >
-                Free spotlight
+                Free community spotlight
               </button>
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={() => setSpotlightPriorityMode("paid")}
+                onClick={(event) =>
+                  runGuardedButtonAction(event, () =>
+                    setSpotlightPriorityMode("paid")
+                  )
+                }
                 disabled={shopActionsLocked || !canStartPaidSpotlight}
                 style={
                   spotlightPriorityMode === "paid"
@@ -2827,7 +2928,7 @@ export default function ShopControlPage() {
                     : fullButton(actionBtn("secondary", shopActionsLocked || !canStartPaidSpotlight))
                 }
               >
-                Paid spotlight
+                Paid priority spotlight
               </button>
               <span style={badge(false)}>
                 Publishing as: {spotlightPriorityMode === "paid" ? "paid priority" : "free"}
@@ -2836,12 +2937,12 @@ export default function ShopControlPage() {
 
             <div style={{ ...helperText(), fontSize: 13 }}>
               {spotlightPriorityMode === "paid"
-                ? "This publish will use your confirmed paid spotlight for priority visibility."
+                ? "This publish will use your confirmed paid spotlight for priority community visibility."
                 : canStartPaidSpotlight
-                ? "A paid spotlight is available, but you can still publish a normal free spotlight if you prefer."
+                ? "A paid spotlight is available, but you can still publish a normal free community spotlight if you prefer."
                 : safeStr(latestSpotlightPayment?.confirmed_at)
                 ? "A paid spotlight is already active for this shop. Start another one only after the current paid run ends."
-                : "Free spotlight is available now. Paid spotlight opens after payment confirmation."}
+                : "Free community spotlight is available now. Paid spotlight opens after payment confirmation."}
             </div>
 
             <textarea
@@ -2941,6 +3042,7 @@ export default function ShopControlPage() {
                     autoPlayVideo={Boolean(spotlightVideoPreviewUrl || spotlightVideoUrl)}
                     mutedVideo={Boolean(spotlightVideoPreviewUrl || spotlightVideoUrl)}
                     loopVideo={Boolean(spotlightVideoPreviewUrl || spotlightVideoUrl)}
+                    maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
                   />
                 </div>
               </div>
@@ -2950,7 +3052,9 @@ export default function ShopControlPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={() => void handleCreateSpotlight()}
+                onClick={(event) =>
+                  runGuardedButtonAction(event, () => void handleCreateSpotlight())
+                }
                 disabled={
                   shopActionsLocked ||
                   creatingSpotlight ||
@@ -3024,7 +3128,7 @@ export default function ShopControlPage() {
           "radial-gradient(circle at 16% 0%, rgba(217,172,51,0.16) 0%, rgba(217,172,51,0) 30%), linear-gradient(180deg, #071827 0%, #0B2942 56%, #123A59 100%)"
         )}
       >
-        <div style={{ ...sectionLabel(), color: "#F6D77A" }}>Vault and private access</div>
+        <div style={{ ...sectionLabel(), color: "#F6D77A" }}>Private Vault access</div>
 
         <div
           style={{
@@ -3042,7 +3146,7 @@ export default function ShopControlPage() {
                 fontSize: 16,
               }}
             >
-              Community-visible products
+              Public shelf products
             </div>
 
             <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
@@ -3077,7 +3181,7 @@ export default function ShopControlPage() {
                 fontSize: 16,
               }}
             >
-              Vault private offers
+              Private Vault offers
             </div>
 
             <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
@@ -3116,28 +3220,37 @@ export default function ShopControlPage() {
                     <button
                       type="button"
                       {...buttonGuardProps()}
-                      onClick={() => copyText(vaultLinkUrl(item), "Vault viewing link copied.")}
+                      onClick={(event) =>
+                        runGuardedButtonAction(event, () =>
+                          copyText(vaultLinkUrl(item), "Vault viewing link copied.")
+                        )
+                      }
                       style={fullButton(actionBtn("soft", !vaultLinkUrl(item)))}
                       disabled={!vaultLinkUrl(item)}
                     >
-                      Copy link
+                      Copy Vault link
                     </button>
                     <button
                       type="button"
                       {...buttonGuardProps()}
-                      onClick={() => {
+                      onClick={(event) => {
+                        guardButtonPress(event);
                         const url = vaultLinkUrl(item);
                         if (url) window.open(url, "_blank", "noopener,noreferrer");
                       }}
                       style={fullButton(actionBtn("secondary", !vaultLinkUrl(item)))}
                       disabled={!vaultLinkUrl(item)}
                     >
-                      Open link
+                      Open Vault link
                     </button>
                     <button
                       type="button"
                       {...buttonGuardProps()}
-                      onClick={() => void extendVaultViewingLink(item)}
+                      onClick={(event) =>
+                        runGuardedButtonAction(event, () =>
+                          void extendVaultViewingLink(item)
+                        )
+                      }
                       style={fullButton(actionBtn("secondary", busyVaultLinkId === Number(item.id)))}
                       disabled={busyVaultLinkId === Number(item.id)}
                     >
@@ -3146,7 +3259,11 @@ export default function ShopControlPage() {
                     <button
                       type="button"
                       {...buttonGuardProps()}
-                      onClick={() => void revokeVaultViewingLink(item)}
+                      onClick={(event) =>
+                        runGuardedButtonAction(event, () =>
+                          void revokeVaultViewingLink(item)
+                        )
+                      }
                       style={fullButton(actionBtn(
                         "secondary",
                         busyVaultLinkId === Number(item.id) ||
@@ -3165,14 +3282,17 @@ export default function ShopControlPage() {
 
               {vaultProducts.length === 0 && vaultLinks.length === 0 ? (
                 <div style={{ ...helperText(), color: "#D7E3F1" }}>
-                  Vault is not open yet. Private offers and permission-based access links will show
-                  here after you activate Vault and release access.
+                  Private Vault is not open yet. Private offers and permission-based
+                  access links will show here after you activate Vault and release
+                  access.
                 </div>
               ) : null}
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={() => void createVaultViewingLink()}
+                onClick={(event) =>
+                  runGuardedButtonAction(event, () => void createVaultViewingLink())
+                }
                 disabled={
                   shopActionsLocked ||
                   creatingVaultLink ||

@@ -4,7 +4,14 @@ import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
+  institutionalInnerCard,
+  institutionalPageCard,
+  institutionalSoftCard,
+  institutionalStatTile,
+} from "../lib/institutionalSurface";
+import {
   getCommunityJoinRequests,
+  pilotApproveJoinRequest,
   selectClan,
   voteOnJoinRequest,
 } from "../lib/api";
@@ -67,25 +74,23 @@ type VoteResponse = {
   community_id?: number;
   community_code?: string | null;
   approved_now?: boolean;
+  pilot_override?: boolean;
   approval_result?: ApprovalResult | null;
   request?: JoinRequestItem;
 };
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
+    ...institutionalPageCard(bg),
     border: "1px solid rgba(11,31,51,0.08)",
-    borderRadius: 20,
-    background: bg,
     padding: 18,
-    boxShadow: "0 12px 30px rgba(15,23,42,0.05)",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
+    ...institutionalSoftCard(bg),
     border: "1px solid rgba(11,31,51,0.08)",
-    borderRadius: 16,
-    background: bg,
     padding: 14,
   };
 }
@@ -103,15 +108,32 @@ function stableTapStyle(): React.CSSProperties {
   };
 }
 
+function consumeActionEvent(
+  event:
+    | React.MouseEvent<HTMLElement>
+    | React.PointerEvent<HTMLElement>
+    | React.TouchEvent<HTMLElement>
+) {
+  event.preventDefault();
+  event.stopPropagation();
+}
+
 function actionBtn(primary = false, disabled = false): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "10px 14px",
-    borderRadius: 12,
-    border: primary ? "none" : "1px solid rgba(11,31,51,0.12)",
-    background: disabled ? "#CBD5E1" : primary ? "#0B63D1" : "#FFFFFF",
+    minHeight: 48,
+    padding: "12px 16px",
+    borderRadius: 14,
+    border: primary
+      ? "1px solid rgba(11,80,170,0.22)"
+      : "1px solid rgba(37,78,119,0.20)",
+    background: disabled
+      ? "linear-gradient(180deg, #CBD5E1 0%, #B8C4D4 100%)"
+      : primary
+      ? "linear-gradient(180deg, #1A6BE1 0%, #0B63D1 58%, #09479C 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(241,247,253,0.98) 62%, rgba(224,234,244,0.98) 100%)",
     color: primary ? "#FFFFFF" : "#0B1F33",
     fontWeight: 900,
     textAlign: "center",
@@ -119,6 +141,11 @@ function actionBtn(primary = false, disabled = false): React.CSSProperties {
     textDecoration: "none",
     opacity: disabled ? 0.78 : 1,
     whiteSpace: "normal",
+    boxShadow: disabled
+      ? "none"
+      : primary
+      ? "0 16px 30px rgba(11,99,209,0.22), inset 0 1px 0 rgba(255,255,255,0.24)"
+      : "0 12px 24px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.84)",
     ...stableTapStyle(),
   };
 }
@@ -130,6 +157,26 @@ function sectionLabel(): React.CSSProperties {
     fontWeight: 1000,
     letterSpacing: 0.45,
     textTransform: "uppercase",
+  };
+}
+
+function reviewerBadge(canPilotApprove = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    minHeight: 30,
+    padding: "6px 10px",
+    borderRadius: 999,
+    background: canPilotApprove
+      ? "linear-gradient(180deg, #FFF7E8 0%, #FBE8B4 100%)"
+      : "#F8FAFC",
+    border: canPilotApprove
+      ? "1px solid rgba(201,161,54,0.28)"
+      : "1px solid rgba(11,31,51,0.08)",
+    color: canPilotApprove ? "#7C5A06" : "#475569",
+    fontWeight: 900,
+    fontSize: 12,
+    whiteSpace: "normal",
   };
 }
 
@@ -188,6 +235,8 @@ export default function CommunityJoinRequestsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [activationPack, setActivationPack] = useState<ApprovalResult | null>(null);
+  const [reviewerRole, setReviewerRole] = useState<string>("user");
+  const [reviewerCanPilotApprove, setReviewerCanPilotApprove] = useState(false);
 
   const clanNum = Number(clanId || 0);
 
@@ -203,9 +252,13 @@ export default function CommunityJoinRequestsPage() {
       const data = await getCommunityJoinRequests(clanNum);
       const rows = Array.isArray(data) ? data : data?.items || [];
       setItems(rows);
+      setReviewerRole(safeStr(data?.reviewer_role || "user", "user"));
+      setReviewerCanPilotApprove(Boolean(data?.reviewer_can_pilot_approve));
     } catch (err: any) {
       setError(err?.message || "Failed to load join requests.");
       setItems([]);
+      setReviewerRole("user");
+      setReviewerCanPilotApprove(false);
     } finally {
       setLoading(false);
     }
@@ -277,6 +330,34 @@ export default function CommunityJoinRequestsPage() {
       await load();
     } catch (err: any) {
       setError(err?.message || "Vote failed.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handlePilotApprove(requestId: number) {
+    try {
+      setBusyId(requestId);
+      setError("");
+      setSuccess("");
+      setActivationPack(null);
+
+      await selectClan(clanNum).catch(() => null);
+
+      const res = (await pilotApproveJoinRequest(requestId)) as VoteResponse;
+
+      if (res?.approval_result?.gmfn_id) {
+        setSuccess(
+          `Pilot approval completed successfully. GMFN ID issued: ${res.approval_result.gmfn_id}`
+        );
+        setActivationPack(res.approval_result || null);
+      } else {
+        setSuccess("Pilot approval completed.");
+      }
+
+      await load();
+    } catch (err: any) {
+      setError(err?.message || "Pilot approval failed.");
     } finally {
       setBusyId(null);
     }
@@ -359,6 +440,9 @@ export default function CommunityJoinRequestsPage() {
           >
             Current step: Community review
           </span>
+          <span style={reviewerBadge(reviewerCanPilotApprove)}>
+            Reviewer role: {safeStr(reviewerRole || "user")}
+          </span>
           <button type="button" onClick={goBack} style={actionBtn(false)}>
             Community Home
           </button>
@@ -414,32 +498,55 @@ export default function CommunityJoinRequestsPage() {
           gap: 14,
         }}
       >
-        <div style={softCard("#FFFFFF")}>
+        <div style={institutionalStatTile("#FFFFFF")}>
           <div style={sectionLabel()}>Total</div>
           <div style={{ marginTop: 8, fontSize: 26, fontWeight: 1000, color: "#0B1F33" }}>
             {summary.total}
           </div>
         </div>
 
-        <div style={softCard("#FFFFFF")}>
+        <div style={institutionalStatTile("#FFFFFF")}>
           <div style={sectionLabel()}>Pending</div>
           <div style={{ marginTop: 8, fontSize: 26, fontWeight: 1000, color: "#0B1F33" }}>
             {summary.pending}
           </div>
         </div>
 
-        <div style={softCard("#FFFFFF")}>
+        <div style={institutionalStatTile("#FFFFFF")}>
           <div style={sectionLabel()}>Approved</div>
           <div style={{ marginTop: 8, fontSize: 26, fontWeight: 1000, color: "#0B1F33" }}>
             {summary.approved}
           </div>
         </div>
 
-        <div style={softCard("#FFFFFF")}>
+        <div style={institutionalStatTile("#FFFFFF")}>
           <div style={sectionLabel()}>Rejected</div>
           <div style={{ marginTop: 8, fontSize: 26, fontWeight: 1000, color: "#0B1F33" }}>
             {summary.rejected}
           </div>
+        </div>
+      </div>
+
+      <div
+        style={{
+          ...pageCard("#FFFDF7"),
+          marginTop: 18,
+          border: "1px solid rgba(201,161,54,0.22)",
+        }}
+      >
+        <div style={sectionLabel()}>Approval rule</div>
+        <div
+          style={{
+            marginTop: 10,
+            color: "#42556C",
+            lineHeight: 1.8,
+            fontSize: 15,
+          }}
+        >
+          A request can stay pending even after one approval if this community
+          currently has enough active members to require more than one approval.
+          Use the <strong>Active members</strong> and <strong>Required approvals</strong>{" "}
+          lines inside each request card to see the current threshold clearly.
         </div>
       </div>
 
@@ -493,8 +600,7 @@ export default function CommunityJoinRequestsPage() {
             style={{
               marginTop: 14,
               padding: 12,
-              borderRadius: 12,
-              background: "#FFFFFF",
+              ...institutionalInnerCard("#FFFFFF"),
               border: "1px solid rgba(11,31,51,0.08)",
             }}
           >
@@ -536,6 +642,9 @@ export default function CommunityJoinRequestsPage() {
             <button
               type="button"
               style={actionBtn(true)}
+              onPointerDown={consumeActionEvent}
+              onMouseDown={consumeActionEvent}
+              onTouchStart={consumeActionEvent}
               onClick={() => copyText(safeStr(activationPack.activation_message || ""))}
             >
               Copy Activation Message
@@ -544,6 +653,9 @@ export default function CommunityJoinRequestsPage() {
             <button
               type="button"
               style={actionBtn(false)}
+              onPointerDown={consumeActionEvent}
+              onMouseDown={consumeActionEvent}
+              onTouchStart={consumeActionEvent}
               onClick={() => copyText(safeStr(activationPack.activation_link || ""))}
             >
               Copy Activation Link
@@ -555,6 +667,9 @@ export default function CommunityJoinRequestsPage() {
                 target={isExternalUrl(safeStr(activationPack.activation_link || "")) ? "_blank" : undefined}
                 rel={isExternalUrl(safeStr(activationPack.activation_link || "")) ? "noreferrer" : undefined}
                 style={actionBtn(false)}
+                onPointerDown={consumeActionEvent}
+                onMouseDown={consumeActionEvent}
+                onTouchStart={consumeActionEvent}
               >
                 Open Activation Page
               </a>
@@ -639,8 +754,7 @@ export default function CommunityJoinRequestsPage() {
                   style={{
                     marginTop: 14,
                     padding: 12,
-                    borderRadius: 12,
-                    background: "#F8FAFC",
+                    ...institutionalInnerCard("#F8FAFC"),
                     color: "#0B1F33",
                     fontWeight: 800,
                   }}
@@ -648,32 +762,98 @@ export default function CommunityJoinRequestsPage() {
                   This request has already been {status}.
                 </div>
               ) : (
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 10,
-                    marginTop: 14,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => handleVote(item.id, "approve")}
-                    disabled={isBusy}
-                    style={actionBtn(true, isBusy)}
+                <>
+                  <div
+                    style={{
+                      ...softCard("#F8FBFF"),
+                      marginTop: 14,
+                    }}
                   >
-                    {isBusy ? "Working..." : "Approve"}
-                  </button>
+                    <div style={sectionLabel()}>What happens now</div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#475569",
+                        lineHeight: 1.75,
+                        fontSize: 14,
+                      }}
+                    >
+                      This request stays pending until the approval count reaches
+                      the current threshold for this community.
+                    </div>
+                  </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handleVote(item.id, "reject")}
-                    disabled={isBusy}
-                    style={actionBtn(false, isBusy)}
+                  {reviewerCanPilotApprove ? (
+                    <div
+                      style={{
+                        ...softCard("#FFF7E8"),
+                        marginTop: 12,
+                        border: "1px solid rgba(201,161,54,0.24)",
+                      }}
+                    >
+                      <div style={sectionLabel()}>Pilot unblock</div>
+                      <div
+                        style={{
+                          marginTop: 8,
+                          color: "#5B4631",
+                          lineHeight: 1.75,
+                          fontSize: 14,
+                        }}
+                      >
+                        If the second reviewer cannot be reached during pilot
+                        testing, an admin can approve this request directly so
+                        testing can continue.
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 10,
+                      marginTop: 14,
+                      flexWrap: "wrap",
+                    }}
                   >
-                    {isBusy ? "Working..." : "Reject"}
-                  </button>
-                </div>
+                    <button
+                      type="button"
+                      onPointerDown={consumeActionEvent}
+                      onMouseDown={consumeActionEvent}
+                      onTouchStart={consumeActionEvent}
+                      onClick={() => handleVote(item.id, "approve")}
+                      disabled={isBusy}
+                      style={actionBtn(true, isBusy)}
+                    >
+                      {isBusy ? "Working..." : "Approve"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onPointerDown={consumeActionEvent}
+                      onMouseDown={consumeActionEvent}
+                      onTouchStart={consumeActionEvent}
+                      onClick={() => handleVote(item.id, "reject")}
+                      disabled={isBusy}
+                      style={actionBtn(false, isBusy)}
+                    >
+                      {isBusy ? "Working..." : "Reject"}
+                    </button>
+
+                    {reviewerCanPilotApprove ? (
+                      <button
+                        type="button"
+                        onPointerDown={consumeActionEvent}
+                        onMouseDown={consumeActionEvent}
+                        onTouchStart={consumeActionEvent}
+                        onClick={() => handlePilotApprove(item.id)}
+                        disabled={isBusy}
+                        style={actionBtn(false, isBusy)}
+                      >
+                        {isBusy ? "Working..." : "Approve Now (Pilot)"}
+                      </button>
+                    ) : null}
+                  </div>
+                </>
               )}
             </div>
           );

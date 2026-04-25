@@ -11,18 +11,17 @@ type ReadingState = {
   whyText: string;
 };
 
-function safeStr(x: any): string {
-  return String(x ?? "").trim();
-}
-
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: "1px solid rgba(108,138,184,0.18)",
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F3F8FF 100%)"
+        : bg,
     padding: 20,
     boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
+      "0 24px 52px rgba(15,23,42,0.08), 0 3px 10px rgba(15,23,42,0.03)",
     overflow: "hidden",
   };
 }
@@ -30,26 +29,30 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: "1px solid rgba(125,154,196,0.18)",
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"
+        : bg,
     padding: 14,
+    boxShadow: "0 16px 34px rgba(15,23,42,0.05)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#5D7389",
-    fontWeight: 900,
-    letterSpacing: 0.35,
+    color: "#39526C",
+    fontWeight: 1000,
+    letterSpacing: 0.45,
     textTransform: "uppercase",
   };
 }
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#5F7287",
-    fontSize: 14,
+    color: "#4F657B",
+    fontSize: 14.5,
     lineHeight: 1.75,
   };
 }
@@ -59,14 +62,37 @@ function badge(primary = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     gap: 6,
-    minHeight: 30,
+    minHeight: 32,
     borderRadius: 999,
-    padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
+    padding: "7px 12px",
+    background: primary
+      ? "linear-gradient(180deg, rgba(29,95,212,0.14) 0%, rgba(29,95,212,0.09) 100%)"
+      : "linear-gradient(180deg, rgba(130,146,172,0.16) 0%, rgba(130,146,172,0.10) 100%)",
+    border: primary
+      ? "1px solid rgba(29,95,212,0.16)"
+      : "1px solid rgba(130,146,172,0.14)",
+    color: primary ? "#164AAE" : "#445C75",
     fontSize: 12,
-    fontWeight: 900,
+    fontWeight: 1000,
     whiteSpace: "normal",
+  };
+}
+
+function stableTapStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 20,
+    isolation: "isolate",
+    pointerEvents: "auto",
+    boxSizing: "border-box",
+    appearance: "none",
+    WebkitAppearance: "none",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
+    lineHeight: 1.2,
   };
 }
 
@@ -75,16 +101,24 @@ function actionBtn(primary = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 40,
-    padding: "10px 14px",
-    borderRadius: 14,
-    border: primary ? "none" : "1px solid rgba(11,31,51,0.10)",
-    background: primary ? "#0B63D1" : "#FFFFFF",
+    minHeight: 46,
+    padding: "12px 16px",
+    borderRadius: 15,
+    border: primary
+      ? "1px solid rgba(18,77,176,0.22)"
+      : "1px solid rgba(121,149,190,0.18)",
+    background: primary
+      ? "linear-gradient(180deg, #2A6AF3 0%, #134FBF 100%)"
+      : "linear-gradient(180deg, #FFFFFF 0%, #F2F7FF 100%)",
     color: primary ? "#FFFFFF" : "#0B1F33",
-    fontWeight: 800,
+    boxShadow: primary
+      ? "0 14px 28px rgba(19,79,191,0.22)"
+      : "0 12px 26px rgba(15,23,42,0.07)",
+    fontWeight: 900,
     fontSize: 14,
     textDecoration: "none",
     whiteSpace: "normal",
+    ...stableTapStyle(),
   };
 }
 

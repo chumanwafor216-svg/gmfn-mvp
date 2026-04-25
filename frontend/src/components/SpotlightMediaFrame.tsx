@@ -14,6 +14,7 @@ type SpotlightMediaFrameProps = {
   autoPlayVideo?: boolean;
   mutedVideo?: boolean;
   loopVideo?: boolean;
+  maxVideoSeconds?: number | null;
 };
 
 function safeStr(value: unknown): string {
@@ -31,6 +32,10 @@ export default function SpotlightMediaFrame(
     () => uniqueMediaValues([props.imageUrl, ...(props.imageCandidates || [])]),
     [props.imageCandidates, props.imageUrl]
   );
+  const imageCandidateKey = useMemo(
+    () => imageCandidates.join("|"),
+    [imageCandidates]
+  );
 
   const [imageIndex, setImageIndex] = useState(0);
   const [videoFailed, setVideoFailed] = useState(false);
@@ -40,11 +45,12 @@ export default function SpotlightMediaFrame(
     setImageIndex(0);
     setVideoFailed(false);
     setImageFailed(false);
-  }, [imageCandidates.join("|"), props.videoUrl]);
+  }, [imageCandidateKey, props.videoUrl]);
 
   const imageSrc = imageCandidates[imageIndex] || "";
   const videoSrc = safeStr(props.videoUrl);
   const backdropSrc = safeStr(props.videoPoster) || imageSrc;
+  const maxVideoSeconds = Number(props.maxVideoSeconds || 0);
 
   const frameStyle: React.CSSProperties = {
     position: "relative",
@@ -109,6 +115,32 @@ export default function SpotlightMediaFrame(
     </>
   ) : null;
 
+  const fallbackNotice =
+    videoSrc && videoFailed ? (
+      <div
+        style={{
+          position: "absolute",
+          left: 12,
+          right: 12,
+          bottom: 12,
+          zIndex: 3,
+          padding: "9px 12px",
+          borderRadius: 999,
+          background: "rgba(7, 24, 39, 0.76)",
+          border: "1px solid rgba(255, 255, 255, 0.28)",
+          color: "#F8FBFF",
+          fontSize: 12,
+          fontWeight: 800,
+          lineHeight: 1.35,
+          textAlign: "center",
+          boxShadow: "0 12px 24px rgba(2, 12, 27, 0.22)",
+          backdropFilter: "blur(10px)",
+        }}
+      >
+        Video could not play here. Showing the cover for now.
+      </div>
+    ) : null;
+
   if (videoSrc && !videoFailed) {
     return (
       <div style={frameStyle}>
@@ -124,6 +156,22 @@ export default function SpotlightMediaFrame(
             playsInline
             preload="metadata"
             onError={() => setVideoFailed(true)}
+            onTimeUpdate={(event) => {
+              if (!Number.isFinite(maxVideoSeconds) || maxVideoSeconds <= 0) {
+                return;
+              }
+
+              const video = event.currentTarget;
+              if (video.currentTime < maxVideoSeconds) return;
+
+              if (props.loopVideo ?? false) {
+                video.currentTime = 0;
+                void video.play().catch(() => undefined);
+                return;
+              }
+
+              video.pause();
+            }}
             style={mediaStyle}
           />
         </div>
@@ -153,6 +201,7 @@ export default function SpotlightMediaFrame(
             style={mediaStyle}
           />
         </div>
+        {fallbackNotice}
       </div>
     );
   }

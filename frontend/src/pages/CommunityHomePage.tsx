@@ -10,18 +10,13 @@ import PageTopNav from "../components/PageTopNav";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { navigateWithOrigin } from "../lib/nav";
 import {
-  createMarketplaceBroadcast,
-  getClanInviteLink,
   getMarketplaceBroadcasts,
-  getMarketplaceShopByGmfnId,
   getMe,
   getPoolMeSummary,
   getSelectedClanId,
   listMyClans,
   safeCopy,
   selectClan,
-  uploadMarketplaceImageFile,
-  uploadMarketplaceVideoFile,
 } from "../lib/api";
 import {
   buildInviteBundle,
@@ -33,9 +28,11 @@ import {
   roleLabel,
 } from "../lib/firstCircle";
 import {
-  prepareSpotlightImageFile,
-  prepareSpotlightVideoFile,
-} from "../lib/spotlightMediaPrep";
+  SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+  SPOTLIGHT_PILOT_REFRESH_MS,
+  SPOTLIGHT_PILOT_ROTATION_MS,
+  SPOTLIGHT_PILOT_ROTATION_SECONDS_LABEL,
+} from "../lib/spotlightPilot";
 
 type ClanItem = {
   id?: number;
@@ -91,12 +88,6 @@ type CollapseKey =
 
 type CollapseState = Record<CollapseKey, boolean>;
 
-type SpotlightDraftState = {
-  description: string;
-  tagNumber: string;
-  expiry: string;
-};
-
 type ActiveCommunitySpotlight = {
   id?: number;
   message: string;
@@ -107,42 +98,6 @@ type ActiveCommunitySpotlight = {
 };
 
 const COMMUNITY_HOME_COLLAPSE_KEY = "gmfn.communityHome.sections.v3";
-const SPOTLIGHT_DRAFT_PREFIX = "gmfn.communityHome.spotlightDraft.";
-const SPOTLIGHT_ALLOWED_IMAGE_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-];
-const SPOTLIGHT_ALLOWED_VIDEO_TYPES = [
-  "video/mp4",
-  "video/webm",
-  "video/quicktime",
-];
-const SPOTLIGHT_IMAGE_TYPE_ALIASES: Record<string, string> = {
-  "image/jpg": "image/jpeg",
-  "image/pjpeg": "image/jpeg",
-  "image/x-png": "image/png",
-};
-const SPOTLIGHT_VIDEO_TYPE_ALIASES: Record<string, string> = {
-  "video/mov": "video/quicktime",
-};
-const SPOTLIGHT_GENERIC_IMAGE_TYPES = [
-  "",
-  "application/octet-stream",
-  "binary/octet-stream",
-];
-const SPOTLIGHT_GENERIC_VIDEO_TYPES = [
-  "",
-  "application/octet-stream",
-  "binary/octet-stream",
-];
-const SPOTLIGHT_ALLOWED_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
-const SPOTLIGHT_ALLOWED_VIDEO_EXTENSIONS = [".mp4", ".webm", ".mov"];
-const SPOTLIGHT_ALLOWED_IMAGE_LABEL = "JPG, PNG, or WebP";
-const SPOTLIGHT_ALLOWED_VIDEO_LABEL = "MP4, WebM, or MOV";
-const SPOTLIGHT_MAX_IMAGE_BYTES = 10 * 1024 * 1024;
-const SPOTLIGHT_MAX_VIDEO_BYTES = 10 * 1024 * 1024;
-const SPOTLIGHT_LIVE_REFRESH_MS = 30000;
 const COMMUNITY_BRAND = {
   ink: "#071827",
   navy: "#081E32",
@@ -157,79 +112,6 @@ const COMMUNITY_BRAND = {
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
-}
-
-function formatFileSize(bytes: number): string {
-  const size = Number(bytes || 0);
-  if (!Number.isFinite(size) || size <= 0) return "0 KB";
-  if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-  return `${Math.max(1, Math.round(size / 1024))} KB`;
-}
-
-function normalizeSpotlightImageType(contentType: string): string {
-  const raw = safeStr(contentType).toLowerCase().split(";")[0]?.trim() || "";
-  return SPOTLIGHT_IMAGE_TYPE_ALIASES[raw] || raw;
-}
-
-function spotlightMediaExtension(filename: string): string {
-  const raw = safeStr(filename).toLowerCase();
-  const dot = raw.lastIndexOf(".");
-  return dot >= 0 ? raw.slice(dot) : "";
-}
-
-function validateSpotlightImageFile(
-  file: File | null | undefined,
-  enforceSize = true
-): string {
-  if (!file) return "";
-
-  const contentType = normalizeSpotlightImageType(file.type);
-  const ext = spotlightMediaExtension(file.name);
-  const hasAcceptedType = SPOTLIGHT_ALLOWED_IMAGE_TYPES.includes(contentType);
-  const hasAcceptedExtension = SPOTLIGHT_ALLOWED_IMAGE_EXTENSIONS.includes(ext);
-  const hasGenericType = SPOTLIGHT_GENERIC_IMAGE_TYPES.includes(contentType);
-
-  if (!hasAcceptedType && !(hasGenericType && hasAcceptedExtension)) {
-    return `Use a ${SPOTLIGHT_ALLOWED_IMAGE_LABEL} image. Other formats are not accepted yet.`;
-  }
-
-  if (enforceSize && Number(file.size || 0) > SPOTLIGHT_MAX_IMAGE_BYTES) {
-    return `Image is ${formatFileSize(
-      file.size
-    )}. Spotlight images must be 10 MB or smaller.`;
-  }
-
-  return "";
-}
-
-function normalizeSpotlightVideoType(contentType: string): string {
-  const raw = safeStr(contentType).toLowerCase().split(";")[0]?.trim() || "";
-  return SPOTLIGHT_VIDEO_TYPE_ALIASES[raw] || raw;
-}
-
-function validateSpotlightVideoFile(
-  file: File | null | undefined,
-  enforceSize = true
-): string {
-  if (!file) return "";
-
-  const contentType = normalizeSpotlightVideoType(file.type);
-  const ext = spotlightMediaExtension(file.name);
-  const hasAcceptedType = SPOTLIGHT_ALLOWED_VIDEO_TYPES.includes(contentType);
-  const hasAcceptedExtension = SPOTLIGHT_ALLOWED_VIDEO_EXTENSIONS.includes(ext);
-  const hasGenericType = SPOTLIGHT_GENERIC_VIDEO_TYPES.includes(contentType);
-
-  if (!hasAcceptedType && !(hasGenericType && hasAcceptedExtension)) {
-    return `Use a ${SPOTLIGHT_ALLOWED_VIDEO_LABEL} video. Other formats are not accepted yet.`;
-  }
-
-  if (enforceSize && Number(file.size || 0) > SPOTLIGHT_MAX_VIDEO_BYTES) {
-    return `Video is ${formatFileSize(
-      file.size
-    )}. Spotlight videos must be 10 MB or smaller.`;
-  }
-
-  return "";
 }
 
 function toBackendAssetUrl(path: string): string {
@@ -273,6 +155,21 @@ function firstTruthy(...values: any[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function normalizeActiveCommunitySpotlight(
+  row: any
+): ActiveCommunitySpotlight | null {
+  if (!row) return null;
+
+  return {
+    id: Number(row?.id || 0) || undefined,
+    message: safeStr(row?.message || ""),
+    imageUrl: toBackendAssetUrl(safeStr(row?.image_url || "")),
+    videoUrl: toBackendAssetUrl(safeStr(row?.video_url || "")),
+    expiresAt: safeStr(row?.expires_at || ""),
+    createdAt: safeStr(row?.created_at || ""),
+  };
 }
 
 function getClanId(clan: ClanItem | null | undefined): number {
@@ -919,30 +816,6 @@ function communitiesCollapseHeaderButton(
   };
 }
 
-function inputStyle(): React.CSSProperties {
-  return {
-    width: "100%",
-    minHeight: 44,
-    borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
-    padding: "11px 12px",
-    fontSize: 14,
-    color: "#0B1F33",
-    outline: "none",
-    boxSizing: "border-box",
-  };
-}
-
-function textAreaStyle(): React.CSSProperties {
-  return {
-    ...inputStyle(),
-    minHeight: 110,
-    resize: "vertical",
-    lineHeight: 1.6,
-  };
-}
-
 function noticeCard(tone: NoticeTone): React.CSSProperties {
   return {
     ...softCard(tone === "success" ? "#F3FBF5" : "#FEF2F2"),
@@ -952,22 +825,6 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
         ? "1px solid rgba(34,197,94,0.16)"
         : "1px solid rgba(239,68,68,0.16)",
     fontWeight: 800,
-  };
-}
-
-function previewMediaBox(): React.CSSProperties {
-  return {
-    width: "100%",
-    minHeight: 220,
-    borderRadius: 22,
-    border: "1px solid rgba(212,175,55,0.16)",
-    background: "linear-gradient(180deg, #15314C 0%, #21496C 56%, #2B5E88 100%)",
-    overflow: "hidden",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow:
-      "0 20px 42px rgba(2,12,27,0.18), inset 0 1px 0 rgba(255,255,255,0.04)",
   };
 }
 
@@ -983,15 +840,6 @@ function moneyNumber(value: any): number {
 
 function standingLabel(amount: number): string {
   return amount < 0 ? "Negative" : "Positive";
-}
-
-function getInviteUrl(payload: any): string {
-  return firstTruthy(
-    payload?.url,
-    payload?.invite_url,
-    payload?.link,
-    payload?.invite_link
-  );
 }
 
 function readLocalJSON<T>(key: string, fallback: T): T {
@@ -1012,19 +860,6 @@ function writeLocalJSON(key: string, value: any) {
   } catch {
     // ignore
   }
-}
-
-function removeLocal(key: string) {
-  try {
-    if (typeof window === "undefined") return;
-    window.localStorage.removeItem(key);
-  } catch {
-    // ignore
-  }
-}
-
-function spotlightDraftStorageKey(clanId: number): string {
-  return `${SPOTLIGHT_DRAFT_PREFIX}${clanId}`;
 }
 
 function defaultCollapseState(): CollapseState {
@@ -1060,7 +895,6 @@ export default function CommunityHomePage() {
   const [clans, setClans] = useState<ClanItem[]>([]);
   const [selectedClan, setSelectedClan] = useState<ClanItem | null>(null);
   const [poolSummary, setPoolSummary] = useState<any>(null);
-  const [inviteLink, setInviteLink] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [changingClanId, setChangingClanId] = useState<number>(0);
 
@@ -1069,34 +903,20 @@ export default function CommunityHomePage() {
     text: string;
   } | null>(null);
 
-  const [spotlightDescription, setSpotlightDescription] = useState("");
-  const [spotlightTagNumber, setSpotlightTagNumber] = useState("");
-  const [spotlightExpiry, setSpotlightExpiry] = useState("");
-  const [spotlightImageFile, setSpotlightImageFile] = useState<File | null>(
-    null
-  );
-  const [spotlightPreviewUrl, setSpotlightPreviewUrl] = useState("");
-  const [preparingSpotlightImage, setPreparingSpotlightImage] = useState(false);
-  const [spotlightVideoFile, setSpotlightVideoFile] = useState<File | null>(
-    null
-  );
-  const [spotlightVideoPreviewUrl, setSpotlightVideoPreviewUrl] = useState("");
-  const [spotlightVideoDurationSeconds, setSpotlightVideoDurationSeconds] =
-    useState<number | null>(null);
-  const [preparingSpotlightVideo, setPreparingSpotlightVideo] = useState(false);
-  const [spotlightFileInputKey, setSpotlightFileInputKey] = useState(0);
-  const [spotlightVideoInputKey, setSpotlightVideoInputKey] = useState(0);
-  const [spotlightNotice, setSpotlightNotice] = useState<{
-    tone: NoticeTone;
-    text: string;
-  } | null>(null);
   const [activeCommunitySpotlight, setActiveCommunitySpotlight] =
     useState<ActiveCommunitySpotlight | null>(null);
+  const [activeCommunitySpotlights, setActiveCommunitySpotlights] = useState<
+    ActiveCommunitySpotlight[]
+  >([]);
+  const [activeCommunitySpotlightIndex, setActiveCommunitySpotlightIndex] =
+    useState(0);
+  const [activeCommunitySpotlightTotal, setActiveCommunitySpotlightTotal] =
+    useState(0);
   const [activeCommunitySpotlightLoading, setActiveCommunitySpotlightLoading] =
     useState(false);
   const [activeCommunitySpotlightSyncIssue, setActiveCommunitySpotlightSyncIssue] =
     useState("");
-  const [publishingSpotlight, setPublishingSpotlight] = useState(false);
+  const activeCommunitySpotlightsRef = useRef<ActiveCommunitySpotlight[]>([]);
 
   const [firstCircleDraft, setFirstCircleDraft] = useState(() =>
     loadFirstCircleDraft()
@@ -1109,8 +929,6 @@ export default function CommunityHomePage() {
   );
   const collapseToggleTimersRef = useRef<number[]>([]);
   const [shopControlOpenSignal, setShopControlOpenSignal] = useState(0);
-  const spotlightImagePrepJobRef = useRef(0);
-  const spotlightVideoPrepJobRef = useRef(0);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1149,34 +967,6 @@ export default function CommunityHomePage() {
       window.clearTimeout(timer);
     };
   }, [notice]);
-
-  useEffect(() => {
-    if (!spotlightImageFile) {
-      setSpotlightPreviewUrl("");
-      return;
-    }
-
-    const objectUrl = URL.createObjectURL(spotlightImageFile);
-    setSpotlightPreviewUrl(objectUrl);
-
-    return () => {
-      URL.revokeObjectURL(objectUrl);
-    };
-  }, [spotlightImageFile]);
-
-  useEffect(() => {
-    if (!spotlightVideoFile) {
-      setSpotlightVideoPreviewUrl("");
-      return;
-    }
-
-    const objectUrl = URL.createObjectURL(spotlightVideoFile);
-    setSpotlightVideoPreviewUrl(objectUrl);
-
-    return () => {
-      URL.revokeObjectURL(objectUrl);
-    };
-  }, [spotlightVideoFile]);
 
   useEffect(() => {
     function refreshFirstCircleDraft() {
@@ -1252,72 +1042,27 @@ export default function CommunityHomePage() {
 
     if (!clanId) {
       setPoolSummary(null);
-      setInviteLink("");
       return;
     }
 
     (async () => {
-      const [summaryRes, inviteRes] = await Promise.all([
-        getPoolMeSummary("NGN").catch((err) => ({
-          __failed: String(
-            err?.message || err || "Your full finance summary is not ready yet."
-          ),
-        })),
-        getClanInviteLink(clanId).catch(() => null),
-      ]);
+      const summaryRes = await getPoolMeSummary("NGN").catch((err) => ({
+        __failed: String(
+          err?.message || err || "Your full finance summary is not ready yet."
+        ),
+      }));
 
       if (!alive) return;
 
       setPoolSummary(
         summaryRes && !(summaryRes as any).__failed ? summaryRes : null
       );
-      setInviteLink(getInviteUrl(inviteRes));
     })();
 
     return () => {
       alive = false;
     };
   }, [selectedClan]);
-
-  useEffect(() => {
-    const clanId = getClanId(selectedClan);
-    if (!clanId) {
-      setSpotlightDescription("");
-      setSpotlightTagNumber("");
-      setSpotlightExpiry("");
-      setSpotlightImageFile(null);
-      setSpotlightPreviewUrl("");
-      setSpotlightFileInputKey((x) => x + 1);
-      return;
-    }
-
-    const draft = readLocalJSON<SpotlightDraftState>(
-      spotlightDraftStorageKey(clanId),
-      {
-        description: "",
-        tagNumber: "",
-        expiry: "",
-      }
-    );
-
-    setSpotlightDescription(draft.description || "");
-    setSpotlightTagNumber(draft.tagNumber || "");
-    setSpotlightExpiry(draft.expiry || "");
-    setSpotlightImageFile(null);
-    setSpotlightPreviewUrl("");
-    setSpotlightFileInputKey((x) => x + 1);
-  }, [selectedClan]);
-
-  useEffect(() => {
-    const clanId = getClanId(selectedClan);
-    if (!clanId) return;
-
-    writeLocalJSON(spotlightDraftStorageKey(clanId), {
-      description: spotlightDescription,
-      tagNumber: spotlightTagNumber,
-      expiry: spotlightExpiry,
-    });
-  }, [selectedClan, spotlightDescription, spotlightTagNumber, spotlightExpiry]);
 
   const selectedClanName = getClanName(selectedClan);
   const selectedClanId = getClanId(selectedClan);
@@ -1374,10 +1119,10 @@ export default function CommunityHomePage() {
       },
       {
         id: "marketplace",
-        label: "Open marketplace",
+        label: "Enter marketplace",
         detail: selectedClanId
-          ? `Open ${selectedClanName || "the selected community"} for live work.`
-          : "Select a community first, then open its marketplace.",
+          ? `Enter ${selectedClanName || "the selected community"} to work inside that one community.`
+          : "Select a community first, then enter its marketplace.",
         technical: "Selected marketplace",
         keywords: ["marketplace", "market", "trade", "work", "open community"],
         disabled: !selectedClanId,
@@ -1400,42 +1145,48 @@ export default function CommunityHomePage() {
       {
         id: "circle",
         label: "Grow circle",
-        detail: "Invite trusted real-life people into the first circle.",
+        detail: "Prepare trusted people before live community work begins.",
         technical: "Trusted circle",
         keywords: ["invite", "circle", "people", "trusted", "grow"],
       },
       {
         id: "shop-control",
-        label: "Manage shop",
-        detail: "Open shop control for your one GSN shop identity.",
+        label: "Open shop control",
+        detail: "Open the owner-side controls for your one GSN shop.",
         technical: "Shop control",
         keywords: ["shop", "seller", "gallery", "control", "products"],
       },
       {
         id: "spotlight",
         label: "Prepare spotlight",
-        detail: "Create or review the community-facing spotlight.",
-        technical: "Spotlight",
+        detail:
+          "Prepare spotlight in Shop Control before any selected community sees it live.",
+        technical: "Shop Control spotlight",
         keywords: ["spotlight", "picture", "video", "advert", "visibility"],
       },
       {
         id: "finance",
-        label: "Open finance",
-        detail: "Review money, pool position, and finance readiness.",
+        label: "Review finance file",
+        detail: "Open your wider finance file across communities.",
         technical: "Finance",
         keywords: ["finance", "money", "deposit", "withdraw", "pool", "pay"],
       },
       {
         id: "support",
-        label: "Borrow or support",
-        detail: "Open loans, borrowing, lending, and support paths.",
+        label: "Open loans and support",
+        detail: selectedClanId
+          ? `Open loans and support for ${selectedClanName || "the selected community"}.`
+          : "Select a community first, then open its loans and support path.",
         technical: "Loans and support",
         keywords: ["loan", "borrow", "lend", "support", "guarantor"],
+        disabled: !selectedClanId,
+        disabledReason:
+          "Select one community first so loans and support stay local to that group.",
       },
       {
         id: "trust",
-        label: "Review trust",
-        detail: "Open Trust Passport and check the trust story.",
+        label: "Review Trust Passport",
+        detail: "Open Trust Passport for your wider trust record across communities.",
         technical: "Trust Passport",
         keywords: ["trust", "passport", "integrity", "cci", "identity"],
       },
@@ -1466,53 +1217,40 @@ export default function CommunityHomePage() {
   }, [firstCircleDraft.memberRole]);
 
   const communitySpotlightNextAction = useMemo(() => {
-    const hasDraft =
-      Boolean(safeStr(spotlightDescription)) ||
-      Boolean(safeStr(spotlightTagNumber)) ||
-      Boolean(safeStr(spotlightExpiry)) ||
-      Boolean(spotlightImageFile) ||
-      Boolean(spotlightVideoFile);
-
     if (activeCommunitySpotlight) {
       return {
-        title: "Keep the live spotlight visible or replace it deliberately",
+        title: "Live spotlight is already visible",
         detail: activeCommunitySpotlight.expiresAt
-          ? "A spotlight is already active for this community. Let it run until expiry unless there is a real reason to replace the current live item."
-          : "A spotlight is already active without an expiry. Replace it only when you are ready for the new image and message to become the live community signal.",
-      };
-    }
-
-    if (hasDraft) {
-      return {
-        title: "Publish the prepared spotlight when the message is ready",
-        detail:
-          "Your draft is already in progress. Review the preview carefully, then publish so the live community spotlight state updates from backend truth.",
+          ? "Open Shop Control only when you want to replace or update the current live item."
+          : "Open Shop Control only when you are ready to replace this standing spotlight.",
       };
     }
 
     return {
-      title: "Prepare a spotlight draft first",
+      title: "Open Shop Control when you are ready",
       detail:
-        "Add the description, optional expiry, and image or short video here. Once the draft looks right, publish it so the live state can appear below.",
+        "Spotlight publishing belongs inside Shop Control so your shop picture, products, Vault, and visibility stay in one clean place.",
     };
-  }, [
-    activeCommunitySpotlight,
-    spotlightDescription,
-    spotlightTagNumber,
-    spotlightExpiry,
-    spotlightImageFile,
-    spotlightVideoFile,
-  ]);
+  }, [activeCommunitySpotlight]);
+
+  useEffect(() => {
+    activeCommunitySpotlightsRef.current = activeCommunitySpotlights;
+  }, [activeCommunitySpotlights]);
 
   async function refreshActiveCommunitySpotlight(clanId: number) {
     if (!clanId) {
       setActiveCommunitySpotlight(null);
+      setActiveCommunitySpotlights([]);
+      setActiveCommunitySpotlightIndex(0);
+      setActiveCommunitySpotlightTotal(0);
       setActiveCommunitySpotlightLoading(false);
       setActiveCommunitySpotlightSyncIssue("");
       return;
     }
 
-    setActiveCommunitySpotlightLoading(true);
+    if (activeCommunitySpotlightsRef.current.length === 0) {
+      setActiveCommunitySpotlightLoading(true);
+    }
 
     try {
       const res = await getMarketplaceBroadcasts({
@@ -1530,19 +1268,24 @@ export default function CommunityHomePage() {
         ? res
         : [];
 
-      const firstActive = rows[0] || null;
+      const normalizedRows = rows
+        .map((row: any) => normalizeActiveCommunitySpotlight(row))
+        .filter(Boolean) as ActiveCommunitySpotlight[];
+      const reportedTotal = Number(
+        (res as any)?.active_total ??
+          (res as any)?.matching_total ??
+          (res as any)?.total ??
+          normalizedRows.length
+      );
 
-      setActiveCommunitySpotlight(
-        firstActive
-          ? {
-              id: Number(firstActive?.id || 0) || undefined,
-              message: safeStr(firstActive?.message || ""),
-              imageUrl: toBackendAssetUrl(safeStr(firstActive?.image_url || "")),
-              videoUrl: toBackendAssetUrl(safeStr(firstActive?.video_url || "")),
-              expiresAt: safeStr(firstActive?.expires_at || ""),
-              createdAt: safeStr(firstActive?.created_at || ""),
-            }
-          : null
+      setActiveCommunitySpotlights(normalizedRows);
+      setActiveCommunitySpotlightTotal(
+        Number.isFinite(reportedTotal)
+          ? Math.max(normalizedRows.length, reportedTotal)
+          : normalizedRows.length
+      );
+      setActiveCommunitySpotlightIndex((prev) =>
+        normalizedRows.length > 0 ? prev % normalizedRows.length : 0
       );
       setActiveCommunitySpotlightSyncIssue(safeStr((res as any)?.__failed || ""));
     } finally {
@@ -1551,10 +1294,38 @@ export default function CommunityHomePage() {
   }
 
   useEffect(() => {
+    if (activeCommunitySpotlights.length === 0) {
+      setActiveCommunitySpotlight(null);
+      return;
+    }
+
+    setActiveCommunitySpotlight(
+      activeCommunitySpotlights[
+        activeCommunitySpotlightIndex % activeCommunitySpotlights.length
+      ] || activeCommunitySpotlights[0]
+    );
+  }, [activeCommunitySpotlightIndex, activeCommunitySpotlights]);
+
+  useEffect(() => {
+    if (activeCommunitySpotlights.length <= 1) return;
+
+    const timer = window.setInterval(() => {
+      setActiveCommunitySpotlightIndex(
+        (prev) => (prev + 1) % activeCommunitySpotlights.length
+      );
+    }, SPOTLIGHT_PILOT_ROTATION_MS);
+
+    return () => window.clearInterval(timer);
+  }, [activeCommunitySpotlights.length]);
+
+  useEffect(() => {
     const clanId = getClanId(selectedClan);
 
     if (!clanId) {
       setActiveCommunitySpotlight(null);
+      setActiveCommunitySpotlights([]);
+      setActiveCommunitySpotlightIndex(0);
+      setActiveCommunitySpotlightTotal(0);
       setActiveCommunitySpotlightLoading(false);
       return;
     }
@@ -1570,7 +1341,7 @@ export default function CommunityHomePage() {
 
     const timer = window.setInterval(() => {
       void loadIfAlive();
-    }, SPOTLIGHT_LIVE_REFRESH_MS);
+    }, SPOTLIGHT_PILOT_REFRESH_MS);
 
     function handleFocusRefresh() {
       void loadIfAlive();
@@ -1597,23 +1368,6 @@ export default function CommunityHomePage() {
     setNotice({ tone, text });
   }
 
-  function showSpotlightNotice(tone: NoticeTone, text: string) {
-    setSpotlightNotice({ tone, text });
-    showNotice(tone, text);
-  }
-
-  function friendlySpotlightUploadError(rawError: unknown): string {
-    const message = safeStr(
-      (rawError as any)?.message || rawError || "Spotlight upload failed."
-    );
-
-    if (/spotlight capacity reached/i.test(message)) {
-      return "Spotlight testing capacity is being refreshed on the live server. Please reload after the latest backend deploy finishes, then publish again. Your selected image or video can remain here.";
-    }
-
-    return message || "Spotlight upload failed.";
-  }
-
   function toggleSection(key: CollapseKey) {
     setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
   }
@@ -1629,7 +1383,7 @@ export default function CommunityHomePage() {
         (id) => id !== timerId
       );
       toggleSection(key);
-    }, 90);
+    }, 24);
     collapseToggleTimersRef.current.push(timerId);
   }
 
@@ -1714,18 +1468,6 @@ export default function CommunityHomePage() {
     }
   }
 
-  function copyInviteLink(event?: React.SyntheticEvent<HTMLElement>) {
-    consumeCommunityButtonEvent(event);
-
-    if (!inviteLink) {
-      showNotice("error", "Invite link is not ready yet.");
-      return;
-    }
-
-    safeCopy(inviteLink);
-    showNotice("success", "Invite link copied.");
-  }
-
   function consumeCommunityButtonEvent(
     event?: React.SyntheticEvent<HTMLElement>
   ) {
@@ -1738,16 +1480,16 @@ export default function CommunityHomePage() {
     event.stopPropagation();
   }
 
-  function communityButtonGuardProps(): Pick<
-    React.HTMLAttributes<HTMLElement>,
-    "onPointerDown" | "onTouchStart" | "onMouseDown"
-  > {
-    return {
-      onPointerDown: consumeCommunityButtonEvent,
-      onTouchStart: consumeCommunityButtonEvent,
-      onMouseDown: consumeCommunityButtonEvent,
-    };
-  }
+function communityButtonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: consumeCommunityButtonEvent,
+    onTouchStart: consumeCommunityButtonEvent,
+    onMouseDown: consumeCommunityButtonEvent,
+  };
+}
 
   function openCommunityRoute(
     event: React.SyntheticEvent<HTMLElement> | undefined,
@@ -1781,7 +1523,7 @@ export default function CommunityHomePage() {
         openCommunityShopControl(event);
         break;
       case "spotlight":
-        openCommunityHomeSection(event, "community-home-spotlight-gears", "spotlight");
+        openCommunityRoute(event, "/app/shop-control#shop-control-spotlight");
         break;
       case "finance":
         openCommunityRoute(event, "/app/finance");
@@ -1826,158 +1568,33 @@ export default function CommunityHomePage() {
     }
   }
 
-  function clearSpotlightDraft(event?: React.SyntheticEvent<HTMLElement>) {
+  async function openSelectedMarketplaceLinks(
+    event?: React.SyntheticEvent<HTMLElement>
+  ) {
     consumeCommunityButtonEvent(event);
 
-    const clanId = getClanId(selectedClan);
-    spotlightImagePrepJobRef.current += 1;
-    spotlightVideoPrepJobRef.current += 1;
-
-    setSpotlightImageFile(null);
-    setSpotlightVideoFile(null);
-    setSpotlightVideoDurationSeconds(null);
-    setPreparingSpotlightImage(false);
-    setPreparingSpotlightVideo(false);
-    setSpotlightNotice(null);
-    setSpotlightDescription("");
-    setSpotlightTagNumber("");
-    setSpotlightExpiry("");
-    setSpotlightPreviewUrl("");
-    setSpotlightVideoPreviewUrl("");
-    setSpotlightFileInputKey((x) => x + 1);
-    setSpotlightVideoInputKey((x) => x + 1);
-
-    if (clanId) {
-      removeLocal(spotlightDraftStorageKey(clanId));
-    }
-  }
-
-  async function handleSpotlightImageChange(file: File | null) {
-    spotlightImagePrepJobRef.current += 1;
-    const prepJob = spotlightImagePrepJobRef.current;
-
-    if (!file) {
-      setPreparingSpotlightImage(false);
-      setSpotlightImageFile(null);
-      setSpotlightNotice(null);
+    if (!selectedClanId || !selectedClan) {
+      showNotice("error", "Select a community first.");
       return;
     }
 
-    const validationIssue = validateSpotlightImageFile(file, false);
-    if (validationIssue) {
-      setPreparingSpotlightImage(false);
-      setSpotlightImageFile(null);
-      setSpotlightPreviewUrl("");
-      setSpotlightFileInputKey((x) => x + 1);
-      showSpotlightNotice("error", validationIssue);
-      return;
-    }
+    setChangingClanId(selectedClanId);
 
     try {
-      setPreparingSpotlightImage(true);
-
-      const prepared = await prepareSpotlightImageFile(file, {
-        maxBytes: SPOTLIGHT_MAX_IMAGE_BYTES,
-      });
-      if (spotlightImagePrepJobRef.current !== prepJob) return;
-
-      const preparedValidationIssue = validateSpotlightImageFile(
-        prepared.file,
-        true
+      await selectClan(selectedClanId);
+      navigateWithOrigin(
+        navigate,
+        "/app/marketplace#marketplace-owned-links",
+        location
       );
-      if (preparedValidationIssue) {
-        throw new Error(preparedValidationIssue);
-      }
-
-      setSpotlightImageFile(prepared.file);
-      setSpotlightNotice({
-        tone: "success",
-        text:
-          prepared.message ||
-          (spotlightVideoFile
-            ? `${safeStr(prepared.file.name) || "Selected image"} is ready as the fallback cover for your spotlight video.`
-            : `${safeStr(prepared.file.name) || "Selected image"} is ready for spotlight publish.`),
-      });
     } catch (err: any) {
-      if (spotlightImagePrepJobRef.current !== prepJob) return;
-      setSpotlightImageFile(null);
-      setSpotlightPreviewUrl("");
-      setSpotlightFileInputKey((x) => x + 1);
-      showSpotlightNotice(
+      showNotice(
         "error",
-        safeStr(err?.message) || "This image could not be prepared right now."
+        safeStr(err?.message) ||
+          "Selected community links could not be opened yet."
       );
     } finally {
-      if (spotlightImagePrepJobRef.current === prepJob) {
-        setPreparingSpotlightImage(false);
-      }
-    }
-  }
-
-  async function handleSpotlightVideoChange(file: File | null) {
-    spotlightVideoPrepJobRef.current += 1;
-    const prepJob = spotlightVideoPrepJobRef.current;
-
-    if (!file) {
-      setPreparingSpotlightVideo(false);
-      setSpotlightVideoFile(null);
-      setSpotlightVideoDurationSeconds(null);
-      setSpotlightNotice(null);
-      return;
-    }
-
-    const validationIssue = validateSpotlightVideoFile(file, false);
-    if (validationIssue) {
-      setPreparingSpotlightVideo(false);
-      setSpotlightVideoFile(null);
-      setSpotlightVideoDurationSeconds(null);
-      setSpotlightVideoPreviewUrl("");
-      setSpotlightVideoInputKey((x) => x + 1);
-      showSpotlightNotice("error", validationIssue);
-      return;
-    }
-
-    try {
-      setPreparingSpotlightVideo(true);
-
-      const prepared = await prepareSpotlightVideoFile(file, {
-        maxBytes: SPOTLIGHT_MAX_VIDEO_BYTES,
-        maxDurationSeconds: 5,
-      });
-      if (spotlightVideoPrepJobRef.current !== prepJob) return;
-
-      const preparedValidationIssue = validateSpotlightVideoFile(
-        prepared.file,
-        true
-      );
-      if (preparedValidationIssue) {
-        throw new Error(preparedValidationIssue);
-      }
-
-      setSpotlightVideoFile(prepared.file);
-      setSpotlightVideoDurationSeconds(prepared.durationSeconds ?? null);
-      setSpotlightNotice({
-        tone: "success",
-        text:
-          prepared.message ||
-          (spotlightImageFile
-            ? `${safeStr(prepared.file.name) || "Selected video"} is ready for spotlight publish. Your selected image will stay as the fallback cover.`
-            : `${safeStr(prepared.file.name) || "Selected video"} is ready for spotlight publish.`),
-      });
-    } catch (err: any) {
-      if (spotlightVideoPrepJobRef.current !== prepJob) return;
-      setSpotlightVideoFile(null);
-      setSpotlightVideoDurationSeconds(null);
-      setSpotlightVideoPreviewUrl("");
-      setSpotlightVideoInputKey((x) => x + 1);
-      showSpotlightNotice(
-        "error",
-        safeStr(err?.message) || "This video could not be prepared right now."
-      );
-    } finally {
-      if (spotlightVideoPrepJobRef.current === prepJob) {
-        setPreparingSpotlightVideo(false);
-      }
+      setChangingClanId(0);
     }
   }
 
@@ -1998,147 +1615,6 @@ export default function CommunityHomePage() {
 
     safeCopy(bundle);
     showNotice("success", "First-circle invite bundle copied.");
-  }
-
-  async function publishSpotlight(event?: React.SyntheticEvent<HTMLElement>) {
-    consumeCommunityButtonEvent(event);
-
-    if (!selectedClanId) {
-      showSpotlightNotice(
-        "error",
-        "Select a community before publishing spotlight."
-      );
-      return;
-    }
-
-    if (preparingSpotlightImage || preparingSpotlightVideo) {
-      showSpotlightNotice(
-        "error",
-        "Please wait while the app prepares your spotlight media."
-      );
-      return;
-    }
-
-    const description = safeStr(spotlightDescription);
-    const tagNumber = safeStr(spotlightTagNumber);
-    const expiry = safeStr(spotlightExpiry);
-    const myGmfnId = safeStr(me?.gmfn_id || "");
-
-    const combinedMessage = [description, tagNumber ? `Tag: ${tagNumber}` : ""]
-      .filter(Boolean)
-      .join("\n");
-
-    if (!combinedMessage && !spotlightImageFile && !spotlightVideoFile) {
-      showSpotlightNotice(
-        "error",
-        "Add a spotlight description, image, or short video first."
-      );
-      return;
-    }
-
-    const imageValidationIssue = validateSpotlightImageFile(spotlightImageFile);
-    if (imageValidationIssue) {
-      showSpotlightNotice("error", imageValidationIssue);
-      return;
-    }
-
-    const videoValidationIssue = validateSpotlightVideoFile(spotlightVideoFile);
-    if (videoValidationIssue) {
-      showSpotlightNotice("error", videoValidationIssue);
-      return;
-    }
-
-    try {
-      setPublishingSpotlight(true);
-      setSpotlightNotice(null);
-
-      let imageUrl = "";
-      let videoUrl = "";
-      let spotlightShopId = 0;
-
-      if (spotlightImageFile) {
-        const uploadRes = await uploadMarketplaceImageFile(
-          spotlightImageFile,
-          selectedClanId
-        );
-
-        imageUrl = firstTruthy(
-          uploadRes?.image_url,
-          uploadRes?.url,
-          uploadRes?.file_url,
-          uploadRes?.path,
-          uploadRes?.item?.image_url,
-          uploadRes?.data?.image_url
-        );
-
-        if (!imageUrl) {
-          throw new Error(
-            "Image upload completed but the system did not return a usable image link."
-          );
-        }
-      }
-
-      if (spotlightVideoFile) {
-        const uploadRes = await uploadMarketplaceVideoFile(
-          spotlightVideoFile,
-          spotlightVideoDurationSeconds,
-          selectedClanId
-        );
-
-        videoUrl = firstTruthy(
-          uploadRes?.video_url,
-          uploadRes?.url,
-          uploadRes?.file_url,
-          uploadRes?.path,
-          uploadRes?.item?.video_url,
-          uploadRes?.data?.video_url
-        );
-
-        if (!videoUrl) {
-          throw new Error(
-            "Video upload completed but the system did not return a usable video link."
-          );
-        }
-      }
-
-      if (myGmfnId) {
-        const shopRes = await getMarketplaceShopByGmfnId(myGmfnId, {
-          clan_id: selectedClanId,
-          header_clan_id: selectedClanId,
-        }).catch(() => null);
-
-        spotlightShopId = Number(
-          shopRes?.item?.id || shopRes?.item?.shop_id || shopRes?.shop_id || 0
-        );
-      }
-
-      const resolvedExpiry = expiry
-        ? new Date(expiry).toISOString()
-        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-
-      await createMarketplaceBroadcast({
-        clan_id: selectedClanId,
-        shop_id: spotlightShopId > 0 ? spotlightShopId : undefined,
-        message: combinedMessage || "Spotlight update",
-        image_url: imageUrl || undefined,
-        video_url: videoUrl || undefined,
-        expires_at: resolvedExpiry,
-      });
-
-      await refreshActiveCommunitySpotlight(selectedClanId);
-      clearSpotlightDraft();
-
-      showSpotlightNotice(
-        "success",
-        videoUrl
-          ? "Spotlight video uploaded successfully. It should now appear on the dashboard spotlight screen."
-          : "Spotlight uploaded successfully. It should now appear on the dashboard spotlight screen."
-      );
-    } catch (err: any) {
-      showSpotlightNotice("error", friendlySpotlightUploadError(err));
-    } finally {
-      setPublishingSpotlight(false);
-    }
   }
 
   if (loading) {
@@ -2191,13 +1667,13 @@ export default function CommunityHomePage() {
 
           <DomainIntroToggle
             title="About Community Home"
-            body="This is where your communities will appear. Create or join one first, then come back here to choose the group you want to work in."
+            body="Community Home is the place where your communities gather in one view. Create or join one first, then come back here to choose the exact group you want to open."
             bullets={[
               "Create or join a community first.",
-              "Then choose the group you want to work in.",
-              "Finance, Trust Passport, and Shop Gallery become clearer after your first community is in place.",
+              "Then choose the one group you want to open next.",
+              "Marketplace, links, and local member activity stay inside the selected community after you open it.",
             ]}
-            note="Simple rule: your groups gather here before you open one for live work."
+            note="Simple rule: Community Home gathers your groups first, then Marketplace opens one group at a time."
             tone="dark"
           />
 
@@ -2206,7 +1682,7 @@ export default function CommunityHomePage() {
             compact={isCompact}
             items={communityNextActionItems}
             onSelect={handleCommunityNextAction}
-            intro="Say what you want in normal words, like join, create, invite, shop, trust, loan, or marketplace. GSN will point you to the closest path."
+            intro="Say what you want in normal words, like choose community, marketplace, create, join, shop, trust, or finance. GSN will point you to the closest path."
           />
 
           <section style={communityBlockCard("blue")}>
@@ -2235,8 +1711,8 @@ export default function CommunityHomePage() {
               }}
             >
               Create or join a community first. After that, Community Home will
-              show your groups in one place and let you open the right
-              marketplace when you need to work.
+              show your groups in one place and let you choose the exact
+              community you want to open next.
             </div>
 
             <div
@@ -2367,8 +1843,9 @@ export default function CommunityHomePage() {
                 maxWidth: 880,
               }}
             >
-              Pick the community you want to work in. Your GSN ID keeps your
-              trust, finance, shop, and spotlight clear wherever you belong.
+              Choose the community you want to open. Community Home keeps your
+              communities, owner identity, and cross-community readings together
+              before you hand off into one marketplace.
             </div>
 
             <div
@@ -2451,7 +1928,7 @@ export default function CommunityHomePage() {
         compact={isCompact}
         items={communityNextActionItems}
         onSelect={handleCommunityNextAction}
-        intro="Say what you want in normal words, like community, marketplace, invite, shop, spotlight, loan, money, or trust. GSN will point you to the closest path."
+        intro="Say what you want in normal words, like choose community, enter marketplace, shop control, finance, trust, or support. GSN will point you to the closest path."
       />
 
       <section style={{ ...communityBlockCard("blue"), order: 55 }}>
@@ -2459,7 +1936,7 @@ export default function CommunityHomePage() {
           style={collapseHeaderLayout(isCompact)}
         >
           <div style={collapseHeaderText("center")}>
-            <div style={sectionLabel("center")}>Your main actions</div>
+            <div style={sectionLabel("center")}>Owner actions from Community Home</div>
             <div
               style={{
                 marginTop: 8,
@@ -2469,7 +1946,10 @@ export default function CommunityHomePage() {
                 textAlign: "center",
               }}
             >
-              Create a community, invite trusted people, manage your shop, or open Marketplace.
+              Start a community, open owner-side tools that follow your one GSN
+              ID, or hand off into the selected marketplace. Marketplace keeps
+              one community's live operating lanes together, while the
+              marketplace link desk carries that community's outward links.
             </div>
           </div>
 
@@ -2506,11 +1986,16 @@ export default function CommunityHomePage() {
             <button
               type="button"
               {...communityButtonGuardProps()}
-              onClick={copyInviteLink}
-              style={actionBtn("secondary", !inviteLink)}
-              disabled={!inviteLink}
+              onClick={(event) => void openSelectedMarketplaceLinks(event)}
+              style={actionBtn(
+                "secondary",
+                !selectedClanId || changingClanId === selectedClanId
+              )}
+              disabled={!selectedClanId || changingClanId === selectedClanId}
             >
-              Copy Selected Community Link
+              {changingClanId === selectedClanId
+                ? "Opening..."
+                : "Open Marketplace Link Desk"}
             </button>
 
             <button
@@ -2531,25 +2016,10 @@ export default function CommunityHomePage() {
             <button
               type="button"
               {...communityButtonGuardProps()}
-              onClick={(event) =>
-                openCommunityHomeSection(
-                  event,
-                  "community-home-spotlight-gears",
-                  "spotlight"
-                )
-              }
-              style={actionBtn("secondary")}
-            >
-              Manage Spotlight
-            </button>
-
-            <button
-              type="button"
-              {...communityButtonGuardProps()}
               onClick={openCommunityShopControl}
               style={actionBtn("secondary")}
             >
-              Shop Control
+              Open Shop Control
             </button>
 
             <button
@@ -2573,7 +2043,7 @@ export default function CommunityHomePage() {
             >
               {changingClanId === selectedClanId
                 ? "Opening..."
-                : "Open Marketplace"}
+                : "Open Selected Marketplace"}
             </button>
           </div>
         ) : null}
@@ -2793,7 +2263,7 @@ export default function CommunityHomePage() {
           style={collapseHeaderLayout(isCompact)}
         >
           <div style={collapseHeaderText("center")}>
-            <div style={sectionLabel("center")}>Spotlight</div>
+            <div style={sectionLabel("center")}>Owner spotlight status</div>
             <div
               style={{
                 marginTop: 8,
@@ -2803,7 +2273,8 @@ export default function CommunityHomePage() {
                 textAlign: "center",
               }}
             >
-              Publish one short message, picture, or video for this community.
+              See the selected community's spotlight status here. Prepare or
+              replace the owner content inside Shop Control.
             </div>
           </div>
 
@@ -2824,161 +2295,207 @@ export default function CommunityHomePage() {
               display: "grid",
               gridTemplateColumns: isCompact
                 ? "1fr"
-                : "minmax(0, 1.05fr) minmax(320px, 0.95fr)",
+                : "minmax(0, 0.95fr) minmax(320px, 1.05fr)",
               gap: 16,
               alignItems: "start",
             }}
           >
-            <div style={innerCard("#FCFEFF")}>
-              <div style={sectionLabel()}>Prepare spotlight</div>
+            <div
+              style={{
+                ...innerCard("#FCFEFF"),
+                border: "1px solid rgba(11,31,51,0.08)",
+              }}
+            >
+              <div style={sectionLabel()}>Selected community spotlight</div>
               <div
                 style={{
-                  marginTop: 8,
-                  color: "#5F7287",
-                  fontSize: 13,
-                  lineHeight: 1.65,
+                  marginTop: 10,
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 8,
                 }}
               >
-                Add the story first, then choose a picture or short video. If
-                both are added, the video goes live and the picture stays as the
-                cover.
+                <span style={badge(true)}>
+                  {activeCommunitySpotlightTotal ||
+                    activeCommunitySpotlights.length}{" "}
+                  live / queued
+                </span>
+                {activeCommunitySpotlights.length > 1 ? (
+                  <span style={badge(false)}>
+                    Showing{" "}
+                    {(activeCommunitySpotlightIndex %
+                      activeCommunitySpotlights.length) +
+                      1}{" "}
+                    of {activeCommunitySpotlights.length}
+                  </span>
+                ) : null}
+                <span style={badge(false)}>
+                  Rotates every {SPOTLIGHT_PILOT_ROTATION_SECONDS_LABEL} seconds
+                </span>
               </div>
 
-              <div style={{ marginTop: 14 }}>
-                <div style={sectionLabel()}>Product description</div>
-                <textarea
-                  value={spotlightDescription}
-                  onChange={(e) => setSpotlightDescription(e.target.value)}
-                  placeholder="Write the spotlight product description..."
-                  style={{ ...textAreaStyle(), marginTop: 8 }}
-                />
-              </div>
+              {activeCommunitySpotlightLoading ? (
+                <div
+                  style={{
+                    marginTop: 10,
+                    color: "#5F7287",
+                    fontSize: 14,
+                    lineHeight: 1.75,
+                  }}
+                >
+                  Refreshing live spotlight state...
+                </div>
+              ) : activeCommunitySpotlight ? (
+                <>
+                  <div style={{ marginTop: 12 }}>
+                    <SpotlightMediaFrame
+                      imageUrl={activeCommunitySpotlight.imageUrl}
+                      videoUrl={activeCommunitySpotlight.videoUrl}
+                      videoPoster={activeCommunitySpotlight.imageUrl}
+                      alt="Live community spotlight"
+                      frameStyle={{
+                        minHeight: 180,
+                        maxHeight: 260,
+                        borderRadius: 18,
+                        border: "1px solid rgba(212,175,55,0.14)",
+                        background:
+                          "linear-gradient(180deg, rgba(24,58,88,0.98) 0%, rgba(38,84,122,0.98) 100%)",
+                      }}
+                      mediaStyle={{
+                        minHeight: 180,
+                        maxHeight: 260,
+                      }}
+                      showVideoControls={Boolean(
+                        activeCommunitySpotlight.videoUrl
+                      )}
+                      autoPlayVideo={Boolean(activeCommunitySpotlight.videoUrl)}
+                      mutedVideo={Boolean(activeCommunitySpotlight.videoUrl)}
+                      loopVideo={Boolean(activeCommunitySpotlight.videoUrl)}
+                      maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
+                      fallback={
+                        <div
+                          style={{
+                            padding: 20,
+                            textAlign: "center",
+                            color: "#D7E3F1",
+                            fontWeight: 800,
+                            fontSize: 14,
+                            lineHeight: 1.7,
+                          }}
+                        >
+                          The active spotlight is live, but no image or video is attached to it.
+                        </div>
+                      }
+                    />
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      color: "#0B1F33",
+                      fontSize: 16,
+                      fontWeight: 900,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {activeCommunitySpotlight.message || "Live spotlight is active."}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      display: "flex",
+                      gap: 8,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <span style={badge(true)}>Active now</span>
+                    {activeCommunitySpotlight.videoUrl ? (
+                      <span style={badge(false)}>Short video live</span>
+                    ) : activeCommunitySpotlight.imageUrl ? (
+                      <span style={badge(false)}>Image live</span>
+                    ) : null}
+                    {activeCommunitySpotlight.expiresAt ? (
+                      <span style={badge(false)}>
+                        Expires:{" "}
+                        {new Date(
+                          activeCommunitySpotlight.expiresAt
+                        ).toLocaleString()}
+                      </span>
+                    ) : (
+                      <span style={badge(false)}>No expiry set</span>
+                    )}
+                  </div>
+                </>
+              ) : activeCommunitySpotlightSyncIssue ? (
+                <div
+                  style={{
+                    marginTop: 10,
+                    color: "#5F7287",
+                    fontSize: 14,
+                    lineHeight: 1.75,
+                  }}
+                >
+                  Live spotlight data could not be confirmed just now.
+                  <div style={{ marginTop: 8, color: "#8A1C1C" }}>
+                    Refresh note: {activeCommunitySpotlightSyncIssue}
+                  </div>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    marginTop: 10,
+                    color: "#5F7287",
+                    fontSize: 14,
+                    lineHeight: 1.75,
+                  }}
+                >
+                  No spotlight is live in the selected community right now.
+                  Open Shop Control when you want to publish one.
+                </div>
+              )}
+            </div>
 
+            <div
+              style={{
+                ...innerCard("rgba(255,255,255,0.98)"),
+                border: "1px solid rgba(212,175,55,0.12)",
+                boxShadow: "0 16px 34px rgba(2,12,27,0.10)",
+              }}
+            >
+              <div style={sectionLabel()}>Spotlight tools live in Shop Control</div>
+              <div
+                style={{
+                  marginTop: 10,
+                  color: "#0B1F33",
+                  fontSize: 18,
+                  fontWeight: 900,
+                  lineHeight: 1.35,
+                }}
+              >
+                {communitySpotlightNextAction.title}
+              </div>
+              <div
+                style={{
+                  marginTop: 10,
+                  color: "#5F7287",
+                  fontSize: 14,
+                  lineHeight: 1.75,
+                }}
+              >
+                {communitySpotlightNextAction.detail}
+              </div>
               <div
                 style={{
                   marginTop: 14,
-                  display: "grid",
-                  gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-                  gap: 12,
+                  color: "#5F7287",
+                  fontSize: 13,
+                  lineHeight: 1.75,
                 }}
               >
-                <div>
-                  <div style={sectionLabel()}>Tag number</div>
-                  <input
-                    value={spotlightTagNumber}
-                    onChange={(e) => setSpotlightTagNumber(e.target.value)}
-                    placeholder="Enter tag number"
-                    style={{ ...inputStyle(), marginTop: 8 }}
-                  />
-                </div>
-
-                <div>
-                  <div style={sectionLabel()}>Expiry (optional)</div>
-                  <input
-                    type="datetime-local"
-                    value={spotlightExpiry}
-                    onChange={(e) => setSpotlightExpiry(e.target.value)}
-                    style={{ ...inputStyle(), marginTop: 8 }}
-                  />
-                </div>
+                This keeps Community Home clean: it shows the owner-side
+                spotlight status here, Shop Control prepares the picture, short
+                video, products, Vault, and paid choices, and Marketplace
+                carries that spotlight inside the selected community.
               </div>
-
-              <div style={{ marginTop: 14 }}>
-                <div style={sectionLabel()}>Image</div>
-                <input
-                  key={spotlightFileInputKey}
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
-                  onChange={(e) =>
-                    handleSpotlightImageChange(e.target.files?.[0] || null)
-                  }
-                  style={{ ...inputStyle(), marginTop: 8, paddingTop: 10 }}
-                />
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#5F7287",
-                    fontSize: 13,
-                    lineHeight: 1.7,
-                  }}
-                >
-                  Use {SPOTLIGHT_ALLOWED_IMAGE_LABEL}, up to 10 MB. Heavy photos
-                  are prepared into a lighter spotlight copy before upload.
-                </div>
-                {spotlightImageFile ? (
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "#0B1F33",
-                      fontSize: 13,
-                      fontWeight: 700,
-                      lineHeight: 1.6,
-                      overflowWrap: "anywhere",
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    Selected image: {safeStr(spotlightImageFile.name) || "image"} |{" "}
-                    {formatFileSize(spotlightImageFile.size)} |{" "}
-                    {safeStr(spotlightImageFile.type) || "unknown type"}
-                  </div>
-                ) : null}
-              </div>
-
-              <div style={{ marginTop: 14 }}>
-                <div style={sectionLabel()}>Short video (optional)</div>
-                <input
-                  key={spotlightVideoInputKey}
-                  type="file"
-                  accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
-                  onChange={(e) =>
-                    handleSpotlightVideoChange(e.target.files?.[0] || null)
-                  }
-                  style={{ ...inputStyle(), marginTop: 8, paddingTop: 10 }}
-                />
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#5F7287",
-                    fontSize: 13,
-                    lineHeight: 1.7,
-                  }}
-                >
-                  Use {SPOTLIGHT_ALLOWED_VIDEO_LABEL}, up to 10 MB. Short clips
-                  work best. If a clip is heavy, GSN will try to prepare a
-                  spotlight-ready version before upload.
-                </div>
-                {spotlightVideoFile ? (
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "#0B1F33",
-                      fontSize: 13,
-                      fontWeight: 700,
-                      lineHeight: 1.6,
-                      overflowWrap: "anywhere",
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    Selected video: {safeStr(spotlightVideoFile.name) || "video"} |{" "}
-                    {formatFileSize(spotlightVideoFile.size)} |{" "}
-                    {safeStr(spotlightVideoFile.type) || "unknown type"}
-                    {spotlightVideoDurationSeconds != null
-                      ? ` | ${spotlightVideoDurationSeconds.toFixed(1)}s`
-                      : ""}
-                  </div>
-                ) : null}
-                {spotlightNotice ? (
-                  <div
-                    style={{
-                      marginTop: 12,
-                      ...noticeCard(spotlightNotice.tone),
-                    }}
-                  >
-                    {spotlightNotice.text}
-                  </div>
-                ) : null}
-              </div>
-
               <div
                 style={{
                   marginTop: 16,
@@ -2990,253 +2507,24 @@ export default function CommunityHomePage() {
                 <button
                   type="button"
                   {...communityButtonGuardProps()}
-                  onClick={publishSpotlight}
-                  disabled={
-                    publishingSpotlight ||
-                    preparingSpotlightImage ||
-                    preparingSpotlightVideo
+                  onClick={(event) =>
+                    openCommunityRoute(
+                      event,
+                      "/app/shop-control#shop-control-spotlight"
+                    )
                   }
-                  style={actionBtn(
-                    "primary",
-                    publishingSpotlight ||
-                      preparingSpotlightImage ||
-                      preparingSpotlightVideo
-                  )}
+                  style={actionBtn("primary")}
                 >
-                  {publishingSpotlight
-                    ? "Publishing..."
-                    : preparingSpotlightImage || preparingSpotlightVideo
-                    ? "Preparing media..."
-                    : "Publish Spotlight"}
+                  Open Owner Spotlight Tools
                 </button>
-
                 <button
                   type="button"
                   {...communityButtonGuardProps()}
-                  onClick={clearSpotlightDraft}
+                  onClick={openCommunityShopControl}
                   style={actionBtn("secondary")}
                 >
-                  Clear Draft
+                  Open Shop Summary
                 </button>
-              </div>
-
-              <div
-                style={{
-                  marginTop: 14,
-                  ...innerCard("#FFFFFF"),
-                  border: "1px solid rgba(11,31,51,0.08)",
-                }}
-              >
-                <div style={sectionLabel()}>Live spotlight state</div>
-                {activeCommunitySpotlightLoading ? (
-                  <div style={{ marginTop: 10, color: "#5F7287", fontSize: 14, lineHeight: 1.75 }}>
-                    Refreshing live spotlight state...
-                  </div>
-                ) : activeCommunitySpotlight ? (
-                  <>
-                    <div style={{ marginTop: 12 }}>
-                      <SpotlightMediaFrame
-                        imageUrl={activeCommunitySpotlight.imageUrl}
-                        videoUrl={activeCommunitySpotlight.videoUrl}
-                        videoPoster={activeCommunitySpotlight.imageUrl}
-                        alt="Live community spotlight"
-                        frameStyle={{
-                          minHeight: 180,
-                          maxHeight: 260,
-                          borderRadius: 18,
-                          border: "1px solid rgba(212,175,55,0.14)",
-                          background:
-                            "linear-gradient(180deg, rgba(24,58,88,0.98) 0%, rgba(38,84,122,0.98) 100%)",
-                        }}
-                        mediaStyle={{
-                          minHeight: 180,
-                          maxHeight: 260,
-                        }}
-                        showVideoControls={Boolean(
-                          activeCommunitySpotlight.videoUrl
-                        )}
-                        autoPlayVideo={Boolean(activeCommunitySpotlight.videoUrl)}
-                        mutedVideo={Boolean(activeCommunitySpotlight.videoUrl)}
-                        loopVideo={Boolean(activeCommunitySpotlight.videoUrl)}
-                        fallback={
-                          <div
-                            style={{
-                              padding: 20,
-                              textAlign: "center",
-                              color: "#D7E3F1",
-                              fontWeight: 800,
-                              fontSize: 14,
-                              lineHeight: 1.7,
-                            }}
-                          >
-                            The active spotlight is live, but no image or video is attached to it.
-                          </div>
-                        }
-                      />
-                    </div>
-                    <div
-                      style={{
-                        marginTop: 10,
-                        color: "#0B1F33",
-                        fontSize: 16,
-                        fontWeight: 900,
-                        lineHeight: 1.4,
-                      }}
-                    >
-                      {activeCommunitySpotlight.message || "Live spotlight is active."}
-                    </div>
-                    <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <span style={badge(true)}>Active now</span>
-                      {activeCommunitySpotlight.videoUrl ? (
-                        <span style={badge(false)}>Short video live</span>
-                      ) : activeCommunitySpotlight.imageUrl ? (
-                        <span style={badge(false)}>Image live</span>
-                      ) : null}
-                      {activeCommunitySpotlight.expiresAt ? (
-                        <span style={badge(false)}>
-                          Expires: {new Date(activeCommunitySpotlight.expiresAt).toLocaleString()}
-                        </span>
-                      ) : (
-                        <span style={badge(false)}>No expiry set</span>
-                      )}
-                    </div>
-                    <div
-                      style={{
-                        marginTop: 10,
-                        color: "#5F7287",
-                        fontSize: 13,
-                        lineHeight: 1.75,
-                      }}
-                    >
-                      This live spotlight belongs to your current community and
-                      should return after refresh or restart while it remains active.
-                    </div>
-                  </>
-                ) : activeCommunitySpotlightSyncIssue ? (
-                  <div style={{ marginTop: 10, color: "#5F7287", fontSize: 14, lineHeight: 1.75 }}>
-                    Live spotlight data could not be confirmed just now. Refresh from this page or
-                    retry after the community spotlight source becomes available again.
-                    <div style={{ marginTop: 8, color: "#8A1C1C" }}>
-                      Refresh note: {activeCommunitySpotlightSyncIssue}
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ marginTop: 10, color: "#5F7287", fontSize: 14, lineHeight: 1.75 }}>
-                    No active community spotlight is live right now. Publish from this panel and
-                    the active state will appear here after backend confirmation.
-                  </div>
-                )}
-                <div
-                  style={{
-                    marginTop: 12,
-                    ...innerCard("#FCFEFF"),
-                    border: "1px solid rgba(11,31,51,0.08)",
-                  }}
-                >
-                  <div style={sectionLabel()}>Current next action</div>
-                  <div
-                    style={{
-                      marginTop: 10,
-                      color: "#0B1F33",
-                      fontSize: 16,
-                      fontWeight: 900,
-                      lineHeight: 1.35,
-                    }}
-                  >
-                    {communitySpotlightNextAction.title}
-                  </div>
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "#5F7287",
-                      fontSize: 13,
-                      lineHeight: 1.75,
-                    }}
-                  >
-                    {communitySpotlightNextAction.detail}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div
-              style={{
-                ...innerCard("rgba(255,255,255,0.98)"),
-                border: "1px solid rgba(212,175,55,0.12)",
-                boxShadow: "0 16px 34px rgba(2,12,27,0.10)",
-              }}
-            >
-              <div style={sectionLabel()}>Preview before publish</div>
-
-              <div style={{ marginTop: 14 }}>
-                <SpotlightMediaFrame
-                  imageUrl={spotlightPreviewUrl}
-                  videoUrl={spotlightVideoPreviewUrl}
-                  videoPoster={spotlightPreviewUrl}
-                  alt="Spotlight preview"
-                  frameStyle={previewMediaBox()}
-                  mediaStyle={{ minHeight: 220 }}
-                  showVideoControls={Boolean(spotlightVideoPreviewUrl)}
-                  fallback={
-                    <div
-                      style={{
-                        padding: 18,
-                        textAlign: "center",
-                        color: "#D7E3F1",
-                        fontWeight: 800,
-                        fontSize: 16,
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      No image or video selected yet
-                    </div>
-                  }
-                />
-
-                <div
-                  style={{
-                    marginTop: 14,
-                    color: "#0B1F33",
-                    fontSize: 18,
-                    fontWeight: 900,
-                    lineHeight: 1.35,
-                  }}
-                >
-                  {safeStr(spotlightDescription) || "No description written yet"}
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 10,
-                    display: "flex",
-                    gap: 8,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  {safeStr(spotlightTagNumber) ? (
-                    <span style={badge(true)}>Tag: {safeStr(spotlightTagNumber)}</span>
-                  ) : (
-                    <span style={badge(false)}>Tag not entered yet</span>
-                  )}
-
-                  {safeStr(spotlightExpiry) ? (
-                    <span style={badge(false)}>Expiry: {safeStr(spotlightExpiry)}</span>
-                  ) : (
-                    <span style={badge(false)}>No expiry set</span>
-                  )}
-
-                  {spotlightVideoPreviewUrl ? (
-                    <span style={badge(true)}>Short video selected</span>
-                  ) : spotlightPreviewUrl ? (
-                    <span style={badge(false)}>Image selected</span>
-                  ) : (
-                    <span style={badge(false)}>No media selected</span>
-                  )}
-
-                  <span style={badge(false)}>
-                    Community: {selectedClanName || "No community selected"}
-                  </span>
-                </div>
               </div>
             </div>
           </div>
@@ -3273,7 +2561,7 @@ export default function CommunityHomePage() {
                 textAlign: "center",
               }}
             >
-              Choose a community. GSN opens its Marketplace.
+              Choose one community here, then hand off into its Marketplace.
             </div>
 
             <div
@@ -3399,7 +2687,7 @@ export default function CommunityHomePage() {
                           <span style={compactSignal(false)}>
                             Paid spotlight: {spotlightSubscribers}
                           </span>
-                          <span style={compactSignal(false)}>Vault: {vaultSubscribers}</span>
+                          <span style={compactSignal(false)}>Private Vault: {vaultSubscribers}</span>
                         </div>
                       ) : (
                         <div
@@ -3420,7 +2708,7 @@ export default function CommunityHomePage() {
                           <span style={compactSignal(false)}>
                             Paid spotlight: {spotlightSubscribers}
                           </span>
-                          <span style={compactSignal(false)}>Vault: {vaultSubscribers}</span>
+                          <span style={compactSignal(false)}>Private Vault: {vaultSubscribers}</span>
                         </div>
                       )}
                     </div>
@@ -3446,7 +2734,7 @@ export default function CommunityHomePage() {
                           <div style={metricValue()}>{financeHealth}</div>
                         </div>
                         <div style={metricCard("blue")}>
-                          <div style={metricLabel()}>Trust across communities</div>
+                          <div style={metricLabel()}>Trust in this community</div>
                         </div>
                       </div>
                     ) : (
@@ -3477,7 +2765,7 @@ export default function CommunityHomePage() {
                             padding: 12,
                           }}
                         >
-                          <div style={sectionLabel()}>Trust across communities</div>
+                          <div style={sectionLabel()}>Trust in this community</div>
                         </div>
                       </>
                     )}

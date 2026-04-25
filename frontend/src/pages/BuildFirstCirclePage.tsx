@@ -129,14 +129,17 @@ function badge(primary = false): React.CSSProperties {
 function stableTapStyle(): React.CSSProperties {
   return {
     position: "relative",
-    zIndex: 2,
+    zIndex: 10,
     isolation: "isolate",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
+    pointerEvents: "auto",
     boxSizing: "border-box",
     transform: "translateZ(0)",
     outlineOffset: 4,
+    appearance: "none",
+    WebkitAppearance: "none",
   };
 }
 
@@ -152,8 +155,8 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 42,
-      padding: "10px 14px",
+      minHeight: 48,
+      padding: "12px 15px",
       borderRadius: 14,
       border: "none",
       background: disabled ? "#CBD5E1" : "#0B63D1",
@@ -164,6 +167,8 @@ function actionBtn(
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
+      overflowWrap: "anywhere",
+      lineHeight: 1.2,
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -174,8 +179,8 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 38,
-      padding: "8px 12px",
+      minHeight: 46,
+      padding: "11px 14px",
       borderRadius: 12,
       border: "1px solid rgba(11,31,51,0.08)",
       background: "#F8FBFF",
@@ -186,6 +191,8 @@ function actionBtn(
       textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
+      overflowWrap: "anywhere",
+      lineHeight: 1.2,
       opacity: disabled ? 0.86 : 1,
     };
   }
@@ -195,8 +202,8 @@ function actionBtn(
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
+    minHeight: 48,
+    padding: "12px 15px",
     borderRadius: 14,
     border: "1px solid rgba(11,31,51,0.10)",
     background: "#FFFFFF",
@@ -207,6 +214,8 @@ function actionBtn(
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
+    overflowWrap: "anywhere",
+    lineHeight: 1.2,
     opacity: disabled ? 0.86 : 1,
   };
 }
@@ -217,8 +226,8 @@ function collapseToggle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 38,
-    padding: "8px 12px",
+    minHeight: 44,
+    padding: "10px 14px",
     borderRadius: 12,
     border: "1px solid rgba(11,31,51,0.10)",
     background: "#FFFFFF",
@@ -228,6 +237,8 @@ function collapseToggle(): React.CSSProperties {
     textAlign: "center",
     cursor: "pointer",
     whiteSpace: "normal",
+    overflowWrap: "anywhere",
+    lineHeight: 1.2,
   };
 }
 
@@ -709,13 +720,13 @@ export default function BuildFirstCirclePage() {
   );
   const activeStepTitle =
     activeStep === 1
-      ? "Choose your role"
+      ? "Pick your aim"
       : activeStep === 2
       ? "Add trusted people"
       : "Copy the invite message";
   const activeStepText =
     activeStep === 1
-      ? "Pick the closest one. GSN will suggest the right people next."
+      ? "Choose what you mostly do. GSN will suggest the right people next."
       : activeStep === 2
       ? `Add ${remainingReady} more ${
           remainingReady === 1 ? "person" : "people"
@@ -1064,9 +1075,11 @@ export default function BuildFirstCirclePage() {
                 flexWrap: "wrap",
               }}
             >
-              <span style={badge(hasRole)}>1. Role</span>
-              <span style={badge(readyCount > 0)}>2. People {readyCount}/{targetCount}</span>
-              <span style={badge(readyCount >= targetCount)}>3. Invite</span>
+              <span style={badge(hasRole)}>Aim</span>
+              <span style={badge(readyCount > 0)}>
+                People {readyCount}/{targetCount}
+              </span>
+              <span style={badge(readyCount >= targetCount)}>Invite</span>
             </div>
           </div>
         </div>
@@ -1083,9 +1096,9 @@ export default function BuildFirstCirclePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Step 1</div>
+            <div style={sectionLabel()}>Aim</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Choose the closest role. You can change it later.
+              Pick the closest one. You can change it later.
             </div>
           </div>
         </div>
@@ -1123,7 +1136,10 @@ export default function BuildFirstCirclePage() {
                     key={role}
                     type="button"
                     {...buttonGuardProps()}
-                    onClick={() => setRole(role)}
+                    onClick={(event) => {
+                      guardButtonPress(event);
+                      setRole(role);
+                    }}
                     style={active ? actionBtn("primary") : actionBtn("secondary")}
                   >
                     {roleText(role)}
@@ -1169,9 +1185,9 @@ export default function BuildFirstCirclePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Step 2</div>
+            <div style={sectionLabel()}>People</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Add three real people you already trust. A phone or email makes each invite ready.
+              Add three real people. Phone or email makes each invite ready.
             </div>
           </div>
         </div>
@@ -1302,7 +1318,10 @@ export default function BuildFirstCirclePage() {
                   <button
                     type="button"
                     {...buttonGuardProps()}
-                    onClick={addManualContact}
+                    onClick={(event) => {
+                      guardButtonPress(event);
+                      addManualContact();
+                    }}
                     style={actionBtn("primary")}
                   >
                     Add Person
@@ -1311,7 +1330,10 @@ export default function BuildFirstCirclePage() {
                   <button
                     type="button"
                     {...buttonGuardProps()}
-                    onClick={() => setManualForm(defaultManualForm())}
+                    onClick={(event) => {
+                      guardButtonPress(event);
+                      setManualForm(defaultManualForm());
+                    }}
                     style={actionBtn("secondary")}
                   >
                     Clear Form
@@ -1331,7 +1353,10 @@ export default function BuildFirstCirclePage() {
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={() => void addFromPhoneContacts()}
+                  onClick={(event) => {
+                    guardButtonPress(event);
+                    void addFromPhoneContacts();
+                  }}
                   disabled={pickingContacts}
                   style={actionBtn("secondary", pickingContacts)}
                 >
@@ -1375,7 +1400,7 @@ export default function BuildFirstCirclePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Step 3</div>
+            <div style={sectionLabel()}>Check people</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Review your people. Keep only names you truly know.
             </div>
@@ -1386,7 +1411,10 @@ export default function BuildFirstCirclePage() {
             <button
               type="button"
               {...buttonGuardProps()}
-              onClick={() => toggleSection("contacts")}
+              onClick={(event) => {
+                guardButtonPress(event);
+                toggleSection("contacts");
+              }}
               style={collapseToggle()}
             >
               {collapsed.contacts ? "Open" : "Collapse"}
@@ -1448,7 +1476,7 @@ export default function BuildFirstCirclePage() {
                         safeStr(item.note) || "",
                       ]
                         .filter(Boolean)
-                        .join(" • ") || "No extra note yet"}
+                        .join(" - ") || "No extra note yet"}
                     </div>
 
                     <div
@@ -1462,7 +1490,10 @@ export default function BuildFirstCirclePage() {
                       <button
                         type="button"
                         {...buttonGuardProps()}
-                        onClick={() => toggleSelected(item.id)}
+                        onClick={(event) => {
+                          guardButtonPress(event);
+                          toggleSelected(item.id);
+                        }}
                         style={item.selected ? actionBtn("primary") : actionBtn("secondary")}
                       >
                         {item.selected ? "Included" : "Include"}
@@ -1471,7 +1502,10 @@ export default function BuildFirstCirclePage() {
                       <button
                         type="button"
                         {...buttonGuardProps()}
-                        onClick={() => removeContact(item.id)}
+                        onClick={(event) => {
+                          guardButtonPress(event);
+                          removeContact(item.id);
+                        }}
                         style={actionBtn("soft")}
                       >
                         Remove
@@ -1496,16 +1530,19 @@ export default function BuildFirstCirclePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Final step</div>
+            <div style={sectionLabel()}>Invite message</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Copy the invite message when the first circle is ready.
+              Copy the invite message when ready.
             </div>
           </div>
 
           <button
             type="button"
             {...buttonGuardProps()}
-            onClick={() => toggleSection("invite")}
+            onClick={(event) => {
+              guardButtonPress(event);
+              toggleSection("invite");
+            }}
             style={collapseToggle()}
           >
             {collapsed.invite ? "Open" : "Collapse"}
@@ -1565,7 +1602,10 @@ export default function BuildFirstCirclePage() {
                   <button
                     type="button"
                     {...buttonGuardProps()}
-                    onClick={copyInviteBundle}
+                    onClick={(event) => {
+                      guardButtonPress(event);
+                      copyInviteBundle();
+                    }}
                     disabled={readyContacts.length === 0}
                     style={actionBtn("primary", readyContacts.length === 0)}
                   >
@@ -1575,7 +1615,10 @@ export default function BuildFirstCirclePage() {
                   <button
                     type="button"
                     {...buttonGuardProps()}
-                    onClick={resetDraft}
+                    onClick={(event) => {
+                      guardButtonPress(event);
+                      resetDraft();
+                    }}
                     style={actionBtn("secondary")}
                   >
                     Reset First Circle

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
@@ -62,11 +62,11 @@ function rowsOf<T = any>(input: any): T[] {
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: "1px solid rgba(13,95,168,0.14)",
+    background: `linear-gradient(180deg, ${bg} 0%, #F6FAFF 100%)`,
     padding: 20,
     boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
+      "0 20px 44px rgba(7,24,39,0.11), 0 6px 18px rgba(11,99,209,0.06), inset 0 1px 0 rgba(255,255,255,0.9)",
     overflow: "hidden",
   };
 }
@@ -74,32 +74,39 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: "1px solid rgba(13,95,168,0.12)",
+    background: `linear-gradient(180deg, ${bg} 0%, #F4F9FF 100%)`,
     padding: 16,
+    boxShadow:
+      "0 14px 30px rgba(7,24,39,0.07), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -2px 0 rgba(8,40,72,0.05)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: "1px solid rgba(13,95,168,0.11)",
+    background: `linear-gradient(180deg, ${bg} 0%, #FCFEFF 100%)`,
     padding: 14,
+    boxShadow:
+      "0 12px 24px rgba(15,23,42,0.05), inset 0 1px 0 rgba(255,255,255,0.86)",
   };
 }
 
 function detailsShell(): React.CSSProperties {
   return {
     borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(13,95,168,0.12)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #FBFDFF 100%)",
+    boxShadow:
+      "0 14px 28px rgba(7,24,39,0.06), inset 0 1px 0 rgba(255,255,255,0.88)",
     overflow: "hidden",
   };
 }
 
 function detailsSummary(): React.CSSProperties {
   return {
+    ...stableTapTarget,
     listStyle: "none",
     cursor: "pointer",
     padding: "16px 18px",
@@ -116,9 +123,11 @@ function detailsSummary(): React.CSSProperties {
 function statTile(): React.CSSProperties {
   return {
     borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(13,95,168,0.11)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F9FCFF 100%)",
     padding: 14,
+    boxShadow:
+      "0 12px 24px rgba(15,23,42,0.045), inset 0 1px 0 rgba(255,255,255,0.86)",
   };
 }
 
@@ -158,11 +167,13 @@ function primaryBtn(disabled = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 48,
+    minHeight: 50,
     padding: "12px 15px",
     borderRadius: 14,
-    border: "none",
-    background: disabled ? "#CBD5E1" : "#0B63D1",
+    border: "1px solid rgba(9,61,122,0.12)",
+    background: disabled
+      ? "#CBD5E1"
+      : "linear-gradient(180deg, #1773E6 0%, #0B63D1 55%, #084C9E 100%)",
     color: "#FFFFFF",
     fontWeight: 900,
     fontSize: 14,
@@ -173,6 +184,9 @@ function primaryBtn(disabled = false): React.CSSProperties {
     overflowWrap: "anywhere",
     lineHeight: 1.2,
     opacity: disabled ? 0.86 : 1,
+    boxShadow: disabled
+      ? "none"
+      : "0 14px 28px rgba(11,99,209,0.2), inset 0 1px 0 rgba(255,255,255,0.2)",
   };
 }
 
@@ -182,11 +196,11 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 48,
+    minHeight: 50,
     padding: "12px 15px",
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(13,95,168,0.12)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F3F8FD 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
@@ -197,6 +211,8 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     overflowWrap: "anywhere",
     lineHeight: 1.2,
     opacity: disabled ? 0.86 : 1,
+    boxShadow:
+      "0 12px 24px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.9)",
   };
 }
 
@@ -206,11 +222,11 @@ function subtleBtn(disabled = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 46,
+    minHeight: 48,
     padding: "11px 14px",
     borderRadius: 12,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#F8FBFF",
+    border: "1px solid rgba(13,95,168,0.11)",
+    background: "linear-gradient(180deg, #F8FBFF 0%, #EEF6FF 100%)",
     color: disabled ? "#94A3B8" : "#24415C",
     fontWeight: 800,
     fontSize: 13,
@@ -220,6 +236,8 @@ function subtleBtn(disabled = false): React.CSSProperties {
     overflowWrap: "anywhere",
     lineHeight: 1.2,
     opacity: disabled ? 0.86 : 1,
+    boxShadow:
+      "0 10px 20px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.86)",
   };
 }
 
@@ -228,13 +246,15 @@ function inputStyle(): React.CSSProperties {
     width: "100%",
     minHeight: 44,
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(13,95,168,0.11)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #FCFEFF 100%)",
     padding: "11px 12px",
     fontSize: 14,
     color: "#0B1F33",
     outline: "none",
     boxSizing: "border-box",
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.92), 0 8px 18px rgba(15,23,42,0.025)",
   };
 }
 
@@ -250,9 +270,9 @@ function textAreaStyle(): React.CSSProperties {
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#5D7389",
+    color: "#2E587E",
     fontWeight: 900,
-    letterSpacing: 0.35,
+    letterSpacing: 0.55,
     textTransform: "uppercase",
   };
 }
@@ -265,11 +285,17 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
+    background: primary
+      ? "linear-gradient(180deg, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0.08) 100%)"
+      : "linear-gradient(180deg, rgba(100,116,139,0.12) 0%, rgba(100,116,139,0.08) 100%)",
+    color: primary ? "#0B63D1" : "#465E76",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
+    border: primary
+      ? "1px solid rgba(11,99,209,0.14)"
+      : "1px solid rgba(148,163,184,0.14)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.72)",
   };
 }
 
@@ -329,14 +355,15 @@ function communityChoiceBtn(active: boolean, disabled = false): React.CSSPropert
 function recordCard(): React.CSSProperties {
   return {
     ...innerCard("#FCFEFF"),
-    border: "1px solid rgba(11,99,209,0.08)",
-    boxShadow: "0 10px 22px rgba(15,23,42,0.035)",
+    border: "1px solid rgba(11,99,209,0.11)",
+    boxShadow:
+      "0 14px 28px rgba(15,23,42,0.055), inset 0 1px 0 rgba(255,255,255,0.84)",
   };
 }
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#5F7287",
+    color: "#4E647A",
     fontSize: 14,
     lineHeight: 1.75,
   };
@@ -481,7 +508,7 @@ export default function DemandBoxPage() {
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  async function loadPage(clanId = selectedClanId) {
+  const loadPage = useCallback(async (clanId = selectedClanId) => {
     setLoading(true);
 
     try {
@@ -523,11 +550,11 @@ export default function DemandBoxPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [selectedClanId]);
 
   useEffect(() => {
     void loadPage(selectedClanId);
-  }, [selectedClanId]);
+  }, [loadPage, selectedClanId]);
 
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });
@@ -1070,7 +1097,7 @@ export default function DemandBoxPage() {
               boxShadow: "0 18px 38px rgba(2,12,27,0.16)",
             }}
           >
-            <div style={sectionLabel()}>About Demand Box</div>
+            <div style={sectionLabel()}>How demand works</div>
 
             <div
               style={{
@@ -1080,7 +1107,7 @@ export default function DemandBoxPage() {
                 lineHeight: 1.45,
               }}
             >
-              GSN keeps the request guided from start to finish.
+              One clear request, one community context, one clean record.
             </div>
 
             <div
@@ -1101,7 +1128,7 @@ export default function DemandBoxPage() {
                     lineHeight: 1.35,
                   }}
                 >
-                  Choose community
+                  Pick community
                 </div>
               </div>
 
@@ -1115,7 +1142,7 @@ export default function DemandBoxPage() {
                     lineHeight: 1.35,
                   }}
                 >
-                  Say need and contact
+                  Say the need
                 </div>
               </div>
 
@@ -1129,7 +1156,7 @@ export default function DemandBoxPage() {
                     lineHeight: 1.35,
                   }}
                 >
-                  Agree proof and pay
+                  Agree proof
                 </div>
               </div>
 
@@ -1143,7 +1170,7 @@ export default function DemandBoxPage() {
                     lineHeight: 1.35,
                   }}
                 >
-                  Close it when settled
+                  Close when settled
                 </div>
               </div>
             </div>
@@ -1198,17 +1225,6 @@ export default function DemandBoxPage() {
                 : "Keep it simple: what you need, where it is needed, how people can reach you, and what proof or payment should be clear first."}
             </div>
           </div>
-
-          {!isCreateMode ? (
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <OriginLink to={demandReturnTo} style={whiteActionBtn(false)}>
-              {demandReturnLabel}
-            </OriginLink>
-            <OriginLink to="/app/dashboard" style={whiteActionBtn(false)}>
-              Dashboard
-            </OriginLink>
-          </div>
-          ) : null}
         </div>
 
         {isCreateMode ? (

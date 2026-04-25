@@ -349,8 +349,8 @@ export async function prepareSpotlightVideoFile(
     maxDurationSeconds?: number;
   }
 ): Promise<PreparedSpotlightMedia> {
-  const maxBytes = Number(options?.maxBytes || 10 * 1024 * 1024);
-  const maxDurationSeconds = Number(options?.maxDurationSeconds || 5);
+  const maxBytes = Number(options?.maxBytes || 15 * 1024 * 1024);
+  const maxDurationSeconds = Number(options?.maxDurationSeconds || 10);
 
   const objectUrl = URL.createObjectURL(file);
 

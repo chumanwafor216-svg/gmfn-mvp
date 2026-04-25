@@ -13,7 +13,8 @@ from pydantic import BaseModel, Field
 router = APIRouter(prefix="/marketplace/media", tags=["marketplace-media"])
 
 MAX_IMAGE_BYTES = 10 * 1024 * 1024
-MAX_VIDEO_BYTES = 10 * 1024 * 1024
+MAX_VIDEO_BYTES = 15 * 1024 * 1024
+MAX_VIDEO_DURATION_SECONDS = 10.0
 
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 ALLOWED_VIDEO_EXTENSIONS = {".mp4", ".webm", ".mov"}
@@ -280,10 +281,10 @@ async def upload_marketplace_video(
     _validate_ext("video", ext)
     _validate_content_type("video", content_type, ext)
 
-    if duration_seconds is not None and float(duration_seconds) > 5.0:
+    if duration_seconds is not None and float(duration_seconds) > MAX_VIDEO_DURATION_SECONDS:
         raise HTTPException(
             status_code=400,
-            detail="Video must not be longer than 5 seconds.",
+            detail=f"Video must not be longer than {int(MAX_VIDEO_DURATION_SECONDS)} seconds.",
         )
 
     data = await _read_limited_bytes(file, MAX_VIDEO_BYTES)
@@ -301,7 +302,7 @@ async def upload_marketplace_video(
         "content_type": content_type,
         "size_bytes": len(data),
         "duration_seconds": duration_seconds,
-        "max_video_seconds": 5.0,
+        "max_video_seconds": MAX_VIDEO_DURATION_SECONDS,
         "url": _public_url_for("videos", filename),
         "clan_id": clan_id,
     }
