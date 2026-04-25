@@ -2017,23 +2017,18 @@ def create_marketplace_broadcast(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
-    resolved_clan_id = _resolve_clan_id(
+    requested_clan_id = _resolve_clan_id(
         current_user=current_user,
         db=db,
         explicit_clan_id=payload.clan_id,
         header_clan_id=x_clan_id,
     )
 
-    _require_active_membership(
-        db=db,
-        user_id=int(current_user.id),
-        clan_id=resolved_clan_id,
-    )
-
     priority_mode = _resolve_priority_mode(payload.priority_mode)
     visibility_scope = _safe_str(payload.visibility_scope, "direct_communities").lower()
 
     shop = None
+    resolved_clan_id = int(requested_clan_id)
     if payload.shop_id:
         shop = (
             db.query(MarketplaceShop)
@@ -2049,6 +2044,20 @@ def create_marketplace_broadcast(
                 detail="Only the shop owner can create a spotlight for this shop",
             )
 
+        shop_clan_id = int(getattr(shop, "clan_id", 0) or 0)
+        if shop_clan_id <= 0:
+            raise HTTPException(
+                status_code=400,
+                detail="Shop is not attached to a community.",
+            )
+        resolved_clan_id = shop_clan_id
+
+    _require_active_membership(
+        db=db,
+        user_id=int(current_user.id),
+        clan_id=resolved_clan_id,
+    )
+
     expires_at = payload.expires_at
     if expires_at is None:
         expires_at = _now_utc().replace(microsecond=0)
@@ -2062,9 +2071,13 @@ def create_marketplace_broadcast(
     if expires_at <= _now_utc():
         raise HTTPException(status_code=400, detail="expires_at must be in the future")
 
-    target_clan_ids = _get_active_clan_ids_for_user(
-        db=db,
-        user_id=int(current_user.id),
+    target_clan_ids = (
+        [int(resolved_clan_id)]
+        if shop is not None
+        else _get_active_clan_ids_for_user(
+            db=db,
+            user_id=int(current_user.id),
+        )
     )
     if not target_clan_ids:
         raise HTTPException(status_code=400, detail="No active clan memberships found")

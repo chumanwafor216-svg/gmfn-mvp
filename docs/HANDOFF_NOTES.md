@@ -11040,3 +11040,47 @@ GSN-branded invite composer and invite-entry continuity.
   - this simplifies the route shape and removes the strongest phone jump-back
     cause, but it should still be phone-tested once deployed to confirm the
     picker return now feels steady in real use
+
+### Shop spotlight publish now targets the shop's real community only (2026-04-25)
+
+- Product-owner concern:
+  - after media attach, the publish action still did not feel trustworthy
+  - spotlight behavior showed signs of duplication
+  - the likely system-level risk was that one shop spotlight publish was being
+    treated like a whole-account broadcast instead of a publish for the selected
+    shop/community
+- Re-audited the backend route:
+  - `gmfn_backend/app/api/routes/marketplace.py`
+  - `POST /marketplace/broadcasts`
+- Confirmed weak point before this fix:
+  - when `shop_id` was supplied, the route still expanded the publish into all
+    active clan memberships for the current user
+  - that could:
+    - create duplicate shop spotlight rows
+    - let one unrelated clan capacity block the whole publish
+    - make one shop spotlight look inconsistent across routes
+- Applied the smallest safe system-level fix:
+  - `gmfn_backend/app/api/routes/marketplace.py`
+    - when a shop-owned spotlight is created:
+      - the shop's own `clan_id` becomes the resolved target community
+      - membership is checked against that real shop community
+      - `target_clan_ids` becomes only `[shop.clan_id]`
+    - non-shop generic broadcasts keep their wider multi-clan behavior
+- Added backend proof:
+  - `gmfn_backend/tests/test_marketplace_public_shop.py`
+    - new regression test verifies that a shop spotlight publish creates a
+      record only for the shop's own community, even when the owner belongs to
+      multiple communities
+- Verification:
+  - backend tests:
+    - `.\\.venv\\Scripts\\python -m pytest tests/test_marketplace_public_shop.py`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - backend tests passed: `3 passed`
+  - frontend build passed
+- Important remaining product note:
+  - after deploy, phone-test one free spotlight publish again. If publish still
+    fails after this routing fix, the next audit target is the live frontend
+    error surfacing around the publish response, not the community targeting
+    rule itself

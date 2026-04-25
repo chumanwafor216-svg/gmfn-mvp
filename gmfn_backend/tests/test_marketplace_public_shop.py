@@ -206,3 +206,85 @@ def test_public_shop_face_hides_missing_media_links(client, monkeypatch, tmp_pat
     assert body["products"][0]["image_url"] is None
     assert body["products"][0]["image_url_available"] is False
     assert body["primary_broadcast"]["image_url"] is None
+
+
+def test_shop_spotlight_publish_targets_only_the_shop_community(
+    client,
+    override_current_user_user,
+):
+    _ensure_marketplace_tables()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'pytest@example.com', 'hashed', 'Shop Owner', 'user', 'GMFN-U-SPOTLIGHT'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES
+                    (1, 'Golden boys', 'Golden boys Marketplace', 'SPOTLIGHT1'),
+                    (2, 'Aberdeen city ICA', 'Aberdeen city ICA Marketplace', 'SPOTLIGHT2')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES
+                    (1, 1, 1, 'member', 0),
+                    (2, 2, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'CHUMA INTERNATIONAL SHOP', 'All kinds of goods', 1
+                )
+                """
+            )
+        )
+
+    res = client.post(
+        "/marketplace/broadcasts",
+        json={
+            "clan_id": 1,
+            "shop_id": 1,
+            "message": "Fresh spotlight",
+            "image_url": "/uploads/marketplace/images/live-spotlight.jpg",
+            "priority_mode": "free",
+            "visibility_scope": "direct_communities",
+        },
+    )
+    assert res.status_code == 200, res.text
+    body = res.json()
+
+    assert body["ok"] is True
+    assert body["propagated_count"] == 1
+    assert body["propagated_clan_ids"] == [1]
+
+    with engine.begin() as conn:
+        rows = conn.execute(
+            text(
+                """
+                SELECT clan_id
+                FROM marketplace_broadcasts
+                ORDER BY id ASC
+                """
+            )
+        ).fetchall()
+
+    assert [int(row[0]) for row in rows] == [1]
