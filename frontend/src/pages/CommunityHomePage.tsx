@@ -5,12 +5,14 @@ import DomainIntroToggle from "../components/DomainIntroToggle";
 import GSNBrandMark from "../components/GSNBrandMark";
 import NextActionGuide, {
   type NextActionGuideItem,
+  type NextActionGuideResolution,
 } from "../components/NextActionGuide";
 import PageTopNav from "../components/PageTopNav";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { navigateWithOrigin } from "../lib/nav";
 import {
   getMarketplaceBroadcasts,
+  getMarketplaceShopByGmfnId,
   getMe,
   getPoolMeSummary,
   getSelectedClanId,
@@ -1074,6 +1076,8 @@ export default function CommunityHomePage() {
     me?.id,
     "Awaiting issue"
   );
+  const communityNextActionIntro =
+    "Tick what you want to do here, or write it in simple words. GSN will check the first required step and lead you from there.";
 
   const cumulativeAvailable = getSummaryTotal(
     poolSummary,
@@ -1125,8 +1129,6 @@ export default function CommunityHomePage() {
           : "Select a community first, then enter its marketplace.",
         technical: "Selected marketplace",
         keywords: ["marketplace", "market", "trade", "work", "open community"],
-        disabled: !selectedClanId,
-        disabledReason: "Select one community first, then Marketplace can open.",
       },
       {
         id: "create-community",
@@ -1152,7 +1154,9 @@ export default function CommunityHomePage() {
       {
         id: "shop-control",
         label: "Open shop control",
-        detail: "Open the owner-side controls for your one GSN shop.",
+        detail: selectedClanId
+          ? "Open the owner-side controls for your one GSN shop in this community."
+          : "Choose one community first, then open the shop controls tied to that community.",
         technical: "Shop control",
         keywords: ["shop", "seller", "gallery", "control", "products"],
       },
@@ -1160,7 +1164,7 @@ export default function CommunityHomePage() {
         id: "spotlight",
         label: "Prepare spotlight",
         detail:
-          "Prepare spotlight in Shop Control before any selected community sees it live.",
+          "Tell GSN you want spotlight and it will check the shop requirement before opening the publish steps.",
         technical: "Shop Control spotlight",
         keywords: ["spotlight", "picture", "video", "advert", "visibility"],
       },
@@ -1179,9 +1183,6 @@ export default function CommunityHomePage() {
           : "Select a community first, then open its loans and support path.",
         technical: "Loans and support",
         keywords: ["loan", "borrow", "lend", "support", "guarantor"],
-        disabled: !selectedClanId,
-        disabledReason:
-          "Select one community first so loans and support stay local to that group.",
       },
       {
         id: "trust",
@@ -1232,6 +1233,197 @@ export default function CommunityHomePage() {
         "Spotlight publishing belongs inside Shop Control so your shop picture, products, Vault, and visibility stay in one clean place.",
     };
   }, [activeCommunitySpotlight]);
+
+  async function resolveCommunityNextAction(
+    item: NextActionGuideItem
+  ): Promise<NextActionGuideResolution | null> {
+    switch (item.id) {
+      case "choose-community":
+        return {
+          title: "Choose one community first",
+          detail:
+            "Open your community list and pick the one you want to work in right now. GSN will keep the next steps inside that same community.",
+          firstStep: "Open the community list.",
+          continueLabel: "Open community list",
+          continueTone: "primary",
+          payload: { nextStep: "choose-community" },
+        };
+      case "marketplace":
+        if (!selectedClanId || !selectedClan) {
+          return {
+            title: "Choose the community before Marketplace",
+            detail:
+              "Marketplace belongs to one community at a time. First pick the community you want to work in, then GSN will open its Marketplace.",
+            firstStep: "Choose the community you want to enter.",
+            continueLabel: "Choose community",
+            continueTone: "primary",
+            payload: { nextStep: "choose-community" },
+          };
+        }
+
+        return {
+          title: `${selectedClanName || "This community"} is ready`,
+          detail: `GSN will now open the Marketplace for ${selectedClanName || "the selected community"}.`,
+          firstStep: "Enter the selected community Marketplace.",
+          continueLabel: "Open Marketplace",
+          continueTone: "primary",
+        };
+      case "create-community":
+        return {
+          title: "Start a new community",
+          detail:
+            "GSN will take you into the create-community lane and lead the founder steps from there.",
+          firstStep: "Open the create-community path.",
+          continueLabel: "Start community",
+          continueTone: "primary",
+        };
+      case "join-community":
+        return {
+          title: "Enter an existing community",
+          detail:
+            "GSN will open the join lane so you can use the right invite or existing-community entry path.",
+          firstStep: "Open the join-community lane.",
+          continueLabel: "Open join path",
+          continueTone: "primary",
+        };
+      case "circle":
+        return {
+          title: "Grow your trusted circle",
+          detail:
+            "GSN will open the trusted-circle section so you can prepare the people you already know in real life.",
+          firstStep: "Open the trusted-circle section.",
+          continueLabel: "Open trusted circle",
+          continueTone: "primary",
+        };
+      case "shop-control":
+        if (!selectedClanId || !selectedClan) {
+          return {
+            title: "Choose the community before shop control",
+            detail:
+              "Your shop work must stay tied to one community. First choose the community you want to work in, then GSN will open its shop controls.",
+            firstStep: "Choose the community for this shop work.",
+            continueLabel: "Choose community",
+            continueTone: "primary",
+            payload: { nextStep: "choose-community" },
+          };
+        }
+
+        return {
+          title: "Shop control is ready",
+          detail: `GSN will open the owner-side shop controls for ${selectedClanName || "the selected community"}.`,
+          firstStep: "Open the shop control workspace.",
+          continueLabel: "Open shop control",
+          continueTone: "primary",
+        };
+      case "spotlight": {
+        if (!selectedClanId || !selectedClan) {
+          return {
+            title: "Choose the community before spotlight",
+            detail:
+              "Spotlight must belong to one community. First choose the community you want to publish into, then GSN will check the shop requirement for that one.",
+            firstStep: "Choose the target community.",
+            continueLabel: "Choose community",
+            continueTone: "primary",
+            payload: { nextStep: "choose-community" },
+          };
+        }
+
+        const gmfnId = safeStr(memberGlobalId);
+        if (!gmfnId || gmfnId === "Awaiting issue") {
+          return {
+            title: "Your GSN ID is still loading",
+            detail:
+              "GSN needs your live member record before it can confirm the shop tied to spotlight. Wait a moment, then try again.",
+            firstStep: "Wait for your GSN ID to load.",
+            continueLabel: "Choose something else",
+            continueTone: "soft",
+            payload: { nextStep: "cancel" },
+          };
+        }
+
+        const shopRes = await getMarketplaceShopByGmfnId(gmfnId, {
+          clan_id: selectedClanId,
+          header_clan_id: selectedClanId,
+        }).catch(() => null);
+        const resolvedShop =
+          (Array.isArray((shopRes as any)?.items)
+            ? (shopRes as any).items?.[0]
+            : null) ||
+          (shopRes as any)?.shop ||
+          shopRes;
+        const shopId = Number((resolvedShop as any)?.id || 0);
+
+        if (!shopId) {
+          return {
+            title: "Set up your shop first",
+            detail: `Spotlight comes from your shop in ${selectedClanName || "the selected community"}. First prepare the shop details. After that, GSN will lead you back into the spotlight upload and publish steps.`,
+            firstStep: "Open shop setup for this community.",
+            continueLabel: "Open shop setup",
+            continueTone: "primary",
+            payload: { nextStep: "prepare-shop-first" },
+          };
+        }
+
+        return {
+          title: "Your shop is ready for spotlight",
+          detail: `GSN has confirmed the shop for ${selectedClanName || "the selected community"}. It can now open the spotlight portal and lead you through upload, preview, and publish.`,
+          firstStep: "Open the guided spotlight portal.",
+          continueLabel: "Open spotlight portal",
+          continueTone: "primary",
+          payload: { nextStep: "open-spotlight" },
+        };
+      }
+      case "finance":
+        return {
+          title: "Open your finance file",
+          detail:
+            "GSN will open your wider finance file so you can see the money record across communities.",
+          firstStep: "Open Finance.",
+          continueLabel: "Open Finance",
+          continueTone: "primary",
+        };
+      case "support":
+        if (!selectedClanId || !selectedClan) {
+          return {
+            title: "Choose the community before loans and support",
+            detail:
+              "Loans and support belong to one community at a time. First pick the community, then GSN will open that local support path.",
+            firstStep: "Choose the community first.",
+            continueLabel: "Choose community",
+            continueTone: "primary",
+            payload: { nextStep: "choose-community" },
+          };
+        }
+
+        return {
+          title: "Loans and support are ready",
+          detail: `GSN will open the loans and support path for ${selectedClanName || "the selected community"}.`,
+          firstStep: "Open Loans and Support.",
+          continueLabel: "Open loans and support",
+          continueTone: "primary",
+        };
+      case "trust":
+        return {
+          title: "Open your Trust Passport",
+          detail:
+            "GSN will open your wider trust record so you can review your trust story across communities.",
+          firstStep: "Open Trust Passport.",
+          continueLabel: "Open Trust Passport",
+          continueTone: "primary",
+        };
+      case "notifications":
+        return {
+          title: "Open your notices",
+          detail:
+            "GSN will open the action queue so you can see what needs your attention next.",
+          firstStep: "Open Notifications.",
+          continueLabel: "Open notices",
+          continueTone: "primary",
+        };
+      default:
+        return null;
+    }
+  }
 
   useEffect(() => {
     activeCommunitySpotlightsRef.current = activeCommunitySpotlights;
@@ -1523,13 +1715,24 @@ function communityButtonGuardProps(): Pick<
 
   function handleCommunityNextAction(
     item: NextActionGuideItem,
-    event?: React.SyntheticEvent<HTMLElement>
+    event?: React.SyntheticEvent<HTMLElement>,
+    resolution?: NextActionGuideResolution | null
   ) {
+    const nextStep = safeStr(resolution?.payload?.nextStep || "");
+
     switch (item.id) {
       case "choose-community":
         openCommunityHomeSection(event, "community-home-community-list", "communities");
         break;
       case "marketplace":
+        if (nextStep === "choose-community") {
+          openCommunityHomeSection(
+            event,
+            "community-home-community-list",
+            "communities"
+          );
+          break;
+        }
         void openSelectedMarketplace(event);
         break;
       case "create-community":
@@ -1542,15 +1745,47 @@ function communityButtonGuardProps(): Pick<
         openCommunityHomeSection(event, "community-home-grow-your-circle", "circle");
         break;
       case "shop-control":
+        if (nextStep === "choose-community") {
+          openCommunityHomeSection(
+            event,
+            "community-home-community-list",
+            "communities"
+          );
+          break;
+        }
         openCommunityShopControl(event);
         break;
       case "spotlight":
+        if (nextStep === "cancel") {
+          consumeCommunityButtonEvent(event);
+          break;
+        }
+        if (nextStep === "choose-community") {
+          openCommunityHomeSection(
+            event,
+            "community-home-community-list",
+            "communities"
+          );
+          break;
+        }
+        if (nextStep === "prepare-shop-first") {
+          openCommunityRoute(event, "/app/shop-control#shop-control-spotlight");
+          break;
+        }
         openCommunitySpotlightWorkspace(event);
         break;
       case "finance":
         openCommunityRoute(event, "/app/finance");
         break;
       case "support":
+        if (nextStep === "choose-community") {
+          openCommunityHomeSection(
+            event,
+            "community-home-community-list",
+            "communities"
+          );
+          break;
+        }
         openCommunityRoute(event, "/app/loans");
         break;
       case "trust":
@@ -1703,8 +1938,9 @@ function communityButtonGuardProps(): Pick<
             storageKey="gmfn.communityHome.nextActionGuide.v1"
             compact={isCompact}
             items={communityNextActionItems}
+            resolveSelection={resolveCommunityNextAction}
             onSelect={handleCommunityNextAction}
-            intro="Say what you want in normal words, like choose community, marketplace, create, join, shop, trust, or finance. GSN will point you to the closest path."
+            intro={communityNextActionIntro}
           />
 
           <section style={communityBlockCard("blue")}>
@@ -1949,8 +2185,9 @@ function communityButtonGuardProps(): Pick<
         storageKey="gmfn.communityHome.nextActionGuide.v1"
         compact={isCompact}
         items={communityNextActionItems}
+        resolveSelection={resolveCommunityNextAction}
         onSelect={handleCommunityNextAction}
-        intro="Say what you want in normal words, like choose community, enter marketplace, shop control, finance, trust, or support. GSN will point you to the closest path."
+        intro={communityNextActionIntro}
       />
 
       <section style={{ ...communityBlockCard("blue"), order: 55 }}>

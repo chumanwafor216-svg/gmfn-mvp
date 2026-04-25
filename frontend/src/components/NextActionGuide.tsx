@@ -14,6 +14,15 @@ export type NextActionGuideItem = {
   disabledReason?: string;
 };
 
+export type NextActionGuideResolution = {
+  title?: string;
+  detail?: string;
+  firstStep?: string;
+  continueLabel?: string;
+  continueTone?: NextActionGuideTone;
+  payload?: Record<string, any> | null;
+};
+
 type NextActionGuideProps = {
   title?: string;
   eyebrow?: string;
@@ -23,9 +32,16 @@ type NextActionGuideProps = {
   storageKey?: string;
   defaultOpen?: boolean;
   compact?: boolean;
+  resolveSelection?: (
+    item: NextActionGuideItem
+  ) =>
+    | NextActionGuideResolution
+    | null
+    | Promise<NextActionGuideResolution | null>;
   onSelect: (
     item: NextActionGuideItem,
-    event?: React.SyntheticEvent<HTMLElement>
+    event?: React.SyntheticEvent<HTMLElement>,
+    resolution?: NextActionGuideResolution | null
   ) => void;
 };
 
@@ -226,11 +242,17 @@ export default function NextActionGuide({
   storageKey,
   defaultOpen = false,
   compact = false,
+  resolveSelection,
   onSelect,
 }: NextActionGuideProps) {
   const [open, setOpen] = useState(() => readOpenState(storageKey, defaultOpen));
   const [query, setQuery] = useState("");
   const [notice, setNotice] = useState("");
+  const [resolvingId, setResolvingId] = useState("");
+  const [selection, setSelection] = useState<{
+    item: NextActionGuideItem;
+    resolution: NextActionGuideResolution | null;
+  } | null>(null);
   const eyebrowText = eyebrow.trim();
 
   useEffect(() => {
@@ -247,7 +269,12 @@ export default function NextActionGuide({
     [query, visibleItems]
   );
 
-  function chooseItem(
+  useEffect(() => {
+    setSelection(null);
+    setResolvingId("");
+  }, [visibleItems]);
+
+  async function chooseItem(
     item: NextActionGuideItem | null,
     event?: React.SyntheticEvent<HTMLElement>
   ) {
@@ -269,11 +296,32 @@ export default function NextActionGuide({
     }
 
     setNotice("");
-    onSelect(item, event);
+
+    if (!resolveSelection) {
+      setSelection(null);
+      onSelect(item, event, null);
+      return;
+    }
+
+    try {
+      setResolvingId(item.id);
+      const resolution = await resolveSelection(item);
+      setSelection({ item, resolution });
+    } catch (error: any) {
+      setSelection(null);
+      setNotice(
+        String(
+          error?.message ||
+            "GSN could not check the next step just now. Please try again."
+        )
+      );
+    } finally {
+      setResolvingId("");
+    }
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    chooseItem(matchedItem, event);
+    void chooseItem(matchedItem, event);
   }
 
   return (
@@ -347,6 +395,7 @@ export default function NextActionGuide({
               onChange={(event) => {
                 setQuery(event.target.value);
                 setNotice("");
+                setSelection(null);
               }}
               placeholder={placeholder}
               aria-label={title}
@@ -373,6 +422,11 @@ export default function NextActionGuide({
             }}
           >
             {notice ||
+              (resolvingId
+                ? "GSN is checking the first step for that action."
+                : selection
+                ? `Ready: ${selection.item.label}.`
+                : null) ||
               (matchedItem
                 ? `Best match: ${matchedItem.label}${
                     matchedItem.technical ? ` - ${matchedItem.technical}` : ""
@@ -397,7 +451,9 @@ export default function NextActionGuide({
                 onPointerDown={(event) => stopGuideEvent(event)}
                 onMouseDown={(event) => stopGuideEvent(event)}
                 onTouchStart={(event) => stopGuideEvent(event)}
-                onClick={(event) => chooseItem(item, event)}
+                onClick={(event) => {
+                  void chooseItem(item, event);
+                }}
                 style={{
                   ...guideButtonStyle(item.tone || "secondary", item.disabled),
                   minHeight: compact ? 64 : 72,
@@ -439,6 +495,87 @@ export default function NextActionGuide({
               </button>
             ))}
           </div>
+
+          {selection ? (
+            <div
+              style={{
+                borderRadius: 20,
+                border: "1px solid rgba(16,37,59,0.12)",
+                background:
+                  "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(240,247,252,0.96) 100%)",
+                padding: "14px 14px 16px",
+                boxShadow:
+                  "0 14px 28px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.8)",
+                display: "grid",
+                gap: 10,
+              }}
+            >
+              <div style={labelStyle()}>GSN will lead this step</div>
+              <div
+                style={{
+                  color: "#10253B",
+                  fontSize: compact ? 18 : 20,
+                  fontWeight: 950,
+                  lineHeight: 1.2,
+                }}
+              >
+                {selection.resolution?.title || selection.item.label}
+              </div>
+              <div style={helperStyle()}>
+                {selection.resolution?.detail || selection.item.detail}
+              </div>
+              {selection.resolution?.firstStep ? (
+                <div
+                  style={{
+                    ...helperStyle(),
+                    fontSize: 13,
+                    color: "#315A80",
+                    fontWeight: 850,
+                  }}
+                >
+                  First step: {selection.resolution.firstStep}
+                </div>
+              ) : null}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  flexWrap: "wrap",
+                }}
+              >
+                <button
+                  type="button"
+                  onPointerDown={(event) => stopGuideEvent(event)}
+                  onMouseDown={(event) => stopGuideEvent(event)}
+                  onTouchStart={(event) => stopGuideEvent(event)}
+                  onClick={(event) => {
+                    stopGuideEvent(event, true);
+                    onSelect(selection.item, event, selection.resolution);
+                    setSelection(null);
+                  }}
+                  style={guideButtonStyle(
+                    selection.resolution?.continueTone || "primary"
+                  )}
+                >
+                  {selection.resolution?.continueLabel ||
+                    `Continue to ${selection.item.label}`}
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={(event) => stopGuideEvent(event)}
+                  onMouseDown={(event) => stopGuideEvent(event)}
+                  onTouchStart={(event) => stopGuideEvent(event)}
+                  onClick={(event) => {
+                    stopGuideEvent(event, true);
+                    setSelection(null);
+                  }}
+                  style={guideButtonStyle("soft")}
+                >
+                  Choose something else
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </section>

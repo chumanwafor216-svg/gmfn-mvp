@@ -11276,3 +11276,38 @@ GSN-branded invite composer and invite-entry continuity.
 - Result:
   - frontend lint passed
   - frontend build passed
+
+### Community Home "What do you want to do?" now explains the first required step before routing (2026-04-25)
+
+- Product-owner requirement:
+  - the shared guidance block on Community Home should not dump people into
+    routes too quickly
+  - GSN should first explain the first required step, then lead the person
+    onward
+  - spotlight must check its shop prerequisite before opening anything
+- Applied the smallest safe route-plus-shared fix:
+  - `frontend/src/components/NextActionGuide.tsx`
+    - added optional guided-resolution support
+    - when a page supplies a resolver, the guide now:
+      - lets the user pick or type an action
+      - asks GSN to check the first required step
+      - shows a short explanation card
+      - only continues after the user confirms
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - Community Home now uses the guided-resolution path
+    - spotlight intent now checks:
+      - whether a community is selected
+      - whether the member already has a shop in that community
+    - if no community is selected, GSN leads back to the community list
+    - if no shop exists yet, GSN says to prepare the shop first and opens the
+      shop setup route from there
+    - marketplace, shop control, and loans/support now also explain their
+      community prerequisite instead of only appearing disabled
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/components/NextActionGuide.tsx src/pages/CommunityHomePage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed
