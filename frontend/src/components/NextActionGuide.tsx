@@ -171,22 +171,22 @@ function guideButtonStyle(
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: soft ? 48 : 50,
-    minWidth: soft ? 112 : 126,
+    minHeight: soft ? 42 : 46,
+    minWidth: soft ? 96 : 112,
     maxWidth: "100%",
-    padding: soft ? "11px 15px" : "12px 16px",
-    borderRadius: primary ? 16 : 15,
+    padding: soft ? "9px 13px" : "10px 14px",
+    borderRadius: primary ? 14 : 14,
     border: primary
-      ? "1px solid rgba(16,37,59,0.22)"
-      : "1px solid rgba(16,37,59,0.14)",
+      ? "1px solid rgba(16,37,59,0.18)"
+      : "1px solid rgba(16,37,59,0.12)",
     background: disabled
       ? "linear-gradient(180deg, #F1F5F9 0%, #E2E8F0 100%)"
       : primary
-      ? "linear-gradient(180deg, #1B4B78 0%, #2B6599 56%, #3B78AE 100%)"
+      ? "linear-gradient(180deg, #1E4E7C 0%, #2F6A9D 64%, #3C79AC 100%)"
       : "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(239,246,252,0.94) 58%, rgba(225,236,245,0.92) 100%)",
     color: disabled ? "#94A3B8" : primary ? "#F8FBFF" : "#102A43",
-    fontSize: soft ? 12 : 13,
-    fontWeight: primary ? 900 : 850,
+    fontSize: soft ? 11.5 : 12.5,
+    fontWeight: primary ? 880 : 840,
     lineHeight: 1.18,
     textAlign: "center",
     textDecoration: "none",
@@ -198,8 +198,8 @@ function guideButtonStyle(
     boxShadow: disabled
       ? "none"
       : primary
-      ? "0 11px 20px rgba(10,24,49,0.14), inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -2px 0 rgba(7,24,39,0.16)"
-      : "0 9px 18px rgba(10,24,49,0.085), inset 0 1px 0 rgba(255,255,255,0.78), inset 0 -2px 0 rgba(16,37,59,0.04)",
+      ? "0 7px 14px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -2px 0 rgba(7,24,39,0.14)"
+      : "0 6px 12px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.78), inset 0 -1px 0 rgba(16,37,59,0.04)",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
@@ -456,11 +456,11 @@ export default function NextActionGuide({
                 }}
                 style={{
                   ...guideButtonStyle(item.tone || "secondary", item.disabled),
-                  minHeight: compact ? 64 : 72,
+                  minHeight: compact ? 56 : 60,
                   alignItems: "flex-start",
                   flexDirection: "column",
-                  gap: 5,
-                  padding: "11px 12px",
+                  gap: 4,
+                  padding: compact ? "10px 11px" : "10px 12px",
                   textAlign: "left",
                 }}
               >
@@ -471,8 +471,8 @@ export default function NextActionGuide({
                       : item.tone === "primary"
                       ? "#F8FBFF"
                       : "#10253B",
-                    fontSize: 15,
-                    fontWeight: 950,
+                    fontSize: 14,
+                    fontWeight: 900,
                     lineHeight: 1.2,
                   }}
                 >
@@ -485,9 +485,9 @@ export default function NextActionGuide({
                       : item.tone === "primary"
                       ? "rgba(248,251,255,0.82)"
                       : "#52677C",
-                    fontSize: 12,
-                    fontWeight: 780,
-                    lineHeight: 1.35,
+                    fontSize: 11.5,
+                    fontWeight: 760,
+                    lineHeight: 1.3,
                   }}
                 >
                   {item.detail}
@@ -539,7 +539,7 @@ export default function NextActionGuide({
               <div
                 style={{
                   display: "flex",
-                  gap: 10,
+                  gap: 8,
                   flexWrap: "wrap",
                 }}
               >
