@@ -11355,3 +11355,35 @@ GSN-branded invite composer and invite-entry continuity.
 - Result:
   - frontend lint passed
   - frontend build passed
+
+### Community Home spotlight now opens as a family first, then asks for the exact next path (2026-04-25)
+
+- Product-owner requirement:
+  - typing or choosing `Spotlight` should not be the final routing decision
+  - GSN should first open the spotlight family, then let the person choose:
+    - free spotlight
+    - subscription spotlight
+    - Vault
+    - shop setup
+- Applied the smallest safe shared-plus-route fix:
+  - `frontend/src/components/NextActionGuide.tsx`
+    - guide items can now carry child actions
+    - choosing a parent item now opens a child step inside the same guide
+    - the guide shows `What do you want under ...?` and allows stepping back
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - `Spotlight` is now a family item instead of a final action
+    - Community Home now offers:
+      - `Free spotlight`
+      - `Subscription spotlight`
+      - `Vault`
+      - `Shop setup`
+    - each child path now checks its own prerequisites before opening the next
+      route
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/components/NextActionGuide.tsx src/pages/CommunityHomePage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed

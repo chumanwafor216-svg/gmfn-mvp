@@ -9,6 +9,7 @@ export type NextActionGuideItem = {
   technical?: string;
   to?: string;
   keywords?: string[];
+  children?: NextActionGuideItem[];
   tone?: NextActionGuideTone;
   disabled?: boolean;
   disabledReason?: string;
@@ -333,6 +334,7 @@ export default function NextActionGuide({
   const [query, setQuery] = useState("");
   const [notice, setNotice] = useState("");
   const [resolvingId, setResolvingId] = useState("");
+  const [branchItem, setBranchItem] = useState<NextActionGuideItem | null>(null);
   const [selection, setSelection] = useState<{
     item: NextActionGuideItem;
     resolution: NextActionGuideResolution | null;
@@ -348,15 +350,37 @@ export default function NextActionGuide({
     [items]
   );
 
+  const branchItems = useMemo(
+    () =>
+      (branchItem?.children || []).filter((item) => item && item.id && item.label),
+    [branchItem]
+  );
+
+  const activeItems = branchItems.length > 0 ? branchItems : visibleItems;
+  const activeTitle = branchItem
+    ? `What do you want under ${branchItem.label}?`
+    : title;
+  const activeIntro = branchItem
+    ? `${branchItem.detail} Choose the exact next step here and GSN will continue from there.`
+    : intro;
+
   const matchedItem = useMemo(
-    () => matchGuideItem(query, visibleItems),
-    [query, visibleItems]
+    () => matchGuideItem(query, activeItems),
+    [query, activeItems]
   );
 
   useEffect(() => {
     setSelection(null);
     setResolvingId("");
-  }, [visibleItems]);
+  }, [visibleItems, branchItems]);
+
+  useEffect(() => {
+    if (!branchItem) return;
+    const branchStillExists = visibleItems.some((item) => item.id === branchItem.id);
+    if (!branchStillExists) {
+      setBranchItem(null);
+    }
+  }, [branchItem, visibleItems]);
 
   async function chooseItem(
     item: NextActionGuideItem | null,
@@ -381,6 +405,13 @@ export default function NextActionGuide({
     }
 
     setNotice("");
+    setSelection(null);
+
+    if ((item.children || []).length > 0) {
+      setBranchItem(item);
+      setQuery("");
+      return;
+    }
 
     const requireConfirmation = Boolean(options?.requireConfirmation);
 
@@ -426,7 +457,7 @@ export default function NextActionGuide({
     >
       <div style={headerStyle(compact)}>
         <div style={{ minWidth: 0 }}>
-          {eyebrowText ? <div style={labelStyle()}>{eyebrowText}</div> : null}
+            {eyebrowText ? <div style={labelStyle()}>{eyebrowText}</div> : null}
           <div
             style={{
               marginTop: eyebrowText ? 5 : 0,
@@ -437,27 +468,54 @@ export default function NextActionGuide({
               letterSpacing: -0.2,
             }}
           >
-            {title}
+            {activeTitle}
           </div>
         </div>
 
-        <button
-          type="button"
-          aria-expanded={open}
-          onPointerDown={(event) => stopGuideEvent(event)}
-          onMouseDown={(event) => stopGuideEvent(event)}
-          onTouchStart={(event) => stopGuideEvent(event)}
-          onClick={(event) => {
-            stopGuideEvent(event, true);
-            setOpen((value) => !value);
-          }}
+        <div
           style={{
-            ...guideButtonStyle("soft"),
-            justifySelf: compact ? "stretch" : "end",
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
+            justifyContent: compact ? "stretch" : "flex-end",
           }}
         >
-          {open ? "Collapse" : "Open"}
-        </button>
+          {branchItem ? (
+            <button
+              type="button"
+              onPointerDown={(event) => stopGuideEvent(event)}
+              onMouseDown={(event) => stopGuideEvent(event)}
+              onTouchStart={(event) => stopGuideEvent(event)}
+              onClick={(event) => {
+                stopGuideEvent(event, true);
+                setBranchItem(null);
+                setSelection(null);
+                setQuery("");
+                setNotice("");
+              }}
+              style={guideButtonStyle("soft")}
+            >
+              Back one step
+            </button>
+          ) : null}
+          <button
+            type="button"
+            aria-expanded={open}
+            onPointerDown={(event) => stopGuideEvent(event)}
+            onMouseDown={(event) => stopGuideEvent(event)}
+            onTouchStart={(event) => stopGuideEvent(event)}
+            onClick={(event) => {
+              stopGuideEvent(event, true);
+              setOpen((value) => !value);
+            }}
+            style={{
+              ...guideButtonStyle("soft"),
+              justifySelf: compact ? "stretch" : "end",
+            }}
+          >
+            {open ? "Collapse" : "Open"}
+          </button>
+        </div>
       </div>
 
       {open ? (
@@ -468,7 +526,7 @@ export default function NextActionGuide({
             gap: 12,
           }}
         >
-          <div style={helperStyle()}>{intro}</div>
+          <div style={helperStyle()}>{activeIntro}</div>
 
           <form
             onSubmit={handleSubmit}

@@ -1162,11 +1162,46 @@ export default function CommunityHomePage() {
       },
       {
         id: "spotlight",
-        label: "Prepare spotlight",
+        label: "Spotlight",
         detail:
-          "Tell GSN you want spotlight and it will check the shop requirement before opening the publish steps.",
+          "Choose the exact spotlight work you want to do next, then GSN will check the requirement and lead you from there.",
         technical: "Shop Control spotlight",
         keywords: ["spotlight", "picture", "video", "advert", "visibility"],
+        children: [
+          {
+            id: "spotlight-free",
+            label: "Free spotlight",
+            detail:
+              "Prepare the normal community spotlight with upload, preview, and publish.",
+            technical: "Free spotlight",
+            keywords: ["free spotlight", "community spotlight", "normal spotlight"],
+            tone: "primary",
+          },
+          {
+            id: "spotlight-paid",
+            label: "Subscription spotlight",
+            detail:
+              "Use the paid spotlight lane when you want subscription-based priority visibility.",
+            technical: "Paid spotlight",
+            keywords: ["paid spotlight", "subscription spotlight", "priority spotlight"],
+          },
+          {
+            id: "spotlight-vault",
+            label: "Vault",
+            detail:
+              "Open the private shop lane for selected people and permission-based access.",
+            technical: "Vault",
+            keywords: ["vault", "private offers", "private gallery"],
+          },
+          {
+            id: "spotlight-shop-setup",
+            label: "Shop setup",
+            detail:
+              "Prepare or complete the shop details first before spotlight or Vault work begins.",
+            technical: "Shop setup",
+            keywords: ["shop setup", "prepare shop", "shop details"],
+          },
+        ],
       },
       {
         id: "finance",
@@ -1315,7 +1350,16 @@ export default function CommunityHomePage() {
           continueLabel: "Open shop control",
           continueTone: "primary",
         };
-      case "spotlight": {
+      case "spotlight":
+        return {
+          title: "Choose the spotlight path",
+          detail:
+            "Free spotlight, subscription spotlight, Vault, and shop setup belong to the same visibility family. Choose the exact one you want next.",
+          firstStep: "Choose the exact spotlight path.",
+          continueLabel: "Choose spotlight path",
+          continueTone: "soft",
+        };
+      case "spotlight-free": {
         if (!selectedClanId || !selectedClan) {
           return {
             title: "Choose the community before spotlight",
@@ -1373,6 +1417,143 @@ export default function CommunityHomePage() {
           payload: { nextStep: "open-spotlight" },
         };
       }
+      case "spotlight-paid": {
+        if (!selectedClanId || !selectedClan) {
+          return {
+            title: "Choose the community before paid spotlight",
+            detail:
+              "Paid spotlight still belongs to one community. First choose the community, then GSN will open the paid spotlight lane for that one.",
+            firstStep: "Choose the target community.",
+            continueLabel: "Choose community",
+            continueTone: "primary",
+            payload: { nextStep: "choose-community" },
+          };
+        }
+
+        const gmfnId = safeStr(memberGlobalId);
+        if (!gmfnId || gmfnId === "Awaiting issue") {
+          return {
+            title: "Your GSN ID is still loading",
+            detail:
+              "GSN needs your live member record before it can confirm the shop tied to paid spotlight. Wait a moment, then try again.",
+            firstStep: "Wait for your GSN ID to load.",
+            continueLabel: "Choose something else",
+            continueTone: "soft",
+            payload: { nextStep: "cancel" },
+          };
+        }
+
+        const shopRes = await getMarketplaceShopByGmfnId(gmfnId, {
+          clan_id: selectedClanId,
+          header_clan_id: selectedClanId,
+        }).catch(() => null);
+        const resolvedShop =
+          (Array.isArray((shopRes as any)?.items)
+            ? (shopRes as any).items?.[0]
+            : null) ||
+          (shopRes as any)?.shop ||
+          shopRes;
+        const shopId = Number((resolvedShop as any)?.id || 0);
+
+        if (!shopId) {
+          return {
+            title: "Set up your shop before paid spotlight",
+            detail: `Paid spotlight also comes from your shop in ${selectedClanName || "the selected community"}. First prepare the shop details, then GSN will lead you into the subscription spotlight lane.`,
+            firstStep: "Open shop setup for this community.",
+            continueLabel: "Open shop setup",
+            continueTone: "primary",
+            payload: { nextStep: "prepare-shop-first" },
+          };
+        }
+
+        return {
+          title: "Your shop is ready for subscription spotlight",
+          detail: `GSN has confirmed the shop for ${selectedClanName || "the selected community"}. It can now open the paid spotlight lane and guide you through the subscription path.`,
+          firstStep: "Open the paid spotlight lane.",
+          continueLabel: "Open subscription spotlight",
+          continueTone: "primary",
+          payload: { nextStep: "open-paid-spotlight" },
+        };
+      }
+      case "spotlight-vault": {
+        if (!selectedClanId || !selectedClan) {
+          return {
+            title: "Choose the community before Vault",
+            detail:
+              "Vault belongs to one community at a time. First choose the community, then GSN will open the private shop lane for that one.",
+            firstStep: "Choose the target community.",
+            continueLabel: "Choose community",
+            continueTone: "primary",
+            payload: { nextStep: "choose-community" },
+          };
+        }
+
+        const gmfnId = safeStr(memberGlobalId);
+        if (!gmfnId || gmfnId === "Awaiting issue") {
+          return {
+            title: "Your GSN ID is still loading",
+            detail:
+              "GSN needs your live member record before it can confirm the shop tied to Vault. Wait a moment, then try again.",
+            firstStep: "Wait for your GSN ID to load.",
+            continueLabel: "Choose something else",
+            continueTone: "soft",
+            payload: { nextStep: "cancel" },
+          };
+        }
+
+        const shopRes = await getMarketplaceShopByGmfnId(gmfnId, {
+          clan_id: selectedClanId,
+          header_clan_id: selectedClanId,
+        }).catch(() => null);
+        const resolvedShop =
+          (Array.isArray((shopRes as any)?.items)
+            ? (shopRes as any).items?.[0]
+            : null) ||
+          (shopRes as any)?.shop ||
+          shopRes;
+        const shopId = Number((resolvedShop as any)?.id || 0);
+
+        if (!shopId) {
+          return {
+            title: "Set up your shop before Vault",
+            detail: `Vault belongs to your shop in ${selectedClanName || "the selected community"}. First prepare the shop details, then GSN will open the private offers lane.`,
+            firstStep: "Open shop setup for this community.",
+            continueLabel: "Open shop setup",
+            continueTone: "primary",
+            payload: { nextStep: "prepare-shop-first" },
+          };
+        }
+
+        return {
+          title: "Your shop is ready for Vault",
+          detail: `GSN has confirmed the shop for ${selectedClanName || "the selected community"}. It can now open the Vault lane for private offers and access links.`,
+          firstStep: "Open the Vault lane.",
+          continueLabel: "Open Vault",
+          continueTone: "primary",
+          payload: { nextStep: "open-vault" },
+        };
+      }
+      case "spotlight-shop-setup":
+        if (!selectedClanId || !selectedClan) {
+          return {
+            title: "Choose the community before shop setup",
+            detail:
+              "The shop must belong to one community. First choose the community, then GSN will open the shop setup lane for that one.",
+            firstStep: "Choose the target community.",
+            continueLabel: "Choose community",
+            continueTone: "primary",
+            payload: { nextStep: "choose-community" },
+          };
+        }
+
+        return {
+          title: "Prepare the shop first",
+          detail: `GSN will open the shop setup lane for ${selectedClanName || "the selected community"} so you can complete the shop details before visibility work begins.`,
+          firstStep: "Open shop setup.",
+          continueLabel: "Open shop setup",
+          continueTone: "primary",
+          payload: { nextStep: "prepare-shop-first" },
+        };
       case "finance":
         return {
           title: "Open your finance file",
@@ -1756,6 +1937,9 @@ function communityButtonGuardProps(): Pick<
         openCommunityShopControl(event);
         break;
       case "spotlight":
+        consumeCommunityButtonEvent(event);
+        break;
+      case "spotlight-free":
         if (nextStep === "cancel") {
           consumeCommunityButtonEvent(event);
           break;
@@ -1773,6 +1957,55 @@ function communityButtonGuardProps(): Pick<
           break;
         }
         openCommunitySpotlightWorkspace(event);
+        break;
+      case "spotlight-paid":
+        if (nextStep === "cancel") {
+          consumeCommunityButtonEvent(event);
+          break;
+        }
+        if (nextStep === "choose-community") {
+          openCommunityHomeSection(
+            event,
+            "community-home-community-list",
+            "communities"
+          );
+          break;
+        }
+        if (nextStep === "prepare-shop-first") {
+          openCommunityRoute(event, "/app/shop-control#shop-control-spotlight");
+          break;
+        }
+        openCommunityRoute(event, "/app/shop-control#shop-control-paid-spotlight");
+        break;
+      case "spotlight-vault":
+        if (nextStep === "cancel") {
+          consumeCommunityButtonEvent(event);
+          break;
+        }
+        if (nextStep === "choose-community") {
+          openCommunityHomeSection(
+            event,
+            "community-home-community-list",
+            "communities"
+          );
+          break;
+        }
+        if (nextStep === "prepare-shop-first") {
+          openCommunityRoute(event, "/app/shop-control#shop-control-spotlight");
+          break;
+        }
+        openCommunityRoute(event, "/app/shop-control#shop-control-vault");
+        break;
+      case "spotlight-shop-setup":
+        if (nextStep === "choose-community") {
+          openCommunityHomeSection(
+            event,
+            "community-home-community-list",
+            "communities"
+          );
+          break;
+        }
+        openCommunityRoute(event, "/app/shop-control#shop-control-spotlight");
         break;
       case "finance":
         openCommunityRoute(event, "/app/finance");
