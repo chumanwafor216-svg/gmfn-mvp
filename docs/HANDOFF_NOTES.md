@@ -11113,3 +11113,66 @@ GSN-branded invite composer and invite-entry continuity.
   - if publish still fails after this deploy, the next step should be to keep
     a persistent inline publish error block in the spotlight composer so the
     exact backend rejection stays visible instead of fading as a short notice
+
+### Free spotlight lane audited end-to-end with frontend and backend fixes (2026-04-25)
+
+- Product-owner concern:
+  - the free spotlight lane still felt dead or jumpy after media attach:
+    - the draft could disappear after file-picker return
+    - a successful publish could still look like a failure
+    - the owner page could re-read through the wrong community and hide the
+      just-published spotlight
+- Audit scope:
+  - `frontend/src/pages/ShopControlPage.tsx`
+  - `gmfn_backend/app/api/routes/marketplace.py`
+  - `gmfn_backend/tests/test_marketplace_public_shop.py`
+- Confirmed weak points before this fix:
+  - owner rereads were still tied to `selectedClanId` even when the shop itself
+    belonged to another community
+  - free spotlight success was coupled to the follow-up refresh, so a refresh
+    failure could relabel a real publish as `"Spotlight could not be created."`
+  - choosing a new image or video cleared the existing draft too early, even if
+    the new pick was cancelled or rejected
+  - shop-backed publish could still be rejected by stale explicit/header clan
+    input before the backend had a chance to anchor the publish to the shop's
+    own community
+- Applied the smallest safe fixes:
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - shop control now loads shop data through
+      `getMarketplaceShopByGmfnId(...)`
+    - once the shop is known, broadcasts, private products, and expected
+      payments re-read through the shop's own `clan_id` instead of the global
+      selected clan
+    - free and paid spotlight hash entry now both reopen the correct in-page
+      spotlight publisher mode
+    - image/video re-picks no longer wipe a good draft before the new file is
+      validated
+    - publish success is now separated from refresh success
+    - the spotlight composer now keeps an inline publish feedback card so the
+      result stays visible in the same panel
+  - `gmfn_backend/app/api/routes/marketplace.py`
+    - when `shop_id` is present, shop spotlight publish now resolves the shop
+      first and then anchors the publish to `shop.clan_id` before any stale
+      explicit/header clan can reject it
+- Added backend proof:
+  - `gmfn_backend/tests/test_marketplace_public_shop.py`
+    - added regression coverage proving that an owned shop spotlight can still
+      publish when a stale clan id/header is sent with the request
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/ShopControlPage.tsx`
+  - frontend build:
+    - `npm run build`
+  - backend tests:
+    - `.\\gmfn_backend\\.venv\\Scripts\\python -m pytest gmfn_backend/tests/test_marketplace_public_shop.py`
+- Result:
+  - frontend lint passed
+  - frontend build passed
+  - backend tests passed: `4 passed`
+- Important remaining product note:
+  - after deploy, phone-test the exact free spotlight lane again:
+    - open free spotlight
+    - attach image or short video
+    - confirm the draft preview stays in place
+    - publish from the same panel
+    - confirm the inline result stays visible and the live spotlight card updates

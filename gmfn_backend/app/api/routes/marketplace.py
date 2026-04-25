@@ -803,7 +803,7 @@ def get_marketplace_shop_by_gmfn_id(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
-    resolved_clan_id = _resolve_clan_id(
+    requested_clan_id = _resolve_clan_id(
         current_user=current_user,
         db=db,
         explicit_clan_id=clan_id,
@@ -820,6 +820,15 @@ def get_marketplace_shop_by_gmfn_id(
     )
     if not shop:
         raise HTTPException(status_code=404, detail="Shop not found")
+
+    resolved_clan_id = int(requested_clan_id)
+    if (
+        int(owner.id) == int(current_user.id)
+        and not _shop_is_visible_in_clan(db, shop=shop, clan_id=resolved_clan_id)
+    ):
+        shop_clan_id = int(getattr(shop, "clan_id", 0) or 0)
+        if shop_clan_id > 0:
+            resolved_clan_id = shop_clan_id
 
     if not _shop_is_visible_in_clan(db, shop=shop, clan_id=resolved_clan_id):
         raise HTTPException(
@@ -2017,18 +2026,10 @@ def create_marketplace_broadcast(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
-    requested_clan_id = _resolve_clan_id(
-        current_user=current_user,
-        db=db,
-        explicit_clan_id=payload.clan_id,
-        header_clan_id=x_clan_id,
-    )
-
     priority_mode = _resolve_priority_mode(payload.priority_mode)
     visibility_scope = _safe_str(payload.visibility_scope, "direct_communities").lower()
 
     shop = None
-    resolved_clan_id = int(requested_clan_id)
     if payload.shop_id:
         shop = (
             db.query(MarketplaceShop)
@@ -2051,6 +2052,14 @@ def create_marketplace_broadcast(
                 detail="Shop is not attached to a community.",
             )
         resolved_clan_id = shop_clan_id
+    else:
+        requested_clan_id = _resolve_clan_id(
+            current_user=current_user,
+            db=db,
+            explicit_clan_id=payload.clan_id,
+            header_clan_id=x_clan_id,
+        )
+        resolved_clan_id = int(requested_clan_id)
 
     _require_active_membership(
         db=db,

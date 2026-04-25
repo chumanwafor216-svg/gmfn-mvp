@@ -5,6 +5,7 @@ import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import PageTopNav from "../components/PageTopNav";
 import {
   getMe,
+  getMarketplaceShopByGmfnId,
   getMyIdentityRisk,
   getSelectedClanId,
   createVaultShopAccessLink,
@@ -115,6 +116,8 @@ type ContinuityReviewState = {
 };
 
 type NoticeTone = "success" | "error" | "info";
+
+type SpotlightFeedbackState = { tone: NoticeTone; text: string } | null;
 
 const SHOP_BRAND = {
   ink: "#0B1F33",
@@ -664,26 +667,6 @@ async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   }
 }
 
-async function uploadShopImageFile(file: File): Promise<string> {
-  const data = await uploadMarketplaceImageFile(file);
-  const url =
-    firstTruthy(
-      data?.image_url,
-      data?.url,
-      data?.path,
-      data?.item?.image_url,
-      data?.item?.url,
-      data?.data?.image_url,
-      data?.data?.url
-    ) || "";
-
-  if (url) return url;
-
-  throw new Error(
-    "We could not prepare an image from that upload. Paste an image URL instead and continue."
-  );
-}
-
 export default function ShopControlPage() {
   const location = useLocation();
 
@@ -742,6 +725,8 @@ export default function ShopControlPage() {
   const [preparingSpotlightVideo, setPreparingSpotlightVideo] = useState(false);
   const [creatingSpotlight, setCreatingSpotlight] = useState(false);
   const [spotlightPriorityMode, setSpotlightPriorityMode] = useState<"free" | "paid">("free");
+  const [spotlightPublishFeedback, setSpotlightPublishFeedback] =
+    useState<SpotlightFeedbackState>(null);
   const spotlightImagePrepJobRef = useRef(0);
   const spotlightVideoPrepJobRef = useRef(0);
   const lastAutoScrolledHashRef = useRef("");
@@ -820,8 +805,9 @@ export default function ShopControlPage() {
     setSpotlightPriorityMode("free");
   }
 
-  const loadPage = useCallback(async (options?: { background?: boolean }) => {
+  const loadPage = useCallback(async (options?: { background?: boolean; preferredClanId?: number | null }) => {
     const background = Boolean(options?.background);
+    const preferredClanId = Number(options?.preferredClanId || 0);
     if (!background) {
       setLoading(true);
     }
@@ -857,14 +843,18 @@ export default function ShopControlPage() {
         return;
       }
 
-      const shopRes = await apiJson<any>(
-        `/api/marketplace/shops/by-gmfn/${encodeURIComponent(gmfnId)}?clan_id=${selectedClanId || 0}`
-      ).catch(() => null);
+      const shopRes = await getMarketplaceShopByGmfnId(gmfnId, {
+        clan_id: preferredClanId > 0 ? preferredClanId : selectedClanId || undefined,
+        header_clan_id: preferredClanId > 0 ? preferredClanId : selectedClanId || undefined,
+      }).catch(() => null);
 
       const shopItem = (shopRes?.item || null) as ShopRecord | null;
       const shopProducts = Array.isArray(shopRes?.products)
         ? (shopRes.products as ProductRecord[])
         : [];
+      const shopContextClanId = Number(
+        shopItem?.clan_id || shopRes?.clan_id || preferredClanId || selectedClanId || 0
+      );
 
       setShop(shopItem);
       setProducts(shopProducts);
@@ -876,17 +866,17 @@ export default function ShopControlPage() {
 
       if (shopItem?.id) {
         const expectedPaymentsPath =
-          `/api/bank/expected?clan_id=${selectedClanId || 0}&limit=100` +
+          `/api/bank/expected?clan_id=${shopContextClanId || 0}&limit=100` +
           (Number(meRes?.id || 0) > 0 ? `&user_id=${Number(meRes?.id)}` : "");
 
         const [broadcastsRes, vaultLinksRes, privateProductsRes, expectedRes, trustSlipRes] =
           await Promise.all([
           apiJson<any>(
-            `/api/marketplace/broadcasts?clan_id=${selectedClanId || 0}&limit=20`
+            `/api/marketplace/broadcasts?clan_id=${shopContextClanId || 0}&limit=20`
           ).catch(() => ({ items: [] })),
           listVaultShopAccessLinks(shopItem.id).catch(() => []),
           apiJson<any>(
-            `/api/marketplace/products?clan_id=${selectedClanId || 0}&shop_id=${shopItem.id}&include_private_manage=true&limit=200`
+            `/api/marketplace/products?clan_id=${shopContextClanId || 0}&shop_id=${shopItem.id}&include_private_manage=true&limit=200`
           ).catch(() => ({ items: [] })),
           apiJson<any>(expectedPaymentsPath).catch(() => []),
           apiJson<any>("/api/trust-slips/me").catch(() => null),
@@ -1021,6 +1011,12 @@ export default function ShopControlPage() {
     lastAutoScrolledHashRef.current = targetId;
 
     if (targetId === "shop-control-spotlight") {
+      setSpotlightPriorityMode("free");
+      setSpotlightOpen(true);
+    }
+
+    if (targetId === "shop-control-paid-spotlight") {
+      setSpotlightPriorityMode("paid");
       setSpotlightOpen(true);
     }
 
@@ -1410,6 +1406,7 @@ export default function ShopControlPage() {
     mode: "free" | "paid" = "free"
   ) {
     guardButtonPress(event);
+    setSpotlightPublishFeedback(null);
     setSpotlightPriorityMode(mode);
     setSpotlightOpen(true);
 
@@ -1618,7 +1615,6 @@ export default function ShopControlPage() {
     spotlightImagePrepJobRef.current += 1;
     const prepJob = spotlightImagePrepJobRef.current;
 
-    setSpotlightImageFile(null);
     setPreparingSpotlightImage(false);
 
     if (!file) {
@@ -1649,6 +1645,7 @@ export default function ShopControlPage() {
       }
 
       setSpotlightImageFile(prepared.file);
+      setSpotlightPublishFeedback(null);
       if (prepared.message) {
         showNotice("info", prepared.message);
       } else {
@@ -1675,8 +1672,6 @@ export default function ShopControlPage() {
     spotlightVideoPrepJobRef.current += 1;
     const prepJob = spotlightVideoPrepJobRef.current;
 
-    setSpotlightVideoFile(null);
-    setSpotlightVideoDurationSeconds(null);
     setPreparingSpotlightVideo(false);
 
     if (!file) {
@@ -1709,6 +1704,7 @@ export default function ShopControlPage() {
 
       setSpotlightVideoFile(prepared.file);
       setSpotlightVideoDurationSeconds(prepared.durationSeconds ?? null);
+      setSpotlightPublishFeedback(null);
       if (prepared.message) {
         showNotice("info", prepared.message);
       } else {
@@ -1727,6 +1723,7 @@ export default function ShopControlPage() {
       if (canUseOriginalForPilot) {
         setSpotlightVideoFile(file);
         setSpotlightVideoDurationSeconds(null);
+        setSpotlightPublishFeedback(null);
         showNotice(
           "info",
           "This phone could not trim the video automatically, so GSN will use the uploaded file for today's pilot and play it as a 10-second spotlight clip."
@@ -1779,6 +1776,7 @@ export default function ShopControlPage() {
     }
 
     setCreatingSpotlight(true);
+    setSpotlightPublishFeedback(null);
 
     try {
       let imageUrl = manualImageUrl;
@@ -1843,18 +1841,40 @@ export default function ShopControlPage() {
         }),
       });
 
+      const successMessage =
+        `${spotlightPriorityMode === "paid" ? "Paid" : "Free"} spotlight published` +
+        `${videoUrl ? " with short video." : "."}`;
+
       clearSpotlightDraft();
-      setSpotlightOpen(false);
-      await loadPage();
-      showNotice(
-        "success",
-        `${spotlightPriorityMode === "paid" ? "Paid" : "Free"} spotlight created${videoUrl ? " with short video" : ""}.`
-      );
+      setSpotlightPublishFeedback({
+        tone: "success",
+        text: successMessage,
+      });
+      showNotice("success", successMessage);
+
+      try {
+        await loadPage({
+          background: true,
+          preferredClanId: effectiveShopClanId,
+        });
+      } catch (refreshErr: any) {
+        const refreshMessage =
+          safeStr(refreshErr?.message) ||
+          "Spotlight published, but the page could not refresh immediately.";
+        setSpotlightPublishFeedback({
+          tone: "info",
+          text: refreshMessage,
+        });
+        showNotice("info", refreshMessage);
+      }
     } catch (err: any) {
-      showNotice(
-        "error",
-        safeStr(err?.message) || "Spotlight could not be created."
-      );
+      const errorMessage =
+        safeStr(err?.message) || "Spotlight could not be created.";
+      setSpotlightPublishFeedback({
+        tone: "error",
+        text: errorMessage,
+      });
+      showNotice("error", errorMessage);
     } finally {
       setCreatingSpotlight(false);
     }
@@ -2960,6 +2980,12 @@ export default function ShopControlPage() {
                 ? "This publish will use your confirmed paid spotlight. Add the message and media here, preview it here, then publish from this same panel."
                 : "Choose a picture, a short video, or both. GSN previews the draft here first, then you publish from this same panel."}
             </div>
+
+            {spotlightPublishFeedback ? (
+              <div style={noticeCard(spotlightPublishFeedback.tone)}>
+                {spotlightPublishFeedback.text}
+              </div>
+            ) : null}
 
             <div
               style={{
