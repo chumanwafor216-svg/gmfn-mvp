@@ -10939,3 +10939,55 @@ GSN-branded invite composer and invite-entry continuity.
   - the lane is now steadier and more app-led, but the user-facing copy can
     still be simplified further if the product owner wants an even stronger
     “the app leads every next step” tone before freezing this route
+### Public shop / gallery now reads through a true public route (2026-04-25)
+
+- Product-owner concern:
+  - spotlight uploads and shop gallery updates felt owner-only
+  - public-facing shop results were not reliably showing what had been uploaded
+  - the risk was that earlier fixes may have been page-local instead of a
+    truthful system-level lane
+- Re-audited the real write and read paths:
+  - owner-side write/publish logic was already real:
+    - `frontend/src/pages/ShopControlPage.tsx`
+    - `frontend/src/pages/ShopAssetsPage.tsx`
+    - backend upload/publish routes under:
+      - `gmfn_backend/app/api/routes/marketplace.py`
+      - `gmfn_backend/app/api/routes/marketplace_media.py`
+  - the main mismatch was the public shop face:
+    - `frontend/src/pages/ShopGalleryPage.tsx`
+    - it was still reading through member-only marketplace endpoints instead of
+      a dedicated public route
+- Applied the smallest system-level fix:
+  - backend `gmfn_backend/app/api/routes/marketplace.py`
+    - added `GET /marketplace/public/shop/{gmfn_id}`
+    - returns:
+      - canonical shop
+      - community-visible products
+      - active broadcasts
+      - primary broadcast
+      - community metadata
+    - no auth dependency on this read route
+    - still respects existing media-availability filtering through shared
+      serializers
+  - frontend `frontend/src/lib/api.ts`
+    - added `getPublicMarketplaceShopByGmfnId(...)`
+  - frontend `frontend/src/pages/ShopGalleryPage.tsx`
+    - public shop page now reads through the new public route instead of
+      member-only `getMarketplaceShopByGmfnId(...)`,
+      `getMarketplaceProducts(...)`, and `getMarketplaceBroadcasts(...)`
+    - this aligns the public-facing page with the actual published system data
+- Added backend proof:
+  - `gmfn_backend/tests/test_marketplace_public_shop.py`
+    - verifies saved public product + spotlight return on the public route
+    - verifies missing media links are hidden instead of leaking broken URLs
+- Verification:
+  - frontend build: `npm run build`
+  - backend tests:
+    - `.\\.venv\\Scripts\\python -m pytest tests/test_marketplace_public_shop.py`
+- Result:
+  - frontend build passed
+  - backend public-shop tests passed: `2 passed`
+- Important remaining product note:
+  - if owners still report that uploads disappear after this fix, the next
+    audit target is persistent upload storage / file survival rather than the
+    public read route itself

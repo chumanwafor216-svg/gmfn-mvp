@@ -2156,6 +2156,24 @@ export async function getMarketplaceShopByGmfnId(
   );
 }
 
+export async function getPublicMarketplaceShopByGmfnId(
+  gmfnId: string,
+  params?: {
+    clan_id?: number | null;
+    product_limit?: number;
+    broadcast_limit?: number;
+  }
+): Promise<any> {
+  return httpJson(
+    `/marketplace/public/shop/${encodeURIComponent(String(gmfnId))}${buildQuery({
+      clan_id: params?.clan_id ?? undefined,
+      product_limit: params?.product_limit ?? 100,
+      broadcast_limit: params?.broadcast_limit ?? 24,
+    })}`,
+    "GET"
+  );
+}
+
 export async function createMarketplaceProduct(payload: {
   clan_id?: number | null;
   shop_id: number;

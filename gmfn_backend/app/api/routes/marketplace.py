@@ -865,6 +865,110 @@ def get_marketplace_shop_by_gmfn_id(
     }
 
 
+@router.get("/public/shop/{gmfn_id}")
+def get_public_marketplace_shop_by_gmfn_id(
+    gmfn_id: str,
+    clan_id: Optional[int] = Query(default=None),
+    product_limit: int = Query(default=100, ge=1, le=300),
+    broadcast_limit: int = Query(default=24, ge=1, le=100),
+    db: Session = Depends(get_db),
+) -> Dict[str, Any]:
+    owner = _get_user_by_identity_key(db, identity_key=gmfn_id)
+    if not owner:
+        raise HTTPException(status_code=404, detail="Seller identity not found")
+
+    shop = _get_canonical_shop_by_owner(
+        db,
+        owner_user_id=int(owner.id),
+    )
+    if not shop or not bool(getattr(shop, "is_active", True)):
+        raise HTTPException(status_code=404, detail="Shop not found")
+
+    requested_clan_id = _safe_int(clan_id, 0)
+
+    product_query = (
+        db.query(MarketplaceProduct)
+        .filter(MarketplaceProduct.shop_id == int(shop.id))
+        .filter(MarketplaceProduct.is_active.is_(True))
+        .filter(MarketplaceProduct.visibility_mode == VISIBILITY_COMMUNITY)
+    )
+    if requested_clan_id > 0:
+        product_query = product_query.filter(
+            MarketplaceProduct.clan_id == int(requested_clan_id)
+        )
+
+    product_rows = (
+        product_query.order_by(
+            MarketplaceProduct.created_at.desc(),
+            MarketplaceProduct.id.desc(),
+        )
+        .limit(int(product_limit))
+        .all()
+    )
+
+    current_time = _now_utc()
+    broadcast_query = (
+        db.query(MarketplaceBroadcast)
+        .filter(MarketplaceBroadcast.author_user_id == int(owner.id))
+        .filter(
+            (MarketplaceBroadcast.expires_at.is_(None))
+            | (MarketplaceBroadcast.expires_at > current_time)
+        )
+    )
+    if requested_clan_id > 0:
+        broadcast_query = broadcast_query.filter(
+            MarketplaceBroadcast.clan_id == int(requested_clan_id)
+        )
+
+    broadcast_rows = (
+        broadcast_query.order_by(
+            MarketplaceBroadcast.created_at.desc(),
+            MarketplaceBroadcast.id.desc(),
+        )
+        .limit(int(broadcast_limit))
+        .all()
+    )
+
+    requested_clan = None
+    if requested_clan_id > 0:
+        requested_clan = (
+            db.query(Clan)
+            .filter(Clan.id == int(requested_clan_id))
+            .first()
+        )
+
+    effective_clan_id = (
+        int(requested_clan_id)
+        if requested_clan_id > 0
+        else int(shop.clan_id)
+        if getattr(shop, "clan_id", None) is not None
+        else None
+    )
+    effective_clan = requested_clan
+    if effective_clan is None and effective_clan_id is not None:
+        effective_clan = (
+            db.query(Clan)
+            .filter(Clan.id == int(effective_clan_id))
+            .first()
+        )
+
+    return {
+        "ok": True,
+        "item": _shop_out(db, shop),
+        "products": [_product_out(db, row) for row in product_rows],
+        "broadcasts": [_broadcast_out(db, row) for row in broadcast_rows],
+        "primary_broadcast": _broadcast_out(db, broadcast_rows[0]) if broadcast_rows else None,
+        "gmfn_id": _safe_str(getattr(owner, "gmfn_id", None)) or gmfn_id,
+        "clan_id": effective_clan_id,
+        "community_name": (
+            _safe_str(getattr(effective_clan, "marketplace_name", None))
+            or _safe_str(getattr(effective_clan, "name", None))
+            or None
+        ),
+        "is_public_shop_face": True,
+    }
+
+
 @router.post("/shops")
 def create_marketplace_shop(
     payload: MarketplaceShopCreateIn,

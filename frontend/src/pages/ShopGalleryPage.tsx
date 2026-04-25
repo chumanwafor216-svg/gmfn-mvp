@@ -5,11 +5,8 @@ import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import {
   getCurrentClan,
   getMe,
+  getPublicMarketplaceShopByGmfnId,
   isAuthenticated,
-  getMarketplaceBroadcasts,
-  getMarketplaceProducts,
-  getMarketplaceShopByGmfnId,
-  getSelectedClanId,
   safeCopy,
 } from "../lib/api";
 import { publicFrontendUrl } from "../lib/publicLinks";
@@ -676,8 +673,6 @@ export default function ShopGalleryPage() {
   const { gmfnId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const selectedClanId = Number(getSelectedClanId() || 0);
-
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 980;
@@ -763,69 +758,26 @@ export default function ShopGalleryPage() {
         const cleanedGmfnId = safeStr(gmfnId || "");
         const clanRes = await getCurrentClan().catch(() => null);
 
-        let shopRes: any = null;
+        const publicShopRes = cleanedGmfnId
+          ? await getPublicMarketplaceShopByGmfnId(cleanedGmfnId, {
+              product_limit: 100,
+              broadcast_limit: 24,
+            }).catch(() => null)
+          : null;
 
-        if (cleanedGmfnId) {
-          shopRes = await getMarketplaceShopByGmfnId(cleanedGmfnId, {
-            clan_id: selectedClanId || undefined,
-            header_clan_id: selectedClanId || undefined,
-          }).catch(() => null);
-
-          if (!shopRes) {
-            shopRes = await getMarketplaceShopByGmfnId(cleanedGmfnId, {
-              header_clan_id: null,
-            }).catch(() => null);
+        const normalizedShop = normalizeShop(
+          publicShopRes?.item || publicShopRes,
+          cleanedGmfnId,
+          {
+            marketplace_name: firstMeaningful(
+              publicShopRes?.community_name,
+              clanRes?.marketplace_name,
+              clanRes?.name
+            ),
           }
-        }
+        );
 
-        const normalizedShop = normalizeShop(shopRes, cleanedGmfnId, clanRes);
-
-        let productRes: any = null;
-
-        if (normalizedShop?.id) {
-          const productFetchAttempts = [
-            selectedClanId > 0
-              ? {
-                  shop_id: normalizedShop.id,
-                  clan_id: selectedClanId,
-                  header_clan_id: selectedClanId,
-                  only_active: true,
-                  include_reposted: true,
-                  limit: 100,
-                }
-              : null,
-            normalizedShop.clanId && normalizedShop.clanId !== selectedClanId
-              ? {
-                  shop_id: normalizedShop.id,
-                  clan_id: normalizedShop.clanId,
-                  header_clan_id: normalizedShop.clanId,
-                  only_active: true,
-                  include_reposted: true,
-                  limit: 100,
-                }
-              : null,
-            {
-              shop_id: normalizedShop.id,
-              header_clan_id: null,
-              only_active: true,
-              include_reposted: true,
-              limit: 100,
-            },
-          ].filter(Boolean) as Parameters<typeof getMarketplaceProducts>[0][];
-
-          for (const attempt of productFetchAttempts) {
-            const attemptRes = await getMarketplaceProducts(attempt).catch(
-              () => null
-            );
-
-            if (!attemptRes) continue;
-
-            productRes = attemptRes;
-            if (rowsOf<any>(attemptRes).length > 0) break;
-          }
-        }
-
-        const normalizedProducts = rowsOf<any>(productRes)
+        const normalizedProducts = rowsOf<any>(publicShopRes?.products)
           .filter((row) => {
             const src = row?.item || row?.product || row?.data || row;
             return (
@@ -841,25 +793,13 @@ export default function ShopGalleryPage() {
           cleanedGmfnId
         );
 
-        let broadcastRes: any = null;
-
-        if (selectedClanId > 0) {
-          broadcastRes = await getMarketplaceBroadcasts({
-            clan_id: selectedClanId,
-            active_only: true,
-            limit: 24,
-          }).catch(() => null);
-        }
-
-        if (!broadcastRes) {
-          broadcastRes = await getMarketplaceBroadcasts({
-            active_only: true,
-            limit: 24,
-          }).catch(() => null);
-        }
+        const publicBroadcasts = rowsOf<any>(publicShopRes?.broadcasts);
 
         const relevantBroadcast =
-          rowsOf<any>(broadcastRes)
+          (publicShopRes?.primary_broadcast
+            ? normalizeBroadcast(publicShopRes?.primary_broadcast)
+            : null) ||
+          publicBroadcasts
             .map((row) => normalizeBroadcast(row))
             .filter(Boolean)
             .find((row) => {
@@ -872,7 +812,7 @@ export default function ShopGalleryPage() {
             }) || null;
 
         if (!alive) return;
-        const normalizedBroadcasts = rowsOf<any>(broadcastRes)
+        const normalizedBroadcasts = publicBroadcasts
           .map((row) => normalizeBroadcast(row))
           .filter(Boolean)
           .sort((a, b) => {
@@ -917,11 +857,11 @@ export default function ShopGalleryPage() {
     return () => {
       alive = false;
     };
-  }, [gmfnId, selectedClanId]);
+  }, [gmfnId]);
 
   useEffect(() => {
     setMiniSpotlightIndex(0);
-  }, [selectedClanId, gmfnId]);
+  }, [gmfnId]);
 
   useEffect(() => {
     communitySpotlightsRef.current = communitySpotlights;
