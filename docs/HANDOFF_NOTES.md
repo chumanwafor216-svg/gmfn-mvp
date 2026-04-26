@@ -43,6 +43,43 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 22:42
+
+#### Workstream
+Trust Passport direct-button `preventDefault()` cleanup pass.
+
+#### Routes/screens affected
+- `/app/trust`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/TrustScorePage.tsx`
+
+#### Confirmed facts
+- `TrustScorePage.tsx` still had several direct `type="button"` controls that already used `stopTrustTap` on pointer/touch start but still forced `event.preventDefault()` on click.
+- These controls are not submit buttons and do not need that extra default-blocking layer.
+- This pass removed the click-time `preventDefault()` from:
+  - `handleCollapseTap`
+  - `handleTrustJourneyTap`
+  - `Refresh Trust Reading`
+  - `Copy GMFN ID`
+  - `Print Trust Passport`
+  - `Open TrustSlip Verify`
+  - Trust Journey route-open buttons for the primary and secondary trust journey routes
+- The trust logic, printing, copy behavior, route opens, and collapse behavior themselves did not change.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other dense action bands across the app may still carry similar click-time default barriers and should continue to be cleaned case by case.
+
+#### Next recommended step
+- Continue targeting isolated direct-button surfaces that still stack pointer/touch guards with extra click-time `preventDefault()` or similar barrier logic.
+
+---
+
+#### Date
 2026-04-26 22:27
 
 #### Workstream

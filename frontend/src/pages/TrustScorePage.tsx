@@ -2267,16 +2267,11 @@ export default function TrustScorePage() {
     }));
   }
 
-  function handleCollapseTap(
-    key: keyof CollapseState,
-    event: React.MouseEvent<HTMLButtonElement>
-  ) {
-    event.preventDefault();
+  function handleCollapseTap(key: keyof CollapseState) {
     toggleSection(key);
   }
 
-  function handleTrustJourneyTap(event: React.MouseEvent<HTMLButtonElement>) {
-    event.preventDefault();
+  function handleTrustJourneyTap() {
     setTrustJourneyExpanded((prev) => !prev);
   }
 
@@ -2606,8 +2601,7 @@ export default function TrustScorePage() {
                 onPointerDown={stopTrustTap}
                 onMouseDown={stopTrustTap}
                 onTouchStart={stopTrustTap}
-                onClick={(event) => {
-                  event.preventDefault();
+                onClick={() => {
                   void handleRefreshTrust();
                 }}
                 disabled={refreshing}
@@ -2621,8 +2615,7 @@ export default function TrustScorePage() {
                 onPointerDown={stopTrustTap}
                 onMouseDown={stopTrustTap}
                 onTouchStart={stopTrustTap}
-                onClick={(event) => {
-                  event.preventDefault();
+                onClick={() => {
                   handleCopy(
                     gmfnId,
                     "GMFN ID copied.",
@@ -2640,8 +2633,7 @@ export default function TrustScorePage() {
                 onPointerDown={stopTrustTap}
                 onMouseDown={stopTrustTap}
                 onTouchStart={stopTrustTap}
-                onClick={(event) => {
-                  event.preventDefault();
+                onClick={() => {
                   if (typeof window !== "undefined" && typeof window.print === "function") {
                     window.print();
                   }
@@ -2657,8 +2649,7 @@ export default function TrustScorePage() {
                   onPointerDown={stopTrustTap}
                   onMouseDown={stopTrustTap}
                   onTouchStart={stopTrustTap}
-                  onClick={(event) => {
-                    event.preventDefault();
+                  onClick={() => {
                     if (typeof window !== "undefined") {
                       window.open(verifyUrl, "_blank", "noopener,noreferrer");
                     }
@@ -3059,10 +3050,7 @@ export default function TrustScorePage() {
                   onPointerDown={stopTrustTap}
                   onMouseDown={stopTrustTap}
                   onTouchStart={stopTrustTap}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    openTrustJourneyRoute(trustJourneyModel.primaryRoute);
-                  }}
+                  onClick={() => openTrustJourneyRoute(trustJourneyModel.primaryRoute)}
                   style={actionBtn("primary")}
                 >
                   {safeStr(trustJourneyModel.primaryRoute.to) === "/app/trust"
@@ -3076,10 +3064,7 @@ export default function TrustScorePage() {
                     onPointerDown={stopTrustTap}
                     onMouseDown={stopTrustTap}
                     onTouchStart={stopTrustTap}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      openTrustJourneyRoute(trustJourneyModel.secondaryRoute);
-                    }}
+                    onClick={() => openTrustJourneyRoute(trustJourneyModel.secondaryRoute)}
                     style={actionBtn("secondary")}
                   >
                     {trustJourneyModel.secondaryRoute.label}
@@ -3228,10 +3213,7 @@ export default function TrustScorePage() {
                     onPointerDown={stopTrustTap}
                     onMouseDown={stopTrustTap}
                     onTouchStart={stopTrustTap}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      openTrustJourneyRoute(trustJourneyModel.secondaryRoute);
-                    }}
+                    onClick={() => openTrustJourneyRoute(trustJourneyModel.secondaryRoute)}
                     style={actionBtn("secondary")}
                   >
                     {trustJourneyModel.secondaryRoute.label}
@@ -3278,7 +3260,7 @@ export default function TrustScorePage() {
             onPointerDown={stopTrustTap}
             onMouseDown={stopTrustTap}
             onTouchStart={stopTrustTap}
-            onClick={(event) => handleCollapseTap("overview", event)}
+            onClick={() => handleCollapseTap("overview")}
             style={collapseToggle()}
           >
             {collapsed.overview ? "Open" : "Collapse"}
@@ -3493,7 +3475,7 @@ export default function TrustScorePage() {
             onPointerDown={stopTrustTap}
             onMouseDown={stopTrustTap}
             onTouchStart={stopTrustTap}
-            onClick={(event) => handleCollapseTap("explainability", event)}
+            onClick={() => handleCollapseTap("explainability")}
             style={collapseToggle()}
           >
             {collapsed.explainability ? "Open" : "Collapse"}
@@ -3619,7 +3601,7 @@ export default function TrustScorePage() {
             onPointerDown={stopTrustTap}
             onMouseDown={stopTrustTap}
             onTouchStart={stopTrustTap}
-            onClick={(event) => handleCollapseTap("breakdown", event)}
+            onClick={() => handleCollapseTap("breakdown")}
             style={collapseToggle()}
           >
             {collapsed.breakdown ? "Open" : "Collapse"}
@@ -3733,7 +3715,7 @@ export default function TrustScorePage() {
             onPointerDown={stopTrustTap}
             onMouseDown={stopTrustTap}
             onTouchStart={stopTrustTap}
-            onClick={(event) => handleCollapseTap("evidence", event)}
+            onClick={() => handleCollapseTap("evidence")}
             style={collapseToggle()}
           >
             {collapsed.evidence ? "Open" : "Collapse"}
