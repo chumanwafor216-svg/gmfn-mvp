@@ -150,15 +150,6 @@ export default function LockManagementPage() {
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
-        nextLinks={[
-          { label: "Loan Workbench", to: "/app/loan-workbench" },
-          { label: "System Operations", to: "/app/command-center/system-operations" },
-          { label: "Notifications", to: "/app/notifications" },
-        ]}
-        utilityLinks={[
-          { label: "Trust Passport", to: "/app/trust" },
-          { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
-        ]}
       />
 
       <section

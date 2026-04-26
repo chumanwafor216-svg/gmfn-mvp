@@ -43,6 +43,36 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 20:46
+
+#### Workstream
+Lock management top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/lock-management`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/LockManagementPage.tsx`
+
+#### Confirmed facts
+- `LockManagementPage.tsx` still exposed top-nav route links while also carrying a lower in-page action band under `Use these pages instead`.
+- This pass removed the top-nav `nextLinks` and `utilityLinks` so route movement stays in the page body instead of two competing route bands.
+- Home and back behavior remain intact in the page top navigation.
+- The page remains intentionally read-only because the backend does not expose a guarantee lock-release endpoint yet.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Any remaining heaviness on this route is now more likely to come from page-level styling or general shared button behavior, not duplicated route bands.
+
+#### Next recommended step
+- Continue the app-wide cleanup in remaining operational routes where stacked local button guards or overlapping launcher behavior still make taps feel physically heavy.
+
+---
+
+#### Date
 2026-04-26 20:39
 
 #### Workstream
