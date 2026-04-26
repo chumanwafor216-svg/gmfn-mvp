@@ -43,6 +43,43 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 18:48
+
+#### Workstream
+TrustSlip route-band simplification pass.
+
+#### Routes/screens affected
+- `/app/trust-slip`
+- `/app/trust-slip/verify`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/TrustSlipPage.tsx`
+- `frontend/src/pages/TrustSlipVerifyPage.tsx`
+
+#### Confirmed facts
+- Both TrustSlip pages were still exposing top-nav route links while also carrying their own route actions deeper in the page body.
+- This pass removed the top-nav `nextLinks` and `utilityLinks` from both pages.
+- TrustSlip keeps route movement inside the page body through the TrustSlip verify and related action area.
+- TrustSlip Verify keeps route movement inside the page body through its lower trust/passport guidance actions.
+- Home and back behavior remain intact in the page top navigation for both routes.
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/TrustSlipPage.tsx src/pages/TrustSlipVerifyPage.tsx`
+  - `npm run build`
+  - both passed
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- `TrustScorePage.tsx` still appears to carry top-nav route links and may need a more careful decision because its lower route contract is less explicit than the other trust pages.
+
+#### Next recommended step
+- Continue the trust-family audit by deciding whether `TrustScorePage.tsx` should gain a clearer lower route band before top-nav route links are removed, or whether another heavy trust/admin page should be cleaned first.
+
+---
+
+#### Date
 2026-04-26 18:38
 
 #### Workstream

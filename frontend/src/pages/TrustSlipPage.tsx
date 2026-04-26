@@ -987,11 +987,6 @@ export default function TrustSlipPage() {
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/dashboard"
-          nextLinks={[
-            { label: "TrustSlip Verify", to: "/app/trust-slip/verify" },
-            { label: "Notifications", to: "/app/notifications" },
-          ]}
-          utilityLinks={[{ label: "My GSN and I", to: "/app/my-gmfn-and-i" }]}
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -1047,11 +1042,6 @@ export default function TrustSlipPage() {
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/dashboard"
-          nextLinks={[
-            { label: "TrustSlip Verify", to: "/app/trust-slip/verify" },
-            { label: "Notifications", to: "/app/notifications" },
-          ]}
-          utilityLinks={[{ label: "My GSN and I", to: "/app/my-gmfn-and-i" }]}
         />
       </div>
 

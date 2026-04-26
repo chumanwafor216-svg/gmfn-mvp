@@ -753,10 +753,6 @@ export default function TrustSlipVerifyPage() {
             homeLabel="Dashboard"
             backTo="/app/trust-slip"
             backLabel="TrustSlip"
-            nextLinks={[
-              { label: "Trust Passport", to: "/app/trust" },
-              { label: "Notifications", to: "/app/notifications" },
-            ]}
           />
         ) : (
           <section
@@ -828,11 +824,6 @@ export default function TrustSlipVerifyPage() {
             homeLabel="Dashboard"
             backTo="/app/trust-slip"
             backLabel="TrustSlip"
-            nextLinks={[
-              { label: "Trust Passport", to: "/app/trust" },
-              { label: "Notifications", to: "/app/notifications" },
-            ]}
-            utilityLinks={[{ label: "My GSN and I", to: "/app/my-gmfn-and-i" }]}
           />
         </div>
       ) : (
