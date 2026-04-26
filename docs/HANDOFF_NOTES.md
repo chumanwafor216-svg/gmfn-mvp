@@ -1,3 +1,32 @@
+## 2026-04-27 02:45
+
+### Workstream
+Notifications passive reveal-button cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from the passive reveal button in `NotificationsPage.tsx`.
+- Cleaned this control:
+  - `Show urgent items`
+
+### Why
+- This button only opens the reading sections for urgent items, so it did not need the same action-level guard as real notice actions like mark-as-read or page-opening.
+- This keeps the Action Inbox lighter without changing notice routing or operational focus logic.
+
+### Files touched
+- `frontend/src/pages/NotificationsPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/notifications`
+
+### Verification
+- `npm exec -- eslint src/pages/NotificationsPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small reveal buttons on first-touch pages may still carry the same unnecessary guard layer and can be cleaned in later passes.
+
 ## 2026-04-27 02:37
 
 ### Workstream

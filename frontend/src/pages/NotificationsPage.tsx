@@ -1261,7 +1261,6 @@ export default function NotificationsPage() {
         <div style={{ marginTop: 16, ...actionRow(isPhone) }}>
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() =>
               setCollapsed((prev) => ({
                 ...prev,
