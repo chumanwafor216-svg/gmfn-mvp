@@ -43,6 +43,47 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 16:48
+
+#### Workstream
+Guarantor earnings route-action simplification pass.
+
+#### Routes/screens affected
+- `/app/guarantor-earnings`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/GuarantorEarningsPage.tsx`
+
+#### Confirmed facts
+- Deeper inspection showed `GuarantorEarningsPage.tsx` still had the same older route-action duplication pattern already removed from several other money and borrowing pages:
+  - the main deeper-route CTA was shown once in the upper summary area
+  - and again in the lower `Next routes` section
+- That meant the page was still making the user choose between two route-advance bands for the same next step.
+- This pass removed the upper duplicate CTA and left route movement in one place only: the lower `Next routes` section.
+- The upper summary area now stays focused on reading and copying the earnings summary.
+- The now-dead `primaryBtn` helper was removed too, so the page no longer carries styling residue from the duplicate action band.
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/GuarantorEarningsPage.tsx`
+  - `npm run build`
+  - both passed
+
+#### Open risks or unknowns
+- The broader app still remains in safe-checkpoint mode rather than final freeze mode.
+- Other dense operational routes may still keep duplicated action bands or heavier local guard layering.
+
+#### Next recommended step
+- Deploy `gmfn-frontend`.
+- Phone-test `/app/guarantor-earnings`, especially:
+  - upper summary reading
+  - `Copy Earnings Summary`
+  - collapse/open controls
+  - lower `Next routes`
+- If `Guarantor Earnings` now feels materially calmer, continue the deeper audit in the next route that still feels physically heavy in live testing.
+
+#### Date
 2026-04-26 16:41
 
 #### Workstream

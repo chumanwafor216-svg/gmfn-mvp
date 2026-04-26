@@ -257,33 +257,6 @@ function routeTile(primary = false): React.CSSProperties {
   };
 }
 
-function primaryBtn(disabled = false): React.CSSProperties {
-  return {
-    ...stableTapStyle(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "11px 14px",
-    minHeight: 48,
-    minWidth: 120,
-    borderRadius: 14,
-    border: "none",
-    background: disabled
-      ? "#CBD5E1"
-      : "linear-gradient(180deg, #255FCE 0%, #1B4FBF 100%)",
-    color: "#FFFFFF",
-    fontWeight: 1000,
-    cursor: disabled ? "not-allowed" : "pointer",
-    fontSize: 14,
-    textAlign: "center",
-    textDecoration: "none",
-    opacity: disabled ? 0.72 : 1,
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
-    boxShadow: disabled ? "none" : "0 14px 30px rgba(29,95,212,0.26)",
-  };
-}
-
 function secondaryBtn(disabled = false): React.CSSProperties {
   return {
     ...stableTapStyle(),
@@ -501,14 +474,6 @@ function payableValue(row: GuarantorEarningItem): number {
   }
 
   return isSettledStatus(safeStr(row?.status)) ? estimatedValue(row) : 0;
-}
-
-function renderStepAction(step: NextStepState) {
-  return (
-    <OriginLink to={step.ctaTo} style={primaryBtn(false)}>
-      {step.ctaLabel}
-    </OriginLink>
-  );
 }
 
 export default function GuarantorEarningsPage() {
@@ -939,7 +904,6 @@ export default function GuarantorEarningsPage() {
                 flexWrap: "wrap",
               }}
             >
-              {renderStepAction(nextStep)}
               <button
                 type="button"
                 {...buttonGuardProps()}
