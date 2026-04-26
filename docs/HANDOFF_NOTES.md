@@ -150,6 +150,13 @@ Marketplace second stabilization pass for workspace-side remote section controls
   - lower members section toggle
 - If both Marketplace routes now feel calm enough, freeze Marketplace and move to the next guided family instead of layering more route-local button fixes.
 
+#### Freeze note
+- Marketplace stabilization is now owner-approved for freeze at this stage.
+- Treat these routes as frozen unless a later task explicitly reopens them:
+  - `/app/marketplace`
+  - `/app/community-marketplace`
+- The current expectation is stability first: do not restyle or rewire these launcher/toggle behaviors casually while other routes are being improved.
+
 #### Date
 2026-04-26 12:20
 
