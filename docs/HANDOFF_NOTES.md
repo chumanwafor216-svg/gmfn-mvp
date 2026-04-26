@@ -43,6 +43,39 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 22:18
+
+#### Workstream
+Trust Passport journey and collapse handler duplicate tap-guard cleanup pass.
+
+#### Routes/screens affected
+- `/app/trust`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/TrustScorePage.tsx`
+
+#### Confirmed facts
+- Trust Passport still had a deeper shared duplicate tap layer in its Trust Journey and collapse controls.
+- The page already protects these buttons on pointer/touch start with `stopTrustTap`, but the shared click handlers still called `event.stopPropagation()` again.
+- This pass removed that redundant click-time propagation stop from:
+  - `handleCollapseTap`
+  - `handleTrustJourneyTap`
+  - the Trust Journey route-open buttons that call `openTrustJourneyRoute(...)`
+- The buttons still keep their existing pointer/touch protection and their route/expand behavior did not change.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other dense action bands in Trust Passport and elsewhere may still carry similar layered tap handling and should continue to be cleaned case by case.
+
+#### Next recommended step
+- Continue following shared click handlers and route-open buttons where pointer/touch guards already exist but click-time propagation stops are still layered underneath.
+
+---
+
+#### Date
 2026-04-26 22:11
 
 #### Workstream

@@ -2272,13 +2272,11 @@ export default function TrustScorePage() {
     event: React.MouseEvent<HTMLButtonElement>
   ) {
     event.preventDefault();
-    event.stopPropagation();
     toggleSection(key);
   }
 
   function handleTrustJourneyTap(event: React.MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
-    event.stopPropagation();
     setTrustJourneyExpanded((prev) => !prev);
   }
 
@@ -3063,7 +3061,6 @@ export default function TrustScorePage() {
                   onTouchStart={stopTrustTap}
                   onClick={(event) => {
                     event.preventDefault();
-                    event.stopPropagation();
                     openTrustJourneyRoute(trustJourneyModel.primaryRoute);
                   }}
                   style={actionBtn("primary")}
@@ -3081,7 +3078,6 @@ export default function TrustScorePage() {
                     onTouchStart={stopTrustTap}
                     onClick={(event) => {
                       event.preventDefault();
-                      event.stopPropagation();
                       openTrustJourneyRoute(trustJourneyModel.secondaryRoute);
                     }}
                     style={actionBtn("secondary")}
@@ -3234,7 +3230,6 @@ export default function TrustScorePage() {
                     onTouchStart={stopTrustTap}
                     onClick={(event) => {
                       event.preventDefault();
-                      event.stopPropagation();
                       openTrustJourneyRoute(trustJourneyModel.secondaryRoute);
                     }}
                     style={actionBtn("secondary")}
