@@ -989,7 +989,6 @@ export default function GuarantorEarningsPage() {
 
               <button
                 type="button"
-                {...buttonGuardProps()}
                 onClick={() => toggleSection("overview")}
                 style={collapseToggle()}
               >
@@ -1093,7 +1092,6 @@ export default function GuarantorEarningsPage() {
 
               <button
                 type="button"
-                {...buttonGuardProps()}
                 onClick={() => toggleSection("meaning")}
                 style={collapseToggle()}
               >
@@ -1187,7 +1185,6 @@ export default function GuarantorEarningsPage() {
                 ) : null}
                 <button
                   type="button"
-                  {...buttonGuardProps()}
                   onClick={() => toggleSection("recent")}
                   style={collapseToggle()}
                 >
@@ -1337,7 +1334,6 @@ export default function GuarantorEarningsPage() {
 
               <button
                 type="button"
-                {...buttonGuardProps()}
                 onClick={() => toggleSection("routes")}
                 style={collapseToggle()}
               >

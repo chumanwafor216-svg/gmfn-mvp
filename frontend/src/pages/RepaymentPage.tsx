@@ -820,7 +820,6 @@ export default function RepaymentPage() {
           </div>
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("overview")}
             style={collapseToggle()}
           >
@@ -992,7 +991,6 @@ export default function RepaymentPage() {
           </div>
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("result")}
             style={collapseToggle()}
           >
@@ -1136,7 +1134,6 @@ export default function RepaymentPage() {
           </div>
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("routes")}
             style={collapseToggle()}
           >

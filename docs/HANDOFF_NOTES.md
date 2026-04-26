@@ -43,6 +43,48 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-27 01:06
+
+#### Workstream
+Guarantor earnings and repayment passive collapse-toggle cleanup pass.
+
+#### Routes/screens affected
+- `/app/guarantor-earnings`
+- `/app/repayment/:loanId`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/GuarantorEarningsPage.tsx`
+- `frontend/src/pages/RepaymentPage.tsx`
+
+#### Confirmed facts
+- `GuarantorEarningsPage.tsx` still used `buttonGuardProps()` on passive section-collapse controls.
+- `RepaymentPage.tsx` still used `buttonGuardProps()` on some passive section-collapse controls, while its `instruction` toggle was already lighter.
+- These controls only open and collapse reading/task sections and do not launch routes or trigger business actions.
+- This pass removed the shared pointer/touch guard layer from these passive toggles:
+  - `GuarantorEarningsPage.tsx`
+    - `overview`
+    - `meaning`
+    - `recent`
+    - `routes`
+  - `RepaymentPage.tsx`
+    - `overview`
+    - `result`
+    - `routes`
+- Earnings summaries, repayment instruction generation, payment declaration, and route targets did not change.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other overview pages may still carry the same unnecessary guard layer on passive collapse controls and can be cleaned in later passes.
+
+#### Next recommended step
+- Continue targeting passive section toggles and non-route detail controls that still use action-level pointer/touch guard props even though they do not launch routes or trigger business actions.
+
+---
+
+#### Date
 2026-04-27 00:56
 
 #### Workstream
