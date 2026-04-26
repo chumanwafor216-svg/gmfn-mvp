@@ -43,6 +43,39 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 23:00
+
+#### Workstream
+Community join-review action-button cleanup pass.
+
+#### Routes/screens affected
+- `/app/community/:clanId/join-requests`
+
+#### Backend routes/endpoints involved
+- `getCommunityJoinRequests`
+- `voteOnJoinRequest`
+- `pilotApproveJoinRequest`
+- `selectClan`
+
+#### Files in play
+- `frontend/src/pages/CommunityJoinRequestsPage.tsx`
+
+#### Confirmed facts
+- `CommunityJoinRequestsPage.tsx` still used a shared pointer/touch action helper that forced `preventDefault()` before hot button actions in the join-review lane.
+- Those controls are plain action buttons and a route-opening anchor, so the extra default-blocking layer was unnecessary heaviness.
+- This pass removed the `preventDefault()` call from `consumeActionEvent(...)` while keeping `stopPropagation()`.
+- The page still protects tap propagation, and the approve/reject/pilot-approve/copy/open actions themselves did not change.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other review or approval pages may still carry the same older helper pattern and can be cleaned in later passes.
+
+#### Next recommended step
+- Continue targeting dense review or approval lanes where pointer/touch helpers still force click default-blocking on normal action controls.
+
+---
+
+#### Date
 2026-04-26 22:54
 
 #### Workstream

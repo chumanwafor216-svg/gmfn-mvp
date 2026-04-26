@@ -114,7 +114,6 @@ function consumeActionEvent(
     | React.PointerEvent<HTMLElement>
     | React.TouchEvent<HTMLElement>
 ) {
-  event.preventDefault();
   event.stopPropagation();
 }
 
