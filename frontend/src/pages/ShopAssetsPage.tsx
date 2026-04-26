@@ -1165,7 +1165,6 @@ export default function ShopAssetsPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("guidance")}
             style={collapseToggle()}
           >
@@ -1228,7 +1227,6 @@ export default function ShopAssetsPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("signboard")}
             style={collapseToggle()}
           >
@@ -1479,7 +1477,6 @@ export default function ShopAssetsPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("products")}
             style={collapseToggle()}
           >
@@ -1770,7 +1767,6 @@ export default function ShopAssetsPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("posted")}
             style={collapseToggle()}
           >

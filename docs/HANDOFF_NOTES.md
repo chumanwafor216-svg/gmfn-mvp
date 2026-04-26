@@ -1,3 +1,35 @@
+## 2026-04-27 02:18
+
+### Workstream
+Shop Assets passive collapse-toggle guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from passive section-collapse controls in `ShopAssetsPage.tsx`.
+- Cleaned these toggles:
+  - `guidance`
+  - `signboard`
+  - `products`
+  - `posted`
+
+### Why
+- These controls only reveal or hide shop-asset sections, so they did not need the same guard layer as real asset-save, product-post, or route-opening actions.
+- This keeps the Shop Assets page lighter without changing shop signboard logic, product logic, or gallery route behavior.
+
+### Files touched
+- `frontend/src/pages/ShopAssetsPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/shop-assets`
+
+### Verification
+- `npm exec -- eslint src/pages/ShopAssetsPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other dense operational pages may still carry the same unnecessary guard layer on passive collapse controls and can be cleaned in later passes.
+
 ## 2026-04-27 02:05
 
 ### Workstream
