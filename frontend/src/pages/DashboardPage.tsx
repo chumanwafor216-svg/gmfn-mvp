@@ -6008,7 +6008,6 @@ export default function DashboardPage() {
           }}
         >
           <summary
-            onPointerDown={(event) => event.stopPropagation()}
             style={{
               display: "grid",
               gridTemplateColumns: "minmax(0, 1fr) auto",
@@ -6816,7 +6815,6 @@ export default function DashboardPage() {
                       }}
                     >
                       <summary
-                        onPointerDown={(event) => event.stopPropagation()}
                         style={{
                           cursor: "pointer",
                           color: "#F6D77A",

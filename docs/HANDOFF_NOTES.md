@@ -43,6 +43,39 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 23:28
+
+#### Workstream
+Dashboard passive summary click-barrier cleanup pass.
+
+#### Routes/screens affected
+- `/app/dashboard`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/DashboardPage.tsx`
+
+#### Confirmed facts
+- `DashboardPage.tsx` still had two nested passive `details/summary` controls carrying their own `onPointerDown={(event) => event.stopPropagation()}` barriers.
+- These summaries are part of passive reading surfaces:
+  - `First look`
+  - `More trust detail`
+- They are not route-launch buttons and did not need their own extra pointer barrier.
+- This pass removed those two local `onPointerDown` propagation stops.
+- The dashboard reading surfaces, trust content, and route behavior did not change.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other passive summary/details surfaces elsewhere in the app may still carry the same small extra pointer barrier pattern and can be cleaned in later passes.
+
+#### Next recommended step
+- Continue targeting small passive summary/details controls where extra local pointer barriers are still layered on top of otherwise passive reading surfaces.
+
+---
+
+#### Date
 2026-04-26 23:14
 
 #### Workstream
