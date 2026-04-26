@@ -3476,12 +3476,10 @@ function marketplaceButtonGuardProps(): Pick<
 
             {pictureToolsOpen ? (
               <div
-                onClick={(event) => event.stopPropagation()}
                 {...marketplacePointerGuardProps()}
                 style={marketplacePictureToolsPanelStyle(isCompact)}
               >
                 <label
-                  onClick={(event) => event.stopPropagation()}
                   {...marketplacePointerGuardProps()}
                   style={marketplacePictureToolButtonStyle(
                     uploadingCommunityPicture

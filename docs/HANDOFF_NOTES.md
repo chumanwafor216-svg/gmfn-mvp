@@ -43,6 +43,38 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 23:14
+
+#### Workstream
+Marketplace picture-tools click-barrier cleanup pass.
+
+#### Routes/screens affected
+- `/app/marketplace`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/MarketplacePage.tsx`
+
+#### Confirmed facts
+- `MarketplacePage.tsx` still had extra click-time propagation stops on the community picture-tools bubble.
+- That surface already uses `marketplacePointerGuardProps()` on the panel and its label, so the added `onClick={(event) => event.stopPropagation()}` barriers were redundant.
+- This pass removed those extra click-time propagation stops from:
+  - the picture-tools panel wrapper
+  - the picture-tools label wrapper
+- The picture open/upload/change behavior itself did not change.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small tool bubbles or nested action surfaces may still carry the same “pointer guard plus extra click stop” pattern and can be cleaned in later passes.
+
+#### Next recommended step
+- Continue targeting nested tool surfaces where pointer/touch guards already exist but extra click-time propagation stops are still layered on top.
+
+---
+
+#### Date
 2026-04-26 23:07
 
 #### Workstream
