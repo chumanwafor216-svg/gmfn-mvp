@@ -1484,12 +1484,7 @@ export default function FinancePage() {
     }));
   }
 
-  function handleCollapseTap(
-    key: keyof CollapseState,
-    event: React.MouseEvent<HTMLButtonElement>
-  ) {
-    event.preventDefault();
-    event.stopPropagation();
+  function handleCollapseTap(key: keyof CollapseState) {
     toggleSection(key);
   }
 
@@ -1982,7 +1977,7 @@ export default function FinancePage() {
             onPointerDown={stopFinanceTap}
             onMouseDown={stopFinanceTap}
             onTouchStart={stopFinanceTap}
-            onClick={(event) => handleCollapseTap("overview", event)}
+            onClick={() => handleCollapseTap("overview")}
             style={collapseToggle()}
           >
             {collapsed.overview ? "Open" : "Collapse"}
@@ -2048,7 +2043,7 @@ export default function FinancePage() {
             onPointerDown={stopFinanceTap}
             onMouseDown={stopFinanceTap}
             onTouchStart={stopFinanceTap}
-            onClick={(event) => handleCollapseTap("reconciliation", event)}
+            onClick={() => handleCollapseTap("reconciliation")}
             style={collapseToggle()}
           >
             {collapsed.reconciliation ? "Open" : "Collapse"}
@@ -2149,7 +2144,7 @@ export default function FinancePage() {
             onPointerDown={stopFinanceTap}
             onMouseDown={stopFinanceTap}
             onTouchStart={stopFinanceTap}
-            onClick={(event) => handleCollapseTap("borrower", event)}
+            onClick={() => handleCollapseTap("borrower")}
             style={collapseToggle()}
           >
             {collapsed.borrower ? "Open" : "Collapse"}
@@ -2359,7 +2354,7 @@ export default function FinancePage() {
             onPointerDown={stopFinanceTap}
             onMouseDown={stopFinanceTap}
             onTouchStart={stopFinanceTap}
-            onClick={(event) => handleCollapseTap("events", event)}
+            onClick={() => handleCollapseTap("events")}
             style={collapseToggle()}
           >
             {collapsed.events ? "Open" : "Collapse"}

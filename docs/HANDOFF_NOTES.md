@@ -43,6 +43,40 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 22:54
+
+#### Workstream
+Finance collapse-control direct-button cleanup pass.
+
+#### Routes/screens affected
+- `/app/finance`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/FinancePage.tsx`
+
+#### Confirmed facts
+- `FinancePage.tsx` still treated collapse buttons as if they needed click-time `preventDefault()` and `stopPropagation()`, even though those buttons already use `stopFinanceTap` on pointer/touch start.
+- This pass removed the extra click-time barrier from the shared `handleCollapseTap(...)` helper and switched the section buttons to call it directly.
+- Cleaned collapse controls:
+  - `overview`
+  - `reconciliation`
+  - `borrower`
+  - `events`
+- The finance sections, reveal logic, and money behavior did not change.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other overview pages may still carry the same collapse-button pattern and can be cleaned in later passes.
+
+#### Next recommended step
+- Continue following high-touch overview pages where section toggles already have pointer/touch guards but still keep extra click-time barriers underneath.
+
+---
+
+#### Date
 2026-04-26 22:48
 
 #### Workstream
