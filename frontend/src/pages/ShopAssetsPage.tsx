@@ -958,15 +958,6 @@ export default function ShopAssetsPage() {
         homeLabel="Dashboard"
         backTo="/app/shop-control"
         backLabel="Shop Control"
-        nextLinks={[
-          { label: "Shop Control", to: "/app/shop-control" },
-          { label: "Marketplace", to: "/app/marketplace" },
-          { label: "TrustSlip", to: "/app/trust-slip" },
-        ]}
-        utilityLinks={[
-          { label: "Community Home", to: "/app/community" },
-          { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
-        ]}
       />
 
       <ExplainToggle

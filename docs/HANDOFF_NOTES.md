@@ -43,6 +43,35 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 21:10
+
+#### Workstream
+Shop assets top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/shop-assets`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/ShopAssetsPage.tsx`
+
+#### Confirmed facts
+- `ShopAssetsPage.tsx` still exposed top-nav route links while the page already carried its own dense in-page asset workflow and route movement through body actions.
+- This pass removed the top-nav `nextLinks` and `utilityLinks` so movement stays in the page body instead of two competing route bands.
+- Home and back behavior remain intact in the page top navigation.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- The page still has many local action buttons, so any remaining heaviness here is more likely to come from stacked guard behavior or dense action grouping than duplicated route bands.
+
+#### Next recommended step
+- Continue the shop-family cleanup in the remaining heavy routes where dense local action rows still make taps feel physically heavy.
+
+---
+
+#### Date
 2026-04-26 21:01
 
 #### Workstream
