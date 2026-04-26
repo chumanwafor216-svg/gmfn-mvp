@@ -1451,7 +1451,7 @@ export default function ShopControlPage() {
     event?: React.SyntheticEvent<HTMLElement>,
     mode: "free" | "paid" = "free"
   ) {
-    guardButtonPress(event);
+    event?.stopPropagation();
     setSpotlightPublishFeedback(null);
     setSpotlightFlowStep(shop?.id ? "upload" : "setup");
     setSpotlightMediaChoice("image");
@@ -1468,6 +1468,16 @@ export default function ShopControlPage() {
 
     setSpotlightOpen(false);
     setSpotlightFlowStep("upload");
+  }
+
+  function openPublicShopFace() {
+    if (!publicShopLink) return;
+    window.open(publicShopLink, "_blank", "noopener,noreferrer");
+  }
+
+  function openShopControlSection(targetId: string) {
+    cancelPendingControlReveal();
+    revealControlTarget(targetId);
   }
 
   async function createVaultInstruction(quantityTotal: 1 | 6) {
@@ -2604,12 +2614,9 @@ export default function ShopControlPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={(event) => {
-                  guardButtonPress(event);
-                  if (publicShopLink) {
-                    window.open(publicShopLink, "_blank", "noopener,noreferrer");
-                  }
-                }}
+                onClick={(event) =>
+                  runGuardedButtonAction(event, () => openPublicShopFace())
+                }
                 style={fullButton(actionBtn("secondary", !publicShopLink))}
                 disabled={!publicShopLink}
               >
@@ -2691,12 +2698,18 @@ export default function ShopControlPage() {
 
             <div style={{ marginTop: 14, ...controlGrid(isCompact, 132) }}>
               {recommendedShopMove.kind === "picture" ? (
-                <a
-                  href="#shop-control-picture-gallery"
+                <button
+                  type="button"
+                  {...buttonGuardProps()}
+                  onClick={(event) =>
+                    runGuardedButtonAction(event, () =>
+                      openShopControlSection("shop-control-picture-gallery")
+                    )
+                  }
                   style={fullButton(actionBtn("primary"))}
                 >
                   Open Picture Tools
-                </a>
+                </button>
               ) : recommendedShopMove.kind === "products" ? (
                 <OriginLink to="/app/shop-assets" style={fullButton(actionBtn("primary"))}>
                   Add Products
@@ -2714,12 +2727,9 @@ export default function ShopControlPage() {
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={(event) => {
-                    guardButtonPress(event);
-                    if (publicShopLink) {
-                      window.open(publicShopLink, "_blank", "noopener,noreferrer");
-                    }
-                  }}
+                  onClick={(event) =>
+                    runGuardedButtonAction(event, () => openPublicShopFace())
+                  }
                   style={fullButton(actionBtn("primary", !publicShopLink))}
                   disabled={!publicShopLink}
                 >
@@ -3496,12 +3506,9 @@ export default function ShopControlPage() {
                     <button
                       type="button"
                       {...buttonGuardProps()}
-                      onClick={(event) => {
-                        guardButtonPress(event);
-                        if (publicShopLink) {
-                          window.open(publicShopLink, "_blank", "noopener,noreferrer");
-                        }
-                      }}
+                      onClick={(event) =>
+                        runGuardedButtonAction(event, () => openPublicShopFace())
+                      }
                       style={fullButton(actionBtn("secondary", !publicShopLink))}
                       disabled={!publicShopLink}
                     >

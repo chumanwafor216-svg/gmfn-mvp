@@ -79,6 +79,10 @@ Shop-family interaction cleanup pass for `Shop Control`, the embedded Community 
   - `?section=vault`
 - `CommunityShopControlPanel.tsx` owner shortcuts were moved to that calmer section-query contract instead of the older hash-only contract.
 - `ShopGalleryPage.tsx` now uses the same cancelable frame-based reveal style instead of the older delayed hash scroll timer.
+- A follow-up pass then removed some of the remaining duplicate guard stacking on the highest-traffic shop buttons:
+  - `ShopControlPage.tsx` public shop openers now use one guarded click path instead of combining pointer guards with extra click-time `guardButtonPress(...)`
+  - the recommended `Open Picture Tools` action no longer uses an old same-page hash anchor; it now reveals the picture section directly through the calmer in-page reveal path
+  - `ShopGalleryPage.tsx` back navigation no longer adds an extra local `guardButtonPress()` on top of the already guarded button action
 - Verification after this pass:
   - `npm exec -- eslint src/pages/ShopControlPage.tsx src/components/CommunityShopControlPanel.tsx src/pages/ShopGalleryPage.tsx`
   - `npm run build`

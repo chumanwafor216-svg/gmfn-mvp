@@ -1299,8 +1299,6 @@ export default function ShopGalleryPage() {
   }
 
   function goBackSafely() {
-    guardButtonPress();
-
     if (typeof window !== "undefined" && window.history.length > 1) {
       window.history.back();
       return;
