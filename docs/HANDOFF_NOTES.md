@@ -12129,3 +12129,37 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend lint passed
   - frontend build passed
   - Dashboard now has a cleaner safe checkpoint for continued phone testing
+
+### Dashboard to Demand Box create entry reached a calmer safe checkpoint (2026-04-26)
+
+- Product-owner issue:
+  - Dashboard still launched first-time Demand Box creation through the older
+    hash contract `/app/demand-box#demand-box-create`
+  - that meant the Dashboard button layer had been cleaned up, but one older
+    route-entry shape was still sitting underneath the path and could keep the
+    create flow feeling less steady
+- Applied the smallest safe route-contract cleanup:
+  - `frontend/src/pages/DashboardPage.tsx`
+    - changed the empty-state Demand Box primary action from the old hash entry
+      to the calmer query-based entry `/app/demand-box?mode=create`
+  - `frontend/src/pages/DemandBoxPage.tsx`
+    - added support for query-based create mode while keeping the legacy hash
+      path working for backward compatibility
+    - create-mode cleanup now removes the `mode=create` query after reveal, the
+      same way the legacy hash path was being cleared after use
+- Routes impacted:
+  - `/app/dashboard`
+  - `/app/demand-box`
+- Shared logic impact:
+  - no backend change
+  - this is a frontend route-entry normalization pass only
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/DashboardPage.tsx src/pages/DemandBoxPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed
+  - Dashboard-to-Demand-Box create entry is now at a safer checkpoint for phone
+    testing

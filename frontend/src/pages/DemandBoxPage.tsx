@@ -716,8 +716,15 @@ export default function DemandBoxPage() {
   const memberCciLabel = cciLabel(me);
 
   const visiblePreview = useMemo(() => visibleRows.slice(0, 6), [visibleRows]);
-  const isCreateMode = location.hash === "#demand-box-create";
-  const currentPath = `${location.pathname}${location.search}${location.hash}`;
+  const demandMode = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return safeStr(params.get("mode") || "").toLowerCase();
+  }, [location.search]);
+  const hasLegacyCreateHash = location.hash === "#demand-box-create";
+  const isCreateMode = demandMode === "create" || hasLegacyCreateHash;
+  const currentPath = `${location.pathname}${location.search}${
+    hasLegacyCreateHash ? location.hash : ""
+  }`;
   const originPath = useMemo(() => {
     if (!location.state || typeof location.state !== "object") return "";
     return safeStr(
@@ -737,14 +744,21 @@ export default function DemandBoxPage() {
 
     revealDemandCreate();
 
-    if (typeof window !== "undefined") {
-      const cleanUrl = `${location.pathname}${location.search}`;
-      window.history.replaceState(window.history.state, "", cleanUrl);
-    }
-  }, [
-    communities.length,
-    createCommunityConfirmed,
-    isCreateMode,
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(location.search);
+        if (params.get("mode") === "create") {
+          params.delete("mode");
+        }
+        const nextSearch = params.toString();
+        const cleanUrl = `${location.pathname}${
+          nextSearch ? `?${nextSearch}` : ""
+        }`;
+        window.history.replaceState(window.history.state, "", cleanUrl);
+      }
+    }, [
+      communities.length,
+      createCommunityConfirmed,
+      isCreateMode,
     loading,
     location.pathname,
     location.search,

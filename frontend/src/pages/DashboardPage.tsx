@@ -3791,7 +3791,7 @@ export default function DashboardPage() {
   const remainingDemandCount = Math.max(demandItems.length - 1, 0);
   const demandPrimaryActionTo =
     demandItems.length === 0
-      ? "/app/demand-box#demand-box-create"
+      ? "/app/demand-box?mode=create"
       : DASHBOARD_TARGETS.DEMAND_BOX;
   const demandPrimaryActionLabel =
     demandItems.length === 0
