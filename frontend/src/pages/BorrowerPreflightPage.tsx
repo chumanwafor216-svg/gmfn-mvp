@@ -157,15 +157,6 @@ export default function BorrowerPreflightPage() {
         homeLabel="Dashboard"
         backTo="/app/loans"
         backLabel="Loans & Support"
-        nextLinks={[
-          { label: "Loan Readiness", to: "/app/loan-readiness" },
-          { label: "Loan Suggestions", to: "/app/loan-suggestions" },
-          { label: "Finance", to: "/app/finance" },
-        ]}
-        utilityLinks={[
-          { label: "Loans & Support", to: "/app/loans" },
-          { label: "Commitment Builder", to: "/app/dashboard#focus-commitments" },
-        ]}
       />
 
       <ExplainToggle

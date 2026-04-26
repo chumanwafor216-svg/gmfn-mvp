@@ -43,6 +43,38 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 20:02
+
+#### Workstream
+Borrower preflight and loan decision top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/borrower-preflight`
+- `/app/loan-decision`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/BorrowerPreflightPage.tsx`
+- `frontend/src/pages/LoanDecisionPage.tsx`
+
+#### Confirmed facts
+- `BorrowerPreflightPage.tsx` still exposed top-nav route links while also carrying in-body route actions for Loans & Support and Loan Readiness.
+- `LoanDecisionPage.tsx` still exposed top-nav route links while also carrying in-body route actions for Loan Workbench, Loans & Support, and Finance.
+- This pass removed the top-nav `nextLinks` and `utilityLinks` from both pages so route movement stays in the page body instead of two competing route bands.
+- Home and back behavior remain intact in the page top navigation for both routes.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other borrowing/member pages may still carry stacked local guard layers even after the route-band cleanup.
+
+#### Next recommended step
+- Continue the app-wide cleanup by following live heaviness into the remaining pages where stacked button guards still make taps feel physically heavy.
+
+---
+
+#### Date
 2026-04-26 19:52
 
 #### Workstream

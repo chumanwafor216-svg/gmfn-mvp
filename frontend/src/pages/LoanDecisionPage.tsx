@@ -246,15 +246,6 @@ export default function LoanDecisionPage() {
         homeLabel="Dashboard"
         backTo="/app/loans"
         backLabel="Loans & Support"
-        nextLinks={[
-          { label: "Loan Workbench", to: "/app/loan-workbench" },
-          { label: "Loan Readiness", to: "/app/loan-readiness" },
-          { label: "Finance", to: "/app/finance" },
-        ]}
-        utilityLinks={[
-          { label: "Loans & Support", to: "/app/loans" },
-          { label: "Guarantor Inbox", to: "/app/guarantor-inbox" },
-        ]}
       />
 
       <ExplainToggle
