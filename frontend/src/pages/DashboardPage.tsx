@@ -1709,7 +1709,7 @@ function spotlightMarketplaceTo(item: SpotlightItem | null): string {
   const verifiedClanId = positiveNumber(item?.source_clan_id || item?.clan_id);
 
   if (verifiedClanId > 0) {
-    return `/community/${verifiedClanId}`;
+    return `/app/marketplace/community/${verifiedClanId}`;
   }
 
   return DASHBOARD_TARGETS.MARKETPLACE;
@@ -3066,9 +3066,7 @@ export default function DashboardPage() {
     [latestSpotlightSnapshot]
   );
 
-  const myShopLink = safeStr(me?.gmfn_id)
-    ? `/app/shop/${encodeURIComponent(safeStr(me?.gmfn_id))}`
-    : "/app/shop/me";
+  const myShopLink = "/app/shop-control";
 
   const unreadCount = useMemo(
     () => notices.filter((n) => !n?.is_read).length,

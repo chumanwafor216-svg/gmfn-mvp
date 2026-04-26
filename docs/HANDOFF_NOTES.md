@@ -12098,3 +12098,34 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend build passed
   - treat Notifications and Demand Box as a safer checkpoint for continued
     phone testing, not a final freeze yet
+
+### Dashboard route contracts reached a cleaner safe checkpoint (2026-04-26)
+
+- Product-owner issue:
+  - even after Dashboard button stabilization, some Dashboard task entries were
+    still launching through mixed destination shapes
+  - that can make the app feel unpredictable because the tap works, but the
+    user does not always land in one consistent family of routes
+- Applied the smallest safe route-contract cleanup:
+  - `frontend/src/pages/DashboardPage.tsx`
+    - changed Spotlight marketplace launches to use the authenticated
+      Marketplace alias shape `/app/marketplace/community/:clanId` instead of
+      mixing direct `/community/:clanId` with `/app/marketplace`
+    - changed Dashboard `Shop` intent launches to use the canonical owner room
+      `/app/shop-control` instead of mixed public-shop-style aliases
+- Route impact:
+  - `/app/dashboard`
+  - Dashboard handoffs into Marketplace workspace
+  - Dashboard handoffs into Shop owner control
+- Shared logic impact:
+  - no backend change
+  - this is a frontend route-contract normalization pass only
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/DashboardPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed
+  - Dashboard now has a cleaner safe checkpoint for continued phone testing
