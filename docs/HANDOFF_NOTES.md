@@ -12163,3 +12163,37 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend build passed
   - Dashboard-to-Demand-Box create entry is now at a safer checkpoint for phone
     testing
+
+### Finance and Loans section reveals reached a calmer safe checkpoint (2026-04-26)
+
+- Product-owner issue:
+  - after Dashboard route cleanup, the next major money-side pages still used
+    delayed `setTimeout` section reveals from `What do you want to do next?`
+  - that older pattern can make the button feel like it did not respond on the
+    first press, then the page jumps a moment later
+- Applied the smallest safe interaction cleanup:
+  - `frontend/src/pages/FinancePage.tsx`
+    - replaced guide-driven delayed section reveals with one cancelable
+      `requestAnimationFrame` reveal lane
+    - finance summary and reconciliation now open and scroll through the calmer
+      reveal helper instead of delayed timers
+  - `frontend/src/pages/LoansPage.tsx`
+    - replaced guide-driven delayed section reveals with one cancelable
+      `requestAnimationFrame` reveal lane
+    - support summary, current focus, borrower flow, and guarantor queue now
+      open and scroll through the calmer reveal helper instead of delayed timers
+- Routes impacted:
+  - `/app/finance`
+  - `/app/loans`
+- Shared logic impact:
+  - no backend change
+  - this is a frontend interaction-calming pass only
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/FinancePage.tsx src/pages/LoansPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed
+  - Finance and Loans are now at a safer checkpoint for continued phone testing

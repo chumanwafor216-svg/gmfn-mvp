@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import DomainIntroToggle from "../components/DomainIntroToggle";
 import NextActionGuide, {
@@ -759,6 +759,7 @@ export default function FinancePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
+  const financeRevealRef = useRef<number | null>(null);
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -803,6 +804,18 @@ export default function FinancePage() {
     window.addEventListener("resize", handleResize);
 
     return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (
+        typeof window !== "undefined" &&
+        financeRevealRef.current !== null
+      ) {
+        window.cancelAnimationFrame(financeRevealRef.current);
+        financeRevealRef.current = null;
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -1484,23 +1497,35 @@ export default function FinancePage() {
     navigateWithOrigin(navigate, to, location);
   }
 
+  function revealFinanceSection(targetId: string, attempt = 0) {
+    if (typeof document === "undefined" || typeof window === "undefined") return;
+
+    if (financeRevealRef.current !== null) {
+      window.cancelAnimationFrame(financeRevealRef.current);
+      financeRevealRef.current = null;
+    }
+
+    const target = document.getElementById(targetId);
+    if (!target) {
+      if (attempt >= 6) return;
+      financeRevealRef.current = window.requestAnimationFrame(() => {
+        revealFinanceSection(targetId, attempt + 1);
+      });
+      return;
+    }
+
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   function handleFinanceNextAction(item: NextActionGuideItem) {
     switch (item.id) {
       case "finance-summary":
         setCollapsed((prev) => ({ ...prev, overview: false }));
-        window.setTimeout(() => {
-          document
-            .getElementById("finance-summary")
-            ?.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 60);
+        revealFinanceSection("finance-summary");
         break;
       case "reconciliation":
         setCollapsed((prev) => ({ ...prev, reconciliation: false }));
-        window.setTimeout(() => {
-          document
-            .getElementById("finance-reconciliation")
-            ?.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 60);
+        revealFinanceSection("finance-reconciliation");
         break;
       default:
         if (item.to) openFinanceRoute(item.to);

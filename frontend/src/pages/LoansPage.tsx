@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import NextActionGuide, {
   type NextActionGuideItem,
@@ -507,6 +507,7 @@ export default function LoansPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
+  const loansRevealRef = useRef<number | null>(null);
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -538,6 +539,15 @@ export default function LoansPage() {
     window.addEventListener("resize", handleResize);
 
     return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && loansRevealRef.current !== null) {
+        window.cancelAnimationFrame(loansRevealRef.current);
+        loansRevealRef.current = null;
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -889,17 +899,32 @@ export default function LoansPage() {
     navigateWithOrigin(navigate, to, location);
   }
 
+  function revealLoansSection(targetId: string, attempt = 0) {
+    if (typeof document === "undefined" || typeof window === "undefined") return;
+
+    if (loansRevealRef.current !== null) {
+      window.cancelAnimationFrame(loansRevealRef.current);
+      loansRevealRef.current = null;
+    }
+
+    const target = document.getElementById(targetId);
+    if (!target) {
+      if (attempt >= 6) return;
+      loansRevealRef.current = window.requestAnimationFrame(() => {
+        revealLoansSection(targetId, attempt + 1);
+      });
+      return;
+    }
+
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   function openLoansSection(key: keyof CollapseState, targetId: string) {
     setCollapsed((prev) => ({
       ...prev,
       [key]: false,
     }));
-
-    window.setTimeout(() => {
-      document
-        .getElementById(targetId)
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 60);
+    revealLoansSection(targetId);
   }
 
   function handleLoansNextAction(item: NextActionGuideItem) {
