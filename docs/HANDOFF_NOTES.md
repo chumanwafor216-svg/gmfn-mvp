@@ -43,6 +43,35 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 21:28
+
+#### Workstream
+Payment rails top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/payment-rails`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/PaymentRailsPage.tsx`
+
+#### Confirmed facts
+- `PaymentRailsPage.tsx` still exposed top-nav route links while the page already carried its own lower `Next routes` section and explicitly instructed users to use that single route section after reading the rail picture.
+- This pass removed the top-nav `nextLinks` and `utilityLinks` so movement stays in the page body instead of two competing route bands.
+- Home and back behavior remain intact in the page top navigation.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Any remaining heaviness on this route is now more likely to come from dense in-page route tiles or shared button guard behavior than duplicated route bands.
+
+#### Next recommended step
+- Continue the operational cleanup in the remaining pages where stacked local action bands still make taps feel physically heavy.
+
+---
+
+#### Date
 2026-04-26 21:18
 
 #### Workstream

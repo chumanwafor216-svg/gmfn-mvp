@@ -688,15 +688,6 @@ export default function PaymentRailsPage() {
         homeLabel="Dashboard"
         backTo="/app/loans"
         backLabel="Loans & Support"
-        nextLinks={[
-          { label: "Finance", to: "/app/finance" },
-          { label: "Marketplace", to: "/app/marketplace" },
-          { label: "Loans", to: "/app/loans" },
-        ]}
-        utilityLinks={[
-          { label: "Community Home", to: "/app/community" },
-          { label: "Trust", to: "/app/trust" },
-        ]}
       />
 
       <ExplainToggle
