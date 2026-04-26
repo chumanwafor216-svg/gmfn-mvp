@@ -1194,14 +1194,6 @@ export default function LoanWorkbenchPage() {
           homeLabel="Dashboard"
           backTo="/app/loan-suggestions"
           backLabel="Loan Suggestions"
-          nextLinks={[
-            { label: "Loan Summary", to: "/app/loans" },
-            { label: "Finance", to: "/app/finance" },
-          ]}
-          utilityLinks={[
-            { label: "Marketplace", to: "/app/marketplace" },
-            { label: "Money Out", to: "/app/withdrawal-instructions" },
-          ]}
         />
 
         <section style={pageCard("#FFFFFF")}>

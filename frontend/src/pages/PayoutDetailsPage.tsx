@@ -521,15 +521,6 @@ export default function PayoutDetailsPage() {
         homeLabel="Dashboard"
         backTo="/app/withdrawal-instructions"
         backLabel="Withdrawal Instructions"
-        nextLinks={[
-          { label: "Loans & Support", to: "/app/loans" },
-          { label: "Withdrawal Instructions", to: "/app/withdrawal-instructions" },
-          { label: "Community Home", to: "/app/community" },
-        ]}
-        utilityLinks={[
-          { label: "Marketplace", to: "/app/marketplace" },
-          { label: "Trust", to: "/app/trust" },
-        ]}
       />
 
       <ExplainToggle

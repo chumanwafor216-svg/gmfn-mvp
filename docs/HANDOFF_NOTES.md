@@ -43,6 +43,38 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 21:40
+
+#### Workstream
+Payout details and loan workbench top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/payout-details`
+- `/app/loan-workbench`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/PayoutDetailsPage.tsx`
+- `frontend/src/pages/LoanWorkbenchPage.tsx`
+
+#### Confirmed facts
+- `PayoutDetailsPage.tsx` still exposed top-nav route links even though the route already told the user to use the single lower `What happens next` section after confirming payout details.
+- `LoanWorkbenchPage.tsx` live state had already been simplified earlier, but its loading state still exposed top-nav route links even though the page body already owns route movement once the workbench opens.
+- This pass removed the duplicated top-nav `nextLinks` and `utilityLinks` from those remaining places so route movement stays in the page body instead of two competing route bands.
+- Home and back behavior remain intact in the page top navigation for both routes.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- `TrustPage.tsx` and `BankConsolePage.tsx` still expose top-nav route links, but they were left unchanged in this sweep because a full replacement route band in the page body was not yet confirmed there.
+
+#### Next recommended step
+- Continue the cleanup only where a route already has a real page-body movement lane or where stacked local guard behavior still makes taps feel physically heavy.
+
+---
+
+#### Date
 2026-04-26 21:28
 
 #### Workstream
