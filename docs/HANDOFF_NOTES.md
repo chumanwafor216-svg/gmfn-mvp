@@ -43,6 +43,50 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-27 00:48
+
+#### Workstream
+Borrowing overview passive collapse-toggle guard cleanup pass.
+
+#### Routes/screens affected
+- `/app/loans`
+- `/app/loan-readiness`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/LoansPage.tsx`
+- `frontend/src/pages/LoanReadinessPage.tsx`
+
+#### Confirmed facts
+- `LoansPage.tsx` and `LoanReadinessPage.tsx` still used `buttonGuardProps()` on passive section-collapse controls.
+- Those controls only open and collapse reading/task sections and do not launch routes or trigger business actions.
+- This pass removed the shared pointer/touch guard layer from these passive toggles:
+  - `LoansPage.tsx`
+    - `overview`
+    - `focus`
+    - `borrower`
+    - `guarantor`
+    - `routes`
+  - `LoanReadinessPage.tsx`
+    - `overview`
+    - `reading`
+    - `blockers`
+    - `routes`
+- After the toggle cleanup, both pages no longer used their page-local `guardButtonPress(...)` / `buttonGuardProps()` helpers, so those dead helpers were removed.
+- Borrowing route targets, readiness reading logic, and support-state logic did not change.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other overview pages may still carry the same unnecessary guard layer on passive collapse controls and can be cleaned in later passes.
+
+#### Next recommended step
+- Continue targeting passive section toggles and non-route detail controls that still use action-level pointer/touch guard props even though they do not launch routes or trigger business actions.
+
+---
+
+#### Date
 2026-04-27 00:39
 
 #### Workstream

@@ -330,21 +330,6 @@ function stableTapStyle(): React.CSSProperties {
   };
 }
 
-function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
-  event?.stopPropagation();
-}
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown"
-> {
-  return {
-    onPointerDown: guardButtonPress,
-    onTouchStart: guardButtonPress,
-    onMouseDown: guardButtonPress,
-  };
-}
-
 function routeTile(primary = false): React.CSSProperties {
   return {
     ...stableTapStyle(),
@@ -1191,7 +1176,6 @@ export default function LoanReadinessPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("overview")}
             style={collapseToggle()}
           >
@@ -1391,7 +1375,6 @@ export default function LoanReadinessPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("reading")}
             style={collapseToggle()}
           >
@@ -1513,7 +1496,6 @@ export default function LoanReadinessPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("blockers")}
             style={collapseToggle()}
           >
@@ -1646,7 +1628,6 @@ export default function LoanReadinessPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("routes")}
             style={collapseToggle()}
           >
