@@ -43,6 +43,38 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 20:53
+
+#### Workstream
+Money In / Money Out top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/payment-instructions`
+- `/app/withdrawal-instructions`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/PaymentInstructionsPage.tsx`
+- `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+
+#### Confirmed facts
+- `PaymentInstructionsPage.tsx` still exposed top-nav route links in both loading and live states even after lower route movement had already been simplified into in-page route sections.
+- `WithdrawalInstructionsPage.tsx` still exposed top-nav route links in both loading and live states even after lower route movement had already been simplified into in-page route sections.
+- This pass removed the top-nav `nextLinks` and `utilityLinks` from both routes so movement stays in the page body instead of two competing route bands.
+- Home and back behavior remain intact in the page top navigation for both routes.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Any remaining heaviness on these pages is now more likely to come from dense local action bands or shared button guard behavior rather than duplicated route bands.
+
+#### Next recommended step
+- Continue the app-wide cleanup in the remaining operational pages where local action density still makes taps feel physically heavy.
+
+---
+
+#### Date
 2026-04-26 20:46
 
 #### Workstream

@@ -1313,15 +1313,6 @@ export default function WithdrawalInstructionsPage() {
           homeLabel="Dashboard"
           backTo="/app/marketplace"
           backLabel="Marketplace"
-          nextLinks={[
-            { label: "Loan Readiness", to: "/app/loan-readiness" },
-            { label: "Finance", to: "/app/finance" },
-          ]}
-          utilityLinks={[
-            { label: "Loans", to: "/app/loans" },
-            { label: "Payout Details", to: "/app/payout-details" },
-            { label: "Money In", to: "/app/payment/pool" },
-          ]}
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -1351,29 +1342,6 @@ export default function WithdrawalInstructionsPage() {
         homeLabel="Dashboard"
         backTo="/app/marketplace"
         backLabel="Marketplace"
-        nextLinks={
-          requiresSupport
-            ? [
-                { label: "Loan Readiness", to: "/app/loan-readiness" },
-                { label: "Payout Details", to: "/app/payout-details" },
-              ]
-            : [
-                { label: "Finance", to: "/app/finance" },
-                { label: "Payout Details", to: "/app/payout-details" },
-              ]
-        }
-        utilityLinks={
-          withdrawalCanWidenRoutes
-            ? [
-                { label: "Loans", to: "/app/loans" },
-                { label: "Payment Rails", to: "/app/payment-rails" },
-                { label: "Money In", to: "/app/payment/pool" },
-              ]
-            : [
-                { label: "Payment Rails", to: "/app/payment-rails" },
-                { label: "Money In", to: "/app/payment/pool" },
-              ]
-        }
       />
 
       <ExplainToggle

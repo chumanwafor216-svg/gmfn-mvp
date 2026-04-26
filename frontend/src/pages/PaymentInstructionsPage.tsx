@@ -1064,15 +1064,6 @@ export default function PaymentInstructionsPage() {
           homeLabel="Dashboard"
           backTo={APP_TARGETS.MARKETPLACE}
           backLabel="Marketplace"
-          nextLinks={[
-            { label: "Finance", to: APP_TARGETS.FINANCE },
-            { label: "Money Out", to: APP_TARGETS.MONEY_OUT },
-          ]}
-          utilityLinks={[
-            { label: "Loans", to: APP_TARGETS.LOANS },
-            { label: "Payment Rails", to: APP_TARGETS.PAYMENT_RAILS },
-            { label: "Notifications", to: APP_TARGETS.NOTIFICATIONS },
-          ]}
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -1102,24 +1093,6 @@ export default function PaymentInstructionsPage() {
         homeLabel="Dashboard"
         backTo={APP_TARGETS.MARKETPLACE}
         backLabel="Marketplace"
-        nextLinks={
-          moneyInCanWidenRoutes
-            ? [
-                { label: "Finance", to: APP_TARGETS.FINANCE },
-                { label: "Money Out", to: APP_TARGETS.MONEY_OUT },
-              ]
-            : [{ label: "Finance", to: APP_TARGETS.FINANCE }]
-        }
-        utilityLinks={[
-          { label: "Payment Rails", to: APP_TARGETS.PAYMENT_RAILS },
-          { label: "Notifications", to: APP_TARGETS.NOTIFICATIONS },
-          ...(moneyInCanWidenRoutes
-            ? [
-                { label: "Payout Details", to: APP_TARGETS.PAYOUT_DETAILS },
-                { label: "Loans", to: APP_TARGETS.LOANS },
-              ]
-            : []),
-        ]}
       />
 
       <ExplainToggle
