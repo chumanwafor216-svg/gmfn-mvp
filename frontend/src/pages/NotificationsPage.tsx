@@ -1372,7 +1372,6 @@ export default function NotificationsPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("focus")}
             style={collapseToggle()}
           >
@@ -1569,7 +1568,6 @@ export default function NotificationsPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("buckets")}
             style={collapseToggle()}
           >
@@ -1740,7 +1738,6 @@ export default function NotificationsPage() {
 
             <button
               type="button"
-              {...buttonGuardProps()}
               onClick={() => toggleSection("rawFeed")}
               style={collapseToggle()}
             >
@@ -1834,7 +1831,6 @@ export default function NotificationsPage() {
 
             <button
               type="button"
-              {...buttonGuardProps()}
               onClick={() => toggleSection("reading")}
               style={collapseToggle()}
             >

@@ -1,3 +1,35 @@
+## 2026-04-27 02:05
+
+### Workstream
+Notifications passive collapse-toggle guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from passive section-collapse controls in `NotificationsPage.tsx`.
+- Cleaned these toggles:
+  - `focus`
+  - `buckets`
+  - `rawFeed`
+  - `reading`
+
+### Why
+- These controls only reveal or hide notification-reading sections, so they did not need the same guard layer as real review, mark-as-read, or route-opening actions.
+- This keeps the Action Inbox lighter without changing notice routing, mark-as-read behavior, or guidance logic.
+
+### Files touched
+- `frontend/src/pages/NotificationsPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/notifications`
+
+### Verification
+- `npm exec -- eslint src/pages/NotificationsPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other dense operational pages may still carry the same unnecessary guard layer on passive collapse controls and can be cleaned in later passes.
+
 ## 2026-04-27 01:56
 
 ### Workstream
