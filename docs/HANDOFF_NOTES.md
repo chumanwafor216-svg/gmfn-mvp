@@ -43,6 +43,36 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 23:46
+
+#### Workstream
+Demand Box passive details-summary guard cleanup pass.
+
+#### Routes/screens affected
+- `/app/demand-box`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/DemandBoxPage.tsx`
+
+#### Confirmed facts
+- `DemandBoxPage.tsx` still used `buttonGuardProps()` on the passive `More detail` summary inside the create-demand surface.
+- That summary is a reading toggle, not a route-launch or destructive action button.
+- This pass removed the shared pointer/touch button-guard layer from that passive `summary`.
+- Demand Box create behavior, category/expiry inputs, and submission logic did not change.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other passive `details/summary` reading surfaces elsewhere may still carry the same unnecessary button-guard layer and can be cleaned in later passes.
+
+#### Next recommended step
+- Continue targeting passive `details/summary` reading toggles that still use action-level pointer/touch guard props even though they do not open routes or trigger business actions.
+
+---
+
+#### Date
 2026-04-26 23:38
 
 #### Workstream

@@ -1538,7 +1538,6 @@ export default function DemandBoxPage() {
           <div style={detailsShell()}>
             <details>
               <summary
-                {...buttonGuardProps()}
                 style={detailsSummary()}
               >
                 <span>More detail</span>
