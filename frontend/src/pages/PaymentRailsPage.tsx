@@ -83,21 +83,6 @@ function stableTapStyle(): React.CSSProperties {
   };
 }
 
-function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
-  event?.stopPropagation();
-}
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown"
-> {
-  return {
-    onPointerDown: guardButtonPress,
-    onTouchStart: guardButtonPress,
-    onMouseDown: guardButtonPress,
-  };
-}
-
 function softBtn(disabled = false): React.CSSProperties {
   return {
     display: "inline-flex",
@@ -934,7 +919,6 @@ export default function PaymentRailsPage() {
             >
               <button
                 type="button"
-                {...buttonGuardProps()}
                 onClick={() => setShowRaw((prev) => !prev)}
                 style={softBtn(false)}
               >

@@ -43,6 +43,37 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 23:55
+
+#### Workstream
+Payment Rails passive raw-toggle guard cleanup pass.
+
+#### Routes/screens affected
+- `/app/payment-rails`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/PaymentRailsPage.tsx`
+
+#### Confirmed facts
+- `PaymentRailsPage.tsx` used a shared page-local `buttonGuardProps()` layer on the passive `Show raw response` / `Hide raw response` toggle.
+- That control is only a reading toggle for the raw rails payload, not a route-launch or business-action button.
+- This pass removed the guard layer from that passive toggle.
+- After that removal, the page-local `guardButtonPress(...)` and `buttonGuardProps()` helper became unused and were removed as dead code.
+- Rail loading, grouped rail reading, and money-route guidance did not change.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other passive reading toggles on operational pages may still carry the same unnecessary button-guard layer and can be cleaned in later passes.
+
+#### Next recommended step
+- Continue targeting passive reading toggles and non-route detail controls that still use action-level pointer/touch guard props even though they do not launch routes or trigger business actions.
+
+---
+
+#### Date
 2026-04-26 23:46
 
 #### Workstream
