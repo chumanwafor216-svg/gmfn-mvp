@@ -1262,7 +1262,6 @@ export default function LoanSuggestionsPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("overview")}
             style={collapseToggle()}
           >
@@ -1455,7 +1454,6 @@ export default function LoanSuggestionsPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("reading")}
             style={collapseToggle()}
           >
@@ -1569,7 +1567,6 @@ export default function LoanSuggestionsPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("supporters")}
             style={collapseToggle()}
           >
@@ -1690,7 +1687,6 @@ export default function LoanSuggestionsPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("routes")}
             style={collapseToggle()}
           >

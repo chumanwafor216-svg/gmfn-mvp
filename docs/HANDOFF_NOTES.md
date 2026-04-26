@@ -1,3 +1,35 @@
+## 2026-04-27 01:48
+
+### Workstream
+Loan Suggestions passive collapse-toggle guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from passive section-collapse controls in `LoanSuggestionsPage.tsx`.
+- Cleaned these toggles:
+  - `overview`
+  - `reading`
+  - `supporters`
+  - `routes`
+
+### Why
+- These controls only reveal or hide reading sections and route lists, so they did not need the same guard layer as real route-opening or support-issue actions.
+- This keeps the loan-suggestions surface lighter without changing fit reading, supporter suggestion content, or route targets.
+
+### Files touched
+- `frontend/src/pages/LoanSuggestionsPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/loan-suggestions`
+
+### Verification
+- `npm exec -- eslint src/pages/LoanSuggestionsPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other borrowing-family detail pages may still carry the same unnecessary guard layer on passive collapse controls and can be cleaned in later passes.
+
 ## 2026-04-27 01:40
 
 ### Workstream
