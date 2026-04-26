@@ -2186,10 +2186,6 @@ function communityButtonGuardProps(): Pick<
             homeTo="/app/dashboard"
             homeLabel="Dashboard"
             backTo="/app/dashboard"
-            nextLinks={[
-              { label: "Marketplace", to: "/app/marketplace" },
-              { label: "Notifications", to: "/app/notifications" },
-            ]}
           />
 
           <section style={communityBlockCard("quiet")}>
@@ -2214,10 +2210,6 @@ function communityButtonGuardProps(): Pick<
             homeTo="/app/dashboard"
             homeLabel="Dashboard"
             backTo="/app/dashboard"
-            nextLinks={[
-              { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
-              { label: "Trust", to: "/app/trust" },
-            ]}
           />
 
           <DomainIntroToggle

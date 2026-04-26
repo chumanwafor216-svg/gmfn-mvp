@@ -43,6 +43,37 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 21:52
+
+#### Workstream
+Community Home loading and empty-state top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/community`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/CommunityHomePage.tsx`
+
+#### Confirmed facts
+- `CommunityHomePage.tsx` still exposed extra top-nav route links in two first-touch states:
+  - loading the current community
+  - no communities available yet
+- Those states already kept home/back, and the empty state already carried its own in-page guide, so the extra top route links were another competing route band at the first touch point.
+- This pass removed those top-nav `nextLinks` from the loading and empty states so first-touch Community Home stays calmer and route movement remains owned by the page body or by home/back.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- `TrustPage.tsx` and `BankConsolePage.tsx` still expose top-nav route links and were left unchanged because they do not yet show the same clearly confirmed replacement route lane in the page body.
+
+#### Next recommended step
+- Continue the cleanup in remaining dense local action areas and only remove top-route bands where the page body already provides a stable replacement path.
+
+---
+
+#### Date
 2026-04-26 21:40
 
 #### Workstream
