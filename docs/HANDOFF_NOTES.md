@@ -43,6 +43,38 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 21:01
+
+#### Workstream
+Loan summary and loan suggestions top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/loan-summary/:loanId`
+- `/app/loan-suggestions`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/LoanSummaryPage.tsx`
+- `frontend/src/pages/LoanSuggestionsPage.tsx`
+
+#### Confirmed facts
+- `LoanSummaryPage.tsx` still exposed top-nav route links in loading and live states even after lower route movement had already been simplified into page-body route sections.
+- `LoanSuggestionsPage.tsx` still exposed top-nav route links in loading and live states even after lower route movement had already been simplified into page-body route sections.
+- This pass removed the top-nav `nextLinks` and `utilityLinks` from both routes so movement stays in the page body instead of two competing route bands.
+- Home and back behavior remain intact in the page top navigation for both routes.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Any remaining heaviness on these routes is now more likely to come from dense local action rows or shared button guard behavior rather than duplicated top route bands.
+
+#### Next recommended step
+- Continue the borrowing-family cleanup in remaining routes where local action density still makes taps feel physically heavy.
+
+---
+
+#### Date
 2026-04-26 20:53
 
 #### Workstream

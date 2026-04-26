@@ -1071,14 +1071,6 @@ export default function LoanSuggestionsPage() {
           homeLabel="Dashboard"
           backTo="/app/loan-readiness"
           backLabel="Loan Readiness"
-          nextLinks={[
-            { label: "Loan Workbench", to: "/app/loan-workbench" },
-            { label: "Loans", to: "/app/loans" },
-          ]}
-          utilityLinks={[
-            { label: "Marketplace", to: "/app/marketplace" },
-            { label: "Money Out", to: "/app/withdrawal-instructions" },
-          ]}
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -1108,18 +1100,6 @@ export default function LoanSuggestionsPage() {
         homeLabel="Dashboard"
         backTo="/app/loan-readiness"
         backLabel="Loan Readiness"
-        nextLinks={[
-          { label: "Loan Workbench", to: "/app/loan-workbench" },
-          { label: "Loans", to: "/app/loans" },
-        ]}
-        utilityLinks={
-          suggestionsSupportActive
-            ? [{ label: "Loan Readiness", to: "/app/loan-readiness" }]
-            : [
-                { label: "Marketplace", to: "/app/marketplace" },
-                { label: "Money Out", to: "/app/withdrawal-instructions" },
-              ]
-        }
       />
 
       <ExplainToggle

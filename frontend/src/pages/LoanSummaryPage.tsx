@@ -1198,14 +1198,6 @@ export default function LoanSummaryPage() {
           homeLabel="Dashboard"
           backTo="/app/loans"
           backLabel="Loans & Support"
-          nextLinks={[
-            { label: "Loan Workbench", to: "/app/loan-workbench" },
-            { label: "Finance", to: "/app/finance" },
-          ]}
-          utilityLinks={[
-            { label: "Marketplace", to: "/app/marketplace" },
-            { label: "Notifications", to: "/app/notifications" },
-          ]}
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -1267,18 +1259,6 @@ export default function LoanSummaryPage() {
         homeLabel="Dashboard"
         backTo="/app/loans"
         backLabel="Loans & Support"
-        nextLinks={[
-          { label: "Loan Workbench", to: "/app/loan-workbench" },
-          { label: "Finance", to: "/app/finance" },
-        ]}
-        utilityLinks={
-          supportItemActive
-            ? [{ label: "Loans & Support", to: "/app/loans" }]
-            : [
-                { label: "Marketplace", to: "/app/marketplace" },
-                { label: "Notifications", to: "/app/notifications" },
-              ]
-        }
       />
 
       <ExplainToggle
