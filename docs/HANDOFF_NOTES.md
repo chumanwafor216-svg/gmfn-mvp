@@ -43,6 +43,50 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 12:08
+
+#### Workstream
+Shared inner-page institutional shell for shop inner pages.
+
+#### Routes/screens affected
+- `/app/shop-control`
+- public shop gallery / shop face route handled by `ShopGalleryPage`
+- spotlight portal inside Shop Control
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/lib/institutionalSurface.ts`
+- `frontend/src/pages/ShopControlPage.tsx`
+- `frontend/src/pages/ShopGalleryPage.tsx`
+
+#### Confirmed facts
+- The product owner wanted the deep-blue side rails and pale-center institutional arrangement from the phone screenshot applied across inner shop pages, not left as page-local one-off gradients.
+- Audit confirmed both `ShopControlPage.tsx` and `ShopGalleryPage.tsx` still carried separate local outer-shell background definitions even after earlier style passes.
+- A new shared helper `institutionalBlueRailShell(...)` now lives in `frontend/src/lib/institutionalSurface.ts`.
+- `ShopControlPage.tsx` now uses that shared shell for:
+  - loading state
+  - spotlight portal mode
+  - normal owner shop-control mode
+- `ShopGalleryPage.tsx` now uses that same shared shell for its top-level public shop/gallery wrapper.
+- This keeps the outer frame aligned across these two high-traffic inner pages while leaving their route-specific blocks and business logic untouched.
+- Verification after this pass:
+  - `npm exec -- eslint src/lib/institutionalSurface.ts src/pages/ShopControlPage.tsx src/pages/ShopGalleryPage.tsx`
+  - `npm run build`
+
+#### Open risks or unknowns
+- This pass standardizes the outer institutional shell first. Other inner pages like Shop Assets and other major inner workspaces still need to adopt the same shared shell if the owner wants full system-wide parity.
+- Shop Gallery still contains many local inner gradients for feature-level blocks; only the page shell was standardized here.
+
+#### Next recommended step
+- Deploy `gmfn-frontend`.
+- Phone-test:
+  - `/app/shop-control`
+  - public shop/gallery
+- If the owner approves this shell, extend `institutionalBlueRailShell(...)` to the next inner pages instead of introducing new page-local backgrounds.
+
+#### Date
 2026-04-25 16:52
 
 #### Workstream

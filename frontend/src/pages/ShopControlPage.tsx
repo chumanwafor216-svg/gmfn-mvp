@@ -26,6 +26,7 @@ import {
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
 } from "../lib/spotlightPilot";
 import { publicFrontendUrl } from "../lib/publicLinks";
+import { institutionalBlueRailShell } from "../lib/institutionalSurface";
 
 type ShopRecord = {
   id: number;
@@ -2466,7 +2467,7 @@ export default function ShopControlPage() {
 
   if (loading) {
     return (
-      <div style={{ maxWidth: 1180, margin: "0 auto", display: "grid", gap: 18 }}>
+      <div style={institutionalBlueRailShell(isCompact, { gap: 18 })}>
         <PageTopNav
           sectionLabel="Shop Control"
           title="Shop Control"
@@ -2485,20 +2486,7 @@ export default function ShopControlPage() {
 
   if (spotlightWorkflowSection) {
     return (
-      <div
-        style={{
-          maxWidth: 1180,
-          margin: "0 auto",
-          padding: isCompact ? "0 10px 40px" : "0 18px 44px",
-          display: "grid",
-          gap: 16,
-          background:
-            "radial-gradient(circle at 9% 3%, rgba(217,172,51,0.26) 0%, rgba(217,172,51,0) 30%), radial-gradient(circle at 94% 4%, rgba(38,132,205,0.24) 0%, rgba(38,132,205,0) 32%), linear-gradient(90deg, #071827 0%, #0B2942 4%, #EAF4FF 4.1%, #F8FBFF 12%, #F8FBFF 88%, #EAF4FF 95.9%, #0B2942 96%, #071827 100%)",
-          borderRadius: isCompact ? 26 : 36,
-          boxShadow:
-            "inset 16px 0 28px rgba(7,24,39,0.14), inset -16px 0 28px rgba(7,24,39,0.14)",
-        }}
-      >
+      <div style={institutionalBlueRailShell(isCompact)}>
         <PageTopNav
           sectionLabel="Spotlight Portal"
           title={spotlightPriorityMode === "paid" ? "Paid Spotlight Portal" : "Free Spotlight Portal"}
@@ -2515,20 +2503,7 @@ export default function ShopControlPage() {
   }
 
   return (
-    <div
-      style={{
-        maxWidth: 1180,
-        margin: "0 auto",
-        padding: isCompact ? "0 10px 40px" : "0 18px 44px",
-        display: "grid",
-        gap: 16,
-        background:
-          "radial-gradient(circle at 10% 3%, rgba(217,172,51,0.18) 0%, rgba(217,172,51,0) 28%), radial-gradient(circle at 92% 5%, rgba(38,132,205,0.16) 0%, rgba(38,132,205,0) 30%), linear-gradient(90deg, #071827 0%, #0B2942 3.3%, #EDF5FF 3.4%, #F8FBFF 12%, #F8FBFF 88%, #EDF5FF 96.6%, #0B2942 96.7%, #071827 100%)",
-        borderRadius: isCompact ? 24 : 32,
-        boxShadow:
-          "inset 14px 0 24px rgba(7,24,39,0.12), inset -14px 0 24px rgba(7,24,39,0.12)",
-      }}
-    >
+    <div style={institutionalBlueRailShell(isCompact)}>
       <PageTopNav
         sectionLabel="Owner Shop Control"
         title="Shop Owner Control"

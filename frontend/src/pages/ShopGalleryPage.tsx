@@ -14,6 +14,7 @@ import {
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
   SPOTLIGHT_PILOT_ROTATION_MS,
 } from "../lib/spotlightPilot";
+import { institutionalBlueRailShell } from "../lib/institutionalSurface";
 
 type ShopProfile = {
   id?: number;
@@ -445,9 +446,6 @@ function normalizeProduct(raw: any, slotNumber: number): ShopProduct | null {
     ),
   };
 }
-
-const SHOP_GALLERY_PAGE_BACKGROUND =
-  "radial-gradient(circle at 9% 0%, rgba(11,99,209,0.14) 0%, transparent 30%), radial-gradient(circle at 92% 10%, rgba(244,114,182,0.065) 0%, transparent 26%), radial-gradient(circle at 74% 58%, rgba(212,175,55,0.065) 0%, transparent 30%), linear-gradient(180deg, rgba(239,248,253,0.99) 0%, rgba(247,251,253,0.98) 46%, rgba(234,244,250,0.98) 100%)";
 
 const SHOP_GALLERY_SURFACE =
   "radial-gradient(circle at 9% 0%, rgba(11,99,209,0.12) 0%, transparent 30%), radial-gradient(circle at 94% 5%, rgba(244,114,182,0.07) 0%, transparent 26%), radial-gradient(circle at 72% 94%, rgba(212,175,55,0.07) 0%, transparent 30%), linear-gradient(180deg, rgba(255,255,255,0.985) 0%, rgba(239,248,253,0.965) 100%)";
@@ -1274,19 +1272,11 @@ export default function ShopGalleryPage() {
 
   return (
     <div
-      style={{
+      style={institutionalBlueRailShell(isCompact, {
         maxWidth: 1240,
-        margin: "0 auto",
         padding: isCompact ? "14px 10px 42px" : "20px 18px 46px",
-        display: "grid",
         gap: 18,
-        borderRadius: isCompact ? 0 : 34,
-        border: isCompact ? "none" : "1px solid rgba(13,95,168,0.10)",
-        background: SHOP_GALLERY_PAGE_BACKGROUND,
-        boxShadow: isCompact
-          ? "none"
-          : "0 28px 70px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.76)",
-      }}
+      })}
     >
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
       {error ? <div style={noticeCard("error")}>{error}</div> : null}

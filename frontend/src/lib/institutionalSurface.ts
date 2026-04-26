@@ -125,3 +125,26 @@ export function institutionalStatTile(
       "0 12px 26px rgba(10,24,49,0.05), inset 0 1px 0 rgba(255,255,255,0.78)",
   };
 }
+
+export function institutionalBlueRailShell(
+  isCompact = false,
+  options?: {
+    maxWidth?: number;
+    padding?: string;
+    gap?: number;
+  }
+): CSSProperties {
+  return {
+    maxWidth: options?.maxWidth ?? 1180,
+    margin: "0 auto",
+    padding: options?.padding ?? (isCompact ? "0 10px 40px" : "0 18px 44px"),
+    display: "grid",
+    gap: options?.gap ?? 16,
+    borderRadius: isCompact ? 26 : 36,
+    background:
+      "radial-gradient(circle at 10% 4%, rgba(217,172,51,0.20) 0%, rgba(217,172,51,0) 28%), radial-gradient(circle at 92% 6%, rgba(38,132,205,0.17) 0%, rgba(38,132,205,0) 32%), linear-gradient(90deg, #0A2135 0%, #153B5B 4.6%, #D8E6F5 4.7%, #EAF2FB 11.5%, #EDF4FB 88.5%, #D8E6F5 95.3%, #153B5B 95.4%, #0A2135 100%)",
+    border: "1px solid rgba(22,61,94,0.22)",
+    boxShadow:
+      "0 30px 72px rgba(7,24,39,0.14), inset 18px 0 30px rgba(7,24,39,0.14), inset -18px 0 30px rgba(7,24,39,0.14), inset 0 1px 0 rgba(255,255,255,0.28)",
+  };
+}
