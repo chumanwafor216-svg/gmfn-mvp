@@ -12571,3 +12571,35 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend build passed
   - the loan-decision route is now at a calmer safe checkpoint for continued
     phone testing
+
+### Borrower Preflight links reached a calmer safe checkpoint (2026-04-26)
+
+- Product-owner issue:
+  - the deeper borrowing-family audit found another stacked-link pattern in the
+    borrower preflight lane
+  - `BorrowerPreflightPage` was still adding `buttonGuardProps()` directly to
+    `OriginLink`, even though `OriginLink` already isolates taps internally
+- Applied the smallest safe interaction cleanup:
+  - `frontend/src/pages/BorrowerPreflightPage.tsx`
+    - removed `buttonGuardProps()` from:
+      - `Open Loans & Support`
+      - `Check Loan Readiness`
+      - `Open Commitment Builder`
+    - removed the now-dead local `guardButtonPress()` and `buttonGuardProps()`
+      helper from that page
+- Routes impacted:
+  - `/app/borrower-preflight`
+- Shared logic impact:
+  - no backend change
+  - no route contract change
+  - this is a frontend interaction cleanup only
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/BorrowerPreflightPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed
+  - the borrower-preflight route is now at a calmer safe checkpoint for
+    continued phone testing

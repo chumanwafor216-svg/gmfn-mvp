@@ -63,21 +63,6 @@ function stableTapStyle(): React.CSSProperties {
   };
 }
 
-function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
-  event?.stopPropagation();
-}
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown"
-> {
-  return {
-    onPointerDown: guardButtonPress,
-    onTouchStart: guardButtonPress,
-    onMouseDown: guardButtonPress,
-  };
-}
-
 function actionLink(primary = false): React.CSSProperties {
   return {
     ...stableTapStyle(),
@@ -281,16 +266,15 @@ export default function BorrowerPreflightPage() {
         </div>
 
         <div style={{ marginTop: 18, display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <OriginLink to="/app/loans" style={actionLink(false)} {...buttonGuardProps()}>
+          <OriginLink to="/app/loans" style={actionLink(false)}>
             Open Loans & Support
           </OriginLink>
-          <OriginLink to="/app/loan-readiness" style={actionLink(true)} {...buttonGuardProps()}>
+          <OriginLink to="/app/loan-readiness" style={actionLink(true)}>
             Check Loan Readiness
           </OriginLink>
           <OriginLink
             to="/app/dashboard#focus-commitments"
             style={actionLink(false)}
-            {...buttonGuardProps()}
           >
             Open Commitment Builder
           </OriginLink>
