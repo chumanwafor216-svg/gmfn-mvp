@@ -43,6 +43,62 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 16:20
+
+#### Workstream
+Shop Assets duplicate guard-helper cleanup pass.
+
+#### Routes/screens affected
+- `/app/shop-assets`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/ShopAssetsPage.tsx`
+
+#### Confirmed facts
+- Deeper inspection showed `ShopAssetsPage.tsx` still had the same older interaction pattern already removed from other parts of the shop family:
+  - shared `buttonGuardProps()` on many hot buttons
+  - plus an extra inner `runGuardedButtonAction(...)` wrapper on those same buttons
+- That meant several `Shop Assets` actions were still carrying two tap-control layers even after earlier shop-family cleanup.
+- This pass removed the duplicate inner helper layer while keeping the shared guard props in place.
+- Cleaned actions include:
+  - `Copy Shop Link`
+  - `Open / Collapse` for `Guidance`
+  - `Open / Collapse` for `Signboard`
+  - `Save Signboard`
+  - `Remove Signboard`
+  - `Open / Collapse` for `Products`
+  - `Post Product` / `Update Product`
+  - `Clear Form`
+  - product-lane `Copy Shop Link`
+  - `Open / Collapse` for `Posted`
+  - item-level `Edit`
+  - `Restore`
+  - `Delete`
+  - item-level `Copy Link`
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/ShopAssetsPage.tsx`
+  - `npm run build`
+  - both passed
+
+#### Open risks or unknowns
+- The broader app still remains in safe-checkpoint mode rather than final freeze mode.
+- Other dense local action bands may still keep older guard layering outside the shop-assets route.
+
+#### Next recommended step
+- Deploy `gmfn-frontend`.
+- Phone-test `/app/shop-assets`, especially:
+  - top `Open Shop Gallery`
+  - `Copy Shop Link`
+  - section open/collapse controls
+  - signboard save/remove
+  - product create/update/reset
+  - posted product item actions
+- If `Shop Assets` now feels materially calmer, continue the deeper audit in the next route that still feels physically heavy in live testing.
+
+#### Date
 2026-04-26 16:16
 
 #### Workstream

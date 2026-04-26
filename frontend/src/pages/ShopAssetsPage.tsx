@@ -163,13 +163,6 @@ function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
   event?.stopPropagation();
 }
 
-function runGuardedButtonAction(
-  _event: React.SyntheticEvent<HTMLElement>,
-  action: () => void
-) {
-  action();
-}
-
 function buttonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
   "onPointerDown" | "onTouchStart" | "onMouseDown"
@@ -1082,11 +1075,7 @@ export default function ShopAssetsPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={(event) =>
-                  runGuardedButtonAction(event, () =>
-                    copyText(shopLink, "Shop gallery link copied.")
-                  )
-                }
+                onClick={() => copyText(shopLink, "Shop gallery link copied.")}
                 style={actionBtn("secondary", !shopLink)}
                 disabled={!shopLink}
               >
@@ -1186,9 +1175,7 @@ export default function ShopAssetsPage() {
           <button
             type="button"
             {...buttonGuardProps()}
-            onClick={(event) =>
-              runGuardedButtonAction(event, () => toggleSection("guidance"))
-            }
+            onClick={() => toggleSection("guidance")}
             style={collapseToggle()}
           >
             {collapsed.guidance ? "Open" : "Collapse"}
@@ -1251,9 +1238,7 @@ export default function ShopAssetsPage() {
           <button
             type="button"
             {...buttonGuardProps()}
-            onClick={(event) =>
-              runGuardedButtonAction(event, () => toggleSection("signboard"))
-            }
+            onClick={() => toggleSection("signboard")}
             style={collapseToggle()}
           >
             {collapsed.signboard ? "Open" : "Collapse"}
@@ -1435,9 +1420,7 @@ export default function ShopAssetsPage() {
                   <button
                     type="button"
                     {...buttonGuardProps()}
-                    onClick={(event) =>
-                      runGuardedButtonAction(event, () => void saveShopSignboard())
-                    }
+                    onClick={() => void saveShopSignboard()}
                     disabled={savingShop || uploadingShopImage}
                     style={actionBtn("primary", savingShop || uploadingShopImage)}
                   >
@@ -1463,13 +1446,11 @@ export default function ShopAssetsPage() {
                   <button
                     type="button"
                     {...buttonGuardProps()}
-                    onClick={(event) =>
-                      runGuardedButtonAction(event, () =>
-                        void saveShopSignboard({
-                          clear_image: true,
-                          image_url: null,
-                        })
-                      )
+                    onClick={() =>
+                      void saveShopSignboard({
+                        clear_image: true,
+                        image_url: null,
+                      })
                     }
                     disabled={savingShop || uploadingShopImage || !safeStr(shopPreviewUrl)}
                     style={actionBtn(
@@ -1508,9 +1489,7 @@ export default function ShopAssetsPage() {
           <button
             type="button"
             {...buttonGuardProps()}
-            onClick={(event) =>
-              runGuardedButtonAction(event, () => toggleSection("products"))
-            }
+            onClick={() => toggleSection("products")}
             style={collapseToggle()}
           >
             {collapsed.products ? "Open" : "Collapse"}
@@ -1630,9 +1609,7 @@ export default function ShopAssetsPage() {
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={(event) =>
-                    runGuardedButtonAction(event, () => void submitProduct())
-                  }
+                  onClick={() => void submitProduct()}
                   disabled={savingProduct}
                   style={actionBtn("primary", savingProduct)}
                 >
@@ -1648,9 +1625,7 @@ export default function ShopAssetsPage() {
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={(event) =>
-                    runGuardedButtonAction(event, resetProductForm)
-                  }
+                  onClick={resetProductForm}
                   style={actionBtn("secondary")}
                 >
                   Clear Form
@@ -1659,11 +1634,7 @@ export default function ShopAssetsPage() {
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={(event) =>
-                    runGuardedButtonAction(event, () =>
-                      copyText(shopLink, "Shop gallery link copied.")
-                    )
-                  }
+                  onClick={() => copyText(shopLink, "Shop gallery link copied.")}
                   style={actionBtn("soft", !shopLink)}
                   disabled={!shopLink}
                 >
@@ -1809,9 +1780,7 @@ export default function ShopAssetsPage() {
           <button
             type="button"
             {...buttonGuardProps()}
-            onClick={(event) =>
-              runGuardedButtonAction(event, () => toggleSection("posted"))
-            }
+            onClick={() => toggleSection("posted")}
             style={collapseToggle()}
           >
             {collapsed.posted ? "Open" : "Collapse"}
@@ -1958,9 +1927,7 @@ export default function ShopAssetsPage() {
                     <button
                       type="button"
                       {...buttonGuardProps()}
-                      onClick={(event) =>
-                        runGuardedButtonAction(event, () => startEditProduct(item))
-                      }
+                      onClick={() => startEditProduct(item)}
                       style={actionBtn(isHidden ? "secondary" : "primary")}
                     >
                       Edit
@@ -1970,11 +1937,7 @@ export default function ShopAssetsPage() {
                       <button
                         type="button"
                         {...buttonGuardProps()}
-                        onClick={(event) =>
-                          runGuardedButtonAction(event, () =>
-                            void restoreProduct(Number(item.id))
-                          )
-                        }
+                        onClick={() => void restoreProduct(Number(item.id))}
                         disabled={isBusy}
                         style={actionBtn("primary", isBusy)}
                       >
@@ -1984,11 +1947,7 @@ export default function ShopAssetsPage() {
                       <button
                         type="button"
                         {...buttonGuardProps()}
-                        onClick={(event) =>
-                          runGuardedButtonAction(event, () =>
-                            void deleteProduct(Number(item.id))
-                          )
-                        }
+                        onClick={() => void deleteProduct(Number(item.id))}
                         disabled={isBusy}
                         style={actionBtn("secondary", isBusy)}
                       >
@@ -1999,10 +1958,8 @@ export default function ShopAssetsPage() {
                     <button
                       type="button"
                       {...buttonGuardProps()}
-                      onClick={(event) =>
-                        runGuardedButtonAction(event, () =>
-                          copyText(productLink, "Product gallery link copied.")
-                        )
+                      onClick={() =>
+                        copyText(productLink, "Product gallery link copied.")
                       }
                       style={actionBtn("soft", !productLink || isHidden)}
                       disabled={!productLink || isHidden}
