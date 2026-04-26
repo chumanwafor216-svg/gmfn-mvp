@@ -43,6 +43,65 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 16:16
+
+#### Workstream
+Money-route action-band simplification pass for `PaymentRailsPage` and `PayoutDetailsPage`.
+
+#### Routes/screens affected
+- `/app/payment-rails`
+- `/app/payout-details`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/PaymentRailsPage.tsx`
+- `frontend/src/pages/PayoutDetailsPage.tsx`
+
+#### Confirmed facts
+- Deeper inspection confirmed another repeated route-action pattern in the money-support inner pages:
+  - `PaymentRailsPage.tsx` was still presenting route exits in multiple places:
+    - the dark hero card
+    - the `How to use this page` helper card
+    - and again in the lower `Next routes` section
+  - `PayoutDetailsPage.tsx` was doing the same thing:
+    - route-movement controls in the top hero card
+    - and again in the lower `What happens next` section
+- This pass reduced both pages to one clear route-movement band:
+  - `PaymentRailsPage.tsx`
+    - removed the hero route buttons
+    - removed the duplicate `Money In task` / `Money Out task` links from the helper card
+    - kept only the raw-response toggle in the helper card
+    - left route-navigation in the lower `Next routes` section
+  - `PayoutDetailsPage.tsx`
+    - removed the duplicate upper CTA buttons from the hero area
+    - left route-navigation in the lower `What happens next` section
+    - kept the hero focused on current payout reading and route status
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/PaymentRailsPage.tsx src/pages/PayoutDetailsPage.tsx`
+  - `npm run build`
+  - both passed
+
+#### Open risks or unknowns
+- The broader app-wide button-heaviness cleanup is still in safe-checkpoint mode rather than final freeze mode.
+- The next likely underlayers are now less about duplicated route bands in the money family and more about any remaining dense local action bands elsewhere in the operational pages.
+
+#### Next recommended step
+- Deploy `gmfn-frontend`.
+- Phone-test:
+  - `/app/payment-rails`
+    - current reading
+    - structured rail listing
+    - raw response toggle
+    - lower `Next routes` only
+  - `/app/payout-details`
+    - payout form
+    - save / copy / clear
+    - lower `What happens next` route band
+- If these now feel calmer, continue the deeper audit into the next dense operational route that still feels physically heavy in live testing.
+
+#### Date
 2026-04-26 16:08
 
 #### Workstream

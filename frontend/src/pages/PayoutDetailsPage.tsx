@@ -285,14 +285,6 @@ function getCommunityName(clan: CommunityLite | null): string {
   return safeStr(clan?.marketplace_name || clan?.name || "");
 }
 
-function renderStepAction(step: NextStepState) {
-  return (
-    <OriginLink to={step.ctaTo} style={primaryBtn(false)}>
-      {step.ctaLabel}
-    </OriginLink>
-  );
-}
-
 export default function PayoutDetailsPage() {
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -652,15 +644,14 @@ export default function PayoutDetailsPage() {
             <div
               style={{
                 marginTop: 16,
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
+                color: "#D7E3F1",
+                lineHeight: 1.75,
+                fontWeight: 800,
               }}
             >
-              {renderStepAction(nextStep)}
-              <OriginLink to="/app/loans" style={secondaryBtn(false)}>
-                Return to Loans & Support
-              </OriginLink>
+              Keep the route reading here. When you are ready to move, use the
+              single <span style={{ fontWeight: 1000 }}>What happens next</span>
+              section below so payout routing stays in one clear place.
             </div>
           </div>
 

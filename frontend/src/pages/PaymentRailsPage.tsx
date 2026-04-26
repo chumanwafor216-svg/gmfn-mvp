@@ -98,60 +98,6 @@ function buttonGuardProps(): Pick<
   };
 }
 
-function primaryBtn(disabled = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "12px 16px",
-    minHeight: 48,
-    borderRadius: 15,
-    border: disabled
-      ? "1px solid rgba(148,163,184,0.24)"
-      : "1px solid rgba(18,77,176,0.22)",
-    background: disabled
-      ? "linear-gradient(180deg, #D5DEE8 0%, #C7D2DE 100%)"
-      : "linear-gradient(180deg, #255FCE 0%, #1B4FBF 100%)",
-    color: "#FFFFFF",
-    boxShadow: disabled
-      ? "none"
-      : "0 16px 32px rgba(29,95,212,0.28), inset 0 1px 0 rgba(255,255,255,0.22)",
-    textDecoration: "none",
-    fontWeight: 1000,
-    fontSize: 14,
-    textAlign: "center",
-    cursor: disabled ? "not-allowed" : "pointer",
-    opacity: disabled ? 0.72 : 1,
-    whiteSpace: "normal",
-    ...stableTapStyle(),
-  };
-}
-
-function secondaryBtn(disabled = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "12px 16px",
-    minHeight: 48,
-    borderRadius: 15,
-    border: "1px solid rgba(121,149,190,0.20)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #EDF5FF 100%)",
-    color: disabled ? "#94A3B8" : "#0B1F33",
-    boxShadow: disabled
-      ? "none"
-      : "0 14px 28px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.84)",
-    textDecoration: "none",
-    fontWeight: 1000,
-    fontSize: 14,
-    textAlign: "center",
-    cursor: disabled ? "not-allowed" : "pointer",
-    opacity: disabled ? 0.72 : 1,
-    whiteSpace: "normal",
-    ...stableTapStyle(),
-  };
-}
-
 function softBtn(disabled = false): React.CSSProperties {
   return {
     display: "inline-flex",
@@ -829,18 +775,14 @@ export default function PaymentRailsPage() {
             <div
               style={{
                 marginTop: 16,
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
+                color: "#D7E3F1",
+                lineHeight: 1.75,
+                fontWeight: 800,
               }}
             >
-              <OriginLink to="/app/payment/pool" style={primaryBtn(false)}>
-                Open Money In
-              </OriginLink>
-
-              <OriginLink to="/app/withdrawal-instructions" style={secondaryBtn(false)}>
-                Open Money Out
-              </OriginLink>
+              Keep the route reading here. When you are ready to act again, use the
+              single <span style={{ fontWeight: 1000 }}>Next routes</span> section
+              below so the money direction is chosen in one clear place.
             </div>
           </div>
 
@@ -999,12 +941,6 @@ export default function PaymentRailsPage() {
                 flexWrap: "wrap",
               }}
             >
-              <OriginLink to="/app/payment/pool" style={softBtn(false)}>
-                Money In task
-              </OriginLink>
-              <OriginLink to="/app/withdrawal-instructions" style={softBtn(false)}>
-                Money Out task
-              </OriginLink>
               <button
                 type="button"
                 {...buttonGuardProps()}
