@@ -11418,3 +11418,33 @@ GSN-branded invite composer and invite-entry continuity.
 - Result:
   - frontend lint passed
   - frontend build passed
+
+### Community Home owner collapse buttons now live inside the large owner cards and toggle directly (2026-04-26)
+
+- Product-owner complaint:
+  - the owner-side collapse buttons still felt jumpy
+  - `Owner shop control` and `Owner spotlight status` should keep their open /
+    collapse controls inside the large cards themselves
+- Applied the smallest safe frontend fix:
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - moved the owner-card collapse buttons into calmer in-card control rows
+    - renamed the labels to be more explicit:
+      - `Open owner actions` / `Collapse owner actions`
+      - `Open spotlight status` / `Collapse spotlight status`
+    - removed the old delayed toggle for Community Home section collapse, so the
+      buttons now act directly on tap
+  - `frontend/src/components/CommunityShopControlPanel.tsx`
+    - moved the owner shop-control collapse button into its own in-card control
+      row
+    - changed the label to `Open owner shop control` /
+      `Collapse owner shop control`
+    - removed the old delayed toggle here too, so the button acts directly on
+      tap
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/CommunityHomePage.tsx src/components/CommunityShopControlPanel.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed

@@ -415,16 +415,6 @@ function collapseToggle(): React.CSSProperties {
   };
 }
 
-function collapseHeaderLayout(isCompact: boolean): React.CSSProperties {
-  return {
-    position: "relative",
-    display: "grid",
-    gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
-    gap: isCompact ? 10 : 12,
-    alignItems: "start",
-  };
-}
-
 function collapseHeaderText(align: "left" | "center" = "left"): React.CSSProperties {
   return {
     minWidth: 0,
@@ -440,6 +430,18 @@ function collapseHeaderButton(isCompact: boolean): React.CSSProperties {
     justifySelf: isCompact ? "stretch" : "end",
     alignSelf: "start",
     width: isCompact ? "100%" : undefined,
+  };
+}
+
+function collapseButtonRow(): React.CSSProperties {
+  return {
+    marginTop: 12,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
+    gap: 8,
+    flexWrap: "wrap",
   };
 }
 
@@ -644,15 +646,7 @@ export default function CommunityShopControlPanel({
   function togglePanelFromButton(event: React.SyntheticEvent<HTMLElement>) {
     event.preventDefault();
     stopPanelTap(event);
-
-    if (collapseToggleTimerRef.current !== null) {
-      window.clearTimeout(collapseToggleTimerRef.current);
-    }
-
-    collapseToggleTimerRef.current = window.setTimeout(() => {
-      collapseToggleTimerRef.current = null;
-      setOpen((prev) => !prev);
-    }, 24);
+    setOpen((prev) => !prev);
   }
 
   return (
@@ -661,9 +655,7 @@ export default function CommunityShopControlPanel({
         <div style={{ marginBottom: 14, ...noticeCard(notice.tone) }}>{notice.text}</div>
       ) : null}
 
-      <div
-        style={collapseHeaderLayout(isCompact)}
-      >
+      <div>
         <div style={collapseHeaderText("center")}>
           <div style={sectionLabel("center")}>Owner shop control</div>
           <div
@@ -680,14 +672,16 @@ export default function CommunityShopControlPanel({
           </div>
         </div>
 
-        <button
-          type="button"
-          {...panelButtonGuardProps()}
-          onClick={togglePanelFromButton}
-          style={collapseHeaderButton(isCompact)}
-        >
-          {open ? "Collapse" : "Open"}
-        </button>
+        <div style={collapseButtonRow()}>
+          <button
+            type="button"
+            {...panelButtonGuardProps()}
+            onClick={togglePanelFromButton}
+            style={collapseHeaderButton(isCompact)}
+          >
+            {open ? "Collapse owner shop control" : "Open owner shop control"}
+          </button>
+        </div>
       </div>
 
       {open ? (

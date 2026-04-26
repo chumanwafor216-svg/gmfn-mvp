@@ -803,6 +803,18 @@ function collapseHeaderButton(isCompact: boolean): React.CSSProperties {
   };
 }
 
+function collapseButtonRow(): React.CSSProperties {
+  return {
+    marginTop: 12,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
+    gap: 8,
+    flexWrap: "wrap",
+  };
+}
+
 function communitiesCollapseHeaderButton(
   isCompact: boolean
 ): React.CSSProperties {
@@ -1754,14 +1766,7 @@ export default function CommunityHomePage() {
     key: CollapseKey
   ) {
     consumeCommunityButtonEvent(event);
-
-    const timerId = window.setTimeout(() => {
-      collapseToggleTimersRef.current = collapseToggleTimersRef.current.filter(
-        (id) => id !== timerId
-      );
-      toggleSection(key);
-    }, 24);
-    collapseToggleTimersRef.current.push(timerId);
+    toggleSection(key);
   }
 
   function toggleCommunitiesSectionFromHeader(
@@ -2477,9 +2482,7 @@ function communityButtonGuardProps(): Pick<
       {!spotlightGuidanceSuspendedView ? (
       <>
       <section style={{ ...communityBlockCard("blue"), order: 55 }}>
-        <div
-          style={collapseHeaderLayout(isCompact)}
-        >
+        <div>
           <div style={collapseHeaderText("center")}>
             <div style={sectionLabel("center")}>Owner actions from Community Home</div>
             <div
@@ -2498,14 +2501,16 @@ function communityButtonGuardProps(): Pick<
             </div>
           </div>
 
-          <button
-            type="button"
-            {...communityButtonGuardProps()}
-            onClick={(event) => toggleSectionFromButton(event, "tools")}
-            style={collapseHeaderButton(isCompact)}
-          >
-            {collapsed.tools ? "Open" : "Collapse"}
-          </button>
+          <div style={collapseButtonRow()}>
+            <button
+              type="button"
+              {...communityButtonGuardProps()}
+              onClick={(event) => toggleSectionFromButton(event, "tools")}
+              style={collapseHeaderButton(isCompact)}
+            >
+              {collapsed.tools ? "Open owner actions" : "Collapse owner actions"}
+            </button>
+          </div>
         </div>
 
         {!collapsed.tools ? (
@@ -2804,9 +2809,7 @@ function communityButtonGuardProps(): Pick<
         id="community-home-spotlight-gears"
         style={{ ...communityBlockCard("summary"), order: 80 }}
       >
-        <div
-          style={collapseHeaderLayout(isCompact)}
-        >
+        <div>
           <div style={collapseHeaderText("center")}>
             <div style={sectionLabel("center")}>Owner spotlight status</div>
             <div
@@ -2823,14 +2826,18 @@ function communityButtonGuardProps(): Pick<
             </div>
           </div>
 
-          <button
-            type="button"
-            {...communityButtonGuardProps()}
-            onClick={(event) => toggleSectionFromButton(event, "spotlight")}
-            style={collapseHeaderButton(isCompact)}
-          >
-            {collapsed.spotlight ? "Open" : "Collapse"}
-          </button>
+          <div style={collapseButtonRow()}>
+            <button
+              type="button"
+              {...communityButtonGuardProps()}
+              onClick={(event) => toggleSectionFromButton(event, "spotlight")}
+              style={collapseHeaderButton(isCompact)}
+            >
+              {collapsed.spotlight
+                ? "Open spotlight status"
+                : "Collapse spotlight status"}
+            </button>
+          </div>
         </div>
 
         {!collapsed.spotlight ? (
