@@ -43,6 +43,42 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-27 00:21
+
+#### Workstream
+Withdrawal Instructions passive collapse-toggle guard cleanup pass.
+
+#### Routes/screens affected
+- `/app/withdrawal-instructions`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+
+#### Confirmed facts
+- `WithdrawalInstructionsPage.tsx` still used `buttonGuardProps()` on its passive section-collapse controls.
+- Those controls only open and collapse reading/task sections and do not launch routes or trigger business actions.
+- This pass removed the shared pointer/touch guard layer from these passive toggles:
+  - `overview`
+  - `request`
+  - `destination`
+  - `rail`
+  - `result`
+  - `routes`
+- Withdrawal execution logic, refresh logic, and payout/finance route targets did not change.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other overview pages may still carry the same unnecessary guard layer on passive collapse controls and can be cleaned in later passes.
+
+#### Next recommended step
+- Continue targeting passive section toggles and non-route detail controls that still use action-level pointer/touch guard props even though they do not launch routes or trigger business actions.
+
+---
+
+#### Date
 2026-04-27 00:13
 
 #### Workstream

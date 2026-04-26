@@ -1492,7 +1492,6 @@ export default function WithdrawalInstructionsPage() {
           </div>
 
           <button
-            {...buttonGuardProps()}
             type="button"
             onClick={() => toggleSection("overview")}
             style={collapseToggle()}
@@ -1704,7 +1703,6 @@ export default function WithdrawalInstructionsPage() {
           </div>
 
           <button
-            {...buttonGuardProps()}
             type="button"
             onClick={() => toggleSection("request")}
             style={collapseToggle()}
@@ -1953,7 +1951,6 @@ export default function WithdrawalInstructionsPage() {
           </div>
 
           <button
-            {...buttonGuardProps()}
             type="button"
             onClick={() => toggleSection("destination")}
             style={collapseToggle()}
@@ -2250,7 +2247,6 @@ export default function WithdrawalInstructionsPage() {
 
         <div style={{ marginTop: 12 }}>
           <button
-            {...buttonGuardProps()}
             type="button"
             onClick={() => toggleSection("rail")}
             style={collapseToggle()}
@@ -2279,7 +2275,6 @@ export default function WithdrawalInstructionsPage() {
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button
-              {...buttonGuardProps()}
               type="button"
               onClick={() => toggleSection("result")}
               style={collapseToggle()}
@@ -2474,7 +2469,6 @@ export default function WithdrawalInstructionsPage() {
           </div>
 
           <button
-            {...buttonGuardProps()}
             type="button"
             onClick={() => toggleSection("routes")}
             style={collapseToggle()}
