@@ -11448,3 +11448,21 @@ GSN-branded invite composer and invite-entry continuity.
 - Result:
   - frontend lint passed
   - frontend build passed
+
+### Frontend LAN preview is now enabled for phone testing (2026-04-26)
+
+- Product-owner need:
+  - phone UX must be viewable directly from the laptop dev server
+- Applied the smallest safe frontend config fix:
+  - `frontend/vite.config.ts`
+    - added `server.host = "0.0.0.0"` so Vite listens on the local network,
+      not only on localhost
+- Local runtime confirmation:
+  - frontend dev server is listening on `0.0.0.0:5173`
+  - laptop Wi-Fi IPv4 is `192.168.1.38`
+  - phone preview URL is `http://192.168.1.38:5173`
+- Verification:
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend build passed
