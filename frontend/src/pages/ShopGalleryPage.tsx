@@ -551,13 +551,6 @@ function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
   event?.stopPropagation();
 }
 
-function runGuardedButtonAction(
-  _event: React.SyntheticEvent<HTMLElement>,
-  action: () => void
-) {
-  action();
-}
-
 function buttonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
   "onPointerDown" | "onTouchStart" | "onMouseDown"
@@ -1366,7 +1359,7 @@ export default function ShopGalleryPage() {
             <button
               type="button"
               {...buttonGuardProps()}
-              onClick={(event) => runGuardedButtonAction(event, goBackSafely)}
+              onClick={goBackSafely}
               style={{
                 ...navLinkButton(false),
                 flex: isCompact ? "1 1 120px" : "0 0 auto",
@@ -1857,9 +1850,7 @@ export default function ShopGalleryPage() {
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={(event) =>
-                    runGuardedButtonAction(event, askForVaultAccess)
-                  }
+                  onClick={askForVaultAccess}
                   style={{
                     ...primaryBtn(false),
                     padding: isCompact ? "10px 12px" : "10px 14px",
@@ -1872,7 +1863,7 @@ export default function ShopGalleryPage() {
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={(event) => runGuardedButtonAction(event, shareShop)}
+                  onClick={shareShop}
                   style={{
                     ...secondaryBtn(false),
                     padding: isCompact ? "10px 12px" : "9px 12px",
@@ -1885,9 +1876,7 @@ export default function ShopGalleryPage() {
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={(event) =>
-                    runGuardedButtonAction(event, copyShopLink)
-                  }
+                  onClick={copyShopLink}
                   style={{
                     ...secondaryBtn(false),
                     padding: isCompact ? "10px 12px" : "9px 12px",
@@ -2086,9 +2075,7 @@ export default function ShopGalleryPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={(event) =>
-                  runGuardedButtonAction(event, askForVaultAccess)
-                }
+                onClick={askForVaultAccess}
                 style={{
                   ...primaryBtn(false),
                   padding: "10px 12px",
@@ -2101,9 +2088,7 @@ export default function ShopGalleryPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={(event) =>
-                  runGuardedButtonAction(event, copyShopLink)
-                }
+                onClick={copyShopLink}
                 style={{
                   ...secondaryBtn(false),
                   padding: "10px 12px",
@@ -2548,11 +2533,7 @@ export default function ShopGalleryPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={(event) =>
-                  runGuardedButtonAction(event, () =>
-                    setShowAllProducts((current) => !current)
-                  )
-                }
+                onClick={() => setShowAllProducts((current) => !current)}
                 style={{
                   ...secondaryBtn(false),
                   minHeight: 44,
@@ -3049,11 +3030,9 @@ export default function ShopGalleryPage() {
                       <button
                         type="button"
                         {...buttonGuardProps()}
-                        onClick={(event) =>
-                          runGuardedButtonAction(event, () =>
-                            setOpenProductId((current) =>
-                              current === productOpenId ? null : productOpenId
-                            )
+                        onClick={() =>
+                          setOpenProductId((current) =>
+                            current === productOpenId ? null : productOpenId
                           )
                         }
                         aria-expanded={isProductOpen}
@@ -3074,9 +3053,7 @@ export default function ShopGalleryPage() {
                       <button
                         type="button"
                         {...buttonGuardProps()}
-                        onClick={(event) =>
-                          runGuardedButtonAction(event, () => shareProduct(product))
-                        }
+                        onClick={() => shareProduct(product)}
                         aria-label={`Share ${displayTitle}`}
                         style={dockShareButtonStyle}
                       >

@@ -43,6 +43,58 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 16:31
+
+#### Workstream
+Public shop gallery duplicate guard-helper cleanup pass.
+
+#### Routes/screens affected
+- public shop/gallery route rendered by `/app/shop/:gmfnId`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/ShopGalleryPage.tsx`
+
+#### Confirmed facts
+- Deeper inspection showed `ShopGalleryPage.tsx` still had the same older interaction pattern already removed from other routes:
+  - shared `buttonGuardProps()` on hot public-facing buttons
+  - plus an extra inner `runGuardedButtonAction(...)` wrapper on those same buttons
+- That meant the public shop path still carried a duplicate tap-control layer even though the helper no longer added real behavior.
+- This pass removed the dead inner helper layer while keeping the shared guard props in place.
+- Cleaned actions include:
+  - `Back`
+  - `Ask seller privately`
+  - `Share public shop`
+  - `Copy public link`
+  - `Ask for Private Vault view`
+  - `Copy public shop link`
+  - `Show all loaded items` / `Return to 12-slot shelf`
+  - product `Open item` / `Close`
+  - product `Share`
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx`
+  - `npm run build`
+  - both passed
+
+#### Open risks or unknowns
+- The broader app still remains in safe-checkpoint mode rather than final freeze mode.
+- Other dense local action bands may still keep older guard layering outside the public shop lane.
+
+#### Next recommended step
+- Deploy `gmfn-frontend`.
+- Phone-test the public shop/gallery route, especially:
+  - `Back`
+  - `Ask seller privately`
+  - `Share public shop`
+  - `Copy public link`
+  - shelf overflow toggle
+  - product `Open item`
+  - product `Share`
+- If the public shop path now feels materially calmer, continue the deeper audit in the next route that still feels physically heavy in live testing.
+
+#### Date
 2026-04-26 16:20
 
 #### Workstream
