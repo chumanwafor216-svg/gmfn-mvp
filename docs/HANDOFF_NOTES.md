@@ -43,6 +43,55 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 15:55
+
+#### Workstream
+Money-in route-action simplification pass for `PaymentInstructionsPage`.
+
+#### Routes/screens affected
+- `/app/payment-instructions`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/PaymentInstructionsPage.tsx`
+
+#### Confirmed facts
+- Deeper inspection showed `PaymentInstructionsPage.tsx` did not have the same shop-style duplicate guard helper stack, but it did have a route-level duplication pattern similar to the one removed from Money Out:
+  - a route-action band inside `Result and reconciliation`
+  - another route-action band again in `Next routes`
+- That meant the page was presenting two different places to move away from the route while the result state was still being read.
+- This pass removed the duplicate middle route-action band in the least risky way:
+  - the result panel now keeps the result reading and a simple route-status explanation
+  - the actual route-navigation choices stay together in the lower `Next routes` section
+  - `Reset Money In` remains available in the result panel because it is task-local rather than route-navigation
+- The result area therefore stays focused on:
+  - what happened
+  - whether the pay-in is still active
+  - where the route navigation belongs next
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/PaymentInstructionsPage.tsx`
+  - `npm run build`
+  - both passed
+
+#### Open risks or unknowns
+- The money-side pages are calmer now, but other domains may still hold route-local button heaviness from dense action bands even if no duplicate guard helper remains.
+- The app should still be treated as being at safe checkpoints rather than final freeze states until the broader phone testing round confirms that repeated presses are no longer common.
+- The next likely remaining underlayers are in dense route-local decision/action bands elsewhere rather than in the same shop-family duplicate helper pattern.
+
+#### Next recommended step
+- Deploy `gmfn-frontend`.
+- Phone-test `/app/payment-instructions`, especially:
+  - amount entry
+  - instruction generation
+  - copy reference
+  - payment confirmation
+  - result section
+  - next-routes section
+- If Money In now feels materially calmer, continue the app-wide audit by targeting the next dense operational route bands that still feel physically heavy in live testing.
+
+#### Date
 2026-04-26 15:42
 
 #### Workstream

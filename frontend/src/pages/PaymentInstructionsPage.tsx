@@ -1786,23 +1786,25 @@ export default function PaymentInstructionsPage() {
               </div>
 
               <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                <OriginLink to={APP_TARGETS.FINANCE} style={actionBtn("primary")}>
-                  Open Finance
-                </OriginLink>
-
-                <OriginLink to={APP_TARGETS.PAYMENT_RAILS} style={actionBtn("secondary")}>
-                  Payment Rails
-                </OriginLink>
-
-                {moneyInCanWidenRoutes ? (
-                  <OriginLink to={APP_TARGETS.MARKETPLACE} style={actionBtn("secondary")}>
-                    Return To Marketplace
-                  </OriginLink>
-                ) : null}
-
-                <OriginLink to={APP_TARGETS.NOTIFICATIONS} style={actionBtn("secondary")}>
-                  Action Inbox
-                </OriginLink>
+                {moneyInTaskStillActive ? (
+                  <div style={innerCard("#F8FBFF")}>
+                    <div style={sectionLabel()}>Keep the route focused</div>
+                    <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                      This pay-in is still active. Stay on this route until payment is
+                      clearly confirmed or reconciliation is visibly awaiting. The route
+                      options stay together in the next section below so they do not
+                      compete with the result reading here.
+                    </div>
+                  </div>
+                ) : (
+                  <div style={innerCard("#F8FBFF")}>
+                    <div style={sectionLabel()}>Move on from here</div>
+                    <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                      This pay-in has reached a visible conclusion. Use the next-routes
+                      section below to reopen the right follow-on page from one place.
+                    </div>
+                  </div>
+                )}
 
                 <button
                   type="button"
