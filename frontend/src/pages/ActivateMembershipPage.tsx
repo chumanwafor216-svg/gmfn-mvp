@@ -204,11 +204,6 @@ export default function ActivateMembershipPage() {
     return String(state?.request_id || searchParams.get("request_id") || "").trim();
   }, [state, searchParams]);
 
-  const [isCompact, setIsCompact] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return window.innerWidth <= 920;
-  });
-
   const [gmfnId, setGmfnId] = useState(initialGmfnId);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -217,19 +212,6 @@ export default function ActivateMembershipPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const innerRailWidth = "min(100%, 760px)";
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    function handleResize() {
-      setIsCompact(window.innerWidth <= 920);
-    }
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   useEffect(() => {
     if (typeof document !== "undefined") {
@@ -297,9 +279,7 @@ export default function ActivateMembershipPage() {
       }
 
       setMsg("Activation successful. Entering workspace...");
-      setTimeout(() => {
-        navigate("/app/dashboard", { replace: true });
-      }, 600);
+      navigate("/app/dashboard", { replace: true });
     } catch (e: any) {
       setErr(String(e?.message || "Activation error"));
     } finally {

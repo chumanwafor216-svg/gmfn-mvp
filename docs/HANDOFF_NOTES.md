@@ -12505,3 +12505,69 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend build passed
   - the Demand Box community-choice lane is now at a calmer safe checkpoint for
     continued phone testing
+
+### Activation handoff reached a calmer safe checkpoint (2026-04-26)
+
+- Product-owner issue:
+  - the activation lane still delayed the final handoff into the workspace
+    through a timer after success
+  - even though the route was working, that older timer pattern can still make
+    a successful first-use tap feel like "nothing happened yet, then it jumped"
+- Applied the smallest safe interaction cleanup:
+  - `frontend/src/pages/ActivateMembershipPage.tsx`
+    - removed the delayed `setTimeout(..., 600)` workspace handoff after
+      activation success
+    - activation now moves into `/app/dashboard` immediately after a valid
+      success response
+- Routes impacted:
+  - `/activate-membership`
+- Shared logic impact:
+  - no backend change
+  - this is a frontend handoff-calming pass only
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/ActivateMembershipPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend build passed
+  - frontend lint still reports a pre-existing unused `isCompact` issue in
+    `ActivateMembershipPage.tsx`
+  - the activation handoff is now at a calmer safe checkpoint for continued
+    phone testing
+
+### Loan Decision links reached a calmer safe checkpoint (2026-04-26)
+
+- Product-owner issue:
+  - the borrowing-side button audit is now moving into deeper route-local
+    layers, not just the headline pages
+  - `LoanDecisionPage` still had page-level tap guards stacked on top of
+    `OriginLink`, even though `OriginLink` already isolates taps internally
+  - this kind of double layering is one of the patterns that keeps buttons
+    feeling heavier or less predictable than they should
+- Applied the smallest safe interaction cleanup:
+  - `frontend/src/pages/LoanDecisionPage.tsx`
+    - removed `buttonGuardProps()` from the `OriginLink` actions used for:
+      - `Open Loan Summary`
+      - `Open Workbench`
+      - `Loan Workbench`
+      - `Return to Loans & Support`
+      - `Open Finance`
+    - removed the now-dead local `guardButtonPress()` and `buttonGuardProps()`
+      helper from that page
+- Routes impacted:
+  - `/app/loan-decision`
+- Shared logic impact:
+  - no backend change
+  - no route contract change
+  - this is a frontend interaction cleanup only
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/LoanDecisionPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed
+  - the loan-decision route is now at a calmer safe checkpoint for continued
+    phone testing
