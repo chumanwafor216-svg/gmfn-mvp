@@ -43,6 +43,48 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 17:27
+
+#### Workstream
+Loans overview route-band simplification pass.
+
+#### Routes/screens affected
+- `/app/loans`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/LoansPage.tsx`
+
+#### Confirmed facts
+- Deeper inspection showed `LoansPage.tsx` was still repeating support-route movement in multiple places:
+  - the upper `Current support focus` card exposed support movement directly
+  - each borrower-side support row also exposed `Open Support Path`
+  - the lower `Next routes` section already owned the main support-route movement for the page
+- That meant the page was still mixing route exits into the reading surfaces instead of keeping route movement together.
+- This pass removed the upper route buttons and the per-row `Open Support Path` buttons.
+- The upper focus card and borrower rows now explain in plain language that the user should continue through the lower `Next routes` section when ready.
+- The now-dead `actionBtn` helper was removed too, so the page no longer carries stale styling residue from the deleted upper action bands.
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/LoansPage.tsx`
+  - `npm run build`
+  - both passed
+
+#### Open risks or unknowns
+- The broader app still remains in safe-checkpoint mode rather than final freeze mode.
+- Other dense operational routes may still keep duplicated action bands or heavier local guard layering.
+
+#### Next recommended step
+- Deploy `gmfn-frontend`.
+- Phone-test `/app/loans`, especially:
+  - current support focus reading
+  - borrower-side support rows
+  - guarantor-side queue reading
+  - lower `Next routes`
+- If `Loans` now feels materially calmer, continue the deeper audit in the next route that still feels physically heavy in live testing.
+
+#### Date
 2026-04-26 17:18
 
 #### Workstream

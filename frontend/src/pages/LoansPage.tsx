@@ -350,86 +350,6 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function actionBtn(
-  kind: "primary" | "secondary" | "soft" = "secondary",
-  disabled = false
-): React.CSSProperties {
-  if (kind === "primary") {
-    return {
-      ...stableTapStyle(),
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 50,
-      minWidth: 124,
-      padding: "10px 15px",
-      borderRadius: 14,
-      border: "none",
-      background: disabled
-        ? "#CBD5E1"
-        : "linear-gradient(180deg, #1659CF 0%, #103F99 100%)",
-      color: "#FFFFFF",
-      fontWeight: 900,
-      fontSize: 14,
-      textAlign: "center",
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      overflowWrap: "anywhere",
-      opacity: disabled ? 0.86 : 1,
-      boxShadow: disabled ? "none" : "0 14px 30px rgba(22,89,207,0.28)",
-    };
-  }
-
-  if (kind === "soft") {
-    return {
-      ...stableTapStyle(),
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 46,
-      minWidth: 120,
-      padding: "9px 13px",
-      borderRadius: 12,
-      border: "1px solid rgba(88,116,148,0.18)",
-      background: "linear-gradient(180deg, #FFFFFF 0%, #EDF5FF 100%)",
-      color: disabled ? "#94A3B8" : "#173A60",
-      fontWeight: 800,
-      fontSize: 13,
-      textAlign: "center",
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      overflowWrap: "anywhere",
-      opacity: disabled ? 0.86 : 1,
-      boxShadow: "0 10px 22px rgba(15,23,42,0.08)",
-    };
-  }
-
-  return {
-    ...stableTapStyle(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 50,
-    minWidth: 124,
-    padding: "10px 15px",
-    borderRadius: 14,
-    border: "1px solid rgba(88,116,148,0.18)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
-    color: disabled ? "#94A3B8" : "#0D2743",
-    fontWeight: 800,
-    fontSize: 14,
-    textAlign: "center",
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
-    opacity: disabled ? 0.86 : 1,
-    boxShadow: "0 10px 22px rgba(15,23,42,0.08)",
-  };
-}
-
 function collapseToggle(): React.CSSProperties {
   return {
     ...stableTapStyle(),
@@ -679,8 +599,6 @@ export default function LoansPage() {
         detail: first.pledgeAmount
           ? `A borrower is waiting for your decision on a pledge of ${first.pledgeAmount}.`
           : "A borrower is waiting for your decision.",
-        ctaLabel: "Incoming Guarantor Requests",
-        ctaTo: "/app/guarantor-inbox",
       };
     }
 
@@ -695,8 +613,6 @@ export default function LoansPage() {
           : `Your borrower-side support activity is still active with status '${safeStr(
               first.status || "open"
             )}'.`,
-        ctaLabel: "Open Support Start",
-        ctaTo: "/app/marketplace#marketplace-loans-support",
       };
     }
 
@@ -707,8 +623,6 @@ export default function LoansPage() {
           detail: safeStr(first.title)
             ? `${safeStr(first.title)} is still active and should be watched closely.`
             : "A guarantor-side support item is still active and should be watched closely.",
-          ctaLabel: "Open Loans & Support",
-          ctaTo: "/app/loans",
         };
       }
 
@@ -719,8 +633,6 @@ export default function LoansPage() {
       return {
         title: safeStr(guidance?.nextBestStep?.title),
         detail: safeStr(guidance?.nextBestStep?.detail),
-        ctaLabel: safeStr(guidance?.nextBestStep?.ctaLabel || "Open Loans & Support"),
-        ctaTo: safeStr(guidance?.nextBestStep?.ctaTo || "/app/loans"),
       };
     }
 
@@ -728,8 +640,6 @@ export default function LoansPage() {
       title: "Your support activity is currently calm",
       detail:
         "No urgent borrower-side or guarantor-side support pressure is currently shown.",
-      ctaLabel: "Open Support Start",
-      ctaTo: "/app/marketplace#marketplace-loans-support",
     };
   }, [guarantorInbox, borrowerLoans, guarantorLoans, guidance]);
 
@@ -1293,18 +1203,10 @@ export default function LoansPage() {
               <div
                 style={{
                   marginTop: 16,
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
+                  ...helperText(),
                 }}
               >
-                <OriginLink to={supportFocus.ctaTo} style={actionBtn("primary")}>
-                  {supportFocus.ctaLabel}
-                </OriginLink>
-
-                <OriginLink to="/app/marketplace#marketplace-loans-support" style={actionBtn("secondary")}>
-                  Start Support Request
-                </OriginLink>
+                Use Next routes below when you are ready to move from this support picture into the next support page.
               </div>
             </div>
 
@@ -1412,17 +1314,8 @@ export default function LoansPage() {
                         .join(" | ") || "This borrower-side support item is still active."}
                     </div>
 
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: isCompact ? "flex-start" : "flex-end",
-                        gap: 10,
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <OriginLink to="/app/marketplace#marketplace-loans-support" style={actionBtn("secondary")}>
-                        Open Support Path
-                      </OriginLink>
+                    <div style={{ ...helperText(), fontSize: 13 }}>
+                      Use Next routes below when you need to continue this borrower-side support item.
                     </div>
                   </div>
                 </div>
