@@ -11676,3 +11676,32 @@ GSN-branded invite composer and invite-entry continuity.
 - Result:
   - frontend lint passed
   - frontend build passed
+
+### Shared next-action guide buttons were hardened for steadier mobile use (2026-04-26)
+
+- Product-owner issue:
+  - the new guided `What do you want to do next?` family was still suffering
+    from jumpy button behavior during live Dashboard testing
+  - the problem needed to be solved at the shared guide level so the same fix
+    benefits Dashboard and the other guided domains
+- Applied the smallest safe shared-frontend fix:
+  - `frontend/src/components/NextActionGuide.tsx`
+    - added one centralized guarded press path for guide buttons
+    - back/open/close, quick-choice, continue, and `Find action` buttons now
+      use the same direct activation logic
+    - duplicate taps on the same guide control inside a short window are now
+      ignored so mobile click + touch/click echo does not trigger a second,
+      conflicting guide action
+    - the shared guide still stops unrelated parent handlers, but it now
+      activates its own buttons through a tighter controlled lane
+- Route impact:
+  - every screen using `NextActionGuide`
+  - especially `/app/dashboard` during typed-intent testing
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/components/NextActionGuide.tsx src/pages/DashboardPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed

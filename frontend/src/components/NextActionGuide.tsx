@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 export type NextActionGuideTone = "primary" | "secondary" | "soft";
 
@@ -343,6 +343,7 @@ export default function NextActionGuide({
     item: NextActionGuideItem;
     resolution: NextActionGuideResolution | null;
   } | null>(null);
+  const lastPressRef = useRef<{ key: string; at: number } | null>(null);
   const eyebrowText = eyebrow.trim();
 
   useEffect(() => {
@@ -460,6 +461,39 @@ export default function NextActionGuide({
     void chooseItem(matchedItem, event, { requireConfirmation: true });
   }
 
+  function runGuidePress(
+    actionKey: string,
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    action: () => void
+  ) {
+    stopGuideEvent(event, true);
+
+    const now =
+      typeof performance !== "undefined" ? performance.now() : Date.now();
+    const lastPress = lastPressRef.current;
+    if (lastPress && lastPress.key === actionKey && now - lastPress.at < 650) {
+      return;
+    }
+
+    lastPressRef.current = { key: actionKey, at: now };
+    action();
+  }
+
+  function guidePressProps(
+    actionKey: string,
+    action: (event?: React.SyntheticEvent<HTMLElement>) => void
+  ): Pick<
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
+    "onPointerDown" | "onMouseDown" | "onTouchStart" | "onClick"
+  > {
+    return {
+      onPointerDown: (event) => stopGuideEvent(event),
+      onMouseDown: (event) => stopGuideEvent(event),
+      onTouchStart: (event) => stopGuideEvent(event),
+      onClick: (event) => runGuidePress(actionKey, event, () => action(event)),
+    };
+  }
+
   return (
     <section
       onPointerDown={stopGuideEvent}
@@ -496,16 +530,12 @@ export default function NextActionGuide({
           {branchItem ? (
             <button
               type="button"
-              onPointerDown={(event) => stopGuideEvent(event)}
-              onMouseDown={(event) => stopGuideEvent(event)}
-              onTouchStart={(event) => stopGuideEvent(event)}
-              onClick={(event) => {
-                stopGuideEvent(event, true);
+              {...guidePressProps("guide-back-one-step", () => {
                 setBranchItem(null);
                 setSelection(null);
                 setQuery("");
                 setNotice("");
-              }}
+              })}
               style={guideButtonStyle("soft")}
             >
               Back one step
@@ -514,13 +544,9 @@ export default function NextActionGuide({
           <button
             type="button"
             aria-expanded={open}
-            onPointerDown={(event) => stopGuideEvent(event)}
-            onMouseDown={(event) => stopGuideEvent(event)}
-            onTouchStart={(event) => stopGuideEvent(event)}
-            onClick={(event) => {
-              stopGuideEvent(event, true);
+            {...guidePressProps("guide-open-close", () => {
               setOpen((value) => !value);
-            }}
+            })}
             style={{
               ...guideButtonStyle("soft"),
               justifySelf: compact ? "stretch" : "end",
@@ -567,9 +593,14 @@ export default function NextActionGuide({
 
             <button
               type="submit"
-              onPointerDown={(event) => stopGuideEvent(event)}
-              onMouseDown={(event) => stopGuideEvent(event)}
-              onTouchStart={(event) => stopGuideEvent(event)}
+              {...guidePressProps(
+                `guide-find-action-${matchedItem?.id || "none"}`,
+                (event) => {
+                  void chooseItem(matchedItem, event, {
+                    requireConfirmation: true,
+                  });
+                }
+              )}
               style={guideButtonStyle("primary")}
             >
               {matchedItem ? `Open ${matchedItem.label}` : "Find action"}
@@ -611,12 +642,9 @@ export default function NextActionGuide({
                 key={item.id}
                 type="button"
                 disabled={item.disabled}
-                onPointerDown={(event) => stopGuideEvent(event)}
-                onMouseDown={(event) => stopGuideEvent(event)}
-                onTouchStart={(event) => stopGuideEvent(event)}
-                onClick={(event) => {
+                {...guidePressProps(`guide-item-${item.id}`, (event) => {
                   void chooseItem(item, event, { requireConfirmation: true });
-                }}
+                })}
                 style={{
                   ...guideButtonStyle(item.tone || "secondary", item.disabled),
                   minHeight: compact ? 56 : 60,
@@ -708,14 +736,13 @@ export default function NextActionGuide({
               >
                 <button
                   type="button"
-                  onPointerDown={(event) => stopGuideEvent(event)}
-                  onMouseDown={(event) => stopGuideEvent(event)}
-                  onTouchStart={(event) => stopGuideEvent(event)}
-                  onClick={(event) => {
-                    stopGuideEvent(event, true);
+                  {...guidePressProps(
+                    `guide-continue-${selection.item.id}`,
+                    (event) => {
                     onSelect(selection.item, event, selection.resolution);
                     setSelection(null);
-                  }}
+                    }
+                  )}
                   style={guideButtonStyle(
                     selection.resolution?.continueTone || "primary"
                   )}
@@ -725,13 +752,9 @@ export default function NextActionGuide({
                 </button>
                 <button
                   type="button"
-                  onPointerDown={(event) => stopGuideEvent(event)}
-                  onMouseDown={(event) => stopGuideEvent(event)}
-                  onTouchStart={(event) => stopGuideEvent(event)}
-                  onClick={(event) => {
-                    stopGuideEvent(event, true);
+                  {...guidePressProps("guide-choose-something-else", () => {
                     setSelection(null);
-                  }}
+                  })}
                   style={guideButtonStyle("soft")}
                 >
                   Choose something else
