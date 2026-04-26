@@ -1129,16 +1129,6 @@ export default function NotificationsPage() {
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
-        nextLinks={[
-          { label: "Community Home", to: "/app/community" },
-          { label: "Trust", to: "/app/trust" },
-          { label: "Demand Box", to: "/app/demand-box" },
-        ]}
-        utilityLinks={[
-          { label: "Marketplace", to: "/app/marketplace" },
-          { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
-          { label: "Commitment Builder", to: "/app/dashboard#focus-commitments" },
-        ]}
       />
 
       <ExplainToggle

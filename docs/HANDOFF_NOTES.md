@@ -43,6 +43,35 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 20:24
+
+#### Workstream
+Notifications top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/notifications`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/NotificationsPage.tsx`
+
+#### Confirmed facts
+- `NotificationsPage.tsx` still exposed top-nav route links while also carrying in-body action cards and route buttons for Trust, Dashboard, and other destination pages.
+- This pass removed the top-nav `nextLinks` and `utilityLinks` so route movement stays in the page body instead of two competing route bands.
+- Home and back behavior remain intact in the page top navigation.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- The page still has several dense action rows, so live testing may still expose stacked local guard heaviness even after the route-band cleanup.
+
+#### Next recommended step
+- Continue the app-wide cleanup in the remaining first-touch inner pages where top route bands still compete with page-body action lanes.
+
+---
+
+#### Date
 2026-04-26 20:02
 
 #### Workstream
