@@ -1,3 +1,36 @@
+## 2026-04-27 01:24
+
+### Workstream
+Create Entry passive toggle guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from passive open/collapse controls in `CreateEntryPage.tsx`.
+- Cleaned these toggles:
+  - existing-member helper `Open / Collapse`
+  - procedure overlay `Collapse`
+  - first block `Read First / Open / Collapse`
+  - second block `Open / Collapse`
+  - third block `Open / Collapse`
+
+### Why
+- These controls only reveal or hide guidance and stage panels, so they did not need the same guard layer as real submit, save, or sign-in actions.
+- This keeps the create-community onboarding flow lighter without changing the real block-submission behavior.
+
+### Files touched
+- `frontend/src/pages/CreateEntryPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- public create-community onboarding route rendered by `CreateEntryPage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/CreateEntryPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other onboarding pages may still carry the same unnecessary guard layer on passive open/collapse controls and can be cleaned in later passes.
+
 ## 2026-04-27 01:16
 
 ### Workstream

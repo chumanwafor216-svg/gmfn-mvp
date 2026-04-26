@@ -722,7 +722,6 @@ export default function CreateEntryPage() {
 
         <button
           type="button"
-          {...buttonGuardProps()}
           onClick={() => setExistingMemberOpen((current) => !current)}
           style={{
             ...secondaryBtn(),
@@ -1489,7 +1488,6 @@ export default function CreateEntryPage() {
                 >
                   <button
                     type="button"
-                    {...buttonGuardProps()}
                     onClick={() => setProcedureOpen(false)}
                     style={{
                       ...secondaryBtn(),
@@ -1631,7 +1629,6 @@ export default function CreateEntryPage() {
 
                 <button
                   type="button"
-                  {...buttonGuardProps()}
                   onClick={() =>
                     !guideDone
                       ? setProcedureOpen(true)
@@ -1828,7 +1825,6 @@ export default function CreateEntryPage() {
 
                 <button
                   type="button"
-                  {...buttonGuardProps()}
                   onClick={() =>
                     openPanel === "verification"
                       ? setOpenPanel(null)
@@ -2418,7 +2414,6 @@ export default function CreateEntryPage() {
 
                 <button
                   type="button"
-                  {...buttonGuardProps()}
                   onClick={() =>
                     openPanel === "community"
                       ? setOpenPanel(null)
