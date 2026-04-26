@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
@@ -351,6 +351,8 @@ export default function MarketplaceWorkspacePage() {
   const [moneyOpen, setMoneyOpen] = useState(true);
   const [alertsOpen, setAlertsOpen] = useState(true);
   const [membersOpen, setMembersOpen] = useState(false);
+  const alertsSectionRef = useRef<HTMLElement | null>(null);
+  const membersSectionRef = useRef<HTMLElement | null>(null);
 
   const [inviteInfo, setInviteInfo] = useState<any>(null);
   const [joinRequests, setJoinRequests] = useState<any[]>([]);
@@ -362,6 +364,34 @@ export default function MarketplaceWorkspacePage() {
       setSelectedClanId(activeClanId);
     }
   }, [activeClanId]);
+
+  const scrollToWorkspaceSection = useCallback(function scrollToWorkspaceSection(
+    ref: React.RefObject<HTMLElement | null>,
+    attempt = 0
+  ) {
+    if (ref.current) {
+      ref.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      return;
+    }
+    if (attempt >= 5) return;
+    window.requestAnimationFrame(() => {
+      scrollToWorkspaceSection(ref, attempt + 1);
+    });
+  }, []);
+
+  const revealWorkspaceSection = useCallback(
+    (
+      setter: React.Dispatch<React.SetStateAction<boolean>>,
+      ref: React.RefObject<HTMLElement | null>
+    ) => {
+      setter(true);
+      scrollToWorkspaceSection(ref);
+    },
+    [scrollToWorkspaceSection]
+  );
 
   useEffect(() => {
     async function loadAll() {
@@ -837,24 +867,24 @@ export default function MarketplaceWorkspacePage() {
             <button
               type="button"
               {...buttonGuardProps()}
-              onClick={() => setAlertsOpen((v) => !v)}
+              onClick={() => revealWorkspaceSection(setAlertsOpen, alertsSectionRef)}
               style={btn(false)}
             >
-              {alertsOpen ? "Hide Alerts" : "Open Alerts"}
+              Open Alerts
             </button>
             <button
               type="button"
               {...buttonGuardProps()}
-              onClick={() => setMembersOpen((v) => !v)}
+              onClick={() => revealWorkspaceSection(setMembersOpen, membersSectionRef)}
               style={btn(false)}
             >
-              {membersOpen ? "Hide Members" : "Open Members"}
+              Open Members
             </button>
           </div>
         </div>
       </div>
 
-      <div style={{ ...pageCard(), marginTop: 18 }}>
+      <section ref={alertsSectionRef} style={{ ...pageCard(), marginTop: 18 }}>
         <div
           style={{
             display: "flex",
@@ -1058,9 +1088,9 @@ export default function MarketplaceWorkspacePage() {
             </div>
           </div>
         ) : null}
-      </div>
+      </section>
 
-      <div style={{ ...pageCard(), marginTop: 18 }}>
+      <section ref={membersSectionRef} style={{ ...pageCard(), marginTop: 18 }}>
         <div
           style={{
             display: "flex",
@@ -1148,7 +1178,7 @@ export default function MarketplaceWorkspacePage() {
             </button>
           </div>
         ) : null}
-      </div>
+      </section>
 
       {privateBlocksLocked ? (
         <div

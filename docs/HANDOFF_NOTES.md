@@ -105,6 +105,52 @@ Marketplace button-stability audit and first Marketplace interaction cleanup pas
 - If this pass materially calms Marketplace, continue with a second stabilization sweep for `MarketplaceWorkspacePage.tsx` and the remaining cross-route hash launchers.
 
 #### Date
+2026-04-26 12:46
+
+#### Workstream
+Marketplace second stabilization pass for workspace-side remote section controls.
+
+#### Routes/screens affected
+- `/app/community-marketplace`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/MarketplaceWorkspacePage.tsx`
+
+#### Confirmed facts
+- Follow-up audit confirmed `MarketplaceWorkspacePage.tsx` still had a confusing interaction pattern even after the first Marketplace cleanup:
+  - the top trust summary card had `Open Alerts` and `Open Members` controls
+  - lower down the page, separate `Community alerts` and `Members to shop mapping` sections also had their own `Open/Hide` controls
+- This meant one top-level button could silently toggle a distant section without clearly taking the user there, which contributed to the feeling that buttons were affecting something elsewhere on the page.
+- This pass changed the top trust-summary buttons so they now:
+  - deliberately open the target section
+  - scroll the user to that section
+  - stop behaving like a second hidden toggle for the same state
+- Added dedicated refs for:
+  - the alerts section
+  - the members section
+- Added a retry-based `requestAnimationFrame` section scroll helper in `MarketplaceWorkspacePage.tsx` so reveal behavior is direct and visible rather than feeling remote or delayed.
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx src/pages/MarketplaceWorkspacePage.tsx`
+  - `npm run build`
+- Lint still reports the same two pre-existing MarketplacePage hook-dependency warnings and no new errors.
+
+#### Open risks or unknowns
+- `MarketplaceWorkspacePage.tsx` still keeps its own local button-guard style, but the most confusing duplicate section-control behavior has now been reduced.
+- Wider cross-route Marketplace handoffs from Loans and Community Home still deserve future cleanup if live testing still shows context drift.
+
+#### Next recommended step
+- Deploy `gmfn-frontend`.
+- Phone-test `/app/community-marketplace` specifically:
+  - top `Open Alerts`
+  - top `Open Members`
+  - lower alerts section toggle
+  - lower members section toggle
+- If both Marketplace routes now feel calm enough, freeze Marketplace and move to the next guided family instead of layering more route-local button fixes.
+
+#### Date
 2026-04-26 12:20
 
 #### Workstream
