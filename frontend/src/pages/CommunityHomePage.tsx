@@ -2497,7 +2497,36 @@ function communityButtonGuardProps(): Pick<
           id="community-home-spotlight-guided-lane"
           style={{ ...communityBlockCard("gold"), order: 18 }}
         >
-          <div style={sectionLabel()}>What do you want to do next?</div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+              gap: 10,
+              alignItems: "start",
+            }}
+          >
+            <div style={sectionLabel()}>What do you want to do next?</div>
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+                justifyContent: isCompact ? "stretch" : "flex-end",
+              }}
+            >
+              <button
+                type="button"
+                {...communityButtonGuardProps()}
+                onClick={(event) => {
+                  consumeCommunityButtonEvent(event);
+                  setGuidedActionFamilyFocus(null);
+                }}
+                style={collapseHeaderButton(isCompact)}
+              >
+                Collapse
+              </button>
+            </div>
+          </div>
           <div
             style={{
               marginTop: 10,

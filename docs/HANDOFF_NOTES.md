@@ -12000,3 +12000,25 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend build passed
   - ready for phone regression on Community Home spotlight handoff, owner shop
     control reveal, and communities collapse/open behavior before freezing
+
+### Community Home spotlight surface regained its own top collapse control (2026-04-26)
+
+- Product-owner issue:
+  - after the structural Community Home cleanup, the `What do you want to do
+    next?` Spotlight surface still did not expose a clear working top
+    `Collapse` control during phone testing
+- Applied the smallest safe route-local follow-up:
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - added a real top `Collapse` button to the suspended spotlight surface so
+      it matches the guide pattern and exits Spotlight mode directly back into
+      Community Home
+- Route impact:
+  - `/app/community`
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/CommunityHomePage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed
