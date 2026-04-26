@@ -694,6 +694,9 @@ export default function ShopControlPage() {
   const [creatingVaultInstruction, setCreatingVaultInstruction] = useState(false);
   const [creatingVaultLink, setCreatingVaultLink] = useState(false);
   const [busyVaultLinkId, setBusyVaultLinkId] = useState<number | null>(null);
+  const [busyVaultLinkAction, setBusyVaultLinkAction] = useState<"extend" | "revoke" | null>(
+    null
+  );
   const [creatingMerchantVerifyInstruction, setCreatingMerchantVerifyInstruction] =
     useState(false);
   const [creatingSpotlightInstruction, setCreatingSpotlightInstruction] = useState(false);
@@ -1409,6 +1412,7 @@ export default function ShopControlPage() {
     }
 
     setBusyVaultLinkId(linkId);
+    setBusyVaultLinkAction("revoke");
     try {
       const updated = await revokeVaultShopAccessLink(linkId);
       setVaultLinks((prev) =>
@@ -1421,6 +1425,7 @@ export default function ShopControlPage() {
       showNotice("error", safeStr(err?.message) || "Vault viewing link could not be revoked.");
     } finally {
       setBusyVaultLinkId(null);
+      setBusyVaultLinkAction(null);
     }
   }
 
@@ -1432,6 +1437,7 @@ export default function ShopControlPage() {
     }
 
     setBusyVaultLinkId(linkId);
+    setBusyVaultLinkAction("extend");
     try {
       const updated = await extendVaultShopAccessLink(linkId, vaultDefaultExpiry());
       setVaultLinks((prev) =>
@@ -1444,6 +1450,7 @@ export default function ShopControlPage() {
       showNotice("error", safeStr(err?.message) || "Vault viewing link could not be extended.");
     } finally {
       setBusyVaultLinkId(null);
+      setBusyVaultLinkAction(null);
     }
   }
 
@@ -3895,7 +3902,8 @@ export default function ShopControlPage() {
                   <div style={{ marginTop: 8, ...helperText() }}>
                     Access ends: {safeDateTime(item?.expires_at) || "No expiry set"}
                   </div>
-                  <div style={{ marginTop: 10, ...controlGrid(isCompact, 120) }}>
+                  <div style={{ marginTop: 10, ...helperText() }}>Use this link</div>
+                  <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
                     <button
                       type="button"
                       {...buttonGuardProps()}
@@ -3907,7 +3915,7 @@ export default function ShopControlPage() {
                       style={fullButton(actionBtn("soft", !vaultLinkUrl(item)))}
                       disabled={!vaultLinkUrl(item)}
                     >
-                      Copy Vault link
+                      Copy link
                     </button>
                     <button
                       type="button"
@@ -3920,8 +3928,11 @@ export default function ShopControlPage() {
                       style={fullButton(actionBtn("secondary", !vaultLinkUrl(item)))}
                       disabled={!vaultLinkUrl(item)}
                     >
-                      Open Vault link
+                      Open link
                     </button>
+                  </div>
+                  <div style={{ marginTop: 10, ...helperText() }}>Manage this link</div>
+                  <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
                     <button
                       type="button"
                       {...buttonGuardProps()}
@@ -3930,10 +3941,17 @@ export default function ShopControlPage() {
                           void extendVaultViewingLink(item)
                         )
                       }
-                      style={fullButton(actionBtn("secondary", busyVaultLinkId === Number(item.id)))}
+                      style={fullButton(
+                        actionBtn(
+                          "secondary",
+                          busyVaultLinkId === Number(item.id) && busyVaultLinkAction === "extend"
+                        )
+                      )}
                       disabled={busyVaultLinkId === Number(item.id)}
                     >
-                      Extend 7 days
+                      {busyVaultLinkId === Number(item.id) && busyVaultLinkAction === "extend"
+                        ? "Extending..."
+                        : "Extend 7 days"}
                     </button>
                     <button
                       type="button"
@@ -3943,17 +3961,21 @@ export default function ShopControlPage() {
                           void revokeVaultViewingLink(item)
                         )
                       }
-                      style={fullButton(actionBtn(
-                        "secondary",
-                        busyVaultLinkId === Number(item.id) ||
-                          firstTruthy(item?.status).toLowerCase() === "revoked"
-                      ))}
+                      style={fullButton(
+                        actionBtn(
+                          "secondary",
+                          busyVaultLinkId === Number(item.id) && busyVaultLinkAction === "revoke" ||
+                            firstTruthy(item?.status).toLowerCase() === "revoked"
+                        )
+                      )}
                       disabled={
                         busyVaultLinkId === Number(item.id) ||
                         firstTruthy(item?.status).toLowerCase() === "revoked"
                       }
                     >
-                      Revoke
+                      {busyVaultLinkId === Number(item.id) && busyVaultLinkAction === "revoke"
+                        ? "Revoking..."
+                        : "Revoke"}
                     </button>
                   </div>
                 </div>

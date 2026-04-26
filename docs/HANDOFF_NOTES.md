@@ -12303,3 +12303,38 @@ GSN-branded invite composer and invite-entry continuity.
     an effect dependency array
   - frontend build passed
   - Trust is now at a safer checkpoint for continued phone testing
+
+### Shop Control vault link actions reached a calmer safe checkpoint (2026-04-26)
+
+- Product-owner issue:
+  - the per-link Vault controls in Shop Control still felt dense and jumpy
+  - one compact four-button row mixed "use the link" and "manage the link"
+    actions together
+  - both management actions also shared one busy state, so a single tap could
+    make the whole row feel unstable
+- Applied the smallest safe interaction cleanup:
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - added a separate `busyVaultLinkAction` state so only the active
+      management action changes label while it is working
+    - split each Vault link control set into two calmer groups:
+      - `Copy link`, `Open link`
+      - `Extend 7 days`, `Revoke`
+    - shortened the first-row labels to reduce width churn during repeated use
+    - changed the busy labels to action-specific text:
+      - `Extending...`
+      - `Revoking...`
+- Routes impacted:
+  - `/app/shop-control`
+- Shared logic impact:
+  - no backend change
+  - this is a frontend button-stability pass only
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/ShopControlPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed
+  - the densest remaining Vault link controls are now at a calmer safe
+    checkpoint for continued phone testing
