@@ -43,6 +43,43 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 18:16
+
+#### Workstream
+Command-centre top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/command-center/system-operations`
+- `/app/command-center/exposure`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/SystemOperationsPage.tsx`
+- `frontend/src/pages/ExposureAdminPage.tsx`
+
+#### Confirmed facts
+- Both command-centre pages were still carrying duplicated route movement:
+  - top navigation `nextLinks` / `utilityLinks`
+  - lower `Next routes`
+- This pass removed the top-nav `nextLinks` and `utilityLinks` from both pages, leaving route movement in one place only: the lower `Next routes` section.
+- Home and back behavior remain intact in the page top navigation for both routes.
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/SystemOperationsPage.tsx src/pages/ExposureAdminPage.tsx`
+  - `npm run build`
+  - both passed
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other trust/admin pages still using both top-nav route links and lower route sections may need the same cleanup.
+
+#### Next recommended step
+- Continue the same audit into the remaining trust/admin operational pages, especially Trust Analytics, Trust Graph, and related command-centre screens.
+
+---
+
+#### Date
 2026-04-26 18:01
 
 #### Workstream

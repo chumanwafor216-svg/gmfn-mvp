@@ -919,11 +919,6 @@ export default function SystemOperationsPage() {
           homeLabel="Dashboard"
           backTo="/app/command-center"
           backLabel="Command Center"
-          nextLinks={[
-            { label: "Trust Analytics", to: "/app/command-center/trust-analytics" },
-            { label: "Exposure", to: "/app/command-center/exposure" },
-          ]}
-          utilityLinks={[{ label: "Trust Graph", to: "/app/command-center/trust-graph" }]}
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -953,11 +948,6 @@ export default function SystemOperationsPage() {
         homeLabel="Dashboard"
         backTo="/app/command-center"
         backLabel="Command Center"
-        nextLinks={[
-          { label: "Trust Analytics", to: "/app/command-center/trust-analytics" },
-          { label: "Exposure", to: "/app/command-center/exposure" },
-        ]}
-        utilityLinks={[{ label: "Trust Graph", to: "/app/command-center/trust-graph" }]}
       />
 
       <ExplainToggle

@@ -693,11 +693,6 @@ export default function ExposureAdminPage() {
           homeLabel="Dashboard"
           backTo="/app/command-center"
           backLabel="Command Center"
-          nextLinks={[
-            { label: "Trust Analytics", to: "/app/command-center/trust-analytics" },
-            { label: "System Operations", to: "/app/command-center/system-operations" },
-          ]}
-          utilityLinks={[{ label: "Trust Graph", to: "/app/command-center/trust-graph" }]}
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -727,11 +722,6 @@ export default function ExposureAdminPage() {
         homeLabel="Dashboard"
         backTo="/app/command-center"
         backLabel="Command Center"
-        nextLinks={[
-          { label: "Trust Analytics", to: "/app/command-center/trust-analytics" },
-          { label: "System Operations", to: "/app/command-center/system-operations" },
-        ]}
-        utilityLinks={[{ label: "Trust Graph", to: "/app/command-center/trust-graph" }]}
       />
 
       <ExplainToggle
