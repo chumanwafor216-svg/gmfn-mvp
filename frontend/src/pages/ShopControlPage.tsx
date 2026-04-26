@@ -2515,18 +2515,6 @@ export default function ShopControlPage() {
         homeLabel="Dashboard"
         backTo="/app/marketplace"
         backLabel="Marketplace"
-        nextLinks={[
-          { label: "Products", to: "/app/shop-assets" },
-          {
-            label: "Public Shop",
-            to: publicShopLink || "/app/marketplace",
-            disabled: !publicShopLink,
-          },
-          { label: "TrustSlip", to: "/app/trust-slip" },
-        ]}
-        utilityLinks={[
-          { label: "Community Home", to: "/app/community" },
-        ]}
       />
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
