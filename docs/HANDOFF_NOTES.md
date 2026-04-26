@@ -1,3 +1,33 @@
+## 2026-04-27 03:18
+
+### Workstream
+Marketplace workspace section-launcher passive guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from the passive section-launcher buttons in `MarketplaceWorkspacePage.tsx`.
+- Cleaned these controls:
+  - `Open Alerts`
+  - `Open Members`
+
+### Why
+- These buttons only reveal and scroll to workspace sections, so they did not need the same action-level guard as real route-launch or member-action buttons.
+- This keeps Marketplace Workspace lighter without changing invite, member mapping, or route-handoff logic.
+
+### Files touched
+- `frontend/src/pages/MarketplaceWorkspacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/community-marketplace`
+
+### Verification
+- `npm exec -- eslint src/pages/MarketplaceWorkspacePage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other workspace launcher buttons on dense operational pages may still carry the same unnecessary action-level guard and can be cleaned in later passes.
+
 ## 2026-04-27 03:09
 
 ### Workstream

@@ -866,7 +866,6 @@ export default function MarketplaceWorkspacePage() {
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button
               type="button"
-              {...buttonGuardProps()}
               onClick={() => revealWorkspaceSection(setAlertsOpen, alertsSectionRef)}
               style={btn(false)}
             >
@@ -874,7 +873,6 @@ export default function MarketplaceWorkspacePage() {
             </button>
             <button
               type="button"
-              {...buttonGuardProps()}
               onClick={() => revealWorkspaceSection(setMembersOpen, membersSectionRef)}
               style={btn(false)}
             >
