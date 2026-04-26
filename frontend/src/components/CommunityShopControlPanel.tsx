@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import * as api from "../lib/api";
 import { navigateWithOrigin } from "../lib/nav";
@@ -504,7 +504,6 @@ export default function CommunityShopControlPanel({
   const [notice, setNotice] = useState<{ tone: NoticeTone; text: string } | null>(
     null
   );
-  const collapseToggleTimerRef = useRef<number | null>(null);
   const [shop, setShop] = useState<ShopSummary | null>(null);
   const [communityLabel, setCommunityLabel] = useState<string>("");
 
@@ -529,15 +528,6 @@ export default function CommunityShopControlPanel({
       // ignore
     }
   }, [open]);
-
-  useEffect(() => {
-    return () => {
-      if (collapseToggleTimerRef.current !== null) {
-        window.clearTimeout(collapseToggleTimerRef.current);
-        collapseToggleTimerRef.current = null;
-      }
-    };
-  }, []);
 
   useEffect(() => {
     if (forceOpenSignal <= 0) return;

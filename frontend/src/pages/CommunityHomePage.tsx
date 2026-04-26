@@ -769,22 +769,6 @@ function collapseHeaderLayout(isCompact: boolean): React.CSSProperties {
   };
 }
 
-function communitiesCollapseHeaderLayout(
-  isCompact: boolean
-): React.CSSProperties {
-  return {
-    ...collapseHeaderLayout(isCompact),
-    zIndex: 30,
-    padding: isCompact ? "4px 0" : 0,
-    borderRadius: 20,
-    cursor: "pointer",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    isolation: "isolate",
-  };
-}
-
 function collapseHeaderText(align: "left" | "center" = "left"): React.CSSProperties {
   return {
     minWidth: 0,
@@ -941,28 +925,65 @@ export default function CommunityHomePage() {
       readLocalJSON(COMMUNITY_HOME_COLLAPSE_KEY, defaultCollapseState())
     )
   );
-  const collapseToggleTimersRef = useRef<number[]>([]);
   const [shopControlOpenSignal, setShopControlOpenSignal] = useState(0);
   const [guidedActionFamilyFocus, setGuidedActionFamilyFocus] = useState<
     string | null
   >(null);
+  const communityRevealJobRef = useRef(0);
+  const communityRevealFrameRef = useRef<number | null>(null);
+
+  const cancelCommunityReveal = useCallback(() => {
+    communityRevealJobRef.current += 1;
+
+    if (communityRevealFrameRef.current !== null) {
+      window.cancelAnimationFrame(communityRevealFrameRef.current);
+      communityRevealFrameRef.current = null;
+    }
+  }, []);
+
+  const revealCommunityTarget = useCallback(
+    (targetIds: string[]) => {
+      cancelCommunityReveal();
+      const jobId = communityRevealJobRef.current;
+
+      const tryReveal = (attempt = 0) => {
+        if (communityRevealJobRef.current !== jobId) return;
+
+        const target = targetIds
+          .map((id) => document.getElementById(id))
+          .find((el) => el && typeof el.scrollIntoView === "function");
+
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+          communityRevealFrameRef.current = null;
+          return;
+        }
+
+        if (attempt >= 12) {
+          communityRevealFrameRef.current = null;
+          return;
+        }
+
+        communityRevealFrameRef.current = window.requestAnimationFrame(() => {
+          tryReveal(attempt + 1);
+        });
+      };
+
+      communityRevealFrameRef.current = window.requestAnimationFrame(() => {
+        tryReveal();
+      });
+    },
+    [cancelCommunityReveal]
+  );
 
   const openGuidedSpotlightFamily = useCallback(
     (event?: React.SyntheticEvent<HTMLElement>) => {
       consumeCommunityButtonEvent(event);
       setGuidedActionFamilyFocus("spotlight");
       setCollapsed((prev) => ({ ...prev, spotlight: false }));
-
-      if (typeof document !== "undefined") {
-        window.setTimeout(() => {
-          const el = document.getElementById("community-home-spotlight-guided-lane");
-          if (el && typeof el.scrollIntoView === "function") {
-            el.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
-        }, 0);
-      }
+      revealCommunityTarget(["community-home-spotlight-guided-lane"]);
     },
-    []
+    [revealCommunityTarget]
   );
 
   useEffect(() => {
@@ -984,12 +1005,9 @@ export default function CommunityHomePage() {
 
   useEffect(() => {
     return () => {
-      collapseToggleTimersRef.current.forEach((timerId) => {
-        window.clearTimeout(timerId);
-      });
-      collapseToggleTimersRef.current = [];
+      cancelCommunityReveal();
     };
-  }, []);
+  }, [cancelCommunityReveal]);
 
   useEffect(() => {
     if (!notice) return;
@@ -1123,11 +1141,10 @@ export default function CommunityHomePage() {
     navigate(
       {
         pathname: location.pathname,
-        hash: location.hash,
       },
       { replace: true }
     );
-  }, [location.hash, location.pathname, location.search, navigate, openGuidedSpotlightFamily]);
+  }, [location.pathname, location.search, navigate, openGuidedSpotlightFamily]);
 
   const cumulativeAvailable = getSummaryTotal(
     poolSummary,
@@ -1824,22 +1841,19 @@ export default function CommunityHomePage() {
   function openCommunityHomeSection(
     event: React.SyntheticEvent<HTMLElement> | undefined,
     targetId: string,
-    expandKey?: CollapseKey
+    expandKey?: CollapseKey,
+    clearGuidedFocus = false
   ) {
     consumeCommunityButtonEvent(event);
+
+    if (clearGuidedFocus) {
+      setGuidedActionFamilyFocus(null);
+    }
 
     if (expandKey) {
       setCollapsed((prev) => ({ ...prev, [expandKey]: false }));
     }
-
-    if (typeof document !== "undefined") {
-      window.setTimeout(() => {
-        const el = document.getElementById(targetId);
-        if (el && typeof el.scrollIntoView === "function") {
-          el.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-      }, 0);
-    }
+    revealCommunityTarget([targetId]);
   }
 
   function openCommunityShopControl(
@@ -1848,34 +1862,14 @@ export default function CommunityHomePage() {
   ) {
     consumeCommunityButtonEvent(event);
     setShopControlOpenSignal((prev) => prev + 1);
-
-    if (typeof document !== "undefined") {
-      const scrollToCommunityTarget = (attempt = 0) => {
-        const el =
-          document.getElementById(targetId) ||
-          document.getElementById("community-home-shop-control");
-        if (el && typeof el.scrollIntoView === "function") {
-          el.scrollIntoView({ behavior: "smooth", block: "start" });
-          return;
-        }
-
-        if (attempt < 8) {
-          window.setTimeout(() => {
-            scrollToCommunityTarget(attempt + 1);
-          }, 80);
-        }
-      };
-
-      window.setTimeout(() => {
-        scrollToCommunityTarget();
-      }, targetId === "community-home-shop-control" ? 0 : 48);
-    }
+    revealCommunityTarget([targetId, "community-home-shop-control"]);
   }
 
   function openCommunitySpotlightWorkspace(
     event: React.SyntheticEvent<HTMLElement> | undefined
   ) {
     consumeCommunityButtonEvent(event);
+    setGuidedActionFamilyFocus(null);
     setCollapsed((prev) => ({ ...prev, spotlight: false }));
     openCommunityShopControl(undefined, "community-shop-control-owner-shortcuts");
   }
@@ -1958,7 +1952,8 @@ function communityButtonGuardProps(): Pick<
           openCommunityHomeSection(
             event,
             "community-home-community-list",
-            "communities"
+            "communities",
+            true
           );
           break;
         }
@@ -1978,7 +1973,8 @@ function communityButtonGuardProps(): Pick<
           openCommunityHomeSection(
             event,
             "community-home-community-list",
-            "communities"
+            "communities",
+            true
           );
           break;
         }
@@ -1996,7 +1992,8 @@ function communityButtonGuardProps(): Pick<
           openCommunityHomeSection(
             event,
             "community-home-community-list",
-            "communities"
+            "communities",
+            true
           );
           break;
         }
@@ -2622,17 +2619,6 @@ function communityButtonGuardProps(): Pick<
               style={actionBtn("secondary")}
             >
               Back to Community Home
-            </button>
-            <button
-              type="button"
-              {...communityButtonGuardProps()}
-              onClick={(event) => {
-                consumeCommunityButtonEvent(event);
-                setGuidedActionFamilyFocus(null);
-              }}
-              style={actionBtn("secondary")}
-            >
-              Cancel
             </button>
           </div>
         </section>
@@ -3264,16 +3250,7 @@ function communityButtonGuardProps(): Pick<
           zIndex: 30,
         }}
       >
-        <div
-          role="button"
-          tabIndex={0}
-          aria-expanded={!collapsed.communities}
-          aria-controls="community-home-communities-panel"
-          {...communityButtonGuardProps()}
-          onClick={toggleCommunitiesSectionFromHeader}
-          onKeyDown={handleCommunitiesHeaderKeyDown}
-          style={communitiesCollapseHeaderLayout(isCompact)}
-        >
+        <div style={collapseHeaderLayout(isCompact)}>
           <div style={{ minWidth: 0, width: "100%", textAlign: "center" }}>
             <div style={sectionLabel("center")}>Your communities</div>
             <div
@@ -3300,14 +3277,20 @@ function communityButtonGuardProps(): Pick<
               <span style={badge(false)}>{sortedClans.length} communities</span>
               {!isCompact ? <span style={badge(false)}>One GSN ID</span> : null}
             </div>
+            <div style={collapseButtonRow()}>
+              <button
+                type="button"
+                aria-expanded={!collapsed.communities}
+                aria-controls="community-home-communities-panel"
+                {...communityButtonGuardProps()}
+                onClick={toggleCommunitiesSectionFromHeader}
+                onKeyDown={handleCommunitiesHeaderKeyDown}
+                style={communitiesCollapseHeaderButton(isCompact)}
+              >
+                {collapsed.communities ? "Open communities" : "Collapse communities"}
+              </button>
+            </div>
           </div>
-
-          <span
-            aria-hidden="true"
-            style={communitiesCollapseHeaderButton(isCompact)}
-          >
-            {collapsed.communities ? "Open" : "Collapse"}
-          </span>
         </div>
 
         {!collapsed.communities ? (

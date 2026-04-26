@@ -11960,3 +11960,43 @@ GSN-branded invite composer and invite-entry continuity.
   - product-owner confirmed the phone behavior is now under control and this
     Dashboard attention-guide lane should be treated as frozen unless a later
     task explicitly asks to change it
+
+### Community Home spotlight and community-list controls were structurally calmed (2026-04-26)
+
+- Product-owner issue:
+  - Community Home still had underlaying jumpiness even after earlier guide
+    stabilization
+  - the spotlight family could still aim at hidden destinations while the page
+    was in suspended spotlight mode
+  - the communities section still used a broad clickable header surface instead
+    of one explicit collapse button
+- Applied the smallest safe route-local cleanup:
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - replaced the old timer-driven community reveal helpers with one shared
+      `requestAnimationFrame`-based reveal lane that cancels previous jobs
+    - guided Spotlight now clears conflicting hash-driven scroll competition by
+      removing the hash when `?guide=spotlight` is consumed
+    - opening the inline spotlight workspace now clears the suspended spotlight
+      guide first, so the launcher no longer targets a hidden owner workspace
+    - Spotlight `choose community` handoffs now restore Community Home before
+      opening the communities section
+    - removed the duplicate `Cancel` exit in the suspended spotlight surface
+    - converted the communities section from a full-header clickable surface to
+      an explicit `Open communities` / `Collapse communities` button
+  - `frontend/src/components/CommunityShopControlPanel.tsx`
+    - removed a dead collapse timer ref left over from older interaction logic
+- Route impact:
+  - `/app/community`
+- Shared logic impact:
+  - no backend or cross-route contract changes
+  - this is a Community Home route-local interaction cleanup
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/CommunityHomePage.tsx src/components/CommunityShopControlPanel.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed
+  - ready for phone regression on Community Home spotlight handoff, owner shop
+    control reveal, and communities collapse/open behavior before freezing
