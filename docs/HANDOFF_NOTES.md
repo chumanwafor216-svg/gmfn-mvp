@@ -83,6 +83,9 @@ Shop-family interaction cleanup pass for `Shop Control`, the embedded Community 
   - `ShopControlPage.tsx` public shop openers now use one guarded click path instead of combining pointer guards with extra click-time `guardButtonPress(...)`
   - the recommended `Open Picture Tools` action no longer uses an old same-page hash anchor; it now reveals the picture section directly through the calmer in-page reveal path
   - `ShopGalleryPage.tsx` back navigation no longer adds an extra local `guardButtonPress()` on top of the already guarded button action
+- A deeper Shop Control pass then removed the same duplicate pattern from more of the paid-tools side:
+  - the `Public shop links` block now opens the public shop through the same single guarded path as the top summary controls
+  - Vault link opening now uses one shared external-link opener instead of layering another direct `guardButtonPress(...)` call onto the click
 - Verification after this pass:
   - `npm exec -- eslint src/pages/ShopControlPage.tsx src/components/CommunityShopControlPanel.tsx src/pages/ShopGalleryPage.tsx`
   - `npm run build`
@@ -90,6 +93,7 @@ Shop-family interaction cleanup pass for `Shop Control`, the embedded Community 
 
 #### Open risks or unknowns
 - `ShopControlPage.tsx` still contains many page-local button guards layered across many individual buttons. The reveal engine is calmer now, but if shop buttons still feel heavy in live testing, the next step should be a second Shop-family pass focused specifically on duplicate guard stacking rather than on hash/scroll behavior.
+- That next duplicate-guard pass has now started, but it is not complete yet. The busiest public/open actions are calmer; some create/pay/revoke actions still keep the older local guard style.
 - Other routes may still link into `Shop Control` using legacy `#shop-control-*` hashes. Those remain supported for compatibility, but the newer calmer contract now exists through `?section=...`.
 
 #### Next recommended step

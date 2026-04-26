@@ -1475,6 +1475,12 @@ export default function ShopControlPage() {
     window.open(publicShopLink, "_blank", "noopener,noreferrer");
   }
 
+  function openExternalLink(url?: string | null) {
+    const resolved = safeStr(url);
+    if (!resolved) return;
+    window.open(resolved, "_blank", "noopener,noreferrer");
+  }
+
   function openShopControlSection(targetId: string) {
     cancelPendingControlReveal();
     revealControlTarget(targetId);
@@ -3242,12 +3248,9 @@ export default function ShopControlPage() {
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={(event) => {
-                    guardButtonPress(event);
-                    if (publicShopLink) {
-                      window.open(publicShopLink, "_blank", "noopener,noreferrer");
-                    }
-                  }}
+                  onClick={(event) =>
+                    runGuardedButtonAction(event, () => openPublicShopFace())
+                  }
                   style={fullButton(actionBtn("secondary", !publicShopLink))}
                   disabled={!publicShopLink}
                 >
@@ -3890,11 +3893,11 @@ export default function ShopControlPage() {
                     <button
                       type="button"
                       {...buttonGuardProps()}
-                      onClick={(event) => {
-                        guardButtonPress(event);
-                        const url = vaultLinkUrl(item);
-                        if (url) window.open(url, "_blank", "noopener,noreferrer");
-                      }}
+                      onClick={(event) =>
+                        runGuardedButtonAction(event, () =>
+                          openExternalLink(vaultLinkUrl(item))
+                        )
+                      }
                       style={fullButton(actionBtn("secondary", !vaultLinkUrl(item)))}
                       disabled={!vaultLinkUrl(item)}
                     >
