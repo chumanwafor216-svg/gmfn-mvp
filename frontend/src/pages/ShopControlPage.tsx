@@ -392,10 +392,9 @@ function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
 }
 
 function runGuardedButtonAction(
-  event: React.SyntheticEvent<HTMLElement>,
+  _event: React.SyntheticEvent<HTMLElement>,
   action: () => void
 ) {
-  guardButtonPress(event);
   action();
 }
 

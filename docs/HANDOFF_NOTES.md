@@ -43,6 +43,63 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 15:05
+
+#### Workstream
+Shop-family duplicate guard cleanup pass across `Shop Control`, `Shop Assets`, and the public `Shop Gallery`.
+
+#### Routes/screens affected
+- `/app/shop-control`
+- `/app/shop-assets`
+- public shop/gallery route handled by `ShopGalleryPage`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/ShopControlPage.tsx`
+- `frontend/src/pages/ShopAssetsPage.tsx`
+- `frontend/src/pages/ShopGalleryPage.tsx`
+
+#### Confirmed facts
+- A deeper grep confirmed one of the old button-jump patterns was still active in the shop family:
+  - several high-traffic buttons already used shared `buttonGuardProps()`
+  - those same buttons were then calling `runGuardedButtonAction(...)`
+  - `runGuardedButtonAction(...)` was still calling `guardButtonPress(...)` internally
+- That meant one tap was still being guarded twice in three major shop surfaces:
+  - `ShopControlPage.tsx`
+  - `ShopAssetsPage.tsx`
+  - `ShopGalleryPage.tsx`
+- This pass removed that inner duplicate layer in the least risky way:
+  - `runGuardedButtonAction(...)` now just runs the supplied action
+  - the shared `buttonGuardProps()` layer remains in place on the buttons themselves
+- Impacted hot paths include:
+  - Shop Control public/open/copy actions
+  - Vault pay/create/open flows
+  - paid spotlight/verification actions
+  - Shop Assets gallery/signboard/product buttons
+  - public Shop Gallery back/share/open-item/copy-link paths
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/ShopControlPage.tsx src/pages/ShopAssetsPage.tsx src/pages/ShopGalleryPage.tsx`
+  - `npm run build`
+  - both passed
+
+#### Open risks or unknowns
+- This removes a real duplicate-guard underlayer from the shop family, but other domains may still keep their own page-local helper stacks.
+- The money-in and withdrawal instruction pages look cleaner than earlier hotspot routes, but they still contain many dense local action bands and may need a later pass if live testing shows they remain physically heavy.
+- Marketplace, Dashboard, Community Home, and Shop-family routes are all calmer than before, but they should still be treated as safe checkpoints rather than final freeze states until the broader live testing round is complete.
+
+#### Next recommended step
+- Deploy `gmfn-frontend`.
+- Phone-test the shop-family buttons again, especially:
+  - Shop Control public/open/copy actions
+  - Vault pay/create/open actions
+  - Paid spotlight and verification buttons
+  - Shop Assets signboard/product buttons
+  - public Shop Gallery back/share/copy/open-item buttons
+- If the shop family now feels materially steadier, continue the same duplicate-guard audit pattern in the next dense money-side action bands only where live testing still reports hesitation.
+
+#### Date
 2026-04-26 14:20
 
 #### Workstream
