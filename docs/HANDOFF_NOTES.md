@@ -43,6 +43,35 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 19:52
+
+#### Workstream
+Finance top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/finance`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/FinancePage.tsx`
+
+#### Confirmed facts
+- `FinancePage.tsx` still exposed top-nav route links in both loading and live states while also carrying guide-driven route movement and deeper in-page route actions for Trust Passport, Loan Readiness, and Loans & Support.
+- This pass removed the top-nav `nextLinks` and `utilityLinks`, leaving route movement inside the page body instead of a second route band at the top.
+- Home and back behavior remain intact in the page top navigation.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- `FinancePage.tsx` does not have one single lower route-tile band like Loans, so this cleanup relies on the existing guide-driven and in-body route actions remaining clear enough during live testing.
+
+#### Next recommended step
+- Continue the app-wide cleanup by following live heaviness into the remaining overview or operational pages still carrying stacked button guards or overlapping launcher behavior.
+
+---
+
+#### Date
 2026-04-26 19:43
 
 #### Workstream

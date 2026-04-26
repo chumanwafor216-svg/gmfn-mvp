@@ -1552,17 +1552,6 @@ export default function FinancePage() {
           homeLabel="Dashboard"
           backTo="/app/marketplace"
           backLabel="Marketplace"
-          nextLinks={[
-            { label: "Money In", to: "/app/payment/pool" },
-            { label: "Money Out", to: "/app/withdrawal-instructions" },
-          ]}
-          utilityLinks={[
-            { label: "Payment Rails", to: "/app/payment-rails" },
-            { label: "Payout Details", to: "/app/payout-details" },
-            { label: "Commitment Builder", to: "/app/dashboard#focus-commitments" },
-            { label: "Loans", to: "/app/loans" },
-            { label: "Notifications", to: "/app/notifications" },
-          ]}
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -1592,17 +1581,6 @@ export default function FinancePage() {
         homeLabel="Dashboard"
         backTo="/app/marketplace"
         backLabel="Marketplace"
-        nextLinks={[
-          { label: "Money In", to: "/app/payment/pool" },
-          { label: "Money Out", to: "/app/withdrawal-instructions" },
-        ]}
-        utilityLinks={[
-          { label: "Payment Rails", to: "/app/payment-rails" },
-          { label: "Payout Details", to: "/app/payout-details" },
-          { label: "Commitment Builder", to: "/app/dashboard#focus-commitments" },
-          { label: "Loans & Support", to: "/app/loans" },
-          { label: "Notifications", to: "/app/notifications" },
-        ]}
       />
 
       <DomainIntroToggle
