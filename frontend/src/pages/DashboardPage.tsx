@@ -4705,10 +4705,6 @@ export default function DashboardPage() {
   ) {
     if (!event) return;
 
-    if (event.type === "click" || event.type === "submit") {
-      event.preventDefault();
-    }
-
     event.stopPropagation();
   }
 
@@ -4750,15 +4746,7 @@ export default function DashboardPage() {
   ) {
     void _durationMs;
     consumeDashboardButtonEvent(event);
-
-    if (typeof window === "undefined") {
-      action();
-      return;
-    }
-
-    window.requestAnimationFrame(() => {
-      action();
-    });
+    action();
   }
 
   function openAttentionTarget(

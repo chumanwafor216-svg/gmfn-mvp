@@ -458,7 +458,9 @@ export default function NextActionGuide({
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    void chooseItem(matchedItem, event, { requireConfirmation: true });
+    runGuidePress(`guide-submit-${matchedItem?.id || "none"}`, event, () => {
+      void chooseItem(matchedItem, event, { requireConfirmation: true });
+    });
   }
 
   function runGuidePress(
@@ -499,7 +501,6 @@ export default function NextActionGuide({
       onPointerDown={stopGuideEvent}
       onMouseDown={stopGuideEvent}
       onTouchStart={stopGuideEvent}
-      onClick={stopGuideEvent}
       style={cardStyle()}
     >
       <div style={headerStyle(compact)}>
@@ -593,14 +594,9 @@ export default function NextActionGuide({
 
             <button
               type="submit"
-              {...guidePressProps(
-                `guide-find-action-${matchedItem?.id || "none"}`,
-                (event) => {
-                  void chooseItem(matchedItem, event, {
-                    requireConfirmation: true,
-                  });
-                }
-              )}
+              onPointerDown={stopGuideEvent}
+              onMouseDown={stopGuideEvent}
+              onTouchStart={stopGuideEvent}
               style={guideButtonStyle("primary")}
             >
               {matchedItem ? `Open ${matchedItem.label}` : "Find action"}

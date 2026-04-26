@@ -468,13 +468,12 @@ function stopPanelTap(event: React.SyntheticEvent) {
 
 function panelButtonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown" | "onClickCapture"
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
 > {
   return {
     onPointerDown: stopPanelTap,
     onTouchStart: stopPanelTap,
     onMouseDown: stopPanelTap,
-    onClickCapture: stopPanelTap,
   };
 }
 

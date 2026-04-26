@@ -1067,6 +1067,7 @@ export default function ShopControlPage() {
       setSpotlightPriorityMode("paid");
       setSpotlightFlowStep(shop?.id ? "upload" : "setup");
       setSpotlightOpen(true);
+      targetId = "shop-control-spotlight";
     }
 
     if (hashScrollTimerRef.current !== null) {
@@ -1472,9 +1473,7 @@ export default function ShopControlPage() {
     setSpotlightPriorityMode(mode);
     setSpotlightOpen(true);
 
-    window.setTimeout(() => {
-      scrollToControlTarget("shop-control-spotlight");
-    }, 24);
+    scrollToControlTarget("shop-control-spotlight");
   }
 
   function collapseSpotlightTools(event?: React.SyntheticEvent<HTMLElement>) {
@@ -1483,13 +1482,11 @@ export default function ShopControlPage() {
 
     if (spotlightCollapseTimerRef.current !== null) {
       window.clearTimeout(spotlightCollapseTimerRef.current);
+      spotlightCollapseTimerRef.current = null;
     }
 
-    spotlightCollapseTimerRef.current = window.setTimeout(() => {
-      spotlightCollapseTimerRef.current = null;
-      setSpotlightOpen(false);
-      setSpotlightFlowStep("upload");
-    }, 24);
+    setSpotlightOpen(false);
+    setSpotlightFlowStep("upload");
   }
 
   async function createVaultInstruction(quantityTotal: 1 | 6) {

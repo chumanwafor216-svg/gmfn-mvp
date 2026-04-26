@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import CommunityShopControlPanel from "../components/CommunityShopControlPanel";
 import DomainIntroToggle from "../components/DomainIntroToggle";
@@ -947,6 +947,24 @@ export default function CommunityHomePage() {
     string | null
   >(null);
 
+  const openGuidedSpotlightFamily = useCallback(
+    (event?: React.SyntheticEvent<HTMLElement>) => {
+      consumeCommunityButtonEvent(event);
+      setGuidedActionFamilyFocus("spotlight");
+      setCollapsed((prev) => ({ ...prev, spotlight: false }));
+
+      if (typeof document !== "undefined") {
+        window.setTimeout(() => {
+          const el = document.getElementById("community-home-spotlight-guided-lane");
+          if (el && typeof el.scrollIntoView === "function") {
+            el.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }, 0);
+      }
+    },
+    []
+  );
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -1100,17 +1118,7 @@ export default function CommunityHomePage() {
     const guide = safeStr(params.get("guide")).toLowerCase();
     if (guide !== "spotlight") return;
 
-    setGuidedActionFamilyFocus("spotlight");
-    setCollapsed((prev) => ({ ...prev, spotlight: false }));
-
-    if (typeof document !== "undefined") {
-      window.setTimeout(() => {
-        const el = document.getElementById("community-home-spotlight-guided-lane");
-        if (el && typeof el.scrollIntoView === "function") {
-          el.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-      }, 0);
-    }
+    openGuidedSpotlightFamily();
 
     navigate(
       {
@@ -1119,7 +1127,7 @@ export default function CommunityHomePage() {
       },
       { replace: true }
     );
-  }, [location.hash, location.pathname, location.search, navigate]);
+  }, [location.hash, location.pathname, location.search, navigate, openGuidedSpotlightFamily]);
 
   const cumulativeAvailable = getSummaryTotal(
     poolSummary,
@@ -1977,17 +1985,7 @@ function communityButtonGuardProps(): Pick<
         openCommunityShopControl(event);
         break;
       case "spotlight":
-        consumeCommunityButtonEvent(event);
-        setGuidedActionFamilyFocus("spotlight");
-        setCollapsed((prev) => ({ ...prev, spotlight: false }));
-        if (typeof document !== "undefined") {
-          window.setTimeout(() => {
-            const el = document.getElementById("community-home-spotlight-gears");
-            if (el && typeof el.scrollIntoView === "function") {
-              el.scrollIntoView({ behavior: "smooth", block: "start" });
-            }
-          }, 0);
-        }
+        openGuidedSpotlightFamily(event);
         break;
       case "spotlight-free":
         if (nextStep === "cancel") {

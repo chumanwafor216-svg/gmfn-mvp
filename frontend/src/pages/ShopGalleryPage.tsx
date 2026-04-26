@@ -561,13 +561,12 @@ function runGuardedButtonAction(
 
 function buttonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown" | "onClickCapture"
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
 > {
   return {
     onPointerDown: guardButtonPress,
     onTouchStart: guardButtonPress,
     onMouseDown: guardButtonPress,
-    onClickCapture: guardButtonPress,
   };
 }
 

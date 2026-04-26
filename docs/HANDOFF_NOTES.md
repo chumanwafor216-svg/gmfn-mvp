@@ -43,6 +43,74 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 12:20
+
+#### Workstream
+Shared button-stability audit and first interaction cleanup pass for the highest-traffic guided routes.
+
+#### Routes/screens affected
+- `/app/dashboard`
+- `/app/community`
+- `/app/shop-control`
+- public shop/gallery route handled by `ShopGalleryPage`
+- all pages using `NextActionGuide`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/components/NextActionGuide.tsx`
+- `frontend/src/pages/DashboardPage.tsx`
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `frontend/src/components/CommunityShopControlPanel.tsx`
+- `frontend/src/pages/ShopControlPage.tsx`
+- `frontend/src/pages/ShopGalleryPage.tsx`
+
+#### Confirmed facts
+- Parallel audit confirmed the button instability was not one broken button. It was a shared interaction problem caused by overlapping tap-guard systems, duplicated spotlight launch paths, and route-local delayed scroll/open behavior competing with newer guided behavior.
+- `NextActionGuide.tsx` had two activation paths for the main typed submit:
+  - the form submit
+  - the submit button's own guarded click path
+- `NextActionGuide.tsx` also had a root-level click stopper that could compete with page-local handlers.
+- `DashboardPage.tsx` still had its own page-local guard layer (`consumeDashboardButtonEvent`, `runDashboardUiMutation`) on top of the shared guide layer.
+- `CommunityHomePage.tsx` still launched guided spotlight in more than one way:
+  - `?guide=spotlight`
+  - typed/quick guide spotlight action
+  - separate direct spotlight route patterns elsewhere
+- `CommunityShopControlPanel.tsx` and `ShopGalleryPage.tsx` were still using heavier `onClickCapture` button guards, while newer screens had already been moved to lighter down-event-only guards.
+- `ShopControlPage.tsx` still had conflicting spotlight motion paths:
+  - hash-driven spotlight open/scroll
+  - direct `openSpotlightTools(...)` timeout scroll
+  - delayed collapse timer
+- `ShopControlPage.tsx` also had a paid spotlight hash mismatch path in the audit, where paid spotlight intent could target a different id from the actual portal behavior.
+- This pass stabilized the interaction layer by:
+  - making `NextActionGuide` typed submit go through one guarded activation path only
+  - removing the guide root click-swallow layer
+  - simplifying Dashboard local button guards so they stop propagation without extra click cancellation and without extra animation-frame delay
+  - unifying Community Home guided spotlight entry through one shared helper
+  - removing `onClickCapture` from Community Shop Control and Shop Gallery button guards
+  - making Shop Control paid spotlight hash handling, open path, and collapse path follow one calmer route without the older conflicting delay pattern
+- Verification after this pass:
+  - `npm exec -- eslint src/components/NextActionGuide.tsx src/pages/DashboardPage.tsx src/pages/CommunityHomePage.tsx src/components/CommunityShopControlPanel.tsx src/pages/ShopControlPage.tsx src/pages/ShopGalleryPage.tsx`
+  - `npm run build`
+
+#### Open risks or unknowns
+- This is the first shared stabilization pass, not the final universal cleanup. Other pages still contain older route-local `buttonGuardProps()` or local launcher patterns outside these audited hotspots.
+- The bottom-nav route transitions in the global layout were not reworked in this pass.
+- Marketplace and other inner guided families still need the same cleanup pattern once the owner confirms this pass reduces the jumpiness enough in Dashboard, Community Home, Shop Control, and Shop Gallery.
+
+#### Next recommended step
+- Deploy `gmfn-frontend`.
+- Phone-test the highest-traffic actions again:
+  - Dashboard `Find action`
+  - Dashboard guided spotlight handoff
+  - Community Home guided spotlight handoff
+  - Community Home owner spotlight buttons
+  - Shop Control spotlight open/collapse/paid spotlight entry
+  - public shop/gallery action buttons
+- If this pass materially calms the app, continue with a second cleanup wave for Marketplace and the remaining process-led guided families instead of adding new layered button rules.
+
+#### Date
 2026-04-26 12:08
 
 #### Workstream
