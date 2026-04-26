@@ -1400,7 +1400,6 @@ export default function LoanWorkbenchPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("selection")}
             style={collapseToggle()}
           >
@@ -1521,7 +1520,6 @@ export default function LoanWorkbenchPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("summary")}
             style={collapseToggle()}
           >
@@ -1834,7 +1832,6 @@ export default function LoanWorkbenchPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("supporters")}
             style={collapseToggle()}
           >
@@ -2066,7 +2063,6 @@ export default function LoanWorkbenchPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("routes")}
             style={collapseToggle()}
           >

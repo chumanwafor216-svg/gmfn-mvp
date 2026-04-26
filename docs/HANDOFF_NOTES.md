@@ -1,3 +1,35 @@
+## 2026-04-27 01:56
+
+### Workstream
+Loan Workbench passive collapse-toggle guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from passive section-collapse controls in `LoanWorkbenchPage.tsx`.
+- Cleaned these toggles:
+  - `selection`
+  - `summary`
+  - `supporters`
+  - `routes`
+
+### Why
+- These controls only reveal or hide reading/workbench sections, so they did not need the same guard layer as real loan-selection or route-opening actions.
+- This keeps the workbench lighter without changing selected-loan behavior, supporter queue content, or route targets.
+
+### Files touched
+- `frontend/src/pages/LoanWorkbenchPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/loan-workbench`
+
+### Verification
+- `npm exec -- eslint src/pages/LoanWorkbenchPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other dense detail pages may still carry the same unnecessary guard layer on passive collapse controls and can be cleaned in later passes.
+
 ## 2026-04-27 01:48
 
 ### Workstream
