@@ -2311,12 +2311,6 @@ export default function TrustScorePage() {
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/dashboard"
-          nextLinks={[
-            { label: "TrustSlip", to: "/app/trust-slip" },
-            { label: "Notifications", to: "/app/notifications" },
-            { label: "Marketplace", to: "/app/marketplace" },
-          ]}
-          utilityLinks={[{ label: "My GSN and I", to: "/app/my-gmfn-and-i" }]}
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -2386,12 +2380,6 @@ export default function TrustScorePage() {
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/dashboard"
-          nextLinks={[
-            { label: "TrustSlip", to: "/app/trust-slip" },
-            { label: "Notifications", to: "/app/notifications" },
-            { label: "Marketplace", to: "/app/marketplace" },
-          ]}
-          utilityLinks={[{ label: "My GSN and I", to: "/app/my-gmfn-and-i" }]}
         />
 
         <DomainIntroToggle

@@ -43,6 +43,40 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 18:58
+
+#### Workstream
+Trust passport top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/trust`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/TrustScorePage.tsx`
+
+#### Confirmed facts
+- `TrustScorePage.tsx` still exposed top-nav route links while also carrying deeper route actions inside the trust journey and related trust sections.
+- This pass removed the top-nav `nextLinks` and `utilityLinks`, leaving route movement in the page body instead of two competing route bands.
+- Home and back behavior remain intact in the page top navigation.
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/TrustScorePage.tsx`
+  - `npm run build`
+  - build passed
+  - eslint only showed the same pre-existing hook warnings for `revealTrustSection` and `loadAll`
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- A few remaining trust/admin pages may still need similar cleanup, but the main trust-facing family now has much less duplicated route movement.
+
+#### Next recommended step
+- Continue the app-wide cleanup by returning to any remaining heavy operational routes still showing duplicated route bands or stacked button guards during live testing.
+
+---
+
+#### Date
 2026-04-26 18:48
 
 #### Workstream
