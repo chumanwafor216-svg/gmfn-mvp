@@ -739,15 +739,6 @@ export default function GuarantorEarningsPage() {
         homeLabel="Dashboard"
         backTo="/app/loans"
         backLabel="Loans & Support"
-        nextLinks={[
-          { label: "Community Home", to: "/app/community" },
-          { label: "Loan Workbench", to: "/app/loan-workbench" },
-          { label: "Marketplace", to: "/app/marketplace" },
-        ]}
-        utilityLinks={[
-          { label: "Money Out", to: "/app/withdrawal-instructions" },
-          { label: "Loan Suggestions", to: "/app/loan-suggestions" },
-        ]}
       />
 
       <ExplainToggle

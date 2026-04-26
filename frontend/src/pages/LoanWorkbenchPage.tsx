@@ -1231,18 +1231,6 @@ export default function LoanWorkbenchPage() {
         homeLabel="Dashboard"
         backTo="/app/loan-suggestions"
         backLabel="Loan Suggestions"
-        nextLinks={[
-          { label: "Loan Summary", to: selectedLoanId ? `/app/loan-summary/${selectedLoanId}` : "/app/loans" },
-          { label: "Finance", to: "/app/finance" },
-        ]}
-        utilityLinks={
-          workbenchSupportActive
-            ? [{ label: "Loan Suggestions", to: "/app/loan-suggestions" }]
-            : [
-                { label: "Marketplace", to: "/app/marketplace" },
-                { label: "Money Out", to: "/app/withdrawal-instructions" },
-              ]
-        }
       />
 
       <ExplainToggle

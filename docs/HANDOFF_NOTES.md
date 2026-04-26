@@ -43,6 +43,77 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 18:01
+
+#### Workstream
+Loan workbench top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/loan-workbench`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/LoanWorkbenchPage.tsx`
+
+#### Confirmed facts
+- `LoanWorkbenchPage.tsx` still exposed route movement in two places:
+  - top navigation `nextLinks` / `utilityLinks`
+  - lower `Next support routes` / `Next routes`
+- This pass removed the top-nav `nextLinks` and `utilityLinks`, leaving route movement in one place only: the lower routes section.
+- Home and back behavior remain intact in the page top navigation.
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/LoanWorkbenchPage.tsx`
+  - `npm run build`
+  - both passed
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- The next likely remaining duplicated route bands are in other trust/admin operational pages still using `PageTopNav` plus lower route sections.
+
+#### Next recommended step
+- Continue the same top-route simplification audit on the next dense operational route that still carries both `PageTopNav` route links and lower `Next routes`.
+
+---
+
+#### Date
+2026-04-26 17:53
+
+#### Workstream
+Guarantor earnings top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/guarantor-earnings`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/GuarantorEarningsPage.tsx`
+
+#### Confirmed facts
+- `GuarantorEarningsPage.tsx` still carried a second route-movement band in `PageTopNav`.
+- The page already had a lower `Next routes` section, so route movement was duplicated:
+  - top navigation route links
+  - lower `Next routes`
+- This pass removed the top-nav `nextLinks` and `utilityLinks`, leaving route movement in one place only: the lower `Next routes` section.
+- Home and back behavior remain intact in the page top navigation.
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/GuarantorEarningsPage.tsx`
+  - `npm run build`
+  - both passed
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- The next likely remaining duplicated route bands are in pages like `LoanWorkbenchPage.tsx` and trust/admin operational surfaces with both `PageTopNav` links and lower route sections.
+
+#### Next recommended step
+- Continue the same top-route simplification audit on the next dense operational route carrying both top-nav route links and lower route tiles.
+
+---
+
+#### Date
 2026-04-26 17:45
 
 #### Workstream
