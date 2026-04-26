@@ -1539,7 +1539,6 @@ export default function DemandBoxPage() {
             <details>
               <summary
                 {...buttonGuardProps()}
-                onClick={guardButtonPress}
                 style={detailsSummary()}
               >
                 <span>More detail</span>

@@ -43,6 +43,35 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 22:01
+
+#### Workstream
+Demand Box duplicate tap-guard cleanup pass.
+
+#### Routes/screens affected
+- `/app/demand-box`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/DemandBoxPage.tsx`
+
+#### Confirmed facts
+- `DemandBoxPage.tsx` still had one explicit duplicate tap-guard layer on the `More detail` summary control.
+- That control already used shared `buttonGuardProps()` but also added `onClick={guardButtonPress}` on top of it.
+- This pass removed the redundant click-time guard so that summary control now uses only the shared guard layer.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other dense action areas may still have similar old stacked local guard patterns and should continue to be cleaned case by case.
+
+#### Next recommended step
+- Keep following remaining dense local action areas where a control still uses more than one guard layer for the same tap.
+
+---
+
+#### Date
 2026-04-26 21:52
 
 #### Workstream
