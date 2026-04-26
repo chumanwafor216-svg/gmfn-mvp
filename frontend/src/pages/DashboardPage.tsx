@@ -4784,10 +4784,10 @@ export default function DashboardPage() {
     });
   }
 
-  function openSpotlightPanel(event?: React.SyntheticEvent<HTMLElement>) {
-    runDashboardUiMutation(event, () =>
-      updateUiState({ spotlightMinimized: false })
-    );
+  function openDashboardSpotlightGuide(
+    event?: React.SyntheticEvent<HTMLElement>
+  ) {
+    openDashboardRoute(event, DASHBOARD_TARGETS.COMMUNITY_SPOTLIGHT);
   }
 
   function minimizeSpotlight(event?: React.SyntheticEvent<HTMLElement>) {
@@ -7012,11 +7012,11 @@ export default function DashboardPage() {
             {!showSpotlight ? (
               <button
                 type="button"
-                onClick={openSpotlightPanel}
+                onClick={openDashboardSpotlightGuide}
                 onPointerDown={consumeDashboardPointerEvent}
                 style={secondaryBtn(false)}
               >
-                Open spotlight
+                Open spotlight tasks
               </button>
             ) : null}
           </div>
@@ -7096,11 +7096,11 @@ export default function DashboardPage() {
               >
                 <button
                   type="button"
-                  onClick={openSpotlightPanel}
+                  onClick={openDashboardSpotlightGuide}
                   onPointerDown={consumeDashboardPointerEvent}
                   style={primaryBtn(false)}
                 >
-                  Open spotlight
+                  Open spotlight tasks
                 </button>
               </div>
             </div>
@@ -7535,7 +7535,7 @@ export default function DashboardPage() {
                   >
                     <button
                       type="button"
-                      onClick={(event) => openDashboardRoute(event, "/app/community")}
+                      onClick={openDashboardSpotlightGuide}
                       onPointerDown={consumeDashboardPointerEvent}
                       style={spotlightActionButton()}
                     >
@@ -8234,13 +8234,11 @@ export default function DashboardPage() {
               </button>
               <button
                 type="button"
-                onClick={(event) =>
-                  openDashboardRoute(event, DASHBOARD_TARGETS.COMMUNITY)
-                }
+                onClick={openDashboardSpotlightGuide}
                 onPointerDown={consumeDashboardPointerEvent}
                 style={dashboardFillButton(secondaryBtn(false))}
               >
-                Open community home
+                Open spotlight tasks
               </button>
             </div>
           </div>
@@ -8637,8 +8635,6 @@ export default function DashboardPage() {
             )}
 
             <div
-              onClick={consumeDashboardButtonEvent}
-              onPointerDown={consumeDashboardPointerEvent}
               style={{
                 display: "flex",
                 justifyContent: "center",
@@ -8972,11 +8968,7 @@ export default function DashboardPage() {
                 </div>
               ) : null}
 
-              <div
-                onClick={consumeDashboardButtonEvent}
-                onPointerDown={consumeDashboardPointerEvent}
-                style={{ ...dashboardActionGrid(isCompact ? 132 : 156) }}
-              >
+              <div style={{ ...dashboardActionGrid(isCompact ? 132 : 156) }}>
                 <button
                   type="button"
                   onClick={(event) =>

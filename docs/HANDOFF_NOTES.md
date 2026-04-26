@@ -12022,3 +12022,41 @@ GSN-branded invite composer and invite-entry continuity.
 - Result:
   - frontend lint passed
   - frontend build passed
+
+### Dashboard spotlight/task-start buttons stabilized (2026-04-26)
+
+- Product-owner issue:
+  - Dashboard still felt unpredictable for first-time users because Spotlight
+    task-start buttons were not all using the same path
+  - some Dashboard buttons still lived inside passive wrapper layers that could
+    intercept taps around the real button
+- Applied the smallest safe route-local cleanup:
+  - `frontend/src/pages/DashboardPage.tsx`
+    - added one shared Dashboard Spotlight guide launcher and routed Dashboard
+      Spotlight task-start actions through `/app/community?guide=spotlight`
+    - changed Dashboard Spotlight task-entry labels from generic `Open
+      spotlight` / `Open community home` into clearer `Open spotlight tasks`
+      where the real destination is the guided Spotlight family
+    - kept route-local preview/support actions like `Market`, `Shop`, and
+      `Hide` in place
+    - removed passive wrapper click-catchers around the Demand Box primary CTA
+      and Notifications action grid so the real button handles the tap more
+      directly
+    - removed the now-dead old local Spotlight opener so stale underlaying
+      behavior does not linger underneath the newer guided path
+- Route impact:
+  - `/app/dashboard`
+- Shared logic impact:
+  - no backend change
+  - no cross-route contract change beyond Dashboard using the already-existing
+    Community Home guided Spotlight route more consistently
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/DashboardPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed
+  - ready for phone regression on Dashboard `Find action`, Spotlight task
+    entry, Demand Box primary action, and Notifications action buttons
