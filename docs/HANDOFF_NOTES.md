@@ -1,3 +1,32 @@
+## 2026-04-27 02:52
+
+### Workstream
+Community Home spotlight-family collapse cleanup pass.
+
+### What changed
+- Removed the action-level `communityButtonGuardProps()` layer from the passive spotlight-family close control in `CommunityHomePage.tsx`.
+- Cleaned this control:
+  - guided spotlight surface `Collapse`
+
+### Why
+- This control only exits the temporary spotlight-family focus mode, so it did not need the same action-level guard as real route-launch or owner-action buttons.
+- This keeps Community Home lighter without changing spotlight routing, owner controls, or guided-family logic.
+
+### Files touched
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/community`
+
+### Verification
+- `npm exec -- eslint src/pages/CommunityHomePage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small guided-family close/open controls may still carry the same unnecessary guard layer and can be cleaned in later passes.
+
 ## 2026-04-27 02:45
 
 ### Workstream
