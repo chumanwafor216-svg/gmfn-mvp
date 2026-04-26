@@ -1136,8 +1136,7 @@ export default function BuildFirstCirclePage() {
                     key={role}
                     type="button"
                     {...buttonGuardProps()}
-                    onClick={(event) => {
-                      guardButtonPress(event);
+                    onClick={() => {
                       setRole(role);
                     }}
                     style={active ? actionBtn("primary") : actionBtn("secondary")}
@@ -1318,8 +1317,7 @@ export default function BuildFirstCirclePage() {
                   <button
                     type="button"
                     {...buttonGuardProps()}
-                    onClick={(event) => {
-                      guardButtonPress(event);
+                    onClick={() => {
                       addManualContact();
                     }}
                     style={actionBtn("primary")}
@@ -1330,8 +1328,7 @@ export default function BuildFirstCirclePage() {
                   <button
                     type="button"
                     {...buttonGuardProps()}
-                    onClick={(event) => {
-                      guardButtonPress(event);
+                    onClick={() => {
                       setManualForm(defaultManualForm());
                     }}
                     style={actionBtn("secondary")}
@@ -1353,8 +1350,7 @@ export default function BuildFirstCirclePage() {
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={(event) => {
-                    guardButtonPress(event);
+                  onClick={() => {
                     void addFromPhoneContacts();
                   }}
                   disabled={pickingContacts}
@@ -1411,8 +1407,7 @@ export default function BuildFirstCirclePage() {
             <button
               type="button"
               {...buttonGuardProps()}
-              onClick={(event) => {
-                guardButtonPress(event);
+              onClick={() => {
                 toggleSection("contacts");
               }}
               style={collapseToggle()}
@@ -1490,8 +1485,7 @@ export default function BuildFirstCirclePage() {
                       <button
                         type="button"
                         {...buttonGuardProps()}
-                        onClick={(event) => {
-                          guardButtonPress(event);
+                        onClick={() => {
                           toggleSelected(item.id);
                         }}
                         style={item.selected ? actionBtn("primary") : actionBtn("secondary")}
@@ -1502,8 +1496,7 @@ export default function BuildFirstCirclePage() {
                       <button
                         type="button"
                         {...buttonGuardProps()}
-                        onClick={(event) => {
-                          guardButtonPress(event);
+                        onClick={() => {
                           removeContact(item.id);
                         }}
                         style={actionBtn("soft")}
@@ -1539,8 +1532,7 @@ export default function BuildFirstCirclePage() {
           <button
             type="button"
             {...buttonGuardProps()}
-            onClick={(event) => {
-              guardButtonPress(event);
+            onClick={() => {
               toggleSection("invite");
             }}
             style={collapseToggle()}
@@ -1602,8 +1594,7 @@ export default function BuildFirstCirclePage() {
                   <button
                     type="button"
                     {...buttonGuardProps()}
-                    onClick={(event) => {
-                      guardButtonPress(event);
+                    onClick={() => {
                       copyInviteBundle();
                     }}
                     disabled={readyContacts.length === 0}
@@ -1615,8 +1606,7 @@ export default function BuildFirstCirclePage() {
                   <button
                     type="button"
                     {...buttonGuardProps()}
-                    onClick={(event) => {
-                      guardButtonPress(event);
+                    onClick={() => {
                       resetDraft();
                     }}
                     style={actionBtn("secondary")}

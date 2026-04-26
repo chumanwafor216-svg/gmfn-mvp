@@ -12407,3 +12407,43 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend build passed
   - the create-community onboarding reveals are now at a safer checkpoint for
     continued phone testing
+
+### Build First Circle buttons reached a calmer safe checkpoint (2026-04-26)
+
+- Product-owner issue:
+  - the first-circle setup flow still had many buttons guarded twice on the same
+    tap
+  - buttons already used shared `buttonGuardProps()` and then called
+    `guardButtonPress(event)` again inside `onClick`
+  - this kind of stacked event handling is one of the patterns that can make
+    the app feel hesitant or jumpy under repeated use
+- Applied the smallest safe interaction cleanup:
+  - `frontend/src/pages/BuildFirstCirclePage.tsx`
+    - removed the redundant inner `guardButtonPress(event)` calls from the main
+      first-circle actions while keeping the shared guard props in place
+    - affected actions include:
+      - role choice buttons
+      - `Add Person`
+      - `Clear Form`
+      - `Choose from Phone Contacts`
+      - `Open` / `Collapse` for people review
+      - `Included` / `Include`
+      - `Remove`
+      - `Open` / `Collapse` for invite message
+      - `Copy Invite Bundle`
+      - `Reset First Circle`
+- Routes impacted:
+  - `/app/build-first-circle`
+- Shared logic impact:
+  - no backend change
+  - this is a frontend button-stability pass only
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/BuildFirstCirclePage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed
+  - the first-circle setup buttons are now at a safer checkpoint for continued
+    phone testing
