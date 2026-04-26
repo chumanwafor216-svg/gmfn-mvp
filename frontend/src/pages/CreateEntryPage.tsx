@@ -774,7 +774,6 @@ export default function CreateEntryPage() {
             </button>
             <button
               type="button"
-              {...buttonGuardProps()}
               onClick={() => setExistingMemberOpen(false)}
               style={{
                 ...secondaryBtn(),

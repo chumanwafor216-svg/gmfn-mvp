@@ -1,3 +1,32 @@
+## 2026-04-27 02:37
+
+### Workstream
+Create entry existing-member helper toggle cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from the passive close control in `CreateEntryPage.tsx`.
+- Cleaned this toggle:
+  - existing-member helper `Stay here`
+
+### Why
+- This control only collapses the existing-member helper panel, so it did not need the same action-level guard as the actual sign-in action.
+- This keeps the create-community onboarding lane lighter without changing sign-in, verification, bank-details, or community-submit logic.
+
+### Files touched
+- `frontend/src/pages/CreateEntryPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- public create-community onboarding route rendered by `CreateEntryPage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/CreateEntryPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small helper close/open controls may still carry the same unnecessary guard layer and can be cleaned in later passes.
+
 ## 2026-04-27 02:31
 
 ### Workstream
