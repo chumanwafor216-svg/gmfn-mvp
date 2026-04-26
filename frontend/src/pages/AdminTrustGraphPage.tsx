@@ -670,11 +670,6 @@ export default function AdminTrustGraphPage() {
           homeLabel="Dashboard"
           backTo="/app/command-center"
           backLabel="Command Center"
-          nextLinks={[
-            { label: "Trust Analytics", to: "/app/command-center/trust-analytics" },
-            { label: "System Operations", to: "/app/command-center/system-operations" },
-          ]}
-          utilityLinks={[{ label: "Exposure", to: "/app/command-center/exposure" }]}
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -704,11 +699,6 @@ export default function AdminTrustGraphPage() {
         homeLabel="Dashboard"
         backTo="/app/command-center"
         backLabel="Command Center"
-        nextLinks={[
-          { label: "Trust Analytics", to: "/app/command-center/trust-analytics" },
-          { label: "System Operations", to: "/app/command-center/system-operations" },
-        ]}
-        utilityLinks={[{ label: "Exposure", to: "/app/command-center/exposure" }]}
       />
 
       <ExplainToggle

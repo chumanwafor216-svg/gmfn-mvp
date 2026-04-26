@@ -43,6 +43,43 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 18:28
+
+#### Workstream
+Trust analytics and trust graph top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/command-center/trust-analytics`
+- `/app/command-center/trust-graph`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/TrustAnalyticsPage.tsx`
+- `frontend/src/pages/AdminTrustGraphPage.tsx`
+
+#### Confirmed facts
+- Both trust-admin pages were still carrying duplicated route movement:
+  - top navigation `nextLinks` / `utilityLinks`
+  - lower route bands (`Where next` / `Next routes`)
+- This pass removed the top-nav `nextLinks` and `utilityLinks` from both pages, leaving route movement in one place only: the lower route section.
+- Home and back behavior remain intact in the page top navigation for both routes.
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/TrustAnalyticsPage.tsx src/pages/AdminTrustGraphPage.tsx`
+  - `npm run build`
+  - both passed
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Remaining trust/admin pages with both top-nav route links and lower route sections may still need the same cleanup.
+
+#### Next recommended step
+- Continue the same top-route simplification audit into the remaining trust/admin operational surfaces, especially `TrustCommandCentrePage` and related trust pages still carrying duplicated route bands.
+
+---
+
+#### Date
 2026-04-26 18:16
 
 #### Workstream

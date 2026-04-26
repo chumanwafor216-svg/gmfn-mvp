@@ -625,11 +625,6 @@ export default function TrustAnalyticsPage() {
           homeLabel="Dashboard"
           backTo="/app/command-center"
           backLabel="Command Center"
-          nextLinks={[
-            { label: "System Operations", to: "/app/command-center/system-operations" },
-            { label: "Exposure", to: "/app/command-center/exposure" },
-          ]}
-          utilityLinks={[{ label: "Trust Graph", to: "/app/command-center/trust-graph" }]}
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -659,11 +654,6 @@ export default function TrustAnalyticsPage() {
         homeLabel="Dashboard"
         backTo="/app/command-center"
         backLabel="Command Center"
-        nextLinks={[
-          { label: "System Operations", to: "/app/command-center/system-operations" },
-          { label: "Exposure", to: "/app/command-center/exposure" },
-        ]}
-        utilityLinks={[{ label: "Trust Graph", to: "/app/command-center/trust-graph" }]}
       />
 
       <ExplainToggle
