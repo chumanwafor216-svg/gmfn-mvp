@@ -1014,7 +1014,6 @@ export default function GuarantorInboxPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("overview")}
             style={collapseToggle()}
           >
@@ -1109,7 +1108,6 @@ export default function GuarantorInboxPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("queue")}
             style={collapseToggle()}
           >
@@ -1297,7 +1295,6 @@ export default function GuarantorInboxPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("guidance")}
             style={collapseToggle()}
           >
@@ -1370,7 +1367,6 @@ export default function GuarantorInboxPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("routes")}
             style={collapseToggle()}
           >
