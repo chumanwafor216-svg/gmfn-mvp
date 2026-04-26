@@ -1461,7 +1461,6 @@ export default function ShopControlPage() {
   }
 
   function collapseSpotlightTools(event?: React.SyntheticEvent<HTMLElement>) {
-    event?.preventDefault();
     event?.stopPropagation();
 
     setSpotlightOpen(false);

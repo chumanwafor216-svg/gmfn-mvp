@@ -43,6 +43,37 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 23:38
+
+#### Workstream
+Shop spotlight collapse-button click-barrier cleanup pass.
+
+#### Routes/screens affected
+- `/app/shop-control`
+- Spotlight Portal inside Shop Control
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/ShopControlPage.tsx`
+
+#### Confirmed facts
+- The Spotlight Portal `Collapse Spotlight` direct button still used `collapseSpotlightTools(...)`, and that helper still forced `event.preventDefault()` on click.
+- That button already uses the shared `buttonGuardProps()` pointer/touch guard layer, so the extra click-time default blocking was unnecessary heaviness.
+- This pass removed only the `preventDefault()` call from `collapseSpotlightTools(...)` and kept `stopPropagation()`.
+- Spotlight open/collapse behavior, route targets, and publish flow did not change.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other dense Shop Control direct-button helpers may still carry small leftover click-time barriers and can be cleaned in later passes.
+
+#### Next recommended step
+- Continue targeting remaining direct-button helpers on high-touch owner surfaces where a shared pointer/touch guard already exists but click-time default blocking is still layered underneath.
+
+---
+
+#### Date
 2026-04-26 23:28
 
 #### Workstream
