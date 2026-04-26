@@ -43,6 +43,58 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 15:42
+
+#### Workstream
+Money-out decision-lane simplification pass for `WithdrawalInstructionsPage`.
+
+#### Routes/screens affected
+- `/app/withdrawal-instructions`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+
+#### Confirmed facts
+- Deeper inspection showed `WithdrawalInstructionsPage.tsx` no longer had the old shop-style duplicate guard helper stack, but it still had a different kind of underlayer:
+  - the same primary route action was exposed twice on the same page
+  - once in `Withdrawal decision lane`
+  - again in `Execution actions`
+- That meant the route was presenting two competing places to do the same thing:
+  - `Continue Direct Withdrawal`
+  - or `Continue To Loan Readiness`
+- This pass removed that duplication in the least risky way:
+  - the actual submit/continue action now stays in the `Withdrawal decision lane`
+  - the lower `Execution actions` panel no longer repeats the same primary action
+  - that panel now explains the current state instead:
+    - awaiting pool reading
+    - use the decision lane above
+    - support path already chosen
+- The result area therefore stays focused on post-decision execution and next routes instead of competing with the decision section.
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/WithdrawalInstructionsPage.tsx`
+  - `npm run build`
+  - eslint reports the same pre-existing hook-dependency warning around `loadPage`
+  - no new lint errors were introduced
+  - build passed
+
+#### Open risks or unknowns
+- `PaymentInstructionsPage.tsx` still has dense action bands and may need the same style of “one clear decision point” simplification if live testing says Money In still feels physically heavy.
+- Other routes may still keep older local button-guard patterns, but this pass was specifically about removing a duplicate route-action band rather than guard stacking.
+- Marketplace, Dashboard, Community Home, Shop-family routes, and the money-side routes should still be treated as safe checkpoints rather than final freeze states until the broader live phone testing round is complete.
+
+#### Next recommended step
+- Deploy `gmfn-frontend`.
+- Phone-test `/app/withdrawal-instructions`, especially:
+  - amount entry
+  - direct withdrawal decision
+  - support-backed continuation decision
+  - result section after the decision
+- If Money Out now feels materially calmer, inspect `PaymentInstructionsPage.tsx` for the same “too many action bands for one task” pattern.
+
+#### Date
 2026-04-26 15:05
 
 #### Workstream

@@ -2423,51 +2423,33 @@ export default function WithdrawalInstructionsPage() {
 
               <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                 {!effectiveAvailableKnown ? (
-                  <button
-                    {...buttonGuardProps()}
-                    type="button"
-                    disabled
-                    style={actionBtn("primary", true)}
-                  >
-                    Awaiting Pool Reading
-                  </button>
-                ) : !requiresSupport ? (
-                  <button
-                    {...buttonGuardProps()}
-                    type="button"
-                    onClick={() => void handleDirectWithdrawal()}
-                    disabled={
-                      submittingWithdrawal ||
-                      requestedAmount <= 0 ||
-                      !communityRailReady ||
-                      !payoutReady
-                    }
-                    style={actionBtn(
-                      "primary",
-                      submittingWithdrawal ||
-                        requestedAmount <= 0 ||
-                        !communityRailReady ||
-                        !payoutReady
-                    )}
-                  >
-                    {submittingWithdrawal
-                      ? "Submitting..."
-                      : "Submit Direct Withdrawal"}
-                  </button>
-                ) : (
-                  <button
-                    {...buttonGuardProps()}
-                    type="button"
-                    onClick={handleContinueToSupportPath}
-                    disabled={requestedAmount <= 0 || !communityRailReady || !payoutReady}
-                    style={actionBtn(
-                      "primary",
-                      requestedAmount <= 0 || !communityRailReady || !payoutReady
-                    )}
-                  >
-                    Continue To Loan Readiness
-                  </button>
-                )}
+                  <div style={innerCard("#FFFBEF")}>
+                    <div style={sectionLabel()}>Awaiting pool reading</div>
+                    <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                      The execution path is still waiting for the effective-available
+                      pool reading. Once that reading is visible, use the decision lane
+                      above to continue with the right route.
+                    </div>
+                  </div>
+                ) : !requiresSupport && !latestWithdrawalResult ? (
+                  <div style={innerCard("#F8FBFF")}>
+                    <div style={sectionLabel()}>Use the decision lane above</div>
+                    <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                      Submit direct withdrawal from the decision lane after you confirm
+                      the amount, community rail, and personal payout account. This
+                      result area stays focused on what happened after that step.
+                    </div>
+                  </div>
+                ) : requiresSupport && !withdrawalCanWidenRoutes ? (
+                  <div style={innerCard("#F8FBFF")}>
+                    <div style={sectionLabel()}>Support path chosen</div>
+                    <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                      This route has already determined that support is needed. Continue
+                      below with the support pages instead of repeating the same decision
+                      action here.
+                    </div>
+                  </div>
+                ) : null}
 
                 {requiresSupport ? (
                   <>
