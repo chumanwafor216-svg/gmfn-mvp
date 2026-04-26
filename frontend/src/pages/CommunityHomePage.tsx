@@ -1180,44 +1180,10 @@ export default function CommunityHomePage() {
         id: "spotlight",
         label: "Spotlight",
         detail:
-          "Choose the exact spotlight work you want to do next, then GSN will check the requirement and lead you from there.",
+          "Open the spotlight work area, then choose the exact spotlight path there.",
         technical: "Shop Control spotlight",
         keywords: ["spotlight", "picture", "video", "advert", "visibility"],
-        children: [
-          {
-            id: "spotlight-free",
-            label: "Free spotlight",
-            detail:
-              "Prepare the normal community spotlight with upload, preview, and publish.",
-            technical: "Free spotlight",
-            keywords: ["free spotlight", "community spotlight", "normal spotlight"],
-            tone: "primary",
-          },
-          {
-            id: "spotlight-paid",
-            label: "Subscription spotlight",
-            detail:
-              "Use the paid spotlight lane when you want subscription-based priority visibility.",
-            technical: "Paid spotlight",
-            keywords: ["paid spotlight", "subscription spotlight", "priority spotlight"],
-          },
-          {
-            id: "spotlight-vault",
-            label: "Vault",
-            detail:
-              "Open the private shop lane for selected people and permission-based access.",
-            technical: "Vault",
-            keywords: ["vault", "private offers", "private gallery"],
-          },
-          {
-            id: "spotlight-shop-setup",
-            label: "Shop setup",
-            detail:
-              "Prepare or complete the shop details first before spotlight or Vault work begins.",
-            technical: "Shop setup",
-            keywords: ["shop setup", "prepare shop", "shop details"],
-          },
-        ],
+        tone: "primary",
       },
       {
         id: "finance",
@@ -1284,6 +1250,45 @@ export default function CommunityHomePage() {
         "Spotlight publishing belongs inside Shop Control so your shop picture, products, Vault, and visibility stay in one clean place.",
     };
   }, [activeCommunitySpotlight]);
+
+  const spotlightHandleItems = useMemo<NextActionGuideItem[]>(
+    () => [
+      {
+        id: "spotlight-free",
+        label: "Free spotlight",
+        detail:
+          "Make the normal community spotlight with upload, preview, and publish.",
+        technical: "Free spotlight",
+        keywords: ["free spotlight", "community spotlight", "normal spotlight"],
+        tone: "primary",
+      },
+      {
+        id: "spotlight-paid",
+        label: "Subscription spotlight",
+        detail:
+          "Use the paid spotlight lane when you want subscription-based priority visibility.",
+        technical: "Paid spotlight",
+        keywords: ["paid spotlight", "subscription spotlight", "priority spotlight"],
+      },
+      {
+        id: "spotlight-vault",
+        label: "Vault",
+        detail:
+          "Open the private shop lane for selected people and permission-based access.",
+        technical: "Vault",
+        keywords: ["vault", "private offers", "private gallery"],
+      },
+      {
+        id: "spotlight-shop-setup",
+        label: "Shop setup",
+        detail:
+          "Prepare or complete the shop details first before spotlight or Vault work begins.",
+        technical: "Shop setup",
+        keywords: ["shop setup", "prepare shop", "shop details"],
+      },
+    ],
+    []
+  );
 
   async function resolveCommunityNextAction(
     item: NextActionGuideItem
@@ -1947,6 +1952,16 @@ function communityButtonGuardProps(): Pick<
         break;
       case "spotlight":
         consumeCommunityButtonEvent(event);
+        setGuidedActionFamilyFocus("spotlight");
+        setCollapsed((prev) => ({ ...prev, spotlight: false }));
+        if (typeof document !== "undefined") {
+          window.setTimeout(() => {
+            const el = document.getElementById("community-home-spotlight-gears");
+            if (el && typeof el.scrollIntoView === "function") {
+              el.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          }, 0);
+        }
         break;
       case "spotlight-free":
         if (nextStep === "cancel") {
@@ -2065,6 +2080,26 @@ function communityButtonGuardProps(): Pick<
     } finally {
       setChangingClanId(0);
     }
+  }
+
+  async function handleSpotlightHandle(
+    item: NextActionGuideItem,
+    event?: React.SyntheticEvent<HTMLElement>
+  ) {
+    consumeCommunityButtonEvent(event);
+
+    const resolution = await resolveCommunityNextAction(item).catch((error: any) => {
+      showNotice(
+        "error",
+        safeStr(error?.message) ||
+          "GSN could not check that spotlight step just now."
+      );
+      return null;
+    });
+
+    if (!resolution) return;
+
+    handleCommunityNextAction(item, event, resolution);
   }
 
   async function openSelectedMarketplaceLinks(
@@ -2425,21 +2460,23 @@ function communityButtonGuardProps(): Pick<
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
-      <NextActionGuide
-        storageKey="gmfn.communityHome.nextActionGuide.v1"
-        compact={isCompact}
-        items={communityNextActionItems}
-        resolveSelection={resolveCommunityNextAction}
-        onBranchChange={(item) =>
-          setGuidedActionFamilyFocus(item?.id === "spotlight" ? "spotlight" : null)
-        }
-        onSelect={handleCommunityNextAction}
-        intro={communityNextActionIntro}
-      />
+      {!spotlightGuidanceSuspendedView ? (
+        <NextActionGuide
+          storageKey="gmfn.communityHome.nextActionGuide.v1"
+          compact={isCompact}
+          items={communityNextActionItems}
+          resolveSelection={resolveCommunityNextAction}
+          onSelect={handleCommunityNextAction}
+          intro={communityNextActionIntro}
+        />
+      ) : null}
 
       {spotlightGuidanceSuspendedView ? (
-        <section style={{ ...communityBlockCard("gold"), order: 18 }}>
-          <div style={sectionLabel()}>Spotlight task in progress</div>
+        <section
+          id="community-home-spotlight-guided-lane"
+          style={{ ...communityBlockCard("gold"), order: 18 }}
+        >
+          <div style={sectionLabel()}>What do you want to do next?</div>
           <div
             style={{
               marginTop: 10,
@@ -2450,7 +2487,7 @@ function communityButtonGuardProps(): Pick<
               maxWidth: 760,
             }}
           >
-            GSN is guiding only your spotlight work right now.
+            Spotlight
           </div>
           <div
             style={{
@@ -2462,8 +2499,8 @@ function communityButtonGuardProps(): Pick<
             }}
           >
             Community Home is suspended for this moment so unrelated tasks do not
-            compete for attention. Choose the spotlight path you want, let GSN
-            check the requirement, then continue or go back one step.
+            compete for attention. Choose the spotlight path you want, and GSN
+            will check what must be done first before it continues.
           </div>
           <div
             style={{
@@ -2474,11 +2511,8 @@ function communityButtonGuardProps(): Pick<
               maxWidth: 860,
             }}
           >
-            Normal order:
-            {" "}choose the spotlight handle,
-            {" "}let GSN check the requirement,
-            {" "}and if your shop is not ready yet, GSN will tell you to prepare
-            the shop first before spotlight can begin.
+            If your shop is not ready yet, GSN will tell you to prepare the shop
+            first before spotlight can begin.
           </div>
           <div
             style={{
@@ -2489,11 +2523,93 @@ function communityButtonGuardProps(): Pick<
             }}
           >
             <span style={badge(true)}>Only spotlight is active here</span>
-            <span style={badge(false)}>Free spotlight</span>
-            <span style={badge(false)}>Subscription spotlight</span>
-            <span style={badge(false)}>Vault</span>
-            <span style={badge(false)}>Shop setup</span>
-            <span style={badge(false)}>Back one step restores Community Home</span>
+            <span style={badge(false)}>Back restores Community Home</span>
+          </div>
+          <div
+            style={{
+              marginTop: 18,
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "1fr"
+                : "repeat(2, minmax(0, 1fr))",
+              gap: 12,
+            }}
+          >
+            {spotlightHandleItems.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                {...communityButtonGuardProps()}
+                onClick={(event) => {
+                  void handleSpotlightHandle(item, event);
+                }}
+                style={{
+                  ...actionBtn(item.tone || "secondary"),
+                  minHeight: isCompact ? 76 : 86,
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  justifyContent: "flex-start",
+                  textAlign: "left",
+                  gap: 6,
+                  padding: isCompact ? "12px 14px" : "14px 16px",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 900,
+                    lineHeight: 1.18,
+                    color: item.tone === "primary" ? "#F8FBFF" : "#102A43",
+                  }}
+                >
+                  {item.label}
+                </span>
+                <span
+                  style={{
+                    fontSize: 12.5,
+                    lineHeight: 1.4,
+                    fontWeight: 760,
+                    color:
+                      item.tone === "primary"
+                        ? "rgba(248,251,255,0.84)"
+                        : "#52677C",
+                  }}
+                >
+                  {item.detail}
+                </span>
+              </button>
+            ))}
+          </div>
+          <div
+            style={{
+              marginTop: 16,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <button
+              type="button"
+              {...communityButtonGuardProps()}
+              onClick={(event) => {
+                consumeCommunityButtonEvent(event);
+                setGuidedActionFamilyFocus(null);
+              }}
+              style={actionBtn("secondary")}
+            >
+              Back to Community Home
+            </button>
+            <button
+              type="button"
+              {...communityButtonGuardProps()}
+              onClick={(event) => {
+                consumeCommunityButtonEvent(event);
+                setGuidedActionFamilyFocus(null);
+              }}
+              style={actionBtn("secondary")}
+            >
+              Cancel
+            </button>
           </div>
         </section>
       ) : null}

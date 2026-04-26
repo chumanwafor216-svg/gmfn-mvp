@@ -11496,3 +11496,35 @@ GSN-branded invite composer and invite-entry continuity.
 - Result:
   - frontend lint passed
   - frontend build passed
+
+### Spotlight is now treated as an intent entry that opens a dedicated spotlight task surface (2026-04-26)
+
+- Product-owner direction:
+  - `What do you want to do next?` should identify the user's intent
+  - after the user chooses `Spotlight`, the app should hand off into a proper
+    spotlight decision surface instead of keeping the user inside a small guide
+    widget
+  - the real spotlight handles should then live on that dedicated surface
+- Applied the smallest safe route-local refactor:
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - `Spotlight` in the next-action guide is now a single intent entry, not a
+      child-action tree inside the guide
+    - choosing `Spotlight` now opens the dedicated spotlight task surface in
+      Community Home
+    - that surface now carries the real spotlight handles directly:
+      - `Free spotlight`
+      - `Subscription spotlight`
+      - `Vault`
+      - `Shop setup`
+    - spotlight handle buttons now run the same prerequisite checks and then
+      continue into the correct route
+    - if a shop must be prepared first, the existing spotlight prerequisite
+      logic is still reused
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/CommunityHomePage.tsx src/components/NextActionGuide.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed
