@@ -1672,15 +1672,12 @@ export default function LoanSuggestionsPage() {
 
                     <div
                       style={{
-                        display: "flex",
-                        justifyContent: isCompact ? "flex-start" : "flex-end",
-                        gap: 10,
-                        flexWrap: "wrap",
+                        marginTop: 10,
+                        ...helperText(),
+                        fontSize: 13,
                       }}
                     >
-                      <OriginLink to="/app/loan-workbench" style={actionBtn("secondary")}>
-                        Open Loan Workbench
-                      </OriginLink>
+                      If this fit looks strong enough, use Next routes below to continue into Loan Workbench.
                     </div>
                   </div>
                 </div>

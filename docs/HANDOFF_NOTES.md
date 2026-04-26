@@ -43,6 +43,47 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 17:09
+
+#### Workstream
+Loan suggestions route-action simplification pass.
+
+#### Routes/screens affected
+- `/app/loan-suggestions`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/LoanSuggestionsPage.tsx`
+
+#### Confirmed facts
+- Deeper inspection showed `LoanSuggestionsPage.tsx` still had a repeated route-exit pattern inside the suggestion cards:
+  - each suggestion card offered `Open Loan Workbench`
+  - the lower `Next routes` section already owned `Loan Workbench` as part of the broader support movement
+- That meant the page was still mixing suggestion reading with route navigation inside each card.
+- This pass removed the per-card `Open Loan Workbench` button and left the suggestion cards focused on fit reading and evidence.
+- The cards now explain plainly that the user should continue through the lower `Next routes` section if the fit looks strong enough.
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/LoanSuggestionsPage.tsx`
+  - `npm run build`
+  - build passed
+  - eslint still shows the same pre-existing `loadSuggestionsForLoan` hook warning on that page, with no new errors
+
+#### Open risks or unknowns
+- The broader app still remains in safe-checkpoint mode rather than final freeze mode.
+- Other dense operational routes may still keep duplicated action bands or heavier local guard layering.
+
+#### Next recommended step
+- Deploy `gmfn-frontend`.
+- Phone-test `/app/loan-suggestions`, especially:
+  - suggestion-card reading
+  - copy actions
+  - collapse/open controls
+  - lower `Next routes`
+- If `Loan Suggestions` now feels materially calmer, continue the deeper audit in the next route that still feels physically heavy in live testing.
+
+#### Date
 2026-04-26 17:02
 
 #### Workstream
