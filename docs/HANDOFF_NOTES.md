@@ -11730,3 +11730,6 @@ GSN-branded invite composer and invite-entry continuity.
 - Result:
   - frontend lint passed
   - frontend build passed
+  - product-owner confirmed the phone behavior is now under control and this
+    Dashboard attention-guide lane should be treated as frozen unless a later
+    task explicitly asks to change it
