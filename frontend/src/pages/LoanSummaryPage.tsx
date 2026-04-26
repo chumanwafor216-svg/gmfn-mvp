@@ -2087,21 +2087,12 @@ export default function LoanSummaryPage() {
               <div
                 style={{
                   marginTop: 14,
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
+                  ...helperText(),
                 }}
               >
-                <OriginLink
-                  to={`/app/payment/loans/${summary.id}`}
-                  style={primaryBtn(!canRepay)}
-                >
-                  {canRepay ? "Loan Payment Instructions" : "Repayment Opens After Approval"}
-                </OriginLink>
-
-                <OriginLink to="/app/finance" style={secondaryBtn(false)}>
-                  See this in Finance
-                </OriginLink>
+                {canRepay
+                  ? "When you are ready to move from repayment evidence into the money route, use Next routes below."
+                  : "Repayment opens after approval or disbursement. Use Next routes below when the support item is ready to move forward."}
               </div>
             </>
           ) : null}

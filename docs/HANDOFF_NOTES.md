@@ -43,6 +43,47 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 17:02
+
+#### Workstream
+Loan summary repayment-route simplification pass.
+
+#### Routes/screens affected
+- `/app/loan-summary/:loanId`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/LoanSummaryPage.tsx`
+
+#### Confirmed facts
+- Deeper inspection showed `LoanSummaryPage.tsx` still had one remaining duplicated route-movement band:
+  - the `Repayment evidence` section offered `Loan Payment Instructions` and `See this in Finance`
+  - the lower `Next routes` section already offered the same route movement choices in the broader loan context
+- That meant the page was still mixing evidence reading with route navigation inside the repayment section.
+- This pass removed the repayment-section route buttons and left repayment focused on evidence, expectation state, and plain-language next-step explanation.
+- Route movement now stays together in the lower `Next routes` section only.
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/LoanSummaryPage.tsx`
+  - `npm run build`
+  - build passed
+  - eslint still shows the same pre-existing `refreshAll` hook warning on that page, with no new errors
+
+#### Open risks or unknowns
+- The broader app still remains in safe-checkpoint mode rather than final freeze mode.
+- Other dense operational routes may still keep duplicated action bands or heavier local guard layering.
+
+#### Next recommended step
+- Deploy `gmfn-frontend`.
+- Phone-test `/app/loan-summary/:loanId`, especially:
+  - repayment evidence reading
+  - guarantor decision controls
+  - copy actions
+  - lower `Next routes`
+- If `Loan Summary` now feels materially calmer, continue the deeper audit in the next route that still feels physically heavy in live testing.
+
+#### Date
 2026-04-26 16:48
 
 #### Workstream
