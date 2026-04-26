@@ -11387,3 +11387,34 @@ GSN-branded invite composer and invite-entry continuity.
 - Result:
   - frontend lint passed
   - frontend build passed
+
+### Community Home now suspends unrelated sections while Spotlight guidance is active (2026-04-26)
+
+- Product-owner correction:
+  - once the person chooses `Spotlight` inside `What do you want to do next?`,
+    Community Home should stop showing unrelated tools
+  - the guide should hold the screen on the spotlight task until the person
+    continues, goes back one step, or cancels
+- Applied the smallest safe route-local fix:
+  - `frontend/src/components/NextActionGuide.tsx`
+    - added optional `onBranchChange` so a route can react when the guide enters
+      or leaves a child-action family
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - Community Home now detects when the guide is inside the `Spotlight`
+      family
+    - while that spotlight family is active, the rest of Community Home is
+      hidden
+    - the screen now keeps only:
+      - the guide itself
+      - any notice
+      - one spotlight-task explanation card
+    - backing out of the spotlight family restores the wider Community Home
+      surface
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/components/NextActionGuide.tsx src/pages/CommunityHomePage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed

@@ -931,6 +931,9 @@ export default function CommunityHomePage() {
   );
   const collapseToggleTimersRef = useRef<number[]>([]);
   const [shopControlOpenSignal, setShopControlOpenSignal] = useState(0);
+  const [guidedActionFamilyFocus, setGuidedActionFamilyFocus] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1078,6 +1081,7 @@ export default function CommunityHomePage() {
   );
   const communityNextActionIntro =
     "Tick what you want to do here, or write it in simple words. GSN will check the first required step and lead you from there.";
+  const spotlightGuidanceSuspendedView = guidedActionFamilyFocus === "spotlight";
 
   const cumulativeAvailable = getSummaryTotal(
     poolSummary,
@@ -2253,6 +2257,7 @@ function communityButtonGuardProps(): Pick<
     >
       <CommunityShellLayers isCompact={isCompact} />
       <div style={communityContentStyle(isCompact)}>
+      {!spotlightGuidanceSuspendedView ? (
       <section style={communityHeroStyle(isCompact)}>
         <div
           style={{
@@ -2411,6 +2416,7 @@ function communityButtonGuardProps(): Pick<
           </div>
         </div>
       </section>
+      ) : null}
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
@@ -2419,10 +2425,57 @@ function communityButtonGuardProps(): Pick<
         compact={isCompact}
         items={communityNextActionItems}
         resolveSelection={resolveCommunityNextAction}
+        onBranchChange={(item) =>
+          setGuidedActionFamilyFocus(item?.id === "spotlight" ? "spotlight" : null)
+        }
         onSelect={handleCommunityNextAction}
         intro={communityNextActionIntro}
       />
 
+      {spotlightGuidanceSuspendedView ? (
+        <section style={{ ...communityBlockCard("gold"), order: 18 }}>
+          <div style={sectionLabel()}>Spotlight task in progress</div>
+          <div
+            style={{
+              marginTop: 10,
+              color: "#0B1F33",
+              fontSize: isCompact ? 24 : 28,
+              fontWeight: 900,
+              lineHeight: 1.15,
+              maxWidth: 760,
+            }}
+          >
+            GSN is guiding only your spotlight work right now.
+          </div>
+          <div
+            style={{
+              marginTop: 10,
+              color: "#5F7287",
+              fontSize: isCompact ? 14 : 15,
+              lineHeight: 1.8,
+              maxWidth: 860,
+            }}
+          >
+            Community Home is suspended for this moment so unrelated tasks do not
+            compete for attention. Choose the spotlight path you want, let GSN
+            check the requirement, then continue or go back one step.
+          </div>
+          <div
+            style={{
+              marginTop: 14,
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
+            <span style={badge(true)}>Only spotlight is active here</span>
+            <span style={badge(false)}>Back one step restores Community Home</span>
+          </div>
+        </section>
+      ) : null}
+
+      {!spotlightGuidanceSuspendedView ? (
+      <>
       <section style={{ ...communityBlockCard("blue"), order: 55 }}>
         <div
           style={collapseHeaderLayout(isCompact)}
@@ -3330,6 +3383,8 @@ function communityButtonGuardProps(): Pick<
           </div>
         ) : null}
       </section>
+      </>
+      ) : null}
       </div>
     </div>
   );

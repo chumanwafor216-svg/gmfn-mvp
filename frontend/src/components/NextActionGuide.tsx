@@ -39,6 +39,7 @@ type NextActionGuideProps = {
     | NextActionGuideResolution
     | null
     | Promise<NextActionGuideResolution | null>;
+  onBranchChange?: (item: NextActionGuideItem | null) => void;
   onSelect: (
     item: NextActionGuideItem,
     event?: React.SyntheticEvent<HTMLElement>,
@@ -328,6 +329,7 @@ export default function NextActionGuide({
   defaultOpen = false,
   compact = false,
   resolveSelection,
+  onBranchChange,
   onSelect,
 }: NextActionGuideProps) {
   const [open, setOpen] = useState(() => readOpenState(storageKey, defaultOpen));
@@ -381,6 +383,10 @@ export default function NextActionGuide({
       setBranchItem(null);
     }
   }, [branchItem, visibleItems]);
+
+  useEffect(() => {
+    onBranchChange?.(branchItem);
+  }, [branchItem, onBranchChange]);
 
   async function chooseItem(
     item: NextActionGuideItem | null,
