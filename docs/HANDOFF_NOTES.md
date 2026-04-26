@@ -43,6 +43,35 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 20:39
+
+#### Workstream
+First Circle top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/build-first-circle`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/BuildFirstCirclePage.tsx`
+
+#### Confirmed facts
+- `BuildFirstCirclePage.tsx` still exposed top-nav route links in both loading and live states while the page already carried its own focused first-circle task flow underneath.
+- This pass removed the top-nav `nextLinks` and `utilityLinks` from both states so movement stays inside the page body instead of two competing route bands.
+- Home and back behavior remain intact in the page top navigation.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- The page still has many local action buttons, so any remaining heaviness there is more likely to come from stacked local guard behavior than route-band duplication.
+
+#### Next recommended step
+- Continue the app-wide cleanup in the remaining first-touch and operational routes that still carry stacked local button guards or competing launcher layers.
+
+---
+
+#### Date
 2026-04-26 20:24
 
 #### Workstream

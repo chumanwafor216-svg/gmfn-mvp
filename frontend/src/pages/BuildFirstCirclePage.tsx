@@ -930,14 +930,6 @@ export default function BuildFirstCirclePage() {
           homeLabel="Dashboard"
           backTo="/app/community"
           backLabel="Community Home"
-          nextLinks={[
-            { label: "Community Home", to: "/app/community" },
-            { label: "Notifications", to: "/app/notifications" },
-          ]}
-          utilityLinks={[
-            { label: "Marketplace", to: "/app/marketplace" },
-            { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
-          ]}
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -967,14 +959,6 @@ export default function BuildFirstCirclePage() {
         homeLabel="Dashboard"
         backTo="/app/community"
         backLabel="Community Home"
-        nextLinks={[
-          { label: "Community Home", to: "/app/community" },
-          { label: "Notifications", to: "/app/notifications" },
-        ]}
-        utilityLinks={[
-          { label: "Marketplace", to: "/app/marketplace" },
-          { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
-        ]}
       />
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
