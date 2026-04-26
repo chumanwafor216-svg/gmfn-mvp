@@ -12377,3 +12377,33 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend build passed
   - the main paid-tool action bands are now at a calmer safe checkpoint for
     continued phone testing
+
+### Create community entry reveals reached a calmer safe checkpoint (2026-04-26)
+
+- Product-owner issue:
+  - the create-community onboarding lane still used a delayed timer before
+    opening and scrolling to the next major block
+  - for first-time users that creates the same "nothing first, then jump"
+    feeling that discourages testing
+- Applied the smallest safe interaction cleanup:
+  - `frontend/src/pages/CreateEntryPage.tsx`
+    - replaced the delayed `setTimeout(..., 80)` panel reveal with one
+      cancelable `requestAnimationFrame` reveal path
+    - added cleanup so unfinished panel-reveal work is canceled on unmount
+    - kept the route purpose and onboarding contract unchanged
+- Routes impacted:
+  - `/create-entry`
+  - the public create-community onboarding lane
+- Shared logic impact:
+  - no backend change
+  - this is a frontend interaction-calming pass only
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/CreateEntryPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed
+  - the create-community onboarding reveals are now at a safer checkpoint for
+    continued phone testing

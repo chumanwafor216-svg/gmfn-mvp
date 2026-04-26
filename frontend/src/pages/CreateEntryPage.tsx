@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { EntryBackLink, EntryGuideLauncher } from "../components/EntryControls";
 import {
@@ -567,6 +567,7 @@ export default function CreateEntryPage() {
   const detailsRef = useRef<HTMLDivElement | null>(null);
   const verificationRef = useRef<HTMLDivElement | null>(null);
   const communityRef = useRef<HTMLDivElement | null>(null);
+  const panelRevealFrameRef = useRef<number | null>(null);
 
   const passwordReady =
     safeStr(password).length >= 6 && safeStr(password) === safeStr(confirmPassword);
@@ -623,17 +624,42 @@ export default function CreateEntryPage() {
     return `/login${query ? `?${query}` : "?entry=existing&force=1"}`;
   }, [location.search]);
 
+  function cancelPendingPanelReveal() {
+    if (typeof window !== "undefined" && panelRevealFrameRef.current !== null) {
+      window.cancelAnimationFrame(panelRevealFrameRef.current);
+      panelRevealFrameRef.current = null;
+    }
+  }
+
   function focusPanel(next: "details" | "verification" | "community") {
     const map = {
       details: detailsRef,
       verification: verificationRef,
       community: communityRef,
     } as const;
-    if (typeof window !== "undefined") {
-      window.setTimeout(() => {
-        map[next].current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 80);
-    }
+    if (typeof window === "undefined") return;
+
+    cancelPendingPanelReveal();
+
+    let attempts = 0;
+    const reveal = () => {
+      const node = map[next].current;
+      if (node) {
+        node.scrollIntoView({ behavior: "smooth", block: "start" });
+        panelRevealFrameRef.current = null;
+        return;
+      }
+
+      attempts += 1;
+      if (attempts >= 10) {
+        panelRevealFrameRef.current = null;
+        return;
+      }
+
+      panelRevealFrameRef.current = window.requestAnimationFrame(reveal);
+    };
+
+    panelRevealFrameRef.current = window.requestAnimationFrame(reveal);
   }
 
   function handleOpenPanel(next: "details" | "verification" | "community") {
@@ -662,6 +688,10 @@ export default function CreateEntryPage() {
     writeStorage(ENTRY_INVITE_CODE_KEY, null);
     nav(existingMemberLoginTo, { replace: false });
   }
+
+  useEffect(() => {
+    return () => cancelPendingPanelReveal();
+  }, []);
 
   const existingMemberPanel = (
     <div style={existingMemberCard(existingMemberOpen)}>
