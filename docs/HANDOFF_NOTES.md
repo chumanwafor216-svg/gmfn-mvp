@@ -43,6 +43,40 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 22:48
+
+#### Workstream
+Community Home embedded owner panel direct-button cleanup pass.
+
+#### Routes/screens affected
+- `/app/community`
+- embedded owner shop panel inside Community Home
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/components/CommunityShopControlPanel.tsx`
+
+#### Confirmed facts
+- The embedded owner shop panel in Community Home still used a helper that treated normal button clicks like form submits by forcing `preventDefault()` before route opens and panel toggles.
+- These controls are plain `type="button"` actions and already use pointer/touch-level isolation through `panelButtonGuardProps()`, so that extra click-time default blocking was unnecessary heaviness.
+- This pass removed the click-time `preventDefault()` behavior from:
+  - the shared `stopPanelTap(...)` helper
+  - `openPanelRoute(...)`
+  - `togglePanelFromButton(...)`
+- The routes, panel open/collapse behavior, and copy/open actions themselves did not change.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other dense owner-side or trust-side action surfaces may still carry similar click-time default barriers and should continue to be cleaned case by case.
+
+#### Next recommended step
+- Continue targeting embedded owner panels and other high-touch direct-button surfaces where pointer/touch guards already exist but click-time `preventDefault()` is still layered underneath.
+
+---
+
+#### Date
 2026-04-26 22:42
 
 #### Workstream

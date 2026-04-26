@@ -459,10 +459,6 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
 }
 
 function stopPanelTap(event: React.SyntheticEvent) {
-  if (event.type === "click" || event.type === "submit") {
-    event.preventDefault();
-  }
-
   event.stopPropagation();
 }
 
@@ -627,13 +623,11 @@ export default function CommunityShopControlPanel({
   }
 
   function openPanelRoute(event: React.SyntheticEvent<HTMLElement>, to: string) {
-    event.preventDefault();
     stopPanelTap(event);
     navigateWithOrigin(navigate, to, location);
   }
 
   function togglePanelFromButton(event: React.SyntheticEvent<HTMLElement>) {
-    event.preventDefault();
     stopPanelTap(event);
     setOpen((prev) => !prev);
   }
