@@ -875,14 +875,6 @@ export default function LoansPage() {
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/dashboard"
-          nextLinks={[
-            { label: "Marketplace", to: "/app/marketplace" },
-            { label: "Notifications", to: "/app/notifications" },
-          ]}
-          utilityLinks={[
-            { label: "Demand Box", to: "/app/demand-box" },
-            { label: "Trust", to: "/app/trust" },
-          ]}
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -911,32 +903,6 @@ export default function LoansPage() {
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
-        nextLinks={
-          supportFlowActive
-            ? [{ label: "Loan Readiness", to: "/app/loan-readiness" }]
-            : [
-                { label: "Marketplace", to: "/app/marketplace" },
-                { label: "Notifications", to: "/app/notifications" },
-              ]
-        }
-        utilityLinks={
-          supportFlowActive
-            ? [
-                { label: "Guarantor Inbox", to: "/app/guarantor-inbox" },
-                {
-                  label: "Commitment Builder",
-                  to: "/app/dashboard#focus-commitments",
-                },
-              ]
-            : [
-                { label: "Demand Box", to: "/app/demand-box" },
-                { label: "Trust", to: "/app/trust" },
-                {
-                  label: "Commitment Builder",
-                  to: "/app/dashboard#focus-commitments",
-                },
-              ]
-        }
       />
 
       <ExplainToggle

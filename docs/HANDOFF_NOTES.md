@@ -43,6 +43,35 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 19:43
+
+#### Workstream
+Loans overview top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/loans`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/LoansPage.tsx`
+
+#### Confirmed facts
+- `LoansPage.tsx` still exposed top-nav route links in both loading and live states while also carrying a full lower `Next routes` / `Next support routes` band with the real operational destinations.
+- This pass removed the top-nav `nextLinks` and `utilityLinks`, leaving route movement in one place only: the lower route band.
+- Home and back behavior remain intact in the page top navigation.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other money-side overview pages such as `FinancePage.tsx` may still need the same cleanup if live testing shows similar heaviness.
+
+#### Next recommended step
+- Continue the app-wide cleanup by following live heaviness into the remaining overview pages still carrying stacked route bands or dense local guard layers.
+
+---
+
+#### Date
 2026-04-26 19:34
 
 #### Workstream
