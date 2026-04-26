@@ -12060,3 +12060,41 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend build passed
   - ready for phone regression on Dashboard `Find action`, Spotlight task
     entry, Demand Box primary action, and Notifications action buttons
+
+### Dashboard inner pages reached a calmer safe checkpoint (2026-04-26)
+
+- Product-owner issue:
+  - after the Dashboard route-local cleanup, the first inner pages users reach
+    from Dashboard still felt less steady than the Dashboard itself
+  - the biggest reported concern was that users could feel delayed or sticky
+    responses after entering Dashboard-linked pages like Notifications and
+    Demand Box
+- Applied the smallest safe inner-page pass:
+  - `frontend/src/pages/NotificationsPage.tsx`
+    - changed the primary notice action so the page no longer waits for
+      `markAsRead()` before moving the user forward
+    - read-marking now runs in the background, which should make the first
+      action feel more immediate
+  - `frontend/src/pages/DemandBoxPage.tsx`
+    - replaced the delayed `setTimeout` create-mode auto-scroll with one shared
+      `requestAnimationFrame` reveal helper
+    - create-mode now clears its hash after the reveal, so the page does not
+      keep reasserting old create state underneath the user
+    - removed duplicate click-time `guardButtonPress(event)` calls from the
+      main guarded Demand Box buttons, leaving one guard lane instead of two
+- Routes impacted:
+  - `/app/notifications`
+  - `/app/demand-box`
+- Shared logic impact:
+  - no backend changes
+  - this is a frontend interaction-calming pass only
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/NotificationsPage.tsx src/pages/DemandBoxPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed
+  - treat Notifications and Demand Box as a safer checkpoint for continued
+    phone testing, not a final freeze yet

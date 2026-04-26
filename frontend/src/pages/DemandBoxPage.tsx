@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
@@ -484,6 +484,7 @@ export default function DemandBoxPage() {
   const [updatingDemandId, setUpdatingDemandId] = useState<number>(0);
   const [createCommunityConfirmed, setCreateCommunityConfirmed] =
     useState(false);
+  const demandCreateRevealRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -560,14 +561,30 @@ export default function DemandBoxPage() {
     setNotice({ tone, text });
   }
 
-  function scrollToDemandCreate() {
-    if (typeof document === "undefined") return;
+  const revealDemandCreate = useCallback((attempt = 0) => {
+    if (typeof document === "undefined" || typeof window === "undefined") return;
 
-    document.getElementById("demand-box-create")?.scrollIntoView({
+    if (demandCreateRevealRef.current !== null) {
+      window.cancelAnimationFrame(demandCreateRevealRef.current);
+      demandCreateRevealRef.current = null;
+    }
+
+    const target = document.getElementById("demand-box-create");
+    if (!target) {
+      if (attempt >= 6) return;
+      demandCreateRevealRef.current = window.requestAnimationFrame(() => {
+        revealDemandCreate(attempt + 1);
+      });
+      return;
+    }
+
+    target.scrollIntoView({
       behavior: "smooth",
       block: "start",
     });
-  }
+
+    demandCreateRevealRef.current = null;
+  }, []);
 
   async function handleChooseDemandCommunity(community: any) {
     const clanId = Number(community?.id || community?.clan_id || 0);
@@ -718,15 +735,32 @@ export default function DemandBoxPage() {
     if (!isCreateMode) return;
     if (communities.length > 1 && !createCommunityConfirmed) return;
 
-    const timer = window.setTimeout(() => {
-      document.getElementById("demand-box-create")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 80);
+    revealDemandCreate();
 
-    return () => window.clearTimeout(timer);
-  }, [communities.length, createCommunityConfirmed, isCreateMode, loading]);
+    if (typeof window !== "undefined") {
+      const cleanUrl = `${location.pathname}${location.search}`;
+      window.history.replaceState(window.history.state, "", cleanUrl);
+    }
+  }, [
+    communities.length,
+    createCommunityConfirmed,
+    isCreateMode,
+    loading,
+    location.pathname,
+    location.search,
+    revealDemandCreate,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      if (
+        typeof window !== "undefined" &&
+        demandCreateRevealRef.current !== null
+      ) {
+        window.cancelAnimationFrame(demandCreateRevealRef.current);
+      }
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -828,8 +862,7 @@ export default function DemandBoxPage() {
                     key={`${clanId || index}`}
                     type="button"
                     {...buttonGuardProps()}
-                    onClick={(event) => {
-                      guardButtonPress(event);
+                    onClick={() => {
                       void handleChooseDemandCommunity(community);
                     }}
                     disabled={busy || !clanId}
@@ -950,8 +983,7 @@ export default function DemandBoxPage() {
                   key={`${clanId || index}`}
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={(event) => {
-                    guardButtonPress(event);
+                  onClick={() => {
                     void handleChooseDemandCommunity(community);
                   }}
                   disabled={busy || !clanId}
@@ -1073,9 +1105,8 @@ export default function DemandBoxPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={(event) => {
-                  guardButtonPress(event);
-                  scrollToDemandCreate();
+                onClick={() => {
+                  revealDemandCreate();
                 }}
                 style={whiteActionBtn(false)}
               >
@@ -1469,8 +1500,7 @@ export default function DemandBoxPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={(event) => {
-                  guardButtonPress(event);
+                onClick={() => {
                   void handleCreateDemand();
                 }}
                 disabled={creating || !safeStr(title)}
@@ -1660,8 +1690,7 @@ export default function DemandBoxPage() {
                       <button
                         type="button"
                         {...buttonGuardProps()}
-                        onClick={(event) => {
-                          guardButtonPress(event);
+                        onClick={() => {
                           void handleUpdateDemandStatus(row, "fulfilled");
                         }}
                         disabled={busy}
@@ -1673,8 +1702,7 @@ export default function DemandBoxPage() {
                       <button
                         type="button"
                         {...buttonGuardProps()}
-                        onClick={(event) => {
-                          guardButtonPress(event);
+                        onClick={() => {
                           void handleUpdateDemandStatus(row, "cancelled");
                         }}
                         disabled={busy}

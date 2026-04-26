@@ -1094,7 +1094,7 @@ export default function NotificationsPage() {
     const normalizedNotice = normalizeGuidanceNotice(notice);
 
     if (safeStr(normalizedNotice.id)) {
-      await markAsRead(safeStr(normalizedNotice.id));
+      void markAsRead(safeStr(normalizedNotice.id));
     }
 
     if (settings.openActionsDirectly) {
