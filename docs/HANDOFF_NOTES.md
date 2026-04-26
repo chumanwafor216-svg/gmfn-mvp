@@ -43,6 +43,68 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 12:35
+
+#### Workstream
+Marketplace button-stability audit and first Marketplace interaction cleanup pass.
+
+#### Routes/screens affected
+- `/app/marketplace`
+- Marketplace-guided in-page sections:
+  - Marketplace actions
+  - Money section
+  - Owned links section
+  - Members section
+  - Borrow / Lend / Support section
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/MarketplacePage.tsx`
+
+#### Confirmed facts
+- Audit confirmed Marketplace had the same class of instability as Dashboard/Community/Shop:
+  - duplicated local guard lanes
+  - delayed section-toggle timers
+  - delayed scroll timers
+  - multiple open paths for the same support/tools sections
+- `toggleSectionFromButton(...)` was still wrapping section expand/collapse in a `setTimeout(..., 12)`, which meant the visible toggle could fire after the user had already moved on to another action.
+- `scrollToMarketplaceSection(...)` was still using a `setTimeout(..., 120)` delayed scroll path.
+- `consumeMarketplaceButtonEvent(...)` was still calling `preventDefault()` on regular button flows, even though these actions are normal page buttons rather than native navigation controls.
+- The `#marketplace-loans-support` hash effect was depending on `loanAmount` and `loanPurpose`, so while the page stayed on that hash, editing the support form could re-trigger the effect and scroll the user again.
+- The Marketplace member-row `OriginLink` to public shop still had an extra Marketplace pointer guard layered on top of the shared `OriginLink` guard.
+- This pass stabilized Marketplace by:
+  - making section toggles act immediately
+  - replacing the delayed section scroll timer with a retry-based `requestAnimationFrame` scroll helper
+  - removing `preventDefault()` from the regular Marketplace button-consume path
+  - stopping the support hash effect from re-triggering just because the user typed inside the support form
+  - removing the redundant Marketplace pointer guard from the member-row `OriginLink`
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx src/pages/MarketplaceWorkspacePage.tsx`
+  - `npm run build`
+- Lint completed with two pre-existing warnings in `MarketplacePage.tsx`:
+  - missing dependency warning around `props.candidates`
+  - missing dependency warning around `loadPage`
+  - no new lint errors were introduced
+
+#### Open risks or unknowns
+- `MarketplaceWorkspacePage.tsx` still has its own local button guard style and some duplicate section toggles, but this first pass focused on the main `/app/marketplace` route where the hidden jump behavior was strongest.
+- Marketplace still receives hash-based deep links from Community Home and several Loans routes. Those launcher paths are now calmer on the Marketplace side, but they remain part of the wider guided-flow system and may need a second pass if live testing still shows cross-route drift.
+
+#### Next recommended step
+- Deploy `gmfn-frontend`.
+- Phone-test:
+  - Marketplace `Find action`
+  - Marketplace `invite`
+  - Marketplace `loan / support`
+  - Members collapse/open
+  - Money collapse/open
+  - Owned links collapse/open
+  - Borrow / Lend / Support form while typing on the page after arriving through a support hash
+- If this pass materially calms Marketplace, continue with a second stabilization sweep for `MarketplaceWorkspacePage.tsx` and the remaining cross-route hash launchers.
+
+#### Date
 2026-04-26 12:20
 
 #### Workstream

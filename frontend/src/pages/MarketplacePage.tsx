@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DomainIntroToggle from "../components/DomainIntroToggle";
 import ExplainToggle from "../components/ExplainToggle";
 import GSNBrandMark from "../components/GSNBrandMark";
@@ -2244,7 +2244,6 @@ export default function MarketplacePage() {
 
   const supportSectionRef = useRef<HTMLElement | null>(null);
   const withdrawalHandoffAppliedRef = useRef("");
-  const sectionToggleTimersRef = useRef<number[]>([]);
 
   const selectedClanId = Number(getSelectedClanId() || 0);
   const currentGmfnId = safeStr(me?.gmfn_id || "");
@@ -2326,20 +2325,13 @@ export default function MarketplacePage() {
     }));
   }
 
-function toggleSectionFromButton(
-  event: React.SyntheticEvent<HTMLElement> | undefined,
-  key: keyof SectionState
-) {
-  consumeMarketplaceButtonEvent(event);
-
-  const timerId = window.setTimeout(() => {
-    sectionToggleTimersRef.current = sectionToggleTimersRef.current.filter(
-      (id) => id !== timerId
-    );
+  function toggleSectionFromButton(
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    key: keyof SectionState
+  ) {
+    consumeMarketplaceButtonEvent(event);
     toggleSection(key);
-  }, 12);
-  sectionToggleTimersRef.current.push(timerId);
-}
+  }
 
   function consumeMarketplacePointerEvent(
     event?: React.SyntheticEvent<HTMLElement>
@@ -2351,7 +2343,6 @@ function toggleSectionFromButton(
     event?: React.SyntheticEvent<HTMLElement>
   ) {
     if (!event) return;
-    event.preventDefault();
     event.stopPropagation();
   }
 
@@ -2425,14 +2416,25 @@ function marketplaceButtonGuardProps(): Pick<
     setIntentGuideOpen((prev) => !prev);
   }
 
-  function scrollToMarketplaceSection(id: string) {
-    window.setTimeout(() => {
-      document.getElementById(id)?.scrollIntoView({
+  const scrollToMarketplaceSection = useCallback(function scrollToMarketplaceSection(
+    id: string,
+    attempt = 0
+  ) {
+    const target =
+      document.getElementById(id) ||
+      (id === "marketplace-loans-support" ? supportSectionRef.current : null);
+    if (target) {
+      target.scrollIntoView({
         block: "start",
         behavior: "smooth",
       });
-    }, 120);
-  }
+      return;
+    }
+    if (attempt >= 5) return;
+    window.requestAnimationFrame(() => {
+      scrollToMarketplaceSection(id, attempt + 1);
+    });
+  }, []);
 
   function openMarketplaceIntent(
     event: React.SyntheticEvent<HTMLElement> | undefined,
@@ -2646,15 +2648,6 @@ function marketplaceButtonGuardProps(): Pick<
   }, [sectionsOpen, activeCommunityId]);
 
   useEffect(() => {
-    return () => {
-      sectionToggleTimersRef.current.forEach((timerId) => {
-        window.clearTimeout(timerId);
-      });
-      sectionToggleTimersRef.current = [];
-    };
-  }, []);
-
-  useEffect(() => {
     if (!loanDraftId) return;
     setSectionsOpen((prev) => ({
       ...prev,
@@ -2687,27 +2680,20 @@ function marketplaceButtonGuardProps(): Pick<
         const storedAmount = safeStr(storedWithdrawalTask?.amountInput);
         const storedNote = safeStr(storedWithdrawalTask?.noteInput);
 
-        if (storedAmount && !safeStr(loanAmount)) {
-          setLoanAmount(storedAmount);
+        if (storedAmount) {
+          setLoanAmount((prev) => (safeStr(prev) ? prev : storedAmount));
         }
 
-        if (storedNote && !safeStr(loanPurpose)) {
-          setLoanPurpose(storedNote);
+        if (storedNote) {
+          setLoanPurpose((prev) => (safeStr(prev) ? prev : storedNote));
         }
 
         withdrawalHandoffAppliedRef.current = token;
       }
     }
 
-    const timer = window.setTimeout(() => {
-      supportSectionRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-  }, [location.hash, activeCommunityId, currentGmfnId, loanAmount, loanPurpose]);
+    scrollToMarketplaceSection("marketplace-loans-support");
+  }, [location.hash, activeCommunityId, currentGmfnId, scrollToMarketplaceSection]);
 
   useEffect(() => {
     const hash = safeStr(location.hash).replace(/^#/, "");
@@ -2721,15 +2707,8 @@ function marketplaceButtonGuardProps(): Pick<
       };
     });
 
-    const timer = window.setTimeout(() => {
-      document.getElementById("marketplace-owned-links")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-  }, [location.hash]);
+    scrollToMarketplaceSection("marketplace-owned-links");
+  }, [location.hash, scrollToMarketplaceSection]);
 
   const memberName = useMemo(() => {
     return (
@@ -4784,7 +4763,6 @@ function marketplaceButtonGuardProps(): Pick<
                           {row.shopTo ? (
                             <OriginLink
                               to={row.shopTo}
-                              {...marketplacePointerGuardProps()}
                               style={actionBtn("secondary")}
                             >
                               Open shop
