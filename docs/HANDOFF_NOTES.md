@@ -43,6 +43,46 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 22:27
+
+#### Workstream
+Shop spotlight portal direct-button cleanup pass.
+
+#### Routes/screens affected
+- `/app/shop-control`
+- in-page spotlight portal inside Shop Control
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/ShopControlPage.tsx`
+
+#### Confirmed facts
+- The dedicated spotlight portal inside `ShopControlPage.tsx` still wrapped several direct `type=\"button\"` actions in extra `event.preventDefault()` and `event.stopPropagation()` logic.
+- These controls are not submit buttons and the spotlight portal is already an isolated task surface, so that extra click-time barrier was unnecessary heaviness.
+- This pass removed the extra click barriers from:
+  - `Continue to shop spotlight`
+  - `Free spotlight`
+  - `Paid spotlight`
+  - `Picture only`
+  - `Video only`
+  - `Picture and video`
+  - `Continue to preview`
+  - `Back to upload`
+  - `Publish spotlight`
+- The spotlight step changes and publish behavior themselves did not change.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other dense Shop Control action areas may still carry similar direct-button click barriers and can be cleaned in later passes.
+
+#### Next recommended step
+- Continue targeting dense direct-button task surfaces where click handlers still carry unnecessary `preventDefault()` / `stopPropagation()` layers on top of already-isolated button actions.
+
+---
+
+#### Date
 2026-04-26 22:18
 
 #### Workstream

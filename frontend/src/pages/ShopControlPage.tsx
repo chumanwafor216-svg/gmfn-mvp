@@ -2139,9 +2139,7 @@ export default function ShopControlPage() {
               <div style={{ marginTop: 14, ...controlGrid(isCompact, 150) }}>
                 <button
                   type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
+                  onClick={() => {
                     void ensureSpotlightShopRecord();
                   }}
                   disabled={creatingSpotlightShop}
@@ -2169,20 +2167,14 @@ export default function ShopControlPage() {
               <div style={{ marginTop: 12, ...controlGrid(isCompact, 150) }}>
                 <button
                   type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setSpotlightPriorityMode("free");
-                  }}
+                  onClick={() => setSpotlightPriorityMode("free")}
                   style={fullButton(actionBtn("primary", spotlightPriorityMode === "free"))}
                 >
                   Free spotlight
                 </button>
                 <button
                   type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
+                  onClick={() => {
                     if (canStartPaidSpotlight) {
                       setSpotlightPriorityMode("paid");
                     }
@@ -2208,33 +2200,21 @@ export default function ShopControlPage() {
               <div style={{ marginTop: 12, ...controlGrid(isCompact, 150) }}>
                 <button
                   type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setSpotlightMediaChoice("image");
-                  }}
+                  onClick={() => setSpotlightMediaChoice("image")}
                   style={fullButton(actionBtn("secondary", spotlightMediaChoice === "image"))}
                 >
                   Picture only
                 </button>
                 <button
                   type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setSpotlightMediaChoice("video");
-                  }}
+                  onClick={() => setSpotlightMediaChoice("video")}
                   style={fullButton(actionBtn("secondary", spotlightMediaChoice === "video"))}
                 >
                   Video only
                 </button>
                 <button
                   type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setSpotlightMediaChoice("both");
-                  }}
+                  onClick={() => setSpotlightMediaChoice("both")}
                   style={fullButton(actionBtn("secondary", spotlightMediaChoice === "both"))}
                 >
                   Picture and video
@@ -2318,11 +2298,7 @@ export default function ShopControlPage() {
             <div style={controlGrid(isCompact, 150)}>
               <button
                 type="button"
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  setSpotlightFlowStep("preview");
-                }}
+                onClick={() => setSpotlightFlowStep("preview")}
                 disabled={
                   shopActionsLocked ||
                   preparingSpotlightImage ||
@@ -2414,20 +2390,14 @@ export default function ShopControlPage() {
             <div style={controlGrid(isCompact, 150)}>
               <button
                 type="button"
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  setSpotlightFlowStep("upload");
-                }}
+                onClick={() => setSpotlightFlowStep("upload")}
                 style={fullButton(actionBtn("secondary"))}
               >
                 Back to upload
               </button>
               <button
                 type="button"
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
+                onClick={() => {
                   void handleCreateSpotlight();
                 }}
                 disabled={
