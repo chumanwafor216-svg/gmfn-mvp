@@ -952,10 +952,6 @@ export default function GuarantorInboxPage() {
                 flexWrap: "wrap",
               }}
             >
-              <OriginLink to={nextStep.ctaTo} style={primaryBtn(false)}>
-                {nextStep.ctaLabel}
-              </OriginLink>
-
               <button
                 type="button"
                 {...buttonGuardProps()}
@@ -964,6 +960,17 @@ export default function GuarantorInboxPage() {
               >
                 Copy Queue Summary
               </button>
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <div style={innerCard("#F8FBFF")}>
+                <div style={sectionLabel()}>Use next routes below</div>
+                <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                  Keep this top area focused on the current queue reading. Use
+                  the next-routes section below when you are ready to continue
+                  into the deeper support page.
+                </div>
+              </div>
             </div>
           </div>
 

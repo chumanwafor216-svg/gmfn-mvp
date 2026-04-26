@@ -1112,15 +1112,25 @@ export default function RepaymentPage() {
                   {paymentConfirmedAt ? "Payment Declared" : "I Have Paid Using This Reference"}
                 </button>
 
-                <OriginLink to={`/app/loan-summary/${numericLoanId}`} style={actionBtn("secondary")}>
-                  Open Loan Summary
-                </OriginLink>
-
-                {!repaymentTaskActive ? (
-                  <OriginLink to="/app/finance" style={actionBtn("secondary")}>
-                    See this in Finance
-                  </OriginLink>
-                ) : null}
+                {repaymentTaskActive ? (
+                  <div style={innerCard("#F8FBFF")}>
+                    <div style={sectionLabel()}>Keep the route focused</div>
+                    <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                      This repayment is still active. Confirm payment here when
+                      you have used the exact reference, then keep the route open
+                      until repayment is clearly awaiting reconciliation.
+                    </div>
+                  </div>
+                ) : (
+                  <div style={innerCard("#F8FBFF")}>
+                    <div style={sectionLabel()}>Move on from here</div>
+                    <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                      This repayment has reached a visible conclusion. Use the
+                      next-routes section below to reopen Loan Summary, Finance,
+                      or Loans &amp; Support from one place.
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

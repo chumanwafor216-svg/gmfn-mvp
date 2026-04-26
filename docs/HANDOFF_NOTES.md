@@ -43,6 +43,69 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 16:08
+
+#### Workstream
+Borrowing-family route-action simplification pass for `RepaymentPage` and `GuarantorInboxPage`.
+
+#### Routes/screens affected
+- `/app/repayment/:loanId`
+- `/app/guarantor-inbox`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/RepaymentPage.tsx`
+- `frontend/src/pages/GuarantorInboxPage.tsx`
+
+#### Confirmed facts
+- Deeper inspection confirmed another route-level duplication pattern in the borrowing family:
+  - `RepaymentPage.tsx` was presenting route-movement controls twice:
+    - inside `Result and reconciliation`
+    - again in the lower `Next routes` section
+  - `GuarantorInboxPage.tsx` was also presenting the primary deeper-route CTA twice:
+    - once in the top summary area
+    - again in the lower `Next routes` section
+- This pass removed that duplication in the least risky way:
+  - `RepaymentPage.tsx`
+    - keeps `I Have Paid Using This Reference` in the result panel
+    - removes repeated route-navigation links from that same panel
+    - replaces them with a route-status explanation:
+      - keep the route focused while active
+      - use the next-routes section once the task has a visible conclusion
+  - `GuarantorInboxPage.tsx`
+    - removes the duplicated top primary route CTA
+    - keeps `Copy Queue Summary`
+    - adds a short explanation that the top card is for queue reading and the lower `Next routes` section is where the deeper support page should be opened
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/RepaymentPage.tsx src/pages/GuarantorInboxPage.tsx`
+  - `npm run build`
+  - eslint reports the same pre-existing hook-dependency warning in `GuarantorInboxPage.tsx` around `loadInbox`
+  - no new lint errors were introduced
+  - build passed
+
+#### Open risks or unknowns
+- The borrowing family is calmer now, but other dense operational pages may still keep route-local action duplication even when no duplicate guard helper remains.
+- The app should still be treated as being at safe checkpoints rather than final freeze states until the broader phone-testing round confirms that repeated presses are no longer common.
+
+#### Next recommended step
+- Deploy `gmfn-frontend`.
+- Phone-test:
+  - `/app/repayment/:loanId`
+    - generate repayment instruction
+    - copy reference
+    - payment declaration
+    - result section
+    - next-routes section
+  - `/app/guarantor-inbox`
+    - queue reading
+    - top summary area
+    - row-level approve / decline / workbench actions
+    - lower next-routes section
+- If these now feel materially calmer, continue the deeper audit by targeting whichever remaining dense operational route still feels physically heavy in live testing.
+
+#### Date
 2026-04-26 15:55
 
 #### Workstream
