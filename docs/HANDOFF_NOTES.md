@@ -11528,3 +11528,45 @@ GSN-branded invite composer and invite-entry continuity.
 - Result:
   - frontend lint passed
   - frontend build passed
+
+### Major-domain guides can now hand off into the same Spotlight task surface (2026-04-26)
+
+- Product-owner direction:
+  - users are likely to start from `Dashboard` or another major domain when they
+    want to work on Spotlight
+  - `What do you want to do next?` should let them type `spotlight` from those
+    domains and still be led into the correct guided Spotlight family
+  - the guided Spotlight family should stay centralized instead of being rebuilt
+    differently on every page
+- Applied the smallest safe frontend-only change:
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - now accepts `?guide=spotlight` as a route handoff signal
+    - when present, Community Home opens the dedicated Spotlight task surface,
+      expands the spotlight area, scrolls to it, and then clears the query from
+      the URL
+  - `frontend/src/pages/DashboardPage.tsx`
+    - added a dedicated `Spotlight` next-action item that routes to
+      `/app/community?guide=spotlight`
+    - removed the `spotlight` keyword from the broader `Community Home` item so
+      typed Spotlight intent does not get swallowed by the generic community
+      route
+  - `frontend/src/pages/FinancePage.tsx`
+  - `frontend/src/pages/LoansPage.tsx`
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - each now includes a direct `Open spotlight guide` next-action entry that
+      routes to `/app/community?guide=spotlight`
+- Route impact:
+  - `/app/dashboard`
+  - `/app/finance`
+  - `/app/loans`
+  - `/app/trust`
+  - `/app/community`
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/CommunityHomePage.tsx src/pages/DashboardPage.tsx src/pages/FinancePage.tsx src/pages/LoansPage.tsx src/pages/TrustScorePage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed with one pre-existing warning in `TrustScorePage.tsx`
+    about a missing `loadAll` hook dependency
+  - frontend build passed

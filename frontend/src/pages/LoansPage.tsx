@@ -838,6 +838,21 @@ export default function LoansPage() {
         keywords: ["finance", "money record", "balance"],
       },
       {
+        id: "spotlight",
+        label: "Open spotlight guide",
+        detail:
+          "Go to the guided spotlight family for free spotlight, subscription spotlight, Vault, or shop setup.",
+        technical: "Guided spotlight",
+        to: "/app/community?guide=spotlight",
+        keywords: [
+          "spotlight",
+          "free spotlight",
+          "subscription spotlight",
+          "vault",
+          "shop setup",
+        ],
+      },
+      {
         id: "marketplace",
         label: "Return to Marketplace",
         detail: "Go back to the selected community Marketplace.",

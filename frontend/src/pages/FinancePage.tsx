@@ -1418,6 +1418,22 @@ export default function FinancePage() {
         keywords: ["trust", "passport", "evidence", "score", "record"],
       },
       {
+        id: "spotlight",
+        label: "Open spotlight guide",
+        detail:
+          "Go to the guided spotlight family for free spotlight, subscription spotlight, Vault, or shop setup.",
+        technical: "Guided spotlight",
+        to: "/app/community?guide=spotlight",
+        keywords: [
+          "spotlight",
+          "free spotlight",
+          "subscription spotlight",
+          "vault",
+          "shop setup",
+        ],
+        tone: "soft",
+      },
+      {
         id: "marketplace",
         label: "Return to Marketplace",
         detail: "Go back to the selected community workspace.",

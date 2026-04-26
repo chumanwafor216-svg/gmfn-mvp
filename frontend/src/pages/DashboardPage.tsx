@@ -322,6 +322,7 @@ const PUBLIC_ROUTE_PREFIXES = [
 const DASHBOARD_TARGETS = {
   DASHBOARD: "/app/dashboard",
   COMMUNITY: "/app/community",
+  COMMUNITY_SPOTLIGHT: "/app/community?guide=spotlight",
   MARKETPLACE: "/app/marketplace",
   FINANCE: "/app/finance",
   MONEY_IN: "/app/payment/pool",
@@ -4312,6 +4313,23 @@ export default function DashboardPage() {
         tone: "secondary" as const,
       })),
       {
+        id: "spotlight",
+        label: "Spotlight",
+        detail:
+          "Open the spotlight task family so GSN can lead free spotlight, subscription spotlight, Vault, or shop setup from one place.",
+        technical: "Guided spotlight",
+        to: DASHBOARD_TARGETS.COMMUNITY_SPOTLIGHT,
+        keywords: [
+          "spotlight",
+          "make spotlight",
+          "publish spotlight",
+          "free spotlight",
+          "subscription spotlight",
+          "vault",
+        ],
+        tone: "secondary",
+      },
+      {
         id: "community",
         label: "Community Home",
         detail:
@@ -4327,7 +4345,6 @@ export default function DashboardPage() {
           "tools",
           "invite",
           "shop",
-          "spotlight",
         ],
         tone: "secondary",
       },

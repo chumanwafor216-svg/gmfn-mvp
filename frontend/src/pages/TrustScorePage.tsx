@@ -2154,6 +2154,22 @@ export default function TrustScorePage() {
         tone: "soft",
       },
       {
+        id: "spotlight",
+        label: "Open spotlight guide",
+        detail:
+          "Go to the guided spotlight family for free spotlight, subscription spotlight, Vault, or shop setup.",
+        technical: "Guided spotlight",
+        to: "/app/community?guide=spotlight",
+        keywords: [
+          "spotlight",
+          "free spotlight",
+          "subscription spotlight",
+          "vault",
+          "shop setup",
+        ],
+        tone: "soft",
+      },
+      {
         id: "focus",
         label: "Add a trust promise",
         detail: "Open focus commitments for repair, repayment, or follow-through.",

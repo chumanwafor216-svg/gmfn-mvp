@@ -1095,6 +1095,32 @@ export default function CommunityHomePage() {
     "Tick what you want to do here, or write it in simple words. GSN will check the first required step and lead you from there.";
   const spotlightGuidanceSuspendedView = guidedActionFamilyFocus === "spotlight";
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const guide = safeStr(params.get("guide")).toLowerCase();
+    if (guide !== "spotlight") return;
+
+    setGuidedActionFamilyFocus("spotlight");
+    setCollapsed((prev) => ({ ...prev, spotlight: false }));
+
+    if (typeof document !== "undefined") {
+      window.setTimeout(() => {
+        const el = document.getElementById("community-home-spotlight-guided-lane");
+        if (el && typeof el.scrollIntoView === "function") {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 0);
+    }
+
+    navigate(
+      {
+        pathname: location.pathname,
+        hash: location.hash,
+      },
+      { replace: true }
+    );
+  }, [location.hash, location.pathname, location.search, navigate]);
+
   const cumulativeAvailable = getSummaryTotal(
     poolSummary,
     "effective_available",
