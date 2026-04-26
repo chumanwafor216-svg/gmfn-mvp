@@ -622,11 +622,11 @@ export default function CommunityShopControlPanel({
     setNotice({ tone: "success", text: "Public shop link copied." });
   }
 
-  function openPanelRoute(_event: React.SyntheticEvent<HTMLElement>, to: string) {
+  function openPanelRoute(to: string) {
     navigateWithOrigin(navigate, to, location);
   }
 
-  function togglePanelFromButton(_event: React.SyntheticEvent<HTMLElement>) {
+  function togglePanelFromButton() {
     setOpen((prev) => !prev);
   }
 
@@ -657,7 +657,7 @@ export default function CommunityShopControlPanel({
           <button
             type="button"
             {...panelButtonGuardProps()}
-            onClick={togglePanelFromButton}
+            onClick={() => togglePanelFromButton()}
             style={collapseHeaderButton(isCompact)}
           >
             {open ? "Collapse owner shop control" : "Open owner shop control"}
@@ -766,14 +766,12 @@ export default function CommunityShopControlPanel({
                       flexWrap: "wrap",
                     }}
                   >
-                    <button
-                      type="button"
-                      {...panelButtonGuardProps()}
-                      onClick={(event) =>
-                        openPanelRoute(event, "/app/shop-control?section=summary")
-                      }
-                      style={actionBtn("primary")}
-                    >
+                <button
+                  type="button"
+                  {...panelButtonGuardProps()}
+                  onClick={() => openPanelRoute("/app/shop-control?section=summary")}
+                  style={actionBtn("primary")}
+                >
                       Open Owner Shop Control
                     </button>
 
@@ -781,7 +779,7 @@ export default function CommunityShopControlPanel({
                       <button
                         type="button"
                         {...panelButtonGuardProps()}
-                        onClick={(event) => openPanelRoute(event, publicShopTo)}
+                        onClick={() => openPanelRoute(publicShopTo)}
                         style={actionBtn("secondary")}
                       >
                         Open Public Shop Face
@@ -809,7 +807,7 @@ export default function CommunityShopControlPanel({
                     <button
                       type="button"
                       {...panelButtonGuardProps()}
-                      onClick={(event) => openPanelRoute(event, "/app/marketplace")}
+                      onClick={() => openPanelRoute("/app/marketplace")}
                       style={actionBtn("secondary")}
                     >
                       Open Community Marketplace
@@ -845,9 +843,7 @@ export default function CommunityShopControlPanel({
                 <button
                   type="button"
                   {...panelButtonGuardProps()}
-                  onClick={(event) =>
-                    openPanelRoute(event, "/app/shop-control?section=picture-gallery")
-                  }
+                  onClick={() => openPanelRoute("/app/shop-control?section=picture-gallery")}
                   style={actionBtn("secondary")}
                 >
                   Pictures & Products
@@ -855,9 +851,7 @@ export default function CommunityShopControlPanel({
                 <button
                   type="button"
                   {...panelButtonGuardProps()}
-                  onClick={(event) =>
-                    openPanelRoute(event, "/app/shop-control?section=spotlight")
-                  }
+                  onClick={() => openPanelRoute("/app/shop-control?section=spotlight")}
                   style={actionBtn("secondary")}
                 >
                   Owner Spotlight
@@ -865,9 +859,7 @@ export default function CommunityShopControlPanel({
                 <button
                   type="button"
                   {...panelButtonGuardProps()}
-                  onClick={(event) =>
-                    openPanelRoute(event, "/app/shop-control?section=paid-spotlight")
-                  }
+                  onClick={() => openPanelRoute("/app/shop-control?section=paid-spotlight")}
                   style={actionBtn("secondary")}
                 >
                   Paid Spotlight
@@ -875,9 +867,7 @@ export default function CommunityShopControlPanel({
                 <button
                   type="button"
                   {...panelButtonGuardProps()}
-                  onClick={(event) =>
-                    openPanelRoute(event, "/app/shop-control?section=vault")
-                  }
+                  onClick={() => openPanelRoute("/app/shop-control?section=vault")}
                   style={actionBtn("secondary")}
                 >
                   Private Vault Access
