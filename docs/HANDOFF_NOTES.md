@@ -1,3 +1,35 @@
+## 2026-04-27 02:31
+
+### Workstream
+Marketplace passive section-toggle guard cleanup pass.
+
+### What changed
+- Removed the action-level `marketplaceButtonGuardProps()` layer from passive section open/collapse controls in `MarketplacePage.tsx`.
+- Cleaned these toggles:
+  - `money`
+  - `tools`
+  - `members`
+  - `support`
+
+### Why
+- These controls only reveal or hide Marketplace sections, so they did not need the same action-level guard as real route-opening, link-copy, or support-draft buttons.
+- This keeps Marketplace lighter without changing finance, owned links, member mapping, or support-route logic.
+
+### Files touched
+- `frontend/src/pages/MarketplacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/marketplace`
+
+### Verification
+- `npm exec -- eslint src/pages/MarketplacePage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other passive surface toggles may still carry the same unnecessary action-level guard and can be cleaned in later passes.
+
 ## 2026-04-27 02:24
 
 ### Workstream

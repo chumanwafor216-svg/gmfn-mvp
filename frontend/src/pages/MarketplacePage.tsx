@@ -3864,7 +3864,6 @@ function marketplaceButtonGuardProps(): Pick<
 
           <button
             type="button"
-            {...marketplaceButtonGuardProps()}
             onClick={(event) => toggleSectionFromButton(event, "money")}
             style={actionBtn("soft")}
           >
@@ -4145,7 +4144,6 @@ function marketplaceButtonGuardProps(): Pick<
 
           <button
             type="button"
-            {...marketplaceButtonGuardProps()}
             onClick={(event) => toggleSectionFromButton(event, "tools")}
             style={actionBtn("soft")}
           >
@@ -4625,7 +4623,6 @@ function marketplaceButtonGuardProps(): Pick<
 
           <button
             type="button"
-            {...marketplaceButtonGuardProps()}
             onClick={(event) => toggleSectionFromButton(event, "members")}
             style={actionBtn("soft")}
           >
@@ -4874,7 +4871,6 @@ function marketplaceButtonGuardProps(): Pick<
             <span style={badge(false)}>Active items: {activeLoanCount}</span>
             <button
               type="button"
-              {...marketplaceButtonGuardProps()}
               onClick={(event) => toggleSectionFromButton(event, "support")}
               style={actionBtn("soft")}
             >
