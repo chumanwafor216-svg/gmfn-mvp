@@ -1,3 +1,37 @@
+## 2026-04-27 03:09
+
+### Workstream
+Community owner panel route-open and collapse duplicate tap-stop cleanup pass.
+
+### What changed
+- Removed the extra click-time `stopPanelTap(...)` call from the embedded owner panel route-open and collapse helpers in `CommunityShopControlPanel.tsx`.
+- Cleaned these owner-panel controls:
+  - `Open owner shop control`
+  - `Open Public Shop Face`
+  - `Open Community Marketplace`
+  - owner shortcut launchers
+  - owner panel open/collapse button
+
+### Why
+- These buttons already use `panelButtonGuardProps()` on pointer/touch start, so they did not need to stop the same tap again inside the shared click helpers.
+- This keeps the owner panel lighter without changing route targets or panel behavior.
+
+### Files touched
+- `frontend/src/components/CommunityShopControlPanel.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/community`
+- embedded owner shop panel inside Community Home
+
+### Verification
+- `npm exec -- eslint src/components/CommunityShopControlPanel.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other dense owner/direct-button surfaces may still carry the same duplicate click-time tap stop and can be cleaned in later passes.
+
 ## 2026-04-27 03:01
 
 ### Workstream

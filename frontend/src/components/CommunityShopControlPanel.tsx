@@ -622,13 +622,11 @@ export default function CommunityShopControlPanel({
     setNotice({ tone: "success", text: "Public shop link copied." });
   }
 
-  function openPanelRoute(event: React.SyntheticEvent<HTMLElement>, to: string) {
-    stopPanelTap(event);
+  function openPanelRoute(_event: React.SyntheticEvent<HTMLElement>, to: string) {
     navigateWithOrigin(navigate, to, location);
   }
 
-  function togglePanelFromButton(event: React.SyntheticEvent<HTMLElement>) {
-    stopPanelTap(event);
+  function togglePanelFromButton(_event: React.SyntheticEvent<HTMLElement>) {
     setOpen((prev) => !prev);
   }
 
