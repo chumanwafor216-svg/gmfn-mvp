@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import DomainIntroToggle from "../components/DomainIntroToggle";
 import NextActionGuide, {
@@ -1565,6 +1565,7 @@ export default function TrustScorePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
+  const trustRevealRef = useRef<number | null>(null);
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -1628,14 +1629,14 @@ export default function TrustScorePage() {
     if (loading || location.hash !== "#trust-journey") return;
 
     setTrustJourneyExpanded(true);
+    revealTrustSection("trust-journey");
 
-    const timer = window.setTimeout(() => {
-      const target = document.getElementById("trust-journey");
-      if (!target) return;
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 80);
-
-    return () => window.clearTimeout(timer);
+    return () => {
+      if (typeof window !== "undefined" && trustRevealRef.current !== null) {
+        window.cancelAnimationFrame(trustRevealRef.current);
+        trustRevealRef.current = null;
+      }
+    };
   }, [loading, location.hash]);
 
   async function loadAll() {
@@ -2205,13 +2206,29 @@ export default function TrustScorePage() {
     navigateWithOrigin(navigate, to, location);
   }
 
+  function revealTrustSection(targetId: string, attempt = 0) {
+    if (typeof document === "undefined" || typeof window === "undefined") return;
+
+    if (trustRevealRef.current !== null) {
+      window.cancelAnimationFrame(trustRevealRef.current);
+      trustRevealRef.current = null;
+    }
+
+    const target = document.getElementById(targetId);
+    if (!target) {
+      if (attempt >= 6) return;
+      trustRevealRef.current = window.requestAnimationFrame(() => {
+        revealTrustSection(targetId, attempt + 1);
+      });
+      return;
+    }
+
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   function openTrustSection(key: keyof CollapseState, targetId: string) {
     setCollapsed((prev) => ({ ...prev, [key]: false }));
-    window.setTimeout(() => {
-      document
-        .getElementById(targetId)
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 60);
+    revealTrustSection(targetId);
   }
 
   function handleTrustNextAction(item: NextActionGuideItem) {
@@ -2221,11 +2238,7 @@ export default function TrustScorePage() {
         break;
       case "trust-journey":
         setTrustJourneyExpanded(true);
-        window.setTimeout(() => {
-          document
-            .getElementById("trust-journey")
-            ?.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 60);
+        revealTrustSection("trust-journey");
         break;
       case "why-change":
         openTrustSection("explainability", "trust-passport-explainability");

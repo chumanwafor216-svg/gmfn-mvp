@@ -12197,3 +12197,34 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend lint passed
   - frontend build passed
   - Finance and Loans are now at a safer checkpoint for continued phone testing
+
+### Trust guided section reveals reached a calmer safe checkpoint (2026-04-26)
+
+- Product-owner issue:
+  - the Trust page still used delayed timer-based section reveals for guided
+    actions and for the `#trust-journey` deep entry
+  - that meant the guide path could still feel like it paused first, then
+    jumped underneath the user
+- Applied the smallest safe interaction cleanup:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - replaced delayed timer-based guided section reveals with one cancelable
+      `requestAnimationFrame` reveal lane
+    - trust summary, trust journey, explainability, and evidence now reveal and
+      scroll through the calmer helper instead of delayed timers
+    - the `#trust-journey` deep entry now uses the same calmer reveal lane
+- Routes impacted:
+  - `/app/trust`
+- Shared logic impact:
+  - no backend change
+  - this is a frontend interaction-calming pass only
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/TrustScorePage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed with the same pre-existing `loadAll` dependency
+    warning, plus one new warning suggesting `revealTrustSection` be included in
+    an effect dependency array
+  - frontend build passed
+  - Trust is now at a safer checkpoint for continued phone testing
