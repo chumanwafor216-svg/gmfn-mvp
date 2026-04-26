@@ -11570,3 +11570,42 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend lint passed with one pre-existing warning in `TrustScorePage.tsx`
     about a missing `loadAll` hook dependency
   - frontend build passed
+
+### Shop Control was simplified for readability and lower-cognitive-use owner flow (2026-04-26)
+
+- Product-owner direction from live screenshots:
+  - `Shop Control` was too dark, too crowded, and too hard to read for
+    non-technical users
+  - the major owner handle page should feel simpler, clearer, and less
+    double-minded
+  - only the basic actions should dominate; the rest should remain available
+    without competing equally for attention
+- Applied the smallest safe route-local UI simplification:
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - simplified `PageTopNav` links so the top strip has fewer competing pills
+    - changed the top summary block from a dark heavy owner wall to a lighter
+      readable owner page surface
+    - rewrote the summary copy in simpler owner-facing language
+    - replaced the dense badge cluster with a smaller set of readable summary
+      tiles
+    - shortened several repeated labels:
+      - `Public Shop Face` -> `Public Shop`
+      - `Copy Public Shop Face Link` -> `Copy Public Link`
+      - `Start 6-slot payment` -> `Start 6-slot plan`
+      - `Create Vault access link` -> `Create access link`
+    - simplified the `Paid access` introduction into `Optional paid tools`
+    - softened the lower `Private Vault access` section from dark blue into a
+      lighter readable surface while keeping the same actions
+    - simplified the `Public shop face` helper copy and de-emphasized the image
+      URL wording
+    - renamed `Slot usage` to `Shop summary` to make the section clearer
+- Route impact:
+  - `/app/shop-control`
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/ShopControlPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed

@@ -2539,24 +2539,22 @@ export default function ShopControlPage() {
       <PageTopNav
         sectionLabel="Owner Shop Control"
         title="Shop Owner Control"
-        subtitle="Owner backstage for your one GSN shop. The public Shop Gallery stays visitor-facing."
+        subtitle="Use only the few tools you need here: shop details, products, public shop face, spotlight, and Vault."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/marketplace"
         backLabel="Marketplace"
         nextLinks={[
-          { label: "Shop Assets", to: "/app/shop-assets" },
+          { label: "Products", to: "/app/shop-assets" },
           {
-            label: "Public Shop Face",
+            label: "Public Shop",
             to: publicShopLink || "/app/marketplace",
             disabled: !publicShopLink,
           },
           { label: "TrustSlip", to: "/app/trust-slip" },
-          { label: "Community Marketplace", to: "/app/marketplace" },
         ]}
         utilityLinks={[
           { label: "Community Home", to: "/app/community" },
-          { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
         ]}
       />
 
@@ -2565,7 +2563,7 @@ export default function ShopControlPage() {
       <section
         id="shop-control-summary"
         style={pageCard(
-          "radial-gradient(circle at 12% 0%, rgba(217,172,51,0.18) 0%, rgba(217,172,51,0) 30%), linear-gradient(180deg, #071827 0%, #0B2942 58%, #123A59 100%)"
+          "radial-gradient(circle at 12% 0%, rgba(217,172,51,0.12) 0%, rgba(217,172,51,0) 28%), linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 56%, #EAF4FF 100%)"
         )}
       >
         <div
@@ -2577,12 +2575,12 @@ export default function ShopControlPage() {
           }}
         >
           <div>
-            <div style={{ ...sectionLabel(), color: "#F6D77A" }}>Owner backstage</div>
+            <div style={sectionLabel()}>Owner page</div>
 
             <div
               style={{
                 marginTop: 10,
-                color: "#F8FBFF",
+                color: "#0B1F33",
                 fontWeight: 900,
                 fontSize: isCompact ? 28 : 34,
                 lineHeight: 1.1,
@@ -2596,32 +2594,40 @@ export default function ShopControlPage() {
                 marginTop: 12,
                 ...helperText(),
                 maxWidth: 860,
-                color: "#D7E3F1",
+                color: "#4D6178",
               }}
             >
-              Use this owner page to shape the public shop face, manage products,
-              prepare live spotlight, and keep Vault private until you deliberately
-              release selected access.
+              Start with the basics. Keep the shop face clear, manage products,
+              open spotlight only when ready, and use Vault only for private
+              access.
             </div>
 
             <div
               style={{
                 marginTop: 14,
-                display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr 1fr" : "repeat(3, minmax(0, 1fr))",
+                gap: 10,
               }}
             >
-              <span style={badge(true)}>Community: {communityName}</span>
-              <span style={badge(false)}>
-                Community no: {firstTruthy(shop?.clan_id, selectedClanId, "Pending")}
-              </span>
-              <span style={badge(false)}>
-                GSN ID: {firstTruthy(shop?.gmfn_id, me?.gmfn_id, "Pending")}
-              </span>
-              <span style={badge(false)}>Public items: {publicProducts.length} / 12</span>
-              <span style={badge(false)}>Vault items: {vaultProducts.length} / 6</span>
-              <span style={badge(false)}>Active spotlights: {activeSpotlights.length}</span>
+              <div style={statTile()}>
+                <div style={sectionLabel()}>Community</div>
+                <div style={{ marginTop: 6, color: "#0B1F33", fontSize: 14, fontWeight: 900, lineHeight: 1.3 }}>
+                  {communityName}
+                </div>
+              </div>
+              <div style={statTile()}>
+                <div style={sectionLabel()}>GSN ID</div>
+                <div style={{ marginTop: 6, color: "#0B1F33", fontSize: 14, fontWeight: 900, lineHeight: 1.3, wordBreak: "break-word" }}>
+                  {firstTruthy(shop?.gmfn_id, me?.gmfn_id, "Pending")}
+                </div>
+              </div>
+              <div style={statTile()}>
+                <div style={sectionLabel()}>What is ready</div>
+                <div style={{ marginTop: 6, color: "#0B1F33", fontSize: 14, fontWeight: 900, lineHeight: 1.4 }}>
+                  {publicProducts.length} public, {vaultProducts.length} private, {activeSpotlights.length} spotlight
+                </div>
+              </div>
             </div>
 
             <div
@@ -2646,7 +2652,7 @@ export default function ShopControlPage() {
                 style={fullButton(actionBtn("secondary", !publicShopLink))}
                 disabled={!publicShopLink}
               >
-                Open Public Shop Face
+                Open Public Shop
               </button>
 
               <button
@@ -2660,7 +2666,7 @@ export default function ShopControlPage() {
                 style={fullButton(actionBtn("secondary", !publicShopLink))}
                 disabled={!publicShopLink}
               >
-                Copy Public Shop Face Link
+                Copy Public Link
               </button>
 
               <OriginLink to="/app/trust-slip" style={fullButton(actionBtn("soft"))}>
@@ -2672,11 +2678,11 @@ export default function ShopControlPage() {
           <div
             style={{
               ...softCard("rgba(255,255,255,0.96)"),
-              border: "1px solid rgba(212,175,55,0.14)",
-              boxShadow: "0 18px 38px rgba(2,12,27,0.16)",
+              border: "1px solid rgba(13,95,168,0.12)",
+              boxShadow: "0 14px 30px rgba(2,12,27,0.10)",
             }}
           >
-            <div style={sectionLabel()}>Control status</div>
+            <div style={sectionLabel()}>Next best move</div>
 
             <div
               style={{
@@ -2769,11 +2775,11 @@ export default function ShopControlPage() {
         id="shop-control-unlocks"
         style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 55%, #EAF4FF 78%, #FFF7D8 100%)")}
       >
-        <div style={sectionLabel()}>Paid access</div>
+        <div style={sectionLabel()}>Optional paid tools</div>
 
         <div style={{ marginTop: 10, ...helperText(), maxWidth: 900 }}>
-          Start only the paid feature you need. Use the exact reference, then return
-          here after payment so GSN can open the feature when it is confirmed.
+          These are optional. Use them only when you need private viewing,
+          public verification, or paid spotlight priority.
         </div>
 
         <div
@@ -2792,13 +2798,12 @@ export default function ShopControlPage() {
               boxShadow: "0 16px 34px rgba(2,12,27,0.10)",
             }}
           >
-            <div style={sectionLabel()}>Private Vault</div>
+            <div style={sectionLabel()}>Vault</div>
             <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 18, fontWeight: 900 }}>
               Private viewing by trust link
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-              Activate Vault when you want selected people to open private offers
-              through a trusted access link.
+              Use Vault only when you want selected people to see private offers.
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(true)}>Vault items: {vaultProducts.length} / 6</span>
@@ -2855,7 +2860,7 @@ export default function ShopControlPage() {
                 disabled={shopActionsLocked || creatingVaultInstruction}
                 style={fullButton(actionBtn("secondary", shopActionsLocked || creatingVaultInstruction))}
               >
-                Start 6-slot payment
+                Start 6-slot plan
               </button>
               <OriginLink to="/app/shop-assets" style={fullButton(actionBtn("secondary"))}>
                 Manage Products
@@ -2880,18 +2885,18 @@ export default function ShopControlPage() {
                   ? "Review Identity First"
                   : creatingVaultLink
                   ? "Creating..."
-                  : "Create Vault access link"}
+                  : "Create access link"}
               </button>
             </div>
           </div>
 
           <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
-            <div style={sectionLabel()}>TrustSlip verification</div>
+            <div style={sectionLabel()}>Verification</div>
             <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 18, fontWeight: 900 }}>
               Visitor verification
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-              Let visitors confirm this shop through your TrustSlip verification page.
+              Let visitors confirm this shop through your TrustSlip page.
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(true)}>
@@ -2978,7 +2983,7 @@ export default function ShopControlPage() {
               Paid spotlight
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-              Use paid spotlight when you want this shop to take priority in community-facing visibility after confirmation.
+              Use this only when you want this shop to take priority after payment confirmation.
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(true)}>Active paid spotlights: {activePaidSpotlights.length}</span>
@@ -3187,7 +3192,7 @@ export default function ShopControlPage() {
               <div style={sectionLabel()}>Upload picture</div>
 
               <div style={{ marginTop: 10, ...helperText() }}>
-                Upload a file or paste an image URL. Save when the picture is ready.
+                Use a simple shop picture here. Save it when it looks right.
               </div>
 
               <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
@@ -3200,11 +3205,11 @@ export default function ShopControlPage() {
                 />
 
                 <div style={{ display: "grid", gap: 8 }}>
-                  <div style={sectionLabel()}>Image URL</div>
+                  <div style={sectionLabel()}>Use a web image instead</div>
                   <input
                     value={imageUrlInput}
                     onChange={(e) => setImageUrlInput(e.target.value)}
-                    placeholder="Paste image URL"
+                    placeholder="Paste image link"
                     style={inputStyle()}
                   />
                 </div>
@@ -3275,8 +3280,8 @@ export default function ShopControlPage() {
                   style={fullButton(actionBtn("secondary", !publicShopLink))}
                   disabled={!publicShopLink}
                 >
-                  Open Public Shop Face
-                </button>
+                    Open Public Shop
+                  </button>
 
                 <button
                   type="button"
@@ -3289,7 +3294,7 @@ export default function ShopControlPage() {
                   style={fullButton(actionBtn("soft", !publicShopLink))}
                   disabled={!publicShopLink}
                 >
-                  Copy Public Shop Link
+                    Copy Public Link
                 </button>
               </div>
             </div>
@@ -3369,7 +3374,7 @@ export default function ShopControlPage() {
       </section>
 
       <section style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 82%, #FFF7D8 100%)")}>
-        <div style={sectionLabel()}>Slot usage</div>
+        <div style={sectionLabel()}>Shop summary</div>
 
         <div
           style={{
@@ -3811,10 +3816,10 @@ export default function ShopControlPage() {
       <section
         id="shop-control-vault"
         style={pageCard(
-          "radial-gradient(circle at 16% 0%, rgba(217,172,51,0.16) 0%, rgba(217,172,51,0) 30%), linear-gradient(180deg, #071827 0%, #0B2942 56%, #123A59 100%)"
+          "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 82%, #FFF7D8 100%)"
         )}
       >
-        <div style={{ ...sectionLabel(), color: "#F6D77A" }}>Private Vault access</div>
+        <div style={sectionLabel()}>Private Vault access</div>
 
         <div
           style={{
@@ -3852,17 +3857,15 @@ export default function ShopControlPage() {
 
           <div
             style={{
-              ...innerCard(
-                "radial-gradient(circle at 16% 0%, rgba(217,172,51,0.16) 0%, rgba(217,172,51,0) 32%), linear-gradient(180deg, #071827 0%, #0B2942 58%, #123A59 100%)"
-              ),
-              border: "1px solid rgba(212,175,55,0.22)",
+              ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
+              border: "1px solid rgba(13,95,168,0.14)",
               boxShadow:
-                "0 20px 44px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -2px 0 rgba(0,0,0,0.16)",
+                "0 16px 34px rgba(7,24,39,0.09), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -2px 0 rgba(8,40,72,0.06)",
             }}
           >
             <div
               style={{
-                color: "#F8FBFF",
+                color: "#0B1F33",
                 fontWeight: 900,
                 fontSize: 16,
               }}
@@ -3871,10 +3874,10 @@ export default function ShopControlPage() {
             </div>
 
             <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-              <div style={{ ...helperText(), color: "#D7E3F1" }}>
+              <div style={helperText()}>
                 Private offers ready: {vaultProducts.length}
               </div>
-              <div style={{ ...helperText(), color: "#D7E3F1" }}>
+              <div style={helperText()}>
                 Access links ready: {vaultLinks.length}
               </div>
 
@@ -3892,14 +3895,14 @@ export default function ShopControlPage() {
                     <span
                       style={{
                         ...badge(false),
-                        background: "rgba(212,175,55,0.10)",
-                        color: "#F6D77A",
+                        background: "rgba(217,172,51,0.12)",
+                        color: "#6F4C00",
                       }}
                     >
                       {firstTruthy(item?.status, "active")}
                     </span>
                   </div>
-                  <div style={{ marginTop: 8, ...helperText(), color: "#D7E3F1" }}>
+                  <div style={{ marginTop: 8, ...helperText() }}>
                     Access ends: {safeDateTime(item?.expires_at) || "No expiry set"}
                   </div>
                   <div style={{ marginTop: 10, ...controlGrid(isCompact, 120) }}>
@@ -3967,7 +3970,7 @@ export default function ShopControlPage() {
               ))}
 
               {vaultProducts.length === 0 && vaultLinks.length === 0 ? (
-                <div style={{ ...helperText(), color: "#D7E3F1" }}>
+                <div style={helperText()}>
                   Private Vault is not open yet. Private offers and permission-based
                   access links will show here after you activate Vault and release
                   access.
