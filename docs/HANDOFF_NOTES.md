@@ -43,6 +43,39 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-27 00:39
+
+#### Workstream
+Revenue Allocation passive section-toggle follow-up cleanup pass.
+
+#### Routes/screens affected
+- `/app/revenue-allocation`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/RevenueAllocationPage.tsx`
+
+#### Confirmed facts
+- `RevenueAllocationPage.tsx` still used `buttonGuardProps()` on additional passive section-collapse controls after the earlier `Meaning` cleanup.
+- Those controls only open and collapse reading sections and do not launch routes or trigger business actions.
+- This pass removed the shared pointer/touch guard layer from these passive toggles:
+  - `summary`
+  - `context`
+  - `routes`
+- Revenue allocation loading, copy action, breakdown math, and route guidance did not change.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other overview pages may still carry the same unnecessary guard layer on passive collapse controls and can be cleaned in later passes.
+
+#### Next recommended step
+- Continue targeting passive section toggles and non-route detail controls that still use action-level pointer/touch guard props even though they do not launch routes or trigger business actions.
+
+---
+
+#### Date
 2026-04-27 00:30
 
 #### Workstream

@@ -842,7 +842,6 @@ export default function RevenueAllocationPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("summary")}
             style={collapseToggle()}
           >
@@ -1082,7 +1081,6 @@ export default function RevenueAllocationPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("context")}
             style={collapseToggle()}
           >
@@ -1137,7 +1135,6 @@ export default function RevenueAllocationPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("routes")}
             style={collapseToggle()}
           >
