@@ -1451,7 +1451,6 @@ export default function ShopControlPage() {
     event?: React.SyntheticEvent<HTMLElement>,
     mode: "free" | "paid" = "free"
   ) {
-    event?.stopPropagation();
     setSpotlightPublishFeedback(null);
     setSpotlightFlowStep(shop?.id ? "upload" : "setup");
     setSpotlightMediaChoice("image");
@@ -1479,6 +1478,16 @@ export default function ShopControlPage() {
     const resolved = safeStr(url);
     if (!resolved) return;
     window.open(resolved, "_blank", "noopener,noreferrer");
+  }
+
+  function paidToolActionLabel(options: {
+    locked: boolean;
+    busy?: boolean;
+    idle: string;
+  }) {
+    if (options.locked) return "Identity first";
+    if (options.busy) return "Working...";
+    return options.idle;
   }
 
   function openShopControlSection(targetId: string) {
@@ -2822,11 +2831,11 @@ export default function ShopControlPage() {
                 disabled={shopActionsLocked || creatingVaultInstruction}
                 style={fullButton(actionBtn("primary", shopActionsLocked || creatingVaultInstruction))}
               >
-                {shopActionsLocked
-                  ? "Review Identity First"
-                  : creatingVaultInstruction
-                  ? "Creating..."
-                  : "Start 1-slot payment"}
+                {paidToolActionLabel({
+                  locked: shopActionsLocked,
+                  busy: creatingVaultInstruction,
+                  idle: "Pay 1 slot",
+                })}
               </button>
               <button
                 type="button"
@@ -2837,7 +2846,11 @@ export default function ShopControlPage() {
                 disabled={shopActionsLocked || creatingVaultInstruction}
                 style={fullButton(actionBtn("secondary", shopActionsLocked || creatingVaultInstruction))}
               >
-                Start 6-slot plan
+                {paidToolActionLabel({
+                  locked: shopActionsLocked,
+                  busy: creatingVaultInstruction,
+                  idle: "Pay 6 slots",
+                })}
               </button>
               <OriginLink to="/app/shop-assets" style={fullButton(actionBtn("secondary"))}>
                 Manage Products
@@ -2858,11 +2871,11 @@ export default function ShopControlPage() {
                   shopActionsLocked || creatingVaultLink || vaultProducts.length === 0
                 ))}
               >
-                {shopActionsLocked
-                  ? "Review Identity First"
-                  : creatingVaultLink
-                  ? "Creating..."
-                  : "Create access link"}
+                {paidToolActionLabel({
+                  locked: shopActionsLocked,
+                  busy: creatingVaultLink,
+                  idle: "Create access link",
+                })}
               </button>
             </div>
           </div>
@@ -2929,24 +2942,28 @@ export default function ShopControlPage() {
                   shopActionsLocked || creatingMerchantVerifyInstruction
                 ))}
               >
-                {shopActionsLocked
-                  ? "Review Identity First"
-                  : creatingMerchantVerifyInstruction
-                  ? "Creating..."
-                  : "Start verification payment"}
+                {paidToolActionLabel({
+                  locked: shopActionsLocked,
+                  busy: creatingMerchantVerifyInstruction,
+                  idle: "Pay verification",
+                })}
               </button>
               <OriginLink to="/app/trust-slip" style={fullButton(actionBtn("secondary"))}>
                 Open TrustSlip
               </OriginLink>
               {safeStr(trustSlipFeature?.public_verify_url) ? (
-                <a
-                  href={String(trustSlipFeature?.public_verify_url)}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  type="button"
+                  {...buttonGuardProps()}
+                  onClick={(event) =>
+                    runGuardedButtonAction(event, () =>
+                      openExternalLink(String(trustSlipFeature?.public_verify_url))
+                    )
+                  }
                   style={fullButton(actionBtn("secondary"))}
                 >
                   Open public verification
-                </a>
+                </button>
               ) : null}
             </div>
           </div>
@@ -3026,16 +3043,18 @@ export default function ShopControlPage() {
                 disabled={shopActionsLocked || creatingSpotlightInstruction}
                 style={fullButton(actionBtn("primary", shopActionsLocked || creatingSpotlightInstruction))}
               >
-                {shopActionsLocked
-                  ? "Review Identity First"
-                  : creatingSpotlightInstruction
-                  ? "Creating..."
-                  : "Start spotlight payment"}
+                {paidToolActionLabel({
+                  locked: shopActionsLocked,
+                  busy: creatingSpotlightInstruction,
+                  idle: "Pay spotlight",
+                })}
               </button>
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={(event) => openSpotlightTools(event, "paid")}
+                onClick={(event) =>
+                  runGuardedButtonAction(event, () => openSpotlightTools(undefined, "paid"))
+                }
                 style={fullButton(actionBtn("secondary"))}
               >
                 Open Paid Spotlight Publisher

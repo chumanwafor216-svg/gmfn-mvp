@@ -86,6 +86,16 @@ Shop-family interaction cleanup pass for `Shop Control`, the embedded Community 
 - A deeper Shop Control pass then removed the same duplicate pattern from more of the paid-tools side:
   - the `Public shop links` block now opens the public shop through the same single guarded path as the top summary controls
   - Vault link opening now uses one shared external-link opener instead of layering another direct `guardButtonPress(...)` call onto the click
+- Another paid-tools stabilization pass then tightened the remaining shape-shifting controls:
+  - `Open Paid Spotlight Publisher` now follows the same guarded action path as the rest of the paid-tools controls instead of using the last direct click-time guard path
+  - `Open public verification` now uses the same guarded external-open pattern as the rest of the shop page, instead of behaving like a raw anchor beside the internal TrustSlip control
+  - shortened several busy/locked labels in the paid-tools area so buttons stop changing size as much while working:
+    - `Pay 1 slot`
+    - `Pay 6 slots`
+    - `Pay verification`
+    - `Pay spotlight`
+    - `Identity first`
+    - `Working...`
 - Verification after this pass:
   - `npm exec -- eslint src/pages/ShopControlPage.tsx src/components/CommunityShopControlPanel.tsx src/pages/ShopGalleryPage.tsx`
   - `npm run build`
@@ -94,6 +104,7 @@ Shop-family interaction cleanup pass for `Shop Control`, the embedded Community 
 #### Open risks or unknowns
 - `ShopControlPage.tsx` still contains many page-local button guards layered across many individual buttons. The reveal engine is calmer now, but if shop buttons still feel heavy in live testing, the next step should be a second Shop-family pass focused specifically on duplicate guard stacking rather than on hash/scroll behavior.
 - That next duplicate-guard pass has now started, but it is not complete yet. The busiest public/open actions are calmer; some create/pay/revoke actions still keep the older local guard style.
+- The create/pay/revoke family is calmer now, but the vault row still has dense per-link controls (`Copy Vault link`, `Open Vault link`, `Extend 7 days`, `Revoke`) that may still need one more simplification pass if live phone testing says they remain visually or physically heavy.
 - Other routes may still link into `Shop Control` using legacy `#shop-control-*` hashes. Those remain supported for compatibility, but the newer calmer contract now exists through `?section=...`.
 
 #### Next recommended step
