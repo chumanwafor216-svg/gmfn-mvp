@@ -43,6 +43,36 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 23:07
+
+#### Workstream
+Community Home shared button-helper cleanup pass.
+
+#### Routes/screens affected
+- `/app/community`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/CommunityHomePage.tsx`
+
+#### Confirmed facts
+- `CommunityHomePage.tsx` still used a page-local shared button helper that forced `preventDefault()` for normal click/submit events before many direct route and section buttons.
+- These controls already use pointer/touch isolation through `communityButtonGuardProps()`, and most are plain `type="button"` actions, so that extra click-time default blocking was unnecessary heaviness.
+- This pass removed the click-time `preventDefault()` behavior from `consumeCommunityButtonEvent(...)` while keeping `stopPropagation()`.
+- Route targets, guided spotlight behavior, community opens, and owner/action flows themselves did not change.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other route-local helpers on first-touch pages may still carry the same pattern and should continue to be cleaned case by case.
+
+#### Next recommended step
+- Continue following route-local shared button helpers on high-touch pages where pointer/touch guards already exist but click-time default blocking is still layered underneath.
+
+---
+
+#### Date
 2026-04-26 23:00
 
 #### Workstream

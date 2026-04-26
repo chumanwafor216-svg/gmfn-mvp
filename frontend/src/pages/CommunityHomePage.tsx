@@ -1910,10 +1910,6 @@ export default function CommunityHomePage() {
   ) {
     if (!event) return;
 
-    if (event.type === "click" || event.type === "submit") {
-      event.preventDefault();
-    }
-
     event.stopPropagation();
   }
 
