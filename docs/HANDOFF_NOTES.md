@@ -43,6 +43,38 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 19:34
+
+#### Workstream
+CCI and My GSN and I top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/cci`
+- `/app/my-gmfn-and-i`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/CCIReadingPage.tsx`
+- `frontend/src/pages/MyGMFNAndIPage.tsx`
+
+#### Confirmed facts
+- `CCIReadingPage.tsx` still exposed top-nav route links while also carrying its own in-body route actions for Identity & Integrity and Trust Passport.
+- `MyGMFNAndIPage.tsx` still exposed top-nav route links in both its loading and live states while also carrying a full lower route-tile surface for Dashboard, Community, Marketplace, Loans, Trust, Demand Box, and related member routes.
+- This pass removed the top-nav `nextLinks` and `utilityLinks` from both pages so route movement stays in the page body instead of two competing route bands.
+- Home and back behavior remain intact in the page top navigation for both routes.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- A few remaining operational pages may still carry stacked button guards or duplicated route movement even after the route-band cleanup.
+
+#### Next recommended step
+- Continue the app-wide cleanup by following live heaviness into the remaining operational or member pages still showing stacked button guards or overlapping launcher behavior.
+
+---
+
+#### Date
 2026-04-26 19:26
 
 #### Workstream

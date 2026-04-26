@@ -401,15 +401,6 @@ export default function MyGMFNAndIPage() {
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/dashboard"
-          nextLinks={[
-            { label: "Trust Passport", to: "/app/trust" },
-            { label: "Community Home", to: "/app/community" },
-            { label: "Marketplace", to: "/app/marketplace" },
-          ]}
-          utilityLinks={[
-            { label: "Notifications", to: "/app/notifications" },
-            { label: "TrustSlip", to: "/app/trust-slip" },
-          ]}
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -438,15 +429,6 @@ export default function MyGMFNAndIPage() {
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
-        nextLinks={[
-          { label: "Trust Passport", to: "/app/trust" },
-          { label: "Community Home", to: "/app/community" },
-          { label: "Marketplace", to: "/app/marketplace" },
-        ]}
-        utilityLinks={[
-          { label: "Notifications", to: "/app/notifications" },
-          { label: "TrustSlip", to: "/app/trust-slip" },
-        ]}
       />
 
       <ExplainToggle

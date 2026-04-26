@@ -295,11 +295,6 @@ export default function CCIReadingPage() {
         homeLabel="Dashboard"
         backTo="/app/dashboard"
         backLabel="Dashboard"
-        nextLinks={[
-          { label: "Identity & Integrity", to: "/app/identity" },
-          { label: "Trust Passport", to: "/app/trust" },
-        ]}
-        utilityLinks={[{ label: "TrustSlip", to: "/app/trust-slip" }]}
       />
 
       <section style={pageCard("#FFFFFF")}>
