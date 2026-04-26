@@ -939,38 +939,6 @@ export default function TrustCommandCentrePage() {
     executiveReading.incompleteError,
   ].filter(Boolean);
 
-  const pageNextLinks = useMemo(() => {
-    if (isPlatformAdmin) {
-      return [
-        { label: "Trust Analytics", to: "/app/command-center/trust-analytics" },
-        { label: "Trust Events", to: "/app/command-center/trust-events" },
-        { label: "System Operations", to: "/app/command-center/system-operations" },
-      ];
-    }
-
-    return [
-      { label: "Exposure", to: "/app/command-center/exposure" },
-      { label: "Bank Console", to: "/app/command-center/bank-console" },
-      { label: "Revenue Allocation", to: "/app/command-center/revenue-allocation" },
-    ];
-  }, [isPlatformAdmin]);
-
-  const pageUtilityLinks = useMemo(() => {
-    if (isPlatformAdmin) {
-      return [
-        { label: "Exposure", to: "/app/command-center/exposure" },
-        { label: "Identity Risk", to: "/app/command-center/identity-risk" },
-        { label: "Trust Graph", to: "/app/command-center/trust-graph" },
-      ];
-    }
-
-    return [
-      { label: "Exposure", to: "/app/command-center/exposure" },
-      { label: "Bank Console", to: "/app/command-center/bank-console" },
-      { label: "Revenue Allocation", to: "/app/command-center/revenue-allocation" },
-    ];
-  }, [isPlatformAdmin]);
-
   const routeCards = useMemo(() => {
     const cards: Array<{
       label: string;
@@ -1305,16 +1273,6 @@ export default function TrustCommandCentrePage() {
             homeTo="/app/dashboard"
             homeLabel="Dashboard"
             backTo="/app/dashboard"
-            nextLinks={[
-              { label: "Trust Analytics", to: "/app/command-center/trust-analytics" },
-              { label: "Trust Events", to: "/app/command-center/trust-events" },
-              { label: "System Operations", to: "/app/command-center/system-operations" },
-            ]}
-            utilityLinks={[
-              { label: "Exposure", to: "/app/command-center/exposure" },
-              { label: "Identity Risk", to: "/app/command-center/identity-risk" },
-              { label: "Trust Graph", to: "/app/command-center/trust-graph" },
-            ]}
           />
 
           <section style={pageCard("#FFFFFF")}>
@@ -1337,8 +1295,6 @@ export default function TrustCommandCentrePage() {
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/dashboard"
-          nextLinks={pageNextLinks}
-          utilityLinks={pageUtilityLinks}
         />
 
       <ExplainToggle

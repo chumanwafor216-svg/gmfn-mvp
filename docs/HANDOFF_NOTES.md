@@ -43,6 +43,42 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 18:38
+
+#### Workstream
+Trust command-centre top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/command-center`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/TrustCommandCentrePage.tsx`
+
+#### Confirmed facts
+- `TrustCommandCentrePage.tsx` still carried duplicated route movement:
+  - top navigation `nextLinks` / `utilityLinks`
+  - lower `Where next`
+- This pass removed the top-nav `nextLinks` and `utilityLinks`, leaving route movement in one place only: the lower `Where next` section.
+- Home and back behavior remain intact in the page top navigation.
+- Dead route-link arrays left behind by that removal were also deleted so the checkpoint stays lint-clean.
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/TrustCommandCentrePage.tsx`
+  - `npm run build`
+  - both passed
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Remaining trust-facing pages with both top-nav route links and lower route sections may still need the same cleanup.
+
+#### Next recommended step
+- Continue the same audit into the remaining trust pages still carrying duplicated route bands, especially Trust Score / Trust Slip surfaces where top-nav route links still coexist with lower route movement.
+
+---
+
+#### Date
 2026-04-26 18:28
 
 #### Workstream
