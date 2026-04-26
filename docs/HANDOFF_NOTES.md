@@ -12338,3 +12338,42 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend build passed
   - the densest remaining Vault link controls are now at a calmer safe
     checkpoint for continued phone testing
+
+### Shop Control paid-tool bands reached a calmer safe checkpoint (2026-04-26)
+
+- Product-owner issue:
+  - the remaining paid-tool sections in Shop Control still mixed setup, payment,
+    and use actions inside the same action bands
+  - generic `Working...` labels also made unrelated actions feel too similar
+    while the page was busy
+- Applied the smallest safe interaction cleanup:
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - expanded `paidToolActionLabel(...)` to support action-specific busy text
+    - split the Vault section controls into:
+      - `Start or renew Vault access`
+      - `Continue with Vault work`
+    - split the Verification section controls into:
+      - `Start or renew verification`
+      - `Use verification pages`
+    - split the Paid spotlight section controls into:
+      - `Start or renew paid spotlight`
+      - `Continue with paid spotlight work`
+    - tightened the live button labels used in those sections:
+      - `Preparing...`
+      - `Creating link...`
+      - `Open paid publisher`
+- Routes impacted:
+  - `/app/shop-control`
+- Shared logic impact:
+  - no backend change
+  - this is a frontend action-band readability and button-stability pass only
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/ShopControlPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed
+  - the main paid-tool action bands are now at a calmer safe checkpoint for
+    continued phone testing

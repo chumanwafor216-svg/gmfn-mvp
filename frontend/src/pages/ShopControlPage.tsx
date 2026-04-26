@@ -1491,9 +1491,10 @@ export default function ShopControlPage() {
     locked: boolean;
     busy?: boolean;
     idle: string;
+    busyText?: string;
   }) {
     if (options.locked) return "Identity first";
-    if (options.busy) return "Working...";
+    if (options.busy) return options.busyText || "Working...";
     return options.idle;
   }
 
@@ -2828,7 +2829,8 @@ export default function ShopControlPage() {
               </div>
             ) : null}
             <div style={{ marginTop: 10, ...helperText() }}>{vaultProofText}</div>
-            <div style={{ marginTop: 12, ...controlGrid(isCompact, 132) }}>
+            <div style={{ marginTop: 12, ...helperText() }}>Start or renew Vault access</div>
+            <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
               <button
                 type="button"
                 {...buttonGuardProps()}
@@ -2842,6 +2844,7 @@ export default function ShopControlPage() {
                   locked: shopActionsLocked,
                   busy: creatingVaultInstruction,
                   idle: "Pay 1 slot",
+                  busyText: "Preparing...",
                 })}
               </button>
               <button
@@ -2857,8 +2860,12 @@ export default function ShopControlPage() {
                   locked: shopActionsLocked,
                   busy: creatingVaultInstruction,
                   idle: "Pay 6 slots",
+                  busyText: "Preparing...",
                 })}
               </button>
+            </div>
+            <div style={{ marginTop: 10, ...helperText() }}>Continue with Vault work</div>
+            <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
               <OriginLink to="/app/shop-assets" style={fullButton(actionBtn("secondary"))}>
                 Manage Products
               </OriginLink>
@@ -2882,6 +2889,7 @@ export default function ShopControlPage() {
                   locked: shopActionsLocked,
                   busy: creatingVaultLink,
                   idle: "Create access link",
+                  busyText: "Creating link...",
                 })}
               </button>
             </div>
@@ -2934,7 +2942,8 @@ export default function ShopControlPage() {
               ) : null}
             </div>
             <div style={{ marginTop: 10, ...helperText() }}>{merchantVerifyProofText}</div>
-            <div style={{ marginTop: 12, ...controlGrid(isCompact, 132) }}>
+            <div style={{ marginTop: 12, ...helperText() }}>Start or renew verification</div>
+            <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
               <button
                 type="button"
                 {...buttonGuardProps()}
@@ -2953,8 +2962,12 @@ export default function ShopControlPage() {
                   locked: shopActionsLocked,
                   busy: creatingMerchantVerifyInstruction,
                   idle: "Pay verification",
+                  busyText: "Preparing...",
                 })}
               </button>
+            </div>
+            <div style={{ marginTop: 10, ...helperText() }}>Use verification pages</div>
+            <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
               <OriginLink to="/app/trust-slip" style={fullButton(actionBtn("secondary"))}>
                 Open TrustSlip
               </OriginLink>
@@ -3038,7 +3051,8 @@ export default function ShopControlPage() {
                 {spotlightNextAction.detail}
               </div>
             </div>
-            <div style={{ marginTop: 12, ...controlGrid(isCompact, 132) }}>
+            <div style={{ marginTop: 12, ...helperText() }}>Start or renew paid spotlight</div>
+            <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
               <button
                 type="button"
                 {...buttonGuardProps()}
@@ -3054,8 +3068,12 @@ export default function ShopControlPage() {
                   locked: shopActionsLocked,
                   busy: creatingSpotlightInstruction,
                   idle: "Pay spotlight",
+                  busyText: "Preparing...",
                 })}
               </button>
+            </div>
+            <div style={{ marginTop: 10, ...helperText() }}>Continue with paid spotlight work</div>
+            <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
               <button
                 type="button"
                 {...buttonGuardProps()}
@@ -3064,7 +3082,7 @@ export default function ShopControlPage() {
                 }
                 style={fullButton(actionBtn("secondary"))}
               >
-                Open Paid Spotlight Publisher
+                Open paid publisher
               </button>
             </div>
           </div>
