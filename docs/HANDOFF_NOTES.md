@@ -43,6 +43,46 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 17:36
+
+#### Workstream
+Repayment top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/repayment/:loanId`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/RepaymentPage.tsx`
+
+#### Confirmed facts
+- Earlier work had already removed duplicated route actions from `Result and reconciliation`, but `RepaymentPage.tsx` was still carrying a second route-movement band in `PageTopNav`.
+- That meant the route still exposed leave-page options in two places:
+  - top navigation route links
+  - lower `Route focus` / `Next routes`
+- This pass removed the top-nav `nextLinks` and `utilityLinks`, leaving route movement in one place only: the lower route section.
+- Home and back behavior remain intact in the page top navigation.
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/RepaymentPage.tsx`
+  - `npm run build`
+  - both passed
+
+#### Open risks or unknowns
+- The broader app still remains in safe-checkpoint mode rather than final freeze mode.
+- Other dense operational routes may still keep duplicated action bands or heavier local guard layering.
+
+#### Next recommended step
+- Deploy `gmfn-frontend`.
+- Phone-test `/app/repayment/:loanId`, especially:
+  - top page entry
+  - repayment overview
+  - amount/reference actions
+  - lower `Route focus` / `Next routes`
+- If `Repayment` now feels materially calmer, continue the deeper audit in the next route that still feels physically heavy in live testing.
+
+#### Date
 2026-04-26 17:27
 
 #### Workstream

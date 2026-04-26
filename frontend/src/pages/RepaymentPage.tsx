@@ -688,8 +688,6 @@ export default function RepaymentPage() {
           homeLabel="Dashboard"
           backTo="/app/loans"
           backLabel="Loans & Support"
-          nextLinks={[{ label: "Loan Summary", to: numericLoanId > 0 ? `/app/loan-summary/${numericLoanId}` : "/app/loans" }]}
-          utilityLinks={[{ label: "Finance", to: "/app/finance" }]}
         />
         <section style={pageCard("#FFFFFF")}>
           <div style={{ color: "#64748B", lineHeight: 1.8 }}>Loading repayment route...</div>
@@ -730,19 +728,6 @@ export default function RepaymentPage() {
         homeLabel="Dashboard"
         backTo={`/app/loan-summary/${numericLoanId}`}
         backLabel="Loan Summary"
-        nextLinks={
-          repaymentTaskActive
-            ? [{ label: "Loan Summary", to: `/app/loan-summary/${numericLoanId}` }]
-            : [
-                { label: "Loan Summary", to: `/app/loan-summary/${numericLoanId}` },
-                { label: "Finance", to: "/app/finance" },
-              ]
-        }
-        utilityLinks={
-          repaymentTaskActive
-            ? [{ label: "Loans & Support", to: "/app/loans" }]
-            : [{ label: "Notifications", to: "/app/notifications" }]
-        }
       />
 
       <ExplainToggle
