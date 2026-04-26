@@ -11705,3 +11705,28 @@ GSN-branded invite composer and invite-entry continuity.
 - Result:
   - frontend lint passed
   - frontend build passed
+
+### Dashboard attention guide no longer auto-opens as a full blocking panel on phone (2026-04-26)
+
+- Product-owner issue from phone testing:
+  - the Dashboard attention guide was staying visibly active on phone and felt
+    like it could be contributing to jumpy-button behavior
+  - the attention surface needed to stay under control instead of taking over
+    the phone screen by default
+- Applied the smallest safe Dashboard-only fix:
+  - `frontend/src/pages/DashboardPage.tsx`
+    - phone view no longer auto-opens the full attention guide panel when the
+      signal is active
+    - on phone, the attention signal now stays as a reminder surface until the
+      user deliberately opens it
+    - desktop/non-phone behavior remains unchanged
+- Route impact:
+  - `/app/dashboard`
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/DashboardPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed

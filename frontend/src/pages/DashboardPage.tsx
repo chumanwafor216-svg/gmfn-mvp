@@ -4597,10 +4597,12 @@ export default function DashboardPage() {
 
   const attentionQuietActive =
     attentionQuietUntilMs > 0 && attentionQuietUntilMs > attentionClockMs;
+  const attentionAutoOpenAllowed = !isPhone;
 
   const attentionSurfaceVisible =
     attentionDisplaySignal.active &&
     (attentionPopupVisible ||
+      (!attentionAutoOpenAllowed && !attentionQuietActive) ||
       (attentionDisplaySignal.shouldShow && !attentionQuietActive));
 
   const attentionPillShouldPulse =
@@ -4645,6 +4647,10 @@ export default function DashboardPage() {
     if (!dashboardIdentityReady) return;
     if (!attentionSignal.active || !attentionSignal.shouldShow) return;
     if (attentionQuietActive) return;
+    if (!attentionAutoOpenAllowed) {
+      setAttentionPopupVisible(false);
+      return;
+    }
     if (
       typeof document !== "undefined" &&
       document.visibilityState !== "visible"
@@ -4671,6 +4677,7 @@ export default function DashboardPage() {
     attentionState.signature,
     attentionClockMs,
     attentionQuietActive,
+    attentionAutoOpenAllowed,
     dashboardIdentityReady,
   ]);
 
