@@ -1390,7 +1390,6 @@ export default function BuildFirstCirclePage() {
             <span style={badge(false)}>{draft.contacts.length} contacts</span>
             <button
               type="button"
-              {...buttonGuardProps()}
               onClick={() => {
                 toggleSection("contacts");
               }}
@@ -1515,7 +1514,6 @@ export default function BuildFirstCirclePage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => {
               toggleSection("invite");
             }}

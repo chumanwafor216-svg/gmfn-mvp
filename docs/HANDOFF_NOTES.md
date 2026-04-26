@@ -1,3 +1,33 @@
+## 2026-04-27 01:16
+
+### Workstream
+Build First Circle passive collapse-toggle guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from the passive section-collapse controls in `BuildFirstCirclePage.tsx`.
+- Cleaned these toggles:
+  - `contacts`
+  - `invite`
+
+### Why
+- These controls only open and collapse reading/workflow sections, so they did not need the same guard layer as route-launch or business-action buttons.
+- This keeps the first-circle flow lighter for first-time users while preserving the actual add/select/remove/copy actions.
+
+### Files touched
+- `frontend/src/pages/BuildFirstCirclePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/build-first-circle`
+
+### Verification
+- `npm exec -- eslint src/pages/BuildFirstCirclePage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other onboarding pages may still carry the same unnecessary guard layer on passive open/collapse controls and can be cleaned in later passes.
+
 # HANDOFF_NOTES.md
 
 ## Purpose
