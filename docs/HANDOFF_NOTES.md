@@ -11466,3 +11466,33 @@ GSN-branded invite composer and invite-entry continuity.
     - `npm run build`
 - Result:
   - frontend build passed
+
+### Spotlight branch in the guided action lane now shows spotlight-only handles (2026-04-26)
+
+- Product-owner correction from live screenshots:
+  - once the user enters `Spotlight`, the guide must stop showing the wider
+    community action list
+  - the spotlight branch should behave like its own handle block and keep only
+    spotlight-related options visible
+- Applied the smallest safe fix:
+  - `frontend/src/components/NextActionGuide.tsx`
+    - branch mode now renders `activeItems` in the quick-choice list instead of
+      always rendering the top-level list
+    - spotlight branch helper text was tightened so it reads like a spotlight
+      handle family instead of duplicating the generic wording
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - the spotlight suspended-task card now explicitly lists the spotlight
+      family handles:
+      - Free spotlight
+      - Subscription spotlight
+      - Vault
+      - Shop setup
+    - it also explains the shop-first rule in plain language
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/components/NextActionGuide.tsx src/pages/CommunityHomePage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed

@@ -2467,6 +2467,21 @@ function communityButtonGuardProps(): Pick<
           </div>
           <div
             style={{
+              marginTop: 12,
+              color: "#5F7287",
+              fontSize: isCompact ? 13 : 14,
+              lineHeight: 1.75,
+              maxWidth: 860,
+            }}
+          >
+            Normal order:
+            {" "}choose the spotlight handle,
+            {" "}let GSN check the requirement,
+            {" "}and if your shop is not ready yet, GSN will tell you to prepare
+            the shop first before spotlight can begin.
+          </div>
+          <div
+            style={{
               marginTop: 14,
               display: "flex",
               gap: 8,
@@ -2474,6 +2489,10 @@ function communityButtonGuardProps(): Pick<
             }}
           >
             <span style={badge(true)}>Only spotlight is active here</span>
+            <span style={badge(false)}>Free spotlight</span>
+            <span style={badge(false)}>Subscription spotlight</span>
+            <span style={badge(false)}>Vault</span>
+            <span style={badge(false)}>Shop setup</span>
             <span style={badge(false)}>Back one step restores Community Home</span>
           </div>
         </section>

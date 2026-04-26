@@ -363,7 +363,7 @@ export default function NextActionGuide({
     ? `What do you want under ${branchItem.label}?`
     : title;
   const activeIntro = branchItem
-    ? `${branchItem.detail} Choose the exact next step here and GSN will continue from there.`
+    ? `${branchItem.detail} Choose the exact spotlight handle you want next. GSN will check the requirement and continue from there.`
     : intro;
 
   const matchedItem = useMemo(
@@ -599,7 +599,7 @@ export default function NextActionGuide({
               gap: 10,
             }}
           >
-            {visibleItems.map((item) => (
+            {activeItems.map((item) => (
               <button
                 key={item.id}
                 type="button"
