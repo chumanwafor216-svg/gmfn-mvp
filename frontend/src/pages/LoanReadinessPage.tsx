@@ -1005,14 +1005,6 @@ export default function LoanReadinessPage() {
           homeLabel="Dashboard"
           backTo="/app/withdrawal-instructions"
           backLabel="Money Out"
-          nextLinks={[
-            { label: "Loan Suggestions", to: "/app/loan-suggestions" },
-            { label: "Loan Workbench", to: "/app/loan-workbench" },
-          ]}
-          utilityLinks={[
-            { label: "Marketplace", to: "/app/marketplace" },
-            { label: "Loans", to: "/app/loans" },
-          ]}
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -1042,28 +1034,6 @@ export default function LoanReadinessPage() {
         homeLabel="Dashboard"
         backTo="/app/withdrawal-instructions"
         backLabel="Money Out"
-        nextLinks={[
-          { label: "Loan Suggestions", to: "/app/loan-suggestions" },
-          { label: "Loan Workbench", to: "/app/loan-workbench" },
-        ]}
-        utilityLinks={
-          readinessSupportActive
-            ? [
-                { label: "Loans & Support", to: "/app/loans" },
-                {
-                  label: "Commitment Builder",
-                  to: "/app/dashboard#focus-commitments",
-                },
-              ]
-            : [
-                { label: "Marketplace", to: "/app/marketplace" },
-                { label: "Loans & Support", to: "/app/loans" },
-                {
-                  label: "Commitment Builder",
-                  to: "/app/dashboard#focus-commitments",
-                },
-              ]
-        }
       />
 
       <ExplainToggle

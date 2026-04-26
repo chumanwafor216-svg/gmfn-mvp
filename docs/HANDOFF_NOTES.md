@@ -43,6 +43,46 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 17:18
+
+#### Workstream
+Loan readiness top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/loan-readiness`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/LoanReadinessPage.tsx`
+
+#### Confirmed facts
+- Deeper inspection showed `LoanReadinessPage.tsx` was still presenting route movement in two separate bands:
+  - `PageTopNav` exposed `nextLinks` and `utilityLinks` at the top of the page
+  - the lower `Next routes` section already owned the route-by-route movement choices for the same support flow
+- That meant the page was still letting users leave the route from two different route bands before they even reached the main readiness reading.
+- This pass removed the top-nav route bands and left route movement in one place only: the lower `Next routes` section.
+- Home and back behavior remain intact in the page top navigation.
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/LoanReadinessPage.tsx`
+  - `npm run build`
+  - both passed
+
+#### Open risks or unknowns
+- The broader app still remains in safe-checkpoint mode rather than final freeze mode.
+- Other dense operational routes may still keep duplicated action bands or heavier local guard layering.
+
+#### Next recommended step
+- Deploy `gmfn-frontend`.
+- Phone-test `/app/loan-readiness`, especially:
+  - top page entry
+  - readiness reading
+  - collapse/open controls
+  - lower `Next routes`
+- If `Loan Readiness` now feels materially calmer, continue the deeper audit in the next route that still feels physically heavy in live testing.
+
+#### Date
 2026-04-26 17:09
 
 #### Workstream
