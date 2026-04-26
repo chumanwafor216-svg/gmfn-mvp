@@ -4458,6 +4458,15 @@ export default function DashboardPage() {
     });
   }, [myShopLink, priorityRoutes]);
 
+  const dashboardGuideSearchItems = useMemo<NextActionGuideItem[]>(
+    () =>
+      dashboardNextActionItems.filter(
+        (item) =>
+          !item.id.startsWith("priority-") && !item.id.startsWith("support-")
+      ),
+    [dashboardNextActionItems]
+  );
+
   const urgentDemandCount = useMemo(
     () =>
       demandItems.filter((item) => safeStr(item.urgency).toLowerCase() === "high")
@@ -6887,6 +6896,7 @@ export default function DashboardPage() {
         storageKey="gmfn.dashboard.nextActionGuide.v1"
         compact={isPhone || isCompact}
         items={dashboardNextActionItems}
+        searchItems={dashboardGuideSearchItems}
         onSelect={handleDashboardNextAction}
         intro="Say what you want in normal words, like loan, deposit, withdraw, shop, trust, community, or marketplace. GSN will point you to the closest route."
       />

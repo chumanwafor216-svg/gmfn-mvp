@@ -11643,3 +11643,36 @@ GSN-branded invite composer and invite-entry continuity.
 - Result:
   - frontend lint passed
   - frontend build passed
+
+### Dashboard `Find action` no longer shares its text search with broad recommendation cards (2026-04-26)
+
+- Product-owner issue:
+  - the `Find action` button inside `What do you want to do next?` on
+    `Dashboard` was still jumping wrongly
+  - the likely cause was that typed intent was being matched against the same
+    mixed list used to display dynamic priority and supporting recommendation
+    cards, not only the stable user-intent routes
+- Applied the smallest safe change:
+  - `frontend/src/components/NextActionGuide.tsx`
+    - added an optional `searchItems` prop so a route can keep one list for
+      visible quick choices and another, safer list for typed intent matching
+    - existing pages continue to work as before when `searchItems` is not
+      provided
+  - `frontend/src/pages/DashboardPage.tsx`
+    - created a Dashboard-specific search list that excludes dynamic
+      `priority-*` and `support-*` recommendation cards
+    - Dashboard now keeps showing those recommendation cards visually, but typed
+      `Find action` matching only uses the stable route-intent items
+- Route impact:
+  - `/app/dashboard`
+- Shared logic impact:
+  - `NextActionGuide` gained a backward-compatible `searchItems` lane for safer
+    typed matching where needed
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/components/NextActionGuide.tsx src/pages/DashboardPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed

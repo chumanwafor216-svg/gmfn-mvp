@@ -30,6 +30,7 @@ type NextActionGuideProps = {
   intro?: string;
   placeholder?: string;
   items: NextActionGuideItem[];
+  searchItems?: NextActionGuideItem[];
   storageKey?: string;
   defaultOpen?: boolean;
   compact?: boolean;
@@ -325,6 +326,7 @@ export default function NextActionGuide({
   intro = "Say it simply. GSN will point you to the closest place.",
   placeholder = "Try: loan, deposit, withdraw, shop, invite...",
   items,
+  searchItems,
   storageKey,
   defaultOpen = false,
   compact = false,
@@ -351,6 +353,10 @@ export default function NextActionGuide({
     () => items.filter((item) => item && item.id && item.label),
     [items]
   );
+  const visibleSearchItems = useMemo(
+    () => (searchItems || items).filter((item) => item && item.id && item.label),
+    [items, searchItems]
+  );
 
   const branchItems = useMemo(
     () =>
@@ -359,6 +365,7 @@ export default function NextActionGuide({
   );
 
   const activeItems = branchItems.length > 0 ? branchItems : visibleItems;
+  const activeSearchItems = branchItems.length > 0 ? branchItems : visibleSearchItems;
   const activeTitle = branchItem
     ? `What do you want under ${branchItem.label}?`
     : title;
@@ -367,8 +374,8 @@ export default function NextActionGuide({
     : intro;
 
   const matchedItem = useMemo(
-    () => matchGuideItem(query, activeItems),
-    [query, activeItems]
+    () => matchGuideItem(query, activeSearchItems),
+    [query, activeSearchItems]
   );
 
   useEffect(() => {
