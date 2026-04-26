@@ -43,6 +43,35 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 19:26
+
+#### Workstream
+Revenue allocation top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/revenue-allocation`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/RevenueAllocationPage.tsx`
+
+#### Confirmed facts
+- `RevenueAllocationPage.tsx` still exposed top-nav route links while also carrying a full lower `Next support routes` band with the same family of destinations.
+- This pass removed the top-nav `nextLinks` and `utilityLinks`, leaving route movement in one place only: the lower `Next support routes` section.
+- Home and back behavior remain intact in the page top navigation.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- `BankConsolePage.tsx` was inspected in the same sweep but was left unchanged because it does not yet show the same clear duplicated lower route band; its top CTA still looks more like a single task action than a second route band.
+
+#### Next recommended step
+- Continue the app-wide cleanup by following live heaviness reports into remaining operational pages with stacked button guards or duplicated route movement.
+
+---
+
+#### Date
 2026-04-26 19:18
 
 #### Workstream

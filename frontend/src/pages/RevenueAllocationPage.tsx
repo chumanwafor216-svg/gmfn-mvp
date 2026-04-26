@@ -637,15 +637,6 @@ export default function RevenueAllocationPage() {
         homeLabel="Dashboard"
         backTo="/app/loan-workbench"
         backLabel="Loan Workbench"
-        nextLinks={[
-          { label: "Loans & Support", to: "/app/loans" },
-          { label: "Loan Summary", to: currentLoanId ? `/app/loan-summary/${currentLoanId}` : "/app/loans" },
-          { label: "Finance", to: "/app/finance" },
-        ]}
-        utilityLinks={[
-          { label: "Marketplace", to: "/app/marketplace" },
-          { label: "Money Out", to: "/app/withdrawal-instructions" },
-        ]}
       />
 
       <ExplainToggle
