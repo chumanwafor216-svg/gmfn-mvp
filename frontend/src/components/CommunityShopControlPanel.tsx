@@ -778,7 +778,7 @@ export default function CommunityShopControlPanel({
                       type="button"
                       {...panelButtonGuardProps()}
                       onClick={(event) =>
-                        openPanelRoute(event, "/app/shop-control#shop-control-summary")
+                        openPanelRoute(event, "/app/shop-control?section=summary")
                       }
                       style={actionBtn("primary")}
                     >
@@ -857,7 +857,7 @@ export default function CommunityShopControlPanel({
                   type="button"
                   {...panelButtonGuardProps()}
                   onClick={(event) =>
-                    openPanelRoute(event, "/app/shop-control#shop-control-picture-gallery")
+                    openPanelRoute(event, "/app/shop-control?section=picture-gallery")
                   }
                   style={actionBtn("secondary")}
                 >
@@ -867,7 +867,7 @@ export default function CommunityShopControlPanel({
                   type="button"
                   {...panelButtonGuardProps()}
                   onClick={(event) =>
-                    openPanelRoute(event, "/app/shop-control#shop-control-spotlight")
+                    openPanelRoute(event, "/app/shop-control?section=spotlight")
                   }
                   style={actionBtn("secondary")}
                 >
@@ -877,7 +877,7 @@ export default function CommunityShopControlPanel({
                   type="button"
                   {...panelButtonGuardProps()}
                   onClick={(event) =>
-                    openPanelRoute(event, "/app/shop-control#shop-control-paid-spotlight")
+                    openPanelRoute(event, "/app/shop-control?section=paid-spotlight")
                   }
                   style={actionBtn("secondary")}
                 >
@@ -887,7 +887,7 @@ export default function CommunityShopControlPanel({
                   type="button"
                   {...panelButtonGuardProps()}
                   onClick={(event) =>
-                    openPanelRoute(event, "/app/shop-control#shop-control-vault")
+                    openPanelRoute(event, "/app/shop-control?section=vault")
                   }
                   style={actionBtn("secondary")}
                 >

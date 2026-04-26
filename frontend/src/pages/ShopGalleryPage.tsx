@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
@@ -682,6 +682,8 @@ export default function ShopGalleryPage() {
   const [miniSpotlightIndex, setMiniSpotlightIndex] = useState(0);
   const communitySpotlightsRef = useRef<ShopBroadcast[]>([]);
   const miniSpotlightIndexRef = useRef(0);
+  const galleryRevealFrameRef = useRef<number | null>(null);
+  const galleryRevealTargetRef = useRef("");
   const [products, setProducts] = useState<ShopProduct[]>([]);
   const [openProductId, setOpenProductId] = useState<number | null>(null);
   const [brokenProductMediaUrls, setBrokenProductMediaUrls] = useState<
@@ -864,6 +866,40 @@ export default function ShopGalleryPage() {
     communitySpotlightsRef.current = communitySpotlights;
   }, [communitySpotlights]);
 
+  const cancelPendingGalleryReveal = useCallback(() => {
+    galleryRevealTargetRef.current = "";
+    if (galleryRevealFrameRef.current !== null) {
+      window.cancelAnimationFrame(galleryRevealFrameRef.current);
+      galleryRevealFrameRef.current = null;
+    }
+  }, []);
+
+  const revealGalleryTarget = useCallback(function revealGalleryTarget(
+    targetId: string,
+    attempt = 0
+  ) {
+    if (typeof document === "undefined" || typeof window === "undefined") return;
+
+    const target = document.getElementById(targetId);
+    if (target) {
+      cancelPendingGalleryReveal();
+      target.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      return;
+    }
+
+    if (attempt < 18) {
+      galleryRevealTargetRef.current = targetId;
+      galleryRevealFrameRef.current = window.requestAnimationFrame(() => {
+        galleryRevealFrameRef.current = null;
+        if (galleryRevealTargetRef.current !== targetId) return;
+        revealGalleryTarget(targetId, attempt + 1);
+      });
+    }
+  }, [cancelPendingGalleryReveal]);
+
   useEffect(() => {
     miniSpotlightIndexRef.current = miniSpotlightIndex;
   }, [miniSpotlightIndex]);
@@ -895,15 +931,19 @@ export default function ShopGalleryPage() {
     if (products.length === 0) return;
 
     const id = location.hash.replace(/^#/, "");
-    const timer = window.setTimeout(() => {
-      document.getElementById(id)?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 80);
+    cancelPendingGalleryReveal();
+    revealGalleryTarget(id);
 
-    return () => window.clearTimeout(timer);
-  }, [location.hash, products.length]);
+    return () => {
+      cancelPendingGalleryReveal();
+    };
+  }, [cancelPendingGalleryReveal, location.hash, products.length, revealGalleryTarget]);
+
+  useEffect(() => {
+    return () => {
+      cancelPendingGalleryReveal();
+    };
+  }, [cancelPendingGalleryReveal]);
 
   const effectiveShop = useMemo<ShopProfile | null>(() => {
     if (!shop && !broadcast) return null;

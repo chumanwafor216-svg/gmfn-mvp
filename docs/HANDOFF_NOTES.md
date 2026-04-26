@@ -43,6 +43,62 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 14:20
+
+#### Workstream
+Shop-family interaction cleanup pass for `Shop Control`, the embedded Community Home owner panel, and the public shop/gallery route.
+
+#### Routes/screens affected
+- `/app/shop-control`
+- embedded owner shop panel inside `/app/community`
+- public shop/gallery route handled by `ShopGalleryPage`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/ShopControlPage.tsx`
+- `frontend/src/components/CommunityShopControlPanel.tsx`
+- `frontend/src/pages/ShopGalleryPage.tsx`
+
+#### Confirmed facts
+- Audit confirmed the shop family still had one of the older underlayers that has been causing jumpy behavior:
+  - `ShopControlPage.tsx` was still using delayed hash timers and retry timers to wake up inner sections after a tap
+  - `CommunityShopControlPanel.tsx` was still sending several owner shortcuts into `Shop Control` using older `#shop-control-*` hash contracts
+  - `ShopGalleryPage.tsx` was still using a delayed `setTimeout(..., 80)` hash scroll on the public page
+- `ShopControlPage.tsx` has now been moved onto one calmer cancelable reveal path:
+  - removed the delayed `hashScrollTimerRef`
+  - removed the old retry-timer array
+  - removed the dead `spotlightCollapseTimerRef`
+  - replaced them with one cancelable `requestAnimationFrame` reveal helper
+- `ShopControlPage.tsx` now also understands section-query entry in addition to legacy hashes:
+  - `?section=summary`
+  - `?section=picture-gallery`
+  - `?section=spotlight`
+  - `?section=paid-spotlight`
+  - `?section=vault`
+- `CommunityShopControlPanel.tsx` owner shortcuts were moved to that calmer section-query contract instead of the older hash-only contract.
+- `ShopGalleryPage.tsx` now uses the same cancelable frame-based reveal style instead of the older delayed hash scroll timer.
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/ShopControlPage.tsx src/components/CommunityShopControlPanel.tsx src/pages/ShopGalleryPage.tsx`
+  - `npm run build`
+  - both passed
+
+#### Open risks or unknowns
+- `ShopControlPage.tsx` still contains many page-local button guards layered across many individual buttons. The reveal engine is calmer now, but if shop buttons still feel heavy in live testing, the next step should be a second Shop-family pass focused specifically on duplicate guard stacking rather than on hash/scroll behavior.
+- Other routes may still link into `Shop Control` using legacy `#shop-control-*` hashes. Those remain supported for compatibility, but the newer calmer contract now exists through `?section=...`.
+
+#### Next recommended step
+- Deploy `gmfn-frontend`.
+- Phone-test:
+  - embedded owner shortcuts from Community Home into Shop Control
+  - Shop Control spotlight section open
+  - Shop Control paid spotlight section open
+  - Shop Control vault section open
+  - public shop/gallery deep links
+- If the page now feels materially calmer, continue the next deeper audit on route-local button-guard stacking rather than on more route-contract changes.
+
+#### Date
 2026-04-26 12:35
 
 #### Workstream

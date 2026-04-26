@@ -730,9 +730,8 @@ export default function ShopControlPage() {
   const spotlightImagePrepJobRef = useRef(0);
   const spotlightVideoPrepJobRef = useRef(0);
   const lastAutoScrolledHashRef = useRef("");
-  const hashScrollTimerRef = useRef<number | null>(null);
-  const hashScrollRetryTimersRef = useRef<number[]>([]);
-  const spotlightCollapseTimerRef = useRef<number | null>(null);
+  const controlRevealFrameRef = useRef<number | null>(null);
+  const controlRevealTargetRef = useRef("");
   const spotlightIdleTimerRef = useRef<number | null>(null);
 
   const selectedClanId = Number(getSelectedClanId() || 0);
@@ -783,11 +782,12 @@ export default function ShopControlPage() {
     setNotice({ tone, text });
   }
 
-  const clearHashScrollRetryTimers = useCallback(() => {
-    hashScrollRetryTimersRef.current.forEach((timerId) => {
-      window.clearTimeout(timerId);
-    });
-    hashScrollRetryTimersRef.current = [];
+  const cancelPendingControlReveal = useCallback(() => {
+    controlRevealTargetRef.current = "";
+    if (controlRevealFrameRef.current !== null) {
+      window.cancelAnimationFrame(controlRevealFrameRef.current);
+      controlRevealFrameRef.current = null;
+    }
   }, []);
 
   const resetSpotlightIdleTimer = useCallback(() => {
@@ -965,7 +965,7 @@ export default function ShopControlPage() {
     }
   }, [selectedClanId]);
 
-  const scrollToControlTarget = useCallback(function scrollToControlTarget(
+  const revealControlTarget = useCallback(function revealControlTarget(
     targetId: string,
     attempt = 0
   ) {
@@ -973,7 +973,7 @@ export default function ShopControlPage() {
 
     const target = document.getElementById(targetId);
     if (target) {
-      clearHashScrollRetryTimers();
+      cancelPendingControlReveal();
       target.scrollIntoView({
         behavior: "smooth",
         block: "start",
@@ -981,16 +981,15 @@ export default function ShopControlPage() {
       return;
     }
 
-    if (attempt < 10) {
-      const retryTimer = window.setTimeout(() => {
-        hashScrollRetryTimersRef.current = hashScrollRetryTimersRef.current.filter(
-          (timerId) => timerId !== retryTimer
-        );
-        scrollToControlTarget(targetId, attempt + 1);
-      }, 100);
-      hashScrollRetryTimersRef.current.push(retryTimer);
+    if (attempt < 18) {
+      controlRevealTargetRef.current = targetId;
+      controlRevealFrameRef.current = window.requestAnimationFrame(() => {
+        controlRevealFrameRef.current = null;
+        if (controlRevealTargetRef.current !== targetId) return;
+        revealControlTarget(targetId, attempt + 1);
+      });
     }
-  }, [clearHashScrollRetryTimers]);
+  }, [cancelPendingControlReveal]);
 
   useEffect(() => {
     void loadPage();
@@ -1021,25 +1020,17 @@ export default function ShopControlPage() {
 
   useEffect(() => {
     return () => {
-      if (spotlightCollapseTimerRef.current !== null) {
-        window.clearTimeout(spotlightCollapseTimerRef.current);
-        spotlightCollapseTimerRef.current = null;
-      }
-      if (hashScrollTimerRef.current !== null) {
-        window.clearTimeout(hashScrollTimerRef.current);
-        hashScrollTimerRef.current = null;
-      }
-      hashScrollRetryTimersRef.current.forEach((timerId) => {
-        window.clearTimeout(timerId);
-      });
-      hashScrollRetryTimersRef.current = [];
+      cancelPendingControlReveal();
     };
-  }, []);
+  }, [cancelPendingControlReveal]);
 
   useEffect(() => {
     if (loading) return;
 
-    const rawTargetId = String(location.hash || "").replace(/^#/, "").trim();
+    const sectionParam = new URLSearchParams(location.search).get("section");
+    const rawTargetId =
+      safeStr(sectionParam) ||
+      String(location.hash || "").replace(/^#/, "").trim();
     if (!rawTargetId) {
       lastAutoScrolledHashRef.current = "";
       return;
@@ -1053,6 +1044,11 @@ export default function ShopControlPage() {
     }
 
     if (!targetId) return;
+    if (targetId === "summary") targetId = "shop-control-summary";
+    if (targetId === "picture-gallery") targetId = "shop-control-picture-gallery";
+    if (targetId === "spotlight") targetId = "shop-control-spotlight";
+    if (targetId === "paid-spotlight") targetId = "shop-control-paid-spotlight";
+    if (targetId === "vault") targetId = "shop-control-vault";
     if (lastAutoScrolledHashRef.current === targetId) return;
 
     lastAutoScrolledHashRef.current = targetId;
@@ -1070,20 +1066,9 @@ export default function ShopControlPage() {
       targetId = "shop-control-spotlight";
     }
 
-    if (hashScrollTimerRef.current !== null) {
-      window.clearTimeout(hashScrollTimerRef.current);
-      hashScrollTimerRef.current = null;
-    }
-    hashScrollRetryTimersRef.current.forEach((timerId) => {
-      window.clearTimeout(timerId);
-    });
-    hashScrollRetryTimersRef.current = [];
-
-    hashScrollTimerRef.current = window.setTimeout(() => {
-      hashScrollTimerRef.current = null;
-      scrollToControlTarget(targetId);
-    }, targetId === "shop-control-spotlight" ? 140 : 40);
-  }, [loading, location.hash, scrollToControlTarget, shop?.id]);
+    cancelPendingControlReveal();
+    revealControlTarget(targetId);
+  }, [cancelPendingControlReveal, loading, location.hash, location.search, revealControlTarget, shop?.id]);
 
   const publicProducts = useMemo(
     () =>
@@ -1473,17 +1458,13 @@ export default function ShopControlPage() {
     setSpotlightPriorityMode(mode);
     setSpotlightOpen(true);
 
-    scrollToControlTarget("shop-control-spotlight");
+    cancelPendingControlReveal();
+    revealControlTarget("shop-control-spotlight");
   }
 
   function collapseSpotlightTools(event?: React.SyntheticEvent<HTMLElement>) {
     event?.preventDefault();
     event?.stopPropagation();
-
-    if (spotlightCollapseTimerRef.current !== null) {
-      window.clearTimeout(spotlightCollapseTimerRef.current);
-      spotlightCollapseTimerRef.current = null;
-    }
 
     setSpotlightOpen(false);
     setSpotlightFlowStep("upload");
