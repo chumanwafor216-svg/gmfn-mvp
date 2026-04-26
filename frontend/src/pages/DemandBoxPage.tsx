@@ -1330,8 +1330,7 @@ export default function DemandBoxPage() {
                     key={`${clanId || index}`}
                     type="button"
                     {...buttonGuardProps()}
-                    onClick={(event) => {
-                      guardButtonPress(event);
+                    onClick={() => {
                       void handleChooseDemandCommunity(community);
                     }}
                     disabled={busy || !clanId}

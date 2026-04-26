@@ -12477,3 +12477,31 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend build passed
   - the shop-assets lane is now at a calmer safe checkpoint for continued phone
     testing
+
+### Demand Box community-choice buttons reached a calmer safe checkpoint (2026-04-26)
+
+- Product-owner issue:
+  - the Demand Box create flow still had one remaining explicit duplicate guard
+    on the community-choice buttons
+  - that meant the new calmer demand flow still had one old event-handling
+    layer sitting underneath the first meaningful decision in the route
+- Applied the smallest safe interaction cleanup:
+  - `frontend/src/pages/DemandBoxPage.tsx`
+    - removed the redundant inner `guardButtonPress(event)` call from the
+      community-choice buttons
+    - kept the shared `buttonGuardProps()` layer in place
+- Routes impacted:
+  - `/app/demand-box`
+- Shared logic impact:
+  - no backend change
+  - this is a frontend button-stability pass only
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/DemandBoxPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed
+  - the Demand Box community-choice lane is now at a calmer safe checkpoint for
+    continued phone testing
