@@ -1,3 +1,35 @@
+## 2026-04-27 02:24
+
+### Workstream
+Marketplace workspace passive toggle guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from passive section open/hide controls in `MarketplaceWorkspacePage.tsx`.
+- Cleaned these toggles:
+  - `Access & sharing`
+  - `Money & support handoff`
+  - `Community alerts`
+  - `Members to shop mapping`
+
+### Why
+- These controls only reveal or hide workspace sections, so they did not need the same guard layer as real route-opening or link-copy actions.
+- This keeps the workspace lighter without changing invite, member mapping, or route-handoff logic.
+
+### Files touched
+- `frontend/src/pages/MarketplaceWorkspacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/community-marketplace`
+
+### Verification
+- `npm exec -- eslint src/pages/MarketplaceWorkspacePage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other nested workspace surfaces may still carry the same unnecessary guard layer on passive open/hide controls and can be cleaned in later passes.
+
 ## 2026-04-27 02:18
 
 ### Workstream

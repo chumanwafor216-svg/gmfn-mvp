@@ -897,7 +897,6 @@ export default function MarketplaceWorkspacePage() {
           <div style={sectionTitle()}>Access & sharing</div>
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => setInviteOpen((v) => !v)}
             style={btn(false)}
           >
@@ -1103,7 +1102,6 @@ export default function MarketplaceWorkspacePage() {
           <div style={sectionTitle()}>Money & support handoff</div>
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => setMoneyOpen((v) => !v)}
             style={btn(false)}
           >
@@ -1212,7 +1210,6 @@ export default function MarketplaceWorkspacePage() {
           <div style={sectionTitle()}>Community alerts</div>
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => setAlertsOpen((v) => !v)}
             style={btn(false)}
           >
@@ -1274,7 +1271,6 @@ export default function MarketplaceWorkspacePage() {
           <div style={sectionTitle()}>Members to shop mapping</div>
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => setMembersOpen((v) => !v)}
             style={btn(false)}
           >
