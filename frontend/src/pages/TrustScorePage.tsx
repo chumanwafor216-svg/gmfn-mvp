@@ -2610,7 +2610,6 @@ export default function TrustScorePage() {
                 onTouchStart={stopTrustTap}
                 onClick={(event) => {
                   event.preventDefault();
-                  event.stopPropagation();
                   void handleRefreshTrust();
                 }}
                 disabled={refreshing}
@@ -2626,7 +2625,6 @@ export default function TrustScorePage() {
                 onTouchStart={stopTrustTap}
                 onClick={(event) => {
                   event.preventDefault();
-                  event.stopPropagation();
                   handleCopy(
                     gmfnId,
                     "GMFN ID copied.",
@@ -2646,7 +2644,6 @@ export default function TrustScorePage() {
                 onTouchStart={stopTrustTap}
                 onClick={(event) => {
                   event.preventDefault();
-                  event.stopPropagation();
                   if (typeof window !== "undefined" && typeof window.print === "function") {
                     window.print();
                   }
@@ -2664,7 +2661,6 @@ export default function TrustScorePage() {
                   onTouchStart={stopTrustTap}
                   onClick={(event) => {
                     event.preventDefault();
-                    event.stopPropagation();
                     if (typeof window !== "undefined") {
                       window.open(verifyUrl, "_blank", "noopener,noreferrer");
                     }

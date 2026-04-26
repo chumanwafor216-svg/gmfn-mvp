@@ -43,6 +43,39 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 22:11
+
+#### Workstream
+Trust Passport toolbar duplicate tap-guard cleanup pass.
+
+#### Routes/screens affected
+- `/app/trust`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/TrustScorePage.tsx`
+
+#### Confirmed facts
+- The main Trust Passport toolbar buttons already used `stopTrustTap` on pointer/touch start but still called `event.stopPropagation()` again inside the click handlers.
+- This pass removed that redundant click-time propagation stop from:
+  - `Refresh Trust Reading`
+  - `Copy GMFN ID`
+  - `Print Trust Passport`
+  - `Open TrustSlip Verify`
+- The buttons still keep their existing pointer/touch protection and their core actions did not change.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other Trust Passport action bands deeper in the page may still carry similar layered tap handling and can be cleaned in later passes.
+
+#### Next recommended step
+- Continue following remaining high-traffic action bands where controls still stack pointer/touch guards with extra click-time propagation stops.
+
+---
+
+#### Date
 2026-04-26 22:01
 
 #### Workstream
