@@ -1008,7 +1008,6 @@ export default function RevenueAllocationPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("details")}
             style={collapseToggle()}
           >

@@ -43,6 +43,36 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-27 00:13
+
+#### Workstream
+Revenue Allocation passive meaning-toggle guard cleanup pass.
+
+#### Routes/screens affected
+- `/app/revenue-allocation`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/RevenueAllocationPage.tsx`
+
+#### Confirmed facts
+- `RevenueAllocationPage.tsx` still used `buttonGuardProps()` on the passive `Meaning` collapse control.
+- That control only opens and collapses the explanatory reading section and does not launch routes or trigger business actions.
+- This pass removed the shared pointer/touch guard layer from that passive toggle.
+- Revenue allocation loading, breakdown math, and route guidance did not change.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other passive reading toggles on operational pages may still carry the same unnecessary action-level guard layer and can be cleaned in later passes.
+
+#### Next recommended step
+- Continue targeting passive reading toggles and non-route detail controls that still use action-level pointer/touch guard props even though they do not launch routes or trigger business actions.
+
+---
+
+#### Date
 2026-04-26 23:55
 
 #### Workstream
