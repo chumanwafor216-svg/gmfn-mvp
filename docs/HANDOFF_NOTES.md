@@ -1,3 +1,33 @@
+## 2026-04-27 03:01
+
+### Workstream
+Community owner panel copy-button duplicate tap-stop cleanup pass.
+
+### What changed
+- Removed the extra click-time `stopPanelTap(...)` call from the embedded owner panel public-link copy button in `CommunityShopControlPanel.tsx`.
+- Cleaned this control:
+  - `Copy Public Shop Link`
+
+### Why
+- This button already uses `panelButtonGuardProps()` on pointer/touch start, so it did not need to stop the same tap again inside `onClick`.
+- This keeps the owner panel lighter without changing the copy action, route targets, or panel behavior.
+
+### Files touched
+- `frontend/src/components/CommunityShopControlPanel.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/community`
+- embedded owner shop panel inside Community Home
+
+### Verification
+- `npm exec -- eslint src/components/CommunityShopControlPanel.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other direct-copy or direct-open buttons on dense owner surfaces may still carry the same duplicate click-time tap stop and can be cleaned in later passes.
+
 ## 2026-04-27 02:52
 
 ### Workstream

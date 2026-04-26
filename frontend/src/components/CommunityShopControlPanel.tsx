@@ -802,10 +802,7 @@ export default function CommunityShopControlPanel({
                     <button
                       type="button"
                       {...panelButtonGuardProps()}
-                      onClick={(event) => {
-                        stopPanelTap(event);
-                        copyShopLink();
-                      }}
+                      onClick={copyShopLink}
                       style={actionBtn("secondary")}
                     >
                       Copy Public Shop Link
