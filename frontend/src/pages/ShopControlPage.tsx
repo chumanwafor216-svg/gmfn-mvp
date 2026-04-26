@@ -122,15 +122,6 @@ type SpotlightFeedbackState = { tone: NoticeTone; text: string } | null;
 type SpotlightFlowStep = "setup" | "upload" | "preview";
 type SpotlightMediaChoice = "image" | "video" | "both";
 
-const SHOP_BRAND = {
-  ink: "#0B1F33",
-  blueDeep: "#071827",
-  blue: "#0B2942",
-  blueSoft: "#EAF4FF",
-  gold: "#D9AC33",
-  goldSoft: "#FFF4C7",
-};
-
 function safeStr(value: unknown): string {
   return String(value ?? "").trim();
 }
@@ -278,53 +269,53 @@ function resolveSpotlightAssetUrl(path: string): string {
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 30,
-    border: "1px solid rgba(212,175,55,0.22)",
+    borderRadius: 26,
+    border: "1px solid rgba(18,58,89,0.16)",
     background: bg,
-    padding: "clamp(14px, 3.8vw, 22px)",
+    padding: "clamp(14px, 3.3vw, 20px)",
     boxShadow:
-      "0 26px 60px rgba(2,12,27,0.17), 0 8px 22px rgba(8,40,72,0.10), inset 0 1px 0 rgba(255,255,255,0.92), inset 0 -3px 0 rgba(8,40,72,0.07)",
+      "0 22px 48px rgba(2,12,27,0.15), 0 8px 20px rgba(8,40,72,0.09), inset 0 1px 0 rgba(255,255,255,0.94), inset 0 -2px 0 rgba(8,40,72,0.07)",
     overflow: "hidden",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
-    borderRadius: 20,
-    border: "1px solid rgba(13,95,168,0.16)",
+    borderRadius: 18,
+    border: "1px solid rgba(18,58,89,0.14)",
     background: bg,
-    padding: 16,
+    padding: 15,
     boxShadow:
-      "0 16px 34px rgba(7,24,39,0.10), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -2px 0 rgba(8,40,72,0.06)",
+      "0 14px 28px rgba(7,24,39,0.09), inset 0 1px 0 rgba(255,255,255,0.90), inset 0 -2px 0 rgba(8,40,72,0.06)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 20,
-    border: "1px solid rgba(13,95,168,0.15)",
+    borderRadius: 18,
+    border: "1px solid rgba(18,58,89,0.14)",
     background: bg,
-    padding: 13,
+    padding: 12,
     boxShadow:
-      "0 16px 34px rgba(7,24,39,0.09), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -2px 0 rgba(8,40,72,0.06)",
+      "0 12px 26px rgba(7,24,39,0.08), inset 0 1px 0 rgba(255,255,255,0.90), inset 0 -2px 0 rgba(8,40,72,0.05)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#315A80",
+    color: "#234E7A",
     fontWeight: 900,
-    letterSpacing: 1.8,
+    letterSpacing: 2,
     textTransform: "uppercase",
   };
 }
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#5F7287",
+    color: "#4E6278",
     fontSize: 14,
-    lineHeight: 1.75,
+    lineHeight: 1.68,
   };
 }
 
@@ -363,8 +354,10 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? SHOP_BRAND.goldSoft : "rgba(13,95,168,0.08)",
-    color: primary ? "#6F4C00" : "#1E4063",
+    background: primary
+      ? "linear-gradient(180deg, #FFF9D8 0%, #F2D16E 100%)"
+      : "linear-gradient(180deg, #FFFFFF 0%, #EAF4FF 100%)",
+    color: primary ? "#6F4C00" : "#1D4267",
     border: primary
       ? "1px solid rgba(217,172,51,0.26)"
       : "1px solid rgba(13,95,168,0.11)",
@@ -374,7 +367,7 @@ function badge(primary = false): React.CSSProperties {
     textAlign: "center",
     boxShadow: primary
       ? "0 7px 14px rgba(217,172,51,0.13), inset 0 1px 0 rgba(255,255,255,0.72)"
-      : "inset 0 1px 0 rgba(255,255,255,0.78)",
+      : "0 6px 12px rgba(7,24,39,0.06), inset 0 1px 0 rgba(255,255,255,0.82)",
   };
 }
 
@@ -444,7 +437,7 @@ function actionBtn(
       opacity: disabled ? 0.86 : 1,
       boxShadow: disabled
         ? "none"
-        : "0 7px 0 rgba(92,64,18,0.34), 0 18px 32px rgba(11,31,51,0.20), inset 0 1px 0 rgba(255,255,255,0.72), inset 0 -2px 0 rgba(72,45,4,0.30)",
+        : "0 6px 0 rgba(92,64,18,0.32), 0 16px 28px rgba(11,31,51,0.18), inset 0 1px 0 rgba(255,255,255,0.72), inset 0 -2px 0 rgba(72,45,4,0.28)",
       lineHeight: 1.15,
     };
   }
@@ -458,11 +451,11 @@ function actionBtn(
       minHeight: 48,
       padding: "9px 13px",
       borderRadius: 14,
-      border: disabled ? "1px solid rgba(148,163,184,0.38)" : "1px solid rgba(212,175,55,0.32)",
+      border: disabled ? "1px solid rgba(148,163,184,0.38)" : "1px solid rgba(18,58,89,0.18)",
       background: disabled
         ? "linear-gradient(180deg, #F1F5F9 0%, #CBD5E1 100%)"
-        : "linear-gradient(180deg, #FFFFFF 0%, #FFF7D8 48%, #E1B33D 100%)",
-      color: disabled ? "#94A3B8" : "#172033",
+        : "linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 46%, #E3EEF9 100%)",
+      color: disabled ? "#94A3B8" : "#0F355B",
       fontWeight: 900,
       fontSize: 13,
       textAlign: "center",
@@ -473,7 +466,7 @@ function actionBtn(
       opacity: disabled ? 0.86 : 1,
       lineHeight: 1.15,
       boxShadow:
-        "0 5px 0 rgba(92,64,18,0.20), 0 13px 24px rgba(7,24,39,0.11), inset 0 1px 0 rgba(255,255,255,0.90), inset 0 -2px 0 rgba(83,56,0,0.14)",
+        "0 5px 0 rgba(22,58,94,0.18), 0 12px 22px rgba(7,24,39,0.10), inset 0 1px 0 rgba(255,255,255,0.92), inset 0 -2px 0 rgba(18,58,89,0.10)",
     };
   }
 
@@ -485,10 +478,10 @@ function actionBtn(
     minHeight: 48,
     padding: "10px 14px",
     borderRadius: 15,
-    border: disabled ? "1px solid rgba(148,163,184,0.38)" : "1px solid rgba(212,175,55,0.30)",
+    border: disabled ? "1px solid rgba(148,163,184,0.38)" : "1px solid rgba(18,58,89,0.18)",
     background: disabled
       ? "linear-gradient(180deg, #F1F5F9 0%, #CBD5E1 100%)"
-      : "linear-gradient(180deg, #FFFFFF 0%, #FFF9E7 50%, #EAC75E 100%)",
+      : "linear-gradient(180deg, #FFFFFF 0%, #F5FAFF 54%, #E4EFFA 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
@@ -500,7 +493,7 @@ function actionBtn(
     opacity: disabled ? 0.86 : 1,
     lineHeight: 1.15,
     boxShadow:
-      "0 5px 0 rgba(92,64,18,0.18), 0 13px 24px rgba(7,24,39,0.10), inset 0 1px 0 rgba(255,255,255,0.90), inset 0 -2px 0 rgba(83,56,0,0.12)",
+      "0 5px 0 rgba(22,58,94,0.16), 0 12px 22px rgba(7,24,39,0.09), inset 0 1px 0 rgba(255,255,255,0.92), inset 0 -2px 0 rgba(18,58,89,0.08)",
   };
 }
 
@@ -566,12 +559,12 @@ function textAreaStyle(): React.CSSProperties {
 function statTile(): React.CSSProperties {
   return {
     borderRadius: 18,
-    border: "1px solid rgba(13,95,168,0.16)",
+    border: "1px solid rgba(18,58,89,0.14)",
     background:
       "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 48%, #EAF4FF 100%)",
     padding: 14,
     boxShadow:
-      "0 16px 30px rgba(7,24,39,0.09), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -2px 0 rgba(8,40,72,0.06)",
+      "0 14px 26px rgba(7,24,39,0.08), inset 0 1px 0 rgba(255,255,255,0.90), inset 0 -2px 0 rgba(8,40,72,0.05)",
   };
 }
 
@@ -2530,10 +2523,10 @@ export default function ShopControlPage() {
         display: "grid",
         gap: 16,
         background:
-          "radial-gradient(circle at 9% 3%, rgba(217,172,51,0.26) 0%, rgba(217,172,51,0) 30%), radial-gradient(circle at 94% 4%, rgba(38,132,205,0.24) 0%, rgba(38,132,205,0) 32%), linear-gradient(90deg, #071827 0%, #0B2942 4%, #EAF4FF 4.1%, #F8FBFF 12%, #F8FBFF 88%, #EAF4FF 95.9%, #0B2942 96%, #071827 100%)",
-        borderRadius: isCompact ? 26 : 36,
+          "radial-gradient(circle at 10% 3%, rgba(217,172,51,0.18) 0%, rgba(217,172,51,0) 28%), radial-gradient(circle at 92% 5%, rgba(38,132,205,0.16) 0%, rgba(38,132,205,0) 30%), linear-gradient(90deg, #071827 0%, #0B2942 3.3%, #EDF5FF 3.4%, #F8FBFF 12%, #F8FBFF 88%, #EDF5FF 96.6%, #0B2942 96.7%, #071827 100%)",
+        borderRadius: isCompact ? 24 : 32,
         boxShadow:
-          "inset 16px 0 28px rgba(7,24,39,0.14), inset -16px 0 28px rgba(7,24,39,0.14)",
+          "inset 14px 0 24px rgba(7,24,39,0.12), inset -14px 0 24px rgba(7,24,39,0.12)",
       }}
     >
       <PageTopNav
@@ -2563,7 +2556,7 @@ export default function ShopControlPage() {
       <section
         id="shop-control-summary"
         style={pageCard(
-          "radial-gradient(circle at 12% 0%, rgba(217,172,51,0.12) 0%, rgba(217,172,51,0) 28%), linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 56%, #EAF4FF 100%)"
+          "radial-gradient(circle at 12% 0%, rgba(217,172,51,0.14) 0%, rgba(217,172,51,0) 28%), linear-gradient(180deg, #071827 0%, #0B2942 56%, #123A59 100%)"
         )}
       >
         <div
@@ -2575,12 +2568,12 @@ export default function ShopControlPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Owner page</div>
+            <div style={{ ...sectionLabel(), color: "#F6D77A" }}>Owner page</div>
 
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: isCompact ? 28 : 34,
                 lineHeight: 1.1,
@@ -2594,7 +2587,7 @@ export default function ShopControlPage() {
                 marginTop: 12,
                 ...helperText(),
                 maxWidth: 860,
-                color: "#4D6178",
+                color: "#D7E3F1",
               }}
             >
               Start with the basics. Keep the shop face clear, manage products,
@@ -2610,19 +2603,34 @@ export default function ShopControlPage() {
                 gap: 10,
               }}
             >
-              <div style={statTile()}>
+              <div
+                style={{
+                  ...statTile(),
+                  background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(234,244,255,0.96) 100%)",
+                }}
+              >
                 <div style={sectionLabel()}>Community</div>
                 <div style={{ marginTop: 6, color: "#0B1F33", fontSize: 14, fontWeight: 900, lineHeight: 1.3 }}>
                   {communityName}
                 </div>
               </div>
-              <div style={statTile()}>
+              <div
+                style={{
+                  ...statTile(),
+                  background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(234,244,255,0.96) 100%)",
+                }}
+              >
                 <div style={sectionLabel()}>GSN ID</div>
                 <div style={{ marginTop: 6, color: "#0B1F33", fontSize: 14, fontWeight: 900, lineHeight: 1.3, wordBreak: "break-word" }}>
                   {firstTruthy(shop?.gmfn_id, me?.gmfn_id, "Pending")}
                 </div>
               </div>
-              <div style={statTile()}>
+              <div
+                style={{
+                  ...statTile(),
+                  background: "linear-gradient(180deg, rgba(255,249,216,0.98) 0%, rgba(234,244,255,0.94) 100%)",
+                }}
+              >
                 <div style={sectionLabel()}>What is ready</div>
                 <div style={{ marginTop: 6, color: "#0B1F33", fontSize: 14, fontWeight: 900, lineHeight: 1.4 }}>
                   {publicProducts.length} public, {vaultProducts.length} private, {activeSpotlights.length} spotlight
@@ -2678,8 +2686,8 @@ export default function ShopControlPage() {
           <div
             style={{
               ...softCard("rgba(255,255,255,0.96)"),
-              border: "1px solid rgba(13,95,168,0.12)",
-              boxShadow: "0 14px 30px rgba(2,12,27,0.10)",
+              border: "1px solid rgba(212,175,55,0.14)",
+              boxShadow: "0 14px 30px rgba(2,12,27,0.14)",
             }}
           >
             <div style={sectionLabel()}>Next best move</div>

@@ -11609,3 +11609,37 @@ GSN-branded invite composer and invite-entry continuity.
 - Result:
   - frontend lint passed
   - frontend build passed
+
+### Shop Control was restored to stronger institutional GSN presentation (2026-04-26)
+
+- Product-owner correction after live review:
+  - the simplified `Shop Control` pass improved clarity but lost too much of
+    the institutional GSN look
+  - the page needed the original blue/white/gold strength back, with sharper
+    edges, better contrast, and a more official feel
+  - the surface should stay simpler than before, but it should no longer feel
+    washed out or amateur
+- Applied the smallest safe route-local styling correction:
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - strengthened the page shell with darker branded blue rails and cleaner
+      white-center contrast
+    - restored the owner summary section to a deep GSN blue header with gold
+      label treatment and higher-contrast copy
+    - sharpened card edges, borders, shadows, and spacing across summary,
+      helper, and status surfaces
+    - upgraded badges and secondary buttons from pale washed tones to stronger
+      institutional white/blue and gold gradients
+    - darkened helper text and section labels so the page remains readable on
+      real devices
+    - kept the earlier simplification of structure while restoring the stronger
+      branded presentation
+- Route impact:
+  - `/app/shop-control`
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/ShopControlPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed
