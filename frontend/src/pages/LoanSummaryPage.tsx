@@ -1455,7 +1455,6 @@ export default function LoanSummaryPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("overview")}
             style={collapseToggle()}
           >
@@ -1687,7 +1686,6 @@ export default function LoanSummaryPage() {
 
             <button
               type="button"
-              {...buttonGuardProps()}
               onClick={() => toggleSection("guarantors")}
               style={collapseToggle()}
             >
@@ -1965,7 +1963,6 @@ export default function LoanSummaryPage() {
 
             <button
               type="button"
-              {...buttonGuardProps()}
               onClick={() => toggleSection("repayment")}
               style={collapseToggle()}
             >
@@ -2098,7 +2095,6 @@ export default function LoanSummaryPage() {
 
               <button
                 type="button"
-                {...buttonGuardProps()}
                 onClick={() => toggleSection("evidence")}
                 style={collapseToggle()}
               >
@@ -2274,7 +2270,6 @@ export default function LoanSummaryPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("routes")}
             style={collapseToggle()}
           >

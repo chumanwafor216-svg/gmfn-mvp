@@ -1,3 +1,36 @@
+## 2026-04-27 01:40
+
+### Workstream
+Loan Summary passive collapse-toggle guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from passive section-collapse controls in `LoanSummaryPage.tsx`.
+- Cleaned these toggles:
+  - `overview`
+  - `guarantors`
+  - `repayment`
+  - `evidence`
+  - `routes`
+
+### Why
+- These controls only reveal or hide reading sections and route lists, so they did not need the same guard layer as real guarantor decisions or route-opening actions.
+- This keeps the loan-summary surface lighter without changing support-state logic, evidence reading, or guarantor decision behavior.
+
+### Files touched
+- `frontend/src/pages/LoanSummaryPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/loan-summary/:loanId`
+
+### Verification
+- `npm exec -- eslint src/pages/LoanSummaryPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other borrowing-family detail pages may still carry the same unnecessary guard layer on passive collapse controls and can be cleaned in later passes.
+
 ## 2026-04-27 01:32
 
 ### Workstream
