@@ -43,6 +43,61 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 16:41
+
+#### Workstream
+Shop Control duplicate guard-helper removal pass.
+
+#### Routes/screens affected
+- `/app/shop-control`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/ShopControlPage.tsx`
+
+#### Confirmed facts
+- Deeper inspection showed `ShopControlPage.tsx` was still carrying the same older interaction pattern already removed from other routes:
+  - shared `buttonGuardProps()` on many hot owner-side buttons
+  - plus an extra inner `runGuardedButtonAction(...)` wrapper on those same buttons
+- That helper no longer added any real guarding behavior, so the page was still paying for a duplicate tap-control layer on its busiest actions.
+- This pass removed the dead inner helper layer while keeping the shared guard props in place.
+- Cleaned actions include:
+  - `Open Public Shop`
+  - `Copy Public Link`
+  - `Open Picture Tools`
+  - `Open Public Shop Face`
+  - Vault pay/create-link buttons
+  - verification pay/open-public-verification buttons
+  - paid spotlight pay/open buttons
+  - picture save/remove
+  - `Save Shop Details`
+  - spotlight priority mode switching
+  - `Publish Spotlight`
+  - Vault per-link `Copy link`, `Open link`, `Extend 7 days`, `Revoke`
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/ShopControlPage.tsx`
+  - `npm run build`
+  - both passed
+
+#### Open risks or unknowns
+- The broader app still remains in safe-checkpoint mode rather than final freeze mode.
+- Other major domains may still keep older local guard layering outside the shop family.
+
+#### Next recommended step
+- Deploy `gmfn-frontend`.
+- Phone-test `/app/shop-control`, especially:
+  - top public/open/copy actions
+  - Vault pay and create-link actions
+  - verification actions
+  - paid spotlight entry
+  - picture save/remove
+  - spotlight publish path
+  - Vault per-link controls
+- If `Shop Control` now feels materially calmer, continue the deeper audit in the next domain that still feels physically heavy in live testing.
+
+#### Date
 2026-04-26 16:31
 
 #### Workstream

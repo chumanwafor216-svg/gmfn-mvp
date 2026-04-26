@@ -391,13 +391,6 @@ function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
   event?.stopPropagation();
 }
 
-function runGuardedButtonAction(
-  _event: React.SyntheticEvent<HTMLElement>,
-  action: () => void
-) {
-  action();
-}
-
 function buttonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
   "onPointerDown" | "onTouchStart" | "onMouseDown"
@@ -2636,9 +2629,7 @@ export default function ShopControlPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={(event) =>
-                  runGuardedButtonAction(event, () => openPublicShopFace())
-                }
+                onClick={() => openPublicShopFace()}
                 style={fullButton(actionBtn("secondary", !publicShopLink))}
                 disabled={!publicShopLink}
               >
@@ -2648,11 +2639,7 @@ export default function ShopControlPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={(event) =>
-                  runGuardedButtonAction(event, () =>
-                    copyText(publicShopLink, "Shop gallery link copied.")
-                  )
-                }
+                onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
                 style={fullButton(actionBtn("secondary", !publicShopLink))}
                 disabled={!publicShopLink}
               >
@@ -2723,11 +2710,7 @@ export default function ShopControlPage() {
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={(event) =>
-                    runGuardedButtonAction(event, () =>
-                      openShopControlSection("shop-control-picture-gallery")
-                    )
-                  }
+                  onClick={() => openShopControlSection("shop-control-picture-gallery")}
                   style={fullButton(actionBtn("primary"))}
                 >
                   Open Picture Tools
@@ -2749,9 +2732,7 @@ export default function ShopControlPage() {
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={(event) =>
-                    runGuardedButtonAction(event, () => openPublicShopFace())
-                  }
+                  onClick={() => openPublicShopFace()}
                   style={fullButton(actionBtn("primary", !publicShopLink))}
                   disabled={!publicShopLink}
                 >
@@ -2833,9 +2814,7 @@ export default function ShopControlPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={(event) =>
-                  runGuardedButtonAction(event, () => void createVaultInstruction(1))
-                }
+                onClick={() => void createVaultInstruction(1)}
                 disabled={shopActionsLocked || creatingVaultInstruction}
                 style={fullButton(actionBtn("primary", shopActionsLocked || creatingVaultInstruction))}
               >
@@ -2849,9 +2828,7 @@ export default function ShopControlPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={(event) =>
-                  runGuardedButtonAction(event, () => void createVaultInstruction(6))
-                }
+                onClick={() => void createVaultInstruction(6)}
                 disabled={shopActionsLocked || creatingVaultInstruction}
                 style={fullButton(actionBtn("secondary", shopActionsLocked || creatingVaultInstruction))}
               >
@@ -2871,9 +2848,7 @@ export default function ShopControlPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={(event) =>
-                  runGuardedButtonAction(event, () => void createVaultViewingLink())
-                }
+                onClick={() => void createVaultViewingLink()}
                 disabled={
                   shopActionsLocked ||
                   creatingVaultLink ||
@@ -2946,11 +2921,7 @@ export default function ShopControlPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={(event) =>
-                  runGuardedButtonAction(event, () =>
-                    void createMerchantVerifyInstruction()
-                  )
-                }
+                onClick={() => void createMerchantVerifyInstruction()}
                 disabled={shopActionsLocked || creatingMerchantVerifyInstruction}
                 style={fullButton(actionBtn(
                   "primary",
@@ -2974,10 +2945,8 @@ export default function ShopControlPage() {
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={(event) =>
-                    runGuardedButtonAction(event, () =>
-                      openExternalLink(String(trustSlipFeature?.public_verify_url))
-                    )
+                  onClick={() =>
+                    openExternalLink(String(trustSlipFeature?.public_verify_url))
                   }
                   style={fullButton(actionBtn("secondary"))}
                 >
@@ -3055,11 +3024,7 @@ export default function ShopControlPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={(event) =>
-                  runGuardedButtonAction(event, () =>
-                    void createSpotlightInstruction()
-                  )
-                }
+                onClick={() => void createSpotlightInstruction()}
                 disabled={shopActionsLocked || creatingSpotlightInstruction}
                 style={fullButton(actionBtn("primary", shopActionsLocked || creatingSpotlightInstruction))}
               >
@@ -3076,9 +3041,7 @@ export default function ShopControlPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={(event) =>
-                  runGuardedButtonAction(event, () => openSpotlightTools(undefined, "paid"))
-                }
+                onClick={() => openSpotlightTools(undefined, "paid")}
                 style={fullButton(actionBtn("secondary"))}
               >
                 Open paid publisher
@@ -3238,11 +3201,7 @@ export default function ShopControlPage() {
                   <button
                     type="button"
                     {...buttonGuardProps()}
-                    onClick={(event) =>
-                      runGuardedButtonAction(event, () =>
-                        void saveShopDetails({ image_url: imageUrlInput })
-                      )
-                    }
+                    onClick={() => void saveShopDetails({ image_url: imageUrlInput })}
                     disabled={shopActionsLocked || savingShop || uploadingImage}
                     style={fullButton(actionBtn("primary", shopActionsLocked || savingShop || uploadingImage))}
                   >
@@ -3258,13 +3217,11 @@ export default function ShopControlPage() {
                   <button
                     type="button"
                     {...buttonGuardProps()}
-                    onClick={(event) =>
-                      runGuardedButtonAction(event, () =>
-                        void saveShopDetails({
-                          clear_image: true,
-                          image_url: null,
-                        })
-                      )
+                    onClick={() =>
+                      void saveShopDetails({
+                        clear_image: true,
+                        image_url: null,
+                      })
                     }
                     disabled={
                       shopActionsLocked || savingShop || uploadingImage || !safeStr(imageUrlInput)
@@ -3291,9 +3248,7 @@ export default function ShopControlPage() {
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={(event) =>
-                    runGuardedButtonAction(event, () => openPublicShopFace())
-                  }
+                  onClick={() => openPublicShopFace()}
                   style={fullButton(actionBtn("secondary", !publicShopLink))}
                   disabled={!publicShopLink}
                 >
@@ -3303,11 +3258,7 @@ export default function ShopControlPage() {
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={(event) =>
-                    runGuardedButtonAction(event, () =>
-                      copyText(publicShopLink, "Shop gallery link copied.")
-                    )
-                  }
+                  onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
                   style={fullButton(actionBtn("soft", !publicShopLink))}
                   disabled={!publicShopLink}
                 >
@@ -3375,9 +3326,7 @@ export default function ShopControlPage() {
           <button
             type="button"
             {...buttonGuardProps()}
-            onClick={(event) =>
-              runGuardedButtonAction(event, () => void saveShopDetails())
-            }
+            onClick={() => void saveShopDetails()}
             disabled={shopActionsLocked || savingShop}
             style={fullButton(actionBtn("primary", shopActionsLocked || savingShop))}
           >
@@ -3552,9 +3501,7 @@ export default function ShopControlPage() {
                     <button
                       type="button"
                       {...buttonGuardProps()}
-                      onClick={(event) =>
-                        runGuardedButtonAction(event, () => openPublicShopFace())
-                      }
+                      onClick={() => openPublicShopFace()}
                       style={fullButton(actionBtn("secondary", !publicShopLink))}
                       disabled={!publicShopLink}
                     >
@@ -3563,11 +3510,7 @@ export default function ShopControlPage() {
                     <button
                       type="button"
                       {...buttonGuardProps()}
-                      onClick={(event) =>
-                        runGuardedButtonAction(event, () =>
-                          copyText(publicShopLink, "Shop gallery link copied.")
-                        )
-                      }
+                      onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
                       style={fullButton(actionBtn("soft", !publicShopLink))}
                       disabled={!publicShopLink}
                     >
@@ -3595,9 +3538,7 @@ export default function ShopControlPage() {
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={(event) =>
-                    runGuardedButtonAction(event, () => setSpotlightPriorityMode("free"))
-                  }
+                  onClick={() => setSpotlightPriorityMode("free")}
                   style={actionBtn("secondary")}
                 >
                   Switch back to free
@@ -3606,9 +3547,7 @@ export default function ShopControlPage() {
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={(event) =>
-                    runGuardedButtonAction(event, () => setSpotlightPriorityMode("paid"))
-                  }
+                  onClick={() => setSpotlightPriorityMode("paid")}
                   style={actionBtn("secondary")}
                 >
                   Use paid spotlight instead
@@ -3757,9 +3696,7 @@ export default function ShopControlPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={(event) =>
-                  runGuardedButtonAction(event, () => void handleCreateSpotlight())
-                }
+                onClick={() => void handleCreateSpotlight()}
                 disabled={
                   shopActionsLocked ||
                   creatingSpotlight ||
@@ -3924,10 +3861,8 @@ export default function ShopControlPage() {
                     <button
                       type="button"
                       {...buttonGuardProps()}
-                      onClick={(event) =>
-                        runGuardedButtonAction(event, () =>
-                          copyText(vaultLinkUrl(item), "Vault viewing link copied.")
-                        )
+                      onClick={() =>
+                        copyText(vaultLinkUrl(item), "Vault viewing link copied.")
                       }
                       style={fullButton(actionBtn("soft", !vaultLinkUrl(item)))}
                       disabled={!vaultLinkUrl(item)}
@@ -3937,11 +3872,7 @@ export default function ShopControlPage() {
                     <button
                       type="button"
                       {...buttonGuardProps()}
-                      onClick={(event) =>
-                        runGuardedButtonAction(event, () =>
-                          openExternalLink(vaultLinkUrl(item))
-                        )
-                      }
+                      onClick={() => openExternalLink(vaultLinkUrl(item))}
                       style={fullButton(actionBtn("secondary", !vaultLinkUrl(item)))}
                       disabled={!vaultLinkUrl(item)}
                     >
@@ -3953,11 +3884,7 @@ export default function ShopControlPage() {
                     <button
                       type="button"
                       {...buttonGuardProps()}
-                      onClick={(event) =>
-                        runGuardedButtonAction(event, () =>
-                          void extendVaultViewingLink(item)
-                        )
-                      }
+                      onClick={() => void extendVaultViewingLink(item)}
                       style={fullButton(
                         actionBtn(
                           "secondary",
@@ -3973,11 +3900,7 @@ export default function ShopControlPage() {
                     <button
                       type="button"
                       {...buttonGuardProps()}
-                      onClick={(event) =>
-                        runGuardedButtonAction(event, () =>
-                          void revokeVaultViewingLink(item)
-                        )
-                      }
+                      onClick={() => void revokeVaultViewingLink(item)}
                       style={fullButton(
                         actionBtn(
                           "secondary",
@@ -4008,9 +3931,7 @@ export default function ShopControlPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={(event) =>
-                  runGuardedButtonAction(event, () => void createVaultViewingLink())
-                }
+                onClick={() => void createVaultViewingLink()}
                 disabled={
                   shopActionsLocked ||
                   creatingVaultLink ||
