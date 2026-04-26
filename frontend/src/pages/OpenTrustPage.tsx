@@ -410,11 +410,6 @@ export default function OpenTrustPage() {
         homeLabel="Dashboard"
         backTo="/app/dashboard"
         backLabel="Dashboard"
-        nextLinks={[
-          { label: "Trust Passport", to: "/app/trust" },
-          { label: "TrustSlip", to: "/app/trust-slip" },
-        ]}
-        utilityLinks={[{ label: "Community", to: "/app/community" }]}
       />
 
       <section style={pageCard("#FFFFFF")}>

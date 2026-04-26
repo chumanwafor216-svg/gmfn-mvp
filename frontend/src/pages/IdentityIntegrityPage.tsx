@@ -1320,15 +1320,6 @@ export default function IdentityIntegrityPage() {
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/dashboard"
-          nextLinks={[
-            { label: "Trust Passport", to: "/app/trust" },
-            { label: "TrustSlip", to: "/app/trust-slip" },
-            { label: "Notifications", to: "/app/notifications" },
-          ]}
-          utilityLinks={[
-            { label: "Marketplace", to: "/app/marketplace" },
-            { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
-          ]}
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -1357,15 +1348,6 @@ export default function IdentityIntegrityPage() {
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
-        nextLinks={[
-          { label: "Trust Passport", to: "/app/trust" },
-          { label: "TrustSlip", to: "/app/trust-slip" },
-          { label: "Notifications", to: "/app/notifications" },
-        ]}
-        utilityLinks={[
-          { label: "Marketplace", to: "/app/marketplace" },
-          { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
-        ]}
       />
 
       <ExplainToggle

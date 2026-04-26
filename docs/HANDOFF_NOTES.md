@@ -43,6 +43,38 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 19:18
+
+#### Workstream
+Open Trust and identity integrity top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/open-trust`
+- `/app/identity-integrity`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/OpenTrustPage.tsx`
+- `frontend/src/pages/IdentityIntegrityPage.tsx`
+
+#### Confirmed facts
+- `OpenTrustPage.tsx` still exposed top-nav route links while also carrying its own in-body route actions for Trust Passport and Community.
+- `IdentityIntegrityPage.tsx` still exposed top-nav route links in both its loading and live states while also carrying deeper route actions for Trust Passport, TrustSlip, notifications, and the next repair step.
+- This pass removed the top-nav `nextLinks` and `utilityLinks` from both pages so route movement stays in the page body instead of two competing route bands.
+- Home and back behavior remain intact in the page top navigation for both routes.
+
+#### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- A few remaining trust/admin operational pages may still carry stacked button guards or duplicated action bands even after the top-route cleanup.
+
+#### Next recommended step
+- Continue the app-wide cleanup by following live heaviness reports into any remaining trust/admin or operational pages that still feel physically heavy on first tap.
+
+---
+
+#### Date
 2026-04-26 18:58
 
 #### Workstream
