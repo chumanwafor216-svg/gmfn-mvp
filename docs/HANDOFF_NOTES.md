@@ -12447,3 +12447,33 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend build passed
   - the first-circle setup buttons are now at a safer checkpoint for continued
     phone testing
+
+### Shop Assets buttons reached a calmer safe checkpoint (2026-04-26)
+
+- Product-owner issue:
+  - the shop-assets lane still had a couple of remaining buttons guarded twice
+    on the same tap
+  - this was smaller than the earlier shop-control cleanup, but it was the same
+    underlayer pattern of new behavior sitting on top of older event handling
+- Applied the smallest safe interaction cleanup:
+  - `frontend/src/pages/ShopAssetsPage.tsx`
+    - removed the redundant inner `guardButtonPress(event)` call from
+      `Open Shop Gallery`
+    - removed the redundant inner `guardButtonPress(event)` call from
+      `Reset Preview`
+    - kept the shared `buttonGuardProps()` layer in place
+- Routes impacted:
+  - `/app/shop-assets`
+- Shared logic impact:
+  - no backend change
+  - this is a frontend button-stability pass only
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/ShopAssetsPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - frontend lint passed
+  - frontend build passed
+  - the shop-assets lane is now at a calmer safe checkpoint for continued phone
+    testing

@@ -1069,8 +1069,7 @@ export default function ShopAssetsPage() {
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={(event) => {
-                  guardButtonPress(event);
+                onClick={() => {
                   if (shopLink) {
                     window.open(shopLink, "_blank", "noopener,noreferrer");
                   }
@@ -1449,8 +1448,7 @@ export default function ShopAssetsPage() {
                   <button
                     type="button"
                     {...buttonGuardProps()}
-                    onClick={(event) => {
-                      guardButtonPress(event);
+                    onClick={() => {
                       setShopSelectedFile(null);
                       if (shopPreviewUrl.startsWith("blob:")) {
                         URL.revokeObjectURL(shopPreviewUrl);
