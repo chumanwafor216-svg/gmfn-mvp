@@ -1242,7 +1242,6 @@ export default function PaymentInstructionsPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("overview")}
             style={collapseToggle()}
           >
@@ -1353,7 +1352,6 @@ export default function PaymentInstructionsPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("warning")}
             style={collapseToggle()}
           >
@@ -1408,7 +1406,6 @@ export default function PaymentInstructionsPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("amount")}
             style={collapseToggle()}
           >
@@ -1509,7 +1506,6 @@ export default function PaymentInstructionsPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("instruction")}
             style={collapseToggle()}
           >
@@ -1658,7 +1654,6 @@ export default function PaymentInstructionsPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("result")}
             style={collapseToggle()}
           >
@@ -1816,7 +1811,6 @@ export default function PaymentInstructionsPage() {
 
           <button
             type="button"
-            {...buttonGuardProps()}
             onClick={() => toggleSection("routes")}
             style={collapseToggle()}
           >
