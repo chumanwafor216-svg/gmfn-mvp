@@ -1,3 +1,32 @@
+## 2026-04-27 01:32
+
+### Workstream
+Join Entry passive launcher guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from the passive request-form launcher in `JoinEntryPage.tsx`.
+- Cleaned this toggle:
+  - request-form `Open / Collapse`
+
+### Why
+- This control only reveals or hides the join-request form, so it did not need the same guard layer as the real submit action.
+- This keeps the join-existing-community onboarding path lighter without changing invite validation or request submission behavior.
+
+### Files touched
+- `frontend/src/pages/JoinEntryPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- public join-existing-community onboarding route rendered by `JoinEntryPage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/JoinEntryPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other onboarding pages may still carry the same unnecessary guard layer on passive launchers and can be cleaned in later passes.
+
 ## 2026-04-27 01:24
 
 ### Workstream

@@ -1132,7 +1132,6 @@ export default function JoinEntryPage() {
                 <button
                   type="button"
                   disabled={!canOpenForm}
-                  {...buttonGuardProps()}
                   onClick={() => {
                     if (!canOpenForm) return;
                     setFormOpen((prev) => !prev);
