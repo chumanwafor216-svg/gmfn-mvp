@@ -795,15 +795,6 @@ export default function GuarantorInboxPage() {
         homeLabel="Dashboard"
         backTo="/app/loans"
         backLabel="Loans & Support"
-        nextLinks={[
-          { label: "Loan Workbench", to: "/app/loan-workbench" },
-          { label: "Loan Suggestions", to: "/app/loan-suggestions" },
-          { label: "Marketplace", to: "/app/marketplace" },
-        ]}
-        utilityLinks={[
-          { label: "Money Out", to: "/app/withdrawal-instructions" },
-          { label: "Notifications", to: "/app/notifications" },
-        ]}
       />
 
       <ExplainToggle

@@ -43,6 +43,47 @@ trust the code, `README.md`, `docs/PROJECT_PROTOCOL.md`, and
 ### Latest update
 
 #### Date
+2026-04-26 17:45
+
+#### Workstream
+Guarantor inbox top-route simplification pass.
+
+#### Routes/screens affected
+- `/app/guarantor-inbox`
+
+#### Backend routes/endpoints involved
+- None changed in this pass.
+
+#### Files in play
+- `frontend/src/pages/GuarantorInboxPage.tsx`
+
+#### Confirmed facts
+- Earlier work had already simplified route duplication inside the queue and lower `Next routes`, but `GuarantorInboxPage.tsx` was still carrying a second route-movement band in `PageTopNav`.
+- That meant the queue still exposed leave-page options in two places:
+  - top navigation route links
+  - lower `Next routes`
+- This pass removed the top-nav `nextLinks` and `utilityLinks`, leaving route movement in one place only: the lower `Next routes` section.
+- Home and back behavior remain intact in the page top navigation.
+- Verification after this pass:
+  - `npm exec -- eslint src/pages/GuarantorInboxPage.tsx`
+  - `npm run build`
+  - build passed
+  - eslint still shows the same pre-existing `loadInbox` hook warning on that page, with no new errors
+
+#### Open risks or unknowns
+- The broader app still remains in safe-checkpoint mode rather than final freeze mode.
+- Other dense operational routes may still keep duplicated action bands or heavier local guard layering.
+
+#### Next recommended step
+- Deploy `gmfn-frontend`.
+- Phone-test `/app/guarantor-inbox`, especially:
+  - top page entry
+  - queue reading
+  - row decisions
+  - lower `Next routes`
+- If `Guarantor Inbox` now feels materially calmer, continue the deeper audit in the next route that still feels physically heavy in live testing.
+
+#### Date
 2026-04-26 17:36
 
 #### Workstream
