@@ -810,7 +810,6 @@ export default function RevenueAllocationPage() {
 
                 <button
                   type="button"
-                  {...buttonGuardProps()}
                   onClick={copySummary}
                   disabled={!allocation}
                   style={secondaryBtn(!allocation)}
