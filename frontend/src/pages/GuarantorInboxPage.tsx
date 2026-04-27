@@ -945,7 +945,6 @@ export default function GuarantorInboxPage() {
             >
               <button
                 type="button"
-                {...buttonGuardProps()}
                 onClick={copyQueueSummary}
                 style={secondaryBtn(false)}
               >

@@ -1,3 +1,32 @@
+## 2026-04-27 04:49
+
+### Workstream
+Guarantor inbox copy action guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from the local copy action in `GuarantorInboxPage.tsx`.
+- Cleaned this control:
+  - `Copy Queue Summary`
+
+### Why
+- This button only copies a local queue summary and does not launch a route or change approval business state.
+- It did not need the same action-level guard as the real approval/decline buttons.
+- This keeps the guarantor inbox lighter without changing queue logic, route targets, or decision flow.
+
+### Files touched
+- `frontend/src/pages/GuarantorInboxPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/guarantor-inbox`
+
+### Verification
+- `npm exec -- eslint src/pages/GuarantorInboxPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small local copy-only buttons on operational pages may still carry the same unnecessary action-level guard and can be cleaned in later passes.
 ## 2026-04-27 04:43
 
 ### Workstream
@@ -15576,6 +15605,7 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend build passed
   - the borrower-preflight route is now at a calmer safe checkpoint for
     continued phone testing
+
 
 
 
