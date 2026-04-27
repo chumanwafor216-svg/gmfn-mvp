@@ -1873,12 +1873,11 @@ export default function ShopGalleryPage() {
                   Share public shop
                 </button>
 
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
-                  onClick={copyShopLink}
-                  style={{
-                    ...secondaryBtn(false),
+                  <button
+                    type="button"
+                    onClick={copyShopLink}
+                    style={{
+                      ...secondaryBtn(false),
                     padding: isCompact ? "10px 12px" : "9px 12px",
                     flex: isCompact ? "1 1 132px" : "0 1 auto",
                   }}
@@ -2085,12 +2084,11 @@ export default function ShopGalleryPage() {
               >
                 Ask for Private Vault view
               </button>
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={copyShopLink}
-                style={{
-                  ...secondaryBtn(false),
+                <button
+                  type="button"
+                  onClick={copyShopLink}
+                  style={{
+                    ...secondaryBtn(false),
                   padding: "10px 12px",
                   fontSize: 12.5,
                   flex: isCompact ? "1 1 132px" : undefined,

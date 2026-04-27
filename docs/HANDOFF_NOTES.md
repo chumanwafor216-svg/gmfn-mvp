@@ -1,3 +1,33 @@
+## 2026-04-27 05:26
+
+### Workstream
+Shop gallery copy action guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from copy-only actions in `ShopGalleryPage.tsx`.
+- Cleaned these controls:
+  - `Copy public link`
+  - `Copy public shop link`
+
+### Why
+- These buttons only copy the public shop URL and do not launch routes or change shop/public-view business state.
+- They did not need the same action-level guard as the real back, share, seller-contact, or product-open actions nearby.
+- This keeps the public shop/gallery page lighter without changing route targets, shelf logic, or sharing behavior.
+
+### Files touched
+- `frontend/src/pages/ShopGalleryPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- public shop/gallery route rendered by `/app/shop/:gmfnId`
+
+### Verification
+- `npm exec -- eslint src/pages/ShopGalleryPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small copy-only buttons on public-facing pages may still carry the same unnecessary action-level guard and can be cleaned in later passes.
 ## 2026-04-27 05:15
 
 ### Workstream
@@ -15696,6 +15726,7 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend build passed
   - the borrower-preflight route is now at a calmer safe checkpoint for
     continued phone testing
+
 
 
 
