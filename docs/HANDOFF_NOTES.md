@@ -1,3 +1,34 @@
+## 2026-04-27 06:14
+
+### Workstream
+Shop assets copy action guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from copy-only helper actions in `ShopAssetsPage.tsx`.
+- Cleaned these controls:
+  - top `Copy Shop Link`
+  - product form `Copy Shop Link`
+  - product row `Copy Link`
+
+### Why
+- These buttons only copy local shop/product links and do not launch routes or change shop asset business state.
+- They did not need the same action-level guard as the real open, save, clear, edit, restore, or delete actions nearby.
+- This keeps Shop Assets lighter without changing asset saving, product editing, or gallery routing logic.
+
+### Files touched
+- `frontend/src/pages/ShopAssetsPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/shop-assets`
+
+### Verification
+- `npm exec -- eslint src/pages/ShopAssetsPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small copy-only helpers on dense shop pages may still carry the same unnecessary action-level guard and can be cleaned in later passes.
 ## 2026-04-27 06:08
 
 ### Workstream

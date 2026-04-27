@@ -1063,13 +1063,12 @@ export default function ShopAssetsPage() {
                 Open Shop Gallery
               </button>
 
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={() => copyText(shopLink, "Shop gallery link copied.")}
-                style={actionBtn("secondary", !shopLink)}
-                disabled={!shopLink}
-              >
+                <button
+                  type="button"
+                  onClick={() => copyText(shopLink, "Shop gallery link copied.")}
+                  style={actionBtn("secondary", !shopLink)}
+                  disabled={!shopLink}
+                >
                 Copy Shop Link
               </button>
             </div>
@@ -1619,13 +1618,12 @@ export default function ShopAssetsPage() {
                   Clear Form
                 </button>
 
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
-                  onClick={() => copyText(shopLink, "Shop gallery link copied.")}
-                  style={actionBtn("soft", !shopLink)}
-                  disabled={!shopLink}
-                >
+                  <button
+                    type="button"
+                    onClick={() => copyText(shopLink, "Shop gallery link copied.")}
+                    style={actionBtn("soft", !shopLink)}
+                    disabled={!shopLink}
+                  >
                   Copy Shop Link
                 </button>
               </div>
@@ -1942,13 +1940,12 @@ export default function ShopAssetsPage() {
                       </button>
                     )}
 
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
-                      onClick={() =>
-                        copyText(productLink, "Product gallery link copied.")
-                      }
-                      style={actionBtn("soft", !productLink || isHidden)}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          copyText(productLink, "Product gallery link copied.")
+                        }
+                        style={actionBtn("soft", !productLink || isHidden)}
                       disabled={!productLink || isHidden}
                     >
                       Copy Link
