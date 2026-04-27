@@ -1,3 +1,32 @@
+## 2026-04-27 04:38
+
+### Workstream
+Payout details copy action guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from the local copy action in `PayoutDetailsPage.tsx`.
+- Cleaned this control:
+  - `Copy Summary`
+
+### Why
+- This button only copies a local payout summary and does not launch a route or change payout business state.
+- It did not need the same action-level guard as the real payout save action.
+- This keeps the payout-details page lighter without changing save behavior, route targets, or payout logic.
+
+### Files touched
+- `frontend/src/pages/PayoutDetailsPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/payout-details`
+
+### Verification
+- `npm exec -- eslint src/pages/PayoutDetailsPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small local copy-only buttons on operational pages may still carry the same unnecessary action-level guard and can be cleaned in later passes.
 ## 2026-04-27 04:31
 
 ### Workstream
@@ -15518,6 +15547,7 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend build passed
   - the borrower-preflight route is now at a calmer safe checkpoint for
     continued phone testing
+
 
 
 

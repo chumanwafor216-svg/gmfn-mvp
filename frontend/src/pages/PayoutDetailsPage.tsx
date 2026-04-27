@@ -788,7 +788,6 @@ export default function PayoutDetailsPage() {
           </button>
 
           <button
-            {...buttonGuardProps()}
             onClick={copySummary}
             style={secondaryBtn(false)}
           >
