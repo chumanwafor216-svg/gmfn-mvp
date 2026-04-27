@@ -1,3 +1,33 @@
+## 2026-04-27 05:08
+
+### Workstream
+Payment instructions copy action guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from the local copy actions in `PaymentInstructionsPage.tsx`.
+- Cleaned these controls:
+  - `Copy Reference`
+  - `Copy Instruction`
+
+### Why
+- These buttons only copy local payment details and do not launch routes or change payment business state.
+- They did not need the same action-level guard as the real generate, refresh, confirm, or reset actions.
+- This keeps the payment-instructions page lighter without changing route targets or money-in logic.
+
+### Files touched
+- `frontend/src/pages/PaymentInstructionsPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/payment-instructions`
+
+### Verification
+- `npm exec -- eslint src/pages/PaymentInstructionsPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small local copy-only buttons on money routes may still carry the same unnecessary action-level guard and can be cleaned in later passes.
 ## 2026-04-27 04:59
 
 ### Workstream
@@ -15634,6 +15664,7 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend build passed
   - the borrower-preflight route is now at a calmer safe checkpoint for
     continued phone testing
+
 
 
 

@@ -1602,21 +1602,19 @@ export default function PaymentInstructionsPage() {
                 <div style={sectionLabel()}>Instruction actions</div>
 
                 <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
-                    onClick={handleCopyReference}
-                    style={actionBtn("primary")}
-                  >
-                    Copy Reference
-                  </button>
+                    <button
+                      type="button"
+                      onClick={handleCopyReference}
+                      style={actionBtn("primary")}
+                    >
+                      Copy Reference
+                    </button>
 
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
-                    onClick={handleCopyInstruction}
-                    style={actionBtn("secondary")}
-                  >
+                    <button
+                      type="button"
+                      onClick={handleCopyInstruction}
+                      style={actionBtn("secondary")}
+                    >
                     Copy Full Instruction
                   </button>
 
