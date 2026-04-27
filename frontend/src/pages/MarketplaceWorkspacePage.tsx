@@ -958,26 +958,24 @@ export default function MarketplaceWorkspacePage() {
                 </div>
 
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
-                    onClick={() => {
-                      safeCopy(inviteLink);
-                      setMsg("Community invite link copied.");
-                    }}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        safeCopy(inviteLink);
+                        setMsg("Community invite link copied.");
+                      }}
                     style={btn(true, !inviteLink)}
                     disabled={!inviteLink}
                   >
                     Copy Join Link
                   </button>
 
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
-                    onClick={copyInviteMessage}
-                    style={btn(false)}
-                  >
-                    Copy Join Message
+                    <button
+                      type="button"
+                      onClick={copyInviteMessage}
+                      style={btn(false)}
+                    >
+                      Copy Join Message
                   </button>
 
                   <button
@@ -1062,23 +1060,21 @@ export default function MarketplaceWorkspacePage() {
                   flexWrap: "wrap",
                 }}
               >
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
-                  onClick={copyShopViewLink}
-                  style={btn(false)}
-                  disabled={!shopViewLink}
-                >
+                  <button
+                    type="button"
+                    onClick={copyShopViewLink}
+                    style={btn(false)}
+                    disabled={!shopViewLink}
+                  >
                   Copy Public Shop Link
                 </button>
 
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
-                  onClick={copyShopViewMessage}
-                  style={btn(false)}
-                  disabled={!shopViewLink}
-                >
+                  <button
+                    type="button"
+                    onClick={copyShopViewMessage}
+                    style={btn(false)}
+                    disabled={!shopViewLink}
+                  >
                   Copy Public Shop Message
                 </button>
               </div>
