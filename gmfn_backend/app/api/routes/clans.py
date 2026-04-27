@@ -686,7 +686,13 @@ def _join_request_status_payload(
         "activation_generated_at": getattr(req, "activation_generated_at", None),
         "activation_delivery_status": getattr(req, "activation_delivery_status", None),
         "activation_delivered_at": getattr(req, "activation_delivered_at", None),
-        "next_step": "activate-membership" if str(req.status).lower() == "approved" else None,
+        "next_step": (
+            "activate-membership"
+            if safe_status == "approved"
+            else "review-decision"
+            if safe_status == "rejected"
+            else None
+        ),
         "message": str(req.status).lower(),
     }
 
@@ -979,6 +985,43 @@ def _build_activation_package(
             "join_request_id": int(join_request.id),
         },
     }
+
+
+def _build_rejection_package(
+    *,
+    clan: Clan,
+    inviter: Optional[User],
+    join_request: ClanJoinRequest,
+) -> dict[str, Any]:
+    community_code = _community_code(clan.id)
+    inviter_name = _member_display(inviter)
+    marketplace_name = _safe_str(getattr(clan, "marketplace_name", None))
+    approval_path = f"/join-approval/{int(join_request.id)}"
+
+    return {
+        "community_id": int(clan.id),
+        "community_code": community_code,
+        "community_name": clan.name,
+        "marketplace_name": marketplace_name or None,
+        "invited_by_user_id": int(join_request.invited_by_user_id) if join_request.invited_by_user_id else None,
+        "invited_by_email": (getattr(inviter, "email", None) if inviter else None),
+        "invited_by_display": inviter_name,
+        "approval_path": approval_path,
+        "decision_message": (
+            f"Your request to join {clan.name} was not approved by the community at this time. "
+            "Open the decision page to review the status."
+        ),
+        "lineage": {
+            "origin_community_id": int(clan.id),
+            "origin_community_code": community_code,
+            "origin_community_name": clan.name,
+            "inviter_user_id": int(join_request.invited_by_user_id) if join_request.invited_by_user_id else None,
+            "invite_id": int(join_request.invite_id) if join_request.invite_id else None,
+            "join_request_id": int(join_request.id),
+        },
+    }
+
+
 def _approve_join_request(
     db: Session,
     *,
@@ -1057,6 +1100,63 @@ def _approve_join_request(
         **activation,
         "activation_generated_at": join_request.activation_generated_at,
         "activation_delivery_status": join_request.activation_delivery_status,
+    }
+
+
+def _reject_join_request(
+    db: Session,
+    *,
+    join_request: ClanJoinRequest,
+) -> dict[str, Any]:
+    applicant = db.get(User, int(join_request.applicant_user_id))
+    if not applicant:
+        raise HTTPException(status_code=404, detail="Applicant user missing")
+
+    clan = db.get(Clan, int(join_request.clan_id))
+    if not clan:
+        raise HTTPException(status_code=404, detail="Clan not found")
+
+    if not _safe_str(getattr(clan, "community_code", None)):
+        clan.community_code = f"GMFN-C-{int(clan.id):06d}"
+        db.add(clan)
+        db.commit()
+        db.refresh(clan)
+
+    inviter = (
+        db.get(User, int(join_request.invited_by_user_id))
+        if join_request.invited_by_user_id is not None
+        else None
+    )
+
+    rejection = _build_rejection_package(
+        clan=clan,
+        inviter=inviter,
+        join_request=join_request,
+    )
+
+    join_request.status = "rejected"
+    join_request.decided_at = datetime.now(timezone.utc)
+
+    db.add(join_request)
+    db.commit()
+    db.refresh(join_request)
+
+    create_notification(
+        db,
+        user_id=int(applicant.id),
+        kind="approval_rejected",
+        title="Your request was not approved",
+        message=f"The community did not approve your request to join {clan.name} yet.",
+        action_url=_safe_str(rejection.get("approval_path"), f"/join-approval/{int(join_request.id)}"),
+        action_label="View decision",
+    )
+
+    return {
+        "ok": True,
+        "status": "rejected",
+        "user_id": int(applicant.id),
+        "message": "Applicant was not approved by the community.",
+        **rejection,
     }
 
 def _clan_out(clan: Clan) -> dict[str, Any]:
@@ -1975,7 +2075,9 @@ def vote_join_request(
 
     stats = _current_join_status(db, join_request=req)
     approved_now = False
+    rejected_now = False
     approval_result = None
+    rejection_result = None
 
     if stats["approvals"] >= stats["required_approvals"]:
         approval_result = _approve_join_request(
@@ -1989,13 +2091,26 @@ def vote_join_request(
             .filter(ClanJoinRequest.id == int(join_request_id))
             .first()
         )
+    elif stats["rejects"] >= stats["required_approvals"]:
+        rejection_result = _reject_join_request(
+            db,
+            join_request=req,
+        )
+        rejected_now = True
+        req = (
+            db.query(ClanJoinRequest)
+            .filter(ClanJoinRequest.id == int(join_request_id))
+            .first()
+        )
 
     return {
         "ok": True,
         "community_id": int(clan_id),
         "community_code": _community_code(clan_id),
         "approved_now": approved_now,
+        "rejected_now": rejected_now,
         "approval_result": approval_result,
+        "rejection_result": rejection_result,
         "request": _join_request_out(db, req),
     }
 

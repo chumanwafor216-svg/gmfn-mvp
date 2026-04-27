@@ -787,6 +787,87 @@ def test_admin_can_pilot_approve_join_request_without_waiting_for_threshold(
         assert approval_notice.action_url == f"/activate-membership?gmfn_id={applicant.gmfn_id}&request_id=1"
 
 
+def test_activated_reviewer_reject_vote_reaches_rejected_state_and_notifies_applicant(
+    client,
+):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        applicant = User(
+            id=2,
+            email="silvia@example.com",
+            hashed_password="PENDING_APPROVAL",
+            role="user",
+        )
+        db.add(applicant)
+        db.flush()
+        db.add(
+            ClanJoinRequest(
+                id=1,
+                clan_id=1,
+                applicant_user_id=2,
+                invited_by_user_id=1,
+                status="pending",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    from app.core import auth as auth_core
+
+    def fake_current_user():
+        return SimpleNamespace(
+            id=1,
+            email="admin@example.com",
+            role="admin",
+            hashed_password="hashed",
+        )
+
+    app.dependency_overrides[auth_core.get_current_user] = fake_current_user
+    try:
+        res = client.post(
+            "/clans/1/join-requests/1/vote",
+            json={"vote": "reject"},
+            headers={"X-Clan-Id": "1"},
+        )
+    finally:
+        app.dependency_overrides.pop(auth_core.get_current_user, None)
+
+    assert res.status_code == 200, res.text
+    data = res.json()
+    assert data["ok"] is True
+    assert data["approved_now"] is False
+    assert data["rejected_now"] is True
+    assert data["rejection_result"]["status"] == "rejected"
+    assert data["rejection_result"]["approval_path"] == "/join-approval/1"
+
+    with SessionLocal() as db:
+        req = db.get(ClanJoinRequest, 1)
+        rejection_notice = (
+            db.query(Notification)
+            .filter(
+                Notification.user_id == 2,
+                Notification.kind == "approval_rejected",
+            )
+            .order_by(Notification.id.desc())
+            .first()
+        )
+
+        assert req is not None
+        assert req.status == "rejected"
+        assert req.decided_at is not None
+        assert rejection_notice is not None
+        assert rejection_notice.action_url == "/join-approval/1"
+
+    status_res = client.get("/clans/join-requests/1/status")
+    assert status_res.status_code == 200, status_res.text
+    status_data = status_res.json()
+    assert status_data["status"] == "rejected"
+    assert status_data["result_channel"] == "request-rejected"
+    assert status_data["result_path"] == "/join-approval/1"
+    assert status_data["next_step"] == "review-decision"
+
+
 def test_public_join_request_rejects_short_lived_invite_after_daily_pilot_window(client):
     _seed_join_context()
     now = datetime.now(timezone.utc)

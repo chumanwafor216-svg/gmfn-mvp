@@ -74,8 +74,14 @@ type VoteResponse = {
   community_id?: number;
   community_code?: string | null;
   approved_now?: boolean;
+  rejected_now?: boolean;
   pilot_override?: boolean;
   approval_result?: ApprovalResult | null;
+  rejection_result?: {
+    status?: string;
+    decision_message?: string | null;
+    approval_path?: string | null;
+  } | null;
   request?: JoinRequestItem;
 };
 
@@ -321,6 +327,11 @@ export default function CommunityJoinRequestsPage() {
       } else if (vote === "approve") {
         setSuccess(
           "Approval recorded successfully. The request may still be waiting for the final approval threshold."
+        );
+      } else if (res?.rejected_now) {
+        setSuccess(
+          res?.rejection_result?.decision_message ||
+            "Request rejected successfully. The applicant can now reopen the decision page."
         );
       } else {
         setSuccess("Rejection recorded successfully.");

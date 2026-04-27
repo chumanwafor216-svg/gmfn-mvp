@@ -16621,6 +16621,66 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend build passed
   - join status reopen flows now follow backend-authoritative result paths
 
+### Join rejection channel now completes at backend level (2026-04-27)
+
+- Continued the same system-level join / approval workstream to close the
+  missing rejection branch.
+- Problem:
+  - `_current_join_status(...)` already counted reject votes
+  - but the backend never transitioned a request into a real `rejected` state
+  - so the negative side of the join channel was incomplete even though the
+    vote tally already existed
+- Applied the smallest safe backend + frontend fix:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - added `_build_rejection_package(...)`
+    - added `_reject_join_request(...)`
+    - `vote_join_request(...)` now triggers a real rejection transition once
+      reject votes reach the current threshold
+    - `_join_request_status_payload(...)` now returns:
+      - `result_channel = "request-rejected"`
+      - `result_path = "/join-approval/{request_id}"`
+      - `next_step = "review-decision"`
+    - rejected applicants now receive an `approval_rejected` notification with
+      an action back into the join decision page
+  - `gmfn_backend/tests/test_join_requests.py`
+    - added coverage proving that:
+      - an activated reviewer can reject
+      - the request status becomes `rejected`
+      - `decided_at` is written
+      - the applicant gets `approval_rejected`
+      - the backend status route reports the rejected result channel/path
+  - `frontend/src/pages/CommunityJoinRequestsPage.tsx`
+    - review UI now understands `rejected_now`
+    - if the backend completes the rejection immediately, the page surfaces the
+      backend decision message instead of a vague generic success string
+- Routes impacted:
+  - backend:
+    - `POST /clans/{clan_id}/join-requests/{join_request_id}/vote`
+    - `GET /clans/join-requests/{join_request_id}/status`
+  - frontend:
+    - `/app/community/:id/join-requests`
+- Shared logic impact:
+  - approval and rejection are now both real backend state transitions
+  - the applicant-side status route can now represent the full join-review
+    decision tree instead of only pending / approved
+  - this is a backend/system-level fix, not a page-only message tweak
+- Verification:
+  - backend compile:
+    - `python -m py_compile gmfn_backend/app/api/routes/clans.py gmfn_backend/tests/test_join_requests.py`
+  - backend tests:
+    - `python -m pytest tests/test_join_requests.py -q`
+  - frontend targeted lint:
+    - `npm exec -- eslint src/pages/CommunityJoinRequestsPage.tsx src/pages/JoinEntryPage.tsx src/pages/JoinRequestPendingPage.tsx src/pages/JoinApprovalPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - backend compile passed
+  - join-request backend tests passed (`23 passed`)
+  - frontend targeted lint passed with only 1 pre-existing warning in
+    `CommunityJoinRequestsPage.tsx`
+  - frontend build passed
+  - the system now has a real rejected branch for the join channel
+
 
 
 
