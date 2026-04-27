@@ -1122,7 +1122,6 @@ export default function GuarantorInboxPage() {
                 <button
                   key={x}
                   type="button"
-                  {...buttonGuardProps()}
                   onClick={() => setFilter(x)}
                   style={filterBtn(filter === x)}
                 >

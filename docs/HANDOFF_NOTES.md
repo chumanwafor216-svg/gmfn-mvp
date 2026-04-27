@@ -1,3 +1,35 @@
+## 2026-04-27 03:36
+
+### Workstream
+Guarantor inbox filter-strip passive guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from the passive queue-filter buttons in `GuarantorInboxPage.tsx`.
+- Cleaned these controls:
+  - `Pending`
+  - `Approved`
+  - `Declined`
+  - `All`
+
+### Why
+- These buttons only change which queue rows are being read, so they did not need the same action-level guard as real approval or route-opening buttons.
+- This keeps the guarantor queue lighter without changing approve/decline actions, route targets, or queue logic.
+
+### Files touched
+- `frontend/src/pages/GuarantorInboxPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/guarantor-inbox`
+
+### Verification
+- `npm exec -- eslint src/pages/GuarantorInboxPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small filter-strip controls on operational pages may still carry the same unnecessary guard layer and can be cleaned in later passes.
+
 ## 2026-04-27 03:28
 
 ### Workstream
