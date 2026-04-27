@@ -1,3 +1,32 @@
+## 2026-04-27 03:28
+
+### Workstream
+Notifications review-dismiss passive guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from the passive review-dismiss button in `NotificationsPage.tsx`.
+- Cleaned this control:
+  - `Close review`
+
+### Why
+- This button only dismisses the current reading panel, so it did not need the same action-level guard as real notice actions like mark-as-read or route opening.
+- This keeps the Action Inbox lighter without changing notice routing or operational focus logic.
+
+### Files touched
+- `frontend/src/pages/NotificationsPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/notifications`
+
+### Verification
+- `npm exec -- eslint src/pages/NotificationsPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small dismiss/close controls on first-touch pages may still carry the same unnecessary guard layer and can be cleaned in later passes.
+
 ## 2026-04-27 03:18
 
 ### Workstream

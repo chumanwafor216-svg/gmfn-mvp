@@ -1536,7 +1536,6 @@ export default function NotificationsPage() {
 
                 <button
                   type="button"
-                  {...buttonGuardProps()}
                   onClick={() => setSelectedNotice(null)}
                   style={actionBtn("soft")}
                 >
