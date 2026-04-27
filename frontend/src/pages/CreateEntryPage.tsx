@@ -761,7 +761,6 @@ export default function CreateEntryPage() {
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button
               type="button"
-              {...buttonGuardProps()}
               onClick={handleExistingMemberLogin}
               style={{
                 ...primaryBtn(false),
