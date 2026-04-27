@@ -1,3 +1,32 @@
+## 2026-04-27 04:59
+
+### Workstream
+Withdrawal instructions copy action guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from the local copy action in `WithdrawalInstructionsPage.tsx`.
+- Cleaned this control:
+  - `Copy Withdrawal Summary`
+
+### Why
+- This button only copies a local withdrawal summary and does not launch a route or change withdrawal business state.
+- It did not need the same action-level guard as the real withdrawal, support-path, destination-save, or refresh actions.
+- This keeps the withdrawal-instructions page lighter without changing route targets or money-out logic.
+
+### Files touched
+- `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/withdrawal-instructions`
+
+### Verification
+- `npm exec -- eslint src/pages/WithdrawalInstructionsPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small local copy-only buttons on money routes may still carry the same unnecessary action-level guard and can be cleaned in later passes.
 ## 2026-04-27 04:49
 
 ### Workstream
@@ -15605,6 +15634,7 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend build passed
   - the borrower-preflight route is now at a calmer safe checkpoint for
     continued phone testing
+
 
 
 

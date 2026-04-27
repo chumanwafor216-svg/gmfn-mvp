@@ -1911,7 +1911,6 @@ export default function WithdrawalInstructionsPage() {
                 )}
 
                 <button
-                  {...buttonGuardProps()}
                   type="button"
                   onClick={handleCopyWithdrawalSummary}
                   style={actionBtn("secondary")}
