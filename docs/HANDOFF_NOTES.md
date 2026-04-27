@@ -1,3 +1,33 @@
+## 2026-04-27 07:08
+
+### Workstream
+Demand Box create-launcher guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from the passive create-demand launcher in `DemandBoxPage.tsx`.
+- Cleaned this control:
+  - `Create demand`
+
+### Why
+- This button only reveals the create-demand surface and does not itself submit a demand, launch a route, or change demand business state.
+- It did not need the same action-level guard as the real community-selection, create-demand, or demand-status actions nearby.
+- This keeps Demand Box lighter without changing create flow logic, community choice, or demand posting behavior.
+
+### Files touched
+- `frontend/src/pages/DemandBoxPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/demand-box`
+
+### Verification
+- `npm exec -- eslint src/pages/DemandBoxPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small reveal-only launcher buttons on workflow pages may still carry the same unnecessary action-level guard and can be cleaned in later passes.
+
 ## 2026-04-27 07:00
 
 ### Workstream

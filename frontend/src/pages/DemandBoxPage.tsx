@@ -1118,7 +1118,6 @@ export default function DemandBoxPage() {
             >
               <button
                 type="button"
-                {...buttonGuardProps()}
                 onClick={() => {
                   revealDemandCreate();
                 }}
