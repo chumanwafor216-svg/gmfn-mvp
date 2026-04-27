@@ -656,7 +656,6 @@ export default function CommunityShopControlPanel({
         <div style={collapseButtonRow()}>
           <button
             type="button"
-            {...panelButtonGuardProps()}
             onClick={() => togglePanelFromButton()}
             style={collapseHeaderButton(isCompact)}
           >

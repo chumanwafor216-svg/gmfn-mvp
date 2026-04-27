@@ -1,3 +1,33 @@
+## 2026-04-27 04:25
+
+### Workstream
+Community owner panel passive launcher guard cleanup pass.
+
+### What changed
+- Removed the action-level `panelButtonGuardProps()` layer from the passive owner-panel open/collapse control in `CommunityShopControlPanel.tsx`.
+- Cleaned this control:
+  - `Open owner shop control` / `Collapse owner shop control`
+
+### Why
+- This button only reveals or hides the embedded owner panel from Community Home.
+- It did not need the same action-level guard as the real route-opening buttons inside the panel.
+- This keeps the owner launcher lighter without changing route targets or panel content.
+
+### Files touched
+- `frontend/src/components/CommunityShopControlPanel.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/community`
+- embedded owner shop panel inside Community Home
+
+### Verification
+- `npm exec -- eslint src/components/CommunityShopControlPanel.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small panel launcher buttons on embedded surfaces may still carry the same unnecessary action-level guard and can be cleaned in later passes.
 ## 2026-04-27 04:14
 
 ### Workstream
@@ -15458,4 +15488,5 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend build passed
   - the borrower-preflight route is now at a calmer safe checkpoint for
     continued phone testing
+
 
