@@ -2532,7 +2532,6 @@ export default function ShopGalleryPage() {
             {overflowProductCount > 0 ? (
               <button
                 type="button"
-                {...buttonGuardProps()}
                 onClick={() => setShowAllProducts((current) => !current)}
                 style={{
                   ...secondaryBtn(false),

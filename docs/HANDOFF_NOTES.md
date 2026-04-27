@@ -1,3 +1,32 @@
+## 2026-04-27 03:44
+
+### Workstream
+Public shop gallery shelf-toggle passive guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from the passive shelf/view toggle in `ShopGalleryPage.tsx`.
+- Cleaned this control:
+  - `Show all loaded items` / `Return to 12-slot shelf`
+
+### Why
+- This button only switches the visible shelf view, so it did not need the same action-level guard as real share/open/contact buttons.
+- This keeps the public shop page lighter without changing product-open, share, or seller-contact logic.
+
+### Files touched
+- `frontend/src/pages/ShopGalleryPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- public shop/gallery route rendered by `/app/shop/:gmfnId`
+
+### Verification
+- `npm exec -- eslint src/pages/ShopGalleryPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small view-mode toggles on public-facing pages may still carry the same unnecessary guard layer and can be cleaned in later passes.
+
 ## 2026-04-27 03:36
 
 ### Workstream
