@@ -1378,21 +1378,19 @@ export default function LoanSummaryPage() {
                 flexWrap: "wrap",
               }}
             >
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={copyLoanSummary}
-                style={secondaryBtn(false)}
-              >
-                Copy loan summary
-              </button>
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={copyLoanAuditLink}
-                style={secondaryBtn(false)}
-              >
-                Copy audit link
+                <button
+                  type="button"
+                  onClick={copyLoanSummary}
+                  style={secondaryBtn(false)}
+                >
+                  Copy loan summary
+                </button>
+                <button
+                  type="button"
+                  onClick={copyLoanAuditLink}
+                  style={secondaryBtn(false)}
+                >
+                  Copy audit link
               </button>
             </div>
           </div>

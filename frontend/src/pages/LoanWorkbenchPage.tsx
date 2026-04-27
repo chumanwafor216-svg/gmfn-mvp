@@ -1361,12 +1361,11 @@ export default function LoanWorkbenchPage() {
                 {refreshing ? "Refreshing..." : "Refresh Workbench"}
               </button>
 
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={() =>
-                  handleCopy(
-                    selectedLoanId ? String(selectedLoanId) : "",
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleCopy(
+                      selectedLoanId ? String(selectedLoanId) : "",
                     "Loan ID copied.",
                     "Loan ID is not ready yet."
                   )

@@ -1,3 +1,38 @@
+## 2026-04-27 05:41
+
+### Workstream
+Borrowing copy action guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from copy-only actions in the borrowing detail pages.
+- Cleaned these controls:
+  - `LoanSummaryPage.tsx`
+    - `Copy loan summary`
+    - `Copy audit link`
+  - `LoanWorkbenchPage.tsx`
+    - `Copy Loan ID`
+
+### Why
+- These buttons only copy local text or a local route id and do not launch routes or change borrowing business state.
+- They did not need the same action-level guard as the real approval, refresh, selection, or route-opening buttons nearby.
+- This keeps the borrowing detail pages lighter without changing supporter decisions, workbench routing, or loan-state logic.
+
+### Files touched
+- `frontend/src/pages/LoanSummaryPage.tsx`
+- `frontend/src/pages/LoanWorkbenchPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/loan-summary/:loanId`
+- `/app/loan-workbench`
+
+### Verification
+- `npm exec -- eslint src/pages/LoanSummaryPage.tsx src/pages/LoanWorkbenchPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small copy-only buttons on dense borrowing pages may still carry the same unnecessary action-level guard and can be cleaned in later passes.
 ## 2026-04-27 05:26
 
 ### Workstream
