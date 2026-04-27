@@ -1,3 +1,33 @@
+## 2026-04-27 04:31
+
+### Workstream
+Guarantor earnings copy action guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from the local copy action in `GuarantorEarningsPage.tsx`.
+- Removed the now-dead page-local `guardButtonPress(...)` and `buttonGuardProps()` helpers from that page.
+- Cleaned this control:
+  - `Copy Earnings Summary`
+
+### Why
+- This button only copies a local text summary and does not launch a route or change business state.
+- It did not need the same action-level guard as higher-risk workflow buttons.
+- This keeps the guarantor earnings page lighter without changing totals, route targets, or earnings logic.
+
+### Files touched
+- `frontend/src/pages/GuarantorEarningsPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/guarantor-earnings`
+
+### Verification
+- `npm exec -- eslint src/pages/GuarantorEarningsPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small local copy-only buttons on operational pages may still carry the same unnecessary action-level guard and can be cleaned in later passes.
 ## 2026-04-27 04:25
 
 ### Workstream
@@ -15488,5 +15518,6 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend build passed
   - the borrower-preflight route is now at a calmer safe checkpoint for
     continued phone testing
+
 
 

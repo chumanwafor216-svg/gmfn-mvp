@@ -219,21 +219,6 @@ function stableTapStyle(): React.CSSProperties {
   };
 }
 
-function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
-  event?.stopPropagation();
-}
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown"
-> {
-  return {
-    onPointerDown: guardButtonPress,
-    onTouchStart: guardButtonPress,
-    onMouseDown: guardButtonPress,
-  };
-}
-
 function routeTile(primary = false): React.CSSProperties {
   return {
     ...stableTapStyle(),
@@ -897,7 +882,6 @@ export default function GuarantorEarningsPage() {
             >
               <button
                 type="button"
-                {...buttonGuardProps()}
                 onClick={copySummary}
                 style={secondaryBtn(false)}
               >
