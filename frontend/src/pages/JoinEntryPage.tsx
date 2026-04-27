@@ -1233,11 +1233,12 @@ export default function JoinEntryPage() {
         note: safeNote || undefined,
       });
 
-      const existingPendingRequest =
+      const existingRequest =
+        Boolean(res?.existing_request) ||
         Boolean(res?.existing_pending_request) ||
-        cleanText(res?.code).toLowerCase() === "pending_request_exists";
+        /_request_exists$/.test(cleanText(res?.code).toLowerCase());
 
-      if (existingPendingRequest) {
+      if (existingRequest) {
         storeExistingRequest(res, safePhone);
         if (continueExistingRequest(res)) {
           return;

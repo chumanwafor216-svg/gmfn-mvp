@@ -508,6 +508,121 @@ def test_public_join_request_returns_pending_request_lineage_when_duplicate(clie
     assert detail["approval_path"].endswith(f"/{created['request']['id']}")
 
 
+def test_public_join_request_returns_approved_request_lineage_when_duplicate(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        applicant = User(
+            id=2,
+            email="2349071733533@pending.gmfn.local",
+            phone_e164="+2349071733533",
+            gmfn_id="GMFN-U-TEST0002",
+            hashed_password="hashed",
+            role="user",
+        )
+        db.add(applicant)
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="package-code",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.flush()
+        db.add(
+            ClanJoinRequest(
+                id=1,
+                clan_id=1,
+                applicant_user_id=2,
+                invite_id=1,
+                invited_by_user_id=1,
+                status="approved",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    duplicate = client.post("/clans/join-requests", json=_join_payload("package-code"))
+
+    assert duplicate.status_code == 409, duplicate.text
+    payload = duplicate.json()
+    detail = payload.get("detail") or {}
+
+    assert detail["code"] == "approved_request_exists"
+    assert detail["request_id"] == 1
+    assert detail["status"] == "approved"
+    assert detail["community_name"] == "Aberdeen City ICA"
+    assert detail["marketplace_name"] == "Aberdeen city marketplace"
+    assert detail["community_code"] == "GMFN-C-000001"
+    assert detail["result_channel"] == "activation-ready"
+    assert "activate-membership" in str(detail.get("result_path") or "")
+    assert "activate-membership" in str(detail.get("activation_path") or "")
+    assert detail["activation_delivery_status"] == "opened"
+    assert detail["activation_delivered_at"] is not None
+
+
+def test_public_join_request_returns_rejected_request_lineage_when_duplicate(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        applicant = User(
+            id=2,
+            email="2349071733533@pending.gmfn.local",
+            phone_e164="+2349071733533",
+            hashed_password="hashed",
+            role="user",
+        )
+        db.add(applicant)
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="package-code",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.flush()
+        db.add(
+            ClanJoinRequest(
+                id=1,
+                clan_id=1,
+                applicant_user_id=2,
+                invite_id=1,
+                invited_by_user_id=1,
+                status="rejected",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    duplicate = client.post("/clans/join-requests", json=_join_payload("package-code"))
+
+    assert duplicate.status_code == 409, duplicate.text
+    payload = duplicate.json()
+    detail = payload.get("detail") or {}
+
+    assert detail["code"] == "rejected_request_exists"
+    assert detail["request_id"] == 1
+    assert detail["status"] == "rejected"
+    assert detail["community_name"] == "Aberdeen City ICA"
+    assert detail["marketplace_name"] == "Aberdeen city marketplace"
+    assert detail["community_code"] == "GMFN-C-000001"
+    assert detail["result_channel"] == "request-rejected"
+    assert detail["result_path"] == "/join-approval/1"
+    assert detail["approval_path"] == "/join-approval/1"
+
+
 def test_public_join_invite_request_status_finds_existing_request_by_phone(client):
     _seed_join_context()
 

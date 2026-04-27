@@ -862,26 +862,35 @@ export async function submitJoinRequest(payload: {
   if (
     res.status === 409 &&
     detail &&
-    typeof detail === "object" &&
-    String((detail as any).code || "").trim().toLowerCase() ===
-      "pending_request_exists"
+    typeof detail === "object"
   ) {
-    return {
-      ok: false,
-      existing_pending_request: true,
-      request_id: (detail as any).request_id,
-      status: (detail as any).status,
-      community_id: (detail as any).community_id,
-      community_code: (detail as any).community_code,
-      community_name: (detail as any).community_name,
-      marketplace_name: (detail as any).marketplace_name,
-      submitted_at: (detail as any).submitted_at,
-      pending_status_path: (detail as any).pending_status_path,
-      approval_path: (detail as any).approval_path,
-      message:
-        String((detail as any).message || "").trim() ||
-        "Your join request is already waiting for community review.",
-    };
+    const code = String((detail as any).code || "").trim().toLowerCase();
+    if (/_request_exists$/.test(code)) {
+      return {
+        ok: false,
+        existing_request: true,
+        existing_pending_request: code === "pending_request_exists",
+        request_id: (detail as any).request_id,
+        status: (detail as any).status,
+        community_id: (detail as any).community_id,
+        community_code: (detail as any).community_code,
+        community_name: (detail as any).community_name,
+        marketplace_name: (detail as any).marketplace_name,
+        submitted_at: (detail as any).submitted_at,
+        pending_status_path: (detail as any).pending_status_path,
+        approval_path: (detail as any).approval_path,
+        activation_path: (detail as any).activation_path,
+        activation_link: (detail as any).activation_link,
+        activation_delivery_status: (detail as any).activation_delivery_status,
+        activation_delivered_at: (detail as any).activation_delivered_at,
+        result_channel: (detail as any).result_channel,
+        result_path: (detail as any).result_path,
+        gmfn_id: (detail as any).gmfn_id,
+        message:
+          String((detail as any).message || "").trim() ||
+          "A previous join request already exists for this invite.",
+      };
+    }
   }
 
   const message =

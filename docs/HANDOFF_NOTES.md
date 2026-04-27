@@ -16681,6 +16681,56 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend build passed
   - the system now has a real rejected branch for the join channel
 
+### Existing join requests now reopen across all final states (2026-04-27)
+
+- Continued the same system-level join-channel cleanup to close the gap where
+  duplicate submissions only reconnected if the earlier request was still
+  pending.
+- Problem:
+  - `POST /clans/join-requests` could already detect an existing request
+  - but the frontend only treated `pending_request_exists` as resumable lineage
+  - approved and rejected existing requests could still feel like dead conflicts
+- Applied the smallest safe backend + frontend fix:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - `create_join_request(...)` now checks the newest existing request for the
+      applicant in that community, regardless of final state
+    - `_existing_join_request_conflict_detail(...)` now returns structured
+      lineage for `pending`, `approved`, and `rejected`
+  - `gmfn_backend/tests/test_join_requests.py`
+    - added coverage proving duplicate submissions now return:
+      - `approved_request_exists` with activation lineage
+      - `rejected_request_exists` with review-decision lineage
+  - `frontend/src/lib/api.ts`
+    - `submitJoinRequest(...)` now recognizes any `*_request_exists` conflict
+      and returns a structured existing-request payload instead of throwing
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - the submit path now routes through the same existing-request recovery
+      logic for pending, approved, and rejected requests
+- Routes impacted:
+  - backend:
+    - `POST /clans/join-requests`
+  - frontend:
+    - `/start/join/...`
+- Shared logic impact:
+  - reopening the same invite and submitting again no longer dead-ends simply
+    because the earlier request has already been approved or rejected
+  - the app now follows backend-authoritative lineage consistently across all
+    request states
+- Verification:
+  - backend compile:
+    - `python -m py_compile gmfn_backend/app/api/routes/clans.py gmfn_backend/tests/test_join_requests.py`
+  - backend tests:
+    - `python -m pytest gmfn_backend/tests/test_join_requests.py -q`
+  - frontend targeted lint:
+    - `npm exec -- eslint src/pages/JoinEntryPage.tsx src/pages/JoinRequestPendingPage.tsx src/pages/JoinApprovalPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - backend compile passed
+  - join-request backend tests passed (`25 passed`)
+  - targeted frontend lint passed
+  - frontend build passed
+
 
 
 

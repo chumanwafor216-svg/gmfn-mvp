@@ -683,9 +683,17 @@ def _join_request_status_payload(
         "activation_path": saved_activation_path or None,
         "activation_link": saved_activation_link or None,
         "activation_message": getattr(req, "activation_message", None),
-        "activation_generated_at": getattr(req, "activation_generated_at", None),
+        "activation_generated_at": (
+            req.activation_generated_at.isoformat()
+            if getattr(req, "activation_generated_at", None)
+            else None
+        ),
         "activation_delivery_status": getattr(req, "activation_delivery_status", None),
-        "activation_delivered_at": getattr(req, "activation_delivered_at", None),
+        "activation_delivered_at": (
+            req.activation_delivered_at.isoformat()
+            if getattr(req, "activation_delivered_at", None)
+            else None
+        ),
         "next_step": (
             "activate-membership"
             if safe_status == "approved"
@@ -694,6 +702,35 @@ def _join_request_status_payload(
             else None
         ),
         "message": str(req.status).lower(),
+    }
+
+
+def _existing_join_request_conflict_detail(
+    db: Session,
+    request: Request,
+    *,
+    req: ClanJoinRequest,
+) -> dict[str, Any]:
+    if str(getattr(req, "status", "")).lower() == "approved":
+        req = _mark_activation_opened_if_needed(db, req=req)
+
+    payload = _join_request_status_payload(db, request, req)
+    safe_status = _safe_str(getattr(req, "status", None)).lower()
+    message = (
+        "A pending join request already exists"
+        if safe_status == "pending"
+        else "This join request was already approved"
+        if safe_status == "approved"
+        else "This join request already has a final decision"
+    )
+
+    return {
+        "code": f"{safe_status or 'existing'}_request_exists",
+        "message": message,
+        "submitted_at": (
+            req.created_at.isoformat() if getattr(req, "created_at", None) else None
+        ),
+        **payload,
     }
 
 
@@ -1786,6 +1823,7 @@ Final admission depends on the community's existing approval requirements.
 @router.post("/join-requests", response_model=dict[str, Any], status_code=201)
 def create_join_request(
     payload: JoinApplicationIn,
+    request: Request,
     db: Session = Depends(get_db),
 ):
     invite_code = (payload.invite_code or "").strip()
@@ -1870,34 +1908,18 @@ def create_join_request(
         .filter(
             ClanJoinRequest.clan_id == int(clan.id),
             ClanJoinRequest.applicant_user_id == int(applicant_user.id),
-            ClanJoinRequest.status == "pending",
         )
+        .order_by(ClanJoinRequest.created_at.desc(), ClanJoinRequest.id.desc())
         .first()
     )
     if existing_request:
         raise HTTPException(
             status_code=409,
-            detail={
-                "code": "pending_request_exists",
-                "message": "A pending join request already exists",
-                "request_id": int(existing_request.id),
-                "status": "pending",
-                "community_id": int(clan.id),
-                "community_code": _community_code(clan.id, clan=clan),
-                "community_name": getattr(clan, "name", None),
-                "marketplace_name": getattr(clan, "marketplace_name", None),
-                "submitted_at": (
-                    existing_request.created_at.isoformat()
-                    if getattr(existing_request, "created_at", None)
-                    else None
-                ),
-                "pending_status_path": (
-                    f"/pending-approval?request_id={int(existing_request.id)}"
-                ),
-                "approval_path": (
-                    f"/join-approval/{int(existing_request.id)}"
-                ),
-            },
+            detail=_existing_join_request_conflict_detail(
+                db,
+                request,
+                req=existing_request,
+            ),
         )
 
     join_request = ClanJoinRequest(
