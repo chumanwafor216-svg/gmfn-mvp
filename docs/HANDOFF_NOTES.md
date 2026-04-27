@@ -1,3 +1,32 @@
+## 2026-04-27 03:53
+
+### Workstream
+Marketplace workspace member-row passive guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from the passive member-row detail button in `MarketplaceWorkspacePage.tsx`.
+- Cleaned this control:
+  - `View Row`
+
+### Why
+- This button only changes which member detail is being shown in the reading panel, so it did not need the same action-level guard as the real `Shop Gallery` launcher.
+- This keeps Marketplace Workspace lighter without changing member-shop routing or member mapping logic.
+
+### Files touched
+- `frontend/src/pages/MarketplaceWorkspacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/community-marketplace`
+
+### Verification
+- `npm exec -- eslint src/pages/MarketplaceWorkspacePage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small row-detail selectors on operational pages may still carry the same unnecessary action-level guard and can be cleaned in later passes.
+
 ## 2026-04-27 03:44
 
 ### Workstream

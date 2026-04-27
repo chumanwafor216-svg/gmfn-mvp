@@ -1325,7 +1325,6 @@ export default function MarketplaceWorkspacePage() {
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <button
                       type="button"
-                      {...buttonGuardProps()}
                       onClick={() => setSelectedMember(member.raw)}
                       style={btn(false)}
                     >
