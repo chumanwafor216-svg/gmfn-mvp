@@ -1,3 +1,33 @@
+## 2026-04-27 06:49
+
+### Workstream
+Community Home copy action guard cleanup pass.
+
+### What changed
+- Removed the action-level `communityButtonGuardProps()` layer from the copy-only helper action in `CommunityHomePage.tsx`.
+- Cleaned this control:
+  - `Copy Invite Bundle`
+
+### Why
+- This button only copies the prepared first-circle invite bundle and does not launch a route or change community business state.
+- It did not need the same action-level guard as the real community, owner, or spotlight actions nearby.
+- This keeps Community Home lighter without changing community selection, spotlight behavior, or owner workflow logic.
+
+### Files touched
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/community`
+
+### Verification
+- `npm exec -- eslint src/pages/CommunityHomePage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small copy-only helpers on first-touch pages may still carry the same unnecessary action-level guard and can be cleaned in later passes.
+
 ## 2026-04-27 06:34
 
 ### Workstream

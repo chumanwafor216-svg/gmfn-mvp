@@ -2874,12 +2874,11 @@ function communityButtonGuardProps(): Pick<
                   Open First Circle
                 </button>
 
-                <button
-                  type="button"
-                  {...communityButtonGuardProps()}
-                  onClick={copyFirstCircleInviteBundle}
-                  disabled={readyFirstCircleContacts.length === 0}
-                  style={actionBtn(
+                  <button
+                    type="button"
+                    onClick={copyFirstCircleInviteBundle}
+                    disabled={readyFirstCircleContacts.length === 0}
+                    style={actionBtn(
                     "secondary",
                     readyFirstCircleContacts.length === 0
                   )}
