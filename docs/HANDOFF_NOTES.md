@@ -1,3 +1,31 @@
+## 2026-04-27 04:14
+
+### Workstream
+Community Home guided-family collapse button passive guard cleanup pass.
+
+### What changed
+- Removed the extra click-time `consumeCommunityButtonEvent(...)` call from the passive guided-family `Collapse` button in `CommunityHomePage.tsx`.
+- Cleaned this control:
+  - `Collapse`
+
+### Why
+- This button only exits the temporary guided-family spotlight focus surface, so it did not need the same click-time tap stop as real route or owner-action buttons.
+- This keeps Community Home lighter without changing spotlight routing, community selection, or owner workflow logic.
+
+### Files touched
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/community`
+
+### Verification
+- `npm exec -- eslint src/pages/CommunityHomePage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small focus-exit controls on guided-family surfaces may still carry the same unnecessary click-time barrier and can be cleaned in later passes.
 ## 2026-04-27 04:03
 
 ### Workstream
@@ -15430,3 +15458,4 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend build passed
   - the borrower-preflight route is now at a calmer safe checkpoint for
     continued phone testing
+

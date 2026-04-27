@@ -2504,8 +2504,7 @@ function communityButtonGuardProps(): Pick<
             >
               <button
                 type="button"
-                onClick={(event) => {
-                  consumeCommunityButtonEvent(event);
+                onClick={() => {
                   setGuidedActionFamilyFocus(null);
                 }}
                 style={collapseHeaderButton(isCompact)}
