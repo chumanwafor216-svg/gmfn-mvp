@@ -1560,7 +1560,6 @@ export default function CreateEntryPage() {
                   </div>
                   <button
                     type="button"
-                    {...buttonGuardProps()}
                     onClick={handleGuideDone}
                     style={{
                       ...primaryBtn(false),

@@ -1,3 +1,33 @@
+## 2026-04-27 07:18
+
+### Workstream
+Create-entry guide-close guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from the passive guide-close control in `CreateEntryPage.tsx`.
+- Cleaned this control:
+  - `Read Again` / guide done button driven by `handleGuideDone`
+
+### Why
+- This button only dismisses the procedure overlay and returns the user to the staged create flow.
+- It did not need the same action-level guard as the real verification, bank-details, or create-community actions nearby.
+- This keeps the create-entry onboarding flow lighter without changing verification logic, bank-details logic, or community-submit behavior.
+
+### Files touched
+- `frontend/src/pages/CreateEntryPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- public create-community onboarding route rendered by `CreateEntryPage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/CreateEntryPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small guide-close or panel-dismiss controls on onboarding pages may still carry the same unnecessary action-level guard and can be cleaned in later passes.
+
 ## 2026-04-27 07:08
 
 ### Workstream
