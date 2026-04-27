@@ -1,3 +1,33 @@
+## 2026-04-27 06:00
+
+### Workstream
+Join review activation-pack copy action cleanup pass.
+
+### What changed
+- Removed the action-level pointer/touch blocker layer from copy-only controls in `CommunityJoinRequestsPage.tsx`.
+- Cleaned these controls:
+  - `Copy Activation Message`
+  - `Copy Activation Link`
+
+### Why
+- These buttons only copy activation text/link details and do not launch routes or change approval business state.
+- They did not need the same action-level pointer blocker as the real approve/reject/pilot-approve actions nearby.
+- This keeps the join-review page lighter without changing community approval logic or activation routing.
+
+### Files touched
+- `frontend/src/pages/CommunityJoinRequestsPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/community/:clanId/join-requests`
+
+### Verification
+- `npm exec -- eslint src/pages/CommunityJoinRequestsPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small copy-only helpers on review/approval pages may still carry the same unnecessary action-level blocker layer and can be cleaned in later passes.
 ## 2026-04-27 05:54
 
 ### Workstream

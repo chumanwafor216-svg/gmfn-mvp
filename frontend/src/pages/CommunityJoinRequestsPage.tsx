@@ -638,27 +638,21 @@ export default function CommunityJoinRequestsPage() {
               flexWrap: "wrap",
             }}
           >
-            <button
-              type="button"
-              style={actionBtn(true)}
-              onPointerDown={consumeActionEvent}
-              onMouseDown={consumeActionEvent}
-              onTouchStart={consumeActionEvent}
-              onClick={() => copyText(safeStr(activationPack.activation_message || ""))}
-            >
-              Copy Activation Message
-            </button>
+              <button
+                type="button"
+                style={actionBtn(true)}
+                onClick={() => copyText(safeStr(activationPack.activation_message || ""))}
+              >
+                Copy Activation Message
+              </button>
 
-            <button
-              type="button"
-              style={actionBtn(false)}
-              onPointerDown={consumeActionEvent}
-              onMouseDown={consumeActionEvent}
-              onTouchStart={consumeActionEvent}
-              onClick={() => copyText(safeStr(activationPack.activation_link || ""))}
-            >
-              Copy Activation Link
-            </button>
+              <button
+                type="button"
+                style={actionBtn(false)}
+                onClick={() => copyText(safeStr(activationPack.activation_link || ""))}
+              >
+                Copy Activation Link
+              </button>
 
             {safeStr(activationPack.activation_link || "") ? (
               <a
