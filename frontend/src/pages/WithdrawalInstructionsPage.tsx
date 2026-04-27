@@ -2064,12 +2064,11 @@ export default function WithdrawalInstructionsPage() {
                     {savingDestination ? "Saving..." : "Save Payout Account"}
                   </button>
 
-                  <button
-                    {...buttonGuardProps()}
-                    type="button"
-                    onClick={handleCopyPayoutAccount}
-                    style={actionBtn("secondary")}
-                  >
+                    <button
+                      type="button"
+                      onClick={handleCopyPayoutAccount}
+                      style={actionBtn("secondary")}
+                    >
                     Copy Payout Account
                   </button>
                 </div>
@@ -2222,13 +2221,12 @@ export default function WithdrawalInstructionsPage() {
               <div style={sectionLabel()}>Rail actions</div>
 
               <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                <button
-                  {...buttonGuardProps()}
-                  type="button"
-                  onClick={handleCopyCommunityRail}
-                  disabled={!communityRailReady}
-                  style={actionBtn("primary", !communityRailReady)}
-                >
+                  <button
+                    type="button"
+                    onClick={handleCopyCommunityRail}
+                    disabled={!communityRailReady}
+                    style={actionBtn("primary", !communityRailReady)}
+                  >
                   Copy Community Rail
                 </button>
 

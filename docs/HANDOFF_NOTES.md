@@ -1,3 +1,33 @@
+## 2026-04-27 06:28
+
+### Workstream
+Withdrawal copy action guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from copy-only helper actions in `WithdrawalInstructionsPage.tsx`.
+- Cleaned these controls:
+  - `Copy Payout Account`
+  - `Copy Community Rail`
+
+### Why
+- These buttons only copy payout/rail details and do not launch routes or change withdrawal business state.
+- They did not need the same action-level guard as the real withdrawal, support-path, save-destination, load-route, or refresh actions nearby.
+- This keeps the withdrawal page lighter without changing payout setup, money-out routing, or finance logic.
+
+### Files touched
+- `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/withdrawal-instructions`
+
+### Verification
+- `npm exec -- eslint src/pages/WithdrawalInstructionsPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small copy-only helpers on finance and payout pages may still carry the same unnecessary action-level guard and can be cleaned in later passes.
 ## 2026-04-27 06:21
 
 ### Workstream
