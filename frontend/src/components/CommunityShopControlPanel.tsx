@@ -794,13 +794,12 @@ export default function CommunityShopControlPanel({
                       </button>
                     )}
 
-                    <button
-                      type="button"
-                      {...panelButtonGuardProps()}
-                      onClick={copyShopLink}
-                      style={actionBtn("secondary")}
-                    >
-                      Copy Public Shop Link
+                      <button
+                        type="button"
+                        onClick={copyShopLink}
+                        style={actionBtn("secondary")}
+                      >
+                        Copy Public Shop Link
                     </button>
 
                     <button

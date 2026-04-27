@@ -1,3 +1,33 @@
+## 2026-04-27 06:34
+
+### Workstream
+Community owner-panel copy action guard cleanup pass.
+
+### What changed
+- Removed the action-level `panelButtonGuardProps()` layer from the copy-only helper action in `CommunityShopControlPanel.tsx`.
+- Cleaned this control:
+  - `Copy Public Shop Link`
+
+### Why
+- This button only copies the public shop link and does not launch a route or change owner-panel business state.
+- It did not need the same action-level guard as the real owner route-open buttons nearby.
+- This keeps the embedded owner panel lighter without changing route targets, panel content, or shop access behavior.
+
+### Files touched
+- `frontend/src/components/CommunityShopControlPanel.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/community`
+- embedded owner shop panel inside Community Home
+
+### Verification
+- `npm exec -- eslint src/components/CommunityShopControlPanel.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small copy-only helpers on owner/control surfaces may still carry the same unnecessary action-level guard and can be cleaned in later passes.
 ## 2026-04-27 06:28
 
 ### Workstream
