@@ -16183,6 +16183,214 @@ GSN-branded invite composer and invite-entry continuity.
   - the borrower-preflight route is now at a calmer safe checkpoint for
     continued phone testing
 
+### Join request duplicate submissions now stay inside the live pending channel (2026-04-27)
+
+- Product-owner issue:
+  - the public join line still stopped too early when the same invited person
+    tried again after already submitting once
+  - backend knew the request was already pending, but frontend only showed a red
+    dead-end message instead of carrying the person into the real pending-status
+    lane
+- Applied the smallest safe system-level fix:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - duplicate pending join requests now return a structured `409` detail
+      payload with:
+      - `code = pending_request_exists`
+      - `request_id`
+      - `community_id`
+      - `community_code`
+      - `community_name`
+      - `marketplace_name`
+      - `submitted_at`
+      - `pending_status_path`
+      - `approval_path`
+  - `frontend/src/lib/api.ts`
+    - `submitJoinRequest(...)` now recognizes that structured duplicate-pending
+      response and returns it as a usable result instead of flattening it into a
+      dead text error
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - when a pending duplicate is returned, the user is now redirected straight
+      into `/pending-approval?request_id=...` with the carried community state
+  - `frontend/src/pages/JoinRequestPendingPage.tsx`
+    - cleaned the small empty-catch lint issue while keeping the activation
+      fallback behavior intact
+  - `gmfn_backend/tests/test_join_requests.py`
+    - added coverage proving duplicate pending submissions now return the
+      structured lineage payload
+- Routes impacted:
+  - backend:
+    - `POST /clans/join-requests`
+  - frontend:
+    - `/start/join/...`
+    - `/pending-approval`
+    - `/join-approval/:requestId`
+- Shared logic impact:
+  - this is a real join-channel behavior change, not a cosmetic page-only patch
+  - duplicate submissions still do **not** create a second reviewer
+    notification; they now simply return the applicant to the live pending lane
+- Verification:
+  - backend tests:
+    - `python -m pytest tests/test_join_requests.py -q`
+  - frontend lint:
+    - `npm exec -- eslint src/pages/JoinEntryPage.tsx src/pages/JoinRequestPendingPage.tsx src/pages/JoinApprovalPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - backend tests passed (`16 passed`)
+  - targeted frontend lint passed
+  - frontend build passed
+  - the public join line now keeps a pending applicant inside the same live
+    channel instead of ending at a dead message
+
+### Same invite + same phone now reopens the live request channel (2026-04-27)
+
+- Product-owner issue:
+  - duplicate-pending submission handling was fixed, but the join page still
+    did not automatically reconnect a returning invited person to their already
+    existing request
+  - if the same person reopened the same invite later, the app still risked
+    dropping them back onto the form instead of the live pending-status route
+- Applied the smallest safe system-level continuation fix:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - added `GET /clans/join-invite/request-status`
+    - resolves the community from the live invite code and optional
+      `community_code`
+    - resolves the applicant from `phone_e164` (or the derived pending email)
+    - returns structured request lineage/status when that phone already has a
+      join request in that community
+    - `create_join_request(...)` now also persists `phone_e164` on the pending
+      applicant user so this lookup path is reliable
+  - `frontend/src/lib/api.ts`
+    - added `getJoinInviteRequestStatus(...)`
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - when the invite is valid and a usable phone is entered, the page now
+      performs a short debounced lookup
+    - if a request already exists for that same invite/community + phone, the
+      user is redirected directly into `/pending-approval?request_id=...`
+      instead of needing to submit again
+  - `gmfn_backend/tests/test_join_requests.py`
+    - added coverage proving the new invite+phone status route finds the
+      existing pending request correctly
+- Routes impacted:
+  - backend:
+    - `GET /clans/join-invite/request-status`
+    - `POST /clans/join-requests`
+  - frontend:
+    - `/start/join/...`
+    - `/pending-approval`
+- Shared logic impact:
+  - this extends the system-level join channel so a returning applicant can
+    stay inside the same live request line
+  - it still does **not** send the final result back through WhatsApp itself;
+    the return path is now inside the app channel
+- Verification:
+  - backend tests:
+    - `python -m pytest tests/test_join_requests.py -q`
+    - result: `17 passed`
+  - backend syntax check:
+    - `python -m py_compile app/api/routes/clans.py tests/test_join_requests.py`
+  - frontend lint:
+    - `npm exec -- eslint src/pages/JoinEntryPage.tsx src/pages/JoinRequestPendingPage.tsx src/pages/JoinApprovalPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - backend tests passed (`17 passed`)
+  - backend compile passed
+  - targeted frontend lint passed
+  - frontend build passed
+  - the public join line now reconnects the same invite + same phone back into
+    the existing live request channel without relying on a second manual submit
+
+### Same invite now keeps a local applicant draft on the same device (2026-04-27)
+
+- Continued the same join-channel workstream with the next safe system-level
+  improvement in the app return path.
+- Problem:
+  - even after the invite+phone request-status lookup was added, a returning
+    invited person on the same device could still lose their already-entered
+    form state and feel pushed back toward starting from scratch
+- Applied the smallest safe route-level fix:
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - now reads and writes a join-form draft in local storage keyed by:
+      - invite code
+      - community code
+    - persists:
+      - first name
+      - surname
+      - phone
+      - country
+      - work category
+      - work detail
+      - note
+    - when that same invite is reopened on the same device, the form can
+      restore the prior applicant state instead of starting empty again
+- Routes impacted:
+  - frontend:
+    - `/start/join/...`
+- Shared logic impact:
+  - this is still within the same app join channel; it does not affect backend
+    approvals, vote thresholds, or WhatsApp sending
+  - it reduces repeated re-entry on the same device while preserving the
+    backend request-status lookup already added earlier
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/JoinEntryPage.tsx src/pages/JoinRequestPendingPage.tsx src/pages/JoinApprovalPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - targeted frontend lint passed
+  - frontend build passed
+  - the same invite path now feels more durable on the same device even before
+    the applicant submits again
+
+### Same invite now remembers its own saved request on the same device (2026-04-27)
+
+- Continued the same join-channel workstream with a safer resume layer.
+- Problem:
+  - even with the local form draft and the invite+phone status lookup, a
+    returning invited person could still feel lost if they reopened the same
+    invite later and did not immediately know whether to type again or just
+    continue the existing request
+- Applied the smallest safe route-level improvement:
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - now stores a saved join-request lineage payload in local storage keyed by:
+      - invite code
+      - community code
+    - preserves:
+      - request id
+      - status
+      - community name
+      - marketplace name
+      - submitted_at
+      - gmfn_id
+      - phone_e164
+      - activation / approval / pending paths when available
+    - renders a clear in-page resume block:
+      - `Continue previous request`
+      - `Clear saved request`
+    - the resume action refreshes the live backend status by request id first,
+      then routes the user into:
+      - pending status
+      - activation
+      - rejection result
+- Routes impacted:
+  - frontend:
+    - `/start/join/...`
+- Shared logic impact:
+  - this stays inside the same in-app join channel
+  - it avoids silently mixing applicants on the same device because the user
+    gets an explicit resume/clear choice instead of an unconditional redirect
+- Verification:
+  - frontend lint:
+    - `npm exec -- eslint src/pages/JoinEntryPage.tsx src/pages/JoinRequestPendingPage.tsx src/pages/JoinApprovalPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - targeted frontend lint passed
+  - frontend build passed
+  - the same invite now exposes a clearer saved-request continuation path on the
+    same device even before the applicant manually submits again
+
 
 
 

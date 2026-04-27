@@ -814,7 +814,70 @@ export async function submitJoinRequest(payload: {
   business_name?: string | null;
   note?: string | null;
 }): Promise<any> {
-  return httpJson("/clans/join-requests", "POST", payload);
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  };
+
+  const tok = getAccessToken();
+  if (tok) headers["Authorization"] = `Bearer ${tok}`;
+
+  const res = await fetch(buildUrl("/clans/join-requests"), {
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload),
+  });
+
+  if (res.ok) {
+    if (res.status === 204) return null;
+    return readJsonOrTextSafe(res);
+  }
+
+  const parsed = await readJsonOrTextSafe(res);
+  const detail =
+    parsed && typeof parsed === "object" ? (parsed as any).detail ?? null : null;
+
+  if (
+    res.status === 409 &&
+    detail &&
+    typeof detail === "object" &&
+    String((detail as any).code || "").trim().toLowerCase() ===
+      "pending_request_exists"
+  ) {
+    return {
+      ok: false,
+      existing_pending_request: true,
+      request_id: (detail as any).request_id,
+      status: (detail as any).status,
+      community_id: (detail as any).community_id,
+      community_code: (detail as any).community_code,
+      community_name: (detail as any).community_name,
+      marketplace_name: (detail as any).marketplace_name,
+      submitted_at: (detail as any).submitted_at,
+      pending_status_path: (detail as any).pending_status_path,
+      approval_path: (detail as any).approval_path,
+      message:
+        String((detail as any).message || "").trim() ||
+        "Your join request is already waiting for community review.",
+    };
+  }
+
+  const message =
+    parsed && typeof parsed === "object"
+      ? typeof (parsed as any).detail === "string"
+        ? String((parsed as any).detail)
+        : typeof (parsed as any).message === "string"
+          ? String((parsed as any).message)
+          : await parseError(
+              new Response(JSON.stringify(parsed), { status: res.status })
+            )
+      : await parseError(
+          new Response(typeof parsed === "string" ? parsed : "", {
+            status: res.status,
+          })
+        );
+
+  throw new HttpStatusError(res.status, message || `HTTP ${res.status}`);
 }
 
 export async function getJoinInvitePreview(
@@ -826,6 +889,25 @@ export async function getJoinInvitePreview(
   return httpJson(
     `/clans/join-invite/preview${buildQuery({
       code,
+      community_code: options?.community_code ?? undefined,
+    })}`,
+    "GET",
+    undefined,
+    { quiet: true }
+  );
+}
+
+export async function getJoinInviteRequestStatus(
+  code: string,
+  phone_e164: string,
+  options?: {
+    community_code?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/clans/join-invite/request-status${buildQuery({
+      code,
+      phone_e164,
       community_code: options?.community_code ?? undefined,
     })}`,
     "GET",

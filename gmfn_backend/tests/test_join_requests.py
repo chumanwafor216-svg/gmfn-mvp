@@ -303,6 +303,142 @@ def test_public_join_request_notifies_all_active_reviewers_not_only_admins(clien
         assert all("GMFN-C-000001" in row.message for row in notifications)
 
 
+def test_public_join_request_returns_pending_request_lineage_when_duplicate(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="package-code",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    first = client.post("/clans/join-requests", json=_join_payload("package-code"))
+
+    assert first.status_code == 201, first.text
+    created = first.json()
+
+    duplicate = client.post("/clans/join-requests", json=_join_payload("package-code"))
+
+    assert duplicate.status_code == 409, duplicate.text
+    payload = duplicate.json()
+    detail = payload.get("detail") or {}
+
+    assert detail["code"] == "pending_request_exists"
+    assert detail["request_id"] == created["request"]["id"]
+    assert detail["status"] == "pending"
+    assert detail["community_name"] == "Aberdeen City ICA"
+    assert detail["marketplace_name"] == "Aberdeen city marketplace"
+    assert detail["community_code"] == "GMFN-C-000001"
+    assert detail["pending_status_path"].endswith(
+        f"request_id={created['request']['id']}"
+    )
+    assert detail["approval_path"].endswith(f"/{created['request']['id']}")
+
+
+def test_public_join_invite_request_status_finds_existing_request_by_phone(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="package-code",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    created = client.post("/clans/join-requests", json=_join_payload("package-code"))
+
+    assert created.status_code == 201, created.text
+    request_id = created.json()["request"]["id"]
+
+    status = client.get(
+        "/clans/join-invite/request-status"
+        "?code=package-code&phone_e164=%2B2349071733533&community_code=GMFN-C-000001"
+    )
+
+    assert status.status_code == 200, status.text
+    data = status.json()
+    assert data["ok"] is True
+    assert data["found"] is True
+    assert data["request_id"] == request_id
+    assert data["status"] == "pending"
+    assert data["community_code"] == "GMFN-C-000001"
+    assert data["community_name"] == "Aberdeen City ICA"
+    assert data["marketplace_name"] == "Aberdeen city marketplace"
+
+
+def test_public_join_invite_request_status_returns_activation_lineage_when_approved(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        applicant = User(
+            id=2,
+            email="2349071733533@pending.gmfn.local",
+            phone_e164="+2349071733533",
+            gmfn_id="GMFN-U-TEST0001",
+            hashed_password="hashed",
+            role="user",
+        )
+        db.add(applicant)
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="package-code",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.flush()
+        db.add(
+            ClanJoinRequest(
+                id=1,
+                clan_id=1,
+                applicant_user_id=2,
+                invite_id=1,
+                invited_by_user_id=1,
+                status="approved",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    status = client.get(
+        "/clans/join-invite/request-status"
+        "?code=package-code&phone_e164=%2B2349071733533&community_code=GMFN-C-000001"
+    )
+
+    assert status.status_code == 200, status.text
+    data = status.json()
+    assert data["ok"] is True
+    assert data["found"] is True
+    assert data["status"] == "approved"
+    assert data["gmfn_id"] == "GMFN-U-TEST0001"
+    assert "activate-membership" in str(data.get("activation_path") or "")
+
+
 def test_list_join_requests_reports_admin_reviewer_override_capability(
     client,
     override_clan_ctx_admin,

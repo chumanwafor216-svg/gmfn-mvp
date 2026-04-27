@@ -272,7 +272,9 @@ export default function JoinRequestPendingPage() {
       try {
         const url = new URL(activationLink, window.location.origin);
         return `${url.pathname}${url.search}${url.hash}`;
-      } catch {}
+      } catch {
+        // Fall through to the gmfn_id activation path fallback below.
+      }
     }
 
     const gmfnId = safeStr(liveStatus?.gmfn_id || "");

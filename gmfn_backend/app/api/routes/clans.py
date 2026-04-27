@@ -10,6 +10,7 @@ from urllib.parse import quote, urlencode, urlparse
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from app.services.notification_service import create_notification
 from app.core.auth import get_current_user, get_password_hash
@@ -595,6 +596,90 @@ def _join_request_out(db: Session, req: ClanJoinRequest) -> dict[str, Any]:
         "required_approvals": stats["required_approvals"],
         "threshold_ratio": stats["threshold_ratio"],
     }
+
+
+def _pending_applicant_email(phone_e164: str) -> str:
+    digits = "".join(ch for ch in _safe_str(phone_e164) if ch.isdigit())
+    return f"{digits}@pending.gmfn.local"
+
+
+def _join_request_status_payload(
+    db: Session,
+    request: Request,
+    req: ClanJoinRequest,
+) -> dict[str, Any]:
+    applicant = (
+        db.get(User, int(req.applicant_user_id))
+        if req.applicant_user_id is not None
+        else None
+    )
+    clan = db.get(Clan, int(req.clan_id))
+    inviter = (
+        db.get(User, int(req.invited_by_user_id))
+        if req.invited_by_user_id is not None
+        else None
+    )
+
+    gmfn_id = getattr(applicant, "gmfn_id", None) if applicant else None
+
+    saved_activation_link = _safe_str(getattr(req, "activation_link", None))
+    if not saved_activation_link and gmfn_id and str(req.status).lower() == "approved":
+        saved_activation_link = _frontend_activation_link(request, gmfn_id, int(req.id))
+
+    saved_activation_path = _safe_str(getattr(req, "activation_path", None))
+    if not saved_activation_path and gmfn_id and str(req.status).lower() == "approved":
+        saved_activation_path = _frontend_activation_path(gmfn_id, int(req.id))
+
+    return {
+        "request_id": int(req.id),
+        "status": req.status,
+        "gmfn_id": gmfn_id,
+        "community_id": int(req.clan_id),
+        "community_code": _community_code(req.clan_id, clan=clan),
+        "community_name": (getattr(clan, "name", None) if clan else None),
+        "marketplace_name": (getattr(clan, "marketplace_name", None) if clan else None),
+        "invited_by_user_id": int(req.invited_by_user_id) if req.invited_by_user_id else None,
+        "invited_by_email": (getattr(inviter, "email", None) if inviter else None),
+        "invited_by_display": (_member_display(inviter) if inviter else None),
+        "activation_path": saved_activation_path or None,
+        "activation_link": saved_activation_link or None,
+        "activation_message": getattr(req, "activation_message", None),
+        "activation_generated_at": getattr(req, "activation_generated_at", None),
+        "activation_delivery_status": getattr(req, "activation_delivery_status", None),
+        "activation_delivered_at": getattr(req, "activation_delivered_at", None),
+        "next_step": "activate-membership" if str(req.status).lower() == "approved" else None,
+        "message": str(req.status).lower(),
+    }
+
+
+def _resolve_public_join_clan(
+    db: Session,
+    *,
+    invite_code: str,
+    community_code: Optional[str] = None,
+) -> tuple[Optional[Clan], Optional[ClanInvite]]:
+    safe_invite_code = _safe_str(invite_code)
+    if safe_invite_code:
+        invite_row = (
+            db.query(ClanInvite)
+            .filter(ClanInvite.code == safe_invite_code)
+            .order_by(ClanInvite.created_at.desc(), ClanInvite.id.desc())
+            .first()
+        )
+        if invite_row:
+            clan = db.get(Clan, int(invite_row.clan_id))
+            if clan:
+                return clan, invite_row
+
+        legacy_clan = db.query(Clan).filter(Clan.invite_code == safe_invite_code).first()
+        if legacy_clan is not None:
+            return legacy_clan, None
+
+    community_clan = _clan_from_community_code(db, community_code)
+    if community_clan is not None:
+        return community_clan, None
+
+    return None, None
 
 PUBLIC_FRONTEND_ORIGIN = "https://gmfn-frontend.onrender.com"
 
@@ -1364,6 +1449,76 @@ def preview_join_invite(
     )
 
 
+@router.get("/join-invite/request-status", response_model=dict[str, Any])
+def get_join_invite_request_status(
+    code: str,
+    phone_e164: str,
+    request: Request,
+    community_code: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    invite_code = _safe_str(code)
+    phone = _safe_str(phone_e164)
+
+    if not invite_code or not phone:
+        return {"ok": True, "found": False}
+
+    clan, _invite_row = _resolve_public_join_clan(
+        db,
+        invite_code=invite_code,
+        community_code=community_code,
+    )
+    if clan is None:
+        return {"ok": True, "found": False}
+
+    pending_email = _pending_applicant_email(phone)
+    applicant = (
+        db.query(User)
+        .filter(
+            or_(
+                User.phone_e164 == phone,
+                User.email == pending_email,
+            )
+        )
+        .order_by(User.id.desc())
+        .first()
+    )
+    if applicant is None:
+        return {
+            "ok": True,
+            "found": False,
+            "community_id": int(clan.id),
+            "community_code": _community_code(clan.id, clan=clan),
+            "community_name": getattr(clan, "name", None),
+            "marketplace_name": getattr(clan, "marketplace_name", None),
+        }
+
+    join_request = (
+        db.query(ClanJoinRequest)
+        .filter(
+            ClanJoinRequest.clan_id == int(clan.id),
+            ClanJoinRequest.applicant_user_id == int(applicant.id),
+        )
+        .order_by(ClanJoinRequest.created_at.desc(), ClanJoinRequest.id.desc())
+        .first()
+    )
+    if join_request is None:
+        return {
+            "ok": True,
+            "found": False,
+            "community_id": int(clan.id),
+            "community_code": _community_code(clan.id, clan=clan),
+            "community_name": getattr(clan, "name", None),
+            "marketplace_name": getattr(clan, "marketplace_name", None),
+        }
+
+    return {
+        "ok": True,
+        "found": True,
+        **_join_request_status_payload(db, request, join_request),
+    }
+
+
 @router.get("/join", response_class=HTMLResponse)
 def join_landing_page(
     code: str,
@@ -1525,9 +1680,7 @@ def create_join_request(
 
         invited_by_user_id = int(inviter_membership.user_id) if inviter_membership else None
 
-    applicant_email = (
-        f"{payload.phone_e164.strip().replace('+', '').replace(' ', '')}@pending.gmfn.local"
-    )
+    applicant_email = _pending_applicant_email(payload.phone_e164)
 
     existing_user = db.query(User).filter(User.email == applicant_email).first()
     if existing_user:
@@ -1538,6 +1691,13 @@ def create_join_request(
             hashed_password=get_password_hash("temp-password"),
             role="user",
         )
+        db.add(applicant_user)
+        db.commit()
+        db.refresh(applicant_user)
+
+    submitted_phone = _safe_str(payload.phone_e164)
+    if submitted_phone and _safe_str(getattr(applicant_user, "phone_e164", None)) != submitted_phone:
+        applicant_user.phone_e164 = submitted_phone
         db.add(applicant_user)
         db.commit()
         db.refresh(applicant_user)
@@ -1554,7 +1714,27 @@ def create_join_request(
     if existing_request:
         raise HTTPException(
             status_code=409,
-            detail="A pending join request already exists",
+            detail={
+                "code": "pending_request_exists",
+                "message": "A pending join request already exists",
+                "request_id": int(existing_request.id),
+                "status": "pending",
+                "community_id": int(clan.id),
+                "community_code": _community_code(clan.id, clan=clan),
+                "community_name": getattr(clan, "name", None),
+                "marketplace_name": getattr(clan, "marketplace_name", None),
+                "submitted_at": (
+                    existing_request.created_at.isoformat()
+                    if getattr(existing_request, "created_at", None)
+                    else None
+                ),
+                "pending_status_path": (
+                    f"/pending-approval?request_id={int(existing_request.id)}"
+                ),
+                "approval_path": (
+                    f"/join-approval/{int(existing_request.id)}"
+                ),
+            },
         )
 
     join_request = ClanJoinRequest(

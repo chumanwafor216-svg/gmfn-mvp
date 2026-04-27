@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { EntryBackLink } from "../components/EntryControls";
 import OriginLink from "../components/OriginLink";
@@ -7,9 +7,15 @@ import {
   institutionalPageCard,
   institutionalSoftCard,
 } from "../lib/institutionalSurface";
-import { getJoinInvitePreview, submitJoinRequest } from "../lib/api";
+import {
+  getJoinApprovalStatus,
+  getJoinInvitePreview,
+  getJoinInviteRequestStatus,
+  submitJoinRequest,
+} from "../lib/api";
 import {
   ENTRY_INVITE_CODE_KEY,
+  readStorage,
   writeStorage,
 } from "../lib/entryFlow";
 
@@ -443,6 +449,48 @@ function friendlyJoinError(value: any): string {
   return raw || "Unable to submit your join request.";
 }
 
+function phoneDigits(value: string): string {
+  return cleanText(value).replace(/\D/g, "");
+}
+
+function approvalRouteFor(result: any): string {
+  const approvalPath = cleanText(result?.approval_path || "");
+  if (approvalPath) return approvalPath;
+
+  const requestId = cleanText(result?.request_id || "");
+  if (!requestId) return "";
+  return `/join-approval/${encodeURIComponent(requestId)}`;
+}
+
+function activationRouteFor(result: any, currentSearch: string): string {
+  const activationPath = cleanText(result?.activation_path || "");
+  if (activationPath) {
+    return mergeSearchIntoPath(activationPath, currentSearch);
+  }
+
+  const activationLink = cleanText(result?.activation_link || "");
+  if (activationLink && typeof window !== "undefined") {
+    try {
+      const url = new URL(activationLink, window.location.origin);
+      return `${url.pathname}${url.search}${url.hash}`;
+    } catch {
+      // Fall through to gmfn_id activation path fallback below.
+    }
+  }
+
+  const gmfnId = cleanText(result?.gmfn_id || "");
+  if (!gmfnId) return "";
+
+  const params = new URLSearchParams();
+  params.set("gmfn_id", gmfnId);
+  const requestId = cleanText(result?.request_id || "");
+  if (requestId) params.set("request_id", requestId);
+  return mergeSearchIntoPath(
+    `/activate-membership?${params.toString()}`,
+    currentSearch
+  );
+}
+
 function joinInviteHelpMessage(
   rawMessage: string,
   blocked: boolean
@@ -577,6 +625,18 @@ function buildInviteLetter(args: {
   );
 
   return lines;
+}
+
+function joinDraftStorageKey(inviteCode: string, communityCode: string): string {
+  const invite = cleanText(inviteCode) || "unknown-invite";
+  const community = cleanText(communityCode) || "unknown-community";
+  return `gmfn_join_draft:${community}:${invite}`;
+}
+
+function joinRequestStorageKey(inviteCode: string, communityCode: string): string {
+  const invite = cleanText(inviteCode) || "unknown-invite";
+  const community = cleanText(communityCode) || "unknown-community";
+  return `gmfn_join_request:${community}:${invite}`;
 }
 
 export default function JoinEntryPage() {
@@ -738,6 +798,18 @@ export default function JoinEntryPage() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [success, setSuccess] = useState<any>(null);
+  const [storedRequest, setStoredRequest] = useState<any>(null);
+  const [resumeBusy, setResumeBusy] = useState(false);
+
+  const joinDraftKey = useMemo(() => {
+    if (!inviteCode) return "";
+    return joinDraftStorageKey(inviteCode, communityCode);
+  }, [inviteCode, communityCode]);
+
+  const joinRequestKey = useMemo(() => {
+    if (!inviteCode) return "";
+    return joinRequestStorageKey(inviteCode, communityCode);
+  }, [inviteCode, communityCode]);
 
   useEffect(() => {
     let alive = true;
@@ -807,10 +879,264 @@ export default function JoinEntryPage() {
     success?.request?.id || success?.request_id || ""
   );
 
+  const continueExistingRequest = useCallback(
+    (result: any): boolean => {
+      const requestId = cleanText(result?.request_id || "");
+      const status = cleanText(result?.status || "pending").toLowerCase();
+      const community = cleanText(
+        result?.community_name || resolvedCommunityName
+      );
+
+      if (!requestId) return false;
+
+      if (status === "approved") {
+        const activationTo = activationRouteFor(result, location.search);
+        if (!activationTo) return false;
+
+        navigate(activationTo, {
+          replace: true,
+          state: {
+            gmfn_id: cleanText(result?.gmfn_id || ""),
+            request_id: requestId,
+          },
+        });
+        return true;
+      }
+
+      if (status === "rejected") {
+        const approvalTo = mergeSearchIntoPath(
+          approvalRouteFor(result),
+          location.search
+        );
+        if (!approvalTo) return false;
+
+        navigate(approvalTo, {
+          replace: true,
+          state: {
+            request_id: requestId,
+            community_name: community,
+            clan_name: community,
+            status,
+          },
+        });
+        return true;
+      }
+
+      const pendingTo = mergeSearchIntoPath(
+        result?.pending_status_path ||
+          `/pending-approval?request_id=${encodeURIComponent(requestId)}`,
+        location.search
+      );
+
+      navigate(pendingTo, {
+        replace: true,
+        state: {
+          request_id: requestId,
+          community_name: community,
+          clan_name: community,
+          status,
+          submitted_at: cleanText(result?.submitted_at || ""),
+        },
+      });
+      return true;
+    },
+    [location.search, navigate, resolvedCommunityName]
+  );
+
+  const storeExistingRequest = useCallback(
+    (result: any, fallbackPhone = "") => {
+      if (!joinRequestKey) return;
+
+      const requestId = cleanText(result?.request_id || "");
+      if (!requestId) return;
+
+      writeStorage(
+        joinRequestKey,
+        JSON.stringify({
+          request_id: requestId,
+          status: cleanText(result?.status || "pending"),
+          community_name: cleanText(
+            result?.community_name || resolvedCommunityName
+          ),
+          marketplace_name: cleanText(result?.marketplace_name || ""),
+          submitted_at: cleanText(result?.submitted_at || ""),
+          gmfn_id: cleanText(result?.gmfn_id || ""),
+          activation_path: cleanText(result?.activation_path || ""),
+          approval_path: cleanText(result?.approval_path || ""),
+          pending_status_path: cleanText(result?.pending_status_path || ""),
+          phone_e164: cleanText(result?.phone_e164 || fallbackPhone),
+        })
+      );
+    },
+    [joinRequestKey, resolvedCommunityName]
+  );
+
+  const clearStoredRequest = useCallback(() => {
+    if (!joinRequestKey) return;
+    writeStorage(joinRequestKey, null);
+    setStoredRequest(null);
+  }, [joinRequestKey]);
+
+  useEffect(() => {
+    if (!joinDraftKey) return;
+
+    const raw = readStorage(joinDraftKey);
+    if (!raw) return;
+
+    try {
+      const draft = JSON.parse(raw) as Partial<{
+        first_name: string;
+        surname: string;
+        phone: string;
+        country: string;
+        work_category: string;
+        work_detail: string;
+        note: string;
+      }>;
+
+      if (!cleanText(firstName) && cleanText(draft.first_name)) {
+        setFirstName(cleanText(draft.first_name));
+      }
+      if (!cleanText(surname) && cleanText(draft.surname)) {
+        setSurname(cleanText(draft.surname));
+      }
+      if (!cleanText(phone) && cleanText(draft.phone)) {
+        setPhone(cleanText(draft.phone));
+      }
+      if (!cleanText(country) && cleanText(draft.country)) {
+        setCountry(cleanText(draft.country));
+      }
+      if (!cleanText(workCategory) && cleanText(draft.work_category)) {
+        setWorkCategory(cleanText(draft.work_category));
+      }
+      if (!cleanText(workDetail) && cleanText(draft.work_detail)) {
+        setWorkDetail(cleanText(draft.work_detail));
+      }
+      if (!cleanText(note) && cleanText(draft.note)) {
+        setNote(cleanText(draft.note));
+      }
+    } catch {
+      // Ignore malformed local draft data and let the normal form flow continue.
+    }
+  }, [
+    country,
+    firstName,
+    joinDraftKey,
+    note,
+    phone,
+    surname,
+    workCategory,
+    workDetail,
+  ]);
+
+  useEffect(() => {
+    if (!joinRequestKey) {
+      setStoredRequest(null);
+      return;
+    }
+
+    const raw = readStorage(joinRequestKey);
+    if (!raw) {
+      setStoredRequest(null);
+      return;
+    }
+
+    try {
+      setStoredRequest(JSON.parse(raw));
+    } catch {
+      setStoredRequest(null);
+    }
+  }, [joinRequestKey]);
+
+  useEffect(() => {
+    if (!joinDraftKey) return;
+
+    const hasAnyDraftValue = [
+      firstName,
+      surname,
+      phone,
+      country,
+      workCategory,
+      workDetail,
+      note,
+    ].some((value) => cleanText(value));
+
+    if (!hasAnyDraftValue) {
+      writeStorage(joinDraftKey, null);
+      return;
+    }
+
+    writeStorage(
+      joinDraftKey,
+      JSON.stringify({
+        first_name: cleanText(firstName),
+        surname: cleanText(surname),
+        phone: cleanText(phone),
+        country: cleanText(country),
+        work_category: cleanText(workCategory),
+        work_detail: cleanText(workDetail),
+        note: cleanText(note),
+      })
+    );
+  }, [
+    country,
+    firstName,
+    joinDraftKey,
+    note,
+    phone,
+    surname,
+    workCategory,
+    workDetail,
+  ]);
+
   useEffect(() => {
     if (!inviteReady || !canOpenForm || success) return;
     setFormOpen(true);
   }, [inviteReady, canOpenForm, success]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const safeInviteCode = cleanText(effectiveInviteCode);
+    const safePhone = cleanText(phone);
+    const digits = phoneDigits(safePhone);
+
+    if (!inviteReady) return;
+    if (inviteBlocked || inviteChecking || busy || success) return;
+    if (!safeInviteCode || digits.length < 8) return;
+
+    let alive = true;
+    const timeoutId = window.setTimeout(() => {
+      getJoinInviteRequestStatus(safeInviteCode, safePhone, {
+        community_code: communityCode || undefined,
+      })
+        .then((out) => {
+          if (!alive) return;
+          if (!out?.found) return;
+          storeExistingRequest(out, safePhone);
+          continueExistingRequest(out);
+        })
+        .catch(() => {
+          // Ignore lookup misses here. The normal join submit path stays available.
+        });
+    }, 450);
+
+    return () => {
+      alive = false;
+      window.clearTimeout(timeoutId);
+    };
+  }, [
+    busy,
+    communityCode,
+    continueExistingRequest,
+    effectiveInviteCode,
+    inviteBlocked,
+    inviteChecking,
+    inviteReady,
+    phone,
+    storeExistingRequest,
+    success,
+  ]);
 
   const selectedDialCode = useMemo(() => {
     return dialCodeForCountry(country);
@@ -896,6 +1222,17 @@ export default function JoinEntryPage() {
         note: safeNote || undefined,
       });
 
+      const existingPendingRequest =
+        Boolean(res?.existing_pending_request) ||
+        cleanText(res?.code).toLowerCase() === "pending_request_exists";
+
+      if (existingPendingRequest) {
+        storeExistingRequest(res, safePhone);
+        if (continueExistingRequest(res)) {
+          return;
+        }
+      }
+
       setSuccess(res);
       setFirstName("");
       setSurname("");
@@ -912,6 +1249,21 @@ export default function JoinEntryPage() {
       );
 
       if (nextRequestId) {
+        storeExistingRequest(
+          {
+            request_id: nextRequestId,
+            status: cleanText(res?.request?.status || res?.status || "pending"),
+            community_name: nextCommunityName,
+            submitted_at: cleanText(
+              res?.request?.created_at ||
+                res?.submitted_at ||
+                new Date().toISOString()
+            ),
+            pending_status_path: res?.pending_status_path || "",
+          },
+          safePhone
+        );
+
         const pendingTo = mergeSearchIntoPath(
           `/pending-approval?request_id=${encodeURIComponent(nextRequestId)}`,
           location.search
@@ -937,6 +1289,33 @@ export default function JoinEntryPage() {
       setErr(friendlyJoinError(e?.message));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function resumeStoredRequest() {
+    const requestId = cleanText(storedRequest?.request_id || "");
+    if (!requestId) return;
+
+    setResumeBusy(true);
+    setErr(null);
+
+    try {
+      const live = await getJoinApprovalStatus(requestId);
+      const merged = {
+        ...storedRequest,
+        ...live,
+        request_id: requestId,
+      };
+      storeExistingRequest(merged, cleanText(storedRequest?.phone_e164 || ""));
+      continueExistingRequest(merged);
+    } catch {
+      if (!continueExistingRequest(storedRequest)) {
+        setErr(
+          "Unable to reopen the saved join request right now. Please enter the phone number again or try once more."
+        );
+      }
+    } finally {
+      setResumeBusy(false);
     }
   }
 
@@ -1044,6 +1423,59 @@ export default function JoinEntryPage() {
             </div>
 
             <div style={{ marginTop: 18, ...softCard() }}>
+              {storedRequest?.request_id ? (
+                <div
+                  style={{
+                    ...innerCard("#F8FBFF"),
+                    marginBottom: 14,
+                  }}
+                >
+                  <div style={labelText()}>Saved progress on this device</div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B1F33",
+                      fontWeight: 900,
+                      fontSize: 17,
+                    }}
+                  >
+                    A previous join request is already tied to this same invite.
+                  </div>
+                  <div style={{ marginTop: 8, ...helperText() }}>
+                    Request ID: {cleanText(storedRequest?.request_id || "")}
+                    {cleanText(storedRequest?.community_name || "")
+                      ? ` • Community: ${cleanText(storedRequest?.community_name || "")}`
+                      : ""}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 14,
+                      display: "flex",
+                      gap: 10,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      style={primaryBtn(resumeBusy)}
+                      disabled={resumeBusy}
+                      {...buttonGuardProps()}
+                      onClick={resumeStoredRequest}
+                    >
+                      {resumeBusy ? "Opening saved request..." : "Continue previous request"}
+                    </button>
+                    <button
+                      type="button"
+                      style={secondaryLink()}
+                      {...buttonGuardProps()}
+                      onClick={clearStoredRequest}
+                    >
+                      Clear saved request
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
               <div
                 style={{
                   display: "flex",
