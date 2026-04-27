@@ -454,6 +454,10 @@ function phoneDigits(value: string): string {
 }
 
 function approvalRouteFor(result: any): string {
+  const resultPath = cleanText(result?.result_path || "");
+  const resultChannel = cleanText(result?.result_channel || "").toLowerCase();
+  if (resultPath && resultChannel === "request-rejected") return resultPath;
+
   const approvalPath = cleanText(result?.approval_path || "");
   if (approvalPath) return approvalPath;
 
@@ -463,6 +467,12 @@ function approvalRouteFor(result: any): string {
 }
 
 function activationRouteFor(result: any, currentSearch: string): string {
+  const resultPath = cleanText(result?.result_path || "");
+  const resultChannel = cleanText(result?.result_channel || "").toLowerCase();
+  if (resultPath && resultChannel === "activation-ready") {
+    return mergeSearchIntoPath(resultPath, currentSearch);
+  }
+
   const activationPath = cleanText(result?.activation_path || "");
   if (activationPath) {
     return mergeSearchIntoPath(activationPath, currentSearch);
@@ -923,7 +933,8 @@ export default function JoinEntryPage() {
       }
 
       const pendingTo = mergeSearchIntoPath(
-        result?.pending_status_path ||
+        result?.result_path ||
+          result?.pending_status_path ||
           `/pending-approval?request_id=${encodeURIComponent(requestId)}`,
         location.search
       );

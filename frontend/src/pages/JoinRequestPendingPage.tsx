@@ -262,6 +262,12 @@ export default function JoinRequestPendingPage() {
   }, [requestId, location.search]);
 
   const activationTo = useMemo(() => {
+    const resultPath = safeStr(liveStatus?.result_path || "");
+    const resultChannel = safeStr(liveStatus?.result_channel || "").toLowerCase();
+    if (resultPath && resultChannel === "activation-ready") {
+      return mergeSearchIntoPath(resultPath, location.search);
+    }
+
     const activationPath = safeStr(liveStatus?.activation_path || "");
     if (activationPath) {
       return mergeSearchIntoPath(activationPath, location.search);
@@ -303,10 +309,14 @@ export default function JoinRequestPendingPage() {
     }
 
     if (lowerStatus === "rejected" && approvalTo) {
+      const resultPath = safeStr(liveStatus?.result_path || "");
       setHandoffStarted(true);
-      navigate(approvalTo, { replace: true });
+      navigate(
+        resultPath ? mergeSearchIntoPath(resultPath, location.search) : approvalTo,
+        { replace: true }
+      );
     }
-  }, [activationTo, approvalTo, handoffStarted, liveStatus, navigate, requestId]);
+  }, [activationTo, approvalTo, handoffStarted, liveStatus, location.search, navigate, requestId]);
 
   return (
     <div

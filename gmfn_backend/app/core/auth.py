@@ -8,11 +8,14 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from sqlalchemy.orm import Session
 
-from app.core.security import decode_token, get_password_hash
+from app.core.security import decode_token, get_password_hash, verify_password
 from app.db.database import get_db
 from app.db.models import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+PENDING_APPROVAL_SENTINEL = "PENDING_APPROVAL"
+PENDING_APPLICANT_EMAIL_SUFFIX = "@pending.gmfn.local"
+PENDING_APPLICANT_TEMP_PASSWORD = "temp-password"
 
 
 def _dev_mode() -> bool:
@@ -38,6 +41,24 @@ def _get_or_create_test_user(db: Session) -> User:
     db.commit()
     db.refresh(user)
     return user
+
+
+def is_user_activation_pending(user: Optional[User]) -> bool:
+    if user is None:
+        return True
+
+    hashed = str(getattr(user, "hashed_password", "") or "")
+    if not hashed or hashed == PENDING_APPROVAL_SENTINEL:
+        return True
+
+    email = str(getattr(user, "email", "") or "").strip().lower()
+    if email.endswith(PENDING_APPLICANT_EMAIL_SUFFIX) and verify_password(
+        PENDING_APPLICANT_TEMP_PASSWORD,
+        hashed,
+    ):
+        return True
+
+    return False
 
 
 def get_current_user(

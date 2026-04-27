@@ -303,6 +303,169 @@ def test_public_join_request_notifies_all_active_reviewers_not_only_admins(clien
         assert all("GMFN-C-000001" in row.message for row in notifications)
 
 
+def test_public_join_request_counts_only_activated_members_for_threshold_and_notifications(
+    client,
+):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        pending_placeholder = User(
+            id=2,
+            email="447903165266@pending.gmfn.local",
+            hashed_password="PENDING_APPROVAL",
+            role="user",
+        )
+        active_reviewer = User(
+            id=3,
+            email="reviewer@example.com",
+            hashed_password="hashed",
+            role="user",
+        )
+        db.add_all([pending_placeholder, active_reviewer])
+        db.flush()
+        db.add_all(
+            [
+                ClanMembership(
+                    id=2,
+                    clan_id=1,
+                    user_id=2,
+                    role="user",
+                    personal_pool_balance=0,
+                ),
+                ClanMembership(
+                    id=3,
+                    clan_id=1,
+                    user_id=3,
+                    role="user",
+                    personal_pool_balance=0,
+                ),
+                ClanInvite(
+                    id=1,
+                    clan_id=1,
+                    created_by_user_id=1,
+                    code="package-code",
+                    is_active=True,
+                    max_uses=3,
+                    uses=0,
+                    created_at=datetime.now(timezone.utc),
+                    expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+                ),
+            ]
+        )
+        db.commit()
+
+    res = client.post("/clans/join-requests", json=_join_payload("package-code"))
+
+    assert res.status_code == 201, res.text
+    data = res.json()
+    assert data["request"]["active_member_count"] == 2
+    assert data["request"]["required_approvals"] == 1
+
+    with SessionLocal() as db:
+        notifications = (
+            db.query(Notification)
+            .filter(Notification.kind == "approval_request")
+            .order_by(Notification.user_id.asc(), Notification.id.asc())
+            .all()
+        )
+
+        assert [int(row.user_id) for row in notifications] == [1, 3]
+
+
+def test_public_join_request_creates_pending_activation_identity(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="package-code",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    res = client.post("/clans/join-requests", json=_join_payload("package-code"))
+
+    assert res.status_code == 201, res.text
+
+    with SessionLocal() as db:
+        applicant = (
+            db.query(User)
+            .filter(User.email == "2349071733533@pending.gmfn.local")
+            .first()
+        )
+        assert applicant is not None
+        assert applicant.hashed_password == "PENDING_APPROVAL"
+
+
+def test_pending_activation_member_cannot_vote_on_join_request(
+    client,
+    override_current_user,
+):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        pending_reviewer = User(
+            id=2,
+            email="447903165266@pending.gmfn.local",
+            hashed_password="PENDING_APPROVAL",
+            role="user",
+        )
+        applicant = User(
+            id=3,
+            email="pending@example.com",
+            hashed_password="hashed",
+            role="user",
+        )
+        db.add_all([pending_reviewer, applicant])
+        db.flush()
+        db.add(
+            ClanMembership(
+                id=2,
+                clan_id=1,
+                user_id=2,
+                role="user",
+                personal_pool_balance=0,
+            )
+        )
+        db.add(
+            ClanJoinRequest(
+                id=1,
+                clan_id=1,
+                applicant_user_id=3,
+                invited_by_user_id=1,
+                status="pending",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    from app.core import auth as auth_core
+
+    def fake_current_user():
+        return SimpleNamespace(id=2, email="447903165266@pending.gmfn.local", role="user")
+
+    app.dependency_overrides[auth_core.get_current_user] = fake_current_user
+    try:
+        res = client.post(
+            "/clans/1/join-requests/1/vote",
+            json={"vote": "approve"},
+            headers={"X-Clan-Id": "1"},
+        )
+    finally:
+        app.dependency_overrides.pop(auth_core.get_current_user, None)
+
+    assert res.status_code == 403, res.text
+    assert res.json()["detail"] == "Only activated community members can vote"
+
+
 def test_public_join_request_returns_pending_request_lineage_when_duplicate(client):
     _seed_join_context()
 
@@ -383,6 +546,8 @@ def test_public_join_invite_request_status_finds_existing_request_by_phone(clien
     assert data["community_code"] == "GMFN-C-000001"
     assert data["community_name"] == "Aberdeen City ICA"
     assert data["marketplace_name"] == "Aberdeen city marketplace"
+    assert data["result_channel"] == "pending-review"
+    assert data["result_path"].endswith(f"request_id={request_id}")
 
 
 def test_public_join_invite_request_status_returns_activation_lineage_when_approved(client):
@@ -436,7 +601,58 @@ def test_public_join_invite_request_status_returns_activation_lineage_when_appro
     assert data["found"] is True
     assert data["status"] == "approved"
     assert data["gmfn_id"] == "GMFN-U-TEST0001"
+    assert data["result_channel"] == "activation-ready"
+    assert "activate-membership" in str(data.get("result_path") or "")
     assert "activate-membership" in str(data.get("activation_path") or "")
+    assert data["activation_delivery_status"] == "opened"
+    assert data["activation_delivered_at"] is not None
+
+    with SessionLocal() as db:
+        refreshed = db.get(ClanJoinRequest, 1)
+        assert refreshed is not None
+        assert refreshed.activation_delivery_status == "opened"
+        assert refreshed.activation_delivered_at is not None
+
+
+def test_direct_join_request_status_marks_activation_opened_when_approved(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        applicant = User(
+            id=2,
+            email="approved@example.com",
+            gmfn_id="GMFN-U-APPROVED1",
+            hashed_password="hashed",
+            role="user",
+        )
+        db.add(applicant)
+        db.flush()
+        db.add(
+            ClanJoinRequest(
+                id=1,
+                clan_id=1,
+                applicant_user_id=2,
+                invited_by_user_id=1,
+                status="approved",
+                activation_delivery_status="pending",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    res = client.get("/clans/join-requests/1/status")
+
+    assert res.status_code == 200, res.text
+    data = res.json()
+    assert data["status"] == "approved"
+    assert data["activation_delivery_status"] == "opened"
+    assert data["activation_delivered_at"] is not None
+
+    with SessionLocal() as db:
+        refreshed = db.get(ClanJoinRequest, 1)
+        assert refreshed is not None
+        assert refreshed.activation_delivery_status == "opened"
+        assert refreshed.activation_delivered_at is not None
 
 
 def test_list_join_requests_reports_admin_reviewer_override_capability(

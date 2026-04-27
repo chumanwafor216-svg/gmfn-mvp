@@ -12,7 +12,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.auth import get_current_user
+from app.core.auth import get_current_user, is_user_activation_pending
 from app.core.clan_auth import ensure_membership
 from app.core.dev_guard import require_dev_mode
 from app.core.security import create_access_token, get_password_hash, verify_password
@@ -126,10 +126,10 @@ def authenticate_user(db: Session, email: str, password: str) -> User | None:
     if not user:
         return None
 
-    hashed = str(getattr(user, "hashed_password", "") or "")
-    if not hashed or hashed == "PENDING_APPROVAL":
+    if is_user_activation_pending(user):
         return None
 
+    hashed = str(getattr(user, "hashed_password", "") or "")
     if not verify_password(password, hashed):
         return None
 
@@ -149,10 +149,10 @@ def authenticate_user_by_identity(db: Session, identity: str, password: str) -> 
     if not user:
         return None
 
-    hashed = str(getattr(user, "hashed_password", "") or "")
-    if not hashed or hashed == "PENDING_APPROVAL":
+    if is_user_activation_pending(user):
         return None
 
+    hashed = str(getattr(user, "hashed_password", "") or "")
     if not verify_password(password, hashed):
         return None
 
@@ -493,8 +493,7 @@ def activate_approved_member(
             detail="This identity has not been admitted to an active community",
         )
 
-    current_hash = str(getattr(user, "hashed_password", "") or "")
-    if current_hash and current_hash != "PENDING_APPROVAL":
+    if not is_user_activation_pending(user):
         raise HTTPException(
             status_code=409,
             detail="This approved identity has already been activated",
@@ -695,9 +694,7 @@ def get_approved_member_activation_status(
         raise HTTPException(status_code=404, detail="Approved member identity not found")
 
     approved = _is_user_approved_somewhere(db, user)
-    activated = bool(
-        str(getattr(user, "hashed_password", "") or "") not in ("", "PENDING_APPROVAL")
-    )
+    activated = not is_user_activation_pending(user)
 
     latest_join_request = (
         db.query(ClanJoinRequest)

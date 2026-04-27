@@ -16,6 +16,12 @@ type ApprovalStatus = {
   gmfn_id?: string | null;
   next_step?: string | null;
   message?: string | null;
+  result_channel?: string | null;
+  result_path?: string | null;
+  pending_status_path?: string | null;
+  approval_path?: string | null;
+  activation_path?: string | null;
+  activation_link?: string | null;
   community_name?: string | null;
   community_code?: string | null;
   marketplace_name?: string | null;
@@ -321,6 +327,31 @@ export default function JoinApprovalPage() {
   const reviewedAt = useMemo(() => {
     return safeStr(data?.approved_at || data?.reviewed_at || data?.activated_at || "");
   }, [data]);
+
+  const continueActivationTo = useMemo(() => {
+    const resultPath = safeStr(data?.result_path || "");
+    const resultChannel = safeStr(data?.result_channel || "").toLowerCase();
+    if (resultPath && resultChannel === "activation-ready") {
+      return mergeSearchIntoPath(resultPath, location.search);
+    }
+
+    const activationPath = safeStr(data?.activation_path || "");
+    if (activationPath) {
+      return mergeSearchIntoPath(activationPath, location.search);
+    }
+
+    const activationLink = safeStr(data?.activation_link || "");
+    if (activationLink && typeof window !== "undefined") {
+      try {
+        const url = new URL(activationLink, window.location.origin);
+        return `${url.pathname}${url.search}${url.hash}`;
+      } catch {
+        // fall through to local path fallback
+      }
+    }
+
+    return mergeSearchIntoPath("/activate-membership", location.search);
+  }, [data, location.search]);
 
   return (
     <div
@@ -638,7 +669,7 @@ export default function JoinApprovalPage() {
                     onClick={() =>
                       navigateWithOrigin(
                         navigate,
-                        mergeSearchIntoPath("/activate-membership", location.search),
+                        continueActivationTo,
                         location,
                         {
                           state: {

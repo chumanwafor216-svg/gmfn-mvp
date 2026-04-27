@@ -16452,6 +16452,175 @@ GSN-branded invite composer and invite-entry continuity.
   - dashboard profile picture now has a real backend save path suitable for
     deployment to Render
 
+### Join approval now counts only activated reviewers at system level (2026-04-27)
+
+- Closed the backend mismatch where placeholder/pending community records could
+  inflate reviewer counts, receive join-review notifications, or appear in
+  visible member rows like fully activated members.
+- Problem:
+  - older pending applicants could still exist as active `clan_memberships`
+  - the join-status threshold logic counted every active membership row
+  - reviewer notifications were sent to every active membership row
+  - visible community member lists could therefore include placeholder rows
+  - result: a join request could look like it needed a second approval from a
+    person who was not truly activated and could not realistically complete the
+    review
+- Applied the smallest safe backend alignment:
+  - `gmfn_backend/app/core/auth.py`
+    - added `is_user_activation_pending(user)`
+    - treats these as not activated:
+      - empty password
+      - `"PENDING_APPROVAL"`
+      - legacy placeholder users with `@pending.gmfn.local` whose stored hash
+        still matches the old `"temp-password"` bootstrap
+  - `gmfn_backend/app/api/routes/auth.py`
+    - authentication now blocks all activation-pending users through the shared
+      helper instead of only checking the raw `"PENDING_APPROVAL"` sentinel
+    - approved-member activation status now also uses the shared helper
+  - `gmfn_backend/app/api/routes/clans.py`
+    - added `_active_reviewer_memberships(...)`
+    - join-review thresholds now count only activated reviewer memberships
+    - join-review notifications now go only to activated reviewer memberships
+    - join voting now rejects activation-pending users with:
+      - `Only activated community members can vote`
+    - visible clan member lists now exclude activation-pending placeholder rows
+    - newly created pending applicants are now stored with:
+      - `hashed_password="PENDING_APPROVAL"`
+      instead of the older hashed `"temp-password"` bootstrap
+- Routes impacted:
+  - backend auth:
+    - `/auth/login`
+    - `/auth/activate-approved-member`
+    - `/auth/approved-member-status`
+  - backend community/join flow:
+    - `POST /clans/join-requests`
+    - `POST /clans/{clan_id}/join-requests/{join_request_id}/vote`
+    - `GET /clans/{clan_id}/members`
+- Shared logic impact:
+  - active reviewer counts now reflect only real activated community members
+  - pending placeholder rows no longer appear as visible community members
+  - reviewer notifications now align with who can truly act
+  - this is a backend/system-level rule correction, not a page-local UI tweak
+- Verification:
+  - backend compile:
+    - `python -m py_compile gmfn_backend/app/core/auth.py gmfn_backend/app/api/routes/auth.py gmfn_backend/app/api/routes/clans.py gmfn_backend/tests/test_join_requests.py`
+  - backend tests:
+    - `python -m pytest tests/test_join_requests.py -q`
+- Result:
+  - backend compile passed
+  - join-request backend tests passed (`21 passed`)
+  - community reviewer thresholds, notifications, visible member lists, and
+    vote eligibility are now aligned around activated membership only
+
+### Approved join-request status now records activation-channel reopening (2026-04-27)
+
+- Continued the same system-level join-channel workstream by wiring the existing
+  activation delivery fields into the status path itself.
+- Problem:
+  - approved join requests already stored:
+    - `activation_link`
+    - `activation_message`
+    - `activation_generated_at`
+    - `activation_delivery_status`
+    - `activation_delivered_at`
+  - but the backend never updated delivery state when the applicant actually
+    reopened the approved path later
+  - result: activation delivery could stay `"pending"` forever even when the
+    applicant had already reopened the same invite/status line
+- Applied the smallest safe backend fix:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - added `_mark_activation_opened_if_needed(...)`
+    - when an approved join request is reopened through:
+      - `GET /clans/join-invite/request-status`
+      - `GET /clans/join-requests/{join_request_id}/status`
+      the backend now marks:
+      - `activation_delivery_status = "opened"`
+      - `activation_delivered_at = now`
+    - the update is idempotent and only runs for approved requests
+- Routes impacted:
+  - `GET /clans/join-invite/request-status`
+  - `GET /clans/join-requests/{join_request_id}/status`
+- Shared logic impact:
+  - the join/result line is now more traceable at backend level
+  - admin/reviewer tooling can tell whether an approved applicant actually
+    reopened the activation/status path instead of leaving delivery frozen at
+    generation time
+  - this supports the same-link continuity work already added on the frontend
+- Verification:
+  - backend compile:
+    - `python -m py_compile gmfn_backend/app/api/routes/clans.py gmfn_backend/tests/test_join_requests.py`
+  - backend tests:
+    - `python -m pytest tests/test_join_requests.py -q`
+- Result:
+  - backend compile passed
+  - join-request backend tests passed (`22 passed`)
+  - approved request status polling now updates activation delivery state when
+    the applicant actually reopens that approved path
+
+### Join status payload now carries authoritative result paths (2026-04-27)
+
+- Continued the same system-level join-channel workstream so the frontend stops
+  guessing where a pending / approved / rejected applicant should go next.
+- Problem:
+  - the backend already knew whether a request was pending, approved, or
+    rejected
+  - but the frontend was still composing some of the follow-up routes locally
+    (`/pending-approval`, `/join-approval/:id`, `/activate-membership`)
+  - that made the return path more fragile and less faithful to the actual
+    backend lineage
+- Applied the smallest safe backend + frontend fix:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - `_join_request_status_payload(...)` now returns:
+      - `pending_status_path`
+      - `approval_path`
+      - `result_channel`
+      - `result_path`
+    - `result_channel` is now explicit:
+      - `pending-review`
+      - `activation-ready`
+      - `request-rejected`
+    - `result_path` is the backend-authoritative next path for that request
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - continue / retry flow now prefers backend `result_path` and
+      `pending_status_path`
+    - same-device saved request lineage now resumes through the backend path
+      instead of rebuilding it locally
+  - `frontend/src/pages/JoinRequestPendingPage.tsx`
+    - pending status page now prefers backend `result_path` for approved or
+      rejected transitions
+  - `frontend/src/pages/JoinApprovalPage.tsx`
+    - continue-activation button now prefers backend `result_path`, then falls
+      back to the older activation fields only if needed
+- Routes impacted:
+  - backend:
+    - `GET /clans/join-invite/request-status`
+    - `GET /clans/join-requests/{join_request_id}/status`
+  - frontend:
+    - `/start/join/...`
+    - `/pending-approval`
+    - `/join-approval/:requestId`
+- Shared logic impact:
+  - the backend is now the source of truth for the next request-state route
+  - pending / approved / rejected reopen flows are less likely to drift when
+    the same invite is revisited later
+  - this is a backend/system-level continuation of the invite/request channel,
+    not a page-only message tweak
+- Verification:
+  - backend compile:
+    - `python -m py_compile gmfn_backend/app/api/routes/clans.py gmfn_backend/tests/test_join_requests.py`
+  - backend tests:
+    - `python -m pytest tests/test_join_requests.py -q`
+  - frontend targeted lint:
+    - `npm exec -- eslint src/pages/JoinEntryPage.tsx src/pages/JoinRequestPendingPage.tsx src/pages/JoinApprovalPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - backend compile passed
+  - join-request backend tests passed (`22 passed`)
+  - targeted frontend lint passed
+  - frontend build passed
+  - join status reopen flows now follow backend-authoritative result paths
+
 
 
 
