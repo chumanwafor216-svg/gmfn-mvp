@@ -1,3 +1,35 @@
+## 2026-04-27 05:15
+
+### Workstream
+Shop Control copy action guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from copy-only actions in `ShopControlPage.tsx`.
+- Cleaned these controls:
+  - top `Copy Public Link`
+  - owner-backstage `Copy Public Link`
+  - spotlight-status `Copy public shop link`
+  - Vault per-link `Copy link`
+
+### Why
+- These buttons only copy local/public URLs and do not launch routes or change shop business state.
+- They did not need the same action-level guard as the real open, pay, create, publish, or revoke actions nearby.
+- This keeps Shop Control lighter without changing route targets, spotlight logic, Vault logic, or shop-save behavior.
+
+### Files touched
+- `frontend/src/pages/ShopControlPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/shop-control`
+
+### Verification
+- `npm exec -- eslint src/pages/ShopControlPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small copy-only buttons on dense owner pages may still carry the same unnecessary action-level guard and can be cleaned in later passes.
 ## 2026-04-27 05:08
 
 ### Workstream
@@ -15664,6 +15696,7 @@ GSN-branded invite composer and invite-entry continuity.
   - frontend build passed
   - the borrower-preflight route is now at a calmer safe checkpoint for
     continued phone testing
+
 
 
 

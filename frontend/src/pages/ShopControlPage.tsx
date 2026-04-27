@@ -2595,7 +2595,6 @@ export default function ShopControlPage() {
 
               <button
                 type="button"
-                {...buttonGuardProps()}
                 onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
                 style={fullButton(actionBtn("secondary", !publicShopLink))}
                 disabled={!publicShopLink}
@@ -3214,7 +3213,6 @@ export default function ShopControlPage() {
 
                 <button
                   type="button"
-                  {...buttonGuardProps()}
                   onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
                   style={fullButton(actionBtn("soft", !publicShopLink))}
                   disabled={!publicShopLink}
@@ -3466,7 +3464,6 @@ export default function ShopControlPage() {
                     </button>
                     <button
                       type="button"
-                      {...buttonGuardProps()}
                       onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
                       style={fullButton(actionBtn("soft", !publicShopLink))}
                       disabled={!publicShopLink}
@@ -3817,7 +3814,6 @@ export default function ShopControlPage() {
                   <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
                     <button
                       type="button"
-                      {...buttonGuardProps()}
                       onClick={() =>
                         copyText(vaultLinkUrl(item), "Vault viewing link copied.")
                       }
