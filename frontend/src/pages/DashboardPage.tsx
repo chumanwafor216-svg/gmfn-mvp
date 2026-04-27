@@ -18,6 +18,7 @@ import {
   getMyTrustSlip,
   getSelectedClanId,
   listMarketplaceRequests,
+  uploadMyProfileImageFile,
 } from "../lib/api";
 import {
   buildGuidanceSnapshot,
@@ -906,6 +907,16 @@ function getStoredCommunitySpotlightImage(clanId: number): string {
   return firstNonEmpty(
     readLocalString(`gmfn.marketplace.communityPicture.${clanId}`),
     readLocalString(`gmfn.communityHome.spotlightImage.${clanId}`)
+  );
+}
+
+function resolveDashboardAvatarSrc(user: any): string {
+  return resolveSpotlightAssetUrl(
+    firstNonEmpty(
+      user?.profile_image_url,
+      user?.avatar_url,
+      user?.avatar,
+    )
   );
 }
 
@@ -2550,14 +2561,19 @@ export default function DashboardPage() {
   }, [dashboardAttentionStorageKey, attentionState]);
 
   useEffect(() => {
-    setAvatarStatus(null);
+    const backendAvatar = resolveDashboardAvatarSrc(me);
     const storedAvatar = readStoredImage(dashboardAvatarStorageKeys);
-    setAvatarSrc(storedAvatar);
+    const nextAvatar = backendAvatar || storedAvatar;
+    setAvatarSrc(nextAvatar);
 
-    if (storedAvatar && !readStoredImage(dashboardAvatarStorageKey)) {
-      writeStoredImage(dashboardAvatarStorageKey, storedAvatar);
+    if (backendAvatar) {
+      writeStoredImage(dashboardAvatarStorageKeys, backendAvatar);
     }
-  }, [dashboardAvatarStorageKey, dashboardAvatarStorageKeys]);
+
+    if (nextAvatar && !readStoredImage(dashboardAvatarStorageKey)) {
+      writeStoredImage(dashboardAvatarStorageKey, nextAvatar);
+    }
+  }, [dashboardAvatarStorageKey, dashboardAvatarStorageKeys, me]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -4861,33 +4877,35 @@ export default function DashboardPage() {
         maxBytes: DASHBOARD_AVATAR_MAX_BYTES,
         maxDimension: DASHBOARD_AVATAR_MAX_DIMENSION,
       });
-      const result = await readFileAsDataUrl(prepared.file);
+      const localPreview = await readFileAsDataUrl(prepared.file);
+      writeStoredImage(dashboardAvatarStorageKeys, localPreview);
+      setAvatarSrc(localPreview);
 
-      if (
-        writeStoredImage(dashboardAvatarStorageKeys, result)
-      ) {
-        setAvatarStatus({
-          tone: "success",
-          text:
-            prepared.message ||
-            "Picture saved on this device and ready for your dashboard.",
-        });
-      } else {
-        setAvatarStatus({
-          tone: "error",
-          text:
-            "Picture is visible now, but it could not be saved on this device yet. Try a smaller photo.",
-        });
+      const uploaded = await uploadMyProfileImageFile(prepared.file);
+      const persistedAvatar = resolveDashboardAvatarSrc(uploaded);
+
+      if (!persistedAvatar) {
+        throw new Error(
+          "Picture uploaded, but the profile save response did not include the saved image."
+        );
       }
 
-      setAvatarSrc(result);
+      writeStoredImage(dashboardAvatarStorageKeys, persistedAvatar);
+      setAvatarSrc(persistedAvatar);
+      setMe((previous: any) => ({ ...(previous || {}), ...(uploaded || {}) }));
+      setAvatarStatus({
+        tone: "success",
+        text:
+          prepared.message ||
+          "Picture saved to your GSN profile and ready across your dashboard.",
+      });
     } catch (error) {
       setAvatarStatus({
         tone: "error",
         text:
           error instanceof Error
             ? error.message
-            : "Picture could not be prepared right now.",
+            : "Picture could not be prepared right now. The previous dashboard picture is still safe.",
       });
     } finally {
       input.value = "";

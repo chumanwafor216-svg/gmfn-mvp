@@ -423,6 +423,28 @@ export async function getMe() {
   return httpJson("/auth/me", "GET");
 }
 
+export async function uploadMyProfileImageFile(file: File): Promise<any> {
+  const tok = getAccessToken();
+  if (!tok) {
+    throw new Error("Sign in again before uploading your dashboard picture.");
+  }
+
+  const fd = new FormData();
+  fd.append("file", file);
+
+  const res = await fetch(buildUrl("/auth/me/profile-image/upload"), {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${tok}`,
+    },
+    body: fd,
+  });
+
+  if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
+  return readJsonOrTextSafe(res);
+}
+
 export async function activateApprovedMember(payload: {
   gmfn_id?: string | null;
   request_id?: string | number | null;

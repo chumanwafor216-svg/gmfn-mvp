@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import os
 import secrets
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any, Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy.exc import IntegrityError
@@ -19,6 +21,19 @@ from app.db.models import Clan, ClanInvite, ClanJoinRequest, ClanMembership, Use
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+PROFILE_IMAGE_MAX_BYTES = 5 * 1024 * 1024
+PROFILE_IMAGE_ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+PROFILE_IMAGE_ALLOWED_CONTENT_TYPES = {
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+}
+PROFILE_IMAGE_CONTENT_TYPE_ALIASES = {
+    "image/jpg": "image/jpeg",
+    "image/pjpeg": "image/jpeg",
+    "image/x-png": "image/png",
+}
+
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -32,6 +47,7 @@ class UserOut(BaseModel):
     gmfn_id: Optional[str] = None
     phone_e164: Optional[str] = None
     display_name: Optional[str] = None
+    profile_image_url: Optional[str] = None
     nickname: Optional[str] = None
 
     cci_score: Optional[float] = None
@@ -371,6 +387,63 @@ def _extract_user_cci_payload(db: Session, user_id: int) -> dict[str, Any]:
         }
 
 
+def _uploads_root() -> Path:
+    raw = str(os.getenv("GMFN_UPLOADS_DIR", "uploads") or "").strip()
+    return Path(raw or "uploads").expanduser()
+
+
+def _profile_image_upload_dir() -> Path:
+    return _uploads_root() / "profile" / "users"
+
+
+def _ensure_profile_image_upload_dir() -> None:
+    _profile_image_upload_dir().mkdir(parents=True, exist_ok=True)
+
+
+def _normalize_profile_image_content_type(content_type: str) -> str:
+    ct = str(content_type or "").strip().lower()
+    if ";" in ct:
+        ct = ct.split(";", 1)[0].strip().lower()
+    return PROFILE_IMAGE_CONTENT_TYPE_ALIASES.get(ct, ct)
+
+
+def _safe_profile_image_ext(filename: Optional[str]) -> str:
+    if not filename:
+        return ""
+    return Path(filename).suffix.lower().strip()
+
+
+def _validate_profile_image_type(upload: UploadFile) -> str:
+    ext = _safe_profile_image_ext(getattr(upload, "filename", None))
+    if ext not in PROFILE_IMAGE_ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported profile picture format. Use jpg, jpeg, png, or webp.",
+        )
+
+    content_type = _normalize_profile_image_content_type(
+        getattr(upload, "content_type", "") or ""
+    )
+    if content_type not in PROFILE_IMAGE_ALLOWED_CONTENT_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported profile picture content type.",
+        )
+    return ext
+
+
+async def _read_profile_image_bytes(upload: UploadFile) -> bytes:
+    raw = await upload.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="Uploaded profile picture is empty.")
+    if len(raw) > PROFILE_IMAGE_MAX_BYTES:
+        raise HTTPException(
+            status_code=400,
+            detail="Profile picture is too large. Maximum allowed is 5MB.",
+        )
+    return raw
+
+
 def _build_me_payload(db: Session, user: User) -> dict[str, Any]:
     cci_payload = _extract_user_cci_payload(db, int(user.id))
     display_name = getattr(user, "display_name", None)
@@ -381,6 +454,7 @@ def _build_me_payload(db: Session, user: User) -> dict[str, Any]:
         "gmfn_id": getattr(user, "gmfn_id", None),
         "phone_e164": getattr(user, "phone_e164", None),
         "display_name": display_name,
+        "profile_image_url": getattr(user, "profile_image_url", None),
         "nickname": display_name,
         "cci_score": cci_payload.get("cci_score"),
         "cci_class": cci_payload.get("cci_class"),
@@ -568,6 +642,37 @@ def me(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    try:
+        current_user = _ensure_user_gmfn_id(db, current_user)
+    except Exception:
+        pass
+
+    return _build_me_payload(db, current_user)
+
+
+@router.post("/me/profile-image/upload", response_model=UserOut)
+async def upload_my_profile_image(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ext = _validate_profile_image_type(file)
+    raw = await _read_profile_image_bytes(file)
+    _ensure_profile_image_upload_dir()
+
+    generated = (
+        f"user_{int(current_user.id)}_"
+        f"{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}_"
+        f"{secrets.token_hex(6)}{ext}"
+    )
+    target = _profile_image_upload_dir() / generated
+    target.write_bytes(raw)
+
+    current_user.profile_image_url = f"/uploads/profile/users/{generated}"
+    db.add(current_user)
+    db.commit()
+    db.refresh(current_user)
+
     try:
         current_user = _ensure_user_gmfn_id(db, current_user)
     except Exception:

@@ -16391,6 +16391,67 @@ GSN-branded invite composer and invite-entry continuity.
   - the same invite now exposes a clearer saved-request continuation path on the
     same device even before the applicant manually submits again
 
+### Dashboard profile picture is now backend-backed at system level (2026-04-27)
+
+- Closed the biggest remaining system-level gap in the dashboard profile picture
+  path.
+- Problem:
+  - the dashboard picture looked like it was saved, but it only lived in
+    browser/device storage
+  - for some Render users the picture disappeared after leaving the dashboard
+    because there was no backend user-avatar field or upload route
+- Applied the smallest safe end-to-end fix:
+  - `gmfn_backend/app/db/models.py`
+    - added `User.profile_image_url`
+  - `gmfn_backend/alembic/versions/20260427_add_user_profile_image_url.py`
+    - added migration for the new nullable avatar column
+  - `gmfn_backend/app/main.py`
+    - added a startup compat guard that ensures the new
+      `users.profile_image_url` column exists even when the environment is only
+      doing app boot, so Render startup can self-heal this schema addition
+  - `gmfn_backend/app/api/routes/auth.py`
+    - extended `UserOut` and `/auth/me` payloads with `profile_image_url`
+    - added authenticated upload route:
+      - `POST /auth/me/profile-image/upload`
+    - validates image type and size
+    - writes the file to `/uploads/profile/users/...`
+    - persists the relative URL on the user record
+  - `frontend/src/lib/api.ts`
+    - added `uploadMyProfileImageFile(file)`
+  - `frontend/src/pages/DashboardPage.tsx`
+    - dashboard now prefers backend `profile_image_url`
+    - upload still shows an immediate local preview, but then replaces it with
+      the persisted backend URL
+    - persisted backend avatar is mirrored into local storage only as a backup,
+      not as the source of truth
+- Routes impacted:
+  - backend:
+    - `/auth/me`
+    - `POST /auth/me/profile-image/upload`
+  - frontend:
+    - `/app/dashboard`
+- Shared logic impact:
+  - this is now a true backend/system-level save path rather than a page-local
+    illusion
+  - the dashboard picture should now survive route changes and later sessions on
+    Render because the source of truth is the user record
+- Verification:
+  - backend compile:
+    - `python -m py_compile app/api/routes/auth.py app/main.py app/db/models.py alembic/versions/20260427_add_user_profile_image_url.py tests/test_entry_create.py`
+  - backend tests:
+    - `python -m pytest tests/test_entry_create.py tests/test_join_requests.py -q`
+  - frontend lint:
+    - `npm exec -- eslint src/pages/DashboardPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - backend compile passed
+  - backend tests passed (`32 passed`)
+  - targeted frontend lint passed
+  - frontend build passed
+  - dashboard profile picture now has a real backend save path suitable for
+    deployment to Render
+
 
 
 

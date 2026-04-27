@@ -1,6 +1,10 @@
 import os
 from datetime import datetime, timedelta, timezone
 
+from app.core.security import get_password_hash
+from app.db.database import SessionLocal
+from app.db.models import User
+
 
 def _parse_api_datetime(value: str) -> datetime:
     parsed = datetime.fromisoformat(value)
@@ -210,6 +214,54 @@ def test_entry_phone_verification_then_create_and_phone_login(client):
     notifications_body = notifications_res.json()
     notification_titles = [item["title"] for item in notifications_body["items"]]
     assert "Starter trust has been established" in notification_titles
+
+
+def test_auth_me_profile_image_upload_persists_on_user_record(client):
+    with SessionLocal() as db:
+        user = User(
+            email="avatar.tester@example.com",
+            hashed_password=get_password_hash("secret123"),
+            role="user",
+            display_name="Avatar Tester",
+        )
+        db.add(user)
+        db.commit()
+
+    login_res = client.post(
+        "/auth/login",
+        data={
+            "username": "avatar.tester@example.com",
+            "password": "secret123",
+        },
+    )
+    assert login_res.status_code == 200, login_res.text
+    token = login_res.json()["access_token"]
+
+    upload_res = client.post(
+        "/auth/me/profile-image/upload",
+        headers={"Authorization": f"Bearer {token}"},
+        files={
+            "file": (
+                "avatar.png",
+                b"\x89PNG\r\n\x1a\navatar-bytes",
+                "image/png",
+            )
+        },
+    )
+    assert upload_res.status_code == 200, upload_res.text
+    upload_body = upload_res.json()
+
+    assert upload_body["email"] == "avatar.tester@example.com"
+    assert upload_body["profile_image_url"].startswith("/uploads/profile/users/")
+
+    me_res = client.get(
+        "/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert me_res.status_code == 200, me_res.text
+    me_body = me_res.json()
+
+    assert me_body["profile_image_url"] == upload_body["profile_image_url"]
 
 
 def test_admin_pilot_intake_reports_completed_create_entry(client, override_current_user):

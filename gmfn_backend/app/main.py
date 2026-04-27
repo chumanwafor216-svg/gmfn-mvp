@@ -11,7 +11,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import distinct
+from sqlalchemy import distinct, inspect, text
 from sqlalchemy.orm import Session
 
 from app.api.router import api_router
@@ -77,6 +77,36 @@ def _uploads_dir() -> Path:
     return Path(raw or "uploads").expanduser()
 
 
+def _ensure_user_profile_image_column() -> None:
+    inspector = inspect(engine)
+    if "users" not in inspector.get_table_names():
+        return
+
+    columns = {str(col.get("name") or "") for col in inspector.get_columns("users")}
+    if "profile_image_url" in columns:
+        return
+
+    try:
+        with engine.begin() as conn:
+            dialect = str(conn.dialect.name or "").lower()
+            if dialect in {"postgresql", "postgres"}:
+                conn.execute(
+                    text(
+                        "ALTER TABLE users "
+                        "ADD COLUMN IF NOT EXISTS profile_image_url VARCHAR(512)"
+                    )
+                )
+                return
+
+            conn.execute(
+                text("ALTER TABLE users ADD COLUMN profile_image_url VARCHAR(512)")
+            )
+    except Exception as exc:
+        if "profile_image_url" in str(exc).lower():
+            return
+        raise
+
+
 def _reconcile_all_clans_once() -> None:
     db: Session = SessionLocal()
     try:
@@ -129,6 +159,7 @@ async def lifespan(app: FastAPI):
     # ---- Startup ----
     if _auto_create_schema():
         Base.metadata.create_all(bind=engine)
+    _ensure_user_profile_image_column()
 
     reconciliation_task: Optional[asyncio.Task] = None
     if _reconciliation_loop_enabled():

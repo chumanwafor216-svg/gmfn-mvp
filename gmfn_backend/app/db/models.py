@@ -34,6 +34,10 @@ class User(Base):
     email: Mapped[str] = mapped_column(String, unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String)
     display_name: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    profile_image_url: Mapped[Optional[str]] = mapped_column(
+        String(512),
+        nullable=True,
+    )
 
     role: Mapped[str] = mapped_column(
         String(20),
