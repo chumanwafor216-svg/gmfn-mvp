@@ -1,3 +1,27 @@
+## 2026-04-27 07:41
+
+### Workstream
+Payout details local-clear guard cleanup.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from the local-only `Clear Local Details` button in `PayoutDetailsPage.tsx`.
+
+### Why
+- This button only clears the page-local payout draft and does not launch a route or change payout business state.
+- It did not need the same action-level guard as `Save Payout Details`.
+- This keeps Payout Details lighter without changing save behavior, route targets, or payout logic.
+
+### Files touched
+- `frontend/src/pages/PayoutDetailsPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/payout-details`
+
+### Verification
+- `npm exec -- eslint src/pages/PayoutDetailsPage.tsx`
+- `npm run build`
+
 ## 2026-04-27 07:27
 
 ### Workstream

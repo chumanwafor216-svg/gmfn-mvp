@@ -795,7 +795,6 @@ export default function PayoutDetailsPage() {
           </button>
 
           <button
-            {...buttonGuardProps()}
             onClick={clearLocal}
             style={secondaryBtn(false)}
           >
