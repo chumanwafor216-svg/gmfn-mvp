@@ -16785,6 +16785,51 @@ GSN-branded invite composer and invite-entry continuity.
   - the system now backfills missing late-reviewer join notifications through
     the shared notifications routes instead of leaving those reviewers stranded
 
+### Approved-member activation now accepts request lineage directly (2026-04-27)
+
+- Continued the same system-level join / approval workstream to close the
+  backend/frontend contract gap after approval.
+- Problem:
+  - the frontend activation path was already prepared to submit `request_id`
+    back to the backend
+  - but `POST /auth/activate-approved-member` still effectively depended on a
+    direct `gmfn_id`
+  - this made the return channel more brittle than it needed to be once a user
+    was approved from a join request
+- Applied the smallest safe backend fix:
+  - `gmfn_backend/app/api/routes/auth.py`
+    - `ActivateApprovedMemberIn` now accepts either:
+      - `gmfn_id`
+      - `request_id`
+    - `activate_approved_member(...)` now:
+      - resolves the applicant through `ClanJoinRequest` when `request_id` is
+        supplied
+      - verifies `confirm_password` when present
+      - guards against mismatched `gmfn_id` + `request_id` payloads
+      - continues through the normal activation / GMFN ID issuance / token path
+  - `gmfn_backend/tests/test_join_requests.py`
+    - added coverage proving an approved applicant can activate directly with:
+      - `request_id`
+      - `password`
+      - `confirm_password`
+- Routes impacted:
+  - backend:
+    - `POST /auth/activate-approved-member`
+- Shared logic impact:
+  - approved users no longer depend on a manually carried GMFN ID to complete
+    the activation step
+  - the join-result return channel is now more consistent with the request
+    lineage already being carried through the rest of the system
+- Verification:
+  - backend compile:
+    - `python -m py_compile gmfn_backend/app/api/routes/auth.py gmfn_backend/tests/test_join_requests.py`
+  - backend tests:
+    - `python -m pytest gmfn_backend/tests/test_join_requests.py -q`
+- Result:
+  - backend compile passed
+  - join-request backend tests passed (`27 passed`)
+  - the backend activation route now accepts request-based lineage directly
+
 
 
 

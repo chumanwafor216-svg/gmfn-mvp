@@ -101,8 +101,10 @@ class FounderSignupWithInviteOut(BaseModel):
 
 
 class ActivateApprovedMemberIn(BaseModel):
-    gmfn_id: str = Field(..., min_length=6, max_length=64)
+    gmfn_id: Optional[str] = Field(default=None, min_length=6, max_length=64)
+    request_id: Optional[str] = Field(default=None, min_length=1, max_length=64)
     password: str = Field(..., min_length=6)
+    confirm_password: Optional[str] = Field(default=None, min_length=6)
 
 
 class ActivateApprovedMemberOut(BaseModel):
@@ -480,12 +482,48 @@ def activate_approved_member(
     db: Session = Depends(get_db),
 ):
     gmfn_id = str(payload.gmfn_id or "").strip().upper()
-    if not gmfn_id:
-        raise HTTPException(status_code=400, detail="GMFN ID is required")
+    request_id = str(payload.request_id or "").strip()
+    confirm_password = str(payload.confirm_password or "").strip()
 
-    user = db.query(User).filter(User.gmfn_id == gmfn_id).first()
+    if not gmfn_id and not request_id:
+        raise HTTPException(status_code=400, detail="GMFN ID or request ID is required")
+
+    if confirm_password and confirm_password != payload.password:
+        raise HTTPException(status_code=400, detail="Passwords do not match")
+
+    user: Optional[User] = None
+
+    if gmfn_id:
+        user = db.query(User).filter(User.gmfn_id == gmfn_id).first()
+
+    if user is None and request_id:
+        try:
+            request_id_int = int(request_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="Request ID is invalid") from exc
+
+        join_request = (
+            db.query(ClanJoinRequest)
+            .filter(ClanJoinRequest.id == request_id_int)
+            .first()
+        )
+        if not join_request:
+            raise HTTPException(status_code=404, detail="Approved join request not found")
+
+        applicant_user_id = int(getattr(join_request, "applicant_user_id", 0) or 0)
+        if not applicant_user_id:
+            raise HTTPException(status_code=404, detail="Approved member identity not found")
+
+        user = db.get(User, applicant_user_id)
+
     if not user:
         raise HTTPException(status_code=404, detail="Approved member identity not found")
+
+    if gmfn_id and str(getattr(user, "gmfn_id", "") or "").strip().upper() != gmfn_id:
+        raise HTTPException(
+            status_code=409,
+            detail="Request ID does not match the supplied GMFN ID",
+        )
 
     if not _is_user_approved_somewhere(db, user):
         raise HTTPException(

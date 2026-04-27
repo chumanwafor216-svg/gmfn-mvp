@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
@@ -979,6 +980,78 @@ def test_admin_can_pilot_approve_join_request_without_waiting_for_threshold(
 
         assert approval_notice is not None
         assert approval_notice.action_url == f"/activate-membership?gmfn_id={applicant.gmfn_id}&request_id=1"
+
+
+def test_activate_approved_member_accepts_request_id_path(
+    client,
+    override_clan_ctx_admin,
+    override_current_user,
+):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        applicant = User(
+            id=2,
+            email="pending@example.com",
+            hashed_password="PENDING_APPROVAL",
+            role="user",
+        )
+        reviewer = User(
+            id=3,
+            email="reviewer@example.com",
+            hashed_password="hashed",
+            role="user",
+        )
+        db.add_all([applicant, reviewer])
+        db.flush()
+        db.add(
+            ClanMembership(
+                id=2,
+                clan_id=1,
+                user_id=3,
+                role="user",
+                personal_pool_balance=0,
+            )
+        )
+        db.add(
+            ClanJoinRequest(
+                id=1,
+                clan_id=1,
+                applicant_user_id=2,
+                invited_by_user_id=1,
+                status="pending",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    approve_res = client.post(
+        "/clans/1/join-requests/1/pilot-approve",
+        headers={"X-Clan-Id": "1"},
+    )
+    assert approve_res.status_code == 200, approve_res.text
+
+    activate_res = client.post(
+        "/auth/activate-approved-member",
+        json={
+            "request_id": "1",
+            "password": "secret123",
+            "confirm_password": "secret123",
+        },
+    )
+    assert activate_res.status_code == 200, activate_res.text
+    activate_body = activate_res.json()
+
+    assert activate_body["ok"] is True
+    assert activate_body["gmfn_id"].startswith("GMFN-U-")
+    assert activate_body["access_token"]
+
+    with SessionLocal() as db:
+        applicant = db.get(User, 2)
+        assert applicant is not None
+        assert applicant.gmfn_id == activate_body["gmfn_id"]
+        assert applicant.hashed_password != "PENDING_APPROVAL"
 
 
 def test_activated_reviewer_reject_vote_reaches_rejected_state_and_notifies_applicant(
