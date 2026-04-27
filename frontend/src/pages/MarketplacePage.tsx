@@ -4254,13 +4254,12 @@ function marketplaceButtonGuardProps(): Pick<
                     >
                       {creatingInviteLink ? "Refreshing..." : "Create / Refresh"}
                     </button>
-                    <button
-                      type="button"
-                      {...marketplaceButtonGuardProps()}
-                      onClick={(event) => {
-                        runMarketplaceAction(event, () => {
-                          copyMarketplaceMessage(
-                            joinWhatsappMessage,
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          runMarketplaceAction(event, () => {
+                            copyMarketplaceMessage(
+                              joinWhatsappMessage,
                             inviteLink,
                             "WhatsApp join message copied.",
                             "Join invite link is not ready yet."
@@ -4356,13 +4355,12 @@ function marketplaceButtonGuardProps(): Pick<
                     </div>
                   ) : null}
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
-                    <button
-                      type="button"
-                      {...marketplaceButtonGuardProps()}
-                      onClick={(event) => {
-                        runMarketplaceAction(event, () => {
-                          copyMarketplaceMessage(
-                            createWhatsappMessage,
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          runMarketplaceAction(event, () => {
+                            copyMarketplaceMessage(
+                              createWhatsappMessage,
                             publicCreateEntryLink,
                             "WhatsApp create message copied.",
                             "Create entry link is not ready yet."
@@ -4450,13 +4448,12 @@ function marketplaceButtonGuardProps(): Pick<
                     </div>
                   ) : null}
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
-                    <button
-                      type="button"
-                      {...marketplaceButtonGuardProps()}
-                      onClick={(event) => {
-                        runMarketplaceAction(event, () => {
-                          copyMarketplaceLink(
-                            publicCommunityWorkspaceLink,
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          runMarketplaceAction(event, () => {
+                            copyMarketplaceLink(
+                              publicCommunityWorkspaceLink,
                             "Public marketplace link copied.",
                             "Public marketplace link is not ready yet."
                           );
@@ -4512,13 +4509,12 @@ function marketplaceButtonGuardProps(): Pick<
                     </div>
                   ) : null}
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
-                    <button
-                      type="button"
-                      {...marketplaceButtonGuardProps()}
-                      onClick={(event) => {
-                        runMarketplaceAction(event, () => {
-                          copyMarketplaceLink(
-                            publicShopViewLink,
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          runMarketplaceAction(event, () => {
+                            copyMarketplaceLink(
+                              publicShopViewLink,
                             "Public shop link copied.",
                             "Public shop link is not ready yet."
                           );

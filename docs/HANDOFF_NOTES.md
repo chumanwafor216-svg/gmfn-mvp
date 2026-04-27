@@ -1,3 +1,35 @@
+## 2026-04-27 06:21
+
+### Workstream
+Marketplace copy action guard cleanup pass.
+
+### What changed
+- Removed the action-level `marketplaceButtonGuardProps()` layer from copy-only helper actions in `MarketplacePage.tsx`.
+- Cleaned these controls:
+  - `Copy WhatsApp Message`
+  - `Copy Create Message`
+  - `Copy Marketplace Link`
+  - `Copy Shop Link`
+
+### Why
+- These buttons only copy local share text/links and do not launch routes or change marketplace business state.
+- They did not need the same action-level guard as the real create-invite, open-link, supporter, or loan-draft actions nearby.
+- This keeps Marketplace lighter without changing invite generation, support-draft behavior, or marketplace routing logic.
+
+### Files touched
+- `frontend/src/pages/MarketplacePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/marketplace`
+
+### Verification
+- `npm exec -- eslint src/pages/MarketplacePage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small copy-only helpers on marketplace-facing share surfaces may still carry the same unnecessary action-level guard and can be cleaned in later passes.
 ## 2026-04-27 06:14
 
 ### Workstream
