@@ -1,3 +1,33 @@
+## 2026-04-27 05:54
+
+### Workstream
+Repayment copy action guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from copy-only helper actions in `RepaymentPage.tsx`.
+- Cleaned these controls:
+  - `Copy Reference`
+  - `Copy Full Instruction`
+
+### Why
+- These buttons only copy repayment details and do not launch routes or change repayment business state.
+- They did not need the same action-level guard as the real generate-instruction or confirm-payment actions nearby.
+- This keeps the repayment page lighter without changing route targets, payment confirmation, or repayment logic.
+
+### Files touched
+- `frontend/src/pages/RepaymentPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/repayment/:loanId`
+
+### Verification
+- `npm exec -- eslint src/pages/RepaymentPage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small copy-only helpers on money or borrowing detail pages may still carry the same unnecessary action-level guard and can be cleaned in later passes.
 ## 2026-04-27 05:48
 
 ### Workstream

@@ -956,24 +956,22 @@ export default function RepaymentPage() {
                   {generatingInstruction ? "Generating..." : "Generate Repayment Instruction"}
                 </button>
 
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
-                  onClick={handleCopyReference}
-                  disabled={!instruction}
-                  style={actionBtn("secondary", !instruction)}
-                >
-                  Copy Reference
-                </button>
+                  <button
+                    type="button"
+                    onClick={handleCopyReference}
+                    disabled={!instruction}
+                    style={actionBtn("secondary", !instruction)}
+                  >
+                    Copy Reference
+                  </button>
 
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
-                  onClick={handleCopyInstruction}
-                  disabled={!instruction}
-                  style={actionBtn("secondary", !instruction)}
-                >
-                  Copy Full Instruction
+                  <button
+                    type="button"
+                    onClick={handleCopyInstruction}
+                    disabled={!instruction}
+                    style={actionBtn("secondary", !instruction)}
+                  >
+                    Copy Full Instruction
                 </button>
               </div>
             </div>
