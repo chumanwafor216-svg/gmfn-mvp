@@ -1,3 +1,32 @@
+## 2026-04-27 05:48
+
+### Workstream
+First circle copy action guard cleanup pass.
+
+### What changed
+- Removed the action-level `buttonGuardProps()` layer from the copy-only helper action in `BuildFirstCirclePage.tsx`.
+- Cleaned this control:
+  - `Copy Invite Bundle`
+
+### Why
+- This button only copies the prepared invite bundle and does not launch a route or change first-circle business state.
+- It did not need the same action-level guard as the real add, remove, select, or reset workflow buttons nearby.
+- This keeps the first-circle page lighter without changing contact handling or invite-bundle logic.
+
+### Files touched
+- `frontend/src/pages/BuildFirstCirclePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/build-first-circle`
+
+### Verification
+- `npm exec -- eslint src/pages/BuildFirstCirclePage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small copy-only helpers on onboarding or operations pages may still carry the same unnecessary action-level guard and can be cleaned in later passes.
 ## 2026-04-27 05:41
 
 ### Workstream

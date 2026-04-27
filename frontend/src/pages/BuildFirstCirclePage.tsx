@@ -1572,14 +1572,13 @@ export default function BuildFirstCirclePage() {
                   </div>
                 </div>
 
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
-                    onClick={() => {
-                      copyInviteBundle();
-                    }}
-                    disabled={readyContacts.length === 0}
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        copyInviteBundle();
+                      }}
+                      disabled={readyContacts.length === 0}
                     style={actionBtn("primary", readyContacts.length === 0)}
                   >
                     Copy Invite Bundle
