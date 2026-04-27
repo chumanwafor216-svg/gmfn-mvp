@@ -2627,9 +2627,7 @@ function communityButtonGuardProps(): Pick<
           >
             <button
               type="button"
-              {...communityButtonGuardProps()}
-              onClick={(event) => {
-                consumeCommunityButtonEvent(event);
+              onClick={() => {
                 setGuidedActionFamilyFocus(null);
               }}
               style={actionBtn("secondary")}

@@ -1,3 +1,32 @@
+## 2026-04-27 04:03
+
+### Workstream
+Community Home guided-family back button passive guard cleanup pass.
+
+### What changed
+- Removed the action-level `communityButtonGuardProps()` layer and extra click-time `consumeCommunityButtonEvent(...)` call from the passive guided-family back button in `CommunityHomePage.tsx`.
+- Cleaned this control:
+  - `Back to Community Home`
+
+### Why
+- This button only exits the temporary guided-family focus surface, so it did not need the same action-level guard as real route or owner-action buttons.
+- This keeps Community Home lighter without changing spotlight routing, community selection, or owner workflow logic.
+
+### Files touched
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/community`
+
+### Verification
+- `npm exec -- eslint src/pages/CommunityHomePage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other small focus-exit controls on guided-family surfaces may still carry the same unnecessary guard layer and can be cleaned in later passes.
+
 ## 2026-04-27 03:53
 
 ### Workstream
