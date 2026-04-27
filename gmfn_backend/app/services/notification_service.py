@@ -5,6 +5,8 @@ from typing import Any, Dict, List
 
 from sqlalchemy.orm import Session
 
+from app.core.auth import is_user_activation_pending
+from app.db.models import Clan, ClanJoinRequest, ClanMembership, User
 from app.db.notification_models import Notification
 
 
@@ -43,6 +45,109 @@ def create_notification(
             db.refresh(row)
 
     return row
+
+
+def _community_code(clan_id: int) -> str:
+    return f"GMFN-C-{int(clan_id):06d}"
+
+
+def ensure_join_review_notifications(
+    db: Session,
+    *,
+    reviewer_user: User,
+) -> Dict[str, Any]:
+    if reviewer_user is None or is_user_activation_pending(reviewer_user):
+        return {"ok": True, "created": 0}
+
+    memberships = (
+        db.query(ClanMembership, Clan)
+        .join(Clan, Clan.id == ClanMembership.clan_id)
+        .filter(
+            ClanMembership.user_id == int(reviewer_user.id),
+            ClanMembership.left_at.is_(None),
+        )
+        .order_by(ClanMembership.created_at.asc(), ClanMembership.id.asc())
+        .all()
+    )
+
+    if not memberships:
+        return {"ok": True, "created": 0}
+
+    active_clan_ids = [int(membership.clan_id) for membership, _clan in memberships]
+    clan_by_id = {int(clan.id): clan for membership, clan in memberships}
+
+    pending_requests = (
+        db.query(ClanJoinRequest)
+        .filter(
+            ClanJoinRequest.clan_id.in_(active_clan_ids),
+            ClanJoinRequest.status == "pending",
+        )
+        .order_by(ClanJoinRequest.created_at.desc(), ClanJoinRequest.id.desc())
+        .all()
+    )
+
+    created = 0
+
+    for join_request in pending_requests:
+        if int(join_request.applicant_user_id or 0) == int(reviewer_user.id):
+            continue
+
+        clan = clan_by_id.get(int(join_request.clan_id)) or db.get(
+            Clan,
+            int(join_request.clan_id),
+        )
+        if clan is None:
+            continue
+
+        action_url = (
+            f"/app/community/{int(clan.id)}/join-requests"
+            f"?request_id={int(join_request.id)}"
+            f"&community_code={_community_code(int(clan.id))}"
+        )
+
+        existing = (
+            db.query(Notification.id)
+            .filter(
+                Notification.user_id == int(reviewer_user.id),
+                Notification.kind == "approval_request",
+                Notification.action_url == action_url,
+            )
+            .first()
+        )
+        if existing:
+            continue
+
+        applicant = (
+            db.get(User, int(join_request.applicant_user_id))
+            if join_request.applicant_user_id is not None
+            else None
+        )
+        applicant_label = (
+            str(getattr(applicant, "gmfn_id", "") or "").strip()
+            or str(getattr(applicant, "email", "") or "").strip()
+            or "A pending applicant"
+        )
+
+        create_notification(
+            db,
+            user_id=int(reviewer_user.id),
+            kind="approval_request",
+            title="Pending join request",
+            message=(
+                f"{applicant_label} is waiting for community review in {clan.name} "
+                f"({_community_code(int(clan.id))})."
+            ),
+            action_url=action_url,
+            action_label="Review",
+            commit=False,
+            refresh=False,
+        )
+        created += 1
+
+    if created:
+        db.commit()
+
+    return {"ok": True, "created": int(created)}
 
 
 def list_my_notifications(

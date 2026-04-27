@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 from app.api.routes import clans as clans_route
+from app.core import auth
 from app.core import clan_auth
 from app.db.database import SessionLocal
 from app.db.models import Clan, ClanInvite, ClanJoinRequest, ClanMembership, User
@@ -252,7 +253,7 @@ def test_public_join_request_notifies_all_active_reviewers_not_only_admins(clien
 
     with SessionLocal() as db:
         reviewer = User(
-            id=2,
+            id=3,
             email="reviewer@example.com",
             hashed_password="hashed",
             role="user",
@@ -263,7 +264,7 @@ def test_public_join_request_notifies_all_active_reviewers_not_only_admins(clien
             ClanMembership(
                 id=2,
                 clan_id=1,
-                user_id=2,
+                user_id=3,
                 role="user",
                 personal_pool_balance=0,
             )
@@ -295,7 +296,7 @@ def test_public_join_request_notifies_all_active_reviewers_not_only_admins(clien
             .all()
         )
 
-        assert [int(row.user_id) for row in notifications] == [1, 2]
+        assert [int(row.user_id) for row in notifications] == [1, 3]
         assert all(
             row.action_url == "/app/community/1/join-requests?request_id=1&community_code=GMFN-C-000001"
             for row in notifications
@@ -370,6 +371,84 @@ def test_public_join_request_counts_only_activated_members_for_threshold_and_not
         )
 
         assert [int(row.user_id) for row in notifications] == [1, 3]
+
+
+def test_notifications_endpoint_backfills_missing_join_review_notice_for_late_reviewer(
+    client,
+):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="package-code",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    res = client.post("/clans/join-requests", json=_join_payload("package-code"))
+    assert res.status_code == 201, res.text
+
+    with SessionLocal() as db:
+        reviewer = User(
+            id=3,
+            email="reviewer@example.com",
+            hashed_password="hashed",
+            role="user",
+        )
+        db.add(reviewer)
+        db.flush()
+        db.add(
+            ClanMembership(
+                id=2,
+                clan_id=1,
+                user_id=3,
+                role="user",
+                personal_pool_balance=0,
+            )
+        )
+        db.commit()
+
+    def fake_current_user():
+        return SimpleNamespace(
+            id=3,
+            email="reviewer@example.com",
+            role="user",
+            hashed_password="hashed",
+        )
+
+    app.dependency_overrides[auth.get_current_user] = fake_current_user
+    try:
+        first = client.get("/notifications/me")
+        assert first.status_code == 200, first.text
+        second = client.get("/notifications/me")
+        assert second.status_code == 200, second.text
+    finally:
+        app.dependency_overrides.pop(auth.get_current_user, None)
+
+    with SessionLocal() as db:
+        notifications = (
+            db.query(Notification)
+            .filter(
+                Notification.user_id == 3,
+                Notification.kind == "approval_request",
+            )
+            .order_by(Notification.id.asc())
+            .all()
+        )
+
+        assert len(notifications) == 1
+        assert notifications[0].action_url == (
+            "/app/community/1/join-requests?request_id=1&community_code=GMFN-C-000001"
+        )
 
 
 def test_public_join_request_creates_pending_activation_identity(client):

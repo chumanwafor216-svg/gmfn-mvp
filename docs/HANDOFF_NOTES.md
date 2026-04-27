@@ -16731,6 +16731,60 @@ GSN-branded invite composer and invite-entry continuity.
   - targeted frontend lint passed
   - frontend build passed
 
+### Late reviewer notifications now backfill on system routes (2026-04-27)
+
+- Continued the same system-level join-review channel so reviewers who become
+  active after a request is already pending do not miss the approval notice.
+- Problem:
+  - join-review notifications were only created at request-submission time
+  - if a reviewer became active later, or first opened their dashboard /
+    notifications later, they could be eligible to vote but still never see a
+    pending join-review notice
+- Applied the smallest safe backend fix:
+  - `gmfn_backend/app/services/notification_service.py`
+    - added `ensure_join_review_notifications(...)`
+    - it scans active memberships for the current reviewer, finds pending
+      community join requests, excludes the applicant, and backfills a single
+      `approval_request` notification per request/action URL if one does not
+      already exist
+  - `gmfn_backend/app/api/routes/notifications.py`
+    - `GET /notifications/me`
+    - `GET /notifications/me/unread-count`
+    - both now call `ensure_join_review_notifications(...)` before returning
+      notifications or counts
+  - `gmfn_backend/tests/test_join_requests.py`
+    - added coverage proving:
+      - late reviewers get a missing approval-request notification when they
+        open notifications
+      - repeated refreshes do not duplicate the same review notice
+    - also corrected the activated-reviewer notification test so the seeded
+      reviewer membership points at the actual reviewer user id rather than the
+      applicant placeholder id
+- Routes impacted:
+  - backend:
+    - `GET /notifications/me`
+    - `GET /notifications/me/unread-count`
+- Shared logic impact:
+  - join-review notifications are now recoverable at system level rather than
+    only at initial request creation time
+  - activated reviewers opening notifications later can still receive the
+    pending review notice they need
+  - duplicate backfilled notifications are prevented by reviewer + kind +
+    action URL dedupe
+- Verification:
+  - backend compile:
+    - `python -m py_compile gmfn_backend/app/api/routes/notifications.py gmfn_backend/app/services/notification_service.py gmfn_backend/tests/test_join_requests.py`
+  - backend tests:
+    - `python -m pytest gmfn_backend/tests/test_join_requests.py -q`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - backend compile passed
+  - join-request backend tests passed (`26 passed`)
+  - frontend build passed
+  - the system now backfills missing late-reviewer join notifications through
+    the shared notifications routes instead of leaving those reviewers stranded
+
 
 
 

@@ -7,6 +7,7 @@ from app.core.auth import get_current_user
 from app.db.database import get_db
 from app.db.models import User
 from app.services.notification_service import (
+    ensure_join_review_notifications,
     get_unread_count,
     list_my_notifications,
     mark_notification_read,
@@ -23,6 +24,10 @@ def my_notifications(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    ensure_join_review_notifications(
+        db,
+        reviewer_user=current_user,
+    )
     return list_my_notifications(
         db,
         user_id=int(current_user.id),
@@ -36,6 +41,10 @@ def my_unread_count(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    ensure_join_review_notifications(
+        db,
+        reviewer_user=current_user,
+    )
     return get_unread_count(
         db,
         user_id=int(current_user.id),
@@ -72,31 +81,3 @@ def seed_my_assistant_notifications(
         db,
         user_id=int(current_user.id),
     )
-def create_notification(
-    db,
-    *,
-    user_id: int,
-    kind: str,
-    title: str,
-    message: str,
-    action_url: str | None = None,
-    action_label: str | None = None,
-):
-    from app.db.models import Notification
-    from datetime import datetime, timezone
-
-    row = Notification(
-        user_id=user_id,
-        kind=kind,
-        title=title,
-        message=message,
-        action_url=action_url,
-        action_label=action_label,
-        is_read=False,
-        created_at=datetime.now(timezone.utc),
-    )
-
-    db.add(row)
-    db.commit()
-    db.refresh(row)
-    return row    
