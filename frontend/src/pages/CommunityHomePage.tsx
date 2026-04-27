@@ -2662,7 +2662,6 @@ function communityButtonGuardProps(): Pick<
           <div style={collapseButtonRow()}>
             <button
               type="button"
-              {...communityButtonGuardProps()}
               onClick={(event) => toggleSectionFromButton(event, "tools")}
               style={collapseHeaderButton(isCompact)}
             >
@@ -2785,7 +2784,6 @@ function communityButtonGuardProps(): Pick<
 
           <button
             type="button"
-            {...communityButtonGuardProps()}
             onClick={(event) => toggleSectionFromButton(event, "circle")}
             style={collapseHeaderButton(isCompact)}
           >
@@ -2986,7 +2984,6 @@ function communityButtonGuardProps(): Pick<
           <div style={collapseButtonRow()}>
             <button
               type="button"
-              {...communityButtonGuardProps()}
               onClick={(event) => toggleSectionFromButton(event, "spotlight")}
               style={collapseHeaderButton(isCompact)}
             >
@@ -3294,7 +3291,6 @@ function communityButtonGuardProps(): Pick<
                 type="button"
                 aria-expanded={!collapsed.communities}
                 aria-controls="community-home-communities-panel"
-                {...communityButtonGuardProps()}
                 onClick={toggleCommunitiesSectionFromHeader}
                 onKeyDown={handleCommunitiesHeaderKeyDown}
                 style={communitiesCollapseHeaderButton(isCompact)}

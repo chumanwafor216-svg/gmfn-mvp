@@ -1,3 +1,36 @@
+## 2026-04-27 07:27
+
+### Workstream
+Community Home passive section-toggle guard cleanup pass.
+
+### What changed
+- Removed the action-level `communityButtonGuardProps()` layer from passive section open/collapse controls in `CommunityHomePage.tsx`.
+- Cleaned these controls:
+  - `Open owner actions` / `Collapse owner actions`
+  - trusted-circle `Open` / `Collapse`
+  - spotlight-status `Open spotlight status` / `Collapse spotlight status`
+  - `Open communities` / `Collapse communities`
+
+### Why
+- These buttons only reveal or hide local Community Home sections and do not launch routes or change business state.
+- They did not need the same action-level guard as the real route, owner, or spotlight actions nearby.
+- This keeps Community Home lighter without changing community selection, spotlight routing, or owner workflow logic.
+
+### Files touched
+- `frontend/src/pages/CommunityHomePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/community`
+
+### Verification
+- `npm exec -- eslint src/pages/CommunityHomePage.tsx`
+- `npm run build`
+
+### Open risks or unknowns
+- This is another safe checkpoint, not a final freeze.
+- Other passive open/collapse controls on first-touch pages may still carry the same unnecessary action-level guard and can be cleaned in later passes.
+
 ## 2026-04-27 07:18
 
 ### Workstream
