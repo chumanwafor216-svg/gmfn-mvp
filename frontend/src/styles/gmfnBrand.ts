@@ -1,46 +1,50 @@
-import React from "react";
+import type React from "react";
 
 export type BrandActionKind = "primary" | "secondary" | "soft";
 
 export const gmfnBrand = {
   colors: {
-    page: "#EEF4FA",
-    pageSoft: "#F8FBFF",
+    page: "#E8F0F8",
+    pageSoft: "#F4F8FC",
     panel: "#FFFFFF",
-    panelSoft: "#F8FBFF",
-    panelRaised: "#FCFEFF",
-    overlayPanel: "rgba(255,255,255,0.94)",
-    ink: "#0B1F33",
-    inkSoft: "#24415C",
-    muted: "#5F7287",
-    label: "#5D7389",
-    line: "rgba(11,31,51,0.08)",
-    lineStrong: "rgba(11,31,51,0.10)",
-    accent: "#1D4ED8",
+    panelSoft: "#F4F8FC",
+    panelRaised: "#FAFCFF",
+    overlayPanel: "rgba(255,255,255,0.965)",
+    ink: "#091B2E",
+    inkSoft: "#1D3853",
+    muted: "#4F647A",
+    label: "#506A82",
+    line: "rgba(9,27,46,0.12)",
+    lineStrong: "rgba(9,27,46,0.16)",
+    accent: "#0C4FA8",
     accentStrong: "#0B63D1",
-    accentSoft: "rgba(29,78,216,0.08)",
-    accentBorder: "rgba(29,78,216,0.18)",
+    accentSoft: "rgba(12,79,168,0.11)",
+    accentBorder: "rgba(12,79,168,0.24)",
     darkText: "#F8FBFF",
-    darkMuted: "#D7E3F1",
-    disabled: "#CBD5E1",
-    gold: "#D6AF47",
-    goldSoft: "rgba(212,175,55,0.18)",
-    goldInnerSoft: "rgba(212,175,55,0.14)",
+    darkMuted: "#D0DEEC",
+    disabled: "#BFCBDC",
+    gold: "#C99A27",
+    goldSoft: "rgba(201,154,39,0.22)",
+    goldInnerSoft: "rgba(201,154,39,0.16)",
   },
   gradients: {
-    hero: "linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)",
-    heroRaised: "linear-gradient(180deg, #163552 0%, #2A5B84 100%)",
+    hero:
+      "linear-gradient(180deg, #071424 0%, #0D2640 34%, #173A5C 72%, #25537E 100%)",
+    heroRaised:
+      "linear-gradient(180deg, #102744 0%, #1D466B 58%, #2A5D88 100%)",
     heroSidebar:
-      "linear-gradient(180deg, #10243A 0%, #163552 52%, #26527C 100%)",
+      "linear-gradient(180deg, #071424 0%, #0D2640 34%, #173A5C 72%, #25537E 100%)",
     pageWash:
-      "radial-gradient(circle at top, rgba(47,103,196,0.14) 0%, rgba(16,36,58,0) 30%), linear-gradient(180deg, #F8FBFF 0%, #EEF4FA 100%)",
+      "radial-gradient(circle at 10% 0%, rgba(201,154,39,0.18) 0%, rgba(201,154,39,0) 26%), radial-gradient(circle at 84% 4%, rgba(38,96,171,0.16) 0%, rgba(38,96,171,0) 30%), linear-gradient(180deg, #F6FAFD 0%, #EAF1F8 54%, #DEE8F2 100%)",
     glass:
-      "linear-gradient(180deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.06) 100%)",
+      "linear-gradient(180deg, rgba(255,255,255,0.19) 0%, rgba(255,255,255,0.08) 100%)",
   },
   shadows: {
-    card: "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
-    hero: "0 22px 48px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.04)",
-    glass: "0 12px 28px rgba(0,0,0,0.10)",
+    card:
+      "0 22px 52px rgba(7,20,36,0.09), 0 4px 12px rgba(7,20,36,0.04), inset 0 1px 0 rgba(255,255,255,0.82)",
+    hero:
+      "0 28px 58px rgba(2,12,27,0.28), inset 0 1px 0 rgba(255,255,255,0.05)",
+    glass: "0 16px 34px rgba(0,0,0,0.14)",
   },
 } as const;
 
@@ -49,8 +53,11 @@ export function brandPageCard(
 ): React.CSSProperties {
   return {
     borderRadius: 24,
-    border: `1px solid ${gmfnBrand.colors.line}`,
-    background: bg,
+    border: `1px solid ${gmfnBrand.colors.lineStrong}`,
+    background:
+      bg === gmfnBrand.colors.panel
+        ? "linear-gradient(180deg, rgba(255,255,255,0.995) 0%, rgba(244,248,252,0.985) 100%)"
+        : bg,
     padding: 20,
     boxShadow: gmfnBrand.shadows.card,
     overflow: "hidden",
@@ -62,9 +69,14 @@ export function brandSoftCard(
 ): React.CSSProperties {
   return {
     borderRadius: 18,
-    border: `1px solid ${gmfnBrand.colors.line}`,
-    background: bg,
+    border: `1px solid ${gmfnBrand.colors.lineStrong}`,
+    background:
+      bg === gmfnBrand.colors.panelSoft
+        ? "linear-gradient(180deg, rgba(248,251,255,0.995) 0%, rgba(236,243,250,0.985) 100%)"
+        : bg,
     padding: 16,
+    boxShadow:
+      "0 16px 36px rgba(7,20,36,0.065), inset 0 1px 0 rgba(255,255,255,0.86)",
   };
 }
 
@@ -74,8 +86,13 @@ export function brandInnerCard(
   return {
     borderRadius: 16,
     border: `1px solid ${gmfnBrand.colors.line}`,
-    background: bg,
+    background:
+      bg === gmfnBrand.colors.panel
+        ? "linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(242,247,252,0.986) 100%)"
+        : bg,
     padding: 14,
+    boxShadow:
+      "0 12px 28px rgba(7,20,36,0.05), inset 0 1px 0 rgba(255,255,255,0.82)",
   };
 }
 
@@ -84,7 +101,7 @@ export function brandSectionLabel(): React.CSSProperties {
     fontSize: 12,
     color: gmfnBrand.colors.label,
     fontWeight: 900,
-    letterSpacing: 0.35,
+    letterSpacing: 0.45,
     textTransform: "uppercase",
   };
 }
@@ -93,7 +110,7 @@ export function brandHelperText(): React.CSSProperties {
   return {
     color: gmfnBrand.colors.muted,
     fontSize: 14,
-    lineHeight: 1.75,
+    lineHeight: 1.72,
   };
 }
 
@@ -107,11 +124,12 @@ export function brandBadge(primary = false): React.CSSProperties {
     padding: "6px 10px",
     background: primary
       ? gmfnBrand.colors.accentSoft
-      : "rgba(100,116,139,0.10)",
-    color: primary ? gmfnBrand.colors.accent : "#51657A",
+      : "rgba(9,27,46,0.08)",
+    color: primary ? gmfnBrand.colors.accent : "#42556A",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
+    border: `1px solid ${primary ? gmfnBrand.colors.accentBorder : "rgba(9,27,46,0.10)"}`,
   };
 }
 
@@ -127,10 +145,10 @@ export function brandActionButton(
       minHeight: 42,
       padding: "10px 14px",
       borderRadius: 14,
-      border: "none",
+      border: disabled ? "1px solid rgba(159,173,190,0.34)" : "1px solid rgba(8,48,110,0.36)",
       background: disabled
         ? gmfnBrand.colors.disabled
-        : gmfnBrand.colors.accent,
+        : "linear-gradient(180deg, #0C4FA8 0%, #0A63C8 100%)",
       color: gmfnBrand.colors.darkText,
       fontWeight: 900,
       fontSize: 14,
@@ -150,6 +168,10 @@ export function brandActionButton(
       appearance: "none",
       WebkitAppearance: "none",
       outlineOffset: 4,
+      boxShadow:
+        disabled
+          ? "none"
+          : "0 16px 30px rgba(8,37,74,0.16), inset 0 1px 0 rgba(255,255,255,0.20)",
     };
   }
 
@@ -161,8 +183,9 @@ export function brandActionButton(
       minHeight: 38,
       padding: "8px 12px",
       borderRadius: 12,
-      border: `1px solid ${gmfnBrand.colors.line}`,
-      background: gmfnBrand.colors.panelSoft,
+      border: `1px solid ${gmfnBrand.colors.lineStrong}`,
+      background:
+        "linear-gradient(180deg, rgba(248,251,255,0.998) 0%, rgba(236,243,250,0.99) 100%)",
       color: disabled ? "#94A3B8" : gmfnBrand.colors.inkSoft,
       fontWeight: 800,
       fontSize: 13,
@@ -182,6 +205,8 @@ export function brandActionButton(
       appearance: "none",
       WebkitAppearance: "none",
       outlineOffset: 4,
+      boxShadow:
+        "0 12px 24px rgba(7,20,36,0.055), inset 0 1px 0 rgba(255,255,255,0.84)",
     };
   }
 
@@ -193,7 +218,8 @@ export function brandActionButton(
     padding: "10px 14px",
     borderRadius: 14,
     border: `1px solid ${gmfnBrand.colors.lineStrong}`,
-    background: gmfnBrand.colors.panel,
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(243,247,252,0.99) 100%)",
     color: disabled ? "#94A3B8" : gmfnBrand.colors.ink,
     fontWeight: 800,
     fontSize: 14,
@@ -213,5 +239,7 @@ export function brandActionButton(
     appearance: "none",
     WebkitAppearance: "none",
     outlineOffset: 4,
+    boxShadow:
+      "0 14px 28px rgba(7,20,36,0.06), inset 0 1px 0 rgba(255,255,255,0.86)",
   };
 }

@@ -23,12 +23,15 @@ type PageTopNavProps = {
 function wrapCard(bg = "#FFFFFF", compact = false): React.CSSProperties {
   return {
     borderRadius: compact ? 18 : 24,
-    border: "1px solid rgba(148,163,184,0.16)",
-    background: bg,
+    border: "1px solid rgba(214,228,242,0.16)",
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, #071424 0%, #0C2338 48%, #11304C 100%)"
+        : bg,
     padding: compact ? 14 : 20,
     boxShadow: compact
-      ? "0 10px 24px rgba(2,6,23,0.18)"
-      : "0 18px 40px rgba(2,6,23,0.28), 0 4px 12px rgba(2,6,23,0.18)",
+      ? "0 14px 30px rgba(2,6,23,0.24)"
+      : "0 24px 48px rgba(2,6,23,0.32), 0 6px 14px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.04)",
     overflow: "hidden",
   };
 }
@@ -36,18 +39,18 @@ function wrapCard(bg = "#FFFFFF", compact = false): React.CSSProperties {
 function topLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#93A9C4",
+    color: "#C5D4E4",
     fontWeight: 900,
-    letterSpacing: 0.35,
+    letterSpacing: 0.4,
     textTransform: "uppercase",
   };
 }
 
 function helperText(compact = false): React.CSSProperties {
   return {
-    color: "#C7D4E5",
+    color: "#D3DFEC",
     fontSize: compact ? 13 : 14,
-    lineHeight: compact ? 1.55 : 1.75,
+    lineHeight: compact ? 1.55 : 1.72,
   };
 }
 
@@ -79,7 +82,7 @@ function actionBtn(
       minHeight: 42,
       padding: "10px 14px",
       borderRadius: 14,
-      border: "none",
+      border: disabled ? "1px solid rgba(255,255,255,0.12)" : "1px solid rgba(9,53,116,0.44)",
       background: disabled ? "#475569" : "#0B63D1",
       color: "#FFFFFF",
       fontWeight: 900,
@@ -97,6 +100,9 @@ function actionBtn(
       isolation: "isolate",
       transform: "translateZ(0)",
       outlineOffset: 4,
+      boxShadow: disabled
+        ? "none"
+        : "0 14px 28px rgba(4,19,38,0.24), inset 0 1px 0 rgba(255,255,255,0.18)",
       ...compactAction,
     };
   }
@@ -109,8 +115,8 @@ function actionBtn(
       minHeight: 38,
       padding: "8px 12px",
       borderRadius: 12,
-      border: "1px solid rgba(148,163,184,0.18)",
-      background: "rgba(15,23,42,0.36)",
+      border: "1px solid rgba(214,228,242,0.18)",
+      background: "linear-gradient(180deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.06) 100%)",
       color: disabled ? "#64748B" : "#D8E2EF",
       fontWeight: 800,
       fontSize: 13,
@@ -127,6 +133,8 @@ function actionBtn(
       isolation: "isolate",
       transform: "translateZ(0)",
       outlineOffset: 4,
+      boxShadow:
+        "0 10px 22px rgba(4,19,38,0.18), inset 0 1px 0 rgba(255,255,255,0.12)",
       ...compactAction,
     };
   }
@@ -138,8 +146,8 @@ function actionBtn(
     minHeight: 42,
     padding: "10px 14px",
     borderRadius: 14,
-    border: "1px solid rgba(148,163,184,0.18)",
-    background: "rgba(15,23,42,0.42)",
+    border: "1px solid rgba(214,228,242,0.18)",
+    background: "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.06) 100%)",
     color: disabled ? "#64748B" : "#E5EEF8",
     fontWeight: 800,
     fontSize: 14,
@@ -156,6 +164,8 @@ function actionBtn(
     isolation: "isolate",
     transform: "translateZ(0)",
     outlineOffset: 4,
+    boxShadow:
+      "0 12px 24px rgba(4,19,38,0.20), inset 0 1px 0 rgba(255,255,255,0.12)",
     ...compactAction,
   };
 }

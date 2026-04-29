@@ -18,14 +18,14 @@ function isGradient(value: string): boolean {
 function defaultGradient(variant: SurfaceVariant): string {
   switch (variant) {
     case "page":
-      return "radial-gradient(circle at 14% 10%, rgba(243,208,106,0.18) 0%, rgba(243,208,106,0) 26%), radial-gradient(circle at 88% 14%, rgba(255,255,255,0.78) 0%, rgba(255,255,255,0) 30%), linear-gradient(180deg, rgba(248,251,255,0.99) 0%, rgba(231,240,251,0.97) 54%, rgba(210,223,239,0.97) 100%)";
+      return "radial-gradient(circle at 12% 8%, rgba(201,154,39,0.20) 0%, rgba(201,154,39,0) 26%), radial-gradient(circle at 86% 12%, rgba(38,96,171,0.15) 0%, rgba(38,96,171,0) 28%), linear-gradient(180deg, rgba(247,250,253,0.995) 0%, rgba(230,238,247,0.982) 54%, rgba(210,222,237,0.975) 100%)";
     case "soft":
-      return "radial-gradient(circle at 16% 10%, rgba(243,208,106,0.16) 0%, rgba(243,208,106,0) 28%), radial-gradient(circle at 86% 16%, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0) 30%), linear-gradient(180deg, rgba(248,251,255,0.99) 0%, rgba(235,244,252,0.97) 58%, rgba(219,231,244,0.96) 100%)";
+      return "radial-gradient(circle at 14% 10%, rgba(201,154,39,0.17) 0%, rgba(201,154,39,0) 27%), radial-gradient(circle at 86% 14%, rgba(38,96,171,0.13) 0%, rgba(38,96,171,0) 29%), linear-gradient(180deg, rgba(248,251,255,0.995) 0%, rgba(236,243,250,0.982) 58%, rgba(221,231,242,0.972) 100%)";
     case "inner":
-      return "radial-gradient(circle at 18% 12%, rgba(243,208,106,0.14) 0%, rgba(243,208,106,0) 30%), radial-gradient(circle at 86% 14%, rgba(255,255,255,0.58) 0%, rgba(255,255,255,0) 30%), linear-gradient(180deg, rgba(255,255,255,0.995) 0%, rgba(243,248,253,0.975) 60%, rgba(227,237,247,0.96) 100%)";
+      return "radial-gradient(circle at 16% 12%, rgba(201,154,39,0.14) 0%, rgba(201,154,39,0) 29%), radial-gradient(circle at 84% 12%, rgba(38,96,171,0.11) 0%, rgba(38,96,171,0) 28%), linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(243,247,252,0.985) 60%, rgba(229,237,246,0.972) 100%)";
     case "stat":
     default:
-      return "radial-gradient(circle at 18% 12%, rgba(243,208,106,0.12) 0%, rgba(243,208,106,0) 30%), radial-gradient(circle at 84% 16%, rgba(255,255,255,0.54) 0%, rgba(255,255,255,0) 30%), linear-gradient(180deg, rgba(255,255,255,0.995) 0%, rgba(239,246,252,0.97) 100%)";
+      return "radial-gradient(circle at 16% 10%, rgba(201,154,39,0.12) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 84% 14%, rgba(38,96,171,0.10) 0%, rgba(38,96,171,0) 28%), linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(239,245,251,0.982) 100%)";
   }
 }
 
@@ -35,8 +35,8 @@ function tintedGradient(
   baseColor: string,
   bottomColor: string
 ): string {
-  const glowOpacity = variant === "page" ? 0.18 : variant === "soft" ? 0.16 : 0.13;
-  return `radial-gradient(circle at 14% 10%, rgba(243,208,106,${glowOpacity}) 0%, rgba(243,208,106,0) 28%), radial-gradient(circle at 88% 14%, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0) 30%), linear-gradient(180deg, ${topColor} 0%, ${baseColor} 56%, ${bottomColor} 100%)`;
+  const glowOpacity = variant === "page" ? 0.19 : variant === "soft" ? 0.17 : 0.14;
+  return `radial-gradient(circle at 14% 10%, rgba(201,154,39,${glowOpacity}) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 86% 14%, rgba(38,96,171,0.12) 0%, rgba(38,96,171,0) 28%), linear-gradient(180deg, ${topColor} 0%, ${baseColor} 56%, ${bottomColor} 100%)`;
 }
 
 export function resolveInstitutionalBg(
@@ -81,11 +81,11 @@ export function resolveInstitutionalBg(
 export function institutionalPageCard(bg = "#FFFFFF"): CSSProperties {
   return {
     borderRadius: 24,
-    border: "1px solid rgba(37,78,119,0.20)",
+    border: "1px solid rgba(20,52,83,0.24)",
     background: resolveInstitutionalBg(bg, "#F4F8FC", "page"),
     padding: 20,
     boxShadow:
-      "0 26px 56px rgba(10,24,49,0.10), 0 6px 14px rgba(10,24,49,0.04), inset 0 1px 0 rgba(255,255,255,0.86), inset 0 -12px 26px rgba(21,63,98,0.05)",
+      "0 30px 62px rgba(7,20,36,0.12), 0 8px 18px rgba(7,20,36,0.045), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -14px 28px rgba(18,52,86,0.06)",
     overflow: "hidden",
   };
 }
@@ -93,28 +93,28 @@ export function institutionalPageCard(bg = "#FFFFFF"): CSSProperties {
 export function institutionalSoftCard(bg = "#F8FBFF"): CSSProperties {
   return {
     borderRadius: 18,
-    border: "1px solid rgba(37,78,119,0.18)",
+    border: "1px solid rgba(20,52,83,0.20)",
     background: resolveInstitutionalBg(bg, "#F2F7FC", "soft"),
     padding: 16,
     boxShadow:
-      "0 16px 36px rgba(10,24,49,0.068), inset 0 1px 0 rgba(255,255,255,0.82)",
+      "0 18px 38px rgba(7,20,36,0.08), inset 0 1px 0 rgba(255,255,255,0.84)",
   };
 }
 
 export function institutionalInnerCard(bg = "#FFFFFF"): CSSProperties {
   return {
     borderRadius: 16,
-    border: "1px solid rgba(37,78,119,0.16)",
+    border: "1px solid rgba(20,52,83,0.18)",
     background: resolveInstitutionalBg(bg, "#FCF8EC", "inner"),
     padding: 14,
     boxShadow:
-      "0 14px 30px rgba(10,24,49,0.055), inset 0 1px 0 rgba(255,255,255,0.80)",
+      "0 16px 30px rgba(7,20,36,0.06), inset 0 1px 0 rgba(255,255,255,0.82)",
   };
 }
 
 export function institutionalStatTile(
   bg = "#FFFFFF",
-  border = "1px solid rgba(37,78,119,0.12)"
+  border = "1px solid rgba(20,52,83,0.16)"
 ): CSSProperties {
   return {
     borderRadius: 16,
@@ -122,7 +122,7 @@ export function institutionalStatTile(
     background: resolveInstitutionalBg(bg, "#F6F9FC", "stat"),
     padding: 14,
     boxShadow:
-      "0 12px 26px rgba(10,24,49,0.05), inset 0 1px 0 rgba(255,255,255,0.78)",
+      "0 14px 28px rgba(7,20,36,0.055), inset 0 1px 0 rgba(255,255,255,0.80)",
   };
 }
 
@@ -142,9 +142,9 @@ export function institutionalBlueRailShell(
     gap: options?.gap ?? 16,
     borderRadius: isCompact ? 26 : 36,
     background:
-      "radial-gradient(circle at 10% 4%, rgba(217,172,51,0.20) 0%, rgba(217,172,51,0) 28%), radial-gradient(circle at 92% 6%, rgba(38,132,205,0.17) 0%, rgba(38,132,205,0) 32%), linear-gradient(90deg, #0A2135 0%, #153B5B 4.6%, #D8E6F5 4.7%, #EAF2FB 11.5%, #EDF4FB 88.5%, #D8E6F5 95.3%, #153B5B 95.4%, #0A2135 100%)",
-    border: "1px solid rgba(22,61,94,0.22)",
+      "radial-gradient(circle at 10% 4%, rgba(201,154,39,0.22) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 92% 6%, rgba(38,96,171,0.18) 0%, rgba(38,96,171,0) 32%), linear-gradient(90deg, #061321 0%, #12314D 4.6%, #D6E4F2 4.7%, #E8F0F8 11.5%, #EBF2F9 88.5%, #D6E4F2 95.3%, #12314D 95.4%, #061321 100%)",
+    border: "1px solid rgba(16,45,74,0.24)",
     boxShadow:
-      "0 30px 72px rgba(7,24,39,0.14), inset 18px 0 30px rgba(7,24,39,0.14), inset -18px 0 30px rgba(7,24,39,0.14), inset 0 1px 0 rgba(255,255,255,0.28)",
+      "0 34px 78px rgba(7,20,36,0.16), inset 18px 0 32px rgba(7,20,36,0.16), inset -18px 0 32px rgba(7,20,36,0.16), inset 0 1px 0 rgba(255,255,255,0.30)",
   };
 }

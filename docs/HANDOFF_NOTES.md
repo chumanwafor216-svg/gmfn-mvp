@@ -18151,3 +18151,50 @@ GSN-branded invite composer and invite-entry continuity.
     multiple real communities
   - test fixtures now reflect the current clan schema instead of a stale
     pre-invite-code shape
+
+### Shared institutional visual system hardened toward a more serious live-ready look (2026-04-29)
+
+- Continued the finish pass at system level instead of repainting single pages.
+- Goal:
+  - reduce the warmer / softer / immature visual feel on weaker pages
+  - move shared surfaces closer to a more institutional blue-gold standard
+    that feels more trustworthy and less like a demo
+- Applied a shared frontend visual pass:
+  - `frontend/src/styles/gmfnBrand.ts`
+    - deepened the core GMFN/GSN brand palette
+    - strengthened page-wash, hero, and glass gradients
+    - strengthened card, inner-card, badge, and action-button contrast/shadows
+  - `frontend/src/lib/institutionalSurface.ts`
+    - hardened the default page / soft / inner / stat gradients
+    - strengthened blue-rail shells, borders, and shadows
+  - `frontend/src/ui/styles.ts`
+    - upgraded legacy generic cards/buttons/pills to the same institutional
+      visual language so older pages do not stay flatter/warmer than the
+      stronger route family
+  - `frontend/src/components/PageTopNav.tsx`
+    - strengthened the shared page-top navigation shell and action controls
+      so routes using it inherit the more mature visual tone
+  - `frontend/src/components/WorkspaceSettingsBridge.tsx`
+    - kept the existing settings structure, but normalized the alternate tone
+      presets so even non-default presets remain institutional rather than
+      overly warm/pastel
+  - `frontend/src/index.css`
+    - hardened the global page wash and default watermark tint toward the
+      institutional blue baseline
+- Verification:
+  - `npm exec -- eslint src/styles/gmfnBrand.ts src/lib/institutionalSurface.ts src/ui/styles.ts src/components/WorkspaceSettingsBridge.tsx src/components/PageTopNav.tsx`
+    → passed
+  - `npm run build`
+    → passed
+- Routes / screen families most affected:
+  - app shell / layout-driven surfaces using `gmfnBrand` and the shared page
+    wash
+  - routes using `PageTopNav`
+  - routes using `institutionalSurface` helpers
+  - older routes using the generic `ui/styles.ts` cards/buttons
+- Frozen-area note:
+  - the `/app/dashboard` frozen `Market Wisdom` interaction model was not
+    restructured in this pass
+- Shared logic impact:
+  - this was a system-level visual maturity correction, not a route-contract or
+    backend-behavior change

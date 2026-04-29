@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { getMySettings } from "../lib/api";
 import { subscribeVisualSettingsUpdated } from "../lib/workspaceEvents";
@@ -53,19 +53,21 @@ function getThemeFromPreset(
 ): { accent: string; page: string; pageWash: string; text: string } {
   if (preset === "cooperative-warm") {
     return {
-      accent: "#8A5A2B",
-      page: "#F8F3ED",
-      pageWash: "linear-gradient(180deg, #FCF8F3 0%, #F8F3ED 100%)",
-      text: "#2F241A",
+      accent: "#8A6515",
+      page: "#EEF3F8",
+      pageWash:
+        "radial-gradient(circle at 10% 0%, rgba(201,154,39,0.15) 0%, rgba(201,154,39,0) 24%), radial-gradient(circle at 84% 4%, rgba(38,96,171,0.10) 0%, rgba(38,96,171,0) 28%), linear-gradient(180deg, #F7FAFD 0%, #EEF3F8 100%)",
+      text: "#12253A",
     };
   }
 
   if (preset === "enterprise-green") {
     return {
       accent: "#0F766E",
-      page: "#F2FAF8",
-      pageWash: "linear-gradient(180deg, #F8FCFB 0%, #F2FAF8 100%)",
-      text: "#102A27",
+      page: "#ECF4F3",
+      pageWash:
+        "radial-gradient(circle at 10% 0%, rgba(15,118,110,0.12) 0%, rgba(15,118,110,0) 26%), radial-gradient(circle at 84% 4%, rgba(38,96,171,0.10) 0%, rgba(38,96,171,0) 28%), linear-gradient(180deg, #F7FBFB 0%, #ECF4F3 100%)",
+      text: "#10273A",
     };
   }
 
