@@ -88,6 +88,35 @@ Cover page shield-star simplification.
 - `npm exec -- eslint src/pages/CoverPage.tsx`
 - `npm run build`
 
+## 2026-04-29 15:58
+
+### Workstream
+Cover page shield-carrier removal correction.
+
+### What changed
+- Corrected the earlier interpretation of the cover-page shield request in `frontend/src/pages/CoverPage.tsx`.
+- Removed the actual inner geometric carrier beneath `GSN`:
+  - the dark five-sided/diamond body
+  - the connecting line network
+  - the four node dots
+- Kept the star itself in place.
+- Slightly tightened the shadowed `GSN` text offset so the lettering and star read more centrally after the carrier removal.
+
+### Why
+- The product owner clarified that the element to remove was not the star backdrop alone, but the full inner support structure carrying the star inside the shield.
+- This pass applies that exact correction while leaving the rest of the cover-page artwork untouched.
+
+### Files touched
+- `frontend/src/pages/CoverPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- public cover page rendered by `CoverPage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/CoverPage.tsx`
+- `npm run build`
+
 ## 2026-04-28 17:18
 
 ### Workstream
