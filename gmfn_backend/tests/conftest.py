@@ -114,7 +114,30 @@ def seed_clan_admin_membership():
             """
             )
         )
-        conn.execute(text("INSERT OR IGNORE INTO clans (id, name) VALUES (1, 'Test Clan')"))
+        conn.execute(
+            text(
+                """
+            INSERT OR IGNORE INTO clans (
+                id,
+                name,
+                invite_code,
+                community_code,
+                status,
+                invite_uses,
+                created_at
+            )
+            VALUES (
+                1,
+                'Test Clan',
+                'test-invite-1',
+                'GMFN-C-000001',
+                'active',
+                0,
+                CURRENT_TIMESTAMP
+            )
+            """
+            )
+        )
         conn.execute(
             text(
                 """
@@ -137,7 +160,30 @@ def seed_clan_member_membership():
             """
             )
         )
-        conn.execute(text("INSERT OR IGNORE INTO clans (id, name) VALUES (1, 'Test Clan')"))
+        conn.execute(
+            text(
+                """
+            INSERT OR IGNORE INTO clans (
+                id,
+                name,
+                invite_code,
+                community_code,
+                status,
+                invite_uses,
+                created_at
+            )
+            VALUES (
+                1,
+                'Test Clan',
+                'test-invite-1',
+                'GMFN-C-000001',
+                'active',
+                0,
+                CURRENT_TIMESTAMP
+            )
+            """
+            )
+        )
         conn.execute(
             text(
                 """

@@ -213,6 +213,37 @@ def _require_clan_admin(clan_ctx: tuple) -> tuple:
         raise HTTPException(status_code=403, detail="Clan admin only")
     return clan, membership, current_user
 
+
+def _resolve_target_clan_membership(
+    db: Session,
+    *,
+    clan_id: int,
+    current_user: User,
+) -> tuple[Clan, ClanMembership, User]:
+    visible_clans = list_visible_user_clans(db=db, user=current_user)
+    clan = next((item for item in visible_clans if int(item.id) == int(clan_id)), None)
+
+    if clan is None:
+        clan = db.get(Clan, int(clan_id))
+
+    if not clan or _is_default_clan_name(getattr(clan, "name", None)):
+        raise HTTPException(status_code=404, detail="Clan not found")
+
+    membership = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.clan_id == int(clan_id),
+            ClanMembership.user_id == int(current_user.id),
+            ClanMembership.left_at.is_(None),
+        )
+        .first()
+    )
+    if not membership:
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    return clan, membership, current_user
+
+
 def _community_code(clan_id: int | Any, clan: Optional[Clan] = None) -> str:
     if clan is not None:
         saved = _safe_str(getattr(clan, "community_code", None))
@@ -2342,11 +2373,13 @@ def update_invite_settings(
 def list_members(
     clan_id: int,
     db: Session = Depends(get_db),
-    clan_ctx: tuple = Depends(get_current_clan_membership),
+    current_user: User = Depends(get_current_user),
 ):
-    clan, _membership, _current_user = clan_ctx
-    if int(clan.id) != int(clan_id):
-        raise HTTPException(status_code=403, detail="Not allowed")
+    clan, _membership, _current_user = _resolve_target_clan_membership(
+        db,
+        clan_id=int(clan_id),
+        current_user=current_user,
+    )
 
     members = [
         membership
@@ -2362,11 +2395,14 @@ def add_member(
     clan_id: int,
     payload: AddMemberIn,
     db: Session = Depends(get_db),
-    clan_ctx: tuple = Depends(get_current_clan_membership),
+    current_user: User = Depends(get_current_user),
 ):
+    clan_ctx = _resolve_target_clan_membership(
+        db,
+        clan_id=int(clan_id),
+        current_user=current_user,
+    )
     clan, _membership, _current_user = _require_clan_admin(clan_ctx)
-    if int(clan.id) != int(clan_id):
-        raise HTTPException(status_code=403, detail="Not allowed")
 
     u = db.get(User, payload.user_id)
     if not u:
@@ -2403,11 +2439,14 @@ def remove_member(
     clan_id: int,
     user_id: int,
     db: Session = Depends(get_db),
-    clan_ctx: tuple = Depends(get_current_clan_membership),
+    current_user: User = Depends(get_current_user),
 ):
+    clan_ctx = _resolve_target_clan_membership(
+        db,
+        clan_id=int(clan_id),
+        current_user=current_user,
+    )
     clan, _membership, _current_user = _require_clan_admin(clan_ctx)
-    if int(clan.id) != int(clan_id):
-        raise HTTPException(status_code=403, detail="Not allowed")
 
     m = (
         db.query(ClanMembership)
@@ -2435,11 +2474,14 @@ def toggle_member_role(
     clan_id: int,
     user_id: int,
     db: Session = Depends(get_db),
-    clan_ctx: tuple = Depends(get_current_clan_membership),
+    current_user: User = Depends(get_current_user),
 ):
+    clan_ctx = _resolve_target_clan_membership(
+        db,
+        clan_id=int(clan_id),
+        current_user=current_user,
+    )
     clan, _membership, _current_user = _require_clan_admin(clan_ctx)
-    if int(clan.id) != int(clan_id):
-        raise HTTPException(status_code=403, detail="Not allowed")
 
     m = (
         db.query(ClanMembership)
@@ -2468,11 +2510,14 @@ def patch_member_pool_balance_compat(
     user_id: int,
     payload: PatchMemberPoolIn,
     db: Session = Depends(get_db),
-    clan_ctx: tuple = Depends(get_current_clan_membership),
+    current_user: User = Depends(get_current_user),
 ):
+    clan_ctx = _resolve_target_clan_membership(
+        db,
+        clan_id=int(clan_id),
+        current_user=current_user,
+    )
     clan, _membership, _current_user = _require_clan_admin(clan_ctx)
-    if int(clan.id) != int(clan_id):
-        raise HTTPException(status_code=403, detail="Not allowed")
 
     if payload.pool_balance < 0:
         raise HTTPException(status_code=400, detail="pool_balance must be >= 0")

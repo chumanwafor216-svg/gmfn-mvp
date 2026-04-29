@@ -18106,3 +18106,48 @@ GSN-branded invite composer and invite-entry continuity.
 - Shared logic impact:
   - none on backend logic or route contracts
   - this was a phone-stability / finishing cleanup only
+
+### Backend clan/member route regression fixed and backend suite restored to green (2026-04-29)
+
+- Continued the completion push by resolving the remaining backend regression
+  that was blocking a truly deployment-ready batch.
+- Problem:
+  - clan/member routes had been refactored to resolve the target community by
+    explicit path `clan_id`, but the older backend test fixtures were still
+    seeding an underspecified `clans` row
+  - under the current migrated SQLite schema, that fixture insert was silently
+    ignored, so member-management routes returned `Clan not found`
+- Applied a backend/system-level fix:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - added `_resolve_target_clan_membership(...)` so path-based clan/member
+      routes resolve the requested real community explicitly instead of relying
+      on ambient clan context
+    - updated member-management routes to use the explicit current user +
+      target-clan resolution path:
+      - `GET /clans/{clan_id}/members`
+      - `POST /clans/{clan_id}/members`
+      - `DELETE /clans/{clan_id}/members/{user_id}`
+      - `PATCH /clans/{clan_id}/members/{user_id}/role`
+      - `PATCH /clans/{clan_id}/members/{user_id}/pool`
+  - `gmfn_backend/tests/conftest.py`
+    - updated clan seed fixtures to insert a fully valid test community row
+      including:
+      - `invite_code`
+      - `community_code`
+      - `status`
+      - `invite_uses`
+      - `created_at`
+- Verification:
+  - `python -m pytest tests/test_clan_members.py tests/test_clan_pool.py -q`
+    → `7 passed`
+  - `python -m pytest -q tests`
+    → `94 passed`
+  - `python -m py_compile app/api/routes/clans.py tests/conftest.py tests/test_join_requests.py`
+    → passed
+- Routes impacted:
+  - backend member-management + pool-adjustment routes listed above
+- Shared logic impact:
+  - clan/member management now behaves correctly when the user belongs to
+    multiple real communities
+  - test fixtures now reflect the current clan schema instead of a stale
+    pre-invite-code shape
