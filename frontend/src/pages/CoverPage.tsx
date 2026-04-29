@@ -431,11 +431,93 @@ function artworkShell(): React.CSSProperties {
 
     overflow: "hidden",
 
-    border: "1px solid rgba(226,236,246,0.14)",
+    border: "1px solid rgba(226,236,246,0.16)",
 
-    background: "rgba(255,255,255,0.035)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.036) 0%, rgba(255,255,255,0.016) 100%)",
 
-    boxShadow: "0 34px 82px rgba(0,8,18,0.34), inset 0 1px 0 rgba(255,255,255,0.06)",
+    boxShadow:
+      "0 40px 92px rgba(0,8,18,0.38), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -18px 42px rgba(5,17,32,0.18)",
+
+  };
+
+}
+
+function artworkPolishFrameStyle(): React.CSSProperties {
+
+  return {
+
+    position: "absolute",
+
+    inset: 20,
+
+    borderRadius: 28,
+
+    border: "1px solid rgba(230,237,244,0.10)",
+
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05), inset 0 -1px 0 rgba(12,27,44,0.24)",
+
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.015) 0%, rgba(255,255,255,0.00) 38%, rgba(5,17,32,0.08) 100%)",
+
+    pointerEvents: "none",
+
+    zIndex: 1,
+
+  };
+
+}
+
+function artworkBottomVeilStyle(): React.CSSProperties {
+
+  return {
+
+    position: "absolute",
+
+    left: 0,
+
+    right: 0,
+
+    bottom: 0,
+
+    height: 176,
+
+    background:
+      "linear-gradient(180deg, rgba(7,20,34,0.00) 0%, rgba(7,20,34,0.24) 32%, rgba(6,16,27,0.54) 100%)",
+
+    pointerEvents: "none",
+
+    zIndex: 2,
+
+  };
+
+}
+
+function buttonDockStyle(): React.CSSProperties {
+
+  return {
+
+    display: "inline-flex",
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    padding: "12px 12px 14px",
+
+    borderRadius: 24,
+
+    border: "1px solid rgba(227,235,243,0.18)",
+
+    background:
+      "linear-gradient(180deg, rgba(12,27,44,0.24) 0%, rgba(8,19,33,0.46) 100%)",
+
+    boxShadow:
+      "0 18px 36px rgba(3,10,22,0.28), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(3,10,22,0.22)",
+
+    backdropFilter: "blur(12px)",
+
+    WebkitBackdropFilter: "blur(12px)",
 
   };
 
@@ -453,13 +535,13 @@ function buttonStyle(disabled = false): React.CSSProperties {
 
     justifyContent: "center",
 
-    minHeight: 52,
+    minHeight: 56,
 
-    minWidth: 210,
+    minWidth: 228,
 
-    padding: "12px 18px",
+    padding: "13px 22px",
 
-    borderRadius: 16,
+    borderRadius: 18,
 
     border: disabled ? "1px solid rgba(161,179,199,0.48)" : "1px solid rgba(205,220,236,0.92)",
 
@@ -473,11 +555,13 @@ function buttonStyle(disabled = false): React.CSSProperties {
 
     fontSize: 16,
 
+    letterSpacing: "0.02em",
+
     cursor: disabled ? "not-allowed" : "pointer",
 
     boxShadow: disabled
       ? "none"
-      : "0 18px 34px rgba(1,13,32,0.24), inset 0 1px 0 rgba(255,255,255,0.96), inset 0 -2px 0 rgba(108,129,154,0.26)",
+      : "0 20px 36px rgba(1,13,32,0.22), inset 0 1px 0 rgba(255,255,255,0.98), inset 0 -2px 0 rgba(108,129,154,0.24)",
 
     whiteSpace: "normal",
 
@@ -556,7 +640,7 @@ function GSNSplashArtwork() {
         overflow: "hidden",
 
         background:
-          "radial-gradient(circle at 50% 18%, rgba(164,190,218,0.11), transparent 24%), radial-gradient(circle at 18% 6%, rgba(201,154,39,0.08), transparent 20%), linear-gradient(180deg, #07141F 0%, #0C1F31 34%, #163247 68%, #28516A 100%)",
+          "radial-gradient(circle at 50% 18%, rgba(164,190,218,0.10), transparent 24%), radial-gradient(circle at 18% 6%, rgba(201,154,39,0.07), transparent 20%), linear-gradient(180deg, #06131E 0%, #0B1D2D 34%, #143045 68%, #254C65 100%)",
 
       }}
 
@@ -809,7 +893,7 @@ function GSNSplashArtwork() {
 
 
 
-        <g opacity="0.20">
+        <g opacity="0.15">
 
           <path
 
@@ -839,7 +923,7 @@ function GSNSplashArtwork() {
 
 
 
-        <g opacity="0.18">
+        <g opacity="0.14">
 
           <path
 
@@ -1218,7 +1302,7 @@ function GSNSplashArtwork() {
               L446 18
               Z
             "
-            fill="rgba(255,255,255,0.04)"
+            fill="rgba(255,255,255,0.03)"
             stroke="rgba(228,240,255,0.10)"
             strokeWidth="1.2"
           />
@@ -1230,7 +1314,7 @@ function GSNSplashArtwork() {
             height="246"
             rx="32"
             fill="rgba(7,19,35,0.62)"
-            stroke="rgba(255,255,255,0.12)"
+            stroke="rgba(255,255,255,0.10)"
             strokeWidth="2"
           />
 
@@ -1240,8 +1324,8 @@ function GSNSplashArtwork() {
             width="612"
             height="202"
             rx="24"
-            fill="rgba(255,255,255,0.03)"
-            stroke="rgba(201,154,39,0.20)"
+            fill="rgba(255,255,255,0.028)"
+            stroke="rgba(201,154,39,0.18)"
             strokeWidth="1.5"
           />
 
@@ -1270,10 +1354,10 @@ function GSNSplashArtwork() {
             x="330"
             y="82"
             textAnchor="middle"
-            fill="#D3B15D"
+            fill="#CCAC63"
             fontSize="22"
             fontWeight="800"
-            letterSpacing="5.2"
+            letterSpacing="5.8"
             fontFamily="Arial, Helvetica, sans-serif"
           >
             TRUST INFRASTRUCTURE PROTOCOL
@@ -1283,10 +1367,10 @@ function GSNSplashArtwork() {
             x="330"
             y="136"
             textAnchor="middle"
-            fill="#F1F5F9"
-            fontSize="36"
+            fill="#F2F6FA"
+            fontSize="34"
             fontWeight="700"
-            letterSpacing="1.6"
+            letterSpacing="1.8"
             fontFamily="Arial, Helvetica, sans-serif"
           >
             Global Support Network
@@ -1296,10 +1380,10 @@ function GSNSplashArtwork() {
             x="330"
             y="180"
             textAnchor="middle"
-            fill="#C8D7E6"
-            fontSize="24"
+            fill="#C2D0DD"
+            fontSize="22"
             fontWeight="500"
-            letterSpacing="0.4"
+            letterSpacing="0.3"
             fontFamily="Arial, Helvetica, sans-serif"
           >
             Trust made visible for stronger communities.
@@ -1309,10 +1393,10 @@ function GSNSplashArtwork() {
             x="330"
             y="206"
             textAnchor="middle"
-            fill="rgba(233,241,252,0.56)"
+            fill="rgba(225,235,246,0.52)"
             fontSize="14"
             fontWeight="700"
-            letterSpacing="3.6"
+            letterSpacing="4"
             fontFamily="Arial, Helvetica, sans-serif"
           >
             TRUSTED COMMUNITY ENTRY
@@ -1336,7 +1420,7 @@ function GSNSplashArtwork() {
 
 
 
-        <g opacity="0.26">
+        <g opacity="0.18">
 
           <circle cx="152" cy="1388" r="4" fill="#AEC1D0" />
 
@@ -1443,15 +1527,20 @@ export default function CoverPage() {
 
           <GSNSplashArtwork />
 
+          <div style={artworkPolishFrameStyle()} />
+
+          <div style={artworkBottomVeilStyle()} />
+
           <div
             style={{
               position: "absolute",
               left: "50%",
-              bottom: 18,
+              bottom: 20,
               transform: "translateX(-50%)",
-              zIndex: 3,
+              zIndex: 4,
             }}
           >
+            <div style={buttonDockStyle()}>
             <button
 
               type="button"
@@ -1469,6 +1558,7 @@ export default function CoverPage() {
               {busy ? "Opening..." : "Continue"}
 
             </button>
+            </div>
           </div>
 
         </div>

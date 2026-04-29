@@ -28,6 +28,41 @@ Cover page institutional calm-down pass.
 - `npm exec -- eslint src/pages/CoverPage.tsx`
 - `npm run build`
 
+## 2026-04-29 15:24
+
+### Workstream
+Cover page premium polish pass.
+
+### What changed
+- Kept the same public cover-page structure and entry flow, but added a second refinement pass so the page feels more finished and institution-facing.
+- Strengthened the artwork shell with:
+  - a cleaner outer frame
+  - a quieter internal polish layer
+  - a deeper lower veil so the CTA area feels anchored instead of floating
+- Reworked the CTA area into a more deliberate dock so `Continue` now sits on a stable premium stage rather than directly on the artwork.
+- Tuned the `Continue` button to feel more authoritative:
+  - slightly larger body
+  - calmer shadowing
+  - better letter spacing
+  - stronger visual weight without becoming loud
+- Further muted decorative waves and bottom dots so the page reads less warm/decorative and more calm/credible.
+- Refined the trust-protocol plaque typography and contrast so the lower institutional message feels more official and less glossy.
+
+### Why
+- After the first calm-down pass, the page was already less warm, but it still needed one more level of finish to feel truly premium and trustworthy.
+- The goal of this pass was not to redesign the page, but to make the same structure feel more deliberate, polished, and serious.
+
+### Files touched
+- `frontend/src/pages/CoverPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- public cover page rendered by `CoverPage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/CoverPage.tsx`
+- `npm run build`
+
 ## 2026-04-28 17:18
 
 ### Workstream
