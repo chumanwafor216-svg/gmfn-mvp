@@ -3,8 +3,12 @@ import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import TrustDocumentFamilyMap from "../components/TrustDocumentFamilyMap";
+import TrustDocumentUseCases from "../components/TrustDocumentUseCases";
 import { getCurrentClan, getMe, getMySettings } from "../lib/api";
 import { buildGuidanceSnapshot } from "../lib/guidance";
+import { buildTrustDocumentFamilyItems } from "../lib/trustDocumentFamilyMap";
+import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
 import {
   brandActionButton,
   brandBadge,
@@ -122,6 +126,30 @@ function selectStyle(): React.CSSProperties {
     color: gmfnBrand.colors.ink,
     outline: "none",
     boxSizing: "border-box",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+  };
+}
+
+function stableTapStyle(): React.CSSProperties {
+  return {
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+  };
+}
+
+function guardButtonPress(event: React.SyntheticEvent<HTMLElement>) {
+  event.stopPropagation();
+}
+
+function buttonGuardProps(): Pick<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: guardButtonPress,
+    onTouchStart: guardButtonPress,
+    onMouseDown: guardButtonPress,
   };
 }
 
@@ -236,6 +264,15 @@ export default function MyGMFNAndIPage() {
       ? "settings"
       : "guide";
   }, [location.search]);
+  const isAppRoute = location.pathname.startsWith("/app/");
+  const trustDocumentItems = useMemo(
+    () => buildTrustDocumentFamilyItems(isAppRoute),
+    [isAppRoute]
+  );
+  const trustDocumentUseCases = useMemo(
+    () => buildTrustDocumentUseCaseItems(trustDocumentItems),
+    [trustDocumentItems]
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -789,6 +826,28 @@ export default function MyGMFNAndIPage() {
               </OriginLink>
             </div>
           </section>
+
+          <TrustDocumentFamilyMap
+            compact={isCompact}
+            items={trustDocumentItems}
+            title="How the trust record moves from personal meaning into public proof"
+            intro={
+              isAppRoute
+                ? "Use this map when you want to understand the difference between the stable identity layer, the fuller personal trust story, the portable TrustSlip, and the public verification check."
+                : "Use this map when you want to understand how GSN moves from a member's stable identity and fuller trust story into portable proof and public verification. Signed-in surfaces are marked clearly where they belong to the app flow."
+            }
+          />
+
+          <TrustDocumentUseCases
+            compact={isCompact}
+            items={trustDocumentUseCases}
+            title="Which trust surface should you open for which question?"
+            intro={
+              isAppRoute
+                ? "Use this chooser when you know the human question already, like identity, trust story, portable proof, or public validity, and want the right trust surface without guessing."
+                : "Use this chooser when you need to understand which trust question belongs to the signed-in record and which belongs to portable proof or public verification."
+            }
+          />
         </>
       ) : (
         <section style={pageCard("#FFFFFF")}>
@@ -898,17 +957,19 @@ export default function MyGMFNAndIPage() {
               >
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={() => void saveSettings()}
                   disabled={saving}
-                  style={actionBtn("primary", saving)}
+                  style={{ ...actionBtn("primary", saving), ...stableTapStyle() }}
                 >
                   {saving ? "Saving..." : "Save Settings"}
                 </button>
 
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={resetSettings}
-                  style={actionBtn("secondary")}
+                  style={{ ...actionBtn("secondary"), ...stableTapStyle() }}
                 >
                   Reset Defaults
                 </button>

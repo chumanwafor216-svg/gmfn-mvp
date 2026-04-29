@@ -148,6 +148,20 @@ function routeTile(primary = false): React.CSSProperties {
     padding: 16,
     textDecoration: "none",
     boxShadow: primary ? "0 10px 24px rgba(11,99,209,0.05)" : "none",
+    ...stableTapStyle(),
+  };
+}
+
+function stableTapStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 0,
+    isolation: "isolate",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 2,
   };
 }
 
@@ -193,6 +207,19 @@ function collapseToggle(): React.CSSProperties {
     cursor: "pointer",
     whiteSpace: "normal",
     textAlign: "center",
+    ...stableTapStyle(),
+  };
+}
+
+function stopGraphTap(e: React.SyntheticEvent) {
+  e.stopPropagation();
+}
+
+function graphButtonGuardProps() {
+  return {
+    onPointerDown: stopGraphTap,
+    onTouchStart: stopGraphTap,
+    onMouseDown: stopGraphTap,
   };
 }
 
@@ -807,6 +834,7 @@ export default function AdminTrustGraphPage() {
             type="button"
             onClick={() => toggleSection("overview")}
             style={collapseToggle()}
+            {...graphButtonGuardProps()}
           >
             {collapsed.overview ? "Open" : "Collapse"}
           </button>
@@ -917,6 +945,7 @@ export default function AdminTrustGraphPage() {
             type="button"
             onClick={() => toggleSection("structure")}
             style={collapseToggle()}
+            {...graphButtonGuardProps()}
           >
             {collapsed.structure ? "Open" : "Collapse"}
           </button>
@@ -1065,6 +1094,7 @@ export default function AdminTrustGraphPage() {
             type="button"
             onClick={() => toggleSection("signals")}
             style={collapseToggle()}
+            {...graphButtonGuardProps()}
           >
             {collapsed.signals ? "Open" : "Collapse"}
           </button>
@@ -1152,6 +1182,7 @@ export default function AdminTrustGraphPage() {
             type="button"
             onClick={() => toggleSection("routes")}
             style={collapseToggle()}
+            {...graphButtonGuardProps()}
           >
             {collapsed.routes ? "Open" : "Collapse"}
           </button>

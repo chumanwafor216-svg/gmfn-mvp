@@ -10,6 +10,13 @@ import {
   institutionalSoftCard,
 } from "../lib/institutionalSurface";
 
+type ReviewerLine = {
+  display: string;
+  gmfnId: string;
+  role: string;
+  roleLabel: string;
+};
+
 function safeStr(x: any, fallback = ""): string {
   const s = String(x ?? "").trim();
   return s || fallback;
@@ -118,6 +125,12 @@ function infoTile(): React.CSSProperties {
     border: "1px solid rgba(11,31,51,0.08)",
     padding: 14,
   };
+}
+
+function reviewerRoleLabel(role: string): string {
+  const raw = safeStr(role);
+  if (!raw) return "";
+  return raw.replace(/[_-]+/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function mergeSearchIntoPath(to: string, currentSearch: string): string {
@@ -252,6 +265,34 @@ export default function JoinRequestPendingPage() {
     () => safeStr(liveStatus?.community_code || searchParams.get("community_code") || ""),
     [liveStatus, searchParams]
   );
+
+  const approvals = useMemo(() => Number(liveStatus?.approvals || 0), [liveStatus]);
+  const rejects = useMemo(() => Number(liveStatus?.rejects || 0), [liveStatus]);
+  const totalVotes = useMemo(
+    () => Number(liveStatus?.total_votes || approvals + rejects || 0),
+    [liveStatus, approvals, rejects]
+  );
+  const activeMembers = useMemo(
+    () => Number(liveStatus?.active_member_count || 0),
+    [liveStatus]
+  );
+  const requiredApprovals = useMemo(
+    () => Number(liveStatus?.required_approvals || 0),
+    [liveStatus]
+  );
+  const eligibleReviewers = useMemo<ReviewerLine[]>(() => {
+    const rows = Array.isArray(liveStatus?.eligible_reviewers)
+      ? liveStatus.eligible_reviewers
+      : [];
+    return rows
+      .map((row: any) => ({
+        display: safeStr(row?.display || ""),
+        gmfnId: safeStr(row?.gmfn_id || ""),
+        role: "",
+        roleLabel: reviewerRoleLabel(safeStr(row?.role || "user")),
+      }))
+      .filter((row: ReviewerLine) => row.display || row.gmfnId);
+  }, [liveStatus]);
 
   const approvalTo = useMemo(() => {
     if (!requestId) return "";
@@ -438,6 +479,111 @@ export default function JoinRequestPendingPage() {
                 not create a second review notification because the first
                 request is still the live one on record.
               </div>
+            </div>
+
+            <div style={softCard()}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 1000,
+                  fontSize: 18,
+                }}
+              >
+                Live review position
+              </div>
+              <div style={{ marginTop: 8, ...helperText() }}>
+                This shows the real review counts currently on record for this
+                request.
+              </div>
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr 1fr" : "repeat(4, minmax(0, 1fr))",
+                  gap: 10,
+                }}
+              >
+                <div style={infoTile()}>
+                  <div style={sectionLabel()}>Approvals</div>
+                  <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 1000, fontSize: 24 }}>
+                    {approvals}
+                  </div>
+                </div>
+                <div style={infoTile()}>
+                  <div style={sectionLabel()}>Rejects</div>
+                  <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 1000, fontSize: 24 }}>
+                    {rejects}
+                  </div>
+                </div>
+                <div style={infoTile()}>
+                  <div style={sectionLabel()}>Total votes</div>
+                  <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 1000, fontSize: 24 }}>
+                    {totalVotes}
+                  </div>
+                </div>
+                <div style={infoTile()}>
+                  <div style={sectionLabel()}>Required approvals</div>
+                  <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 1000, fontSize: 24 }}>
+                    {requiredApprovals}
+                  </div>
+                </div>
+              </div>
+              <div style={{ marginTop: 10, ...helperText() }}>
+                Activated reviewers currently counted in this community:{" "}
+                <strong>{activeMembers}</strong>
+              </div>
+            </div>
+
+            <div style={softCard()}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 1000,
+                  fontSize: 18,
+                }}
+              >
+                Activated reviewers on record
+              </div>
+              <div style={{ marginTop: 8, ...helperText() }}>
+                These are the currently activated reviewers the system counts in
+                this community right now.
+              </div>
+              {eligibleReviewers.length ? (
+                <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+                  {eligibleReviewers.map((reviewer: ReviewerLine, index: number) => (
+                    <div key={`${reviewer.gmfnId || reviewer.display}-${index}`} style={infoTile()}>
+                      <div style={sectionLabel()}>
+                        Reviewer {index + 1}
+                        {reviewer.role ? ` • ${reviewer.role}` : ""}
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 8,
+                          color: "#0B1F33",
+                          fontWeight: 900,
+                          lineHeight: 1.55,
+                        }}
+                      >
+                        {reviewer.display || "Visible reviewer"}
+                      </div>
+                      {reviewer.gmfnId ? (
+                        <div style={{ marginTop: 6, ...helperText() }}>
+                          {reviewer.gmfnId}
+                        </div>
+                      ) : null}
+                      {reviewer.roleLabel ? (
+                        <div style={{ marginTop: 4, ...helperText() }}>
+                          Role: {reviewer.roleLabel}
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ marginTop: 12, ...pendingNotice() }}>
+                  No activated reviewer line is visible in this community yet.
+                </div>
+              )}
             </div>
 
             <div style={softCard()}>

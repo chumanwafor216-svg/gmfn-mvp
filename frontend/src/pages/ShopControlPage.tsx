@@ -2138,6 +2138,7 @@ export default function ShopControlPage() {
               <div style={{ marginTop: 14, ...controlGrid(isCompact, 150) }}>
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={() => {
                     void ensureSpotlightShopRecord();
                   }}
@@ -2148,6 +2149,7 @@ export default function ShopControlPage() {
                 </button>
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={collapseSpotlightTools}
                   style={fullButton(actionBtn("secondary"))}
                 >
@@ -2166,6 +2168,7 @@ export default function ShopControlPage() {
               <div style={{ marginTop: 12, ...controlGrid(isCompact, 150) }}>
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={() => setSpotlightPriorityMode("free")}
                   style={fullButton(actionBtn("primary", spotlightPriorityMode === "free"))}
                 >
@@ -2173,6 +2176,7 @@ export default function ShopControlPage() {
                 </button>
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={() => {
                     if (canStartPaidSpotlight) {
                       setSpotlightPriorityMode("paid");
@@ -2199,6 +2203,7 @@ export default function ShopControlPage() {
               <div style={{ marginTop: 12, ...controlGrid(isCompact, 150) }}>
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={() => setSpotlightMediaChoice("image")}
                   style={fullButton(actionBtn("secondary", spotlightMediaChoice === "image"))}
                 >
@@ -2206,6 +2211,7 @@ export default function ShopControlPage() {
                 </button>
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={() => setSpotlightMediaChoice("video")}
                   style={fullButton(actionBtn("secondary", spotlightMediaChoice === "video"))}
                 >
@@ -2213,6 +2219,7 @@ export default function ShopControlPage() {
                 </button>
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={() => setSpotlightMediaChoice("both")}
                   style={fullButton(actionBtn("secondary", spotlightMediaChoice === "both"))}
                 >
@@ -2297,6 +2304,7 @@ export default function ShopControlPage() {
             <div style={controlGrid(isCompact, 150)}>
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() => setSpotlightFlowStep("preview")}
                 disabled={
                   shopActionsLocked ||
@@ -2320,6 +2328,7 @@ export default function ShopControlPage() {
               </button>
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={collapseSpotlightTools}
                 style={fullButton(actionBtn("secondary"))}
               >
@@ -2389,6 +2398,7 @@ export default function ShopControlPage() {
             <div style={controlGrid(isCompact, 150)}>
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() => setSpotlightFlowStep("upload")}
                 style={fullButton(actionBtn("secondary"))}
               >
@@ -2396,6 +2406,7 @@ export default function ShopControlPage() {
               </button>
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() => {
                   void handleCreateSpotlight();
                 }}
@@ -2425,6 +2436,7 @@ export default function ShopControlPage() {
               </button>
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={collapseSpotlightTools}
                 style={fullButton(actionBtn("secondary"))}
               >
@@ -2595,6 +2607,7 @@ export default function ShopControlPage() {
 
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
                 style={fullButton(actionBtn("secondary", !publicShopLink))}
                 disabled={!publicShopLink}
@@ -3213,6 +3226,7 @@ export default function ShopControlPage() {
 
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
                   style={fullButton(actionBtn("soft", !publicShopLink))}
                   disabled={!publicShopLink}
@@ -3464,6 +3478,7 @@ export default function ShopControlPage() {
                     </button>
                     <button
                       type="button"
+                      {...buttonGuardProps()}
                       onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
                       style={fullButton(actionBtn("soft", !publicShopLink))}
                       disabled={!publicShopLink}
@@ -3814,6 +3829,7 @@ export default function ShopControlPage() {
                   <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
                     <button
                       type="button"
+                      {...buttonGuardProps()}
                       onClick={() =>
                         copyText(vaultLinkUrl(item), "Vault viewing link copied.")
                       }

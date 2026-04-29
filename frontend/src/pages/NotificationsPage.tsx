@@ -19,6 +19,7 @@ import {
 type RawNotificationRow = {
   id: string;
   kind: string;
+  kindLabel: string;
   title: string;
   detail: string;
   ctaLabel: string;
@@ -655,10 +656,103 @@ function normalizeSettings(raw: any): SettingsState {
   };
 }
 
+function rawNotificationText(raw: any): string {
+  return [
+    safeStr(raw?.kind),
+    safeStr(raw?.title),
+    safeStr(raw?.message),
+    safeStr(raw?.detail),
+    safeStr(raw?.description),
+    safeStr(raw?.action_label),
+    safeStr(raw?.action_url),
+  ]
+    .join(" ")
+    .toLowerCase();
+}
+
+function isJoinReviewNotification(raw: any): boolean {
+  const kind = safeStr(raw?.kind).toLowerCase();
+  const text = rawNotificationText(raw);
+
+  return (
+    kind === "approval_request" ||
+    kind === "approval_rejected" ||
+    kind === "approval_approved" ||
+    text.includes("join request") ||
+    text.includes("wants to join") ||
+    text.includes("community review") ||
+    text.includes("/join-approval/") ||
+    text.includes("/join-requests")
+  );
+}
+
+function isJoinReviewRequestNotification(raw: any): boolean {
+  const kind = safeStr(raw?.kind).toLowerCase();
+  const text = rawNotificationText(raw);
+  return (
+    kind === "approval_request" ||
+    text.includes("pending join request") ||
+    text.includes("new join request") ||
+    text.includes("wants to join")
+  );
+}
+
+function isJoinReviewRejectedNotification(raw: any): boolean {
+  const kind = safeStr(raw?.kind).toLowerCase();
+  const text = rawNotificationText(raw);
+  return (
+    kind === "approval_rejected" ||
+    text.includes("not approved") ||
+    text.includes("view decision")
+  );
+}
+
+function joinReviewKindLabel(raw: any): string {
+  if (isJoinReviewRequestNotification(raw)) return "Join review";
+  if (isJoinReviewRejectedNotification(raw)) return "Join decision";
+  return "Join update";
+}
+
 function normalizeRawNotificationRow(raw: any): RawNotificationRow {
+  if (isJoinReviewNotification(raw)) {
+    const isReview = isJoinReviewRequestNotification(raw);
+    const isRejected = isJoinReviewRejectedNotification(raw);
+
+    return {
+      id: firstTruthy(raw?.id, raw?.notification_id, raw?.title, raw?.message),
+      kind: firstTruthy(raw?.kind, raw?.title, "approval_request"),
+      kindLabel: joinReviewKindLabel(raw),
+      title: firstTruthy(
+        raw?.title,
+        isReview
+          ? "Someone is waiting to join"
+          : isRejected
+          ? "Join request was not approved"
+          : "Join request update"
+      ),
+      detail: firstTruthy(
+        raw?.message,
+        raw?.detail,
+        isReview
+          ? "Someone is waiting for community review. Open the review page and decide whether to approve or reject the request."
+          : isRejected
+          ? "This request was not approved. Open the decision page to review the outcome."
+          : "Open the join review lane to continue with the correct next step."
+      ),
+      ctaLabel: firstTruthy(
+        raw?.action_label,
+        isReview ? "Open join review" : "Open decision"
+      ),
+      ctaTo: resolveNoticeTarget(raw),
+      unread: !raw?.is_read,
+      createdAt: firstTruthy(raw?.created_at),
+    };
+  }
+
   return {
     id: firstTruthy(raw?.id, raw?.notification_id, raw?.title, raw?.message),
     kind: firstTruthy(raw?.kind, raw?.title, "update"),
+    kindLabel: firstTruthy(raw?.kind, raw?.title, "Update"),
     title: firstTruthy(raw?.title, raw?.kind, "Update"),
     detail: firstTruthy(
       raw?.message,
@@ -1261,6 +1355,7 @@ export default function NotificationsPage() {
         <div style={{ marginTop: 16, ...actionRow(isPhone) }}>
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() =>
               setCollapsed((prev) => ({
                 ...prev,
@@ -1536,6 +1631,7 @@ export default function NotificationsPage() {
 
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={() => setSelectedNotice(null)}
                   style={actionBtn("soft")}
                 >
@@ -1566,6 +1662,7 @@ export default function NotificationsPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("buckets")}
             style={collapseToggle()}
           >
@@ -1736,6 +1833,7 @@ export default function NotificationsPage() {
 
             <button
               type="button"
+              {...buttonGuardProps()}
               onClick={() => toggleSection("rawFeed")}
               style={collapseToggle()}
             >
@@ -1778,7 +1876,7 @@ export default function NotificationsPage() {
                       </div>
 
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        <span style={badge(false)}>{item.kind}</span>
+                        <span style={badge(false)}>{item.kindLabel || item.kind}</span>
                         {item.unread ? (
                           <span style={badge(true)}>Unread</span>
                         ) : (
@@ -1829,6 +1927,7 @@ export default function NotificationsPage() {
 
             <button
               type="button"
+              {...buttonGuardProps()}
               onClick={() => toggleSection("reading")}
               style={collapseToggle()}
             >

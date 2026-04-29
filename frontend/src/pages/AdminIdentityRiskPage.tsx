@@ -22,6 +22,41 @@ function card(): React.CSSProperties {
   };
 }
 
+function stableTapStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
+  };
+}
+
+function stopIdentityRiskTap(event: React.SyntheticEvent) {
+  event.stopPropagation();
+}
+
+function summaryToggle(): React.CSSProperties {
+  return {
+    cursor: "pointer",
+    fontWeight: 900,
+    color: "#0B1F33",
+    display: "inline-flex",
+    alignItems: "center",
+    minHeight: 40,
+    padding: "8px 14px",
+    borderRadius: 14,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(241,246,252,0.98) 100%)",
+    boxShadow: "0 10px 24px rgba(15,23,42,0.08)",
+    ...stableTapStyle(),
+  };
+}
+
 function riskStyle(level: "green" | "yellow" | "red"): React.CSSProperties {
   if (level === "red") {
     return {
@@ -86,9 +121,8 @@ export default function AdminIdentityRiskPage() {
     })();
   }, []);
 
-  const items = Array.isArray(data?.items) ? data.items : [];
-
   const grouped = useMemo(() => {
+    const items = Array.isArray(data?.items) ? data.items : [];
     const map = new Map<number, any[]>();
     for (const row of items) {
       const uid = toNum(row?.user_id || 0);
@@ -106,7 +140,7 @@ export default function AdminIdentityRiskPage() {
       );
       return { userId, rows, risk: max };
     });
-  }, [items]);
+  }, [data]);
 
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto" }}>
@@ -194,14 +228,20 @@ export default function AdminIdentityRiskPage() {
                     {safeStr(row?.description || "No description")}
                   </div>
                   <div style={{ marginTop: 8, fontSize: 13, color: "#64748b" }}>
-                    Severity: {safeStr(row?.severity || "0")} · Created: {safeStr(row?.created_at || "—")}
+                    Severity: {safeStr(row?.severity || "0")} | Created:{" "}
+                    {safeStr(row?.created_at || "-")}
                   </div>
                 </div>
               ))}
             </div>
 
             <details style={{ marginTop: 14 }}>
-              <summary style={{ cursor: "pointer", fontWeight: 900, color: "#0B1F33" }}>
+              <summary
+                style={summaryToggle()}
+                onPointerDown={stopIdentityRiskTap}
+                onTouchStart={stopIdentityRiskTap}
+                onMouseDown={stopIdentityRiskTap}
+              >
                 Detailed identity signals
               </summary>
               <pre

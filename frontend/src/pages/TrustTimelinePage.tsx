@@ -442,7 +442,7 @@ export default function TrustTimelinePage() {
           >
             <div style={sectionLabel()}>Score (explainable)</div>
             <div style={{ fontSize: 12, ...helperText() }}>
-              {totals.total} events • {totals.pos} positive • {totals.neg} negative
+              {totals.total} events - {totals.pos} positive - {totals.neg} negative
             </div>
           </div>
 

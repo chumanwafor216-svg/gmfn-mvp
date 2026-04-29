@@ -1456,7 +1456,7 @@ export default function JoinEntryPage() {
                   <div style={{ marginTop: 8, ...helperText() }}>
                     Request ID: {cleanText(storedRequest?.request_id || "")}
                     {cleanText(storedRequest?.community_name || "")
-                      ? ` • Community: ${cleanText(storedRequest?.community_name || "")}`
+                      ? ` \u2022 Community: ${cleanText(storedRequest?.community_name || "")}`
                       : ""}
                   </div>
                   <div
@@ -1576,6 +1576,7 @@ export default function JoinEntryPage() {
                 <button
                   type="button"
                   disabled={!canOpenForm}
+                  {...buttonGuardProps()}
                   onClick={() => {
                     if (!canOpenForm) return;
                     setFormOpen((prev) => !prev);

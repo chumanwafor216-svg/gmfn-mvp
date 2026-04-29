@@ -1,7 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
+import NextActionGuide from "../components/NextActionGuide";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import TrustDocumentActionGuide from "../components/TrustDocumentActionGuide";
+import TrustDocumentFamilyMap from "../components/TrustDocumentFamilyMap";
+import TrustDocumentUseCases from "../components/TrustDocumentUseCases";
 import {
   getCurrentClan,
   getMe,
@@ -19,6 +24,12 @@ import {
   buildGuidanceSnapshot,
   type GuidanceSnapshot,
 } from "../lib/guidance";
+import { navigateWithOrigin } from "../lib/nav";
+import { buildIdentityActionGuide } from "../lib/trustDocumentActionGuide";
+import { buildTrustDocumentFamilyItems } from "../lib/trustDocumentFamilyMap";
+import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
+import { buildIdentityIntegrityGuideItems } from "../lib/trustDocumentGuide";
+import { buildIdentityIntegritySnapshot } from "../lib/trustDocumentSnapshots";
 
 type TrustEventRow = {
   id?: number | string;
@@ -211,6 +222,19 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
+function stableTapStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 0,
+    isolation: "isolate",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 2,
+  };
+}
+
 function actionBtn(
   kind: "primary" | "secondary" | "soft" = "secondary",
   disabled = false
@@ -232,6 +256,7 @@ function actionBtn(
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
+      ...stableTapStyle(),
     };
   }
 
@@ -252,6 +277,7 @@ function actionBtn(
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
+      ...stableTapStyle(),
     };
   }
 
@@ -271,6 +297,7 @@ function actionBtn(
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
+    ...stableTapStyle(),
   };
 }
 
@@ -289,6 +316,19 @@ function collapseToggle(): React.CSSProperties {
     fontSize: 13,
     cursor: "pointer",
     whiteSpace: "normal",
+    ...stableTapStyle(),
+  };
+}
+
+function stopIdentityTap(e: React.SyntheticEvent) {
+  e.stopPropagation();
+}
+
+function identityButtonGuardProps() {
+  return {
+    onPointerDown: stopIdentityTap,
+    onTouchStart: stopIdentityTap,
+    onMouseDown: stopIdentityTap,
   };
 }
 
@@ -850,6 +890,8 @@ function eventTone(kind: string) {
 }
 
 export default function IdentityIntegrityPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const selectedClanId = Number(getSelectedClanId() || 0);
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
@@ -997,6 +1039,13 @@ export default function IdentityIntegrityPage() {
   }, [me, trustSlip]);
 
   const trustSlipCode = safeStr(trustSlip?.code || "");
+  const guideItems = useMemo(() => buildIdentityIntegrityGuideItems(), []);
+  const actionGuide = useMemo(() => buildIdentityActionGuide(), []);
+  const trustDocumentFamilyItems = useMemo(() => buildTrustDocumentFamilyItems(true), []);
+  const trustDocumentUseCases = useMemo(
+    () => buildTrustDocumentUseCaseItems(trustDocumentFamilyItems, "identity"),
+    [trustDocumentFamilyItems]
+  );
 
   const cci = useMemo(() => getCciState(me), [me]);
   const openTrust = useMemo(
@@ -1302,6 +1351,29 @@ export default function IdentityIntegrityPage() {
     showNotice("success", "TrustSlip code copied.");
   }
 
+  function copyIdentitySnapshot() {
+    const snapshot = buildIdentityIntegritySnapshot({
+      displayName,
+      gmfnId,
+      communityLabel,
+      trustSlipCode,
+      openTrustClass: openTrust.classText,
+      openTrustScore: openTrust.scoreText,
+      cciClass: cci.classText,
+      cciScore: cci.scoreText,
+      continuityLabel: continuity.label,
+      nextMoveLabel,
+    });
+
+    safeCopy(snapshot);
+    showNotice("success", "Identity snapshot copied.");
+  }
+
+  function handleGuideSelect(item: { to?: string; disabled?: boolean }) {
+    if (!item.to || item.disabled) return;
+    navigateWithOrigin(navigate, item.to, location);
+  }
+
   if (loading) {
     return (
       <div
@@ -1459,6 +1531,7 @@ export default function IdentityIntegrityPage() {
                 onClick={copyGmfnId}
                 disabled={!gmfnId || gmfnId === "Pending"}
                 style={actionBtn("primary", !gmfnId || gmfnId === "Pending")}
+                {...identityButtonGuardProps()}
               >
                 Copy GMFN ID
               </button>
@@ -1468,8 +1541,18 @@ export default function IdentityIntegrityPage() {
                 onClick={copyTrustSlipCode}
                 disabled={!trustSlipCode}
                 style={actionBtn("secondary", !trustSlipCode)}
+                {...identityButtonGuardProps()}
               >
                 Copy TrustSlip Code
+              </button>
+
+              <button
+                type="button"
+                onClick={copyIdentitySnapshot}
+                style={actionBtn("soft")}
+                {...identityButtonGuardProps()}
+              >
+                Copy identity snapshot
               </button>
 
               <OriginLink to="/app/trust" style={actionBtn("secondary")}>
@@ -1501,6 +1584,7 @@ export default function IdentityIntegrityPage() {
             type="button"
             onClick={() => toggleSection("summary")}
             style={collapseToggle()}
+            {...identityButtonGuardProps()}
           >
             {collapsed.summary ? "Open" : "Collapse"}
           </button>
@@ -1816,7 +1900,12 @@ export default function IdentityIntegrityPage() {
             ))}
 
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button type="submit" style={actionBtn("primary", recoveryBusy)} disabled={recoveryBusy}>
+              <button
+                type="submit"
+                style={actionBtn("primary", recoveryBusy)}
+                disabled={recoveryBusy}
+                {...identityButtonGuardProps()}
+              >
                 {recoveryBusy ? "Saving..." : "Save private recovery challenge"}
               </button>
             </div>
@@ -1859,7 +1948,12 @@ export default function IdentityIntegrityPage() {
             ))}
 
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button type="submit" style={actionBtn("primary", recoveryBusy)} disabled={recoveryBusy || recovery.locked}>
+              <button
+                type="submit"
+                style={actionBtn("primary", recoveryBusy)}
+                disabled={recoveryBusy || recovery.locked}
+                {...identityButtonGuardProps()}
+              >
                 {recoveryBusy ? "Checking..." : "Verify private recovery challenge"}
               </button>
             </div>
@@ -1888,6 +1982,7 @@ export default function IdentityIntegrityPage() {
             type="button"
             onClick={() => toggleSection("reasons")}
             style={collapseToggle()}
+            {...identityButtonGuardProps()}
           >
             {collapsed.reasons ? "Open" : "Collapse"}
           </button>
@@ -2013,6 +2108,7 @@ export default function IdentityIntegrityPage() {
               type="button"
               onClick={() => toggleSection("timeline")}
               style={collapseToggle()}
+              {...identityButtonGuardProps()}
             >
               {collapsed.timeline ? "Open" : "Collapse"}
             </button>
@@ -2109,6 +2205,7 @@ export default function IdentityIntegrityPage() {
             type="button"
             onClick={() => toggleSection("next")}
             style={collapseToggle()}
+            {...identityButtonGuardProps()}
           >
             {collapsed.next ? "Open" : "Collapse"}
           </button>
@@ -2180,6 +2277,30 @@ export default function IdentityIntegrityPage() {
           </div>
         ) : null}
       </section>
+
+      <NextActionGuide
+        storageKey="gmfn.identityIntegrity.nextActionGuide.v1"
+        compact={isCompact}
+        items={guideItems}
+        intro="Say what you need next in plain words like open trust passport, check cci, or open the portable proof. GSN will carry you into the closest trust document surface."
+        onSelect={handleGuideSelect}
+      />
+
+      <TrustDocumentActionGuide content={actionGuide} compact={isCompact} />
+
+      <TrustDocumentFamilyMap
+        compact={isCompact}
+        items={trustDocumentFamilyItems}
+        title="How Identity & Integrity fits into the wider trust-document family"
+        intro="Identity & Integrity is the steady anchor under the trust family. Use this map when you need to separate stable identity and continuity from the fuller Trust Passport story, portable TrustSlip proof, and public validity checks."
+      />
+
+      <TrustDocumentUseCases
+        compact={isCompact}
+        items={trustDocumentUseCases}
+        title="Which trust question should stay with identity first?"
+        intro="Stay here when the question is who this person is, what holds steady across trust changes, or what narrower verification and CCI context sits behind the trust story."
+      />
     </div>
   );
 }

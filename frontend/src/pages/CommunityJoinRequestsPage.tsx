@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
@@ -233,6 +233,10 @@ function isExternalUrl(value: string): boolean {
 export default function CommunityJoinRequestsPage() {
   const navigate = useNavigate();
   const { clanId } = useParams();
+  const [isCompact, setIsCompact] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 920;
+  });
 
   const [items, setItems] = useState<JoinRequestItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -245,7 +249,20 @@ export default function CommunityJoinRequestsPage() {
 
   const clanNum = Number(clanId || 0);
 
-  async function load() {
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    function handleResize() {
+      setIsCompact(window.innerWidth <= 920);
+    }
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const load = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -267,7 +284,7 @@ export default function CommunityJoinRequestsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [clanNum]);
 
   useEffect(() => {
     if (!clanNum) {
@@ -280,7 +297,7 @@ export default function CommunityJoinRequestsPage() {
       await selectClan(clanNum).catch(() => null);
       await load();
     })();
-  }, [clanNum]);
+  }, [clanNum, load]);
 
   const selectedCommunityName = useMemo(() => {
     const first = items[0];
@@ -504,7 +521,9 @@ export default function CommunityJoinRequestsPage() {
         style={{
           marginTop: 18,
           display: "grid",
-          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+          gridTemplateColumns: isCompact
+            ? "repeat(2, minmax(0, 1fr))"
+            : "repeat(4, minmax(0, 1fr))",
           gap: 14,
         }}
       >
@@ -725,7 +744,15 @@ export default function CommunityJoinRequestsPage() {
                   wants to join <strong>{safeStr(item.clan_name || "this community")}</strong>.
                 </div>
 
-                <div style={{ marginTop: 10, display: "grid", gap: 4 }}>
+                <div
+                  style={{
+                    marginTop: 12,
+                    ...institutionalInnerCard("#FFFFFF"),
+                    display: "grid",
+                    gap: 6,
+                    border: "1px solid rgba(11,31,51,0.08)",
+                  }}
+                >
                   <div>
                     Community ID: {safeStr(item.community_code || "Awaiting issue")}
                   </div>

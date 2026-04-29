@@ -48,6 +48,28 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
   };
 }
 
+function stableTapStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
+  };
+}
+
+function consumeActionEvent(
+  event:
+    | React.MouseEvent<HTMLElement>
+    | React.PointerEvent<HTMLElement>
+    | React.TouchEvent<HTMLElement>
+) {
+  event.stopPropagation();
+}
+
 function actionBtn(primary = false, disabled = false): React.CSSProperties {
   return {
     display: "inline-flex",
@@ -76,10 +98,7 @@ function actionBtn(primary = false, disabled = false): React.CSSProperties {
       ? "0 16px 30px rgba(11,99,209,0.22), inset 0 1px 0 rgba(255,255,255,0.24)"
       : "0 12px 24px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.84)",
     whiteSpace: "normal",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "translateZ(0)",
+    ...stableTapStyle(),
   };
 }
 
@@ -411,7 +430,14 @@ export default function JoinApprovalPage() {
             </div>
           </div>
 
-          <button type="button" onClick={goBack} style={actionBtn(false)}>
+          <button
+            type="button"
+            onPointerDown={consumeActionEvent}
+            onMouseDown={consumeActionEvent}
+            onTouchStart={consumeActionEvent}
+            onClick={goBack}
+            style={actionBtn(false)}
+          >
             Back
           </button>
         </div>
@@ -665,6 +691,9 @@ export default function JoinApprovalPage() {
                 {status === "approved" ? (
                   <button
                     type="button"
+                    onPointerDown={consumeActionEvent}
+                    onMouseDown={consumeActionEvent}
+                    onTouchStart={consumeActionEvent}
                     style={actionBtn(true)}
                     onClick={() =>
                       navigateWithOrigin(

@@ -192,6 +192,20 @@ function routeTile(primary = false): React.CSSProperties {
     padding: 16,
     textDecoration: "none",
     boxShadow: primary ? "0 10px 24px rgba(11,99,209,0.05)" : "none",
+    ...stableTapStyle(),
+  };
+}
+
+function stableTapStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 0,
+    isolation: "isolate",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 2,
   };
 }
 
@@ -243,6 +257,7 @@ function actionBtn(
       whiteSpace: "normal",
       textAlign: "center",
       opacity: disabled ? 0.86 : 1,
+      ...stableTapStyle(),
     };
   }
 
@@ -264,6 +279,7 @@ function actionBtn(
       whiteSpace: "normal",
       textAlign: "center",
       opacity: disabled ? 0.86 : 1,
+      ...stableTapStyle(),
     };
   }
 
@@ -281,9 +297,10 @@ function actionBtn(
     fontSize: 14,
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      textAlign: "center",
+    whiteSpace: "normal",
+    textAlign: "center",
     opacity: disabled ? 0.86 : 1,
+    ...stableTapStyle(),
   };
 }
 
@@ -303,6 +320,19 @@ function collapseToggle(): React.CSSProperties {
     cursor: "pointer",
     whiteSpace: "normal",
     textAlign: "center",
+    ...stableTapStyle(),
+  };
+}
+
+function stopExposureTap(e: React.SyntheticEvent) {
+  e.stopPropagation();
+}
+
+function exposureButtonGuardProps() {
+  return {
+    onPointerDown: stopExposureTap,
+    onTouchStart: stopExposureTap,
+    onMouseDown: stopExposureTap,
   };
 }
 
@@ -833,6 +863,7 @@ export default function ExposureAdminPage() {
             type="button"
             onClick={() => toggleSection("overview")}
             style={collapseToggle()}
+            {...exposureButtonGuardProps()}
           >
             {collapsed.overview ? "Open" : "Collapse"}
           </button>
@@ -957,6 +988,7 @@ export default function ExposureAdminPage() {
             type="button"
             onClick={() => toggleSection("pressure")}
             style={collapseToggle()}
+            {...exposureButtonGuardProps()}
           >
             {collapsed.pressure ? "Open" : "Collapse"}
           </button>
@@ -1064,6 +1096,7 @@ export default function ExposureAdminPage() {
             type="button"
             onClick={() => toggleSection("queues")}
             style={collapseToggle()}
+            {...exposureButtonGuardProps()}
           >
             {collapsed.queues ? "Open" : "Collapse"}
           </button>
@@ -1131,6 +1164,7 @@ export default function ExposureAdminPage() {
             type="button"
             onClick={() => toggleSection("routes")}
             style={collapseToggle()}
+            {...exposureButtonGuardProps()}
           >
             {collapsed.routes ? "Open" : "Collapse"}
           </button>

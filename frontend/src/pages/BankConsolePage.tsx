@@ -105,6 +105,18 @@ function stableTapStyle(): React.CSSProperties {
   };
 }
 
+function stopBankTap(e: React.SyntheticEvent) {
+  e.stopPropagation();
+}
+
+function bankButtonGuardProps() {
+  return {
+    onPointerDown: stopBankTap,
+    onTouchStart: stopBankTap,
+    onMouseDown: stopBankTap,
+  };
+}
+
 function primaryBtn(disabled = false): React.CSSProperties {
   return {
     display: "inline-flex",
@@ -716,6 +728,7 @@ export default function BankConsolePage() {
                       )
                     }
                     style={secondaryBtn(false)}
+                    {...bankButtonGuardProps()}
                   >
                     Copy summary
                   </button>
@@ -830,6 +843,7 @@ export default function BankConsolePage() {
                 onClick={() => void loadAll()}
                 disabled={loading}
                 style={secondaryBtn(loading)}
+                {...bankButtonGuardProps()}
               >
                 {loading ? "Refreshing..." : "Refresh"}
               </button>
@@ -1027,6 +1041,7 @@ export default function BankConsolePage() {
             onClick={() => void ingestNow()}
             disabled={busyIngest}
             style={primaryBtn(busyIngest)}
+            {...bankButtonGuardProps()}
           >
             {busyIngest ? "Ingesting..." : "Ingest Event"}
           </button>
@@ -1035,6 +1050,7 @@ export default function BankConsolePage() {
             onClick={() => void reconcileNow()}
             disabled={busyReconcile}
             style={secondaryBtn(busyReconcile)}
+            {...bankButtonGuardProps()}
           >
             {busyReconcile ? "Reconciling..." : "Run Reconciliation"}
           </button>
@@ -1234,6 +1250,7 @@ export default function BankConsolePage() {
                     <button
                       onClick={() => safeCopy(JSON.stringify(cfg, null, 2))}
                       style={secondaryBtn(false)}
+                      {...bankButtonGuardProps()}
                     >
                       Copy config snapshot
                     </button>

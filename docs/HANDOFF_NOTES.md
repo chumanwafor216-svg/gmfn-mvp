@@ -1,3 +1,797 @@
+## 2026-04-28 17:18
+
+### Workstream
+Trust-document family symmetry and question-routing completion pass.
+
+### What changed
+- Added `frontend/src/lib/trustDocumentUseCases.ts` as a shared trust-surface question router.
+  - It now explains, in one governed frontend layer, which trust question belongs to:
+    - `CCI`
+    - `Identity & Integrity`
+    - `Trust Passport`
+    - `TrustSlip`
+    - `TrustSlip Verify`
+- Added `frontend/src/components/TrustDocumentUseCases.tsx` as the reusable UI surface for that chooser.
+  - It makes the difference between:
+    - the narrower cross-community read
+    - the stable identity anchor
+    - the fuller trust story
+    - the portable proof
+    - the public validity check
+    visible in one place.
+- `TrustScorePage.tsx`
+  - now renders the shared trust-document family map
+  - now renders the shared trust-surface question chooser
+  - this closes a previous asymmetry where Trust Passport had action guidance but not the fuller trust-family map and question-routing layer.
+- `TrustSlipPage.tsx`
+  - now renders the shared trust-document family map
+  - now renders the shared trust-surface question chooser
+  - this makes TrustSlip much clearer about when to stay with portable proof and when to move back inward to Trust Passport or Identity.
+- `TrustSlipVerifyPage.tsx`
+  - now renders the shared trust-surface question chooser after the family map
+  - this strengthens the public-verification explanation layer by making the public-vs-private trust boundary even more explicit.
+- `IdentityIntegrityPage.tsx`
+  - now renders the shared trust-document family map
+  - now renders the shared trust-surface question chooser
+  - this makes the identity anchor participate much more fully in the same trust-document family language as the other trust screens.
+- `CCIReadingPage.tsx`
+  - now renders the shared trust-surface question chooser beneath the existing trust-family map
+  - this makes the route clearer about when the user should stay with the narrow integrity read versus move out to identity, fuller trust, portable proof, or public verification.
+- `MyGMFNAndIPage.tsx`
+  - now renders the shared trust-surface question chooser inside the guide tab
+  - this improves `/guide` and `/app/my-gmfn-and-i` by giving the wider member guide the same governed trust-question language as the signed-in trust routes.
+
+### Why
+- The trust-document family had already gained:
+  - shared continuation
+  - shared action guidance
+  - shared copy/export snapshots
+  - a shared trust-family map
+- But the full family still was not symmetrical.
+- `Trust Passport` and `TrustSlip` especially still lacked the same explicit question-routing layer that would help a user decide which trust surface to open based on the human question in front of them.
+- This pass completes much more of that family symmetry and keeps the explanation in shared frontend logic instead of trapping it inside one page.
+
+### Files touched
+- `frontend/src/lib/trustDocumentUseCases.ts`
+- `frontend/src/components/TrustDocumentUseCases.tsx`
+- `frontend/src/pages/TrustScorePage.tsx`
+- `frontend/src/pages/TrustSlipPage.tsx`
+- `frontend/src/pages/TrustSlipVerifyPage.tsx`
+- `frontend/src/pages/IdentityIntegrityPage.tsx`
+- `frontend/src/pages/CCIReadingPage.tsx`
+- `frontend/src/pages/MyGMFNAndIPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/trust`
+- `/app/trust-slip`
+- `/app/trust-slip/verify`
+- `/app/identity`
+- `/app/cci-reading`
+- `/guide`
+- `/app/my-gmfn-and-i`
+
+### Verification
+- `npm exec -- eslint src/pages/TrustScorePage.tsx src/pages/TrustSlipPage.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/IdentityIntegrityPage.tsx src/pages/CCIReadingPage.tsx src/pages/MyGMFNAndIPage.tsx src/components/TrustDocumentFamilyMap.tsx src/components/TrustDocumentUseCases.tsx src/lib/trustDocumentFamilyMap.ts src/lib/trustDocumentUseCases.ts src/lib/trustDocumentActionGuide.ts src/lib/trustDocumentGuide.ts`
+- `npm run build`
+- ESLint result: touched files passed with the same two pre-existing `react-hooks/exhaustive-deps` warnings still present in `TrustScorePage.tsx` around `revealTrustSection` and `loadAll`.
+
+## 2026-04-28 16:29
+
+### Workstream
+Trust-document family map and public-guide alignment pass.
+
+### What changed
+- Added `frontend/src/lib/trustDocumentFamilyMap.ts` as a shared source of truth for the trust-document family structure.
+  - It now defines the difference between:
+    - `Identity & Integrity`
+    - `CCI`
+    - `Trust Passport`
+    - `TrustSlip`
+    - `TrustSlip Verify`
+  - It also handles signed-in vs public-route availability so the same trust-family explanation can be reused both inside the app and on the wider public/member guide path.
+- Added `frontend/src/components/TrustDocumentFamilyMap.tsx` as a reusable explanatory surface.
+  - It gives users a clear map of:
+    - stable identity
+    - cross-community reading
+    - personal trust story
+    - portable proof
+    - public validity check
+- `CCIReadingPage.tsx`
+  - now renders the shared trust-document family map
+  - this makes the CCI surface much clearer about where it sits inside the wider trust-document ecosystem instead of leaving it as an isolated narrow reading
+- `MyGMFNAndIPage.tsx`
+  - now renders the same shared trust-document family map inside the guide tab
+  - on `/guide`, signed-in trust surfaces are explained honestly as app-only where necessary
+  - on `/app/my-gmfn-and-i`, the same map becomes a navigable route family
+- `TrustSlipVerifyPage.tsx`
+  - now renders the trust-document family map as well
+  - this is especially useful on the public verification path because it explains what belongs to:
+    - public validity
+    - portable proof
+    - the fuller signed-in trust record
+
+### Why
+- The trust-document family had gotten much stronger inside the signed-in app, but the wider explanation layer was still not whole enough.
+- `CCIReadingPage.tsx` still needed a clearer explanation of how it differs from the fuller Trust Passport and the portable TrustSlip surfaces.
+- `MyGMFNAndIPage.tsx` is the wider user-facing guide route and needed a better trust-document explanation spine so the product can explain the movement from personal trust meaning into outward proof more clearly.
+- `TrustSlipVerifyPage.tsx` is the public verification end of the chain, so it now explains that it is one governed part of the wider trust-document family rather than a standalone proof page.
+
+### Files touched
+- `frontend/src/lib/trustDocumentFamilyMap.ts`
+- `frontend/src/components/TrustDocumentFamilyMap.tsx`
+- `frontend/src/pages/CCIReadingPage.tsx`
+- `frontend/src/pages/MyGMFNAndIPage.tsx`
+- `frontend/src/pages/TrustSlipVerifyPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/cci-reading`
+- `/guide`
+- `/app/my-gmfn-and-i`
+- `/app/trust-slip/verify`
+- public TrustSlip verify path rendered by `TrustSlipVerifyPage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/CCIReadingPage.tsx src/pages/MyGMFNAndIPage.tsx src/pages/TrustSlipVerifyPage.tsx src/components/TrustDocumentFamilyMap.tsx src/lib/trustDocumentFamilyMap.ts src/components/TrustDocumentActionGuide.tsx src/lib/trustDocumentActionGuide.ts`
+- `npm run build`
+
+## 2026-04-28 16:08
+
+### Workstream
+Trust-document action-guidance consolidation pass.
+
+### What changed
+- Added `frontend/src/lib/trustDocumentActionGuide.ts` as a shared source for action-usage guidance across the trust-document family.
+  - It now defines shared action guidance for:
+    - `Identity & Integrity`
+    - `Trust Passport`
+    - `TrustSlip`
+    - `TrustSlip Verify`
+- Added `frontend/src/components/TrustDocumentActionGuide.tsx` as a reusable surface for that guidance.
+  - The component explains, in simple language, what each quick-action cluster is for, why it matters, and when to use copy vs print vs verify vs continue.
+- `IdentityIntegrityPage.tsx`
+  - now renders the shared trust-document action guide after the shared next-action guide
+  - this keeps the identity route from feeling like a separate island once the user reaches its copy and trust-forward actions
+- `TrustScorePage.tsx`
+  - now renders the shared action guide for the Trust Passport action row
+  - this gives the route a clearer explanation of:
+    - refresh
+    - copy trust snapshot
+    - print
+    - TrustSlip verification handoff
+- `TrustSlipPage.tsx`
+  - now renders the shared action guide for the portable-document actions
+  - this clarifies the difference between:
+    - copying the code
+    - copying the verify link
+    - copying the portable snapshot
+    - printing the document
+- `TrustSlipVerifyPage.tsx`
+  - now renders the shared action guide for the verification actions
+  - this clarifies the difference between:
+    - carrying the public verification result
+    - reopening the verify route
+    - returning to Trust Passport for the fuller explanation
+
+### Why
+- The previous pass made the trust-document family better at continuation and better at copying/exporting, but it still assumed the user would naturally understand which action to use when.
+- That was still too implicit for a trust-heavy product.
+- This pass makes the action rows themselves more governed:
+  - what to copy
+  - what to print
+  - what public verification is for
+  - when to step back into the fuller trust explanation
+- It also keeps this explanation in a shared/system-level frontend layer instead of trapping the action meaning inside one route.
+
+### Files touched
+- `frontend/src/lib/trustDocumentActionGuide.ts`
+- `frontend/src/components/TrustDocumentActionGuide.tsx`
+- `frontend/src/pages/IdentityIntegrityPage.tsx`
+- `frontend/src/pages/TrustScorePage.tsx`
+- `frontend/src/pages/TrustSlipPage.tsx`
+- `frontend/src/pages/TrustSlipVerifyPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/identity`
+- `/app/trust`
+- `/app/trust-slip`
+- `/app/trust-slip/verify`
+
+### Verification
+- `npm exec -- eslint src/pages/IdentityIntegrityPage.tsx src/pages/TrustScorePage.tsx src/pages/TrustSlipPage.tsx src/pages/TrustSlipVerifyPage.tsx src/components/TrustDocumentActionGuide.tsx src/lib/trustDocumentActionGuide.ts src/lib/trustDocumentGuide.ts src/lib/trustDocumentSnapshots.ts`
+- `npm run build`
+- ESLint result: touched files passed with the same two pre-existing `react-hooks/exhaustive-deps` warnings still present in `TrustScorePage.tsx` around `revealTrustSection` and `loadAll`.
+
+## 2026-04-28 15:33
+
+### Workstream
+Trust-document snapshot and identity-route alignment pass.
+
+### What changed
+- Added `frontend/src/lib/trustDocumentSnapshots.ts` as a shared plain-text snapshot builder for the active trust-document family so the user can copy a coherent reading from multiple trust surfaces without each page inventing its own wording.
+- Expanded `frontend/src/lib/trustDocumentGuide.ts` with `buildIdentityIntegrityGuideItems()` so `Identity & Integrity` now participates in the same trust-document continuation family as `CCI`, `TrustSlip`, `TrustSlip Verify`, and `Trust Passport`.
+- `IdentityIntegrityPage.tsx`
+  - Added a `Copy identity snapshot` action in the top hero actions.
+  - Added shared `NextActionGuide` continuation into:
+    - `Trust Passport`
+    - `CCI`
+    - `TrustSlip`
+  - Routed that guide through the shared origin-aware navigation helper.
+- `CCIReadingPage.tsx`
+  - Added a `Copy CCI snapshot` action beside the current identity/trust continuation actions.
+- `TrustSlipPage.tsx`
+  - Added a shared `Copy TrustSlip snapshot` action to the main quick-action rail.
+- `TrustSlipVerifyPage.tsx`
+  - Added a shared `Copy verification snapshot` action to the verification quick-action rail.
+- `TrustScorePage.tsx`
+  - Added a shared `Copy trust snapshot` action to the Trust Passport hero action row.
+
+### Why
+- The trust-document family had a better continuation rhythm after the previous pass, but it still lacked one shared copy/export layer.
+- `Identity & Integrity` also still sat slightly outside that trust-document family even though it is one of the most important trust-adjacent pages in the app.
+- This pass keeps the work route-local and reversible while improving two practical things at once:
+  - users can carry a clean summary out of the trust-facing routes more easily
+  - the identity route now points forward into the same trust-document system instead of standing alone
+
+### Files touched
+- `frontend/src/lib/trustDocumentGuide.ts`
+- `frontend/src/lib/trustDocumentSnapshots.ts`
+- `frontend/src/pages/IdentityIntegrityPage.tsx`
+- `frontend/src/pages/CCIReadingPage.tsx`
+- `frontend/src/pages/TrustSlipPage.tsx`
+- `frontend/src/pages/TrustSlipVerifyPage.tsx`
+- `frontend/src/pages/TrustScorePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/identity`
+- `/app/cci-reading`
+- `/app/trust-slip`
+- `/app/trust-slip/verify`
+- `/app/trust`
+
+### Verification
+- `npm exec -- eslint src/pages/IdentityIntegrityPage.tsx src/pages/CCIReadingPage.tsx src/pages/TrustSlipPage.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/TrustScorePage.tsx src/lib/trustDocumentGuide.ts src/lib/trustDocumentSnapshots.ts`
+- `npm run build`
+- ESLint result: touched files passed with the same two pre-existing warnings still present in `TrustScorePage.tsx` for `react-hooks/exhaustive-deps` around `revealTrustSection` and `loadAll`.
+
+## 2026-04-28 14:54
+
+### Workstream
+Trust-document continuity and text-quality finishing pass.
+
+### What changed
+- Added a shared trust-document next-step helper in `frontend/src/lib/trustDocumentGuide.ts` so the active trust document routes now point users toward the right adjacent trust surfaces with the same system-level guidance language.
+- `CCIReadingPage.tsx`
+  - Added a shared `NextActionGuide` that can route the user into `Identity & Integrity`, `Trust Passport`, or `TrustSlip`.
+  - Added a small route-local `What to do with this reading` section so the page explains both what CCI is good for and what it cannot prove by itself.
+  - Replaced the broken non-ASCII fallback dash with a plain safe `-` fallback.
+- `TrustSlipPage.tsx`
+  - Added the same shared `NextActionGuide` pattern so the portable-trust document can now carry the user cleanly into `TrustSlip Verify`, `Trust Passport`, or `Identity & Integrity`.
+- `TrustSlipVerifyPage.tsx`
+  - Added the shared `NextActionGuide` so a verification result can now continue into `TrustSlip`, `Trust Passport`, or `Identity & Integrity` instead of stopping at copy/print actions.
+  - Replaced the broken non-ASCII fallback dash in the visible-score / issued-date readout with a plain safe `-` fallback.
+- `TrustScorePage.tsx`
+  - Cleaned the remaining non-ASCII fallback dashes in the trust-passport route so the route no longer leaks broken punctuation into the visible trust and recompute surfaces.
+- `TrustTimelinePage.tsx`
+  - Cleaned the summary header separator text from bullet punctuation into plain ASCII separators.
+
+### Why
+- The active trust-document routes were still too fragmented.
+- `CCIReadingPage.tsx` especially felt like a small side-reading instead of a governed part of the trust-document family.
+- `TrustSlipPage.tsx` and `TrustSlipVerifyPage.tsx` already had the right document data, but they still relied mostly on local buttons rather than a clearer shared guidance layer to explain the next move.
+- Several trust-facing routes were also still leaking broken non-ASCII fallback punctuation into live text.
+- This pass keeps the changes route-local and reversible while making the trust document family easier to understand and continue through on phone.
+
+### Files touched
+- `frontend/src/lib/trustDocumentGuide.ts`
+- `frontend/src/pages/CCIReadingPage.tsx`
+- `frontend/src/pages/TrustSlipPage.tsx`
+- `frontend/src/pages/TrustSlipVerifyPage.tsx`
+- `frontend/src/pages/TrustScorePage.tsx`
+- `frontend/src/pages/TrustTimelinePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/app/cci-reading`
+- `/app/trust-slip`
+- `/app/trust-slip/verify`
+- `/app/trust`
+- trust timeline page file `TrustTimelinePage.tsx` (confirmed cleaned, but no active route registration was found in `frontend/src/App.tsx` during this pass)
+
+### Verification
+- `npm exec -- eslint src/pages/CCIReadingPage.tsx src/pages/TrustSlipPage.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/TrustScorePage.tsx src/pages/TrustTimelinePage.tsx src/lib/trustDocumentGuide.ts`
+- `npm run build`
+- ESLint result: the touched files passed; existing warnings remain in `TrustScorePage.tsx` for two pre-existing `react-hooks/exhaustive-deps` findings around `revealTrustSection` and `loadAll`.
+
+## 2026-04-28 14:05
+
+### Workstream
+Remaining admin oversight route finishing pass.
+
+### What changed
+- Tightened `AdminTrustEventsPage.tsx` and `AdminIncompleteLoansPage.tsx` without changing their route purpose.
+- `AdminTrustEventsPage.tsx`
+  - Added local touch-safe button styling plus guarded tap handling for the live route-local controls.
+  - Added a clearer event overview with tracked/recent/positive/negative/noted counts.
+  - Added route-local next-step actions into:
+    - `Trust Analytics`
+    - `Trust Graph`
+    - `Identity Risk`
+    - `Command Center`
+  - Replaced the always-open raw JSON dump with per-event `Open raw event` / `Collapse raw event` controls.
+  - Added `Copy event snapshot` for the current trust-event record.
+  - Cleaned the visible timestamp / event-id fallback text so the page no longer shows broken encoded punctuation there.
+- `AdminIncompleteLoansPage.tsx`
+  - Added local touch-safe action styling plus guarded tap handling for copy actions.
+  - Added queue overview tiles for:
+    - total coverage gap
+    - locked coverage
+    - next operational read
+  - Added top-level admin continuation actions into:
+    - `System Operations`
+    - `Bank Console`
+    - `Command Center`
+  - Added `Copy queue snapshot` for the current incomplete-loan queue.
+  - Added per-loan `Copy loan snapshot` alongside `Open Loan Summary`.
+  - Cleaned the borrower fallback text so the page no longer shows broken encoded punctuation there.
+
+### Why
+- These were the last two admin trust/operations oversight routes still feeling rougher than the rest of the recently tightened command-centre family.
+- `AdminTrustEventsPage.tsx` was still dumping raw event JSON by default with no phone-safe drill-down pattern and no clean route handoff into the adjacent admin reading surfaces.
+- `AdminIncompleteLoansPage.tsx` already exposed the right queue, but it still lacked the steadier action rhythm and quick operational carry-forward already present in nearby admin pages.
+- This keeps both routes route-local and reversible while making the remaining admin oversight surfaces easier to inspect, copy from, and continue from on phone.
+
+### Files touched
+- `frontend/src/pages/AdminTrustEventsPage.tsx`
+- `frontend/src/pages/AdminIncompleteLoansPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- admin trust events route rendered by `AdminTrustEventsPage.tsx`
+- admin incomplete loans route rendered by `AdminIncompleteLoansPage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/AdminTrustEventsPage.tsx src/pages/AdminIncompleteLoansPage.tsx`
+- `npm run build`
+## 2026-04-28 13:06
+
+### Workstream
+Admin identity-risk drill-down finishing pass.
+
+### What changed
+- Tightened `AdminIdentityRiskPage.tsx` without changing its structure.
+- Added a small local tap guard helper plus touch-safe stable tap styling for the route's only drill-down control.
+- Applied the tightening to the `Detailed identity signals` summary toggle.
+- Cleaned the visible timestamp separator text in the signal rows so the page no longer shows broken encoded punctuation there.
+
+### Why
+- `AdminIdentityRiskPage.tsx` is mostly read-only, but its one live drill-down path was still a raw `<summary>` control while nearby admin trust/control routes had already been brought onto the steadier phone-safe interaction pattern.
+- This keeps the route structure intact while removing one more rough phone interaction point and one more small text-quality defect from the admin review layer.
+
+### Files touched
+- `frontend/src/pages/AdminIdentityRiskPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- admin identity risk route rendered by `AdminIdentityRiskPage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/AdminIdentityRiskPage.tsx`
+- `npm run build`
+
+## 2026-04-28 12:39
+
+### Workstream
+Bank-console phone-tap tightening pass.
+
+### What changed
+- Tightened `BankConsolePage.tsx` without changing its structure.
+- Added a small local bank-button guard helper.
+- Applied the guard to the direct phone-heavy actions:
+  - recent/unmatched/credit list `Copy summary`
+  - top summary `Refresh`
+  - manual-ingest `Ingest Event`
+  - manual-ingest `Run Reconciliation`
+  - expected-payments/config `Copy config snapshot`
+
+### Why
+- `BankConsolePage.tsx` already had stronger visual button styling, but its most-used live actions were still missing the same tap isolation already used on the steadier trust, join, marketplace, and shop-control routes.
+- It is a tester-facing money-control route where refresh, ingest, reconcile, and copy actions need to feel reliable on phone.
+- This keeps the current structure intact while bringing the bank-console route into the same phone-safe interaction family.
+
+### Files touched
+- `frontend/src/pages/BankConsolePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- bank console route rendered by `BankConsolePage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/BankConsolePage.tsx`
+- `npm run build`
+
+## 2026-04-28 12:28
+
+### Workstream
+Admin trust-graph phone-tap tightening pass.
+
+### What changed
+- Tightened `AdminTrustGraphPage.tsx` without changing its structure.
+- Added a small local shared graph-button guard helper.
+- Added touch-safe stable tap styling to the shared route and collapse button surfaces.
+- Applied the guard to:
+  - graph overview `Open/Collapse`
+  - relationship structure `Open/Collapse`
+  - visible signals `Open/Collapse`
+  - next routes `Open/Collapse`
+
+### Why
+- `AdminTrustGraphPage.tsx` was the remaining trust/control admin route still carrying the older raw collapse-button path after the command-centre, exposure, and identity pages had been tightened.
+- It is a tester-facing admin reading surface where the main live controls are the section toggles and route cards.
+- This keeps the current structure intact while bringing the graph/admin route into the same phone-safe interaction family as the rest of the cleaned trust, join, marketplace, and shop-control surfaces.
+
+### Files touched
+- `frontend/src/pages/AdminTrustGraphPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- admin trust graph route rendered by `AdminTrustGraphPage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/ExposureAdminPage.tsx src/pages/IdentityIntegrityPage.tsx src/pages/AdminTrustGraphPage.tsx`
+- `npm run build`
+
+## 2026-04-28 12:19
+
+### Workstream
+Admin exposure / identity phone-tap tightening pass.
+
+### What changed
+- Tightened `ExposureAdminPage.tsx` and `IdentityIntegrityPage.tsx` without changing their structure.
+- `ExposureAdminPage.tsx`
+  - Added a small local shared tap guard helper.
+  - Added touch-safe stable tap styling to the shared route/action/collapse button surfaces.
+  - Applied the guard to:
+    - exposure summary `Open/Collapse`
+    - pressure reading `Open/Collapse`
+    - visible queues `Open/Collapse`
+    - next routes `Open/Collapse`
+- `IdentityIntegrityPage.tsx`
+  - Added a small local shared tap guard helper.
+  - Added touch-safe stable tap styling to the shared action/collapse button surfaces.
+  - Applied the guard to:
+    - `Copy GMFN ID`
+    - `Copy TrustSlip Code`
+    - identity readings `Open/Collapse`
+    - private recovery submit actions
+    - why identity and trust changed `Open/Collapse`
+    - identity and trust timeline `Open/Collapse`
+    - next clean step `Open/Collapse`
+
+### Why
+- These two admin trust/control routes were still carrying the older raw phone-button path while the rest of the trust, join, marketplace, and shop-control family had already been tightened.
+- They are high-friction tester-facing admin pages where collapse, copy, and recovery actions need to feel steady on phone.
+- This keeps the current structure intact while bringing the remaining exposure/identity surfaces into the same interaction family.
+
+### Files touched
+- `frontend/src/pages/ExposureAdminPage.tsx`
+- `frontend/src/pages/IdentityIntegrityPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- exposure admin route rendered by `ExposureAdminPage.tsx`
+- identity integrity route rendered by `IdentityIntegrityPage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/ExposureAdminPage.tsx src/pages/IdentityIntegrityPage.tsx`
+- `npm run build`
+
+## 2026-04-28 12:05
+
+### Workstream
+Admin trust/control phone-tap tightening pass.
+
+### What changed
+- Tightened `SystemOperationsPage.tsx` and `TrustCommandCentrePage.tsx` without changing their structure.
+- Added small shared local button-guard helpers and applied them to these section toggles:
+  - `SystemOperationsPage.tsx`
+    - operational overview `Open/Collapse`
+    - pilot intake monitor `Open/Collapse`
+    - live signals `Open/Collapse`
+    - operational queues `Open/Collapse`
+    - route cards `Open/Collapse`
+  - `TrustCommandCentrePage.tsx`
+    - executive reading `Open/Collapse`
+    - pilot worksheet `Open/Collapse`
+    - command summary `Open/Collapse`
+    - command routes `Open/Collapse`
+    - workflows `Open/Collapse`
+    - notes `Open/Collapse`
+
+### Why
+- These admin trust/control routes already had steadier route cards, but their section toggles were still using the older raw button path.
+- They are tester-facing admin surfaces that can still feel jumpy on phone if the collapse controls are left behind.
+- This keeps the current structure intact while bringing the command-center layer into the same interaction family as the cleaned trust, join, marketplace, and shop routes.
+
+### Files touched
+- `frontend/src/pages/SystemOperationsPage.tsx`
+- `frontend/src/pages/TrustCommandCentrePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- system operations route rendered by `SystemOperationsPage.tsx`
+- trust command centre route rendered by `TrustCommandCentrePage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/SystemOperationsPage.tsx src/pages/TrustCommandCentrePage.tsx src/pages/OpenTrustPage.tsx src/pages/TrustLeaderboardPage.tsx src/pages/TrustAnalyticsPage.tsx src/pages/TrustTimelinePage.tsx src/pages/TrustScorePage.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/TrustSlipPage.tsx src/pages/ShopAssetsPage.tsx src/pages/ShopControlPage.tsx src/components/CommunityShopControlPanel.tsx src/pages/CommunityHomePage.tsx src/pages/MarketplacePage.tsx src/pages/ShopGalleryPage.tsx src/pages/MarketplaceWorkspacePage.tsx src/pages/JoinByInvitePage.tsx src/pages/MyGMFNAndIPage.tsx src/pages/CoverPage.tsx src/pages/LoginPage.tsx src/pages/CreateEntryPage.tsx src/pages/WelcomePage.tsx src/pages/ActivateMembershipPage.tsx src/pages/MemberActivationPage.tsx src/pages/JoinEntryPage.tsx src/pages/NotificationsPage.tsx src/pages/JoinApprovalPage.tsx src/pages/JoinRequestPendingPage.tsx src/pages/CommunityJoinRequestsPage.tsx`
+- `npm run build`
+
+## 2026-04-28 11:52
+
+### Workstream
+Open-trust / trust-leaderboard route action tightening pass.
+
+### What changed
+- Tightened `OpenTrustPage.tsx` and `TrustLeaderboardPage.tsx` without changing their structure.
+- Added touch-safe stable tap styling to the shared action-button surfaces used by:
+  - `Open Trust Passport`
+  - `Open Community`
+  - `Open Trust`
+  - `Open TrustSlip`
+  - `Open Open Trust`
+
+### Why
+- These trust-facing routes are lighter than the main trust pages, but they still expose real route-jump actions that testers can hit on phone.
+- Their action-button surfaces were still missing the same touch-safe button baseline already used on the steadier trust, join, marketplace, and shop routes.
+- This keeps the page structure intact while bringing the remaining trust landing/fallback routes into the same interaction family.
+
+### Files touched
+- `frontend/src/pages/OpenTrustPage.tsx`
+- `frontend/src/pages/TrustLeaderboardPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- open-trust route rendered by `OpenTrustPage.tsx`
+- trust-leaderboard route rendered by `TrustLeaderboardPage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/OpenTrustPage.tsx src/pages/TrustLeaderboardPage.tsx src/pages/TrustAnalyticsPage.tsx src/pages/TrustTimelinePage.tsx src/pages/TrustScorePage.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/TrustSlipPage.tsx src/pages/ShopAssetsPage.tsx src/pages/ShopControlPage.tsx src/components/CommunityShopControlPanel.tsx src/pages/CommunityHomePage.tsx src/pages/MarketplacePage.tsx src/pages/ShopGalleryPage.tsx src/pages/MarketplaceWorkspacePage.tsx src/pages/JoinByInvitePage.tsx src/pages/MyGMFNAndIPage.tsx src/pages/CoverPage.tsx src/pages/LoginPage.tsx src/pages/CreateEntryPage.tsx src/pages/WelcomePage.tsx src/pages/ActivateMembershipPage.tsx src/pages/MemberActivationPage.tsx src/pages/JoinEntryPage.tsx src/pages/NotificationsPage.tsx src/pages/JoinApprovalPage.tsx src/pages/JoinRequestPendingPage.tsx src/pages/CommunityJoinRequestsPage.tsx`
+- `npm run build`
+
+## 2026-04-28 11:43
+
+### Workstream
+Trust-analytics phone-tap tightening pass.
+
+### What changed
+- Tightened `TrustAnalyticsPage.tsx` without changing its structure.
+- Added a small shared local analytics-button guard helper and applied it to:
+  - signal overview `Open/Collapse`
+  - signal mix `Open/Collapse`
+  - recent trust timeline `Open/Collapse`
+  - reading notes `Open/Collapse`
+
+### Why
+- `TrustAnalyticsPage` is a tester-facing trust reading route where the main live controls are the section toggles.
+- Those toggles were still using the older raw button path compared with the steadier trust, join, marketplace, and shop-control routes.
+- This keeps the current structure intact while making the analytics reading surface behave more consistently on phone.
+
+### Files touched
+- `frontend/src/pages/TrustAnalyticsPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- trust analytics route rendered by `TrustAnalyticsPage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/TrustAnalyticsPage.tsx src/pages/TrustTimelinePage.tsx src/pages/TrustScorePage.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/TrustSlipPage.tsx src/pages/ShopAssetsPage.tsx src/pages/ShopControlPage.tsx src/components/CommunityShopControlPanel.tsx src/pages/CommunityHomePage.tsx src/pages/MarketplacePage.tsx src/pages/ShopGalleryPage.tsx src/pages/MarketplaceWorkspacePage.tsx src/pages/JoinByInvitePage.tsx src/pages/MyGMFNAndIPage.tsx src/pages/CoverPage.tsx src/pages/LoginPage.tsx src/pages/CreateEntryPage.tsx src/pages/WelcomePage.tsx src/pages/ActivateMembershipPage.tsx src/pages/MemberActivationPage.tsx src/pages/JoinEntryPage.tsx src/pages/NotificationsPage.tsx src/pages/JoinApprovalPage.tsx src/pages/JoinRequestPendingPage.tsx src/pages/CommunityJoinRequestsPage.tsx`
+- `npm run build`
+
+## 2026-04-28 11:33
+
+### Workstream
+Trust-timeline phone-tap tightening pass.
+
+### What changed
+- Tightened `TrustTimelinePage.tsx` without changing its structure.
+- Added a small shared local timeline-button guard helper and applied it to:
+  - `Back to TrustSlip`
+  - `Refresh`
+  - `Download Timeline PDF`
+  - `Copy Pack ID`
+  - `Download Evidence Pack (ZIP)`
+
+### Why
+- `TrustTimelinePage` is a public-facing trust review/export route with several high-traffic direct actions.
+- Its refresh and export controls were still using the older raw button path compared with the steadier trust, join, marketplace, and shop-control routes.
+- This keeps the page structure intact while making the trust timeline/export lane behave more consistently on phone.
+
+### Files touched
+- `frontend/src/pages/TrustTimelinePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- trust timeline / evidence export route rendered by `TrustTimelinePage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/TrustTimelinePage.tsx src/pages/TrustScorePage.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/TrustSlipPage.tsx src/pages/ShopAssetsPage.tsx src/pages/ShopControlPage.tsx src/components/CommunityShopControlPanel.tsx src/pages/CommunityHomePage.tsx src/pages/MarketplacePage.tsx src/pages/ShopGalleryPage.tsx src/pages/MarketplaceWorkspacePage.tsx src/pages/JoinByInvitePage.tsx src/pages/MyGMFNAndIPage.tsx src/pages/CoverPage.tsx src/pages/LoginPage.tsx src/pages/CreateEntryPage.tsx src/pages/WelcomePage.tsx src/pages/ActivateMembershipPage.tsx src/pages/MemberActivationPage.tsx src/pages/JoinEntryPage.tsx src/pages/NotificationsPage.tsx src/pages/JoinApprovalPage.tsx src/pages/JoinRequestPendingPage.tsx src/pages/CommunityJoinRequestsPage.tsx`
+- `npm run build`
+
+## 2026-04-28 11:24
+
+### Workstream
+Trust-score phone-tap tightening pass.
+
+### What changed
+- Tightened `TrustScorePage.tsx` without changing its structure.
+- Added a small shared local trust-button guard helper and applied it to:
+  - `Refresh Trust Reading`
+  - `Copy GMFN ID`
+  - `Print Trust Passport`
+  - `Open TrustSlip Verify`
+  - trust journey `Open/Collapse`
+  - trust journey route actions
+  - trust summary / explainability / breakdown / evidence `Open/Collapse`
+
+### Why
+- `TrustScorePage` still had the older repeated raw stop-propagation pattern on its highest-traffic buttons.
+- The trust family was already partly cleaned in `TrustSlipPage.tsx` and `TrustSlipVerifyPage.tsx`, so this closes the next visible gap without changing route purpose or layout.
+- This keeps the current structure intact while making the fuller trust-review route behave more like the steadier join, marketplace, and shop-control surfaces on phone.
+
+### Files touched
+- `frontend/src/pages/TrustScorePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- trust score / trust passport route rendered by `TrustScorePage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/TrustScorePage.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/TrustSlipPage.tsx src/pages/ShopAssetsPage.tsx src/pages/ShopControlPage.tsx src/components/CommunityShopControlPanel.tsx src/pages/CommunityHomePage.tsx src/pages/MarketplacePage.tsx src/pages/ShopGalleryPage.tsx src/pages/MarketplaceWorkspacePage.tsx src/pages/JoinByInvitePage.tsx src/pages/MyGMFNAndIPage.tsx src/pages/CoverPage.tsx src/pages/LoginPage.tsx src/pages/CreateEntryPage.tsx src/pages/WelcomePage.tsx src/pages/ActivateMembershipPage.tsx src/pages/MemberActivationPage.tsx src/pages/JoinEntryPage.tsx src/pages/NotificationsPage.tsx src/pages/JoinApprovalPage.tsx src/pages/JoinRequestPendingPage.tsx src/pages/CommunityJoinRequestsPage.tsx`
+- `npm run build`
+
+## 2026-04-27 08:46
+
+### Workstream
+Login page phone-tap tightening pass.
+
+### What changed
+- Tightened the public sign-in screen in `LoginPage.tsx`.
+- Added touch-safe input treatment to the login form.
+- Added the shared tap guard to:
+  - guide `Collapse`
+  - `Sign in`
+
+### Why
+- The login screen is the final public handoff in the same welcome/create/join/activate route family.
+- It was still using the older raw button treatment on its main sign-in action and guide-close control.
+- This keeps the current structure intact while making the existing-member route feel more consistent on phone.
+
+### Files touched
+- `frontend/src/pages/LoginPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/login`
+
+### Verification
+- `npm exec -- eslint src/pages/LoginPage.tsx src/pages/CreateEntryPage.tsx src/pages/WelcomePage.tsx src/pages/ActivateMembershipPage.tsx src/pages/MemberActivationPage.tsx src/pages/JoinEntryPage.tsx src/pages/NotificationsPage.tsx src/pages/JoinApprovalPage.tsx src/pages/JoinRequestPendingPage.tsx src/pages/CommunityJoinRequestsPage.tsx`
+- `npm run build`
+
+## 2026-04-27 08:35
+
+### Workstream
+Create-entry existing-member route action tightening pass.
+
+### What changed
+- Tightened the real route-jump action inside the `Already a member?` helper in `CreateEntryPage.tsx`.
+- Added the shared tap guard to:
+  - `I am already a member`
+
+### Why
+- This button launches the existing-member sign-in route and is a true route action, not a passive helper toggle.
+- It was still looser than the newer join and activation route actions on phone.
+- The passive helper structure was left intact.
+
+### Files touched
+- `frontend/src/pages/CreateEntryPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- public create-community onboarding route rendered by `CreateEntryPage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/CreateEntryPage.tsx src/pages/WelcomePage.tsx src/pages/ActivateMembershipPage.tsx src/pages/MemberActivationPage.tsx src/pages/JoinEntryPage.tsx src/pages/NotificationsPage.tsx src/pages/JoinApprovalPage.tsx src/pages/JoinRequestPendingPage.tsx src/pages/CommunityJoinRequestsPage.tsx`
+- `npm run build`
+
+## 2026-04-27 08:26
+
+### Workstream
+Welcome entry guide-close phone-tap tightening pass.
+
+### What changed
+- Tightened the public welcome/entry guide-close control in `WelcomePage.tsx`.
+- Added the same touch-safe tap treatment used on the steadier join and activation screens to:
+  - the guide `Collapse` button inside the public GSN summary panel
+
+### Why
+- The welcome screen is the first touchpoint in the same join/create/activate route family.
+- Its guide-close button was still using the older bare button treatment and could feel less steady on phone than the newer join and activation surfaces.
+- This keeps the current structure intact while making the public entry surface more consistent.
+
+### Files touched
+- `frontend/src/pages/WelcomePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/welcome`
+
+### Verification
+- `npm exec -- eslint src/pages/WelcomePage.tsx src/pages/ActivateMembershipPage.tsx src/pages/MemberActivationPage.tsx src/pages/JoinEntryPage.tsx src/pages/NotificationsPage.tsx src/pages/JoinApprovalPage.tsx src/pages/JoinRequestPendingPage.tsx src/pages/CommunityJoinRequestsPage.tsx`
+- `npm run build`
+
+## 2026-04-27 08:17
+
+### Workstream
+Public activation screen phone-tap tightening pass.
+
+### What changed
+- Tightened the public approved-member activation screen in `ActivateMembershipPage.tsx`.
+- Added steadier mobile tap treatment to:
+  - activation submit button
+  - clear-password-fields button
+- Added the same touch-safe treatment to activation inputs and shared button chrome on that page.
+
+### Why
+- This page sits in the same join/approval/activation route family as the recently tightened join and member-activation screens.
+- It still felt lighter and more prone to tap drift on phone than the newer activation surfaces.
+- The change keeps the current structure intact while making the final approved-member step steadier.
+
+### Files touched
+- `frontend/src/pages/ActivateMembershipPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- public approved-member activation route rendered by `ActivateMembershipPage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/ActivateMembershipPage.tsx src/pages/MemberActivationPage.tsx src/pages/JoinEntryPage.tsx src/pages/NotificationsPage.tsx src/pages/JoinApprovalPage.tsx src/pages/JoinRequestPendingPage.tsx src/pages/CommunityJoinRequestsPage.tsx`
+- `npm run build`
+
+## 2026-04-27 08:05
+
+### Workstream
+Member activation phone-tap tightening pass.
+
+### What changed
+- Tightened `MemberActivationPage.tsx` without changing its structure.
+- Added shared mobile tap guards and steadier tap chrome to:
+  - `About`
+  - `Activation Guide`
+  - `Activate Membership`
+- Added touch-safe input treatment to the activation form.
+- Removed two stale local leftovers while doing the pass:
+  - unused `useNavigate`
+  - unused `darkGuidePanel()` helper
+
+### Why
+- This page is part of the same approved-member completion line and needed to match the steadier join/review screens on phone.
+- The cleanup also removed small stale artifacts exposed by lint while keeping the route behavior intact.
+
+### Files touched
+- `frontend/src/pages/MemberActivationPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/activate-member`
+- member-activation route rendered by `MemberActivationPage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/MemberActivationPage.tsx src/pages/JoinEntryPage.tsx src/pages/NotificationsPage.tsx src/pages/JoinApprovalPage.tsx src/pages/JoinRequestPendingPage.tsx src/pages/CommunityJoinRequestsPage.tsx`
+- `npm run build`
+
 ## 2026-04-27 07:41
 
 ### Workstream
@@ -16830,12 +17624,485 @@ GSN-branded invite composer and invite-entry continuity.
   - join-request backend tests passed (`27 passed`)
   - the backend activation route now accepts request-based lineage directly
 
+### Pending join status now exposes live reviewer counts and activated reviewer line (2026-04-27)
 
+- Continued the same system-level join / approval workstream to make the
+  waiting path easier to trace for applicants and testers.
+- Problem:
+  - the pending route could say a request was still under review
+  - but it did not expose the live approval counts or the currently activated
+    reviewer line that the backend was actually using
+  - this made it hard to tell whether the system was waiting on a real reviewer
+    or on placeholder/duplicate community records
+- Applied the smallest safe backend + frontend fix:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - `_current_join_status(...)` now returns:
+      - `eligible_reviewers`
+      - `approvals`
+      - `rejects`
+      - `total_votes`
+      - `active_member_count`
+      - `required_approvals`
+      - `threshold_ratio`
+    - `_join_request_out(...)` and `_join_request_status_payload(...)` now
+      include the same live review stats
+  - `frontend/src/pages/JoinRequestPendingPage.tsx`
+    - added a typed `ReviewerLine` model for the pending screen
+    - added a `Live review position` card showing:
+      - approvals
+      - rejects
+      - total votes
+      - required approvals
+      - activated reviewers currently counted
+    - added an `Activated reviewers on record` card showing the current
+      reviewer display line and GMFN ID when available
+  - `gmfn_backend/tests/test_join_requests.py`
+    - added coverage proving the status route reports the live approval counts
+      and the current activated reviewer line
+- Routes impacted:
+  - backend:
+    - `GET /clans/join-requests/{join_request_id}/status`
+    - `GET /clans/join-invite/request-status`
+  - frontend:
+    - `/pending-approval`
+- Shared logic impact:
+  - the applicant-side pending channel can now show the real backend review
+    position instead of only a generic waiting state
+  - this makes it easier to confirm whether reviewers are truly active and
+    whether the current threshold is being driven by real community membership
+  - the system still treats backend review stats as the source of truth
+- Verification:
+  - backend compile:
+    - `python -m py_compile gmfn_backend/app/api/routes/clans.py gmfn_backend/tests/test_join_requests.py`
+  - backend tests:
+    - `python -m pytest gmfn_backend/tests/test_join_requests.py -q`
+  - frontend targeted lint:
+    - `npm exec -- eslint src/pages/JoinRequestPendingPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - backend compile passed
+  - join-request backend tests passed (`28 passed`)
+  - targeted pending-page lint passed
+  - frontend build passed
 
+### Join review pages received finishing cleanup without changing structure (2026-04-27)
 
+- Continued the same join / approval finish pass, but kept the current screen
+  structure intact.
+- Problem:
+  - the review pages were functionally working but still had rough phone edges:
+    - the community join-requests summary grid was too rigid on smaller screens
+    - the request metadata inside each review card was still reading like loose
+      text instead of a stable institutional panel
+    - the join approval page still needed stronger tap isolation on its live
+      action buttons
+    - the pending page still had the malformed reviewer role line
+- Applied a frontend-only cleanup:
+  - `frontend/src/pages/CommunityJoinRequestsPage.tsx`
+    - added a phone-aware compact mode (`window.innerWidth <= 920`)
+    - made the top summary stats responsive (`2` columns on compact, `4` on
+      larger screens)
+    - moved each request's metadata list into an institutional inner panel so
+      the same information reads more cleanly without changing the order or the
+      route flow
+    - wrapped `load` in `useCallback(...)` and fixed the page's remaining hook
+      dependency warning
+  - `frontend/src/pages/JoinApprovalPage.tsx`
+    - added the same stable tap guard style used on the other review surfaces
+    - applied pointer / touch / mouse guard handlers to the live `Back` and
+      `Continue Activation` buttons to reduce phone drift without changing the
+      route behavior
+  - `frontend/src/pages/JoinRequestPendingPage.tsx`
+    - normalized the reviewer role label through a small formatter
+    - stopped relying on the malformed encoded separator by hiding the raw role
+      token and rendering a clean `Role: ...` line beneath the reviewer record
+- Routes impacted:
+  - `/app/community/:id/join-requests`
+  - `/join-approval/:requestId`
+  - `/join-request/pending`
+- Shared logic impact:
+  - none on backend business rules
+  - this was a phone-first finish pass on the review surfaces only
+- Verification:
+  - targeted frontend lint:
+    - `npm exec -- eslint src/pages/JoinRequestPendingPage.tsx src/pages/JoinApprovalPage.tsx src/pages/CommunityJoinRequestsPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - targeted lint passed cleanly
+  - frontend build passed
+  - the current join review flow remains unchanged, but the pages are steadier
+    and more polished on phone
 
+### Notifications page now explains join-review alerts more clearly and behaves more steadily on phone (2026-04-27)
 
+- Continued the same join / approval finishing pass without changing the
+  existing Action Inbox structure.
+- Problem:
+  - join-review alerts in `/app/notifications` were still reading like generic
+    raw updates
+  - the inbox could show backend kinds like `approval_request` without
+    translating them into the simple join-review language already used in the
+    pending and approval pages
+  - several inbox controls still lacked the same pointer / touch guard used on
+    the steadier phone surfaces
+- Applied a frontend-only cleanup:
+  - `frontend/src/pages/NotificationsPage.tsx`
+    - added a shared join-notification interpretation layer:
+      - detects join-review request / decision notifications from kind, text,
+        and target path
+      - maps them into clearer labels like `Join review` and `Join decision`
+      - upgrades generic CTA labels into clearer actions like
+        `Open join review` and `Open decision`
+    - preserved the current page structure but made the raw notification feed
+      show the cleaner `kindLabel` instead of the raw backend token
+    - added missing button guards to the inbox summary action, bucket collapse,
+      raw-feed collapse, reading collapse, and close-review controls so those
+      taps behave more like the already-tightened review pages
+- Routes impacted:
+  - `/app/notifications`
+- Shared logic impact:
+  - join-review alerts now read more consistently from:
+    - notification inbox
+    - community join review
+    - pending applicant status
+    - approval / rejection result page
+  - no backend business rules or route contracts changed
+- Verification:
+  - targeted frontend lint:
+    - `npm exec -- eslint src/pages/NotificationsPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - targeted lint passed
+  - frontend build passed
+  - the notification inbox now speaks the join-review language more clearly and
+    its core controls are steadier on phone
 
+### Join entry page received small finishing cleanup for saved-request and form launcher behavior (2026-04-27)
 
+- Continued the same join / approval finish pass without changing the route
+  structure.
+- Problem:
+  - the join-entry page still had a rough saved-request separator that could
+    render inconsistently depending on device encoding
+  - the request-form launcher button was missing the same tap guard used on the
+    steadier join-review controls
+- Applied a frontend-only cleanup:
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - converted the saved-request community separator into an explicit bullet
+      escape (`\\u2022`) so it renders consistently
+    - added the shared `buttonGuardProps()` to the request-form launcher button
+      so that opening / collapsing the form behaves more steadily on phone
+- Routes impacted:
+  - `/start/join/...`
+- Shared logic impact:
+  - none on backend business rules or join lineage
+  - this was a phone-stability / rendering finish pass only
+- Verification:
+  - targeted frontend lint:
+    - `npm exec -- eslint src/pages/JoinEntryPage.tsx src/pages/NotificationsPage.tsx src/pages/JoinApprovalPage.tsx src/pages/JoinRequestPendingPage.tsx src/pages/CommunityJoinRequestsPage.tsx`
+  - frontend build:
+    - `npm run build`
+- Result:
+  - targeted lint passed
+  - frontend build passed
+  - the join-entry screen now fits more cleanly into the same tightened
+    phone-facing join flow
 
+### Cover page continue action received phone-tap tightening cleanup (2026-04-27)
 
+- Continued the same public entry / join / activation finishing pass without
+  changing route structure.
+- Problem:
+  - the public cover page `Continue` action was still on the older tap pattern
+    even though the surrounding public entry family had already been tightened
+    for phone use
+- Applied a frontend-only cleanup:
+  - `frontend/src/pages/CoverPage.tsx`
+    - added touch-safe button helpers for the public cover page
+    - added the shared tap guard to the real `Continue` action
+    - added touch-safe button styling so the first public entry action matches
+      the steadier join / create / login / activation buttons
+- Routes impacted:
+  - public cover page rendered by `frontend/src/pages/CoverPage.tsx`
+- Shared logic impact:
+  - none on backend logic or route contracts
+  - this was a phone-stability / finishing cleanup only
+
+### My GMFN and I settings actions received phone-tap tightening cleanup (2026-04-27)
+
+- Continued the same finishing pass without changing the page structure.
+- Problem:
+  - the `My GMFN and I` settings page still had direct action buttons on the
+    older tap pattern
+  - the selector control was also missing the same touch-safe behavior used on
+    the stronger cleaned pages
+- Applied a frontend-only cleanup:
+  - `frontend/src/pages/MyGMFNAndIPage.tsx`
+    - added touch-safe selector styling
+    - added shared tap guards to `Save Settings` and `Reset Defaults`
+    - applied touch-safe button styling so these settings actions behave more
+      steadily on phone
+- Routes impacted:
+  - `frontend/src/pages/MyGMFNAndIPage.tsx`
+- Shared logic impact:
+  - none on backend logic or route contracts
+  - this was a phone-stability / finishing cleanup only
+
+### Join-by-invite preview continue action received phone-tap tightening cleanup (2026-04-27)
+
+- Continued the same finishing pass without changing the invite-preview route
+  structure.
+- Problem:
+  - the public invite-preview page still had its main continuation action on
+    the older tap pattern
+- Applied a frontend-only cleanup:
+  - `frontend/src/pages/JoinByInvitePage.tsx`
+    - added touch-safe button helpers for the invite-preview page
+    - added the shared tap guard to the real `Continue invited route` action
+    - applied touch-safe button styling so the invite-preview handoff matches
+      the steadier public entry / join / login / activation actions
+- Routes impacted:
+  - `frontend/src/pages/JoinByInvitePage.tsx`
+  - `frontend/src/pages/JoinClanPage.tsx` (wrapper route)
+- Shared logic impact:
+  - none on backend logic or route contracts
+  - this was a phone-stability / finishing cleanup only
+
+### Shop assets copy actions received phone-tap tightening cleanup (2026-04-27)
+
+- Continued the same finishing pass without changing the route structure.
+- Problem:
+  - a few copy-link actions inside the shop-assets workflow were still bypassing
+    the shared tap guard even though the surrounding page had already been
+    tightened
+- Applied a frontend-only cleanup:
+  - `frontend/src/pages/ShopAssetsPage.tsx`
+    - added the shared tap guard to the remaining direct copy actions:
+      - `Copy Shop Link` near the signboard launcher
+      - `Copy Shop Link` in the product form actions
+      - `Copy Link` in the posted products list
+- Routes impacted:
+  - `frontend/src/pages/ShopAssetsPage.tsx`
+- Shared logic impact:
+  - none on backend logic or route contracts
+  - this was a phone-stability / finishing cleanup only
+
+### Marketplace workspace copy and selection controls received phone-tap tightening cleanup (2026-04-28)
+
+- Continued the same finishing pass without changing the workspace structure.
+- Problem:
+  - several live controls in `MarketplaceWorkspacePage` were still using direct
+    taps without the shared button guard
+  - this included the invite panel toggle, copy actions, and member row
+    selection button
+- Applied a frontend-only cleanup:
+  - `frontend/src/pages/MarketplaceWorkspacePage.tsx`
+    - added the shared tap guard to:
+      - invite panel `Open / Hide`
+      - `Copy Join Link`
+      - `Copy Join Message`
+      - `Copy Public Shop Link`
+      - `Copy Public Shop Message`
+      - member `View Row`
+- Routes impacted:
+  - `frontend/src/pages/MarketplaceWorkspacePage.tsx`
+- Shared logic impact:
+  - none on backend logic or route contracts
+  - this was a phone-stability / finishing cleanup only
+
+### Shop control public-link and vault-link copy actions received phone-tap tightening cleanup (2026-04-28)
+
+- Continued the same finishing pass without changing the owner-side route
+  structure.
+- Problem:
+  - several copy-link actions in `ShopControlPage` were still bypassing the
+    shared tap guard even though neighboring owner actions were already using
+    it
+- Applied a frontend-only cleanup:
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - added the shared tap guard to:
+      - `Copy Public Link` in the shop-control summary block
+      - `Copy Public Link` in the shop details action row
+      - `Copy public shop link` in the live spotlight block
+      - `Copy link` in the vault viewing links list
+- Routes impacted:
+  - `frontend/src/pages/ShopControlPage.tsx`
+- Shared logic impact:
+  - none on backend logic or route contracts
+  - this was a phone-stability / finishing cleanup only
+
+### Shop gallery public-link copy and product-list toggle controls received phone-tap tightening cleanup (2026-04-28)
+
+- Continued the same finishing pass without changing the public shop route
+  structure.
+- Problem:
+  - the public shop face still had a couple of direct copy-link actions and the
+    `Show all loaded items` toggle on the older tap path
+- Applied a frontend-only cleanup:
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - added the shared tap guard to:
+      - `Copy public link`
+      - `Copy public shop link`
+      - `Show all loaded items` / `Return to 12-slot shelf`
+- Routes impacted:
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+- Shared logic impact:
+  - none on backend logic or route contracts
+  - this was a phone-stability / finishing cleanup only
+
+### Marketplace outward-link copy controls received phone-tap tightening cleanup (2026-04-28)
+
+- Continued the same finishing pass without changing the Marketplace route
+  structure.
+- Problem:
+  - four outward-link copy actions in `MarketplacePage` were still bypassing
+    the shared Marketplace tap guard even though the neighboring open/send
+    actions were already using it
+- Applied a frontend-only cleanup:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - added the shared Marketplace tap guard to:
+      - `Copy WhatsApp Message`
+      - `Copy Create Message`
+      - `Copy Marketplace Link`
+      - `Copy Shop Link`
+- Routes impacted:
+  - `frontend/src/pages/MarketplacePage.tsx`
+- Shared logic impact:
+  - none on backend logic or route contracts
+  - this was a phone-stability / finishing cleanup only
+
+### Community Home spotlight, circle, and community-list controls received phone-tap tightening cleanup (2026-04-28)
+
+- Continued the same finishing pass without changing the Community Home route
+  structure.
+- Problem:
+  - several high-traffic collapse/back/copy controls in `CommunityHomePage`
+    were still sitting on the older direct tap path even though neighboring
+    launcher actions already used the shared Community Home guard
+- Applied a frontend-only cleanup:
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - added the shared Community Home tap guard to:
+      - spotlight guidance `Collapse`
+      - `Back to Community Home`
+      - owner actions `Open/Collapse`
+      - trusted-circle `Open/Collapse`
+      - `Copy Invite Bundle`
+      - spotlight status `Open/Collapse`
+      - communities `Open/Collapse`
+- Routes impacted:
+  - `frontend/src/pages/CommunityHomePage.tsx`
+- Shared logic impact:
+  - none on backend logic or route contracts
+  - this was a phone-stability / finishing cleanup only
+
+### Community Shop Control panel collapse and public-shop copy controls received phone-tap tightening cleanup (2026-04-28)
+
+- Continued the same finishing pass without changing the panel structure
+  launched from Community Home.
+- Problem:
+  - `CommunityShopControlPanel` was already using the shared tap guard for most
+    owner-launcher actions, but its main collapse control and public-shop copy
+    action were still on the older direct tap path
+- Applied a frontend-only cleanup:
+  - `frontend/src/components/CommunityShopControlPanel.tsx`
+    - added the shared panel tap guard to:
+      - `Open/Collapse owner shop control`
+      - `Copy Public Shop Link`
+- Routes impacted:
+  - `frontend/src/components/CommunityShopControlPanel.tsx`
+- Shared logic impact:
+  - none on backend logic or route contracts
+  - this was a phone-stability / finishing cleanup only
+
+### Shop Control spotlight workflow buttons received phone-tap tightening cleanup (2026-04-28)
+
+- Continued the same finishing pass without changing the Shop Control route
+  structure.
+- Problem:
+  - the step-by-step spotlight workflow in `ShopControlPage` still had several
+    direct action buttons on the older tap path even though much of the rest of
+    the owner-control surface had already been tightened
+- Applied a frontend-only cleanup:
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - added the shared Shop Control tap guard to:
+      - `Continue to shop spotlight`
+      - all spotlight `Cancel` actions
+      - spotlight priority selection (`Free spotlight`, `Paid spotlight`)
+      - spotlight media selection (`Picture only`, `Video only`, `Picture and video`)
+      - `Continue to preview`
+      - `Back to upload`
+      - `Publish spotlight`
+- Routes impacted:
+  - `frontend/src/pages/ShopControlPage.tsx`
+- Shared logic impact:
+  - none on backend logic or route contracts
+  - this was a phone-stability / finishing cleanup only
+
+### Shop Assets section toggles received phone-tap tightening cleanup (2026-04-28)
+
+- Continued the same finishing pass without changing the Shop Assets route
+  structure.
+- Problem:
+  - `ShopAssetsPage` still had its main section collapse controls on the older
+    direct tap path even though its direct product and copy actions had already
+    been tightened
+- Applied a frontend-only cleanup:
+  - `frontend/src/pages/ShopAssetsPage.tsx`
+    - added the shared Shop Assets tap guard to:
+      - guided release order `Open/Collapse`
+      - signboard `Open/Collapse`
+      - product picture blocks `Open/Collapse`
+      - posted product blocks `Open/Collapse`
+- Routes impacted:
+  - `frontend/src/pages/ShopAssetsPage.tsx`
+- Shared logic impact:
+  - none on backend logic or route contracts
+  - this was a phone-stability / finishing cleanup only
+
+### TrustSlip copy, print, and section-toggle controls received phone-tap tightening cleanup (2026-04-28)
+
+- Continued the same finishing pass without changing the TrustSlip route
+  structure.
+- Problem:
+  - `TrustSlipPage` still had its main copy/print cluster and section toggles
+    on the older direct tap path
+- Applied a frontend-only cleanup:
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - added the shared tap guard and stable touch-safe button styling to:
+      - `Copy TrustSlip Code`
+      - `Copy Verify Link`
+      - `Copy GMFN ID`
+      - `Print TrustSlip`
+      - `Merchant verification` `Open/Collapse`
+      - merchant verify `Copy Verify Link`
+      - `Merchant-facing view` `Open/Collapse`
+      - `Evidence and exposure context` `Open/Collapse`
+      - `Institutional notes` `Open/Collapse`
+- Routes impacted:
+  - `frontend/src/pages/TrustSlipPage.tsx`
+- Shared logic impact:
+  - none on backend logic or route contracts
+  - this was a phone-stability / finishing cleanup only
+
+### TrustSlip Verify quick-action buttons received phone-tap tightening cleanup (2026-04-28)
+
+- Continued the same finishing pass without changing the TrustSlip Verify
+  route structure.
+- Problem:
+  - the quick action cluster in `TrustSlipVerifyPage` still used direct click
+    handlers without the shared tap guard
+- Applied a frontend-only cleanup:
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx`
+    - added the shared tap guard to:
+      - `Copy TrustSlip Code`
+      - `Copy Verify Link`
+      - `Copy GMFN ID`
+      - `Print Verification`
+- Routes impacted:
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx`
+- Shared logic impact:
+  - none on backend logic or route contracts
+  - this was a phone-stability / finishing cleanup only

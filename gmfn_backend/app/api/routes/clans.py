@@ -516,6 +516,10 @@ def _current_join_status(
     *,
     join_request: ClanJoinRequest,
 ) -> dict[str, Any]:
+    reviewer_rows = _active_reviewer_memberships(
+        db,
+        clan_id=int(join_request.clan_id),
+    )
     votes = (
         db.query(ClanJoinVote)
         .filter(ClanJoinVote.join_request_id == int(join_request.id))
@@ -530,12 +534,7 @@ def _current_join_status(
     )
     total_votes = len(votes)
 
-    active_members = len(
-        _active_reviewer_memberships(
-            db,
-            clan_id=int(join_request.clan_id),
-        )
-    )
+    active_members = len(reviewer_rows)
     required = max(
         1,
         int(
@@ -552,6 +551,15 @@ def _current_join_status(
         "active_member_count": active_members,
         "required_approvals": required,
         "threshold_ratio": str(JOIN_APPROVAL_RATIO),
+        "eligible_reviewers": [
+            {
+                "user_id": int(user.id),
+                "gmfn_id": _safe_str(getattr(user, "gmfn_id", None)) or None,
+                "display": _member_display(user),
+                "role": _safe_str(getattr(membership, "role", None), "user"),
+            }
+            for membership, user in reviewer_rows
+        ],
     }
 
 
@@ -615,6 +623,7 @@ def _join_request_out(db: Session, req: ClanJoinRequest) -> dict[str, Any]:
         "active_member_count": stats["active_member_count"],
         "required_approvals": stats["required_approvals"],
         "threshold_ratio": stats["threshold_ratio"],
+        "eligible_reviewers": stats["eligible_reviewers"],
     }
 
 
@@ -639,6 +648,7 @@ def _join_request_status_payload(
         if req.invited_by_user_id is not None
         else None
     )
+    stats = _current_join_status(db, join_request=req)
 
     gmfn_id = getattr(applicant, "gmfn_id", None) if applicant else None
 
@@ -694,6 +704,13 @@ def _join_request_status_payload(
             if getattr(req, "activation_delivered_at", None)
             else None
         ),
+        "approvals": stats["approvals"],
+        "rejects": stats["rejects"],
+        "total_votes": stats["total_votes"],
+        "active_member_count": stats["active_member_count"],
+        "required_approvals": stats["required_approvals"],
+        "threshold_ratio": stats["threshold_ratio"],
+        "eligible_reviewers": stats["eligible_reviewers"],
         "next_step": (
             "activate-membership"
             if safe_status == "approved"

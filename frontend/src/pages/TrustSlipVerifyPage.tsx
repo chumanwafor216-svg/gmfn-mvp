@@ -1,8 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
+import NextActionGuide from "../components/NextActionGuide";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import TrustDocumentActionGuide from "../components/TrustDocumentActionGuide";
+import TrustDocumentFamilyMap from "../components/TrustDocumentFamilyMap";
+import TrustDocumentUseCases from "../components/TrustDocumentUseCases";
 import * as api from "../lib/api";
 import {
   institutionalInnerCard,
@@ -10,7 +14,13 @@ import {
   institutionalSoftCard,
   institutionalStatTile,
 } from "../lib/institutionalSurface";
+import { navigateWithOrigin } from "../lib/nav";
 import { publicFrontendUrl } from "../lib/publicLinks";
+import { buildTrustSlipVerifyActionGuide } from "../lib/trustDocumentActionGuide";
+import { buildTrustDocumentFamilyItems } from "../lib/trustDocumentFamilyMap";
+import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
+import { buildTrustSlipVerifyGuideItems } from "../lib/trustDocumentGuide";
+import { buildTrustSlipVerifySnapshot } from "../lib/trustDocumentSnapshots";
 
 type TrustSlipVerifyRecord = {
   id?: number;
@@ -529,6 +539,7 @@ function deriveBanner(record: TrustSlipVerifyRecord | null): {
 export default function TrustSlipVerifyPage() {
   const params = useParams<{ code?: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -695,6 +706,19 @@ export default function TrustSlipVerifyPage() {
 
   const banner = useMemo(() => deriveBanner(record), [record]);
   const bannerStyle = bannerToneStyle(banner.tone);
+  const guideItems = useMemo(
+    () => buildTrustSlipVerifyGuideItems(isAppRoute),
+    [isAppRoute]
+  );
+  const familyItems = useMemo(
+    () => buildTrustDocumentFamilyItems(isAppRoute),
+    [isAppRoute]
+  );
+  const trustDocumentUseCases = useMemo(
+    () => buildTrustDocumentUseCaseItems(familyItems, "verify"),
+    [familyItems]
+  );
+  const actionGuide = useMemo(() => buildTrustSlipVerifyActionGuide(), []);
 
   const verifyPath = resolvedCode ? `/t/${encodeURIComponent(resolvedCode)}` : "";
   const verifyUrl = resolvedCode ? publicFrontendUrl(verifyPath) : "";
@@ -731,6 +755,29 @@ export default function TrustSlipVerifyPage() {
 
     api.safeCopy(gmfnId);
     showNotice("success", "GMFN ID copied.");
+  }
+
+  function copyVerificationSnapshot() {
+    api.safeCopy(
+      buildTrustSlipVerifySnapshot({
+        holderName,
+        gmfnId,
+        communityLabel,
+        trustSlipCode: resolvedCode || "Not available",
+        visibleBand,
+        visibleScore: visibleScore === null ? "-" : String(Math.round(visibleScore)),
+        verificationStatus: banner.title,
+        issuedAt: safeDateTime(record?.issued_at) || "Not stated",
+        expiresAt: safeDateTime(record?.expires_at) || "Not stated",
+        verifyUrl,
+      })
+    );
+    showNotice("success", "Verification snapshot copied.");
+  }
+
+  function handleGuideSelect(item: { to?: string; disabled?: boolean }) {
+    if (!item.to || item.disabled) return;
+    navigateWithOrigin(navigate, item.to, location);
   }
 
   if (loading) {
@@ -1041,7 +1088,7 @@ export default function TrustSlipVerifyPage() {
                     lineHeight: 1.25,
                   }}
                 >
-                  {visibleScore === null ? "—" : String(Math.round(visibleScore))}
+                  {visibleScore === null ? "-" : String(Math.round(visibleScore))}
                 </div>
               </div>
 
@@ -1049,7 +1096,7 @@ export default function TrustSlipVerifyPage() {
                 <div style={sectionLabel()}>Issued / expires</div>
                 <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
                   <div style={{ ...helperText(), color: "#0B1F33" }}>
-                    Issued: {safeDateTime(record?.issued_at) || "—"}
+                    Issued: {safeDateTime(record?.issued_at) || "-"}
                   </div>
                   <div style={{ ...helperText(), color: "#0B1F33" }}>
                     Expires: {safeDateTime(record?.expires_at) || "Not stated"}
@@ -1176,6 +1223,38 @@ export default function TrustSlipVerifyPage() {
         </div>
       </section>
 
+      <NextActionGuide
+        storageKey="gmfn.trustSlipVerify.nextActionGuide.v1"
+        compact={isCompact}
+        items={guideItems}
+        intro="Say what you need next in plain words, like open the full trust explanation, return to the document, or check the identity side behind this verification."
+        onSelect={handleGuideSelect}
+      />
+
+      <TrustDocumentActionGuide content={actionGuide} compact={isCompact} />
+
+      <TrustDocumentFamilyMap
+        compact={isCompact}
+        items={familyItems}
+        title="How this public verification fits into the wider trust family"
+        intro={
+          isAppRoute
+            ? "TrustSlip Verify confirms the public reading, but it does not replace the stable identity layer, the narrower CCI reading, or the fuller Trust Passport story."
+            : "This page is the public verification end of the trust family. Use this map to understand what belongs to the private signed-in trust record and what belongs to portable proof and public validity."
+        }
+      />
+
+      <TrustDocumentUseCases
+        compact={isCompact}
+        items={trustDocumentUseCases}
+        title="Which trust question belongs on this public page?"
+        intro={
+          isAppRoute
+            ? "Stay here when the question is whether a public code still points to a valid current reading. Move back to TrustSlip, Trust Passport, or Identity & Integrity when someone needs the fuller private context behind this result."
+            : "Use this public chooser when you need to separate quick validity confirmation from the deeper signed-in trust records that explain the person and the wider trust story."
+        }
+      />
+
       <section className="print-trust-support" style={pageCard("#FFFFFF")}>
         <div style={sectionLabel()}>Quick actions</div>
 
@@ -1224,6 +1303,10 @@ export default function TrustSlipVerifyPage() {
             style={actionBtn("soft")}
           >
             Print Verification
+          </button>
+
+          <button type="button" onClick={copyVerificationSnapshot} style={actionBtn("soft")}>
+            Copy verification snapshot
           </button>
 
           {isAppRoute ? (

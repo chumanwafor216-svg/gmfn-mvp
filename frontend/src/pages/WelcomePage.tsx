@@ -123,6 +123,34 @@ function supportText(): React.CSSProperties {
   };
 }
 
+function stableTapStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
+  };
+}
+
+function guardButtonPress(event: React.SyntheticEvent<HTMLElement>) {
+  event.stopPropagation();
+}
+
+function buttonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: guardButtonPress,
+    onTouchStart: guardButtonPress,
+    onMouseDown: guardButtonPress,
+  };
+}
+
 function addForceLoginFlag(base: string): string {
   const [pathname, rawQuery = ""] = String(base || "").split("?");
   const params = new URLSearchParams(rawQuery);
@@ -298,7 +326,9 @@ export default function WelcomePage() {
                 <button
                   type="button"
                   onClick={() => setGuideOpen(false)}
+                  {...buttonGuardProps()}
                   style={{
+                    ...stableTapStyle(),
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",

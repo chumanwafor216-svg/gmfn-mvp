@@ -19,22 +19,6 @@ function pageShell(compact = false): React.CSSProperties {
   };
 }
 
-function pageCard(bg = "#FFFFFF"): React.CSSProperties {
-  return {
-    width: "100%",
-    maxWidth: 760,
-    padding: 26,
-    borderRadius: 24,
-    background:
-      bg === "#FFFFFF"
-        ? "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(242,247,252,0.98) 62%, rgba(229,237,247,0.96) 100%)"
-        : bg,
-    border: "1px solid rgba(11,31,51,0.08)",
-    boxShadow:
-      "0 18px 50px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.78)",
-  };
-}
-
 function heroCard(): React.CSSProperties {
   return {
     width: "100%",
@@ -80,11 +64,27 @@ function inputStyle(): React.CSSProperties {
     boxSizing: "border-box",
     boxShadow:
       "inset 0 1px 0 rgba(255,255,255,0.86), 0 6px 14px rgba(10,24,49,0.04)",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+  };
+}
+
+function stableTapStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
   };
 }
 
 function primaryBtn(disabled = false): React.CSSProperties {
   return {
+    ...stableTapStyle(),
     width: "min(100%, 60%)",
     padding: "14px 18px",
     borderRadius: 16,
@@ -107,6 +107,7 @@ function primaryBtn(disabled = false): React.CSSProperties {
 
 function secondaryBtn(): React.CSSProperties {
   return {
+    ...stableTapStyle(),
     width: "100%",
     padding: "14px 18px",
     borderRadius: 16,
@@ -117,6 +118,21 @@ function secondaryBtn(): React.CSSProperties {
     cursor: "pointer",
     fontSize: 15,
     textAlign: "center",
+  };
+}
+
+function guardButtonPress(event: React.SyntheticEvent<HTMLElement>) {
+  event.stopPropagation();
+}
+
+function buttonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: guardButtonPress,
+    onTouchStart: guardButtonPress,
+    onMouseDown: guardButtonPress,
   };
 }
 
@@ -180,37 +196,11 @@ function labelText(): React.CSSProperties {
   };
 }
 
-function badge(primary = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    minHeight: 30,
-    padding: "6px 10px",
-    borderRadius: 999,
-    background: primary ? "#EAF2FF" : "#F8FAFC",
-    border: primary
-      ? "1px solid rgba(11,99,209,0.14)"
-      : "1px solid rgba(11,31,51,0.08)",
-    color: primary ? "#0B63D1" : "#475569",
-    fontWeight: 900,
-    fontSize: 12,
-    whiteSpace: "normal",
-  };
-}
-
 function helperText(): React.CSSProperties {
   return {
     color: "#5F768D",
     lineHeight: 1.75,
     fontSize: 14,
-  };
-}
-
-function supportText(): React.CSSProperties {
-  return {
-    color: "rgba(16,37,59,0.88)",
-    fontSize: 14,
-    lineHeight: 1.75,
   };
 }
 
@@ -222,15 +212,18 @@ export default function LoginPage() {
   const nav = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const routeState =
-    (location.state as {
-      from?: { pathname?: string; search?: string };
-      create_entry?: {
-        clan_name?: string;
-        clan_description?: string;
-        email?: string;
-      };
-    }) || {};
+  const routeState = useMemo(
+    () =>
+      ((location.state as {
+        from?: { pathname?: string; search?: string };
+        create_entry?: {
+          clan_name?: string;
+          clan_description?: string;
+          email?: string;
+        };
+      }) || {}),
+    [location.state]
+  );
 
   const founderContext = routeState.create_entry || {};
   const founderEmail = safeStr(founderContext.email || "");
@@ -493,6 +486,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setGuideOpen(false)}
+                  {...buttonGuardProps()}
                   style={{
                     ...secondaryBtn(),
                     width: "auto",
@@ -724,7 +718,12 @@ export default function LoginPage() {
                 justifyContent: "center",
               }}
             >
-              <button type="submit" disabled={busy} style={primaryBtn(busy)}>
+              <button
+                type="submit"
+                disabled={busy}
+                {...buttonGuardProps()}
+                style={primaryBtn(busy)}
+              >
                 {busy ? "Signing in..." : "Sign in"}
               </button>
             </div>

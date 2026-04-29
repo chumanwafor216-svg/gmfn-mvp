@@ -850,6 +850,77 @@ def test_direct_join_request_status_marks_activation_opened_when_approved(client
         assert refreshed.activation_delivered_at is not None
 
 
+def test_join_request_status_reports_live_review_counts_and_activated_reviewers(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        pending_applicant = User(
+            id=2,
+            email="pending@example.com",
+            hashed_password="PENDING_APPROVAL",
+            role="user",
+        )
+        active_reviewer = User(
+            id=3,
+            email="reviewer@example.com",
+            gmfn_id="GMFN-U-REVIEW01",
+            hashed_password="hashed",
+            role="user",
+        )
+        pending_placeholder = User(
+            id=4,
+            email="placeholder@example.com",
+            hashed_password="PENDING_APPROVAL",
+            role="user",
+        )
+        db.add_all([pending_applicant, active_reviewer, pending_placeholder])
+        db.flush()
+        db.add_all(
+            [
+                ClanMembership(
+                    id=2,
+                    clan_id=1,
+                    user_id=3,
+                    role="user",
+                    personal_pool_balance=0,
+                ),
+                ClanMembership(
+                    id=3,
+                    clan_id=1,
+                    user_id=4,
+                    role="user",
+                    personal_pool_balance=0,
+                ),
+                ClanJoinRequest(
+                    id=1,
+                    clan_id=1,
+                    applicant_user_id=2,
+                    invited_by_user_id=1,
+                    status="pending",
+                    created_at=datetime.now(timezone.utc),
+                ),
+            ]
+        )
+        db.commit()
+
+    res = client.get("/clans/join-requests/1/status")
+
+    assert res.status_code == 200, res.text
+    data = res.json()
+    assert data["status"] == "pending"
+    assert data["active_member_count"] == 2
+    assert data["required_approvals"] == 1
+    assert data["approvals"] == 0
+    assert data["rejects"] == 0
+    assert isinstance(data["eligible_reviewers"], list)
+    assert len(data["eligible_reviewers"]) == 2
+    reviewer_ids = {str(item.get("gmfn_id") or "") for item in data["eligible_reviewers"]}
+    reviewer_displays = {str(item.get("display") or "") for item in data["eligible_reviewers"]}
+    assert "GMFN-U-REVIEW01" in reviewer_ids
+    assert "admin@example.com" in reviewer_displays
+    assert all(display.strip() for display in reviewer_displays)
+
+
 def test_list_join_requests_reports_admin_reviewer_override_capability(
     client,
     override_clan_ctx_admin,

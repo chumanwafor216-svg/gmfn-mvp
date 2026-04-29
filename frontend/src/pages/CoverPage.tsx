@@ -482,6 +482,58 @@ function buttonStyle(disabled = false): React.CSSProperties {
 
     whiteSpace: "normal",
 
+    touchAction: "manipulation",
+
+    WebkitTapHighlightColor: "transparent",
+
+  };
+
+}
+
+
+
+function stableTapStyle(): React.CSSProperties {
+
+  return {
+
+    touchAction: "manipulation",
+
+    WebkitTapHighlightColor: "transparent",
+
+  };
+
+}
+
+
+
+function guardButtonPress(
+
+  event:
+
+    | React.PointerEvent<HTMLElement>
+
+    | React.TouchEvent<HTMLElement>
+
+    | React.MouseEvent<HTMLElement>
+
+): void {
+
+  event.stopPropagation();
+
+}
+
+
+
+function buttonGuardProps() {
+
+  return {
+
+    onPointerDown: guardButtonPress,
+
+    onTouchStart: guardButtonPress,
+
+    onMouseDown: guardButtonPress,
+
   };
 
 }
@@ -1408,9 +1460,11 @@ export default function CoverPage() {
 
               onClick={goNext}
 
+              {...buttonGuardProps()}
+
               disabled={busy}
 
-              style={buttonStyle(busy)}
+              style={{ ...buttonStyle(busy), ...stableTapStyle() }}
 
             >
 

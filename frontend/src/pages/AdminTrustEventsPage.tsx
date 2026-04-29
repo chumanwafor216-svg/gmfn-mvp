@@ -1,10 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
+import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import { adminRecentTrustEvents } from "../lib/api";
 
 function safeStr(x: any): string {
-  return String(x ?? "");
+  return String(x ?? "").trim();
+}
+
+function toNum(x: any): number | null {
+  const n = Number(x);
+  return Number.isFinite(n) ? n : null;
 }
 
 function topPattern(): string {
@@ -29,113 +35,343 @@ function card(): React.CSSProperties {
   };
 }
 
+function softCard(bg = "#F8FBFF"): React.CSSProperties {
+  return {
+    ...card(),
+    background: bg,
+    border: "1px solid rgba(108,138,184,0.16)",
+    boxShadow: "0 14px 34px rgba(15,23,42,0.04)",
+  };
+}
+
+function statTile(): React.CSSProperties {
+  return {
+    borderRadius: 18,
+    border: "1px solid rgba(108,138,184,0.16)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F6FAFF 100%)",
+    padding: 16,
+    boxShadow: "0 14px 28px rgba(15,23,42,0.04)",
+  };
+}
+
+function sectionLabel(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#39526C",
+    fontWeight: 1000,
+    letterSpacing: 0.45,
+    textTransform: "uppercase",
+  };
+}
+
+function helperText(): React.CSSProperties {
+  return {
+    color: "#526579",
+    fontSize: 14.5,
+    lineHeight: 1.75,
+  };
+}
+
+function stableTapStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
+  };
+}
+
+function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
+  event?.stopPropagation();
+}
+
+function buttonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: guardButtonPress,
+    onTouchStart: guardButtonPress,
+    onMouseDown: guardButtonPress,
+  };
+}
+
+function actionBtn(kind: "primary" | "secondary" | "soft" = "secondary"): React.CSSProperties {
+  const base: React.CSSProperties = {
+    ...stableTapStyle(),
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 44,
+    padding: "10px 14px",
+    borderRadius: 14,
+    textDecoration: "none",
+    fontWeight: 900,
+    fontSize: 14,
+    whiteSpace: "normal",
+  };
+
+  if (kind === "primary") {
+    return {
+      ...base,
+      border: "1px solid rgba(9,83,176,0.24)",
+      background: "linear-gradient(180deg, #1D75E8 0%, #0B63D1 100%)",
+      color: "#FFFFFF",
+      boxShadow: "0 14px 28px rgba(15,23,42,0.12)",
+    };
+  }
+
+  if (kind === "soft") {
+    return {
+      ...base,
+      border: "1px solid rgba(124,153,196,0.18)",
+      background: "linear-gradient(180deg, #F8FBFF 0%, #EAF2FF 100%)",
+      color: "#24415C",
+      boxShadow: "0 12px 24px rgba(15,23,42,0.08)",
+    };
+  }
+
+  return {
+    ...base,
+    border: "1px solid rgba(124,153,196,0.18)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF4FF 100%)",
+    color: "#0B1F33",
+    boxShadow: "0 12px 24px rgba(15,23,42,0.08)",
+  };
+}
+
+function collapseToggle(): React.CSSProperties {
+  return {
+    ...actionBtn("soft"),
+    minHeight: 40,
+    padding: "8px 14px",
+  };
+}
+
+function badge(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    minHeight: 30,
+    padding: "6px 10px",
+    borderRadius: 999,
+    background: primary
+      ? "rgba(11,99,209,0.08)"
+      : "rgba(100,116,139,0.10)",
+    color: primary ? "#0B63D1" : "#475569",
+    fontSize: 12,
+    fontWeight: 1000,
+    whiteSpace: "normal",
+  };
+}
+
+function fmtWhen(value: any): string {
+  const raw = safeStr(value);
+  if (!raw) return "-";
+  const parsed = new Date(raw);
+  if (!Number.isFinite(parsed.getTime())) return raw;
+  return parsed.toLocaleString();
+}
+
+function deltaMeta(value: any): { label: string; tone: "pos" | "neg" | "zero" | "none" } {
+  const raw = safeStr(value);
+  if (!raw) return { label: "No delta stated", tone: "none" };
+  const num = Number(raw);
+  if (!Number.isFinite(num)) return { label: raw, tone: "none" };
+  if (num > 0) return { label: `+${num}`, tone: "pos" };
+  if (num < 0) return { label: String(num), tone: "neg" };
+  return { label: "0", tone: "zero" };
+}
+
+function eventToneStyle(tone: "pos" | "neg" | "zero" | "none"): React.CSSProperties {
+  if (tone === "pos") return { background: "#F0FDF4", border: "1px solid #BBF7D0", color: "#166534" };
+  if (tone === "neg") return { background: "#FEF2F2", border: "1px solid #FECACA", color: "#991B1B" };
+  if (tone === "zero") return { background: "#FFFBEF", border: "1px solid #FDE68A", color: "#92400E" };
+  return { background: "#F8FAFC", border: "1px solid rgba(148,163,184,0.16)", color: "#334155" };
+}
+
+function buildEventSnapshot(row: any): string {
+  return [
+    `Event: ${safeStr(row?.event_type || "trust.event")}`,
+    `When: ${fmtWhen(row?.created_at)}`,
+    `Delta: ${deltaMeta(row?.delta).label}`,
+    `Actor: ${safeStr(row?.actor_user_id || "-")}`,
+    `Subject: ${safeStr(row?.subject_user_id || "-")}`,
+    `Reason: ${safeStr(row?.reason || "Not stated")}`,
+    `Note: ${safeStr(row?.note || "Not stated")}`,
+  ].join("`n");
+}
+
 export default function AdminTrustEventsPage() {
   const [rows, setRows] = useState<any[]>([]);
   const [err, setErr] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const pattern = useMemo(() => topPattern(), []);
 
   useEffect(() => {
+    let alive = true;
+
     (async () => {
       try {
+        setErr(null);
         const res = await adminRecentTrustEvents(100);
         const items = Array.isArray(res) ? res : res?.items || [];
+        if (!alive) return;
         setRows(items || []);
       } catch (e: any) {
+        if (!alive) return;
         setErr(String(e?.message || e || "Unable to load recent trust events."));
       }
     })();
+
+    return () => {
+      alive = false;
+    };
   }, []);
+
+  const summary = useMemo(() => {
+    const recentCutoff = Date.now() - 24 * 60 * 60 * 1000;
+    let recent = 0;
+    let positive = 0;
+    let negative = 0;
+    let noted = 0;
+
+    rows.forEach((row) => {
+      const createdAt = new Date(safeStr(row?.created_at)).getTime();
+      if (Number.isFinite(createdAt) && createdAt >= recentCutoff) recent += 1;
+      const num = toNum(row?.delta);
+      if (num !== null && num > 0) positive += 1;
+      if (num !== null && num < 0) negative += 1;
+      if (safeStr(row?.reason || row?.note)) noted += 1;
+    });
+
+    return { total: rows.length, recent, positive, negative, noted };
+  }, [rows]);
+
+  function toggleRow(rowKey: string) {
+    setExpanded((current) => ({ ...current, [rowKey]: !current[rowKey] }));
+  }
+
+  async function copyEvent(row: any) {
+    const payload = JSON.stringify(row, null, 2);
+    const snapshot = buildEventSnapshot(row);
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(`${snapshot}` + "`n`n" + `${payload}`);
+        setNotice("Event snapshot copied.");
+      } else {
+        setNotice("Clipboard is not available here.");
+      }
+    } catch {
+      setNotice("Clipboard is not available here.");
+    }
+  }
 
   return (
     <div style={{ maxWidth: 1260, margin: "0 auto" }}>
-      <PageTopNav
-        sectionLabel="Trust Events"
-        title="Trust Events"
-        subtitle="Review recent trust-event records for oversight, evidence, and explainability checks."
-        homeTo="/app/dashboard"
-        homeLabel="Dashboard"
-        backTo="/app/command-center"
-        backLabel="Command Center"
-      />
+      <PageTopNav sectionLabel="Trust Events" title="Trust Events" subtitle="Review recent trust-event records for oversight, evidence, and explainability checks." homeTo="/app/dashboard" homeLabel="Dashboard" backTo="/app/command-center" backLabel="Command Center" />
 
       <ExplainToggle
         label="What this screen does"
         what="This screen shows recent trust-event records for oversight, evidence checks, and explainability review."
         why="It helps you inspect the raw event trail behind trust activity before you step into deeper analytics or intervention pages."
-        next="Start with the recent event list, then open the raw event details only when you need to inspect the exact evidence."
+        next="Start with the event overview here, then open the raw event details only when you need the exact evidence for a specific trust change."
         tone="light"
         style={{ marginTop: 18 }}
       />
 
-      <div
-        style={{
-          backgroundImage: `url("${pattern}")`,
-          backgroundRepeat: "no-repeat",
-          backgroundSize: "cover",
-          backgroundPosition: "center top",
-          borderRadius: 28,
-          border: "1px solid rgba(11,31,51,0.06)",
-          overflow: "hidden",
-          backgroundColor: "#F8FBFE",
-        }}
-      >
+      <div style={{ backgroundImage: `url("${pattern}")`, backgroundRepeat: "no-repeat", backgroundSize: "cover", backgroundPosition: "center top", borderRadius: 28, border: "1px solid rgba(11,31,51,0.06)", overflow: "hidden", backgroundColor: "#F8FBFE" }}>
         <div style={{ padding: 24 }}>
           <div style={{ fontSize: 34, fontWeight: 1000, color: "#0B1F33" }}>Trust event log</div>
           <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
-            Recent TrustEvents for oversight, evidence, and explainability review.
+            Review the raw trust-event trail first, then move into the deeper admin routes only when the current record shows where the pressure really sits.
           </div>
 
-          {err && (
-            <div
-              style={{
-                marginTop: 16,
-                padding: "12px 14px",
-                borderRadius: 14,
-                background: "#FEF2F2",
-                border: "1px solid #FECACA",
-                color: "#991B1B",
-                fontWeight: 900,
-              }}
-            >
-              {err}
+          <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span style={badge(true)}>Tracked events: {summary.total}</span>
+            <span style={badge(false)}>Last 24 hours: {summary.recent}</span>
+            <span style={badge(false)}>Positive deltas: {summary.positive}</span>
+            <span style={badge(false)}>Negative deltas: {summary.negative}</span>
+            <span style={badge(false)}>Events with notes: {summary.noted}</span>
+          </div>
+
+          {notice ? <div style={{ marginTop: 16, padding: "12px 14px", borderRadius: 14, background: "#ECFDF3", border: "1px solid #A7F3D0", color: "#166534", fontWeight: 900 }}>{notice}</div> : null}
+          {err ? <div style={{ marginTop: 16, padding: "12px 14px", borderRadius: 14, background: "#FEF2F2", border: "1px solid #FECACA", color: "#991B1B", fontWeight: 900 }}>{err}</div> : null}
+
+          <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+            <div style={statTile()}>
+              <div style={sectionLabel()}>What to read first</div>
+              <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                Start with the newest negative or heavily noted event before treating the graph or analytics pages as the source of truth.
+              </div>
             </div>
-          )}
+            <div style={statTile()}>
+              <div style={sectionLabel()}>When to leave this page</div>
+              <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                Move to Trust Graph when you need structure, Trust Analytics when you need pattern, and Identity Risk when the event points to a person-level integrity issue.
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 18, display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <OriginLink to="/app/command-center/trust-analytics" style={actionBtn("primary")}>Open Trust Analytics</OriginLink>
+            <OriginLink to="/app/command-center/trust-graph" style={actionBtn("secondary")}>Open Trust Graph</OriginLink>
+            <OriginLink to="/app/identity" style={actionBtn("secondary")}>Open Identity Risk</OriginLink>
+            <OriginLink to="/app/command-center" style={actionBtn("soft")}>Back to Command Center</OriginLink>
+          </div>
 
           <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-            {rows.length === 0 && <div style={{ ...card(), color: "#7A8D9F" }}>No recent trust events are currently shown.</div>}
-
-            {rows.map((row, i) => (
-              <div key={row?.id || i} style={card()}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-                  <div>
-                    <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}>
-                      {safeStr(row?.event_type || "trust.event")}
+            {rows.length === 0 && !err ? <div style={{ ...softCard(), color: "#7A8D9F" }}>No recent trust events are currently shown.</div> : null}
+            {rows.map((row, index) => {
+              const rowKey = safeStr(row?.id || row?.event_id || index);
+              const delta = deltaMeta(row?.delta);
+              const detailOpen = Boolean(expanded[rowKey]);
+              return (
+                <div key={rowKey} style={card()}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                    <div>
+                      <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}>{safeStr(row?.event_type || "trust.event")}</div>
+                      <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 13 }}>{fmtWhen(row?.created_at)}</div>
                     </div>
-                    <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 13 }}>
-                      {safeStr(row?.created_at || "—")}
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}>
+                      <span style={{ ...badge(false), ...eventToneStyle(delta.tone) }}>{delta.label}</span>
+                      <span style={badge(false)}>Event #{safeStr(row?.id || "-")}</span>
                     </div>
                   </div>
 
-                  <div style={{ color: "#64748b", fontSize: 12 }}>
-                    Event #{safeStr(row?.id || "—")}
+                  <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <span style={badge(false)}>Actor: {safeStr(row?.actor_user_id || "-")}</span>
+                    <span style={badge(false)}>Subject: {safeStr(row?.subject_user_id || "-")}</span>
+                    {safeStr(row?.loan_id) ? <span style={badge(false)}>Loan #{safeStr(row?.loan_id)}</span> : null}
+                    {safeStr(row?.payment_reference) ? <span style={badge(false)}>Ref: {safeStr(row?.payment_reference)}</span> : null}
                   </div>
-                </div>
 
-                <div style={{ marginTop: 14 }}>
-                  <pre
-                    style={{
-                      margin: 0,
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-word",
-                      fontSize: 12,
-                      color: "#334155",
-                    }}
-                  >
-                    {JSON.stringify(row, null, 2)}
-                  </pre>
+                  <div style={{ marginTop: 14, ...helperText(), color: "#0B1F33" }}>
+                    {safeStr(row?.reason || row?.note) || "No short explanation was attached to this event yet."}
+                  </div>
+
+                  <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <button type="button" {...buttonGuardProps()} onClick={() => { void copyEvent(row); }} style={actionBtn("secondary")}>Copy event snapshot</button>
+                    <button type="button" {...buttonGuardProps()} onClick={() => toggleRow(rowKey)} style={collapseToggle()}>{detailOpen ? "Collapse raw event" : "Open raw event"}</button>
+                  </div>
+
+                  {detailOpen ? (
+                    <div style={{ marginTop: 14, ...softCard("#F8FBFF") }}>
+                      <div style={sectionLabel()}>Raw event details</div>
+                      <pre style={{ margin: "12px 0 0", whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: 12, color: "#334155", lineHeight: 1.7 }}>
+                        {JSON.stringify(row, null, 2)}
+                      </pre>
+                    </div>
+                  ) : null}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

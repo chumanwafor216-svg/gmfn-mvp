@@ -331,6 +331,21 @@ function routeTile(primary = false): React.CSSProperties {
   };
 }
 
+function stopCommandTap(event: React.SyntheticEvent<HTMLElement>) {
+  event.stopPropagation();
+}
+
+function commandButtonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onMouseDown" | "onTouchStart"
+> {
+  return {
+    onPointerDown: stopCommandTap,
+    onMouseDown: stopCommandTap,
+    onTouchStart: stopCommandTap,
+  };
+}
+
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
@@ -1388,6 +1403,7 @@ export default function TrustCommandCentrePage() {
 
           <button
             type="button"
+            {...commandButtonGuardProps()}
             onClick={() => toggleSection("executive")}
             style={collapseToggle()}
           >
@@ -1590,6 +1606,7 @@ export default function TrustCommandCentrePage() {
 
           <button
             type="button"
+            {...commandButtonGuardProps()}
             onClick={() => toggleSection("pilot")}
             style={collapseToggle()}
           >
@@ -1914,6 +1931,7 @@ export default function TrustCommandCentrePage() {
 
           <button
             type="button"
+            {...commandButtonGuardProps()}
             onClick={() => toggleSection("overview")}
             style={collapseToggle()}
           >
@@ -2149,6 +2167,7 @@ export default function TrustCommandCentrePage() {
 
           <button
             type="button"
+            {...commandButtonGuardProps()}
             onClick={() => toggleSection("routes")}
             style={collapseToggle()}
           >
@@ -2207,6 +2226,7 @@ export default function TrustCommandCentrePage() {
 
           <button
             type="button"
+            {...commandButtonGuardProps()}
             onClick={() => toggleSection("workflows")}
             style={collapseToggle()}
           >
@@ -2263,6 +2283,7 @@ export default function TrustCommandCentrePage() {
 
           <button
             type="button"
+            {...commandButtonGuardProps()}
             onClick={() => toggleSection("notes")}
             style={collapseToggle()}
           >

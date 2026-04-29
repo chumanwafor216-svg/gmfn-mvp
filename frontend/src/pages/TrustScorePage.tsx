@@ -5,6 +5,9 @@ import NextActionGuide, {
   type NextActionGuideItem,
 } from "../components/NextActionGuide";
 import PageTopNav from "../components/PageTopNav";
+import TrustDocumentActionGuide from "../components/TrustDocumentActionGuide";
+import TrustDocumentFamilyMap from "../components/TrustDocumentFamilyMap";
+import TrustDocumentUseCases from "../components/TrustDocumentUseCases";
 import * as api from "../lib/api";
 import {
   buildGuidanceSnapshot,
@@ -19,6 +22,10 @@ import {
 } from "../lib/institutionalSurface";
 import { navigateWithOrigin } from "../lib/nav";
 import { publicApiUrl } from "../lib/publicLinks";
+import { buildTrustPassportActionGuide } from "../lib/trustDocumentActionGuide";
+import { buildTrustDocumentFamilyItems } from "../lib/trustDocumentFamilyMap";
+import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
+import { buildTrustPassportSnapshot } from "../lib/trustDocumentSnapshots";
 
 type NoticeTone = "success" | "error";
 
@@ -971,7 +978,7 @@ function getCciState(me: any, trustSlip: any): TrustReadingState {
         classText,
         scoreText:
           scoreNum === null || Number.isNaN(scoreNum)
-            ? "—"
+            ? "-"
             : String(Math.round(scoreNum)),
         tone: "green",
         statusText: "Healthy across visible communities",
@@ -984,7 +991,7 @@ function getCciState(me: any, trustSlip: any): TrustReadingState {
         classText,
         scoreText:
           scoreNum === null || Number.isNaN(scoreNum)
-            ? "—"
+            ? "-"
             : String(Math.round(scoreNum)),
         tone: "green",
         statusText: "Stable and growing",
@@ -999,7 +1006,7 @@ function getCciState(me: any, trustSlip: any): TrustReadingState {
         classText,
         scoreText:
           scoreNum === null || Number.isNaN(scoreNum)
-            ? "—"
+            ? "-"
             : String(Math.round(scoreNum)),
         tone: "yellow",
         statusText: "Needs attention",
@@ -1013,7 +1020,7 @@ function getCciState(me: any, trustSlip: any): TrustReadingState {
       classText,
       scoreText:
         scoreNum === null || Number.isNaN(scoreNum)
-          ? "—"
+          ? "-"
           : String(Math.round(scoreNum)),
       tone: "red",
       statusText: "At risk",
@@ -1067,7 +1074,7 @@ function getCciState(me: any, trustSlip: any): TrustReadingState {
 
   return {
     classText: "Pending",
-    scoreText: "—",
+    scoreText: "-",
     tone: "neutral",
     statusText: "CCI is being prepared",
     whyText: "A fuller cross-community reading will appear when available.",
@@ -1126,7 +1133,7 @@ function getOpenTrustState(
         classText: rawClass,
         scoreText:
           rawScore === null || Number.isNaN(rawScore)
-            ? "—"
+            ? "-"
             : String(Math.round(rawScore)),
         tone: "green",
         statusText: "Strong in your current community",
@@ -1139,7 +1146,7 @@ function getOpenTrustState(
         classText: rawClass,
         scoreText:
           rawScore === null || Number.isNaN(rawScore)
-            ? "—"
+            ? "-"
             : String(Math.round(rawScore)),
         tone: "green",
         statusText: "Stable in your current community",
@@ -1153,7 +1160,7 @@ function getOpenTrustState(
         classText: rawClass,
         scoreText:
           rawScore === null || Number.isNaN(rawScore)
-            ? "—"
+            ? "-"
             : String(Math.round(rawScore)),
         tone: "yellow",
         statusText: "Needs attention in your current community",
@@ -1167,7 +1174,7 @@ function getOpenTrustState(
       classText: rawClass,
       scoreText:
         rawScore === null || Number.isNaN(rawScore)
-          ? "—"
+          ? "-"
           : String(Math.round(rawScore)),
       tone: "red",
       statusText: "At risk in your current community",
@@ -1225,7 +1232,7 @@ function getOpenTrustState(
   if (!hasSelectedCommunity) {
     return {
       classText: "Pending",
-      scoreText: "—",
+      scoreText: "-",
       tone: "neutral",
       statusText: "Select a community to view Open Trust",
       whyText:
@@ -1235,7 +1242,7 @@ function getOpenTrustState(
 
   return {
     classText: "Pending",
-    scoreText: "—",
+    scoreText: "-",
     tone: "neutral",
     statusText: "Open Trust is being prepared",
     whyText:
@@ -1844,7 +1851,7 @@ export default function TrustScorePage() {
       recompute?.score,
       explainability?.current_score,
       trustSlipSummary?.trust_score,
-      "—"
+      "-"
     );
   }, [recompute, explainability, trustSlipSummary]);
 
@@ -1937,12 +1944,12 @@ export default function TrustScorePage() {
     "0.00"
   );
   const trustCurrency = firstTruthy(trustSlipSummary?.currency, "NGN");
-  const graphScore = firstTruthy(trustSlipSummary?.graph_score, "—");
-  const cciScore = firstTruthy(trustSlipSummary?.cci_score, "—");
-  const cciBand = firstTruthy(trustSlipSummary?.cci_band, "—");
-  const levelLabel = firstTruthy(trustSlipSummary?.level_label, "—");
-  const standingScore = firstTruthy(trustSlipSummary?.standing_score, "—");
-  const lifetimeTrust = firstTruthy(trustSlipSummary?.lifetime_trust, "—");
+  const graphScore = firstTruthy(trustSlipSummary?.graph_score, "-");
+  const cciScore = firstTruthy(trustSlipSummary?.cci_score, "-");
+  const cciBand = firstTruthy(trustSlipSummary?.cci_band, "-");
+  const levelLabel = firstTruthy(trustSlipSummary?.level_label, "-");
+  const standingScore = firstTruthy(trustSlipSummary?.standing_score, "-");
+  const lifetimeTrust = firstTruthy(trustSlipSummary?.lifetime_trust, "-");
   const riskFlags = Array.isArray(trustSlipSummary?.risk_flags)
     ? trustSlipSummary!.risk_flags!
     : [];
@@ -2065,6 +2072,12 @@ export default function TrustScorePage() {
     safeStr(trustJourneyModel.primaryRoute.to) === "/app/trust"
       ? "Use this Trust Passport reading to see what is helping, what needs care, and what to repair next."
       : trustJourneyModel.primaryRoute.detail;
+  const actionGuide = useMemo(() => buildTrustPassportActionGuide(), []);
+  const trustDocumentFamilyItems = useMemo(() => buildTrustDocumentFamilyItems(true), []);
+  const trustDocumentUseCases = useMemo(
+    () => buildTrustDocumentUseCaseItems(trustDocumentFamilyItems, "passport"),
+    [trustDocumentFamilyItems]
+  );
 
   const trustNextActionItems = useMemo<NextActionGuideItem[]>(
     () => [
@@ -2286,6 +2299,26 @@ export default function TrustScorePage() {
     setNotice({ tone: "success", text: successText });
   }
 
+  function copyTrustSnapshot() {
+    handleCopy(
+      buildTrustPassportSnapshot({
+        memberName,
+        gmfnId,
+        communityName,
+        communityCode,
+        currentBand,
+        currentScore,
+        openTrustClass: openTrust.classText,
+        cciClass: cci.classText,
+        trustSlipCode,
+        nextStepLabel: nextStep.ctaLabel,
+        verifyUrl,
+      }),
+      "Trust snapshot copied.",
+      "Trust snapshot is not available yet."
+    );
+  }
+
   if (loading) {
     return (
       <div
@@ -2390,6 +2423,22 @@ export default function TrustScorePage() {
         items={trustNextActionItems}
         onSelect={handleTrustNextAction}
         intro="Say what you want in normal words, like trust score, why changed, repair, proof, verify, CCI, or marketplace. GSN will point you to the closest trust path."
+      />
+
+      <TrustDocumentActionGuide content={actionGuide} compact={isCompact} />
+
+      <TrustDocumentFamilyMap
+        compact={isCompact}
+        items={trustDocumentFamilyItems}
+        title="How Trust Passport fits into the wider trust-document family"
+        intro="Trust Passport is the fuller personal trust record. Use this map when you need to separate the stable identity layer, the portable TrustSlip proof, and the public verification check from the deeper trust story explained here."
+      />
+
+      <TrustDocumentUseCases
+        compact={isCompact}
+        items={trustDocumentUseCases}
+        title="Which trust question should stay here, and which should move elsewhere?"
+        intro="Use this chooser when someone asks for identity proof, the fuller trust explanation, portable proof, or a public validity check, and you need to know whether to stay inside Trust Passport or move to a narrower surface."
       />
 
       <section style={pageCard("linear-gradient(135deg, #F8FBFF 0%, #FFFFFF 54%, #FFF8E7 100%)")}>
@@ -2641,6 +2690,17 @@ export default function TrustScorePage() {
                 style={actionBtn("soft")}
               >
                 Print Trust Passport
+              </button>
+
+              <button
+                type="button"
+                onPointerDown={stopTrustTap}
+                onMouseDown={stopTrustTap}
+                onTouchStart={stopTrustTap}
+                onClick={copyTrustSnapshot}
+                style={actionBtn("soft")}
+              >
+                Copy trust snapshot
               </button>
 
               {verifyUrl ? (
@@ -3630,25 +3690,25 @@ export default function TrustScorePage() {
 
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 <div style={helperText()}>
-                  Borrower repayment delta: {safeStr(ruleset?.borrower_repayment_delta || "—")}
+                  Borrower repayment delta: {safeStr(ruleset?.borrower_repayment_delta || "-")}
                 </div>
                 <div style={helperText()}>
-                  Guarantor repayment delta: {safeStr(ruleset?.guarantor_repayment_delta || "—")}
+                  Guarantor repayment delta: {safeStr(ruleset?.guarantor_repayment_delta || "-")}
                 </div>
                 <div style={helperText()}>
-                  Precision: {safeStr(ruleset?.precision || "—")}
+                  Precision: {safeStr(ruleset?.precision || "-")}
                 </div>
                 <div style={helperText()}>
-                  Ordering: {safeStr(ruleset?.ordering || "—")}
+                  Ordering: {safeStr(ruleset?.ordering || "-")}
                 </div>
                 <div style={helperText()}>
-                  Computed band: {safeStr(recompute?.breakdown?.computed_band || recompute?.band || "—")}
+                  Computed band: {safeStr(recompute?.breakdown?.computed_band || recompute?.band || "-")}
                 </div>
                 <div style={helperText()}>
-                  Computed score: {safeStr(recompute?.breakdown?.computed_score || recompute?.score || "—")}
+                  Computed score: {safeStr(recompute?.breakdown?.computed_score || recompute?.score || "-")}
                 </div>
                 <div style={helperText()}>
-                  Computed score int: {safeStr(recompute?.breakdown?.computed_score_int ?? "—")}
+                  Computed score int: {safeStr(recompute?.breakdown?.computed_score_int ?? "-")}
                 </div>
               </div>
             </div>
@@ -3801,13 +3861,13 @@ export default function TrustScorePage() {
 
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 <div style={helperText()}>
-                  TrustSlip status: {safeStr(trustSlipSummary?.status || "—")}
+                  TrustSlip status: {safeStr(trustSlipSummary?.status || "-")}
                 </div>
                 <div style={helperText()}>
-                  Issued: {safeDateTime(trustSlipSummary?.issued_at) || "—"}
+                  Issued: {safeDateTime(trustSlipSummary?.issued_at) || "-"}
                 </div>
                 <div style={helperText()}>
-                  Expires: {safeDateTime(trustSlipSummary?.expires_at) || "—"}
+                  Expires: {safeDateTime(trustSlipSummary?.expires_at) || "-"}
                 </div>
                 <div style={helperText()}>
                   Disclaimer: {safeStr(

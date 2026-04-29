@@ -4256,6 +4256,7 @@ function marketplaceButtonGuardProps(): Pick<
                     </button>
                       <button
                         type="button"
+                        {...marketplaceButtonGuardProps()}
                         onClick={(event) => {
                           runMarketplaceAction(event, () => {
                             copyMarketplaceMessage(
@@ -4357,6 +4358,7 @@ function marketplaceButtonGuardProps(): Pick<
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
                       <button
                         type="button"
+                        {...marketplaceButtonGuardProps()}
                         onClick={(event) => {
                           runMarketplaceAction(event, () => {
                             copyMarketplaceMessage(
@@ -4450,6 +4452,7 @@ function marketplaceButtonGuardProps(): Pick<
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
                       <button
                         type="button"
+                        {...marketplaceButtonGuardProps()}
                         onClick={(event) => {
                           runMarketplaceAction(event, () => {
                             copyMarketplaceLink(
@@ -4511,6 +4514,7 @@ function marketplaceButtonGuardProps(): Pick<
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
                       <button
                         type="button"
+                        {...marketplaceButtonGuardProps()}
                         onClick={(event) => {
                           runMarketplaceAction(event, () => {
                             copyMarketplaceLink(

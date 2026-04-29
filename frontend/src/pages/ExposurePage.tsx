@@ -84,6 +84,53 @@ function timeAgo(iso?: string): string {
   return `${days} day(s) ago`;
 }
 
+function stableTapStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
+  };
+}
+
+function stopExposureTap(e: React.SyntheticEvent) {
+  e.stopPropagation();
+}
+
+function exposureButtonGuardProps() {
+  return {
+    onPointerDown: stopExposureTap,
+    onTouchStart: stopExposureTap,
+    onMouseDown: stopExposureTap,
+  };
+}
+
+function toolButtonStyle(disabled = false): React.CSSProperties {
+  return {
+    padding: "10px 12px",
+    borderRadius: 10,
+    border: "1px solid #ddd",
+    background: "white",
+    cursor: disabled ? "not-allowed" : "pointer",
+    opacity: disabled ? 0.6 : 1,
+    ...stableTapStyle(),
+  };
+}
+
+function routeLinkStyle(): React.CSSProperties {
+  return {
+    marginLeft: 6,
+    display: "inline-flex",
+    alignItems: "center",
+    minHeight: 40,
+    ...stableTapStyle(),
+  };
+}
+
 export default function ExposurePage() {
   const [me, setMe] = useState<MeLite | null>(null);
 
@@ -239,7 +286,6 @@ export default function ExposurePage() {
     loadMeUI();
     loadExposureUI();
     loadDefaultedLoansUI();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -310,13 +356,8 @@ export default function ExposurePage() {
           <button
             onClick={runOverdueNowUI}
             disabled={loading || !isAdmin}
-            style={{
-              padding: "10px 12px",
-              borderRadius: 10,
-              border: "1px solid #ddd",
-              background: "white",
-              cursor: loading || !isAdmin ? "not-allowed" : "pointer",
-            }}
+            style={toolButtonStyle(loading || !isAdmin)}
+            {...exposureButtonGuardProps()}
           >
             {loading ? "Working..." : "Run overdue detector now"}
           </button>
@@ -324,13 +365,8 @@ export default function ExposurePage() {
           <button
             onClick={loadExposureUI}
             disabled={loading || !isAdmin}
-            style={{
-              padding: "10px 12px",
-              borderRadius: 10,
-              border: "1px solid #ddd",
-              background: "white",
-              cursor: loading || !isAdmin ? "not-allowed" : "pointer",
-            }}
+            style={toolButtonStyle(loading || !isAdmin)}
+            {...exposureButtonGuardProps()}
           >
             Refresh exposure
           </button>
@@ -338,19 +374,13 @@ export default function ExposurePage() {
           <button
             onClick={loadCciScoresUI}
             disabled={cciLoading || rows.length === 0}
-            style={{
-              padding: "10px 12px",
-              borderRadius: 10,
-              border: "1px solid #ddd",
-              background: "white",
-              cursor: cciLoading || rows.length === 0 ? "not-allowed" : "pointer",
-              opacity: cciLoading || rows.length === 0 ? 0.6 : 1,
-            }}
+            style={toolButtonStyle(cciLoading || rows.length === 0)}
+            {...exposureButtonGuardProps()}
           >
             {cciLoading ? "Loading CCI..." : "Load CCI scores"}
           </button>
 
-          <Link to="/app/command-center/trust-analytics" style={{ marginLeft: 6 }}>
+          <Link to="/app/command-center/trust-analytics" style={routeLinkStyle()}>
             Trust Analytics →
           </Link>
         </div>

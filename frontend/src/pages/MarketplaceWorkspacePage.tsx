@@ -895,6 +895,7 @@ export default function MarketplaceWorkspacePage() {
           <div style={sectionTitle()}>Access & sharing</div>
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => setInviteOpen((v) => !v)}
             style={btn(false)}
           >
@@ -960,6 +961,7 @@ export default function MarketplaceWorkspacePage() {
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                     <button
                       type="button"
+                      {...buttonGuardProps()}
                       onClick={() => {
                         safeCopy(inviteLink);
                         setMsg("Community invite link copied.");
@@ -972,6 +974,7 @@ export default function MarketplaceWorkspacePage() {
 
                     <button
                       type="button"
+                      {...buttonGuardProps()}
                       onClick={copyInviteMessage}
                       style={btn(false)}
                     >
@@ -1062,6 +1065,7 @@ export default function MarketplaceWorkspacePage() {
               >
                   <button
                     type="button"
+                    {...buttonGuardProps()}
                     onClick={copyShopViewLink}
                     style={btn(false)}
                     disabled={!shopViewLink}
@@ -1071,6 +1075,7 @@ export default function MarketplaceWorkspacePage() {
 
                   <button
                     type="button"
+                    {...buttonGuardProps()}
                     onClick={copyShopViewMessage}
                     style={btn(false)}
                     disabled={!shopViewLink}
@@ -1321,6 +1326,7 @@ export default function MarketplaceWorkspacePage() {
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <button
                       type="button"
+                      {...buttonGuardProps()}
                       onClick={() => setSelectedMember(member.raw)}
                       style={btn(false)}
                     >

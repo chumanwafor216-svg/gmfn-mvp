@@ -762,6 +762,7 @@ export default function CreateEntryPage() {
             <button
               type="button"
               onClick={handleExistingMemberLogin}
+              {...buttonGuardProps()}
               style={{
                 ...primaryBtn(false),
                 width: "auto",

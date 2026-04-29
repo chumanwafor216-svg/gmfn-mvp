@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { EntryBackLink } from "../components/EntryControls";
 import OriginLink from "../components/OriginLink";
 import { activateApprovedMember, observeIdentityRisk } from "../lib/api";
@@ -49,20 +49,6 @@ function innerPanel(): React.CSSProperties {
   };
 }
 
-function darkGuidePanel(): React.CSSProperties {
-  return {
-    borderRadius: 22,
-    background:
-      "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)",
-    border: "1px solid rgba(16,37,59,0.16)",
-    boxShadow:
-      "0 18px 34px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
-    padding: 18,
-    position: "relative",
-    overflow: "hidden",
-  };
-}
-
 function topRailCard(): React.CSSProperties {
   return {
     borderRadius: 22,
@@ -87,6 +73,7 @@ function guideButtonShell(): React.CSSProperties {
 
 function guideAboutBtn(): React.CSSProperties {
   return {
+    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -108,12 +95,12 @@ function guideAboutBtn(): React.CSSProperties {
     textTransform: "uppercase",
     cursor: "pointer",
     textShadow: "0 1px 0 rgba(255,255,255,0.32)",
-    transform: "translateY(0)",
   };
 }
 
 function guideMainBtn(): React.CSSProperties {
   return {
+    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -132,7 +119,6 @@ function guideMainBtn(): React.CSSProperties {
     textAlign: "center",
     cursor: "pointer",
     textShadow: "0 1px 0 rgba(255,255,255,0.34)",
-    transform: "translateY(0)",
   };
 }
 
@@ -151,11 +137,27 @@ function inputStyle(readOnly = false): React.CSSProperties {
     boxSizing: "border-box",
     boxShadow:
       "inset 0 1px 0 rgba(255,255,255,0.86), 0 6px 14px rgba(10,24,49,0.04)",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+  };
+}
+
+function stableTapStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
   };
 }
 
 function primaryBtn(disabled = false): React.CSSProperties {
   return {
+    ...stableTapStyle(),
     width: "min(100%, 60%)",
     padding: "14px 18px",
     borderRadius: 16,
@@ -173,12 +175,12 @@ function primaryBtn(disabled = false): React.CSSProperties {
       ? "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.52)"
       : "0 18px 32px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.58), inset 0 -8px 14px rgba(125,85,10,0.12)",
     textShadow: disabled ? "none" : "0 1px 0 rgba(255,255,255,0.36)",
-    transform: "translateY(0)",
   };
 }
 
 function secondaryBtn(): React.CSSProperties {
   return {
+    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -196,7 +198,6 @@ function secondaryBtn(): React.CSSProperties {
       "0 14px 24px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.82), inset 0 -6px 10px rgba(120,142,170,0.10)",
     textShadow: "0 1px 0 rgba(255,255,255,0.52)",
     cursor: "pointer",
-    transform: "translateY(0)",
   };
 }
 
@@ -254,8 +255,22 @@ function helperText(): React.CSSProperties {
   };
 }
 
+function guardButtonPress(event: React.SyntheticEvent<HTMLElement>) {
+  event.stopPropagation();
+}
+
+function buttonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: guardButtonPress,
+    onTouchStart: guardButtonPress,
+    onMouseDown: guardButtonPress,
+  };
+}
+
 export default function MemberActivationPage() {
-  const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
 
@@ -387,6 +402,7 @@ export default function MemberActivationPage() {
                 <div style={guideButtonShell()}>
                   <button
                     type="button"
+                    {...buttonGuardProps()}
                     onClick={() => setGuideOpen((current) => !current)}
                     style={guideAboutBtn()}
                   >
@@ -394,6 +410,7 @@ export default function MemberActivationPage() {
                   </button>
                   <button
                     type="button"
+                    {...buttonGuardProps()}
                     onClick={() => setGuideOpen((current) => !current)}
                     style={guideMainBtn()}
                   >
@@ -523,6 +540,7 @@ export default function MemberActivationPage() {
                   <button
                     type="submit"
                     disabled={busy || activated}
+                    {...buttonGuardProps()}
                     style={primaryBtn(busy || activated)}
                   >
                     {busy ? "Activating..." : "Activate Membership"}

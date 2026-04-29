@@ -1,7 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import NextActionGuide from "../components/NextActionGuide";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
-import { getMe } from "../lib/api";
+import TrustDocumentFamilyMap from "../components/TrustDocumentFamilyMap";
+import TrustDocumentUseCases from "../components/TrustDocumentUseCases";
+import { getMe, safeCopy } from "../lib/api";
+import { navigateWithOrigin } from "../lib/nav";
+import { buildTrustDocumentFamilyItems } from "../lib/trustDocumentFamilyMap";
+import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
+import { buildCciGuideItems } from "../lib/trustDocumentGuide";
+import { buildCciSnapshot } from "../lib/trustDocumentSnapshots";
 
 type ReadingState = {
   classText: string;
@@ -155,7 +164,7 @@ function getCciState(me: any): ReadingState {
     if (classText === "A" || classText === "A+") {
       return {
         classText,
-        scoreText: scoreNum === null || Number.isNaN(scoreNum) ? "—" : String(Math.round(scoreNum)),
+        scoreText: scoreNum === null || Number.isNaN(scoreNum) ? "-" : String(Math.round(scoreNum)),
         tone: "green",
         statusText: "Healthy across visible communities",
         whyText: String(rawWhy || "Your trust position is steady right now."),
@@ -164,7 +173,7 @@ function getCciState(me: any): ReadingState {
     if (classText === "B") {
       return {
         classText,
-        scoreText: scoreNum === null || Number.isNaN(scoreNum) ? "—" : String(Math.round(scoreNum)),
+        scoreText: scoreNum === null || Number.isNaN(scoreNum) ? "-" : String(Math.round(scoreNum)),
         tone: "green",
         statusText: "Stable and growing",
         whyText: String(rawWhy || "Keep consistent positive actions across communities."),
@@ -173,7 +182,7 @@ function getCciState(me: any): ReadingState {
     if (classText === "C") {
       return {
         classText,
-        scoreText: scoreNum === null || Number.isNaN(scoreNum) ? "—" : String(Math.round(scoreNum)),
+        scoreText: scoreNum === null || Number.isNaN(scoreNum) ? "-" : String(Math.round(scoreNum)),
         tone: "yellow",
         statusText: "Needs attention",
         whyText: String(rawWhy || "A few better actions can improve your standing."),
@@ -181,7 +190,7 @@ function getCciState(me: any): ReadingState {
     }
     return {
       classText,
-      scoreText: scoreNum === null || Number.isNaN(scoreNum) ? "—" : String(Math.round(scoreNum)),
+      scoreText: scoreNum === null || Number.isNaN(scoreNum) ? "-" : String(Math.round(scoreNum)),
       tone: "red",
       statusText: "At risk",
       whyText: String(rawWhy || "Your trust position needs action and repair."),
@@ -227,7 +236,7 @@ function getCciState(me: any): ReadingState {
 
   return {
     classText: "Pending",
-    scoreText: "—",
+    scoreText: "-",
     tone: "neutral",
     statusText: "CCI is being prepared",
     whyText: "A fuller cross-community reading will appear when available.",
@@ -248,6 +257,8 @@ function toneMeta(tone: ReadingState["tone"]) {
 }
 
 export default function CCIReadingPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 980;
@@ -284,6 +295,39 @@ export default function CCIReadingPage() {
 
   const cci = useMemo(() => getCciState(me), [me]);
   const tone = useMemo(() => toneMeta(cci.tone), [cci.tone]);
+  const guideItems = useMemo(() => buildCciGuideItems(), []);
+  const familyItems = useMemo(() => buildTrustDocumentFamilyItems(true), []);
+  const trustDocumentUseCases = useMemo(
+    () => buildTrustDocumentUseCaseItems(familyItems, "cci"),
+    [familyItems]
+  );
+  const memberLabel = useMemo(() => {
+    return String(
+      me?.display_name ||
+        me?.nickname ||
+        me?.name ||
+        me?.first_name ||
+        me?.email ||
+        "Member"
+    ).trim();
+  }, [me]);
+
+  function handleGuideSelect(item: { to?: string }) {
+    if (!item.to) return;
+    navigateWithOrigin(navigate, item.to, location);
+  }
+
+  function copyCciSnapshot() {
+    safeCopy(
+      buildCciSnapshot({
+        memberLabel,
+        classText: cci.classText,
+        scoreText: cci.scoreText,
+        statusText: cci.statusText,
+        whyText: cci.whyText,
+      })
+    );
+  }
 
   return (
     <div style={{ maxWidth: 980, margin: "0 auto", display: "grid", gap: 18 }}>
@@ -344,6 +388,64 @@ export default function CCIReadingPage() {
               <OriginLink to="/app/trust" style={actionBtn(false)}>
                 Open Trust Passport
               </OriginLink>
+              <button type="button" onClick={copyCciSnapshot} style={actionBtn(false)}>
+                Copy CCI snapshot
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <NextActionGuide
+        storageKey="gmfn.cciReading.nextActionGuide.v1"
+        compact={isCompact}
+        items={guideItems}
+        intro="Say what you want next in plain words like verify identity, explain my trust, or open the portable proof. GSN will point you to the closest trust document surface."
+        onSelect={handleGuideSelect}
+      />
+
+      <TrustDocumentFamilyMap
+        compact={isCompact}
+        items={familyItems}
+        title="Where CCI sits inside the trust-document family"
+        intro="CCI is only one reading inside the wider trust system. Use this map when you need to understand whether to stay with the narrow integrity read, move into the fuller personal trust story, carry portable proof, or confirm public validity."
+      />
+
+      <TrustDocumentUseCases
+        compact={isCompact}
+        items={trustDocumentUseCases}
+        title="Which trust question should stay with CCI?"
+        intro="Stay with CCI when the question is the narrower cross-community integrity read. Move out when someone needs the stable identity anchor, the fuller trust story, portable proof, or a public validity check."
+      />
+
+      <section style={pageCard("#FFFFFF")}>
+        <div style={sectionLabel()}>What to do with this reading</div>
+        <div
+          style={{
+            marginTop: 10,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+            gap: 12,
+          }}
+        >
+          <div style={innerCard("#F8FBFF")}>
+            <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 15 }}>
+              Use CCI for the wider read
+            </div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              This page helps you understand how people outside your immediate
+              community may read your visible trust behaviour right now.
+            </div>
+          </div>
+
+          <div style={innerCard("#FFFFFF")}>
+            <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 15 }}>
+              Do not stop here if you need proof
+            </div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              If someone needs a portable trust document or a public verify
+              code, continue into TrustSlip or Trust Passport instead of using
+              the CCI page alone.
             </div>
           </div>
         </div>

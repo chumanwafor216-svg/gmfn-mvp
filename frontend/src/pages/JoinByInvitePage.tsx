@@ -47,21 +47,6 @@ function apiUrl(path: string): string {
   return `${apiBase()}${cleanPath}`;
 }
 
-function mergeSearchIntoPath(to: string, currentSearch: string): string {
-  const [basePath, baseQueryRaw = ""] = String(to || "").split("?");
-  const merged = new URLSearchParams(baseQueryRaw);
-  const current = new URLSearchParams(currentSearch);
-
-  current.forEach((value, key) => {
-    if (!merged.has(key)) {
-      merged.append(key, value);
-    }
-  });
-
-  const finalQuery = merged.toString();
-  return finalQuery ? `${basePath}?${finalQuery}` : basePath;
-}
-
 function fmtDate(iso?: string | null): string {
   if (!iso) return "Not specified";
   const d = new Date(iso);
@@ -174,6 +159,32 @@ function btn(primary = false, disabled = false): React.CSSProperties {
     justifyContent: "center",
     whiteSpace: "normal",
     textAlign: "center",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+  };
+}
+
+function stableTapStyle(): React.CSSProperties {
+  return {
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+  };
+}
+
+function guardButtonPress(
+  event:
+    | React.PointerEvent<HTMLElement>
+    | React.TouchEvent<HTMLElement>
+    | React.MouseEvent<HTMLElement>
+): void {
+  event.stopPropagation();
+}
+
+function buttonGuardProps() {
+  return {
+    onPointerDown: guardButtonPress,
+    onTouchStart: guardButtonPress,
+    onMouseDown: guardButtonPress,
   };
 }
 
@@ -557,9 +568,13 @@ export default function JoinByInvitePage() {
               >
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={continueInviteFlow}
                   disabled={!canContinue || continuing}
-                  style={btn(true, !canContinue || continuing)}
+                  style={{
+                    ...btn(true, !canContinue || continuing),
+                    ...stableTapStyle(),
+                  }}
                 >
                   {continuing ? "Continuing..." : "Continue invited route"}
                 </button>

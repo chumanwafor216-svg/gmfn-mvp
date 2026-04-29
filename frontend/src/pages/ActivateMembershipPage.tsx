@@ -62,11 +62,27 @@ function inputStyle(): React.CSSProperties {
     boxSizing: "border-box",
     boxShadow:
       "inset 0 1px 0 rgba(255,255,255,0.86), 0 6px 14px rgba(10,24,49,0.04)",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+  };
+}
+
+function stableTapStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    transform: "translateZ(0)",
+    outlineOffset: 4,
   };
 }
 
 function primaryBtn(disabled = false): React.CSSProperties {
   return {
+    ...stableTapStyle(),
     width: "min(100%, 60%)",
     padding: "14px 18px",
     borderRadius: 16,
@@ -89,6 +105,7 @@ function primaryBtn(disabled = false): React.CSSProperties {
 
 function secondaryBtn(): React.CSSProperties {
   return {
+    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -106,6 +123,21 @@ function secondaryBtn(): React.CSSProperties {
       "0 10px 24px rgba(10,24,49,0.14), inset 0 1px 0 rgba(255,255,255,0.78)",
     textShadow: "0 1px 0 rgba(255,255,255,0.52)",
     cursor: "pointer",
+  };
+}
+
+function guardButtonPress(event: React.SyntheticEvent<HTMLElement>) {
+  event.stopPropagation();
+}
+
+function buttonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: guardButtonPress,
+    onTouchStart: guardButtonPress,
+    onMouseDown: guardButtonPress,
   };
 }
 
@@ -405,13 +437,23 @@ export default function ActivateMembershipPage() {
                   </div>
 
                   <div style={{ marginTop: 18, display: "flex", justifyContent: "center" }}>
-                    <button type="submit" disabled={!canSubmit} style={primaryBtn(!canSubmit)}>
+                    <button
+                      type="submit"
+                      disabled={!canSubmit}
+                      {...buttonGuardProps()}
+                      style={primaryBtn(!canSubmit)}
+                    >
                       {busy ? "Activating..." : "Activate membership"}
                     </button>
                   </div>
 
                   <div style={{ marginTop: 14, display: "flex", justifyContent: "center" }}>
-                    <button type="button" onClick={clearForm} style={secondaryBtn()}>
+                    <button
+                      type="button"
+                      onClick={clearForm}
+                      {...buttonGuardProps()}
+                      style={secondaryBtn()}
+                    >
                       Clear password fields
                     </button>
                   </div>

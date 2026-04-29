@@ -1,9 +1,20 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
+import NextActionGuide from "../components/NextActionGuide";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import TrustDocumentActionGuide from "../components/TrustDocumentActionGuide";
+import TrustDocumentFamilyMap from "../components/TrustDocumentFamilyMap";
+import TrustDocumentUseCases from "../components/TrustDocumentUseCases";
 import * as api from "../lib/api";
+import { navigateWithOrigin } from "../lib/nav";
 import { publicApiUrl } from "../lib/publicLinks";
+import { buildTrustSlipActionGuide } from "../lib/trustDocumentActionGuide";
+import { buildTrustDocumentFamilyItems } from "../lib/trustDocumentFamilyMap";
+import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
+import { buildTrustSlipGuideItems } from "../lib/trustDocumentGuide";
+import { buildTrustSlipSnapshot } from "../lib/trustDocumentSnapshots";
 
 type NoticeTone = "success" | "error";
 
@@ -357,12 +368,43 @@ function stableTapStyle(): React.CSSProperties {
   };
 }
 
+const stableTapTarget: React.CSSProperties = {
+  position: "relative",
+  zIndex: 10,
+  isolation: "isolate",
+  pointerEvents: "auto",
+  WebkitTapHighlightColor: "transparent",
+  touchAction: "manipulation",
+  userSelect: "none",
+  appearance: "none",
+  WebkitAppearance: "none",
+  boxSizing: "border-box",
+  outlineOffset: 4,
+  transform: "translateZ(0)",
+};
+
+function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
+  event?.stopPropagation();
+}
+
+function buttonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onTouchStart" | "onMouseDown"
+> {
+  return {
+    onPointerDown: guardButtonPress,
+    onTouchStart: guardButtonPress,
+    onMouseDown: guardButtonPress,
+  };
+}
+
 function actionBtn(
   kind: "primary" | "secondary" | "soft" = "secondary",
   disabled = false
 ): React.CSSProperties {
   if (kind === "primary") {
     return {
+      ...stableTapTarget,
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
@@ -390,6 +432,7 @@ function actionBtn(
 
   if (kind === "soft") {
     return {
+      ...stableTapTarget,
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
@@ -412,6 +455,7 @@ function actionBtn(
   }
 
   return {
+    ...stableTapTarget,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -670,6 +714,8 @@ async function callFirstAvailable<T = any>(
 }
 
 export default function TrustSlipPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
@@ -692,6 +738,13 @@ export default function TrustSlipPage() {
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
   const [summary, setSummary] = useState<TrustSlipSummary | null>(null);
+  const guideItems = useMemo(() => buildTrustSlipGuideItems(), []);
+  const actionGuide = useMemo(() => buildTrustSlipActionGuide(), []);
+  const trustDocumentFamilyItems = useMemo(() => buildTrustDocumentFamilyItems(true), []);
+  const trustDocumentUseCases = useMemo(
+    () => buildTrustDocumentUseCaseItems(trustDocumentFamilyItems, "trust-slip"),
+    [trustDocumentFamilyItems]
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -969,6 +1022,31 @@ export default function TrustSlipPage() {
     showNotice("error", "Copy is not supported in this browser.");
   }
 
+  function handleGuideSelect(item: { to?: string }) {
+    if (!item.to) return;
+    navigateWithOrigin(navigate, item.to, location);
+  }
+
+  function copyTrustSlipSnapshot() {
+    handleCopy(
+      buildTrustSlipSnapshot({
+        holderName,
+        gmfnId,
+        communityName,
+        communityRef,
+        trustSlipCode,
+        merchantBand,
+        merchantTrustLimit,
+        merchantCurrency,
+        cciBand,
+        expiresAt: safeDateTime(summary?.expires_at) || "Not stated",
+        verifyUrl,
+      }),
+      "TrustSlip snapshot copied.",
+      "TrustSlip snapshot is not ready yet."
+    );
+  }
+
   if (loading) {
     return (
       <div
@@ -1051,6 +1129,30 @@ export default function TrustSlipPage() {
         why="It keeps the public-facing trust summary, code, expiry window, and verification route together in one shareable place."
         next="Start with the main TrustSlip summary, then use TrustSlip Verify when you need to confirm the current public reading."
         tone="blue"
+      />
+
+      <NextActionGuide
+        storageKey="gmfn.trustSlip.nextActionGuide.v1"
+        compact={isCompact}
+        items={guideItems}
+        intro="Say what you need next in simple words, like verify this code, explain the trust story, or open the identity side behind the same document."
+        onSelect={handleGuideSelect}
+      />
+
+      <TrustDocumentActionGuide content={actionGuide} compact={isCompact} />
+
+      <TrustDocumentFamilyMap
+        compact={isCompact}
+        items={trustDocumentFamilyItems}
+        title="How TrustSlip fits into the wider trust-document family"
+        intro="TrustSlip is the portable proof layer. Use this map when you need to separate the fuller Trust Passport story from the shorter outward-facing document and the public verification check that proves it is still current."
+      />
+
+      <TrustDocumentUseCases
+        compact={isCompact}
+        items={trustDocumentUseCases}
+        title="Which trust question should stay in TrustSlip?"
+        intro="Stay here when the task is carrying concise outward-facing proof. Move outward to public verification for current validity, or back inward to Trust Passport and Identity & Integrity when the fuller story matters."
       />
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
@@ -1139,6 +1241,7 @@ export default function TrustSlipPage() {
             >
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() =>
                   handleCopy(
                     trustSlipCode,
@@ -1154,6 +1257,7 @@ export default function TrustSlipPage() {
 
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() =>
                   handleCopy(
                     verifyUrl,
@@ -1169,6 +1273,7 @@ export default function TrustSlipPage() {
 
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() =>
                   handleCopy(
                     gmfnId,
@@ -1184,6 +1289,7 @@ export default function TrustSlipPage() {
 
               <button
                 type="button"
+                {...buttonGuardProps()}
                 onClick={() => {
                   if (typeof window !== "undefined" && typeof window.print === "function") {
                     window.print();
@@ -1192,6 +1298,15 @@ export default function TrustSlipPage() {
                 style={actionBtn("soft")}
               >
                 Print TrustSlip
+              </button>
+
+              <button
+                type="button"
+                {...buttonGuardProps()}
+                onClick={copyTrustSlipSnapshot}
+                style={actionBtn("soft")}
+              >
+                Copy TrustSlip snapshot
               </button>
             </div>
           </div>
@@ -1359,6 +1474,7 @@ export default function TrustSlipPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("merchantVerify")}
             style={collapseToggle()}
           >
@@ -1517,6 +1633,7 @@ export default function TrustSlipPage() {
 
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={() =>
                     handleCopy(
                       verifyUrl,
@@ -1565,6 +1682,7 @@ export default function TrustSlipPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("merchantView")}
             style={collapseToggle()}
           >
@@ -1693,6 +1811,7 @@ export default function TrustSlipPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("evidence")}
             style={collapseToggle()}
           >
@@ -1812,6 +1931,7 @@ export default function TrustSlipPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("notes")}
             style={collapseToggle()}
           >

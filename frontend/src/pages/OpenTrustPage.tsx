@@ -113,15 +113,26 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function actionBtn(primary = false): React.CSSProperties {
+function stableTapStyle(): React.CSSProperties {
   return {
     position: "relative",
-    zIndex: 2,
+    zIndex: 20,
+    pointerEvents: "auto",
     boxSizing: "border-box",
     appearance: "none",
     WebkitAppearance: "none",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
+    transform: "translateZ(0)",
+    lineHeight: 1.2,
+  };
+}
+
+function actionBtn(primary = false): React.CSSProperties {
+  return {
+    ...stableTapStyle(),
+    position: "relative",
+    zIndex: 2,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",

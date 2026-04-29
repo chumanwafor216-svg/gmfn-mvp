@@ -118,6 +118,21 @@ function stableTapStyle(): React.CSSProperties {
   };
 }
 
+function stopSystemTap(event: React.SyntheticEvent<HTMLElement>) {
+  event.stopPropagation();
+}
+
+function systemButtonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onMouseDown" | "onTouchStart"
+> {
+  return {
+    onPointerDown: stopSystemTap,
+    onMouseDown: stopSystemTap,
+    onTouchStart: stopSystemTap,
+  };
+}
+
 function routeTile(primary = false): React.CSSProperties {
   return {
     display: "flex",
@@ -1056,6 +1071,7 @@ export default function SystemOperationsPage() {
 
           <button
             type="button"
+            {...systemButtonGuardProps()}
             onClick={() => toggleSection("overview")}
             style={collapseToggle()}
           >
@@ -1180,6 +1196,7 @@ export default function SystemOperationsPage() {
 
           <button
             type="button"
+            {...systemButtonGuardProps()}
             onClick={() => toggleSection("intake")}
             style={collapseToggle()}
           >
@@ -1471,6 +1488,7 @@ export default function SystemOperationsPage() {
 
           <button
             type="button"
+            {...systemButtonGuardProps()}
             onClick={() => toggleSection("signals")}
             style={collapseToggle()}
           >
@@ -1567,6 +1585,7 @@ export default function SystemOperationsPage() {
 
           <button
             type="button"
+            {...systemButtonGuardProps()}
             onClick={() => toggleSection("queues")}
             style={collapseToggle()}
           >
@@ -1661,6 +1680,7 @@ export default function SystemOperationsPage() {
 
           <button
             type="button"
+            {...systemButtonGuardProps()}
             onClick={() => toggleSection("routes")}
             style={collapseToggle()}
           >

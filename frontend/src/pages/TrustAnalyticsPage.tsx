@@ -269,6 +269,21 @@ function stableTapStyle(): React.CSSProperties {
   };
 }
 
+function stopAnalyticsTap(event: React.SyntheticEvent<HTMLElement>) {
+  event.stopPropagation();
+}
+
+function analyticsButtonGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onMouseDown" | "onTouchStart"
+> {
+  return {
+    onPointerDown: stopAnalyticsTap,
+    onMouseDown: stopAnalyticsTap,
+    onTouchStart: stopAnalyticsTap,
+  };
+}
+
 function actionBtn(
   kind: "primary" | "secondary" | "soft" = "secondary",
   disabled = false
@@ -760,6 +775,7 @@ export default function TrustAnalyticsPage() {
 
           <button
             type="button"
+            {...analyticsButtonGuardProps()}
             onClick={() => toggleSection("overview")}
             style={collapseToggle()}
           >
@@ -884,6 +900,7 @@ export default function TrustAnalyticsPage() {
 
           <button
             type="button"
+            {...analyticsButtonGuardProps()}
             onClick={() => toggleSection("mix")}
             style={collapseToggle()}
           >
@@ -996,6 +1013,7 @@ export default function TrustAnalyticsPage() {
 
           <button
             type="button"
+            {...analyticsButtonGuardProps()}
             onClick={() => toggleSection("timeline")}
             style={collapseToggle()}
           >
@@ -1091,6 +1109,7 @@ export default function TrustAnalyticsPage() {
 
           <button
             type="button"
+            {...analyticsButtonGuardProps()}
             onClick={() => toggleSection("notes")}
             style={collapseToggle()}
           >

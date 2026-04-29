@@ -1065,6 +1065,7 @@ export default function ShopAssetsPage() {
 
                 <button
                   type="button"
+                  {...buttonGuardProps()}
                   onClick={() => copyText(shopLink, "Shop gallery link copied.")}
                   style={actionBtn("secondary", !shopLink)}
                   disabled={!shopLink}
@@ -1164,6 +1165,7 @@ export default function ShopAssetsPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("guidance")}
             style={collapseToggle()}
           >
@@ -1226,6 +1228,7 @@ export default function ShopAssetsPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("signboard")}
             style={collapseToggle()}
           >
@@ -1476,6 +1479,7 @@ export default function ShopAssetsPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("products")}
             style={collapseToggle()}
           >
@@ -1620,6 +1624,7 @@ export default function ShopAssetsPage() {
 
                   <button
                     type="button"
+                    {...buttonGuardProps()}
                     onClick={() => copyText(shopLink, "Shop gallery link copied.")}
                     style={actionBtn("soft", !shopLink)}
                     disabled={!shopLink}
@@ -1765,6 +1770,7 @@ export default function ShopAssetsPage() {
 
           <button
             type="button"
+            {...buttonGuardProps()}
             onClick={() => toggleSection("posted")}
             style={collapseToggle()}
           >
@@ -1942,6 +1948,7 @@ export default function ShopAssetsPage() {
 
                       <button
                         type="button"
+                        {...buttonGuardProps()}
                         onClick={() =>
                           copyText(productLink, "Product gallery link copied.")
                         }
