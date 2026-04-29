@@ -377,8 +377,7 @@ function pageShell(): React.CSSProperties {
     justifyContent: "center",
 
     background:
-
-      "radial-gradient(circle at top, rgba(63,114,206,0.14) 0%, rgba(9,23,44,0.00) 30%), linear-gradient(180deg, #07172B 0%, #0D2A48 58%, #12365A 100%)",
+      "radial-gradient(circle at 12% 0%, rgba(201,154,39,0.10) 0%, rgba(201,154,39,0.00) 22%), radial-gradient(circle at 84% 6%, rgba(70,116,171,0.11) 0%, rgba(70,116,171,0.00) 28%), linear-gradient(180deg, #06101A 0%, #0A1828 48%, #112B40 100%)",
 
     color: "#FFFFFF",
 
@@ -432,11 +431,11 @@ function artworkShell(): React.CSSProperties {
 
     overflow: "hidden",
 
-    border: "1px solid rgba(255,255,255,0.12)",
+    border: "1px solid rgba(226,236,246,0.14)",
 
-    background: "rgba(255,255,255,0.04)",
+    background: "rgba(255,255,255,0.035)",
 
-    boxShadow: "0 28px 74px rgba(0,0,0,0.30)",
+    boxShadow: "0 34px 82px rgba(0,8,18,0.34), inset 0 1px 0 rgba(255,255,255,0.06)",
 
   };
 
@@ -462,13 +461,13 @@ function buttonStyle(disabled = false): React.CSSProperties {
 
     borderRadius: 16,
 
-    border: disabled ? "1px solid rgba(177,196,220,0.55)" : "1px solid rgba(255,255,255,0.92)",
+    border: disabled ? "1px solid rgba(161,179,199,0.48)" : "1px solid rgba(205,220,236,0.92)",
 
     background: disabled
-      ? "linear-gradient(180deg, #9DB5D5 0%, #88A5C8 100%)"
-      : "linear-gradient(180deg, #FFFFFF 0%, #F1F6FD 52%, #DCE9F7 100%)",
+      ? "linear-gradient(180deg, #97AABE 0%, #869CAF 100%)"
+      : "linear-gradient(180deg, #FFFFFF 0%, #F3F7FB 52%, #E2EAF3 100%)",
 
-    color: "#08254A",
+    color: "#0A233B",
 
     fontWeight: 900,
 
@@ -478,7 +477,7 @@ function buttonStyle(disabled = false): React.CSSProperties {
 
     boxShadow: disabled
       ? "none"
-      : "0 18px 34px rgba(1,13,32,0.30), inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -2px 0 rgba(124,149,182,0.35)",
+      : "0 18px 34px rgba(1,13,32,0.24), inset 0 1px 0 rgba(255,255,255,0.96), inset 0 -2px 0 rgba(108,129,154,0.26)",
 
     whiteSpace: "normal",
 
@@ -557,8 +556,7 @@ function GSNSplashArtwork() {
         overflow: "hidden",
 
         background:
-
-          "radial-gradient(circle at 50% 18%, rgba(123,181,255,0.16), transparent 24%), linear-gradient(180deg, #081E63 0%, #0B349B 38%, #0F5FC4 72%, #1282D2 100%)",
+          "radial-gradient(circle at 50% 18%, rgba(164,190,218,0.11), transparent 24%), radial-gradient(circle at 18% 6%, rgba(201,154,39,0.08), transparent 20%), linear-gradient(180deg, #07141F 0%, #0C1F31 34%, #163247 68%, #28516A 100%)",
 
       }}
 
@@ -588,9 +586,9 @@ function GSNSplashArtwork() {
 
           <linearGradient id="shieldBorderGlow" x1="0" y1="0" x2="0" y2="1">
 
-            <stop offset="0%" stopColor="#F4C75A" />
+            <stop offset="0%" stopColor="#E3C06A" />
 
-            <stop offset="100%" stopColor="#E7A83B" />
+            <stop offset="100%" stopColor="#B98A2B" />
 
           </linearGradient>
 
@@ -598,9 +596,9 @@ function GSNSplashArtwork() {
 
           <linearGradient id="shieldFill" x1="0" y1="0" x2="0" y2="1">
 
-            <stop offset="0%" stopColor="#0F6FF0" />
+            <stop offset="0%" stopColor="#215989" />
 
-            <stop offset="100%" stopColor="#0A49BA" />
+            <stop offset="100%" stopColor="#133A63" />
 
           </linearGradient>
 
@@ -618,11 +616,11 @@ function GSNSplashArtwork() {
 
             <stop offset="0%" stopColor="#FFFFFF" />
 
-            <stop offset="36%" stopColor="#F2F7FD" />
+            <stop offset="36%" stopColor="#F4F7FB" />
 
-            <stop offset="68%" stopColor="#D6E4F3" />
+            <stop offset="68%" stopColor="#D4DEE9" />
 
-            <stop offset="100%" stopColor="#ACC2DB" />
+            <stop offset="100%" stopColor="#9FB2C7" />
 
           </linearGradient>
 
@@ -630,29 +628,29 @@ function GSNSplashArtwork() {
 
             <stop offset="0%" stopColor="#FFFFFF" />
 
-            <stop offset="44%" stopColor="#F7FBFF" />
+            <stop offset="44%" stopColor="#F5F8FB" />
 
-            <stop offset="100%" stopColor="#DDEBFA" />
+            <stop offset="100%" stopColor="#D5E0EA" />
 
           </linearGradient>
 
           <linearGradient id="starReliefFill" x1="0" y1="0" x2="0" y2="1">
 
-            <stop offset="0%" stopColor="#FFF4C8" />
+            <stop offset="0%" stopColor="#F7E9B9" />
 
-            <stop offset="48%" stopColor="#F2CB67" />
+            <stop offset="48%" stopColor="#DAB460" />
 
-            <stop offset="100%" stopColor="#D99630" />
+            <stop offset="100%" stopColor="#A9792A" />
 
           </linearGradient>
 
           <radialGradient id="starPulseGlow" cx="50%" cy="45%" r="62%">
 
-            <stop offset="0%" stopColor="rgba(255,244,184,0.96)" />
+            <stop offset="0%" stopColor="rgba(245,232,179,0.88)" />
 
-            <stop offset="38%" stopColor="rgba(246,208,104,0.54)" />
+            <stop offset="38%" stopColor="rgba(214,179,95,0.42)" />
 
-            <stop offset="100%" stopColor="rgba(246,208,104,0)" />
+            <stop offset="100%" stopColor="rgba(214,179,95,0)" />
 
           </radialGradient>
 
@@ -819,7 +817,7 @@ function GSNSplashArtwork() {
 
             fill="none"
 
-            stroke="#CBEAFF"
+            stroke="#A8C5D8"
 
             strokeWidth="3"
 
@@ -831,7 +829,7 @@ function GSNSplashArtwork() {
 
             fill="none"
 
-            stroke="#A6E4FF"
+            stroke="#89AFC9"
 
             strokeWidth="2.5"
 
@@ -849,7 +847,7 @@ function GSNSplashArtwork() {
 
             fill="none"
 
-            stroke="#A3E6FF"
+            stroke="#88AFC7"
 
             strokeWidth="3"
 
@@ -861,7 +859,7 @@ function GSNSplashArtwork() {
 
             fill="none"
 
-            stroke="#9FE0FF"
+            stroke="#82A8C0"
 
             strokeWidth="3"
 
@@ -1231,7 +1229,7 @@ function GSNSplashArtwork() {
             width="660"
             height="246"
             rx="32"
-            fill="rgba(5,19,45,0.54)"
+            fill="rgba(7,19,35,0.62)"
             stroke="rgba(255,255,255,0.12)"
             strokeWidth="2"
           />
@@ -1243,7 +1241,7 @@ function GSNSplashArtwork() {
             height="202"
             rx="24"
             fill="rgba(255,255,255,0.03)"
-            stroke="rgba(244,199,90,0.18)"
+            stroke="rgba(201,154,39,0.20)"
             strokeWidth="1.5"
           />
 
@@ -1272,7 +1270,7 @@ function GSNSplashArtwork() {
             x="330"
             y="82"
             textAnchor="middle"
-            fill="#F3D06A"
+            fill="#D3B15D"
             fontSize="22"
             fontWeight="800"
             letterSpacing="5.2"
@@ -1285,7 +1283,7 @@ function GSNSplashArtwork() {
             x="330"
             y="136"
             textAnchor="middle"
-            fill="#F6F8FC"
+            fill="#F1F5F9"
             fontSize="36"
             fontWeight="700"
             letterSpacing="1.6"
@@ -1298,7 +1296,7 @@ function GSNSplashArtwork() {
             x="330"
             y="180"
             textAnchor="middle"
-            fill="#DCEBFF"
+            fill="#C8D7E6"
             fontSize="24"
             fontWeight="500"
             letterSpacing="0.4"
@@ -1340,13 +1338,13 @@ function GSNSplashArtwork() {
 
         <g opacity="0.26">
 
-          <circle cx="152" cy="1388" r="4" fill="#C7EDFF" />
+          <circle cx="152" cy="1388" r="4" fill="#AEC1D0" />
 
-          <circle cx="738" cy="1398" r="4" fill="#C7EDFF" />
+          <circle cx="738" cy="1398" r="4" fill="#AEC1D0" />
 
-          <circle cx="308" cy="1366" r="3.5" fill="#C7EDFF" />
+          <circle cx="308" cy="1366" r="3.5" fill="#AEC1D0" />
 
-          <circle cx="590" cy="1350" r="3.5" fill="#C7EDFF" />
+          <circle cx="590" cy="1350" r="3.5" fill="#AEC1D0" />
 
         </g>
 

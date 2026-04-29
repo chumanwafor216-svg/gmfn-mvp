@@ -1,3 +1,33 @@
+## 2026-04-29 14:53
+
+### Workstream
+Cover page institutional calm-down pass.
+
+### What changed
+- Reworked `frontend/src/pages/CoverPage.tsx` to keep the exact same page structure while making the visual tone quieter, more mature, and more institution-facing.
+- Toned down the top-level page wash so the cover no longer opens with a bright, warm blue cast.
+- Shifted the main artwork panel toward deeper navy and steel-blue gradients with only a restrained gold accent.
+- Softened the shell border and shadow so the artwork feels more deliberate and less glossy.
+- Rebalanced the primary `Continue` button chrome to match the calmer institutional palette already used across the stronger shared system surfaces.
+- Muted the decorative wave lines, footer dots, and lower trust-protocol plaque so the page reads as serious and trustworthy rather than warm or demo-like.
+- Cleaned duplicate SVG `fill` and `stroke` leftovers that had been introduced during the first cover-page tuning pass.
+
+### Why
+- The product owner called out the public cover page as too warm and not serious enough for first trust.
+- The page needed to feel closer to a calm financial/institutional entry surface without changing its content model or route structure.
+- This pass keeps the same cover-page flow and composition while improving the tone of first impression.
+
+### Files touched
+- `frontend/src/pages/CoverPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- public cover page rendered by `CoverPage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/CoverPage.tsx`
+- `npm run build`
+
 ## 2026-04-28 17:18
 
 ### Workstream
