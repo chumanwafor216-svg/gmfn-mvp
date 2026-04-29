@@ -63,6 +63,31 @@ Cover page premium polish pass.
 - `npm exec -- eslint src/pages/CoverPage.tsx`
 - `npm run build`
 
+## 2026-04-29 15:41
+
+### Workstream
+Cover page shield-star simplification.
+
+### What changed
+- Removed the background carrier/glow shape behind the shield star in `frontend/src/pages/CoverPage.tsx`.
+- Kept the star itself, the shield, the `GSN` text, and the rest of the page artwork unchanged.
+- This makes the central shield mark read more cleanly and less boxed-in.
+
+### Why
+- The product owner specifically called out the star carrier inside the shield as unnecessary and wanted it removed without disturbing the rest of the cover-page composition.
+- This pass applies the smallest possible visual change to honor that request.
+
+### Files touched
+- `frontend/src/pages/CoverPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- public cover page rendered by `CoverPage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/CoverPage.tsx`
+- `npm run build`
+
 ## 2026-04-28 17:18
 
 ### Workstream

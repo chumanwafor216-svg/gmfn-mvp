@@ -1188,22 +1188,6 @@ function GSNSplashArtwork() {
 
             <g>
 
-              <ellipse
-                cx="450"
-                cy="418"
-                rx="56"
-                ry="56"
-                fill="url(#starPulseGlow)"
-                opacity="0.72"
-              >
-                <animate
-                  attributeName="opacity"
-                  values="0.42;0.82;0.42"
-                  dur="2.8s"
-                  repeatCount="indefinite"
-                />
-              </ellipse>
-
               <polygon
 
                 points="
