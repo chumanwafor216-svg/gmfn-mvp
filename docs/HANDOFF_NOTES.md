@@ -88,6 +88,52 @@ Cover page shield-star simplification.
 - `npm exec -- eslint src/pages/CoverPage.tsx`
 - `npm run build`
 
+## 2026-04-29 16:22
+
+### Workstream
+Public entry family institutionalization pass.
+
+### What changed
+- Audited the weaker public entry pages after the cover-page uplift and brought the most visibly warmer screens into the same darker institutional family.
+- `WelcomePage.tsx`
+  - darkened the main shell and hero surface
+  - cooled the guide panel and summary tiles
+  - muted leftover bright-gold next-step accents
+- `LoginPage.tsx`
+  - darkened the page shell and hero card
+  - replaced the warmer gold primary button with the calmer white/steel institutional action style
+  - cooled the sign-in guide card, saved-details card, and supporting step blocks
+- `CreateEntryPage.tsx`
+  - darkened the page shell
+  - cooled page cards, soft cards, inputs, stage cards, and existing-member surfaces
+  - replaced the warmer primary/stage action buttons with the calmer institutional action style
+  - cooled the founder guide panel and its helper messaging
+- `ActivateMembershipPage.tsx`
+  - darkened the page shell
+  - cooled the main activation card and inner form panel
+  - moved the main activation action into the calmer institutional action style
+
+### Why
+- The product owner asked for the weaker inner entry pages, especially the email/sign-in/onboarding pages, to stop feeling warm or demo-like and instead match the more serious, trustworthy institutional direction now established on the cover page.
+- This pass keeps the same page structures and flows but makes the public entry family feel much more coherent visually.
+
+### Files touched
+- `frontend/src/pages/WelcomePage.tsx`
+- `frontend/src/pages/LoginPage.tsx`
+- `frontend/src/pages/CreateEntryPage.tsx`
+- `frontend/src/pages/ActivateMembershipPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- `/welcome`
+- `/login`
+- public create-community onboarding route rendered by `CreateEntryPage.tsx`
+- public approved-member activation route rendered by `ActivateMembershipPage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/WelcomePage.tsx src/pages/LoginPage.tsx src/pages/CreateEntryPage.tsx src/pages/ActivateMembershipPage.tsx`
+- `npm run build`
+
 ## 2026-04-29 15:58
 
 ### Workstream

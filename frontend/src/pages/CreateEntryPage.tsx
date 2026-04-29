@@ -29,7 +29,7 @@ function pageShell(): React.CSSProperties {
     minHeight: "100vh",
     width: "100%",
     background:
-      "radial-gradient(circle at top, rgba(47,103,196,0.16) 0%, rgba(16,37,59,0.00) 32%), linear-gradient(180deg, #10243A 0%, #173654 62%, #26527C 100%)",
+      "radial-gradient(circle at 12% 0%, rgba(201,154,39,0.08) 0%, rgba(201,154,39,0.00) 22%), radial-gradient(circle at 84% 8%, rgba(84,123,169,0.10) 0%, rgba(84,123,169,0.00) 28%), linear-gradient(180deg, #06111C 0%, #0A1B2B 50%, #123149 100%)",
     padding: "34px 22px",
     boxSizing: "border-box",
   };
@@ -38,9 +38,12 @@ function pageShell(): React.CSSProperties {
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
-    background: bg,
-    border: "1px solid rgba(11,31,51,0.08)",
-    boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, rgba(247,250,253,0.99) 0%, rgba(232,239,246,0.97) 100%)"
+        : bg,
+    border: "1px solid rgba(17,37,58,0.10)",
+    boxShadow: "0 22px 54px rgba(8,18,34,0.08)",
     padding: 24,
   };
 }
@@ -48,8 +51,11 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     borderRadius: 18,
-    background: bg,
-    border: "1px solid rgba(11,31,51,0.08)",
+    background:
+      bg === "#F8FBFF"
+        ? "linear-gradient(180deg, rgba(249,251,253,0.98) 0%, rgba(236,242,247,0.96) 100%)"
+        : bg,
+    border: "1px solid rgba(17,37,58,0.10)",
     padding: 18,
   };
 }
@@ -68,11 +74,12 @@ function input(): React.CSSProperties {
     width: "100%",
     padding: "13px 14px",
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.12)",
+    border: "1px solid rgba(28,76,126,0.14)",
     outline: "none",
     fontSize: 14,
     boxSizing: "border-box",
-    background: "#FFFFFF",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.98) 100%)",
     color: "#0B1F33",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
@@ -95,19 +102,19 @@ function primaryBtn(disabled = false): React.CSSProperties {
     width: "100%",
     padding: "14px 18px",
     borderRadius: 16,
+    border: disabled ? "1px solid rgba(161,179,199,0.48)" : "1px solid rgba(205,220,236,0.92)",
     background: disabled
       ? "linear-gradient(180deg, #D7DEE8 0%, #C8D2DF 100%)"
-      : "linear-gradient(180deg, #F6D77D 0%, #F3D06A 52%, #D9A941 100%)",
-    color: disabled ? "#6B7B8D" : "#10253B",
+      : "linear-gradient(180deg, #FFFFFF 0%, #F3F7FB 52%, #E2EAF3 100%)",
+    color: disabled ? "#6B7B8D" : "#0A233B",
     fontWeight: 1000,
-    border: "none",
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 15,
     opacity: disabled ? 0.8 : 1,
     boxShadow: disabled
       ? "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.52)"
-      : "0 16px 30px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.56)",
-    textShadow: disabled ? "none" : "0 1px 0 rgba(255,255,255,0.36)",
+      : "0 18px 34px rgba(1,13,32,0.24), inset 0 1px 0 rgba(255,255,255,0.96), inset 0 -2px 0 rgba(108,129,154,0.26)",
+    textShadow: "none",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
@@ -131,7 +138,7 @@ function secondaryBtn(): React.CSSProperties {
     borderRadius: 999,
     border: "1px solid rgba(16,37,59,0.12)",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(229,237,249,0.96) 100%)",
+      "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(234,241,248,0.98) 100%)",
     color: "#123055",
     textDecoration: "none",
     fontWeight: 1000,
@@ -157,13 +164,12 @@ function stageToggleBtn(active = false): React.CSSProperties {
     : {
         ...secondaryBtn(),
         borderRadius: 16,
-        border: "none",
         background:
-          "linear-gradient(180deg, #F6D77D 0%, #F3D06A 52%, #D9A941 100%)",
-        color: "#10253B",
+          "linear-gradient(180deg, #FFFFFF 0%, #F3F7FB 52%, #E2EAF3 100%)",
+        color: "#0A233B",
         boxShadow:
-          "0 16px 30px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.56)",
-        textShadow: "0 1px 0 rgba(255,255,255,0.36)",
+          "0 18px 34px rgba(1,13,32,0.24), inset 0 1px 0 rgba(255,255,255,0.96), inset 0 -2px 0 rgba(108,129,154,0.26)",
+        textShadow: "none",
       };
 }
 
@@ -172,10 +178,10 @@ function existingMemberCard(open = false): React.CSSProperties {
     width: "min(100%, 760px)",
     borderRadius: 22,
     border: open
-      ? "1px solid rgba(243,208,106,0.34)"
+      ? "1px solid rgba(201,154,39,0.24)"
       : "1px solid rgba(255,255,255,0.16)",
     background: open
-      ? "linear-gradient(180deg, rgba(255,251,235,0.14) 0%, rgba(255,255,255,0.07) 100%)"
+      ? "linear-gradient(180deg, rgba(201,154,39,0.08) 0%, rgba(255,255,255,0.05) 100%)"
       : "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%)",
     boxShadow:
       "0 16px 34px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.10)",
@@ -314,9 +320,9 @@ function stageShell(active = false, complete = false): React.CSSProperties {
     return {
       borderRadius: 20,
       padding: 18,
-      border: "1px solid rgba(217,169,65,0.30)",
+      border: "1px solid rgba(184,159,104,0.26)",
       background:
-        "linear-gradient(180deg, rgba(255,251,238,0.98) 0%, rgba(252,245,225,0.94) 100%)",
+        "linear-gradient(180deg, rgba(247,244,236,0.98) 0%, rgba(236,232,220,0.94) 100%)",
       boxShadow:
         "0 12px 24px rgba(16,37,59,0.07), inset 0 1px 0 rgba(255,255,255,0.72)",
     };
@@ -1405,7 +1411,7 @@ export default function CreateEntryPage() {
             />
             <div
               style={{
-                color: guideDone ? "#B9D7F0" : "#F3D06A",
+                color: guideDone ? "#B9D7F0" : "#CCAC63",
                 fontSize: 13,
                 fontWeight: 800,
                 lineHeight: 1.6,
@@ -1421,8 +1427,8 @@ export default function CreateEntryPage() {
                   width: "min(100%, 760px)",
                   borderRadius: 22,
                   border: "1px solid rgba(255,255,255,0.42)",
-                  background:
-                    "linear-gradient(180deg, rgba(251,253,255,0.99) 0%, rgba(235,242,251,0.98) 34%, rgba(220,232,247,0.95) 68%, rgba(206,221,240,0.92) 100%)",
+                background:
+                    "linear-gradient(180deg, rgba(244,248,252,0.99) 0%, rgba(228,235,243,0.98) 34%, rgba(210,221,233,0.95) 68%, rgba(191,205,220,0.92) 100%)",
                   boxShadow:
                     "0 24px 60px rgba(5,16,38,0.28), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -18px 30px rgba(122,147,180,0.08)",
                   padding: 24,
@@ -1437,8 +1443,8 @@ export default function CreateEntryPage() {
                     position: "absolute",
                     inset: 0,
                     pointerEvents: "none",
-                    background:
-                      "radial-gradient(circle at top, rgba(243,208,106,0.16) 0%, rgba(243,208,106,0) 26%), radial-gradient(circle at bottom right, rgba(52,101,164,0.14) 0%, rgba(52,101,164,0) 30%)",
+                  background:
+                      "radial-gradient(circle at top, rgba(201,154,39,0.10) 0%, rgba(201,154,39,0) 24%), radial-gradient(circle at bottom right, rgba(84,123,169,0.10) 0%, rgba(84,123,169,0) 30%)",
                   }}
                 />
                 <div
@@ -1455,7 +1461,7 @@ export default function CreateEntryPage() {
                   <div
                     style={{
                       ...sectionLabel(),
-                      color: "#B88721",
+                      color: "#B18A3C",
                       letterSpacing: 3.4,
                       textShadow: "0 1px 0 rgba(255,255,255,0.76)",
                     }}
@@ -1514,7 +1520,7 @@ export default function CreateEntryPage() {
                       borderRadius: 16,
                       border: "1px solid rgba(16,37,59,0.10)",
                       background:
-                        "linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(245,249,253,0.68) 100%)",
+                        "linear-gradient(180deg, rgba(250,252,254,0.82) 0%, rgba(235,241,247,0.70) 100%)",
                       boxShadow:
                         "inset 0 1px 0 rgba(255,255,255,0.82), 0 8px 20px rgba(10,24,49,0.06)",
                       padding: "13px 14px",
@@ -1530,7 +1536,7 @@ export default function CreateEntryPage() {
                       borderRadius: 16,
                       border: "1px solid rgba(16,37,59,0.10)",
                       background:
-                        "linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(245,249,253,0.68) 100%)",
+                        "linear-gradient(180deg, rgba(250,252,254,0.82) 0%, rgba(235,241,247,0.70) 100%)",
                       boxShadow:
                         "inset 0 1px 0 rgba(255,255,255,0.82), 0 8px 20px rgba(10,24,49,0.06)",
                       padding: "13px 14px",
@@ -1547,7 +1553,7 @@ export default function CreateEntryPage() {
                       borderRadius: 16,
                       border: "1px solid rgba(16,37,59,0.10)",
                       background:
-                        "linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(245,249,253,0.68) 100%)",
+                        "linear-gradient(180deg, rgba(250,252,254,0.82) 0%, rgba(235,241,247,0.70) 100%)",
                       boxShadow:
                         "inset 0 1px 0 rgba(255,255,255,0.82), 0 8px 20px rgba(10,24,49,0.06)",
                       padding: "13px 14px",

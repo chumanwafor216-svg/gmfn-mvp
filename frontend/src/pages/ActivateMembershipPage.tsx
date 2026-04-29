@@ -15,7 +15,7 @@ function pageShell(): React.CSSProperties {
     alignItems: "center",
     justifyContent: "center",
     background:
-      "radial-gradient(circle at top, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0) 24%), radial-gradient(circle at top right, rgba(74,132,214,0.18) 0%, rgba(74,132,214,0) 30%), radial-gradient(circle at bottom left, rgba(39,91,156,0.20) 0%, rgba(39,91,156,0) 32%), linear-gradient(180deg, #07101C 0%, #0B1F33 36%, #173654 70%, #26527C 100%)",
+      "radial-gradient(circle at 12% 0%, rgba(201,154,39,0.08) 0%, rgba(201,154,39,0) 22%), radial-gradient(circle at 84% 8%, rgba(84,123,169,0.10) 0%, rgba(84,123,169,0) 28%), linear-gradient(180deg, #06111C 0%, #0A1B2B 44%, #123149 100%)",
     color: "#FFFFFF",
     fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
     padding: "22px",
@@ -26,11 +26,11 @@ function pageShell(): React.CSSProperties {
 function whiteCard(): React.CSSProperties {
   return {
     borderRadius: 24,
-    border: "1px solid rgba(255,255,255,0.34)",
+    border: "1px solid rgba(228,236,244,0.26)",
     background:
-      "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(230,239,252,0.96) 58%, rgba(212,226,246,0.92) 100%)",
+      "linear-gradient(180deg, rgba(247,250,253,0.98) 0%, rgba(232,238,245,0.96) 58%, rgba(214,224,236,0.92) 100%)",
     boxShadow:
-      "0 22px 56px rgba(5,16,38,0.26), inset 0 1px 0 rgba(255,255,255,0.82)",
+      "0 26px 62px rgba(5,16,38,0.30), inset 0 1px 0 rgba(255,255,255,0.80)",
     padding: 22,
     overflow: "hidden",
   };
@@ -41,7 +41,7 @@ function innerPanel(): React.CSSProperties {
     borderRadius: 16,
     border: "1px solid rgba(16,37,59,0.10)",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(245,249,253,0.68) 100%)",
+      "linear-gradient(180deg, rgba(250,252,254,0.82) 0%, rgba(235,241,247,0.70) 100%)",
     boxShadow:
       "inset 0 1px 0 rgba(255,255,255,0.82), 0 8px 20px rgba(10,24,49,0.06)",
     padding: 18,
@@ -86,11 +86,11 @@ function primaryBtn(disabled = false): React.CSSProperties {
     width: "min(100%, 60%)",
     padding: "14px 18px",
     borderRadius: 16,
-    border: "none",
+    border: disabled ? "1px solid rgba(161,179,199,0.48)" : "1px solid rgba(205,220,236,0.92)",
     background: disabled
       ? "linear-gradient(180deg, #D7DEE8 0%, #C8D2DF 100%)"
-      : "linear-gradient(180deg, #F6D77D 0%, #F3D06A 52%, #D9A941 100%)",
-    color: disabled ? "#6B7B8D" : "#10253B",
+      : "linear-gradient(180deg, #FFFFFF 0%, #F3F7FB 52%, #E2EAF3 100%)",
+    color: disabled ? "#6B7B8D" : "#0A233B",
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 15,
@@ -98,8 +98,8 @@ function primaryBtn(disabled = false): React.CSSProperties {
     textAlign: "center",
     boxShadow: disabled
       ? "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.52)"
-      : "0 16px 30px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.56)",
-    textShadow: disabled ? "none" : "0 1px 0 rgba(255,255,255,0.36)",
+      : "0 18px 34px rgba(1,13,32,0.24), inset 0 1px 0 rgba(255,255,255,0.96), inset 0 -2px 0 rgba(108,129,154,0.26)",
+    textShadow: "none",
   };
 }
 
@@ -112,7 +112,7 @@ function secondaryBtn(): React.CSSProperties {
     padding: "12px 16px",
     borderRadius: 999,
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(229,237,249,0.96) 100%)",
+      "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(234,241,248,0.98) 100%)",
     color: "#123055",
     textDecoration: "none",
     fontWeight: 900,

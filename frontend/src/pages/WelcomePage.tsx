@@ -54,7 +54,7 @@ function pageShell(): React.CSSProperties {
     alignItems: "center",
     justifyContent: "center",
     background:
-      "radial-gradient(circle at top, rgba(47,103,196,0.16) 0%, rgba(16,37,59,0.00) 32%), linear-gradient(180deg, #10243A 0%, #173654 62%, #26527C 100%)",
+      "radial-gradient(circle at 12% 0%, rgba(201,154,39,0.08) 0%, rgba(201,154,39,0.00) 22%), radial-gradient(circle at 84% 8%, rgba(84,123,169,0.10) 0%, rgba(84,123,169,0.00) 28%), linear-gradient(180deg, #06111C 0%, #0A1B2B 50%, #123149 100%)",
     color: "#FFFFFF",
     fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
     padding: "18px",
@@ -68,10 +68,10 @@ function heroCard(): React.CSSProperties {
     width: "100%",
     borderRadius: 34,
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.06) 100%)",
-    border: "1px solid rgba(255,255,255,0.16)",
+      "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
+    border: "1px solid rgba(229,236,244,0.16)",
     boxShadow:
-      "0 28px 72px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.10)",
+      "0 34px 82px rgba(0,8,18,0.34), inset 0 1px 0 rgba(255,255,255,0.08)",
     padding: 18,
     backdropFilter: "blur(10px)",
     position: "relative",
@@ -95,9 +95,9 @@ function routeCard(): React.CSSProperties {
     justifySelf: "center",
     borderRadius: 24,
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.06) 100%)",
-    border: "1px solid rgba(255,255,255,0.14)",
-    boxShadow: "0 18px 34px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.10)",
+      "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
+    border: "1px solid rgba(229,236,244,0.14)",
+    boxShadow: "0 20px 38px rgba(0,8,18,0.22), inset 0 1px 0 rgba(255,255,255,0.08)",
     padding: 9,
     display: "grid",
     gap: 6,
@@ -109,8 +109,9 @@ function routeCard(): React.CSSProperties {
 function infoCard(): React.CSSProperties {
   return {
     borderRadius: 18,
-    background: "rgba(255,255,255,0.07)",
-    border: "1px solid rgba(255,255,255,0.12)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
+    border: "1px solid rgba(229,236,244,0.12)",
     padding: 16,
   };
 }
@@ -270,7 +271,7 @@ export default function WelcomePage() {
             inset: 0,
             pointerEvents: "none",
             background:
-              "radial-gradient(circle at top, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0) 28%), radial-gradient(circle at bottom, rgba(123,181,255,0.10) 0%, rgba(123,181,255,0) 30%)",
+              "radial-gradient(circle at top, rgba(201,154,39,0.07) 0%, rgba(201,154,39,0) 26%), radial-gradient(circle at bottom, rgba(110,145,186,0.08) 0%, rgba(110,145,186,0) 30%)",
           }}
         />
         {guideOpen ? (
@@ -310,9 +311,9 @@ export default function WelcomePage() {
               style={{
                 ...infoCard(),
                 background:
-                  "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(230,239,252,0.96) 58%, rgba(212,226,246,0.92) 100%)",
-                border: "1px solid rgba(255,255,255,0.34)",
-                boxShadow: "0 22px 56px rgba(5,16,38,0.26)",
+                  "linear-gradient(180deg, rgba(244,248,252,0.99) 0%, rgba(228,235,243,0.98) 34%, rgba(210,221,233,0.95) 68%, rgba(191,205,220,0.92) 100%)",
+                border: "1px solid rgba(230,237,244,0.28)",
+                boxShadow: "0 26px 62px rgba(5,16,38,0.30)",
                 padding: 22,
               }}
             >
@@ -361,8 +362,8 @@ export default function WelcomePage() {
                       borderRadius: 28,
                       padding: isCompact ? "10px 12px" : "12px 16px",
                       background:
-                        "linear-gradient(180deg, rgba(255,255,255,0.50) 0%, rgba(233,240,250,0.18) 100%)",
-                      border: "1px solid rgba(255,255,255,0.42)",
+                        "linear-gradient(180deg, rgba(255,255,255,0.54) 0%, rgba(223,231,239,0.22) 100%)",
+                      border: "1px solid rgba(255,255,255,0.40)",
                       boxShadow:
                         "0 18px 36px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.78)",
                     }}
@@ -415,8 +416,8 @@ export default function WelcomePage() {
                       border: "1px solid rgba(16,37,59,0.10)",
                       background:
                         index < 2
-                          ? "rgba(243,208,106,0.16)"
-                          : "rgba(116,136,160,0.14)",
+                          ? "rgba(184,159,104,0.18)"
+                          : "rgba(116,136,160,0.12)",
                       backdropFilter: "blur(3px)",
                       padding: "12px 14px",
                       fontSize: 14,
@@ -732,7 +733,7 @@ export default function WelcomePage() {
                   height: 2,
                   borderRadius: 999,
                   background:
-                    "linear-gradient(90deg, rgba(243,208,106,0) 0%, rgba(243,208,106,0.9) 50%, rgba(243,208,106,0) 100%)",
+                    "linear-gradient(90deg, rgba(204,172,99,0) 0%, rgba(204,172,99,0.78) 50%, rgba(204,172,99,0) 100%)",
                 }}
               />
               <div
@@ -741,7 +742,7 @@ export default function WelcomePage() {
                   fontWeight: 800,
                   letterSpacing: 2.4,
                   textTransform: "uppercase",
-                  color: "rgba(243,208,106,0.92)",
+                  color: "rgba(204,172,99,0.88)",
                 }}
               >
                 One Clear Next Step
