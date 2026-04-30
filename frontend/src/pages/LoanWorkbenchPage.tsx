@@ -301,10 +301,10 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
     ...base,
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)"
+        ? "linear-gradient(180deg, rgba(8,17,31,0.98) 0%, rgba(11,31,51,0.97) 56%, rgba(23,54,84,0.95) 100%)"
         : bg,
-    border: "1px solid rgba(88,116,148,0.18)",
-    boxShadow: "0 20px 46px rgba(15,23,42,0.08)",
+    border: "1px solid rgba(123,161,204,0.20)",
+    boxShadow: "0 22px 48px rgba(2,6,23,0.22), 0 6px 14px rgba(15,23,42,0.05)",
   };
 }
 
@@ -314,10 +314,10 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
     ...base,
     background:
       bg === "#F8FBFF"
-        ? "linear-gradient(180deg, #F8FBFF 0%, #EDF6FF 100%)"
+        ? "linear-gradient(180deg, rgba(13,28,45,0.96) 0%, rgba(18,40,64,0.94) 100%)"
         : bg,
-    border: "1px solid rgba(88,116,148,0.18)",
-    boxShadow: "0 16px 36px rgba(15,23,42,0.08)",
+    border: "1px solid rgba(123,161,204,0.20)",
+    boxShadow: "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -327,10 +327,10 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
     ...base,
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"
+        ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
         : bg,
-    border: "1px solid rgba(88,116,148,0.17)",
-    boxShadow: "0 14px 28px rgba(15,23,42,0.07)",
+    border: "1px solid rgba(123,161,204,0.14)",
+    boxShadow: "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -340,10 +340,10 @@ function statTile(bg = "#FFFFFF"): React.CSSProperties {
     ...base,
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)"
+        ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
         : bg,
-    border: "1px solid rgba(88,116,148,0.17)",
-    boxShadow: "0 12px 24px rgba(15,23,42,0.07)",
+    border: "1px solid rgba(123,161,204,0.14)",
+    boxShadow: "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -393,20 +393,20 @@ function routeTile(primary = false): React.CSSProperties {
       ? "1px solid rgba(29,95,212,0.24)"
       : "1px solid rgba(88,116,148,0.18)",
     background: primary
-      ? "linear-gradient(180deg, #F5FAFF 0%, #E4F0FF 100%)"
-      : "linear-gradient(180deg, #FFFDF9 0%, #F1F7FF 100%)",
+      ? "linear-gradient(180deg, #184A96 0%, #133A74 100%)"
+      : "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
     padding: 16,
     textDecoration: "none",
     boxShadow: primary
-      ? "0 16px 34px rgba(29,95,212,0.12)"
-      : "0 14px 30px rgba(15,23,42,0.07)",
+      ? "0 16px 34px rgba(19,79,191,0.24), inset 0 1px 0 rgba(255,255,255,0.10)"
+      : "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#38516B",
+    color: "#9CB4CF",
     fontWeight: 900,
     letterSpacing: 0.35,
     textTransform: "uppercase",
@@ -421,13 +421,11 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 32,
     borderRadius: 999,
     padding: "7px 12px",
-    background: primary
-      ? "linear-gradient(180deg, rgba(29,95,212,0.16) 0%, rgba(29,95,212,0.10) 100%)"
-      : "linear-gradient(180deg, rgba(92,114,138,0.16) 0%, rgba(92,114,138,0.10) 100%)",
+    background: primary ? "rgba(32,76,133,0.36)" : "rgba(255,255,255,0.08)",
     border: primary
-      ? "1px solid rgba(29,95,212,0.14)"
-      : "1px solid rgba(88,116,148,0.14)",
-    color: primary ? "#0F56BF" : "#44596F",
+      ? "1px solid rgba(123,161,204,0.24)"
+      : "1px solid rgba(123,161,204,0.14)",
+    color: primary ? "#CFE3FF" : "#E6EEF8",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
@@ -475,9 +473,10 @@ function actionBtn(
       minWidth: 124,
       padding: "10px 14px",
       borderRadius: 12,
-      border: "1px solid rgba(88,116,148,0.18)",
-      background: "linear-gradient(180deg, #FFFFFF 0%, #EDF5FF 100%)",
-      color: disabled ? "#94A3B8" : "#173A60",
+      border: "1px solid rgba(121,149,190,0.20)",
+      background:
+        "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+      color: disabled ? "#94A3B8" : "#E6EEF8",
       fontWeight: 800,
       fontSize: 13,
       textAlign: "center",
@@ -486,7 +485,7 @@ function actionBtn(
       whiteSpace: "normal",
       overflowWrap: "anywhere",
       opacity: disabled ? 0.86 : 1,
-      boxShadow: "0 10px 22px rgba(15,23,42,0.08)",
+      boxShadow: "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
     };
   }
 
@@ -499,9 +498,10 @@ function actionBtn(
     minWidth: 132,
     padding: "11px 16px",
     borderRadius: 14,
-    border: "1px solid rgba(88,116,148,0.18)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
-    color: disabled ? "#94A3B8" : "#0D2743",
+    border: "1px solid rgba(121,149,190,0.20)",
+    background:
+      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+    color: disabled ? "#94A3B8" : "#E6EEF8",
     fontWeight: 800,
     fontSize: 14,
     textAlign: "center",
@@ -510,7 +510,7 @@ function actionBtn(
     whiteSpace: "normal",
     overflowWrap: "anywhere",
     opacity: disabled ? 0.86 : 1,
-    boxShadow: "0 10px 22px rgba(15,23,42,0.08)",
+    boxShadow: "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -524,16 +524,17 @@ function collapseToggle(): React.CSSProperties {
     minWidth: 124,
     padding: "10px 14px",
     borderRadius: 12,
-    border: "1px solid rgba(88,116,148,0.18)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
-    color: "#173A60",
+    border: "1px solid rgba(123,161,204,0.20)",
+    background:
+      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+    color: "#E6EEF8",
     fontWeight: 800,
     fontSize: 13,
     textAlign: "center",
     cursor: "pointer",
     whiteSpace: "normal",
     overflowWrap: "anywhere",
-    boxShadow: "0 10px 22px rgba(15,23,42,0.08)",
+    boxShadow: "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -1197,7 +1198,7 @@ export default function LoanWorkbenchPage() {
         />
 
         <section style={pageCard("#FFFFFF")}>
-          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+          <div style={{ color: "rgba(230,238,248,0.76)", lineHeight: 1.8 }}>
             Loading loan workbench...
           </div>
         </section>
@@ -1333,7 +1334,7 @@ export default function LoanWorkbenchPage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: 20,
                 lineHeight: 1.25,
@@ -1418,7 +1419,7 @@ export default function LoanWorkbenchPage() {
         {!collapsed.selection ? (
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             {loans.length === 0 ? (
-              <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+              <div style={{ color: "rgba(230,238,248,0.76)", lineHeight: 1.8 }}>
                 No support item is visible for your current community.
               </div>
             ) : (
@@ -1443,7 +1444,7 @@ export default function LoanWorkbenchPage() {
                       <div>
                         <div
                           style={{
-                            color: "#0B1F33",
+                            color: "#F8FBFF",
                             fontWeight: 900,
                             fontSize: 16,
                             lineHeight: 1.35,
@@ -1551,7 +1552,7 @@ export default function LoanWorkbenchPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 18,
                   lineHeight: 1.25,
@@ -1595,7 +1596,7 @@ export default function LoanWorkbenchPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 18,
                   lineHeight: 1.25,
@@ -1610,7 +1611,7 @@ export default function LoanWorkbenchPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 16,
                 }}
@@ -1624,7 +1625,7 @@ export default function LoanWorkbenchPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 16,
                 }}
@@ -1638,7 +1639,7 @@ export default function LoanWorkbenchPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 16,
                 }}
@@ -1652,7 +1653,7 @@ export default function LoanWorkbenchPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 16,
                 }}
@@ -1666,7 +1667,7 @@ export default function LoanWorkbenchPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 16,
                 }}
@@ -1680,7 +1681,7 @@ export default function LoanWorkbenchPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 16,
                 }}
@@ -1694,7 +1695,7 @@ export default function LoanWorkbenchPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 16,
                 }}
@@ -1708,7 +1709,7 @@ export default function LoanWorkbenchPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 16,
                 }}
@@ -1722,7 +1723,7 @@ export default function LoanWorkbenchPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 14,
                   lineHeight: 1.35,
@@ -1737,7 +1738,7 @@ export default function LoanWorkbenchPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 14,
                   lineHeight: 1.35,
@@ -1752,7 +1753,7 @@ export default function LoanWorkbenchPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 14,
                   lineHeight: 1.35,
@@ -1767,7 +1768,7 @@ export default function LoanWorkbenchPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 14,
                   lineHeight: 1.35,
@@ -1850,7 +1851,7 @@ export default function LoanWorkbenchPage() {
             <div style={innerCard("#FCFEFF")}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 15,
                 }}
@@ -1868,7 +1869,7 @@ export default function LoanWorkbenchPage() {
                     <div key={item.key} style={innerCard("#FFFFFF")}>
                       <div
                         style={{
-                          color: "#0B1F33",
+                          color: "#F8FBFF",
                           fontWeight: 900,
                           lineHeight: 1.35,
                         }}
@@ -1943,7 +1944,7 @@ export default function LoanWorkbenchPage() {
             <div style={innerCard("#FFFFFF")}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 15,
                 }}
@@ -1970,7 +1971,7 @@ export default function LoanWorkbenchPage() {
                       >
                         <div
                           style={{
-                            color: "#0B1F33",
+                            color: "#F8FBFF",
                             fontWeight: 900,
                             lineHeight: 1.35,
                           }}
@@ -2012,7 +2013,7 @@ export default function LoanWorkbenchPage() {
               <div style={innerCard("#FFFBEF")}>
                 <div
                   style={{
-                    color: "#0B1F33",
+                    color: "#F8FBFF",
                     fontWeight: 900,
                     fontSize: 15,
                   }}
@@ -2081,7 +2082,7 @@ export default function LoanWorkbenchPage() {
             <OriginLink to={nextRoute.ctaTo} style={routeTile(true)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,
@@ -2100,7 +2101,7 @@ export default function LoanWorkbenchPage() {
             <OriginLink to="/app/loan-readiness" style={routeTile(false)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,
@@ -2116,7 +2117,7 @@ export default function LoanWorkbenchPage() {
             <OriginLink to="/app/loan-suggestions" style={routeTile(false)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,
@@ -2132,7 +2133,7 @@ export default function LoanWorkbenchPage() {
             <OriginLink to={selectedLoanId ? `/app/loan-summary/${selectedLoanId}` : "/app/loans"} style={routeTile(false)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,
@@ -2148,7 +2149,7 @@ export default function LoanWorkbenchPage() {
             <OriginLink to={selectedLoanId ? "/app/revenue-allocation" : "/app/loans"} style={routeTile(false)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,
@@ -2164,7 +2165,7 @@ export default function LoanWorkbenchPage() {
             <OriginLink to={selectedLoanId ? `/app/payment/loans/${selectedLoanId}` : "/app/finance"} style={routeTile(false)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,
@@ -2181,7 +2182,7 @@ export default function LoanWorkbenchPage() {
               <OriginLink to="/app/loans" style={routeTile(false)}>
                 <div
                   style={{
-                    color: "#0B1F33",
+                    color: "#F8FBFF",
                     fontWeight: 900,
                     fontSize: 17,
                     lineHeight: 1.3,

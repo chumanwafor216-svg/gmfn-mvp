@@ -29,7 +29,7 @@ function pageShell(): React.CSSProperties {
     minHeight: "100vh",
     width: "100%",
     background:
-      "radial-gradient(circle at 12% 0%, rgba(201,154,39,0.08) 0%, rgba(201,154,39,0.00) 22%), radial-gradient(circle at 84% 8%, rgba(84,123,169,0.10) 0%, rgba(84,123,169,0.00) 28%), linear-gradient(180deg, #06111C 0%, #0A1B2B 50%, #123149 100%)",
+      "radial-gradient(circle at 84% 8%, rgba(84,123,169,0.12) 0%, rgba(84,123,169,0.00) 28%), radial-gradient(circle at 18% 88%, rgba(58,92,134,0.12) 0%, rgba(58,92,134,0.00) 28%), linear-gradient(180deg, #06111C 0%, #0A1B2B 46%, #102A43 100%)",
     padding: "34px 22px",
     boxSizing: "border-box",
   };
@@ -40,10 +40,10 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
     borderRadius: 24,
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, rgba(247,250,253,0.99) 0%, rgba(232,239,246,0.97) 100%)"
+        ? "linear-gradient(180deg, rgba(248,251,255,0.99) 0%, rgba(232,239,247,0.97) 100%)"
         : bg,
-    border: "1px solid rgba(17,37,58,0.10)",
-    boxShadow: "0 22px 54px rgba(8,18,34,0.08)",
+    border: "1px solid rgba(17,37,58,0.11)",
+    boxShadow: "0 26px 60px rgba(8,18,34,0.10)",
     padding: 24,
   };
 }
@@ -53,10 +53,12 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
     borderRadius: 18,
     background:
       bg === "#F8FBFF"
-        ? "linear-gradient(180deg, rgba(249,251,253,0.98) 0%, rgba(236,242,247,0.96) 100%)"
+        ? "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(233,240,247,0.96) 100%)"
         : bg,
-    border: "1px solid rgba(17,37,58,0.10)",
+    border: "1px solid rgba(17,37,58,0.11)",
     padding: 18,
+    boxShadow:
+      "0 14px 30px rgba(8,18,34,0.07), inset 0 1px 0 rgba(255,255,255,0.74)",
   };
 }
 
@@ -102,18 +104,20 @@ function primaryBtn(disabled = false): React.CSSProperties {
     width: "100%",
     padding: "14px 18px",
     borderRadius: 16,
-    border: disabled ? "1px solid rgba(161,179,199,0.48)" : "1px solid rgba(205,220,236,0.92)",
+    border: disabled
+      ? "1px solid rgba(161,179,199,0.48)"
+      : "1px solid rgba(82,128,186,0.62)",
     background: disabled
       ? "linear-gradient(180deg, #D7DEE8 0%, #C8D2DF 100%)"
-      : "linear-gradient(180deg, #FFFFFF 0%, #F3F7FB 52%, #E2EAF3 100%)",
-    color: disabled ? "#6B7B8D" : "#0A233B",
+      : "linear-gradient(180deg, #2D6AA3 0%, #235784 52%, #173E63 100%)",
+    color: disabled ? "#6B7B8D" : "#FFFFFF",
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 15,
     opacity: disabled ? 0.8 : 1,
     boxShadow: disabled
       ? "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.52)"
-      : "0 18px 34px rgba(1,13,32,0.24), inset 0 1px 0 rgba(255,255,255,0.96), inset 0 -2px 0 rgba(108,129,154,0.26)",
+      : "0 20px 36px rgba(1,13,32,0.28), inset 0 1px 0 rgba(196,222,247,0.34), inset 0 -8px 12px rgba(8,25,43,0.20)",
     textShadow: "none",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
@@ -138,13 +142,13 @@ function secondaryBtn(): React.CSSProperties {
     borderRadius: 999,
     border: "1px solid rgba(16,37,59,0.12)",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(234,241,248,0.98) 100%)",
+      "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(229,237,249,0.98) 100%)",
     color: "#123055",
     textDecoration: "none",
     fontWeight: 1000,
     fontSize: 14,
     boxShadow:
-      "0 10px 24px rgba(10,24,49,0.14), inset 0 1px 0 rgba(255,255,255,0.78)",
+      "0 14px 28px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.82), inset 0 -6px 10px rgba(120,142,170,0.10)",
     whiteSpace: "nowrap",
     textShadow: "0 1px 0 rgba(255,255,255,0.52)",
     touchAction: "manipulation",
@@ -165,10 +169,10 @@ function stageToggleBtn(active = false): React.CSSProperties {
         ...secondaryBtn(),
         borderRadius: 16,
         background:
-          "linear-gradient(180deg, #FFFFFF 0%, #F3F7FB 52%, #E2EAF3 100%)",
-        color: "#0A233B",
+          "linear-gradient(180deg, #2D6AA3 0%, #235784 52%, #173E63 100%)",
+        color: "#FFFFFF",
         boxShadow:
-          "0 18px 34px rgba(1,13,32,0.24), inset 0 1px 0 rgba(255,255,255,0.96), inset 0 -2px 0 rgba(108,129,154,0.26)",
+          "0 20px 36px rgba(1,13,32,0.28), inset 0 1px 0 rgba(196,222,247,0.34), inset 0 -8px 12px rgba(8,25,43,0.20)",
         textShadow: "none",
       };
 }
@@ -178,10 +182,10 @@ function existingMemberCard(open = false): React.CSSProperties {
     width: "min(100%, 760px)",
     borderRadius: 22,
     border: open
-      ? "1px solid rgba(201,154,39,0.24)"
+      ? "1px solid rgba(120,153,194,0.24)"
       : "1px solid rgba(255,255,255,0.16)",
     background: open
-      ? "linear-gradient(180deg, rgba(201,154,39,0.08) 0%, rgba(255,255,255,0.05) 100%)"
+      ? "linear-gradient(180deg, rgba(74,123,169,0.10) 0%, rgba(255,255,255,0.05) 100%)"
       : "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%)",
     boxShadow:
       "0 16px 34px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.10)",
@@ -735,7 +739,7 @@ export default function CreateEntryPage() {
             color: "#123055",
           }}
         >
-          {existingMemberOpen ? "Collapse" : "Open"}
+          {existingMemberOpen ? "Collapse sign-in help" : "Open sign-in help"}
         </button>
       </div>
 
@@ -759,7 +763,7 @@ export default function CreateEntryPage() {
             }}
           >
             If you already have a GSN account, do not create another one.
-            Go to sign in and verify yourself with your email and password.
+            Open sign in and verify yourself with your email and password.
             After sign-in, the app opens your workspace instead of returning
             you to this create-community form.
           </div>
@@ -776,7 +780,7 @@ export default function CreateEntryPage() {
                 flex: "1 1 220px",
               }}
             >
-              I am already a member
+              Open sign in instead
             </button>
             <button
               type="button"
@@ -1645,8 +1649,8 @@ export default function CreateEntryPage() {
                   {!guideDone
                     ? "Read First"
                     : openPanel === "details"
-                    ? "Collapse"
-                    : "Open"}
+                    ? "Collapse details step"
+                    : "Open details step"}
                 </button>
               </div>
 
@@ -1837,7 +1841,9 @@ export default function CreateEntryPage() {
                   style={stageToggleBtn(openPanel === "verification")}
                   disabled={!canOpenVerification}
                 >
-                  {openPanel === "verification" ? "Collapse" : "Open"}
+                  {openPanel === "verification"
+                    ? "Collapse verification step"
+                    : "Open verification step"}
                 </button>
               </div>
 
@@ -2426,7 +2432,9 @@ export default function CreateEntryPage() {
                   style={stageToggleBtn(openPanel === "community")}
                   disabled={!canOpenCommunity}
                 >
-                  {openPanel === "community" ? "Collapse" : "Open"}
+                  {openPanel === "community"
+                    ? "Collapse community step"
+                    : "Open community step"}
                 </button>
               </div>
 

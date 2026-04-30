@@ -102,10 +102,10 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
     padding: 22,
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F3F8FF 100%)"
+        ? "linear-gradient(180deg, rgba(8,17,31,0.98) 0%, rgba(11,31,51,0.97) 56%, rgba(23,54,84,0.95) 100%)"
         : bg,
-    border: "1px solid rgba(108,138,184,0.18)",
-    boxShadow: "0 24px 52px rgba(15,23,42,0.08)",
+    border: "1px solid rgba(123,161,204,0.20)",
+    boxShadow: "0 22px 48px rgba(2,6,23,0.22), 0 6px 14px rgba(15,23,42,0.05)",
   };
 }
 
@@ -114,10 +114,10 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
     ...institutionalSoftCard(bg),
     background:
       bg === "#F8FBFF"
-        ? "linear-gradient(180deg, #FCFEFF 0%, #EDF5FF 100%)"
+        ? "linear-gradient(180deg, rgba(13,28,45,0.96) 0%, rgba(18,40,64,0.94) 100%)"
         : bg,
-    border: "1px solid rgba(123,153,197,0.18)",
-    boxShadow: "0 18px 40px rgba(15,23,42,0.06)",
+    border: "1px solid rgba(123,161,204,0.16)",
+    boxShadow: "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -126,10 +126,10 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
     ...institutionalInnerCard(bg),
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"
+        ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
         : bg,
-    border: "1px solid rgba(125,154,196,0.18)",
-    boxShadow: "0 16px 34px rgba(15,23,42,0.05)",
+    border: "1px solid rgba(123,161,204,0.14)",
+    boxShadow: "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -138,17 +138,17 @@ function statTile(bg = "#FFFFFF"): React.CSSProperties {
     ...institutionalStatTile(bg),
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)"
+        ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
         : bg,
-    border: "1px solid rgba(122,152,195,0.18)",
-    boxShadow: "0 14px 30px rgba(15,23,42,0.05)",
+    border: "1px solid rgba(123,161,204,0.14)",
+    boxShadow: "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#39526C",
+    color: "#9CB4CF",
     fontWeight: 1000,
     letterSpacing: 0.45,
     textTransform: "uppercase",
@@ -157,7 +157,7 @@ function sectionLabel(): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#4F657B",
+    color: "#C8D8EA",
     fontSize: 14.5,
     lineHeight: 1.75,
   };
@@ -171,13 +171,11 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 32,
     borderRadius: 999,
     padding: "7px 12px",
-    background: primary
-      ? "linear-gradient(180deg, rgba(29,95,212,0.14) 0%, rgba(29,95,212,0.09) 100%)"
-      : "linear-gradient(180deg, rgba(130,146,172,0.16) 0%, rgba(130,146,172,0.10) 100%)",
+    background: primary ? "rgba(32,76,133,0.36)" : "rgba(255,255,255,0.08)",
     border: primary
-      ? "1px solid rgba(29,95,212,0.16)"
-      : "1px solid rgba(130,146,172,0.14)",
-    color: primary ? "#164AAE" : "#445C75",
+      ? "1px solid rgba(123,161,204,0.24)"
+      : "1px solid rgba(123,161,204,0.14)",
+    color: primary ? "#CFE3FF" : "#E6EEF8",
     fontSize: 12,
     fontWeight: 1000,
     whiteSpace: "normal",
@@ -242,10 +240,8 @@ function actionBtn(
       ? "#CBD5E1"
       : primary
       ? "linear-gradient(180deg, #255FCE 0%, #1B4FBF 100%)"
-      : soft
-      ? "linear-gradient(180deg, #FDFEFE 0%, #EEF5FF 100%)"
-      : "linear-gradient(180deg, #FFFFFF 0%, #F1F7FF 100%)",
-    color: disabled ? "#FFFFFF" : primary ? "#FFFFFF" : "#0B1F33",
+      : "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+    color: disabled ? "#FFFFFF" : primary ? "#FFFFFF" : "#E6EEF8",
     fontWeight: 1000,
     fontSize: 14,
     textAlign: "center",
@@ -284,16 +280,17 @@ function collapseToggle(): React.CSSProperties {
     minWidth: 120,
     padding: "9px 13px",
     borderRadius: 12,
-    border: "1px solid rgba(124,154,196,0.18)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #F1F7FF 100%)",
-    color: "#24415C",
+    border: "1px solid rgba(121,149,190,0.20)",
+    background:
+      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+    color: "#E6EEF8",
     fontWeight: 800,
     fontSize: 13,
     textAlign: "center",
     cursor: "pointer",
     whiteSpace: "normal",
     overflowWrap: "anywhere",
-    boxShadow: "0 10px 22px rgba(15,23,42,0.06)",
+    boxShadow: "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -690,7 +687,7 @@ export default function RepaymentPage() {
           backLabel="Loans & Support"
         />
         <section style={pageCard("#FFFFFF")}>
-          <div style={{ color: "#64748B", lineHeight: 1.8 }}>Loading repayment route...</div>
+          <div style={{ color: "rgba(230,238,248,0.76)", lineHeight: 1.8 }}>Loading repayment route...</div>
         </section>
       </div>
     );
@@ -803,7 +800,7 @@ export default function RepaymentPage() {
             <div style={{ marginTop: 10, color: routeState.toneText, fontWeight: 900, fontSize: 20, lineHeight: 1.25 }}>
               {routeState.title}
             </div>
-            <div style={{ marginTop: 10, ...helperText(), color: "#0B1F33" }}>
+            <div style={{ marginTop: 10, ...helperText(), color: "#F8FBFF" }}>
               {routeState.detail}
             </div>
           </div>
@@ -847,14 +844,14 @@ export default function RepaymentPage() {
           >
             <div style={statTile()}>
               <div style={sectionLabel()}>Loan status</div>
-              <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 18, fontWeight: 900 }}>
+              <div style={{ marginTop: 8, color: "#F8FBFF", fontSize: 18, fontWeight: 900 }}>
                 {safeStr(summary?.status || "Awaiting issue")}
               </div>
             </div>
 
             <div style={statTile()}>
               <div style={sectionLabel()}>Outstanding amount</div>
-              <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 18, fontWeight: 900 }}>
+              <div style={{ marginTop: 8, color: "#F8FBFF", fontSize: 18, fontWeight: 900 }}>
                 {fmtMoney(outstandingAmount, currency)}
               </div>
             </div>
@@ -910,7 +907,7 @@ export default function RepaymentPage() {
                 <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                   <div style={innerCard("#FFFFFF")}>
                     <div style={sectionLabel()}>Exact amount</div>
-                    <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}>
+                    <div style={{ marginTop: 8, color: "#F8FBFF", fontWeight: 1000, fontSize: 18 }}>
                       {fmtMoney(instruction.amount || outstandingAmount, currency)}
                     </div>
                   </div>
@@ -1014,7 +1011,7 @@ export default function RepaymentPage() {
                   <div style={{ marginTop: 8, color: routeState.toneText, fontWeight: 900, fontSize: 16, lineHeight: 1.35 }}>
                     {routeState.title}
                   </div>
-                  <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                  <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                     {routeState.detail}
                   </div>
                 </div>
@@ -1022,7 +1019,7 @@ export default function RepaymentPage() {
                 {paymentConfirmedAt ? (
                   <div style={innerCard("#FFFBEF")}>
                     <div style={sectionLabel()}>Payment declared at</div>
-                    <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900, fontSize: 14, lineHeight: 1.35 }}>
+                    <div style={{ marginTop: 8, color: "#F8FBFF", fontWeight: 900, fontSize: 14, lineHeight: 1.35 }}>
                       {safeDateTime(paymentConfirmedAt)}
                     </div>
                   </div>
@@ -1069,7 +1066,7 @@ export default function RepaymentPage() {
                 ) : instruction ? (
                   <div style={innerCard("#F8FBFF")}>
                   <div style={sectionLabel()}>Expected payment visibility</div>
-                  <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                  <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                       Finance has not yet shown a matching repayment expectation for this
                       generated reference.
                   </div>
@@ -1096,7 +1093,7 @@ export default function RepaymentPage() {
                 {repaymentTaskActive ? (
                   <div style={innerCard("#F8FBFF")}>
                     <div style={sectionLabel()}>Keep the route focused</div>
-                    <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                    <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                       This repayment is still active. Confirm payment here when
                       you have used the exact reference, then keep the route open
                       until repayment is clearly awaiting reconciliation.
@@ -1105,7 +1102,7 @@ export default function RepaymentPage() {
                 ) : (
                   <div style={innerCard("#F8FBFF")}>
                     <div style={sectionLabel()}>Move on from here</div>
-                    <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                    <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                       This repayment has reached a visible conclusion. Use the
                       next-routes section below to reopen Loan Summary, Finance,
                       or Loans &amp; Support from one place.
@@ -1144,7 +1141,7 @@ export default function RepaymentPage() {
             <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
               <div style={innerCard("#F8FBFF")}>
                 <div style={sectionLabel()}>One-task mode</div>
-                <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                   Stay inside this repayment path until the instruction is generated,
                   payment is made with the exact reference, and the route is clearly
                   awaiting reconciliation.

@@ -3,6 +3,12 @@ import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
+  institutionalInnerCard,
+  institutionalPageCard,
+  institutionalSoftCard,
+  institutionalStatTile,
+} from "../lib/institutionalSurface";
+import {
   getAdminPilotIntake,
   getAdminIdentityRisk,
   getAdminIncompleteLoans,
@@ -68,40 +74,31 @@ function safeDateTime(x: any): string {
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 20,
+    ...institutionalPageCard(bg),
+    border: "1px solid rgba(20,52,83,0.24)",
     boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
-    overflow: "hidden",
+      "0 30px 62px rgba(7,20,36,0.12), 0 8px 18px rgba(7,20,36,0.045), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -14px 28px rgba(18,52,86,0.06)",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
-    borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 16,
+    ...institutionalSoftCard(bg),
+    border: "1px solid rgba(20,52,83,0.20)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 14,
+    ...institutionalInnerCard(bg),
+    border: "1px solid rgba(20,52,83,0.18)",
   };
 }
 
 function statTile(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 14,
+    ...institutionalStatTile(bg),
+    border: "1px solid rgba(20,52,83,0.16)",
   };
 }
 
@@ -141,12 +138,16 @@ function routeTile(primary = false): React.CSSProperties {
     minHeight: 104,
     borderRadius: 18,
     border: primary
-      ? "1px solid rgba(11,99,209,0.18)"
-      : "1px solid rgba(11,31,51,0.08)",
-    background: primary ? "#F7FAFF" : "#FFFFFF",
+      ? "1px solid rgba(29,95,212,0.24)"
+      : "1px solid rgba(122,152,195,0.20)",
+    background: primary
+      ? "linear-gradient(180deg, #F8FCFF 0%, #E5F0FF 100%)"
+      : "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
     padding: 16,
     textDecoration: "none",
-    boxShadow: primary ? "0 10px 24px rgba(11,99,209,0.05)" : "none",
+    boxShadow: primary
+      ? "0 18px 38px rgba(29,95,212,0.12)"
+      : "0 16px 32px rgba(15,23,42,0.065)",
     ...stableTapStyle(),
   };
 }
@@ -169,8 +170,8 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
+    background: primary ? "rgba(29,95,212,0.12)" : "rgba(160,178,201,0.18)",
+    color: primary ? "#0B63D1" : "#31506D",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
@@ -211,8 +212,8 @@ function actionBtn(
       minHeight: 38,
       padding: "8px 12px",
       borderRadius: 12,
-      border: "1px solid rgba(11,31,51,0.08)",
-      background: "#F8FBFF",
+      border: "1px solid rgba(122,152,195,0.18)",
+      background: "linear-gradient(180deg, #F8FBFF 0%, #EAF2FF 100%)",
       color: disabled ? "#94A3B8" : "#24415C",
       fontWeight: 800,
       fontSize: 13,
@@ -232,8 +233,8 @@ function actionBtn(
     minHeight: 42,
     padding: "10px 14px",
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(122,152,195,0.20)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
@@ -254,8 +255,8 @@ function collapseToggle(): React.CSSProperties {
     minHeight: 38,
     padding: "8px 12px",
     borderRadius: 12,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(122,152,195,0.20)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
     color: "#24415C",
     fontWeight: 800,
     fontSize: 13,
@@ -268,7 +269,7 @@ function collapseToggle(): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#5F7287",
+    color: "#4E6680",
     fontSize: 14,
     lineHeight: 1.75,
   };
@@ -1342,7 +1343,14 @@ export default function SystemOperationsPage() {
                               </div>
                             </div>
 
-                            <span style={{ ...badge(false), color: tone.text, background: "#FFFFFF" }}>
+                            <span
+                              style={{
+                                ...badge(false),
+                                color: tone.text,
+                                background:
+                                  "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)",
+                              }}
+                            >
                               {pilotStageLabel(row?.stage)}
                             </span>
                           </div>
@@ -1426,7 +1434,14 @@ export default function SystemOperationsPage() {
                               {firstTruthy(row?.applicant?.display_name, row?.applicant?.email, "Join applicant")}
                             </div>
 
-                            <span style={{ ...badge(false), color: tone.text, background: "#FFFFFF" }}>
+                            <span
+                              style={{
+                                ...badge(false),
+                                color: tone.text,
+                                background:
+                                  "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)",
+                              }}
+                            >
                               {pilotStageLabel(row?.stage || row?.status)}
                             </span>
                           </div>

@@ -228,14 +228,14 @@ function extractSuggestedSafeAmount(raw: any): string {
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
-    border: "1px solid rgba(108,138,184,0.22)",
+    border: "1px solid rgba(123,161,204,0.20)",
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F3F8FF 100%)"
+        ? "linear-gradient(180deg, rgba(8,17,31,0.98) 0%, rgba(11,31,51,0.97) 56%, rgba(23,54,84,0.95) 100%)"
         : bg,
     padding: 20,
     boxShadow:
-      "0 28px 58px rgba(15,23,42,0.09), 0 6px 14px rgba(15,23,42,0.04)",
+      "0 22px 48px rgba(2,6,23,0.22), 0 6px 14px rgba(15,23,42,0.05)",
     overflow: "hidden",
   };
 }
@@ -243,49 +243,49 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     borderRadius: 18,
-    border: "1px solid rgba(123,153,197,0.21)",
+    border: "1px solid rgba(123,161,204,0.16)",
     background:
-      bg === "#F8FBFF"
-        ? "linear-gradient(180deg, #FCFEFF 0%, #EDF5FF 100%)"
+      bg === "#F8FBFF" || bg === "#FFFFFF"
+        ? "linear-gradient(180deg, rgba(13,28,45,0.96) 0%, rgba(18,40,64,0.94) 100%)"
         : bg,
     padding: 16,
     boxShadow:
-      "0 22px 44px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.58)",
+      "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 16,
-    border: "1px solid rgba(125,154,196,0.20)",
+    border: "1px solid rgba(123,161,204,0.14)",
     background:
-      bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"
+      bg === "#FFFFFF" || bg === "#F8FBFF"
+        ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
         : bg,
     padding: 14,
     boxShadow:
-      "0 18px 36px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.56)",
+      "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
 function statTile(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 16,
-    border: "1px solid rgba(122,152,195,0.20)",
+    border: "1px solid rgba(123,161,204,0.14)",
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)"
+        ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
         : bg,
     padding: 14,
     boxShadow:
-      "0 18px 34px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.54)",
+      "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#334F69",
+    color: "#9CB4CF",
     fontWeight: 1000,
     letterSpacing: 0.45,
     textTransform: "uppercase",
@@ -300,17 +300,15 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 32,
     borderRadius: 999,
     padding: "7px 12px",
-    background: primary
-      ? "linear-gradient(180deg, rgba(29,95,212,0.14) 0%, rgba(29,95,212,0.09) 100%)"
-      : "linear-gradient(180deg, rgba(130,146,172,0.16) 0%, rgba(130,146,172,0.10) 100%)",
+    background: primary ? "rgba(32,76,133,0.36)" : "rgba(255,255,255,0.08)",
     border: primary
-      ? "1px solid rgba(29,95,212,0.16)"
-      : "1px solid rgba(130,146,172,0.14)",
-    color: primary ? "#164AAE" : "#445C75",
+      ? "1px solid rgba(123,161,204,0.24)"
+      : "1px solid rgba(123,161,204,0.14)",
+    color: primary ? "#CFE3FF" : "#E6EEF8",
     fontSize: 12,
     fontWeight: 1000,
     whiteSpace: "normal",
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.52)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -390,11 +388,12 @@ function actionBtn(
       padding: "10px 14px",
       borderRadius: 13,
       border: "1px solid rgba(121,149,190,0.20)",
-      background: "linear-gradient(180deg, #FBFDFF 0%, #EAF3FF 100%)",
-      color: disabled ? "#94A3B8" : "#24415C",
+      background:
+        "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+      color: disabled ? "#94A3B8" : "#E6EEF8",
       boxShadow: disabled
         ? "none"
-        : "0 12px 24px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.64)",
+        : "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
       fontWeight: 900,
       fontSize: 13,
       textDecoration: "none",
@@ -413,11 +412,12 @@ function actionBtn(
     padding: "12px 16px",
     borderRadius: 15,
     border: "1px solid rgba(121,149,190,0.20)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #EDF5FF 100%)",
-    color: disabled ? "#94A3B8" : "#0B1F33",
+    background:
+      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+    color: disabled ? "#94A3B8" : "#E6EEF8",
     boxShadow: disabled
       ? "none"
-      : "0 16px 30px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.68)",
+      : "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
     fontWeight: 900,
     fontSize: 14,
     textDecoration: "none",
@@ -438,10 +438,11 @@ function collapseToggle(): React.CSSProperties {
     padding: "10px 14px",
     borderRadius: 13,
     border: "1px solid rgba(121,149,190,0.20)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
-    color: "#24415C",
+    background:
+      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+    color: "#E6EEF8",
     boxShadow:
-      "0 14px 28px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.68)",
+      "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
     fontWeight: 900,
     fontSize: 13,
     cursor: "pointer",
@@ -478,7 +479,7 @@ function textAreaStyle(): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#425C74",
+    color: "#C8D8EA",
     fontSize: 14.5,
     lineHeight: 1.75,
   };
@@ -1467,7 +1468,7 @@ export default function WithdrawalInstructionsPage() {
               {guidedState.title}
             </div>
 
-            <div style={{ marginTop: 10, ...helperText(), color: "#0B1F33" }}>
+            <div style={{ marginTop: 10, ...helperText(), color: "#F8FBFF" }}>
               {guidedState.detail}
             </div>
           </div>
@@ -1525,7 +1526,7 @@ export default function WithdrawalInstructionsPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 18,
                   fontWeight: 900,
                   lineHeight: 1.25,
@@ -1540,7 +1541,7 @@ export default function WithdrawalInstructionsPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 18,
                   fontWeight: 900,
                   lineHeight: 1.25,
@@ -1597,7 +1598,7 @@ export default function WithdrawalInstructionsPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 16,
                   fontWeight: 900,
                   lineHeight: 1.25,
@@ -1612,7 +1613,7 @@ export default function WithdrawalInstructionsPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 16,
                   fontWeight: 900,
                   lineHeight: 1.25,
@@ -1627,7 +1628,7 @@ export default function WithdrawalInstructionsPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 16,
                   fontWeight: 900,
                   lineHeight: 1.25,
@@ -1642,7 +1643,7 @@ export default function WithdrawalInstructionsPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 16,
                   fontWeight: 900,
                   lineHeight: 1.25,
@@ -1657,7 +1658,7 @@ export default function WithdrawalInstructionsPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 16,
                   fontWeight: 900,
                   lineHeight: 1.25,
@@ -1672,7 +1673,7 @@ export default function WithdrawalInstructionsPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 15,
                   fontWeight: 900,
                   lineHeight: 1.3,
@@ -1787,7 +1788,7 @@ export default function WithdrawalInstructionsPage() {
                   <div
                     style={{
                       marginTop: 8,
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                       fontWeight: 900,
                       fontSize: 15,
                       lineHeight: 1.45,
@@ -1906,7 +1907,7 @@ export default function WithdrawalInstructionsPage() {
                       requestedAmount <= 0 || !communityRailReady || !payoutReady
                     )}
                   >
-                    Continue To Loan Readiness
+                    Open Loan Readiness Support
                   </button>
                 )}
 
@@ -2084,7 +2085,7 @@ export default function WithdrawalInstructionsPage() {
                   <div
                     style={{
                       marginTop: 8,
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                       fontWeight: 900,
                       fontSize: 16,
                     }}
@@ -2098,7 +2099,7 @@ export default function WithdrawalInstructionsPage() {
                   <div
                     style={{
                       marginTop: 8,
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                       fontWeight: 900,
                       fontSize: 16,
                     }}
@@ -2112,7 +2113,7 @@ export default function WithdrawalInstructionsPage() {
                   <div
                     style={{
                       marginTop: 8,
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                       fontWeight: 900,
                       fontSize: 16,
                     }}
@@ -2126,7 +2127,7 @@ export default function WithdrawalInstructionsPage() {
                   <div
                     style={{
                       marginTop: 8,
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                       fontWeight: 900,
                       fontSize: 16,
                       wordBreak: "break-word",
@@ -2201,7 +2202,7 @@ export default function WithdrawalInstructionsPage() {
                 <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                   {settlementRouteLines.map((line, index) => (
                     <div key={`withdraw-route-line-${index}`} style={innerCard("#FFFFFF")}>
-                      <div style={{ ...helperText(), color: "#0B1F33" }}>{line}</div>
+                      <div style={{ ...helperText(), color: "#F8FBFF" }}>{line}</div>
                     </div>
                   ))}
 
@@ -2210,7 +2211,7 @@ export default function WithdrawalInstructionsPage() {
                       key={`withdraw-settlement-line-${index}`}
                       style={innerCard("#FFFFFF")}
                     >
-                      <div style={{ ...helperText(), color: "#0B1F33" }}>{line}</div>
+                      <div style={{ ...helperText(), color: "#F8FBFF" }}>{line}</div>
                     </div>
                   ))}
                 </div>
@@ -2319,7 +2320,7 @@ export default function WithdrawalInstructionsPage() {
                   <div
                     style={{
                       marginTop: 8,
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                       fontWeight: 900,
                       fontSize: 16,
                       lineHeight: 1.35,
@@ -2335,7 +2336,7 @@ export default function WithdrawalInstructionsPage() {
 
                 <div style={innerCard("#FFFFFF")}>
                   <div style={sectionLabel()}>App explanation</div>
-                  <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                  <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                     {!effectiveAvailableKnown
                       ? "The effective-available pool reading is not visible yet, so wait for that reading before this route decides the path."
                       : !requiresSupport
@@ -2347,7 +2348,7 @@ export default function WithdrawalInstructionsPage() {
                 {latestWithdrawalResult ? (
                   <div style={innerCard("#FFFFFF")}>
                     <div style={sectionLabel()}>Latest direct withdrawal result</div>
-                    <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                    <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                       {[
                         firstTruthy(
                           latestWithdrawalResult?.status,
@@ -2385,7 +2386,7 @@ export default function WithdrawalInstructionsPage() {
                 {!effectiveAvailableKnown ? (
                   <div style={innerCard("#FFFBEF")}>
                     <div style={sectionLabel()}>Awaiting pool reading</div>
-                    <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                    <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                       The execution path is still waiting for the effective-available
                       pool reading. Once that reading is visible, use the decision lane
                       above to continue with the right route.
@@ -2394,7 +2395,7 @@ export default function WithdrawalInstructionsPage() {
                 ) : !requiresSupport && !latestWithdrawalResult ? (
                   <div style={innerCard("#F8FBFF")}>
                     <div style={sectionLabel()}>Use the decision lane above</div>
-                    <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                    <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                       Submit direct withdrawal from the decision lane after you confirm
                       the amount, community rail, and personal payout account. This
                       result area stays focused on what happened after that step.
@@ -2403,7 +2404,7 @@ export default function WithdrawalInstructionsPage() {
                 ) : requiresSupport && !withdrawalCanWidenRoutes ? (
                   <div style={innerCard("#F8FBFF")}>
                     <div style={sectionLabel()}>Support path chosen</div>
-                    <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                    <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                       This route has already determined that support is needed. Continue
                       below with the support pages instead of repeating the same decision
                       action here.
@@ -2413,17 +2414,17 @@ export default function WithdrawalInstructionsPage() {
 
                 {requiresSupport ? (
                   <>
-                    <OriginLink to="/app/loan-readiness" style={actionBtn("secondary")}>
-                      Loan Readiness
-                    </OriginLink>
+                      <OriginLink to="/app/loan-readiness" style={actionBtn("secondary")}>
+                        Open Loan Readiness
+                      </OriginLink>
 
-                    <OriginLink to="/app/loan-suggestions" style={actionBtn("secondary")}>
-                      Loan Suggestions
-                    </OriginLink>
+                      <OriginLink to="/app/loan-suggestions" style={actionBtn("secondary")}>
+                        Open Loan Suggestions
+                      </OriginLink>
 
-                    <OriginLink to="/app/loan-workbench" style={actionBtn("secondary")}>
-                      Loan Workbench
-                    </OriginLink>
+                      <OriginLink to="/app/loan-workbench" style={actionBtn("secondary")}>
+                        Open Loan Workbench
+                      </OriginLink>
                   </>
                 ) : withdrawalCanWidenRoutes ? (
                   <>
@@ -2431,9 +2432,9 @@ export default function WithdrawalInstructionsPage() {
                       Open Finance
                     </OriginLink>
 
-                    <OriginLink to="/app/payout-details" style={actionBtn("secondary")}>
-                      Payout Details
-                    </OriginLink>
+                      <OriginLink to="/app/payout-details" style={actionBtn("secondary")}>
+                        Open Payout Details
+                      </OriginLink>
                   </>
                 ) : null}
               </div>
@@ -2486,29 +2487,29 @@ export default function WithdrawalInstructionsPage() {
                 gap: 12,
               }}
             >
-              <OriginLink to="/app/finance" style={actionBtn("primary")}>
-                Finance
-              </OriginLink>
+                <OriginLink to="/app/finance" style={actionBtn("primary")}>
+                  Open Finance
+                </OriginLink>
 
-              <OriginLink to="/app/payout-details" style={actionBtn("secondary")}>
-                Payout Details
-              </OriginLink>
+                <OriginLink to="/app/payout-details" style={actionBtn("secondary")}>
+                  Open Payout Details
+                </OriginLink>
 
-              <OriginLink to="/app/payment-rails" style={actionBtn("secondary")}>
-                Payment Rails
-              </OriginLink>
+                <OriginLink to="/app/payment-rails" style={actionBtn("secondary")}>
+                  Open Payment Rails
+                </OriginLink>
 
-              <OriginLink to="/app/loan-readiness" style={actionBtn("secondary")}>
-                Loan Readiness
-              </OriginLink>
+                <OriginLink to="/app/loan-readiness" style={actionBtn("secondary")}>
+                  Open Loan Readiness
+                </OriginLink>
 
-              <OriginLink to="/app/loan-workbench" style={actionBtn("secondary")}>
-                Loan Workbench
-              </OriginLink>
+                <OriginLink to="/app/loan-workbench" style={actionBtn("secondary")}>
+                  Open Loan Workbench
+                </OriginLink>
 
-              <OriginLink to="/app/loans" style={actionBtn("secondary")}>
-                Loans
-              </OriginLink>
+                <OriginLink to="/app/loans" style={actionBtn("secondary")}>
+                  Open Loans & Support
+                </OriginLink>
 
               <OriginLink to="/app/marketplace" style={actionBtn("secondary")}>
                 Marketplace
@@ -2522,7 +2523,7 @@ export default function WithdrawalInstructionsPage() {
             <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
               <div style={innerCard("#F8FBFF")}>
                 <div style={sectionLabel()}>One-task mode</div>
-                <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                   Keep this withdrawal on one path until the route produces a direct
                   result or hands you into the support flow.
                 </div>
@@ -2534,13 +2535,3 @@ export default function WithdrawalInstructionsPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-

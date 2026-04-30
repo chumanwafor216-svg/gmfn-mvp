@@ -400,6 +400,30 @@ export default function OpenTrustPage() {
     [me, trustSlip, selectedClanId]
   );
   const tone = useMemo(() => toneMeta(openTrust.tone), [openTrust.tone]);
+  const routeGuide = useMemo(
+    () => [
+      {
+        label: "Stay here when",
+        title: "You only need the immediate community read",
+        body:
+          "Open Trust answers the narrower question: how are you reading inside the community you are in right now?",
+      },
+      {
+        label: "Move to Trust Passport when",
+        title: "You need the fuller trust story",
+        body:
+          "Trust Passport carries the wider explanation, document surfaces, and longer trust record beyond this one community snapshot.",
+      },
+      {
+        label: "Move to Community when",
+        title: "You need to act inside the current group",
+        body:
+          "Open Community if the next step is member activity, coordination, or checking the place where this trust reading is being formed.",
+      },
+    ],
+    []
+  );
+
   const communityLabel = useMemo(
     () =>
       firstTruthy(
@@ -464,7 +488,7 @@ export default function OpenTrustPage() {
               {loading ? "Loading the current community trust reading..." : openTrust.whyText}
             </div>
             <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <OriginLink to="/app/trust" style={actionBtn(false)}>
+              <OriginLink to="/app/trust" style={actionBtn(true)}>
                 Open Trust Passport
               </OriginLink>
               <OriginLink to="/app/community" style={actionBtn(false)}>
@@ -472,6 +496,52 @@ export default function OpenTrustPage() {
               </OriginLink>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div style={sectionLabel()}>What to do next</div>
+        <div
+          style={{
+            marginTop: 10,
+            color: "#0B1F33",
+            fontSize: isCompact ? 24 : 29,
+            fontWeight: 900,
+            lineHeight: 1.15,
+          }}
+        >
+          Use the right trust surface for the right question
+        </div>
+        <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
+          Open Trust is the narrow community reading. If you need the fuller trust record or
+          the place where this reading is being shaped, move there directly from here.
+        </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+            gap: 12,
+          }}
+        >
+          {routeGuide.map((item) => (
+            <div key={item.title} style={innerCard("#F8FBFF")}>
+              <div style={sectionLabel()}>{item.label}</div>
+              <div
+                style={{
+                  marginTop: 10,
+                  color: "#0B1F33",
+                  fontSize: 18,
+                  fontWeight: 900,
+                  lineHeight: 1.25,
+                }}
+              >
+                {item.title}
+              </div>
+              <div style={{ marginTop: 10, ...helperText() }}>{item.body}</div>
+            </div>
+          ))}
         </div>
       </section>
     </div>

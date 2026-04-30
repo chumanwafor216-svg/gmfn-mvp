@@ -271,8 +271,8 @@ function resolveSpotlightAssetUrl(path: string): string {
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 26,
-    border: "1px solid rgba(18,58,89,0.16)",
-    background: bg,
+    border: "1px solid rgba(18,58,89,0.18)",
+    background: bg === "#FFFFFF" ? "linear-gradient(180deg, #FDFEFF 0%, #EEF5FF 100%)" : bg,
     padding: "clamp(14px, 3.3vw, 20px)",
     boxShadow:
       "0 22px 48px rgba(2,12,27,0.15), 0 8px 20px rgba(8,40,72,0.09), inset 0 1px 0 rgba(255,255,255,0.94), inset 0 -2px 0 rgba(8,40,72,0.07)",
@@ -283,8 +283,8 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     borderRadius: 18,
-    border: "1px solid rgba(18,58,89,0.14)",
-    background: bg,
+    border: "1px solid rgba(18,58,89,0.16)",
+    background: bg === "#F8FBFF" ? "linear-gradient(180deg, #F5F9FF 0%, #E5EEFB 100%)" : bg,
     padding: 15,
     boxShadow:
       "0 14px 28px rgba(7,24,39,0.09), inset 0 1px 0 rgba(255,255,255,0.90), inset 0 -2px 0 rgba(8,40,72,0.06)",
@@ -294,8 +294,8 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 18,
-    border: "1px solid rgba(18,58,89,0.14)",
-    background: bg,
+    border: "1px solid rgba(18,58,89,0.16)",
+    background: bg === "#F8FBFF" ? "linear-gradient(180deg, #F5F9FF 0%, #E5EEFB 100%)" : bg,
     padding: 12,
     boxShadow:
       "0 12px 26px rgba(7,24,39,0.08), inset 0 1px 0 rgba(255,255,255,0.90), inset 0 -2px 0 rgba(8,40,72,0.05)",
@@ -305,7 +305,7 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#234E7A",
+    color: "#4E6680",
     fontWeight: 900,
     letterSpacing: 2,
     textTransform: "uppercase",
@@ -314,7 +314,7 @@ function sectionLabel(): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#4E6278",
+    color: "#466078",
     fontSize: 14,
     lineHeight: 1.68,
   };

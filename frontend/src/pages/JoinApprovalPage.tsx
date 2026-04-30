@@ -34,17 +34,28 @@ type NormalizedStatus = "approved" | "pending" | "rejected" | "unknown";
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    ...institutionalPageCard(bg),
-    border: "1px solid rgba(11,31,51,0.08)",
+    ...institutionalPageCard(
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, rgba(8,17,31,0.98) 0%, rgba(11,31,51,0.97) 56%, rgba(23,54,84,0.95) 100%)"
+        : bg
+    ),
+    border: "1px solid rgba(123,161,204,0.20)",
     padding: 18,
+    boxShadow: "0 24px 54px rgba(2,6,23,0.26)",
   };
 }
 
-function softCard(bg = "#F8FBFF"): React.CSSProperties {
+function softCard(bg = "#F4F8FC"): React.CSSProperties {
   return {
-    ...institutionalSoftCard(bg),
-    border: "1px solid rgba(11,31,51,0.08)",
+    ...institutionalSoftCard(
+      bg === "#F4F8FC"
+        ? "linear-gradient(180deg, rgba(12,26,43,0.96) 0%, rgba(17,39,62,0.94) 100%)"
+        : bg
+    ),
+    border: "1px solid rgba(123,161,204,0.16)",
     padding: 14,
+    boxShadow:
+      "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -105,7 +116,7 @@ function actionBtn(primary = false, disabled = false): React.CSSProperties {
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#4F6B8A",
+    color: "#9CB4CF",
     fontWeight: 1000,
     letterSpacing: 0.45,
     textTransform: "uppercase",
@@ -114,7 +125,7 @@ function sectionLabel(): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#64748B",
+    color: "#C8D8EA",
     lineHeight: 1.8,
     fontSize: 14,
   };
@@ -127,11 +138,13 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     padding: "6px 10px",
     borderRadius: 999,
-    background: primary ? "#EAF2FF" : "#F8FAFC",
+    background: primary
+      ? "rgba(32,76,133,0.36)"
+      : "rgba(255,255,255,0.08)",
     border: primary
-      ? "1px solid rgba(29,78,216,0.16)"
-      : "1px solid rgba(11,31,51,0.08)",
-    color: primary ? "#1D4ED8" : "#475569",
+      ? "1px solid rgba(123,181,255,0.28)"
+      : "1px solid rgba(214,226,239,0.18)",
+    color: primary ? "#CFE3FF" : "#E6EEF8",
     fontWeight: 900,
     fontSize: 12,
     whiteSpace: "normal",
@@ -375,10 +388,13 @@ export default function JoinApprovalPage() {
   return (
     <div
       style={{
+        minHeight: "100vh",
         padding: 20,
         maxWidth: 960,
         margin: "0 auto",
         paddingBottom: 30,
+        background:
+          "radial-gradient(circle at top, rgba(94,146,214,0.10) 0%, rgba(11,31,51,0.00) 24%), linear-gradient(180deg, #07101C 0%, #0B1F33 34%, #173654 70%, #24496E 100%)",
       }}
     >
       <PageTopNav
@@ -398,7 +414,7 @@ export default function JoinApprovalPage() {
 
       <div
         style={{
-          ...pageCard("linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)"),
+          ...pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 54%, #173654 100%)"),
           marginTop: 18,
         }}
       >
@@ -453,7 +469,7 @@ export default function JoinApprovalPage() {
       </div>
 
       {loading ? (
-        <div style={{ ...pageCard(), marginTop: 18 }}>
+        <div style={{ ...pageCard(), marginTop: 18, color: "#F8FBFF" }}>
           <strong>Loading approval status...</strong>
         </div>
       ) : null}
@@ -499,7 +515,7 @@ export default function JoinApprovalPage() {
                 {tone.title}
               </div>
 
-              <div style={{ marginTop: 10, ...helperText(), color: "#475569" }}>
+              <div style={{ marginTop: 10, ...helperText(), color: "#35516B" }}>
                 {helperMessage}
               </div>
 
@@ -556,7 +572,7 @@ export default function JoinApprovalPage() {
                   <div
                     style={{
                       marginTop: 8,
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                       fontWeight: 1000,
                       lineHeight: 1.45,
                       wordBreak: "break-word",
@@ -571,7 +587,7 @@ export default function JoinApprovalPage() {
                   <div
                     style={{
                       marginTop: 8,
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                       fontWeight: 1000,
                       lineHeight: 1.45,
                     }}
@@ -586,7 +602,7 @@ export default function JoinApprovalPage() {
                     <div
                       style={{
                         marginTop: 8,
-                        color: "#0B1F33",
+                        color: "#F8FBFF",
                         fontWeight: 1000,
                         lineHeight: 1.45,
                       }}
@@ -602,7 +618,7 @@ export default function JoinApprovalPage() {
                     <div
                       style={{
                         marginTop: 8,
-                        color: "#0B1F33",
+                        color: "#F8FBFF",
                         fontWeight: 1000,
                         lineHeight: 1.45,
                       }}
@@ -620,7 +636,7 @@ export default function JoinApprovalPage() {
                     <div
                       style={{
                         marginTop: 8,
-                        color: "#0B1F33",
+                        color: "#F8FBFF",
                         fontWeight: 1000,
                         lineHeight: 1.45,
                       }}
@@ -636,7 +652,7 @@ export default function JoinApprovalPage() {
                     <div
                       style={{
                         marginTop: 8,
-                        color: "#0B1F33",
+                        color: "#F8FBFF",
                         fontWeight: 1000,
                         lineHeight: 1.45,
                         wordBreak: "break-word",
@@ -653,7 +669,7 @@ export default function JoinApprovalPage() {
                     <div
                       style={{
                         marginTop: 8,
-                        color: "#0B1F33",
+                        color: "#F8FBFF",
                         fontWeight: 1000,
                         lineHeight: 1.45,
                       }}
@@ -709,7 +725,7 @@ export default function JoinApprovalPage() {
                       )
                     }
                   >
-                    Continue Activation
+                    Open activation
                   </button>
                 ) : null}
 
@@ -740,9 +756,9 @@ export default function JoinApprovalPage() {
               </div>
 
               <div style={{ marginTop: 10, ...helperText() }}>
-                GSN also supports steadier follow-through after entry, so goals
-                around savings, repayment, and business discipline can become
-                more structured once your path is active.
+                Focus Commitments opens from Dashboard after workspace entry. If
+                you want to understand that discipline path first, open the full
+                guide before you continue.
               </div>
 
               <div
@@ -759,16 +775,16 @@ export default function JoinApprovalPage() {
                   state={withOriginState(location)}
                   style={actionBtn(false)}
                 >
-                  Open My GSN and I
+                  Open full GSN guide
                 </OriginLink>
 
                 <OriginLink
-                  to="/app/dashboard#focus-commitments"
+                  to="/guide"
                   preserveSearch
                   state={withOriginState(location)}
                   style={actionBtn(false)}
                 >
-                  Open Commitment Builder
+                  Read about Focus Commitments first
                 </OriginLink>
               </div>
             </div>

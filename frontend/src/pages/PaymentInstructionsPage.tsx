@@ -128,14 +128,14 @@ function resolveMediaUrl(src: string): string {
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
-    border: "1px solid rgba(108,138,184,0.22)",
+    border: "1px solid rgba(123,161,204,0.20)",
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F3F8FF 100%)"
+        ? "linear-gradient(180deg, rgba(8,17,31,0.98) 0%, rgba(11,31,51,0.97) 56%, rgba(23,54,84,0.95) 100%)"
         : bg,
     padding: 20,
     boxShadow:
-      "0 28px 58px rgba(15,23,42,0.10), 0 6px 14px rgba(15,23,42,0.04)",
+      "0 22px 48px rgba(2,6,23,0.22), 0 6px 14px rgba(15,23,42,0.05)",
     overflow: "hidden",
   };
 }
@@ -143,49 +143,49 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     borderRadius: 18,
-    border: "1px solid rgba(123,153,197,0.21)",
+    border: "1px solid rgba(123,161,204,0.16)",
     background:
-      bg === "#F8FBFF"
-        ? "linear-gradient(180deg, #FCFEFF 0%, #EDF5FF 100%)"
+      bg === "#F8FBFF" || bg === "#FFFFFF"
+        ? "linear-gradient(180deg, rgba(13,28,45,0.96) 0%, rgba(18,40,64,0.94) 100%)"
         : bg,
     padding: 16,
     boxShadow:
-      "0 20px 42px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
+      "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 16,
-    border: "1px solid rgba(125,154,196,0.20)",
+    border: "1px solid rgba(123,161,204,0.14)",
     background:
-      bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"
+      bg === "#FFFFFF" || bg === "#F8FBFF"
+        ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
         : bg,
     padding: 14,
     boxShadow:
-      "0 18px 36px rgba(15,23,42,0.065), inset 0 1px 0 rgba(255,255,255,0.80)",
+      "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
 function statTile(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 16,
-    border: "1px solid rgba(122,152,195,0.20)",
+    border: "1px solid rgba(123,161,204,0.14)",
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)"
+        ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
         : bg,
     padding: 14,
     boxShadow:
-      "0 16px 32px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.80)",
+      "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#334F69",
+    color: "#9CB4CF",
     fontWeight: 1000,
     letterSpacing: 0.45,
     textTransform: "uppercase",
@@ -200,17 +200,15 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 32,
     borderRadius: 999,
     padding: "7px 12px",
-    background: primary
-      ? "linear-gradient(180deg, rgba(29,95,212,0.14) 0%, rgba(29,95,212,0.09) 100%)"
-      : "linear-gradient(180deg, rgba(130,146,172,0.16) 0%, rgba(130,146,172,0.10) 100%)",
+    background: primary ? "rgba(32,76,133,0.36)" : "rgba(255,255,255,0.08)",
     border: primary
-      ? "1px solid rgba(29,95,212,0.16)"
-      : "1px solid rgba(130,146,172,0.14)",
-    color: primary ? "#164AAE" : "#445C75",
+      ? "1px solid rgba(123,161,204,0.24)"
+      : "1px solid rgba(123,161,204,0.14)",
+    color: primary ? "#CFE3FF" : "#E6EEF8",
     fontSize: 12,
     fontWeight: 1000,
     whiteSpace: "normal",
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.60)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -289,11 +287,12 @@ function actionBtn(
       padding: "10px 14px",
       borderRadius: 13,
       border: "1px solid rgba(121,149,190,0.20)",
-      background: "linear-gradient(180deg, #FBFDFF 0%, #EAF3FF 100%)",
-      color: disabled ? "#94A3B8" : "#24415C",
+      background:
+        "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+      color: disabled ? "#94A3B8" : "#E6EEF8",
       boxShadow: disabled
         ? "none"
-        : "0 12px 24px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
+        : "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
       fontWeight: 900,
       fontSize: 13,
       textAlign: "center",
@@ -313,11 +312,12 @@ function actionBtn(
     padding: "12px 16px",
     borderRadius: 15,
     border: "1px solid rgba(121,149,190,0.20)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #EDF5FF 100%)",
-    color: disabled ? "#94A3B8" : "#0B1F33",
+    background:
+      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+    color: disabled ? "#94A3B8" : "#E6EEF8",
     boxShadow: disabled
       ? "none"
-      : "0 14px 28px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.84)",
+      : "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
     fontWeight: 900,
     fontSize: 14,
     textAlign: "center",
@@ -339,10 +339,11 @@ function collapseToggle(): React.CSSProperties {
     padding: "11px 15px",
     borderRadius: 12,
     border: "1px solid rgba(124,154,196,0.20)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #EDF5FF 100%)",
-    color: "#24415C",
+    background:
+      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+    color: "#E6EEF8",
     boxShadow:
-      "0 12px 24px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
+      "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
     fontWeight: 900,
     fontSize: 13,
     cursor: "pointer",
@@ -371,7 +372,7 @@ function inputStyle(): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#425C74",
+    color: "#C8D8EA",
     fontSize: 14.5,
     lineHeight: 1.75,
   };
@@ -1216,7 +1217,7 @@ export default function PaymentInstructionsPage() {
               {inferredResult.title}
             </div>
 
-            <div style={{ marginTop: 10, ...helperText(), color: "#0B1F33" }}>
+            <div style={{ marginTop: 10, ...helperText(), color: "#F8FBFF" }}>
               {inferredResult.detail}
             </div>
           </div>
@@ -1274,7 +1275,7 @@ export default function PaymentInstructionsPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 18,
                   fontWeight: 900,
                 }}
@@ -1288,7 +1289,7 @@ export default function PaymentInstructionsPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 16,
                   fontWeight: 900,
                 }}
@@ -1363,7 +1364,7 @@ export default function PaymentInstructionsPage() {
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             <div style={innerCard("#FFFBEF")}>
               <div style={sectionLabel()}>Pay-in rule</div>
-              <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+              <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                 GSN does not hold your funds. Pay into the community account
                 using the exact generated reference.
               </div>
@@ -1371,14 +1372,14 @@ export default function PaymentInstructionsPage() {
 
             <div style={innerCard("#FFFBEF")}>
               <div style={sectionLabel()}>Matching rule</div>
-              <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+              <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                 A wrong reference or wrong amount may delay reconciliation and leave the payment unmatched.
               </div>
             </div>
 
             <div style={innerCard("#FFFBEF")}>
               <div style={sectionLabel()}>Critical rule</div>
-              <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+              <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                 Money In does not use guarantor logic. It stays a pay-in route,
                 not a support route.
               </div>
@@ -1546,7 +1547,7 @@ export default function PaymentInstructionsPage() {
                     <div
                       style={{
                         marginTop: 8,
-                        color: "#0B1F33",
+                        color: "#F8FBFF",
                         fontWeight: 1000,
                         fontSize: 18,
                       }}
@@ -1695,7 +1696,7 @@ export default function PaymentInstructionsPage() {
                   >
                     {inferredResult.title}
                   </div>
-                  <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                  <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                     {inferredResult.detail}
                   </div>
                 </div>
@@ -1706,7 +1707,7 @@ export default function PaymentInstructionsPage() {
                     <div
                       style={{
                         marginTop: 8,
-                        color: "#0B1F33",
+                        color: "#F8FBFF",
                         fontWeight: 900,
                         fontSize: 14,
                         lineHeight: 1.35,
@@ -1755,7 +1756,7 @@ export default function PaymentInstructionsPage() {
                 {moneyInTaskStillActive ? (
                   <div style={innerCard("#F8FBFF")}>
                     <div style={sectionLabel()}>Keep the route focused</div>
-                    <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                    <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                       This pay-in is still active. Stay on this route until payment is
                       clearly confirmed or reconciliation is visibly awaiting. The route
                       options stay together in the next section below so they do not
@@ -1765,7 +1766,7 @@ export default function PaymentInstructionsPage() {
                 ) : (
                   <div style={innerCard("#F8FBFF")}>
                     <div style={sectionLabel()}>Move on from here</div>
-                    <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                    <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                       This pay-in has reached a visible conclusion. Use the next-routes
                       section below to reopen the right follow-on page from one place.
                     </div>
@@ -1864,7 +1865,7 @@ export default function PaymentInstructionsPage() {
             <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
               <div style={innerCard("#F8FBFF")}>
                 <div style={sectionLabel()}>One-task mode</div>
-                <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                   Generate the instruction, pay using the exact reference, and keep this
                   route open until the payment is confirmed or reconciliation is visibly
                   awaiting.
@@ -1877,7 +1878,3 @@ export default function PaymentInstructionsPage() {
     </div>
   );
 }
-
-
-
-

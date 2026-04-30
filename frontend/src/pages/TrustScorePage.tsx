@@ -1469,7 +1469,7 @@ function buildTrustJourneyModel(params: {
           ? {
               key: "focus",
               label: "Open Focus Commitments",
-              detail: "Correct the commitment that has slipped behind.",
+              detail: "Open the Dashboard focus section and correct the commitment that has slipped behind.",
               to: "/app/dashboard#focus-commitments",
             }
           : params.openTrust.tone === "yellow"
@@ -1523,7 +1523,7 @@ function buildTrustJourneyModel(params: {
       secondaryRoute: {
         key: "focus",
         label: "Open Focus Commitments",
-        detail: "Keep the next target visible and on track.",
+        detail: "Open the Dashboard focus section and keep the next target visible and on track.",
         to: "/app/dashboard#focus-commitments",
       },
       helps: [
@@ -2185,9 +2185,9 @@ export default function TrustScorePage() {
       },
       {
         id: "focus",
-        label: "Add a trust promise",
-        detail: "Open focus commitments for repair, repayment, or follow-through.",
-        technical: "Focus commitments",
+        label: "Open Focus Commitments",
+        detail: "Open the Dashboard focus section for repair, repayment, or follow-through.",
+        technical: "Dashboard focus commitments",
         to: "/app/dashboard#focus-commitments",
         keywords: ["promise", "commitment", "focus", "repair plan", "target"],
         tone: "soft",

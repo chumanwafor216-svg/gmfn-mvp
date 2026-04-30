@@ -110,7 +110,7 @@ function btn(primary = false, disabled = false): React.CSSProperties {
       ? "linear-gradient(180deg, #CBD5E1 0%, #B8C4D4 100%)"
       : primary
       ? "linear-gradient(180deg, #1A6BE1 0%, #0B63D1 58%, #09479C 100%)"
-      : "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(241,247,253,0.98) 62%, rgba(224,234,244,0.98) 100%)",
+      : "linear-gradient(180deg, rgba(255,255,255,0.995) 0%, rgba(236,244,251,0.984) 62%, rgba(221,231,241,0.98) 100%)",
     color: primary ? "#FFFFFF" : "#0B1F33",
     fontWeight: 900,
     cursor: disabled ? "not-allowed" : "pointer",
@@ -132,7 +132,7 @@ function btn(primary = false, disabled = false): React.CSSProperties {
       ? "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.52)"
       : primary
       ? "0 16px 30px rgba(11,99,209,0.20), inset 0 1px 0 rgba(255,255,255,0.20)"
-      : "0 14px 28px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.88)",
+      : "0 16px 30px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.88)",
   };
 }
 
@@ -167,22 +167,22 @@ function badge(primary = false): React.CSSProperties {
     borderRadius: 999,
     padding: "6px 10px",
     background: primary
-      ? "linear-gradient(180deg, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0.08) 100%)"
-      : "linear-gradient(180deg, rgba(100,116,139,0.12) 0%, rgba(100,116,139,0.08) 100%)",
-    color: primary ? "#0B63D1" : "#415B73",
+      ? "linear-gradient(180deg, rgba(11,99,209,0.15) 0%, rgba(11,99,209,0.09) 100%)"
+      : "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(228,238,248,0.78) 100%)",
+    color: primary ? "#0B63D1" : "#466078",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
     border: primary
       ? "1px solid rgba(11,99,209,0.14)"
-      : "1px solid rgba(148,163,184,0.14)",
+      : "1px solid rgba(37,78,119,0.16)",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.74)",
   };
 }
 
 function muted(): React.CSSProperties {
   return {
-    color: "#4D647A",
+    color: "#445C73",
     lineHeight: 1.7,
     fontSize: 14,
   };
@@ -199,7 +199,7 @@ function sectionTitle(): React.CSSProperties {
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#2E587E",
+    color: "#4A627A",
     fontWeight: 1000,
     letterSpacing: 0.55,
     textTransform: "uppercase",

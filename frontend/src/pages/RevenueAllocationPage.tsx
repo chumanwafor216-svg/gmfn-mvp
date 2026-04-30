@@ -125,12 +125,11 @@ function normalizeCollapseState(raw: any): CollapseState {
 
 function safeDateTime(x: any): string {
   const raw = safeStr(x);
-  if (!raw) return "—";
+  if (!raw) return "Not stated";
   const d = new Date(raw);
   if (Number.isNaN(d.getTime())) return raw;
   return d.toLocaleString();
 }
-
 function moneyText(value: any): string {
   const raw = safeStr(value).replace(/,/g, "");
   const n = Number(raw);
@@ -233,11 +232,11 @@ function routeTile(primary = false): React.CSSProperties {
     minWidth: 0,
     borderRadius: 18,
     border: primary
-      ? "1px solid rgba(29,95,212,0.24)"
-      : "1px solid rgba(122,152,195,0.20)",
+      ? "1px solid rgba(29,95,212,0.22)"
+      : "1px solid rgba(20,52,83,0.18)",
     background: primary
-      ? "linear-gradient(180deg, #F8FCFF 0%, #E5F0FF 100%)"
-      : "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
+      ? "radial-gradient(circle at 14% 10%, rgba(201,154,39,0.12) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 86% 14%, rgba(38,96,171,0.16) 0%, rgba(38,96,171,0) 28%), linear-gradient(180deg, rgba(248,252,255,0.998) 0%, rgba(226,237,250,0.986) 100%)"
+      : "radial-gradient(circle at 14% 10%, rgba(201,154,39,0.10) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 86% 14%, rgba(38,96,171,0.12) 0%, rgba(38,96,171,0) 28%), linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(234,243,251,0.986) 100%)",
     padding: 16,
     textDecoration: "none",
     boxShadow: primary
@@ -284,8 +283,8 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     minHeight: 48,
     minWidth: 132,
     borderRadius: 14,
-    border: "1px solid rgba(124,154,196,0.20)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #EDF5FF 100%)",
+    border: "1px solid rgba(20,52,83,0.18)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #E8F1FB 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
@@ -310,9 +309,9 @@ function collapseToggle(): React.CSSProperties {
     minWidth: 128,
     padding: "11px 15px",
     borderRadius: 12,
-    border: "1px solid rgba(124,154,196,0.20)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #EDF5FF 100%)",
-    color: "#24415C",
+    border: "1px solid rgba(20,52,83,0.18)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #E8F1FB 100%)",
+    color: "#213D59",
     fontWeight: 800,
     fontSize: 13,
     cursor: "pointer",
@@ -343,7 +342,7 @@ function inputStyle(): React.CSSProperties {
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#334F69",
+    color: "#4A627A",
     fontWeight: 900,
     letterSpacing: 0.35,
     textTransform: "uppercase",
@@ -360,11 +359,11 @@ function badge(primary = false): React.CSSProperties {
     padding: "7px 12px",
     background: primary
       ? "linear-gradient(180deg, rgba(29,95,212,0.14) 0%, rgba(29,95,212,0.09) 100%)"
-      : "linear-gradient(180deg, rgba(130,146,172,0.16) 0%, rgba(130,146,172,0.10) 100%)",
+      : "linear-gradient(180deg, rgba(247,250,254,0.98) 0%, rgba(228,238,248,0.80) 100%)",
     border: primary
       ? "1px solid rgba(29,95,212,0.16)"
-      : "1px solid rgba(130,146,172,0.14)",
-    color: primary ? "#164AAE" : "#445C75",
+      : "1px solid rgba(20,52,83,0.16)",
+    color: primary ? "#164AAE" : "#496178",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
@@ -374,7 +373,7 @@ function badge(primary = false): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#425C74",
+    color: "#405A72",
     fontSize: 14.5,
     lineHeight: 1.75,
   };

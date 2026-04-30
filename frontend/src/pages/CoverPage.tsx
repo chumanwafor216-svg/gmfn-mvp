@@ -1442,6 +1442,26 @@ export default function CoverPage() {
 
   }
 
+  function openGuide() {
+
+    if (busy) return;
+
+    navigate("/guide", {
+
+      replace: false,
+
+      state:
+
+        location.state && typeof location.state === "object"
+
+          ? { ...(location.state as Record<string, unknown>) }
+
+          : undefined,
+
+    });
+
+  }
+
 
 
   return (
@@ -1467,7 +1487,7 @@ export default function CoverPage() {
               zIndex: 4,
             }}
           >
-            <div style={buttonDockStyle()}>
+            <div style={{ ...buttonDockStyle(), display: "grid", gap: 10, justifyItems: "center" }}>
             <button
 
               type="button"
@@ -1482,7 +1502,37 @@ export default function CoverPage() {
 
             >
 
-              {busy ? "Opening..." : "Continue"}
+              {busy ? "Opening..." : "Open Welcome"}
+
+            </button>
+
+            <button
+
+              type="button"
+
+              onClick={openGuide}
+
+              {...buttonGuardProps()}
+
+              disabled={busy}
+
+              style={{
+                ...buttonStyle(false),
+                ...stableTapStyle(),
+                minHeight: 40,
+                padding: "10px 18px",
+                borderRadius: 999,
+                background: "linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.07) 100%)",
+                color: "#FFFFFF",
+                border: "1px solid rgba(255,255,255,0.16)",
+                boxShadow: "0 10px 24px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.12)",
+                fontSize: 13,
+                fontWeight: 900,
+              }}
+
+            >
+
+              Read the full guide first
 
             </button>
             </div>

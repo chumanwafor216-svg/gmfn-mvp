@@ -156,10 +156,10 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
     padding: 22,
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F3F8FF 100%)"
+        ? "linear-gradient(180deg, rgba(8,17,31,0.98) 0%, rgba(11,31,51,0.97) 56%, rgba(23,54,84,0.95) 100%)"
         : bg,
-    border: "1px solid rgba(108,138,184,0.18)",
-    boxShadow: "0 24px 52px rgba(15,23,42,0.08)",
+    border: "1px solid rgba(123,161,204,0.20)",
+    boxShadow: "0 22px 48px rgba(2,6,23,0.22), 0 6px 14px rgba(15,23,42,0.05)",
   };
 }
 
@@ -170,10 +170,10 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
     padding: 16,
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"
+        ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
         : bg,
-    border: "1px solid rgba(125,154,196,0.18)",
-    boxShadow: "0 16px 34px rgba(15,23,42,0.05)",
+    border: "1px solid rgba(123,161,204,0.14)",
+    boxShadow: "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -182,10 +182,10 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
     ...institutionalSoftCard(bg),
     background:
       bg === "#F8FBFF"
-        ? "linear-gradient(180deg, #FCFEFF 0%, #EDF5FF 100%)"
+        ? "linear-gradient(180deg, rgba(13,28,45,0.96) 0%, rgba(18,40,64,0.94) 100%)"
         : bg,
-    border: "1px solid rgba(123,153,197,0.18)",
-    boxShadow: "0 18px 40px rgba(15,23,42,0.06)",
+    border: "1px solid rgba(123,161,204,0.16)",
+    boxShadow: "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -194,10 +194,10 @@ function statTile(bg = "#FFFFFF"): React.CSSProperties {
     ...institutionalStatTile(bg),
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)"
+        ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
         : bg,
-    border: "1px solid rgba(122,152,195,0.18)",
-    boxShadow: "0 14px 30px rgba(15,23,42,0.05)",
+    border: "1px solid rgba(123,161,204,0.14)",
+    boxShadow: "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -232,13 +232,13 @@ function routeTile(primary = false): React.CSSProperties {
       ? "1px solid rgba(29,95,212,0.22)"
       : "1px solid rgba(122,152,195,0.18)",
     background: primary
-      ? "linear-gradient(180deg, #F7FBFF 0%, #E9F2FF 100%)"
-      : "linear-gradient(180deg, #FFFDF9 0%, #F3F8FF 100%)",
+      ? "linear-gradient(180deg, #184A96 0%, #133A74 100%)"
+      : "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
     padding: 16,
     textDecoration: "none",
     boxShadow: primary
-      ? "0 16px 34px rgba(29,95,212,0.10)"
-      : "0 14px 30px rgba(15,23,42,0.05)",
+      ? "0 16px 34px rgba(19,79,191,0.24), inset 0 1px 0 rgba(255,255,255,0.10)"
+      : "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -253,8 +253,9 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     minWidth: 120,
     borderRadius: 14,
     border: "1px solid rgba(124,154,196,0.18)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #F1F7FF 100%)",
-    color: disabled ? "#94A3B8" : "#0B1F33",
+    background:
+      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+    color: disabled ? "#94A3B8" : "#E6EEF8",
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
@@ -263,7 +264,7 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     opacity: disabled ? 0.72 : 1,
     whiteSpace: "normal",
     overflowWrap: "anywhere",
-    boxShadow: "0 12px 24px rgba(15,23,42,0.06)",
+    boxShadow: "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -278,22 +279,23 @@ function collapseToggle(): React.CSSProperties {
     padding: "9px 13px",
     borderRadius: 12,
     border: "1px solid rgba(124,154,196,0.18)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #F1F7FF 100%)",
-    color: "#24415C",
+    background:
+      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+    color: "#E6EEF8",
     fontWeight: 800,
     fontSize: 13,
     textAlign: "center",
     cursor: "pointer",
     whiteSpace: "normal",
     overflowWrap: "anywhere",
-    boxShadow: "0 10px 22px rgba(15,23,42,0.06)",
+    boxShadow: "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#39526C",
+    color: "#9CB4CF",
     fontWeight: 1000,
     letterSpacing: 0.45,
     textTransform: "uppercase",
@@ -307,13 +309,11 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 32,
     padding: "7px 12px",
     borderRadius: 999,
-    background: primary
-      ? "linear-gradient(180deg, rgba(29,95,212,0.14) 0%, rgba(29,95,212,0.09) 100%)"
-      : "linear-gradient(180deg, rgba(130,146,172,0.16) 0%, rgba(130,146,172,0.10) 100%)",
+    background: primary ? "rgba(32,76,133,0.36)" : "rgba(255,255,255,0.08)",
     border: primary
-      ? "1px solid rgba(29,95,212,0.16)"
-      : "1px solid rgba(130,146,172,0.14)",
-    color: primary ? "#164AAE" : "#445C75",
+      ? "1px solid rgba(123,161,204,0.24)"
+      : "1px solid rgba(123,161,204,0.14)",
+    color: primary ? "#CFE3FF" : "#E6EEF8",
     fontSize: 12,
     fontWeight: 1000,
     whiteSpace: "normal",
@@ -322,7 +322,7 @@ function badge(primary = false): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#4F657B",
+    color: "#C8D8EA",
     fontSize: 14.5,
     lineHeight: 1.75,
   };
@@ -799,7 +799,7 @@ export default function GuarantorEarningsPage() {
                 <div
                   style={{
                     marginTop: 8,
-                    color: "#0B1F33",
+                    color: "#F8FBFF",
                     fontWeight: 900,
                     fontSize: 15,
                     lineHeight: 1.3,
@@ -814,7 +814,7 @@ export default function GuarantorEarningsPage() {
                 <div
                   style={{
                     marginTop: 8,
-                    color: "#0B1F33",
+                    color: "#F8FBFF",
                     fontWeight: 900,
                     fontSize: 15,
                     lineHeight: 1.3,
@@ -830,7 +830,7 @@ export default function GuarantorEarningsPage() {
                 <div
                   style={{
                     marginTop: 8,
-                    color: "#0B1F33",
+                    color: "#F8FBFF",
                     fontWeight: 900,
                     fontSize: 15,
                     lineHeight: 1.3,
@@ -846,7 +846,7 @@ export default function GuarantorEarningsPage() {
                 <div
                   style={{
                     marginTop: 8,
-                    color: "#0B1F33",
+                    color: "#F8FBFF",
                     fontWeight: 900,
                     fontSize: 15,
                     lineHeight: 1.3,
@@ -896,7 +896,7 @@ export default function GuarantorEarningsPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 15,
                   fontWeight: 900,
                   lineHeight: 1.65,
@@ -911,7 +911,7 @@ export default function GuarantorEarningsPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 15,
                   fontWeight: 900,
                   lineHeight: 1.65,
@@ -949,7 +949,7 @@ export default function GuarantorEarningsPage() {
       ) : null}
 
       {loading ? (
-        <div style={{ ...pageCard(), marginTop: 18, color: "#64748B" }}>
+        <div style={{ ...pageCard(), marginTop: 18, color: "rgba(230,238,248,0.76)" }}>
           Loading guarantor earnings...
         </div>
       ) : (
@@ -1005,7 +1005,7 @@ export default function GuarantorEarningsPage() {
                       marginTop: 8,
                       fontWeight: 1000,
                       fontSize: 28,
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                     }}
                   >
                     {fmtMoney(totals.total)} {currency}
@@ -1019,7 +1019,7 @@ export default function GuarantorEarningsPage() {
                       marginTop: 8,
                       fontWeight: 1000,
                       fontSize: 28,
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                     }}
                   >
                     {fmtMoney(totals.estimatedTotal)} {currency}
@@ -1033,7 +1033,7 @@ export default function GuarantorEarningsPage() {
                       marginTop: 8,
                       fontWeight: 1000,
                       fontSize: 28,
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                     }}
                   >
                     {fmtMoney(totals.thisYear)} {currency}
@@ -1047,7 +1047,7 @@ export default function GuarantorEarningsPage() {
                       marginTop: 8,
                       fontWeight: 1000,
                       fontSize: 28,
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                     }}
                   >
                     {fmtMoney(totals.totalWeight)} {currency}
@@ -1097,7 +1097,7 @@ export default function GuarantorEarningsPage() {
                     style={{
                       fontSize: 18,
                       fontWeight: 1000,
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                     }}
                   >
                     Visible contribution
@@ -1121,7 +1121,7 @@ export default function GuarantorEarningsPage() {
                     style={{
                       fontSize: 18,
                       fontWeight: 1000,
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                     }}
                   >
                     Encouragement
@@ -1210,7 +1210,7 @@ export default function GuarantorEarningsPage() {
                             <div
                               style={{
                                 fontWeight: 1000,
-                                color: "#0B1F33",
+                                color: "#F8FBFF",
                                 fontSize: 17,
                               }}
                             >
@@ -1222,14 +1222,14 @@ export default function GuarantorEarningsPage() {
                                 marginTop: 8,
                                 display: "grid",
                                 gap: 6,
-                                color: "#64748B",
+                                color: "rgba(230,238,248,0.76)",
                                 lineHeight: 1.7,
                                 fontSize: 14,
                               }}
                             >
                               <div>
                                 Contribution weight:{" "}
-                                <strong style={{ color: "#0B1F33" }}>
+                                <strong style={{ color: "#F8FBFF" }}>
                                   {safeStr(earning?.weight_amount || "0")}{" "}
                                   {safeStr(earning?.currency || currency)}
                                 </strong>
@@ -1240,7 +1240,7 @@ export default function GuarantorEarningsPage() {
                               {earning?.loan_status ? (
                                 <div>
                                   Loan status:{" "}
-                                  <strong style={{ color: "#0B1F33" }}>
+                                  <strong style={{ color: "#F8FBFF" }}>
                                     {safeStr(earning.loan_status)}
                                   </strong>
                                 </div>
@@ -1271,7 +1271,7 @@ export default function GuarantorEarningsPage() {
                               style={{
                                 marginTop: 10,
                                 fontSize: 12,
-                                color: "#64748B",
+                                color: "rgba(230,238,248,0.76)",
                                 fontWeight: 1000,
                               }}
                             >
@@ -1283,7 +1283,7 @@ export default function GuarantorEarningsPage() {
                                 marginTop: 6,
                                 fontWeight: 1000,
                                 fontSize: 18,
-                                color: settled ? "#065F46" : "#0B1F33",
+                                color: settled ? "#34D399" : "#F8FBFF",
                               }}
                             >
                               {fmtMoney(amountValue)}{" "}
@@ -1337,7 +1337,7 @@ export default function GuarantorEarningsPage() {
                 <OriginLink to={nextStep.ctaTo} style={routeTile(true)}>
                   <div
                     style={{
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                       fontWeight: 900,
                       fontSize: 17,
                       lineHeight: 1.3,
@@ -1353,7 +1353,7 @@ export default function GuarantorEarningsPage() {
                 <OriginLink to="/app/loan-workbench" style={routeTile(false)}>
                   <div
                     style={{
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                       fontWeight: 900,
                       fontSize: 17,
                       lineHeight: 1.3,
@@ -1369,7 +1369,7 @@ export default function GuarantorEarningsPage() {
                 <OriginLink to="/app/loan-suggestions" style={routeTile(false)}>
                   <div
                     style={{
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                       fontWeight: 900,
                       fontSize: 17,
                       lineHeight: 1.3,
@@ -1385,7 +1385,7 @@ export default function GuarantorEarningsPage() {
                 <OriginLink to="/app/community" style={routeTile(false)}>
                   <div
                     style={{
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                       fontWeight: 900,
                       fontSize: 17,
                       lineHeight: 1.3,
@@ -1401,7 +1401,7 @@ export default function GuarantorEarningsPage() {
                 <OriginLink to="/app/marketplace" style={routeTile(false)}>
                   <div
                     style={{
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                       fontWeight: 900,
                       fontSize: 17,
                       lineHeight: 1.3,
@@ -1417,7 +1417,7 @@ export default function GuarantorEarningsPage() {
                 <OriginLink to="/app/withdrawal-instructions" style={routeTile(false)}>
                   <div
                     style={{
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                       fontWeight: 900,
                       fontSize: 17,
                       lineHeight: 1.3,

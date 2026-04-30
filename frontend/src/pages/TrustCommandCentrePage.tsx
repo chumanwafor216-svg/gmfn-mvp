@@ -3,6 +3,12 @@ import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
+  institutionalInnerCard,
+  institutionalPageCard,
+  institutionalSoftCard,
+  institutionalStatTile,
+} from "../lib/institutionalSurface";
+import {
   adminRecentTrustEvents,
   getAdminIdentityRisk,
   getAdminIncompleteLoans,
@@ -134,12 +140,11 @@ function toNum(x: any): number {
 
 function safeDateTime(x: any): string {
   const raw = safeStr(x);
-  if (!raw) return "—";
+  if (!raw) return "Not stated";
   const d = new Date(raw);
   if (!Number.isFinite(d.getTime())) return raw;
   return d.toLocaleString();
 }
-
 function formatNumber(x: any): string {
   const n = Number(x);
   if (!Number.isFinite(n)) return safeStr(x) || "0";
@@ -244,65 +249,51 @@ function adminInner(maxWidth = 1180): React.CSSProperties {
 }
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
-  const resolvedBackground =
-    bg === "#FFFFFF"
-      ? "linear-gradient(145deg, rgba(255,255,255,0.97) 0%, rgba(246,251,255,0.96) 48%, rgba(239,247,255,0.92) 100%)"
-      : bg;
-
   return {
-    borderRadius: 24,
-    border: "1px solid rgba(193,207,222,0.62)",
-    background: resolvedBackground,
-    padding: 20,
+    ...institutionalPageCard(bg),
+    border: "1px solid rgba(20,52,83,0.24)",
+    background:
+      bg === "#FFFFFF"
+        ? "radial-gradient(circle at 14% 10%, rgba(201,154,39,0.16) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 86% 14%, rgba(38,96,171,0.14) 0%, rgba(38,96,171,0) 30%), linear-gradient(180deg, rgba(255,255,255,0.995) 0%, rgba(239,247,255,0.985) 54%, rgba(221,232,245,0.975) 100%)"
+        : bg,
     boxShadow:
-      "0 20px 48px rgba(5,16,38,0.12), 0 2px 8px rgba(15,23,42,0.04), inset 0 1px 0 rgba(255,255,255,0.86)",
-    overflow: "hidden",
+      "0 28px 58px rgba(7,20,36,0.12), 0 6px 14px rgba(7,20,36,0.045), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -14px 28px rgba(18,52,86,0.05)",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
-  const resolvedBackground =
-    bg === "#FFFFFF"
-      ? "linear-gradient(145deg, rgba(255,255,255,0.98), rgba(246,250,255,0.94))"
-      : bg === "#F8FBFF"
-        ? "linear-gradient(145deg, rgba(248,251,255,0.98), rgba(238,247,255,0.94))"
-        : bg;
-
   return {
-    borderRadius: 18,
-    border: "1px solid rgba(193,207,222,0.58)",
-    background: resolvedBackground,
-    padding: 16,
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.82)",
+    ...institutionalSoftCard(bg),
+    border: "1px solid rgba(20,52,83,0.20)",
+    background:
+      bg === "#FFFFFF"
+        ? "radial-gradient(circle at 16% 12%, rgba(201,154,39,0.13) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 86% 16%, rgba(38,96,171,0.10) 0%, rgba(38,96,171,0) 28%), linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(243,248,254,0.984) 58%, rgba(228,237,246,0.975) 100%)"
+        : bg === "#F8FBFF"
+          ? "radial-gradient(circle at 16% 12%, rgba(201,154,39,0.14) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 86% 16%, rgba(38,96,171,0.12) 0%, rgba(38,96,171,0) 29%), linear-gradient(180deg, rgba(250,252,255,0.996) 0%, rgba(236,244,252,0.984) 60%, rgba(220,231,242,0.972) 100%)"
+          : bg,
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
-  const resolvedBackground =
-    bg === "#FFFFFF"
-      ? "linear-gradient(145deg, rgba(255,255,255,0.99), rgba(249,252,255,0.95))"
-      : bg === "#F8FBFF" || bg === "#FCFEFF"
-        ? "linear-gradient(145deg, rgba(248,251,255,0.99), rgba(240,248,255,0.95))"
-        : bg;
-
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(193,207,222,0.56)",
-    background: resolvedBackground,
-    padding: 14,
-    boxShadow: "0 8px 20px rgba(5,16,38,0.045), inset 0 1px 0 rgba(255,255,255,0.86)",
+    ...institutionalInnerCard(bg),
+    background:
+      bg === "#FFFFFF"
+        ? "radial-gradient(circle at 18% 12%, rgba(201,154,39,0.10) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 84% 14%, rgba(38,96,171,0.09) 0%, rgba(38,96,171,0) 28%), linear-gradient(180deg, rgba(255,255,255,0.999) 0%, rgba(246,249,253,0.986) 62%, rgba(232,239,246,0.972) 100%)"
+        : bg === "#F8FBFF" || bg === "#FCFEFF"
+          ? "radial-gradient(circle at 18% 12%, rgba(201,154,39,0.11) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 84% 14%, rgba(38,96,171,0.10) 0%, rgba(38,96,171,0) 28%), linear-gradient(180deg, rgba(249,252,255,0.997) 0%, rgba(240,247,253,0.984) 60%, rgba(226,236,246,0.972) 100%)"
+          : bg,
   };
 }
 
 function statTile(): React.CSSProperties {
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(193,207,222,0.58)",
+    ...institutionalStatTile("#FFFFFF"),
+    border: "1px solid rgba(20,52,83,0.17)",
     background:
-      "linear-gradient(145deg, rgba(255,255,255,0.99), rgba(242,248,255,0.96))",
-    padding: 14,
+      "radial-gradient(circle at 16% 10%, rgba(201,154,39,0.10) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 84% 14%, rgba(38,96,171,0.10) 0%, rgba(38,96,171,0) 28%), linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(240,246,252,0.984) 100%)",
     boxShadow:
-      "0 12px 26px rgba(5,16,38,0.055), inset 0 1px 0 rgba(255,255,255,0.9)",
+      "0 14px 30px rgba(7,20,36,0.06), inset 0 1px 0 rgba(255,255,255,0.88)",
   };
 }
 
@@ -314,16 +305,16 @@ function routeTile(primary = false): React.CSSProperties {
     minHeight: 110,
     borderRadius: 18,
     border: primary
-      ? "1px solid rgba(217,169,65,0.42)"
-      : "1px solid rgba(193,207,222,0.58)",
+      ? "1px solid rgba(176,133,38,0.34)"
+      : "1px solid rgba(20,52,83,0.18)",
     background: primary
-      ? "linear-gradient(145deg, rgba(255,251,235,0.98), rgba(240,248,255,0.96))"
-      : "linear-gradient(145deg, rgba(255,255,255,0.99), rgba(244,249,255,0.96))",
+      ? "radial-gradient(circle at 14% 10%, rgba(201,154,39,0.18) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 86% 14%, rgba(38,96,171,0.11) 0%, rgba(38,96,171,0) 28%), linear-gradient(180deg, rgba(255,251,238,0.995) 0%, rgba(243,245,249,0.984) 58%, rgba(229,238,247,0.976) 100%)"
+      : "radial-gradient(circle at 14% 10%, rgba(201,154,39,0.10) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 86% 14%, rgba(38,96,171,0.12) 0%, rgba(38,96,171,0) 28%), linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(241,247,253,0.985) 60%, rgba(227,236,245,0.973) 100%)",
     padding: 16,
     textDecoration: "none",
     boxShadow: primary
-      ? "0 14px 30px rgba(134,98,20,0.12), inset 0 1px 0 rgba(255,255,255,0.9)"
-      : "0 8px 20px rgba(5,16,38,0.045), inset 0 1px 0 rgba(255,255,255,0.86)",
+      ? "0 16px 34px rgba(134,98,20,0.12), inset 0 1px 0 rgba(255,255,255,0.9)"
+      : "0 12px 26px rgba(7,20,36,0.06), inset 0 1px 0 rgba(255,255,255,0.86)",
     WebkitTapHighlightColor: "transparent",
     touchAction: "manipulation",
     position: "relative",
@@ -349,7 +340,7 @@ function commandButtonGuardProps(): Pick<
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#5D7389",
+    color: "#4E6680",
     fontWeight: 900,
     letterSpacing: 0.35,
     textTransform: "uppercase",
@@ -365,12 +356,12 @@ function badge(primary = false): React.CSSProperties {
     borderRadius: 999,
     padding: "6px 10px",
     border: primary
-      ? "1px solid rgba(217,169,65,0.34)"
-      : "1px solid rgba(193,207,222,0.58)",
+      ? "1px solid rgba(176,133,38,0.28)"
+      : "1px solid rgba(20,52,83,0.18)",
     background: primary
-      ? "linear-gradient(180deg, rgba(255,251,235,0.96), rgba(246,215,125,0.26))"
-      : "linear-gradient(180deg, rgba(248,251,255,0.96), rgba(232,241,251,0.72))",
-    color: primary ? "#8A6616" : "#51657A",
+      ? "linear-gradient(180deg, rgba(255,250,236,0.98), rgba(241,220,166,0.46))"
+      : "linear-gradient(180deg, rgba(249,252,255,0.98), rgba(228,238,248,0.78))",
+    color: primary ? "#8A6616" : "#4B6278",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
@@ -424,8 +415,8 @@ function actionBtn(
       borderRadius: 999,
       border: "1px solid rgba(193,207,222,0.66)",
       background:
-        "linear-gradient(180deg, rgba(255,255,255,0.98), rgba(238,247,255,0.94))",
-      color: disabled ? "#94A3B8" : "#24415C",
+        "linear-gradient(180deg, rgba(255,255,255,0.995), rgba(229,238,248,0.94))",
+      color: disabled ? "#94A3B8" : "#213D59",
       fontWeight: 800,
       fontSize: 13,
       textDecoration: "none",
@@ -453,7 +444,7 @@ function actionBtn(
     borderRadius: 999,
     border: "1px solid rgba(193,207,222,0.66)",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.99), rgba(241,247,253,0.96))",
+      "linear-gradient(180deg, rgba(255,255,255,0.995), rgba(233,242,251,0.95))",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
@@ -483,8 +474,8 @@ function collapseToggle(): React.CSSProperties {
     borderRadius: 999,
     border: "1px solid rgba(193,207,222,0.66)",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.99), rgba(241,247,253,0.96))",
-    color: "#24415C",
+      "linear-gradient(180deg, rgba(255,255,255,0.995), rgba(233,242,251,0.95))",
+    color: "#213D59",
     fontWeight: 900,
     fontSize: 13,
     cursor: "pointer",
@@ -502,7 +493,7 @@ function collapseToggle(): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#5F7287",
+    color: "#435C73",
     fontSize: 14,
     lineHeight: 1.75,
   };

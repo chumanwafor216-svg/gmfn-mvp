@@ -458,7 +458,7 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#435A72",
+    color: "#9CB4CF",
     fontWeight: 900,
     letterSpacing: 0.35,
     textTransform: "uppercase",
@@ -473,10 +473,8 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary
-      ? "linear-gradient(180deg, rgba(29,78,216,0.16) 0%, rgba(29,78,216,0.09) 100%)"
-      : "linear-gradient(180deg, rgba(100,116,139,0.16) 0%, rgba(100,116,139,0.10) 100%)",
-    color: primary ? "#164AAE" : "#455D75",
+    background: primary ? "rgba(32,76,133,0.36)" : "rgba(255,255,255,0.08)",
+    color: primary ? "#CFE3FF" : "#E6EEF8",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
@@ -541,9 +539,10 @@ function actionBtn(
       minHeight: 46,
       padding: "10px 14px",
       borderRadius: 12,
-      border: "1px solid rgba(29,78,216,0.18)",
-      background: "linear-gradient(180deg, #FBFDFF 0%, #EBF4FF 100%)",
-      color: disabled ? "#94A3B8" : "#1E4063",
+      border: "1px solid rgba(121,149,190,0.20)",
+      background:
+        "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+      color: disabled ? "#94A3B8" : "#E6EEF8",
       fontWeight: 800,
       fontSize: 13,
       textAlign: "center",
@@ -553,7 +552,7 @@ function actionBtn(
       opacity: disabled ? 0.86 : 1,
       boxShadow: disabled
         ? "none"
-        : "0 12px 24px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
+        : "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
     };
   }
 
@@ -565,9 +564,10 @@ function actionBtn(
     minHeight: 48,
     padding: "11px 15px",
     borderRadius: 14,
-    border: "1px solid rgba(29,78,216,0.18)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
-    color: disabled ? "#94A3B8" : "#0B1F33",
+    border: "1px solid rgba(121,149,190,0.20)",
+    background:
+      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+    color: disabled ? "#94A3B8" : "#E6EEF8",
     fontWeight: 800,
     fontSize: 14,
     textAlign: "center",
@@ -577,7 +577,7 @@ function actionBtn(
     opacity: disabled ? 0.86 : 1,
     boxShadow: disabled
       ? "none"
-      : "0 12px 24px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.84)",
+      : "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -591,16 +591,17 @@ function collapseToggle(): React.CSSProperties {
     minWidth: 106,
     padding: "10px 16px",
     borderRadius: 14,
-    border: "1px solid rgba(29,78,216,0.18)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #EDF5FF 100%)",
-    color: "#1E4063",
+    border: "1px solid rgba(121,149,190,0.20)",
+    background:
+      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+    color: "#E6EEF8",
     fontWeight: 900,
     fontSize: 13.5,
     cursor: "pointer",
     textAlign: "center",
     whiteSpace: "normal",
     boxShadow:
-      "0 12px 24px rgba(10,24,49,0.085), inset 0 1px 0 rgba(255,255,255,0.82)",
+      "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -610,7 +611,7 @@ function stopFinanceTap(event: React.SyntheticEvent<HTMLElement>) {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#4E657C",
+    color: "#C8D8EA",
     fontSize: 14,
     lineHeight: 1.75,
   };
@@ -621,8 +622,8 @@ function tableWrap(): React.CSSProperties {
     width: "100%",
     overflowX: "auto",
     borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(123,161,204,0.14)",
+    background: "linear-gradient(180deg, rgba(13,28,45,0.96) 0%, rgba(18,40,64,0.94) 100%)",
   };
 }
 
@@ -637,9 +638,9 @@ function financeTable(): React.CSSProperties {
 function tableHeadCell(): React.CSSProperties {
   return {
     padding: "11px 12px",
-    borderBottom: "1px solid rgba(11,31,51,0.08)",
-    background: "#F5F9FE",
-    color: "#36506A",
+    borderBottom: "1px solid rgba(123,161,204,0.14)",
+    background: "rgba(255,255,255,0.06)",
+    color: "#C8D8EA",
     fontSize: 11,
     fontWeight: 950,
     letterSpacing: 0.28,
@@ -652,8 +653,8 @@ function tableHeadCell(): React.CSSProperties {
 function tableCell(strong = false): React.CSSProperties {
   return {
     padding: "12px",
-    borderBottom: "1px solid rgba(11,31,51,0.06)",
-    color: strong ? "#0B1F33" : "#51657A",
+    borderBottom: "1px solid rgba(123,161,204,0.10)",
+    color: strong ? "#F8FBFF" : "#D8E5F3",
     fontSize: 13.5,
     fontWeight: strong ? 900 : 700,
     lineHeight: 1.45,
@@ -663,7 +664,7 @@ function tableCell(strong = false): React.CSSProperties {
 
 function emptyRecord(text: string) {
   return (
-    <div style={{ ...helperText(), color: "#64748B" }}>
+    <div style={{ ...helperText(), color: "rgba(230,238,248,0.76)" }}>
       {text}
     </div>
   );
@@ -1382,7 +1383,7 @@ export default function FinancePage() {
       },
       {
         id: "support",
-        label: "Borrow / lend / support",
+        label: "Open Loans & Support",
         detail: "Open the live Loans & Support workspace for this community.",
         technical: "Loans & Support",
         to: "/app/loans",
@@ -1390,7 +1391,7 @@ export default function FinancePage() {
       },
       {
         id: "payment-rails",
-        label: "Choose payment route",
+        label: "Open Payment Rails",
         detail: "Review inbound and outbound money route options.",
         technical: "Payment rails",
         to: "/app/payment-rails",
@@ -1398,7 +1399,7 @@ export default function FinancePage() {
       },
       {
         id: "payout-details",
-        label: "Set payout details",
+        label: "Open Payout Details",
         detail: "Check where withdrawals should be sent.",
         technical: "Payout details",
         to: "/app/payout-details",
@@ -1406,7 +1407,7 @@ export default function FinancePage() {
       },
       {
         id: "reconciliation",
-        label: "Check expected payments",
+        label: "Open Payment Reconciliation",
         detail: `${pendingReconciliationCount} payment item${
           pendingReconciliationCount === 1 ? "" : "s"
         } may need matching or confirmation.`,
@@ -1416,7 +1417,7 @@ export default function FinancePage() {
       },
       {
         id: "readiness",
-        label: "Check loan readiness",
+        label: "Open Loan Readiness",
         detail: "Review whether the live support path looks ready to continue.",
         technical: "Loan readiness",
         to: "/app/loan-readiness",
@@ -1457,7 +1458,7 @@ export default function FinancePage() {
       },
       {
         id: "notifications",
-        label: "See what is waiting",
+        label: "Open Action Inbox",
         detail: "Open the action queue when someone needs a response.",
         technical: "Notifications",
         to: "/app/notifications",
@@ -1466,9 +1467,9 @@ export default function FinancePage() {
       },
       {
         id: "focus",
-        label: "Add a money promise",
-        detail: "Open focus commitments for a savings, repayment, or support promise.",
-        technical: "Focus commitments",
+        label: "Open Focus Commitments",
+        detail: "Open the Dashboard focus section for a savings, repayment, or support promise.",
+        technical: "Dashboard focus commitments",
         to: "/app/dashboard#focus-commitments",
         keywords: ["promise", "commitment", "focus", "plan", "repayment plan"],
         tone: "soft",
@@ -1550,7 +1551,7 @@ export default function FinancePage() {
         />
 
         <section style={pageCard("#FFFFFF")}>
-          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+          <div style={{ color: "rgba(230,238,248,0.76)", lineHeight: 1.8 }}>
             Loading finance record...
           </div>
         </section>
@@ -1734,7 +1735,7 @@ export default function FinancePage() {
             >
               {financeFileReading.title}
             </div>
-            <div style={{ ...helperText(), color: "#0B1F33" }}>
+            <div style={{ ...helperText(), color: "#F8FBFF" }}>
               {financeFileReading.detail}
             </div>
             <div

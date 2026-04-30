@@ -1,3 +1,329 @@
+### Approval and activation family received a darker polished surface pass (2026-04-29 22:38)
+
+- Continued the GMFN-only pilot-readiness workstream by taking the strongest remaining active public decision/activation surfaces through a darker institutional polish pass instead of leaving them as lighter holdouts beside the already-upgraded entry family.
+- Applied a route-local darker surface pass to `frontend/src/pages/JoinApprovalPage.tsx`:
+  - converted the default page cards and soft detail cards to darker navy institutional surfaces
+  - retuned badges, labels, helper text, and loading state to the same calmer dark-family language
+  - kept the semantic approval/pending/rejection status card behavior intact while making the surrounding details and next-step panels feel more polished and less bright
+- Applied a route-local darker surface pass to `frontend/src/pages/JoinRequestPendingPage.tsx`:
+  - converted the main page cards, soft process cards, tracking cards, pending notices, and stat tiles to darker institutional surfaces
+  - retuned labels, helper text, badges, and value text for dark-surface readability
+  - cleaned the broken reviewer separator glyph in the activated-reviewers section to a plain ASCII `-`
+- Applied a route-local darker surface pass to `frontend/src/pages/MemberActivationPage.tsx`:
+  - converted the outer activation card and main inner activation panel to darker institutional surfaces
+  - retuned helper text and key heading colors so the active route still reads clearly on phone while feeling closer to the stronger institutional entry family
+- Verification:
+  - `npm exec -- eslint src/pages/JoinApprovalPage.tsx src/pages/JoinRequestPendingPage.tsx src/pages/MemberActivationPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Routes impacted:
+  - `/join-approval/:requestId`
+  - `/pending-approval`
+  - `/join-request/pending`
+  - `/activate-membership`
+- Shared logic impact:
+  - no backend rule changed
+  - no auth or route contract changed
+  - no frozen dashboard surface changed
+  - this was a route-local visual/polish pass for active approval and activation pages only
+
+### Public pilot-readiness button sweep removed misleading protected jump-ins (2026-04-29 22:06)
+
+- Started the GMFN-only pilot-readiness workstream by auditing the public entry and jump-in chain for buttons that could send a not-yet-entered user into the wrong protected place.
+- Confirmed the strongest mismatch was on public invite / approval / pending surfaces: several buttons were pointing straight to `/app/dashboard#focus-commitments` even though Commitment Builder is a protected post-entry workspace surface.
+- Applied a route-local correction batch so those public screens now keep people in public-safe guide routes instead of bouncing them into a protected dashboard target:
+  - `frontend/src/pages/JoinByInvitePage.tsx`
+    - changed `Open My GSN and I` to `Open full GSN guide`
+    - replaced `Open Commitment Builder` with `Read about Commitment Builder first`
+    - tightened the helper copy so it now explains Commitment Builder opens after workspace entry
+  - `frontend/src/pages/InviteLandingPage.tsx`
+    - replaced the direct Commitment Builder jump with the same public-safe guide action
+    - tightened the surrounding helper copy to explain Commitment Builder opens after workspace entry
+  - `frontend/src/pages/JoinApprovalPage.tsx`
+    - changed the guide action to `Open full GSN guide`
+    - replaced the direct Commitment Builder jump with the same public-safe guide action
+    - tightened the support copy to explain the builder belongs after workspace entry
+  - `frontend/src/pages/JoinRequestPendingPage.tsx`
+    - changed the guide action to `Open full GSN guide`
+    - replaced the direct Commitment Builder jump with the same public-safe guide action
+- Applied one signed-in continuation cleanup to `frontend/src/pages/MemberActivationPage.tsx`:
+  - after activation, the vague `Continue` action now reads `Build first circle`
+  - reordered the activated-state actions so the clearest forward route comes first, followed by Trust and Notifications
+- Verification:
+  - `npm exec -- eslint src/pages/JoinByInvitePage.tsx src/pages/InviteLandingPage.tsx src/pages/JoinApprovalPage.tsx src/pages/JoinRequestPendingPage.tsx src/pages/MemberActivationPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Routes impacted:
+  - `/join-by-invite/:code`
+  - founder invitation landing rendered by `frontend/src/pages/InviteLandingPage.tsx`
+  - `/join-approval/:requestId`
+  - `/pending-approval`
+  - `/join-request/pending`
+  - `/activate-membership`
+- Shared logic impact:
+  - no auth core changed
+  - no route contract changed
+  - no backend rule changed
+  - this was a route-local pilot-readiness correction to stop public buttons from promising protected workspace tools too early
+
+### Public guide route was fully wired back into the entry journey (2026-04-29 20:04)
+
+- Continued the same outward-facing/public institutionalization workstream by closing the next real gap after the `/guide` split: the public guide existed, but the main public entry surfaces still did too little to send people there intentionally.
+- Extended the route-local public guide correction in `frontend/src/pages/MyGMFNAndIPage.tsx`:
+  - kept the signed-in `/app/my-gmfn-and-i` behavior intact
+  - kept `/guide` forced to the guide context
+  - added a public `NextActionGuide` chooser so the public guide now points cleanly into:
+    - `Cover`
+    - `Welcome`
+    - `Login`
+- Applied a route-local entry integration pass to `frontend/src/pages/CoverPage.tsx`:
+  - added a new secondary CTA in the cover button dock:
+    - `Read the full guide first`
+  - this lets public users choose orientation before they step into the next route
+- Applied a route-local entry integration pass to `frontend/src/pages/WelcomePage.tsx`:
+  - added a new secondary CTA in the `One Clear Next Step` panel:
+    - `Open full GSN guide`
+  - this makes the public guide part of the same controlled entry journey rather than a hidden side route
+- Tightened route language in `frontend/src/pages/InviteLandingPage.tsx`:
+  - relabeled the existing `/guide` continuation to:
+    - `Open full GSN guide`
+  - this keeps the public guide naming consistent across founder/public invitation entry too
+- Verification:
+  - `npm exec -- eslint src/pages/MyGMFNAndIPage.tsx src/pages/CoverPage.tsx src/pages/WelcomePage.tsx src/pages/InviteLandingPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Routes impacted:
+  - `/guide` rendered by `frontend/src/pages/MyGMFNAndIPage.tsx`
+  - `/app/my-gmfn-and-i` rendered by the same page with signed-in behavior preserved
+  - `/cover` rendered by `frontend/src/pages/CoverPage.tsx`
+  - `/welcome` rendered by `frontend/src/pages/WelcomePage.tsx`
+  - founder invitation landing rendered by `frontend/src/pages/InviteLandingPage.tsx`
+- Shared logic impact:
+  - no backend contract changed
+  - no auth or entry-flow contract changed
+  - this was a route-local public-guide integration and naming pass only
+
+### Public guide route was separated cleanly from the signed-in member guide flow (2026-04-29 19:46)
+
+- Continued the same outward-facing/public institutionalization workstream by fixing the strongest remaining public holdout: `frontend/src/pages/MyGMFNAndIPage.tsx` was still behaving too much like the signed-in member route even when opened through `/guide`.
+- Applied a route-local context pass to `frontend/src/pages/MyGMFNAndIPage.tsx`:
+  - added shared `NextActionGuide` support for the public `/guide` route
+  - made the route context-aware so `/guide` now:
+    - uses `GSN Guide` and `Cover` navigation instead of dashboard framing
+    - forces the public guide tab instead of exposing member settings on the public route
+    - swaps the hero copy from member-specific `Welcome` language into public guide language
+    - replaces the signed-in dashboard/community route grid with a public next-step chooser into:
+      - `Cover`
+      - `Welcome`
+      - `Login`
+  - preserved the existing signed-in `/app/my-gmfn-and-i` member/settings behavior for the app route
+- Verification:
+  - `npm exec -- eslint src/pages/MyGMFNAndIPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Routes impacted:
+  - `/guide` rendered by `frontend/src/pages/MyGMFNAndIPage.tsx`
+  - `/app/my-gmfn-and-i` rendered by the same page with signed-in behavior preserved
+- Shared logic impact:
+  - no backend contract changed
+  - no trust rule changed
+  - this was a route-local public-vs-app context correction only
+
+### Open Trust and public shop face received a shared outward-facing coherence pass (2026-04-29 19:28)
+
+- Continued the same public-facing institutionalization workstream by tightening the next-step guidance on the outward-facing trust/shop surfaces instead of jumping into a different family.
+- Applied a route-local pass to `frontend/src/pages/OpenTrustPage.tsx`:
+  - normalized the broken fallback score glyph to plain ASCII `-`
+  - strengthened the primary next-step action so `Open Trust Passport` reads as the main fuller-trust path
+  - added a new `What to do next` section explaining the difference between:
+    - staying with the narrow community reading
+    - moving into the fuller Trust Passport story
+    - returning to Community when the next step is group activity
+- Applied a route-local pass to `frontend/src/pages/ShopGalleryPage.tsx`:
+  - added a new `What to do next` section clarifying the difference between:
+    - the public shelf
+    - the private Vault path
+    - returning into protected GSN tools
+  - kept this route-local so the public shop face becomes easier to read without touching marketplace contracts or shared shop infrastructure
+- Verification:
+  - `npm exec -- eslint src/pages/OpenTrustPage.tsx src/pages/ShopGalleryPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Routes impacted:
+  - `/app/open-trust-reading` rendered by `frontend/src/pages/OpenTrustPage.tsx`
+  - `/shop/:gmfnId` rendered by `frontend/src/pages/ShopGalleryPage.tsx`
+- Shared logic impact:
+  - no backend rule, shop visibility rule, or trust contract changed
+  - this was a route-local explanation/continuation pass only
+
+## 2026-04-29 19:08
+
+### Workstream
+Public vault-access route institutionalization continuation.
+
+### What changed
+- Took the remaining public-facing vault access surface through the same calmer institutional pass used across the upgraded entry family, while keeping the access logic and token flow intact.
+- `ShopAccessPage.tsx`
+  - added a shared darker institutional shell for loading, inactive-link, and active-access states
+  - strengthened the main page-card and inner-card chrome so the route feels closer to the upgraded welcome / login / join / activation family
+  - upgraded the pill/badge treatment to the same calmer institutional rhythm
+  - added shared route-local continuation buttons for:
+    - `Back to Welcome`
+    - `Open public shop face` when the owner GMFN id is available
+  - added a dedicated `What to do next` section so the route explains when to stay in private Vault access and when to leave for the public shop face or a new entry path
+
+### Why
+- After the login/create continuation pass, `ShopAccessPage.tsx` was the strongest remaining public-facing transition route still visually and behaviorally sitting outside the calmer institutional family.
+- It is not part of the main join/create/account activation flow, but it is still a public-facing controlled-access entry surface and needed the same seriousness and next-step clarity.
+
+### Files touched
+- `frontend/src/pages/ShopAccessPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- public private-vault access route rendered by `ShopAccessPage.tsx`
+- alias routes that resolve into the same surface:
+  - `/shop-access/:token`
+  - `/vault-shop-access/:token`
+
+### Verification
+- `npm exec -- eslint src/pages/ShopAccessPage.tsx`
+- `npm run build`
+
+## 2026-04-29 18:52
+
+### Workstream
+Public access and return-entry institutionalization continuation.
+
+### What changed
+- Continued the same institutional public-entry pass across the remaining access / return surfaces that still felt brighter and less settled than the upgraded welcome / join / invite / activation routes.
+- `LoginPage.tsx`
+  - cooled the shell and deepened the hero-card chrome
+  - moved the main sign-in action into the same calmer institutional blue treatment now used across the stronger public family
+  - tightened the secondary action chrome to the same white / steel rhythm as the upgraded entry routes
+- `CreateEntryPage.tsx`
+  - cooled the shell and strengthened the main page-card / support-card chrome
+  - moved the main create-entry action into the calmer institutional blue treatment
+  - tightened the secondary and stage-toggle action language into the same white / steel and blue institutional family
+  - replaced the warmer highlighted existing-member card tint with a cooler institutional emphasis so the route stays in-family while preserving the same meaning
+
+### Why
+- After the activation-family continuation, the strongest remaining public-entry holdouts were the return-access and create-entry routes.
+- They still carried the older brighter white / warmer emphasis more than the newer institutional entry family.
+- This pass keeps all route purpose and create/login behavior intact while bringing those routes much closer to the same governed public-entry system.
+
+### Files touched
+- `frontend/src/pages/LoginPage.tsx`
+- `frontend/src/pages/CreateEntryPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- public sign-in / returning-account route rendered by `LoginPage.tsx`
+- public create-community / create-entry route rendered by `CreateEntryPage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/LoginPage.tsx src/pages/CreateEntryPage.tsx`
+- `npm run build`
+
+## 2026-04-29 18:38
+
+### Workstream
+Public activation and welcome family institutionalization continuation.
+
+### What changed
+- Continued the same public-entry institutional tone pass, but this time across the activation family that still sat slightly apart from the calmer cover / login / join / invite surfaces.
+- `ActivateMembershipPage.tsx`
+  - cooled the outer shell and reduced the lingering warmer wash
+  - strengthened the main activation card chrome
+  - moved the main activation CTA into the steadier institutional blue action treatment
+  - tightened the secondary pill treatment to match the calmer white / steel rhythm already used across the stronger public entry routes
+- `MemberActivationPage.tsx`
+  - cooled the outer shell and deepened the activation rail
+  - replaced the warmer gold guide / activation actions with the same calmer institutional blue and white / steel treatment used across the upgraded public family
+  - strengthened the white-card surface so the route feels more aligned with the calmer join / approval / pending screens
+- `WelcomePage.tsx`
+  - subtly cooled the welcome shell and deepened the hero / route-card chrome
+  - kept the route structure and mode logic intact, but brought the activation-launch surface closer to the same institutional family as the rest of the upgraded public entry routes
+
+### Why
+- After the join / invite continuation pass, the activation family still felt slightly more visually mixed than the rest of the public entry system.
+- This pass keeps all activation and welcome behavior intact while making the routes feel more like one governed entry journey instead of separate visual branches.
+
+### Files touched
+- `frontend/src/pages/ActivateMembershipPage.tsx`
+- `frontend/src/pages/MemberActivationPage.tsx`
+- `frontend/src/pages/WelcomePage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- public membership activation route rendered by `ActivateMembershipPage.tsx`
+- approved member activation route rendered by `MemberActivationPage.tsx`
+- public welcome / route-choice entry screen rendered by `WelcomePage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/ActivateMembershipPage.tsx src/pages/MemberActivationPage.tsx src/pages/WelcomePage.tsx`
+- `npm run build`
+
+## 2026-04-29 18:05
+
+### Workstream
+Public join and invite family institutionalization continuation.
+
+### What changed
+- Continued the same institutional public-entry direction, but this time across the remaining join / invite review surfaces that still felt warmer or less settled than the upgraded cover / welcome / login / create-entry family.
+- `JoinEntryPage.tsx`
+  - reduced the warmer gold wash in the outer shell
+  - cooled the main container chrome
+  - replaced the older gold primary action with the calmer blue institutional action style
+  - tightened the secondary route action into the same cooler white / steel action rhythm
+- `InviteLandingPage.tsx`
+  - darkened the outer shell into the same navy-led institutional family
+  - strengthened card borders and shadows
+  - cooled the support cards
+  - replaced the simpler flat CTA styling with the calmer institutional action treatment
+  - corrected the hero helper copy color so it reads clearly against the dark hero panel
+- `JoinByInvitePage.tsx`
+  - darkened the page shell into the same institutional family
+  - upgraded the main surface chrome and support cards
+  - moved the main actions into the steadier institutional button treatment
+- `JoinApprovalPage.tsx`
+  - strengthened the approval route shell with a darker institutional background
+  - deepened the hero approval card to match the calmer cover / entry family
+  - cooled page and support cards so the route feels more aligned with the newer public entry surfaces
+- `JoinRequestPendingPage.tsx`
+  - applied the same darker shell treatment
+  - deepened the pending-state hero panel
+  - cooled the remaining support cards so the route reads more like a serious waiting / review surface than a generic light workflow page
+
+### Why
+- The product owner had already pushed the public cover / welcome / login / create-entry family toward a calmer institutional tone.
+- The join and invite continuation routes were still more visually mixed, especially the founder invitation and invitation-preview surfaces.
+- This pass keeps the route structure and business behavior intact, but makes the wider public join / invitation family feel much more like one governed system.
+
+### Files touched
+- `frontend/src/pages/JoinEntryPage.tsx`
+- `frontend/src/pages/InviteLandingPage.tsx`
+- `frontend/src/pages/JoinByInvitePage.tsx`
+- `frontend/src/pages/JoinApprovalPage.tsx`
+- `frontend/src/pages/JoinRequestPendingPage.tsx`
+- `docs/HANDOFF_NOTES.md`
+
+### Routes / screens affected
+- public join-existing-community onboarding route rendered by `JoinEntryPage.tsx`
+- public founder invitation preview rendered by `InviteLandingPage.tsx`
+- public invite preview rendered by `JoinByInvitePage.tsx`
+- public join approval route rendered by `JoinApprovalPage.tsx`
+- public pending review route rendered by `JoinRequestPendingPage.tsx`
+
+### Verification
+- `npm exec -- eslint src/pages/InviteLandingPage.tsx src/pages/JoinByInvitePage.tsx src/pages/JoinEntryPage.tsx src/pages/JoinApprovalPage.tsx src/pages/JoinRequestPendingPage.tsx`
+- `npm run build`
+
 ## 2026-04-29 14:53
 
 ### Workstream
@@ -18363,3 +18689,643 @@ GSN-branded invite composer and invite-entry continuity.
 - Shared logic impact:
   - this was a system-level visual maturity correction, not a route-contract or
     backend-behavior change
+
+### Private guidance/member utility surfaces darkened for pilot-readiness (2026-04-29)
+
+- Continued the GMFN-only pilot-readiness visual pass on active authenticated routes that still felt lighter/older than the institutional family.
+- Route-local updates:
+  - `frontend/src/pages/BuildFirstCirclePage.tsx`
+    - darkened the main page-card / soft-card / inner-card / stat-tile system
+    - strengthened labels, chips, helper text, and invite-preview surfaces so the first-circle workflow reads as a serious guided workspace instead of a lighter setup page
+    - cleaned the share-ready invite copy separators back to plain ASCII `-`
+  - `frontend/src/pages/NotificationsPage.tsx`
+    - darkened the page shell, action rails, stat tiles, focus/review surfaces, raw-feed panels, and reading guide blocks
+    - moved the softer utility controls into the same darker institutional button/card rhythm used on stronger live routes
+    - replaced the truncated glyph suffix with plain ASCII `...`
+  - `frontend/src/pages/ClansPage.tsx`
+    - darkened the community creation, invite package, and existing-community management shells
+    - kept form inputs readable while moving the surrounding cards, badges, and secondary actions into the darker institutional family
+    - strengthened invite-package evidence blocks so sender/link/code/share text no longer sits in lighter utility boxes
+- Verification:
+  - `npm exec -- eslint src/pages/BuildFirstCirclePage.tsx src/pages/NotificationsPage.tsx src/pages/ClansPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Routes impacted:
+  - `/app/build-first-circle`
+  - `/app/notifications`
+  - `/app/clans`
+- Frozen-area note:
+  - `/app/dashboard` Market Wisdom remained untouched
+- Shared logic impact:
+  - no auth, backend, or route-contract behavior changed
+  - this was a route-local institutional polish / readability pass for live private member surfaces
+
+### Private member guide and community landing surfaces institutionalized further (2026-04-29)
+
+- Continued the GMFN-only private pilot-readiness pass on two larger authenticated live routes that still felt lighter than the stronger institutional family.
+- Route-local updates:
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - darkened the route-local page-card / soft-card / inner-card system
+    - retuned badges, compact signals, metric cards, collapse controls, and secondary actions into the darker institutional family
+    - strengthened the community-summary and first-circle support surfaces without changing community-home workflow or shop-control behavior
+  - `frontend/src/pages/MyGMFNAndIPage.tsx`
+    - darkened the guide/settings shell cards plus capability and route tiles
+    - strengthened the hero-side guidance panel and settings summary cards so the member guide feels closer to the same serious private workspace family as Community Home and Notifications
+    - kept the public `/guide` vs signed-in `/app/my-gmfn-and-i` context split intact while improving the protected member presentation
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityHomePage.tsx src/pages/MyGMFNAndIPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Routes impacted:
+  - `/app/community`
+  - `/app/my-gmfn-and-i`
+  - `/guide` (presentation continuity only through the shared page file)
+- Frozen-area note:
+  - `/app/dashboard` Market Wisdom remained untouched
+- Shared logic impact:
+  - no auth, backend, or route-contract behavior changed
+  - this was a route-local institutional polish pass for private member surfaces and the shared guide/member page shell
+
+### Private operational money-support routes darkened for pilot-readiness (2026-04-29)
+
+- Continued the GMFN-only private pilot-readiness pass on active operational/support routes that still felt lighter and less institutional than the stronger authenticated surfaces.
+- Route-local updates:
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - darkened the page-card / soft-card / inner-card / stat-tile system
+    - moved section labels, badges, helper text, collapse controls, and non-primary action buttons into the same darker institutional family used on stronger private routes
+    - retuned explanatory/result text blocks so the live withdrawal route no longer mixes a dark shell with lighter legacy reading surfaces
+  - `frontend/src/pages/PaymentInstructionsPage.tsx`
+    - darkened the main payment-in shell plus soft/inner/stat surfaces
+    - moved section labels, badges, helper text, collapse controls, and secondary/soft actions into the darker institutional family
+    - kept pay-in form inputs readable while strengthening the surrounding route guidance and reconciliation explanation surfaces
+  - `frontend/src/pages/PayoutDetailsPage.tsx`
+    - darkened the payout shell, secondary action treatment, section labels, badges, and explanatory detail surfaces
+    - kept account-entry inputs readable while moving the surrounding payout explanation and next-step areas into the same institutional family
+- Verification:
+  - `npm exec -- eslint src/pages/WithdrawalInstructionsPage.tsx src/pages/PaymentInstructionsPage.tsx src/pages/PayoutDetailsPage.tsx`
+    -> passed with one pre-existing warning in `WithdrawalInstructionsPage.tsx`:
+       `react-hooks/exhaustive-deps` on `loadPage`
+  - `npm run build`
+    -> passed
+- Routes impacted:
+  - `/app/withdrawal-instructions`
+  - `/app/payment/pool`
+  - `/app/payout-details`
+- Frozen-area note:
+  - `/app/dashboard` Market Wisdom remained untouched
+- Shared logic impact:
+  - no auth, backend, or route-contract behavior changed
+  - this was a route-local institutional polish / readability pass for live private money-support routes
+
+### Private finance and loan follow-through routes institutionalized further (2026-04-29)
+
+- Continued the GMFN-only private pilot-readiness haul on the next coherent authenticated operational family: finance overview, loans, loan readiness, and repayment follow-through.
+- Route-local updates:
+  - `frontend/src/pages/FinancePage.tsx`
+    - darkened route-local badges, helper text, collapse controls, and non-primary buttons
+    - moved the finance tables into a darker institutional shell with lighter header/value text so the finance workspace no longer drops back to a bright utility table treatment
+  - `frontend/src/pages/LoansPage.tsx`
+    - darkened the page-card / soft-card / inner-card / stat-tile system
+    - moved route tiles, badges, helper text, collapse controls, and supporting text into the same darker institutional family
+    - retuned explicit value/summary text so the live loan workspace reads consistently against the darker shell
+  - `frontend/src/pages/LoanReadinessPage.tsx`
+    - darkened the page-card / soft-card / inner-card / stat-tile system
+    - moved route tiles, badges, helper text, and collapse controls into the same darker institutional family as Loans
+    - retuned explicit explanatory/result text so the readiness route no longer mixes dark shells with lighter legacy reading blocks
+  - `frontend/src/pages/RepaymentPage.tsx`
+    - darkened the repayment page-card / soft-card / inner-card / stat-tile system
+    - moved badges, helper text, secondary/soft buttons, and collapse controls into the same darker institutional family
+    - retuned repayment explanation/detail text blocks so the route now matches the stronger private money-support surfaces
+- Verification:
+  - `npm exec -- eslint src/pages/FinancePage.tsx src/pages/LoansPage.tsx src/pages/LoanReadinessPage.tsx src/pages/RepaymentPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Routes impacted:
+  - `/app/finance`
+  - `/app/loans`
+  - `/app/loan-readiness`
+  - `/app/payment/loans/:loanId`
+- Frozen-area note:
+  - `/app/dashboard` Market Wisdom remained untouched
+- Shared logic impact:
+  - no auth, backend, or route-contract behavior changed
+  - this was a route-local institutional polish / readability pass for live private finance and loan follow-through routes
+
+### Private guarantor and loan-workbench routes darkened for pilot-readiness (2026-04-29)
+
+- Continued the GMFN-only private pilot-readiness haul on the adjacent live guarantor/workbench family so the support-routing surfaces no longer lag the newer institutional member routes.
+- Route-local updates:
+  - `frontend/src/pages/LoanSuggestionsPage.tsx`
+    - darkened the page-card / soft-card / inner-card / stat-tile system
+    - moved route tiles, badges, helper text, collapse controls, and non-primary buttons into the darker institutional family
+    - cleaned the legacy broken fallback date marker from `â€”` to `Not stated`
+    - retuned explicit explanatory/result text so the suggested-supporter route no longer mixes dark shells with brighter utility cards
+  - `frontend/src/pages/LoanWorkbenchPage.tsx`
+    - darkened the page-card / soft-card / inner-card / stat-tile system
+    - moved route tiles, badges, helper text, collapse controls, and non-primary buttons into the same darker institutional family as Loans and Readiness
+    - cleaned the legacy broken fallback date marker from `â€”` to `Not stated`
+    - retuned detailed workbench reading text so the live loan support route feels visually aligned with the stronger private operational surfaces
+  - `frontend/src/pages/GuarantorInboxPage.tsx`
+    - darkened the inbox shell, route tiles, badges, helper text, filter controls, secondary controls, and collapse controls
+    - kept the guarantor decision workflow intact while moving the surrounding queue/guidance surfaces into the darker institutional family
+  - `frontend/src/pages/GuarantorEarningsPage.tsx`
+    - darkened the earnings shell, route tiles, badges, helper text, secondary controls, and collapse controls
+    - retuned explicit value and guidance text so the live guarantor-earnings route reads more like a serious private workspace and less like an older utility page
+- Verification:
+  - `npm exec -- eslint src/pages/LoanSuggestionsPage.tsx src/pages/LoanWorkbenchPage.tsx src/pages/GuarantorInboxPage.tsx src/pages/GuarantorEarningsPage.tsx`
+    -> passed with pre-existing warnings:
+       - `GuarantorInboxPage.tsx:628` missing dependency `loadInbox`
+       - `LoanSuggestionsPage.tsx:885` missing dependency `loadSuggestionsForLoan`
+       - `LoanWorkbenchPage.tsx:1042` missing dependencies `loadLoanList` and `loadLoanWorkbench`
+  - `npm run build`
+    -> passed
+- Routes impacted:
+  - `/app/loan-suggestions`
+  - `/app/loan-workbench`
+  - `/app/guarantor-inbox`
+  - `/app/guarantor-earnings`
+- Frozen-area note:
+  - `/app/dashboard` Market Wisdom remained untouched
+- Shared logic impact:
+  - no auth, backend, or route-contract behavior changed
+  - this was a route-local institutional polish / readability pass for live private guarantor and loan-workbench routes
+
+### Command-center operational admin routes darkened for pilot-readiness (2026-04-29)
+
+- Continued the GMFN-only longer-haul pilot-readiness pass on the live authenticated command-center / oversight family that was still visually lighter than the upgraded private operational routes.
+- Route-local updates:
+  - `frontend/src/pages/SystemOperationsPage.tsx`
+    - moved the live system-operations shell, soft cards, inner cards, stat tiles, route tiles, badges, helper text, and secondary/collapse controls into the darker institutional surface family
+    - kept the existing queue/intake/signal logic intact while making the route feel much closer to the steadier private command-center system
+  - `frontend/src/pages/BankConsolePage.tsx`
+    - darkened the main shell plus soft/inner support surfaces and steadied the secondary action treatment
+    - cleaned the fallback status/date marker from the legacy dash to `Not stated`
+    - kept bank-ingest / reconciliation workflow and route contracts unchanged
+  - `frontend/src/pages/ExposureAdminPage.tsx`
+    - moved the exposure pressure/queue/route surfaces into the darker institutional card family
+    - retuned route tiles, stat tiles, badges, helper text, and secondary/soft controls so the command-center branch no longer drops back into lighter legacy panels
+  - `frontend/src/pages/AdminIdentityRiskPage.tsx`
+    - upgraded the identity-risk cards, grouped-signal rows, and detail-toggle treatment into the same darker institutional family
+    - kept the risk grouping/classification logic intact while making the manual-review route read more like a serious admin workspace
+- Verification:
+  - `npm exec -- eslint src/pages/SystemOperationsPage.tsx src/pages/BankConsolePage.tsx src/pages/ExposureAdminPage.tsx src/pages/AdminIdentityRiskPage.tsx`
+    -> passed with one pre-existing warning in `BankConsolePage.tsx`:
+       `react-hooks/exhaustive-deps` on `loadAll`
+  - `npm run build`
+    -> passed
+- Routes impacted:
+  - `/app/command-center/system-operations`
+  - `/app/command-center/bank-console`
+  - `/app/command-center/exposure`
+  - `/app/command-center/identity-risk`
+- Frozen-area note:
+  - `/app/dashboard` Market Wisdom remained untouched
+- Shared logic impact:
+  - no auth, backend, or route-contract behavior changed
+  - this was a route-local institutional polish / readability pass for live authenticated command-center operational routes
+### Marketplace operations and trust-graph routes darkened for pilot-readiness (2026-04-29)
+
+- Continued the GMFN-only longer-haul pilot-readiness pass on the remaining authenticated marketplace-operations and trust-graph oversight routes that were still visually lighter than the upgraded private operational families.
+- Route-local updates:
+  - `frontend/src/pages/DemandBoxPage.tsx`
+    - moved the demand-box page-card / soft-card / inner-card / stat-tile system into the darker institutional surface family
+    - retuned section labels, badges, helper text, and softer action surfaces so the live demand workflow no longer drops back into older bright utility styling
+  - `frontend/src/pages/ShopAssetsPage.tsx`
+    - moved the shop-assets page-card / soft-card / inner-card / stat-tile system into the same darker institutional family
+    - darkened route-local badges, helper text, section labels, and non-primary action treatment while preserving the existing assets workflow and route purposes
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - deepened the route-local page-card / soft-card / notice / secondary-control treatment so the live shop-control route reads more like the upgraded private marketplace workspace
+    - kept existing shop-control logic and destinations intact while removing some of the lighter legacy utility feel
+  - `frontend/src/pages/AdminTrustGraphPage.tsx`
+    - moved the trust-graph page-card / soft-card / inner-card / stat-tile system into the darker institutional command-center family
+    - darkened route tiles, badges, helper text, and collapse-control treatment so the live oversight surface aligns better with the upgraded admin routes
+- Verification:
+  - `npm exec -- eslint src/pages/DemandBoxPage.tsx src/pages/ShopAssetsPage.tsx src/pages/ShopControlPage.tsx src/pages/AdminTrustGraphPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Routes impacted:
+  - `/app/demand-box`
+  - `/app/shop-assets`
+  - `/app/shop-control`
+  - `/app/command-center/trust-graph`
+- Frozen-area note:
+  - `/app/dashboard` Market Wisdom remained untouched
+- Shared logic impact:
+  - no auth, backend, or route-contract behavior changed
+  - this was a route-local institutional polish / readability pass for live authenticated marketplace operations and trust-graph oversight routes
+### Core command-center routes darkened further for pilot-readiness (2026-04-29)
+
+- Continued the GMFN-only longer-haul authenticated pilot-readiness pass on the remaining core command-center routes so the command-center landing, trust-analytics, and revenue-allocation branches no longer lag the upgraded admin / operational family.
+- Route-local updates:
+  - `frontend/src/pages/TrustCommandCentrePage.tsx`
+    - moved the command-center page-card / soft-card / inner-card / stat-tile system closer to the darker institutional surface family
+    - darkened route tiles, badges, helper text, and softer action surfaces while preserving all existing oversight destinations and loading logic
+    - cleaned the fallback date marker to `Not stated`
+  - `frontend/src/pages/TrustAnalyticsPage.tsx`
+    - moved the trust-analytics page-card / soft-card / inner-card / stat-tile system into the same darker institutional family
+    - darkened badges, helper text, soft actions, and collapse controls while preserving the existing analytics workflow and route purpose
+    - cleaned the fallback date marker to `Not stated`
+  - `frontend/src/pages/RevenueAllocationPage.tsx`
+    - deepened the route-tile, secondary-action, collapse-control, badge, and helper-text treatment so the revenue-allocation route sits more naturally beside the upgraded finance / command-center surfaces
+    - cleaned the fallback date marker to `Not stated`
+- Verification:
+  - `npm exec -- eslint src/pages/TrustCommandCentrePage.tsx src/pages/TrustAnalyticsPage.tsx src/pages/RevenueAllocationPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Routes impacted:
+  - `/app/command-center`
+  - `/app/command-center/trust-analytics`
+  - `/app/command-center/revenue-allocation`
+- Frozen-area note:
+  - `/app/dashboard` Market Wisdom remained untouched
+- Shared logic impact:
+  - no auth, backend, or route-contract behavior changed
+  - this was a route-local institutional polish / readability pass for live authenticated core command-center routes
+### Marketplace workspace, payment rails, and loan-summary routes polished further for pilot-readiness (2026-04-29)
+
+- Continued the GMFN-only longer-haul authenticated pilot-readiness pass on the next coherent private workspace family so marketplace workspace, payment-rails, and loan-summary no longer lag the darker institutional operational surfaces.
+- Route-local updates:
+  - `frontend/src/pages/MarketplaceWorkspacePage.tsx`
+    - deepened the secondary button, badge, helper-text, and section-label treatment so the live community marketplace workspace feels steadier and less like a lighter utility branch
+    - kept the existing community invite/member/join-request workflow intact
+  - `frontend/src/pages/PaymentRailsPage.tsx`
+    - moved the page-card / soft-card / inner-card system into the same darker institutional family used by the upgraded private operational routes
+    - darkened route tiles, badges, helper text, and soft controls while preserving the existing payment-rails reading workflow and route purpose
+  - `frontend/src/pages/LoanSummaryPage.tsx`
+    - deepened the route-tile, secondary-action, collapse-control, badge, helper-text, and section-label treatment so the live loan-summary route aligns better with the upgraded finance / guarantor / repayment surfaces
+    - cleaned the fallback date marker to `Not stated`
+- Verification:
+  - `npm exec -- eslint src/pages/MarketplaceWorkspacePage.tsx src/pages/PaymentRailsPage.tsx src/pages/LoanSummaryPage.tsx`
+    -> passed with one pre-existing warning in `LoanSummaryPage.tsx`:
+       `react-hooks/exhaustive-deps` on `refreshAll`
+  - `npm run build`
+    -> passed
+- Routes impacted:
+  - `/community/:clanId`
+  - `/app/payment-rails`
+  - `/app/loan-summary/:loanId`
+- Frozen-area note:
+  - `/app/dashboard` Market Wisdom remained untouched
+- Shared logic impact:
+  - no auth, backend, or route-contract behavior changed
+  - this was a route-local institutional polish / readability pass for live authenticated marketplace workspace, payment rails, and loan-summary routes
+### Public entry button labels tightened for pilot-readiness (2026-04-29)
+
+- Switched the GMFN-only pilot-readiness pass from broad visual cleanup into route-truth on the live public entry funnel, where vague `Continue` labels still made the next step feel less explicit than it should.
+- Route-local updates:
+  - `frontend/src/pages/CoverPage.tsx`
+    - changed the main dock action from `Continue` to `Open Welcome`
+    - kept the exact route behavior intact while making the first public handoff clearer
+  - `frontend/src/pages/WelcomePage.tsx`
+    - changed the single-lane create action from `Continue` to `Start community setup`
+    - changed the single-lane invitation action from `Continue` to `Open join path`
+    - changed the single-lane approved-member action from `Continue` to `Finish activation`
+    - changed the general new-member chooser action from `Continue` to `Choose create or join`
+- Verification:
+  - `npm exec -- eslint src/pages/CoverPage.tsx src/pages/WelcomePage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Routes impacted:
+  - `/cover`
+  - `/welcome`
+- Frozen-area note:
+  - `/app/dashboard` Market Wisdom remained untouched
+- Shared logic impact:
+  - no auth, backend, or route-contract behavior changed
+  - this was a route-local pilot-readiness truth pass on live public entry labels so users can tell what each button really opens before tapping it
+### Authenticated focus-commitment handoffs clarified for pilot-readiness (2026-04-29)
+
+- Continued the GMFN-only pilot-readiness truth sweep on live authenticated support / borrowing routes where technically correct next-step buttons still hid that they were opening the Dashboard focus-commitments section.
+- Route-local updates:
+  - `frontend/src/pages/LoansPage.tsx`
+    - changed the route-tile label from `Commitment Builder` to `Open Focus Commitments`
+    - clarified the helper copy so the route now says it opens the Dashboard focus section for a steadier visible plan
+  - `frontend/src/pages/LoanReadinessPage.tsx`
+    - changed the route-tile label from `Commitment Builder` to `Open Focus Commitments`
+    - clarified the helper copy so the route now says it opens the Dashboard focus section for readiness follow-through
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - changed the support CTA from `Continue To Loan Readiness` to `Open Loan Readiness Support`
+    - kept the same route behavior while making the destination explicit before tap
+  - `frontend/src/pages/FinancePage.tsx`
+    - changed the focus handoff from `Add a money promise` to `Open Focus Commitments`
+    - clarified the detail and technical text to say it opens the Dashboard focus section / Dashboard focus commitments
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - changed the trust-facing focus handoffs from generic promise/builder language to `Open Focus Commitments`
+    - clarified the route details so users can tell the action opens the Dashboard focus section for repair, repayment, or follow-through
+- Verification:
+  - `npm exec -- eslint src/pages/LoansPage.tsx src/pages/LoanReadinessPage.tsx src/pages/WithdrawalInstructionsPage.tsx src/pages/FinancePage.tsx src/pages/TrustScorePage.tsx`
+    -> passed with the same pre-existing warnings:
+       - `frontend/src/pages/TrustScorePage.tsx:1647` missing dependency `revealTrustSection`
+       - `frontend/src/pages/TrustScorePage.tsx:1774` missing dependency `loadAll`
+       - `frontend/src/pages/WithdrawalInstructionsPage.tsx:765` missing dependency `loadPage`
+  - `npm run build`
+    -> passed
+- Routes impacted:
+  - `/app/loans`
+  - `/app/loan-readiness`
+  - `/app/withdrawal-instructions`
+  - `/app/finance`
+  - `/app/trust`
+- Frozen-area note:
+  - `/app/dashboard` Market Wisdom remained untouched
+- Shared logic impact:
+  - no auth, backend, or route-contract behavior changed
+  - this was a route-local pilot-readiness truth pass so authenticated users can tell when a button opens the Dashboard focus section before tapping it
+### Notifications and guide route truth tightened for pilot-readiness (2026-04-29)
+
+- Continued the GMFN-only pilot-readiness truth sweep on live authenticated continuity routes so focus-commitment and guide handoffs no longer use older or more misleading wording once a user is already inside the member workspace.
+- Route-local updates:
+  - `frontend/src/pages/NotificationsPage.tsx`
+    - added a route-local CTA-label normalizer for notification actions
+    - notification actions that resolve to `/app/dashboard#focus-commitments` now show `Open Focus Commitments` instead of older or generic action labels
+    - notification actions that resolve to `/app/my-gmfn-and-i` now show `Open My GSN and I` when the incoming label is vague or still uses older naming
+  - `frontend/src/pages/MyGMFNAndIPage.tsx`
+    - changed the route tile label from `Commitment Builder` to `My GSN and I`
+    - clarified the helper copy so the page explains that member guidance/settings live here, while Focus Commitments opens from Dashboard when the execution-discipline layer is needed
+- Verification:
+  - `npm exec -- eslint src/pages/NotificationsPage.tsx src/pages/MyGMFNAndIPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Routes impacted:
+  - `/app/notifications`
+  - `/app/my-gmfn-and-i`
+  - `/guide`
+- Frozen-area note:
+  - `/app/dashboard` Market Wisdom remained untouched
+- Shared logic impact:
+  - no auth, backend, or route-contract behavior changed
+  - this was a route-local pilot-readiness truth pass so notification actions and guide tiles say more honestly which live member surface opens next
+### Invitation, approval, and return-entry button truth tightened further for pilot-readiness (2026-04-29)
+
+- Continued the GMFN-only pilot-readiness truth sweep on live public invitation / approval / return-entry routes where the next-step actions still used vague `Continue` wording even though each button was opening a specific route.
+- Route-local updates:
+  - `frontend/src/pages/InviteLandingPage.tsx`
+    - changed the success-state notice from `Continue into the guided founder route` to `Open the guided founder entry route`
+    - changed the primary CTA from `Continue founder route` to `Open founder entry`
+    - changed the supporting copy from `Continue into the public founder flow` to `Open the public founder flow`
+  - `frontend/src/pages/JoinByInvitePage.tsx`
+    - changed the success-state notice from `Continue into the guided invited entry` to `Open the guided invited entry route`
+    - changed the primary CTA from `Continue invited route` to `Open invited entry`
+  - `frontend/src/pages/JoinApprovalPage.tsx`
+    - changed the approval CTA from `Continue Activation` to `Open activation`
+  - `frontend/src/pages/WelcomePage.tsx`
+    - changed the existing-account CTA from `Continue to Login` to `Open sign in`
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - changed the saved-request CTA from `Continue previous request` to `Reopen saved request`
+- Verification:
+  - `npm exec -- eslint src/pages/InviteLandingPage.tsx src/pages/JoinByInvitePage.tsx src/pages/JoinApprovalPage.tsx src/pages/WelcomePage.tsx src/pages/JoinEntryPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Routes impacted:
+  - founder invite landing in `frontend/src/pages/InviteLandingPage.tsx`
+  - `/join-by-invite/:code`
+  - `/join-approval/:requestId`
+  - `/welcome`
+  - `/join`
+  - `/join/:code`
+  - `/join/community/:clanId`
+- Frozen-area note:
+  - `/app/dashboard` Market Wisdom remained untouched
+- Shared logic impact:
+  - no auth, backend, or route-contract behavior changed
+  - this was a route-local pilot-readiness truth pass so live public entry buttons say more clearly which route opens next before the user taps
+### Focus Commitments naming tightened across live invitation/public entry routes (2026-04-29)
+
+- Continued the GMFN-only pilot-readiness truth sweep on live invitation and public-entry routes so older `Commitment Builder` wording no longer leaks into public-facing guidance where the actual live member destination is the Dashboard Focus Commitments section.
+- Route-local updates:
+  - `frontend/src/pages/InviteLandingPage.tsx`
+    - changed the support explanation from `Commitment Builder opens after workspace entry` to `Focus Commitments opens from Dashboard after workspace entry`
+    - changed the support CTA from `Read about Commitment Builder first` to `Read about Focus Commitments first`
+  - `frontend/src/pages/JoinByInvitePage.tsx`
+    - made the same support-copy truth fix so the page now explains that Focus Commitments opens from Dashboard after workspace entry
+    - changed `Read about Commitment Builder first` to `Read about Focus Commitments first`
+  - `frontend/src/pages/JoinApprovalPage.tsx`
+    - made the same support-copy truth fix for the approved/decision route
+    - changed `Read about Commitment Builder first` to `Read about Focus Commitments first`
+  - `frontend/src/pages/JoinRequestPendingPage.tsx`
+    - changed `Read about Commitment Builder first` to `Read about Focus Commitments first`
+  - `frontend/src/pages/WelcomePage.tsx`
+    - changed the public capability list item from `Commitment Builder` to `Focus Commitments`
+- Verification:
+  - `npm exec -- eslint src/pages/InviteLandingPage.tsx src/pages/JoinByInvitePage.tsx src/pages/JoinApprovalPage.tsx src/pages/JoinRequestPendingPage.tsx src/pages/WelcomePage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Routes impacted:
+  - founder invite landing in `frontend/src/pages/InviteLandingPage.tsx`
+  - `/join-by-invite/:code`
+  - `/join-approval/:requestId`
+  - `/pending-approval`
+  - `/join-request/pending`
+  - `/welcome`
+- Frozen-area note:
+  - `/app/dashboard` Market Wisdom remained untouched
+- Shared logic impact:
+  - no auth, backend, or route-contract behavior changed
+  - this was a route-local pilot-readiness truth pass so public-facing guide/support language matches the actual live Focus Commitments destination more honestly
+### Trust and inbox destination labels tightened after activation for pilot-readiness (2026-04-29)
+
+- Continued the GMFN-only pilot-readiness truth sweep on live authenticated member-continuity routes so post-activation and action-inbox trust handoffs now say more exactly which private screen opens next.
+- Route-local updates:
+  - `frontend/src/pages/MemberActivationPage.tsx`
+    - changed `Review Trust` to `Open Trust Passport`
+    - changed `Review Notifications` to `Open Action Inbox`
+  - `frontend/src/pages/NotificationsPage.tsx`
+    - changed the trust-onboarding fallback CTA label from `Review Trust` to `Open Trust Passport`
+    - changed the rendered trust-onboarding primary action from `Review Trust` to `Open Trust Passport`
+- Verification:
+  - `npm exec -- eslint src/pages/MemberActivationPage.tsx src/pages/NotificationsPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Routes impacted:
+  - `/activate-membership`
+  - `/app/notifications`
+  - `/app/trust`
+- Frozen-area note:
+  - `/app/dashboard` Market Wisdom remained untouched
+- Shared logic impact:
+  - no auth, backend, or route-contract behavior changed
+  - this was a route-local pilot-readiness truth pass so post-activation and inbox trust actions name the actual destination more clearly before the user taps
+### Entry and activation chain wording tightened further for pilot-readiness (2026-04-29)
+
+- Continued the GMFN-only pilot-readiness truth sweep on the live entry and activation chain so the create/sign-in/activation routes speak more clearly about what opens next and when a user should leave the current form instead of forcing the wrong path.
+- Route-local updates:
+  - `frontend/src/pages/LoginPage.tsx`
+    - changed the sign-in guide step heading from `Continue safely` to `Use activation first if needed`
+    - kept the same guidance meaning while making the route choice more explicit
+  - `frontend/src/pages/CreateEntryPage.tsx`
+    - changed the existing-member helper copy from `Go to sign in` to `Open sign in`
+    - changed the existing-member CTA from `I am already a member` to `Open sign in instead`
+  - `frontend/src/pages/WelcomePage.tsx`
+    - changed the general approved-member CTA from `Activate` to `Open activation`
+    - changed the general existing-member CTA from `Login` to `Open sign in`
+    - changed the general create/join branch CTAs from `Create` / `Join` to `Open create path` / `Open join path`
+  - `frontend/src/pages/MemberActivationPage.tsx`
+    - changed the submit CTA from `Activate Membership` to `Finish activation`
+    - changed the busy label from `Activating...` to `Finishing activation...`
+- Verification:
+  - `npm exec -- eslint src/pages/LoginPage.tsx src/pages/CreateEntryPage.tsx src/pages/WelcomePage.tsx src/pages/MemberActivationPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Routes impacted:
+  - `/login`
+  - `/create`
+  - `/welcome`
+  - `/activate-membership`
+- Frozen-area note:
+  - `/app/dashboard` Market Wisdom remained untouched
+- Shared logic impact:
+  - no auth, backend, or route-contract behavior changed
+  - this was a route-local pilot-readiness truth pass so the core entry/activation chain says more plainly what action each live button actually performs next
+### Entry-step toggles and headlines clarified for end-to-end pilot-readiness (2026-04-29)
+
+- Continued the GMFN-only end-to-end pilot-readiness sweep on the live entry chain so collapsible steps and welcome headlines no longer rely on generic `Open` / `Collapse` wording where a pilot user needs a more concrete sense of which step is being revealed.
+- Route-local updates:
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - changed the request-form toggle from `Open` / `Collapse` to `Open request form` / `Collapse form`
+  - `frontend/src/pages/CreateEntryPage.tsx`
+    - changed the existing-member helper toggle from `Open` / `Collapse` to `Open sign-in help` / `Collapse sign-in help`
+    - changed the stage toggles from generic `Open` / `Collapse` to step-specific labels:
+      - `Open details step` / `Collapse details step`
+      - `Open verification step` / `Collapse verification step`
+      - `Open community step` / `Collapse community step`
+  - `frontend/src/pages/WelcomePage.tsx`
+    - changed the route headline copy to be more action-truthful:
+      - `Continue your invitation.` -> `Open your invitation path.`
+      - `Continue creating your community.` -> `Open your community setup.`
+      - `Complete your activation.` -> `Open your activation path.`
+      - `Sign in to continue.` -> `Open sign in.`
+    - clarified related subtext so the page now says more directly which live route opens next
+- Verification:
+  - `npm exec -- eslint src/pages/JoinEntryPage.tsx src/pages/CreateEntryPage.tsx src/pages/WelcomePage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Routes impacted:
+  - `/join`
+  - `/join/:code`
+  - `/join/community/:clanId`
+  - `/create`
+  - `/welcome`
+- Frozen-area note:
+  - `/app/dashboard` Market Wisdom remained untouched
+- Shared logic impact:
+  - no auth, backend, or route-contract behavior changed
+  - this was a route-local pilot-readiness truth pass so the live entry chain reads more like a guided route system and less like a set of generic expand/collapse controls
+### Finance and support chain handoffs made more route-truthful for pilot testing (2026-04-29)
+
+- Continued the GMFN-only end-to-end pilot-readiness sweep on the live finance / loans / support chain so route handoffs now name their real destinations more consistently instead of mixing current-page nouns with action labels.
+- Route-local updates:
+  - `frontend/src/pages/FinancePage.tsx`
+    - changed support-route labels to be more destination-truthful:
+      - `Borrow / lend / support` -> `Open Loans & Support`
+      - `Choose payment route` -> `Open Payment Rails`
+      - `Set payout details` -> `Open Payout Details`
+      - `Check expected payments` -> `Open Payment Reconciliation`
+      - `Check loan readiness` -> `Open Loan Readiness`
+      - `See what is waiting` -> `Open Action Inbox`
+  - `frontend/src/pages/LoansPage.tsx`
+    - changed route labels to name the next surface more explicitly:
+      - `Check readiness` -> `Open Loan Readiness`
+      - `Get suggestions` -> `Open Loan Suggestions`
+      - `Open workbench` -> `Open Loan Workbench`
+      - `Guarantor earnings` -> `Open Guarantor Earnings`
+      - `See this in Finance` -> `Open Finance`
+      - `See what is waiting` -> `Open Action Inbox`
+  - `frontend/src/pages/LoanReadinessPage.tsx`
+    - normalized the fallback CTA label from `Open Support Start Surface` to `Open Support Start Page` so it matches the same destination language used elsewhere in the chain
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - changed live support/finance action labels to be explicit route openings:
+      - `Loan Readiness` -> `Open Loan Readiness`
+      - `Loan Suggestions` -> `Open Loan Suggestions`
+      - `Loan Workbench` -> `Open Loan Workbench`
+      - `Payout Details` -> `Open Payout Details`
+      - `Finance` -> `Open Finance`
+      - `Payment Rails` -> `Open Payment Rails`
+      - `Loans` -> `Open Loans & Support`
+- Verification:
+  - `npm exec -- eslint src/pages/FinancePage.tsx src/pages/LoansPage.tsx src/pages/LoanReadinessPage.tsx src/pages/WithdrawalInstructionsPage.tsx`
+    -> passed with one pre-existing warning in `WithdrawalInstructionsPage.tsx`:
+       `react-hooks/exhaustive-deps` on `loadPage`
+  - `npm run build`
+    -> passed
+- Routes impacted:
+  - `/app/finance`
+  - `/app/loans`
+  - `/app/loan-readiness`
+  - `/app/withdrawal-instructions`
+- Frozen-area note:
+  - `/app/dashboard` Market Wisdom remained untouched
+- Shared logic impact:
+  - no auth, backend, or route-contract behavior changed
+  - this was a route-local pilot-readiness truth pass so the live finance/support chain says more plainly which screen each action opens next
+### Final live-route pilot preflight tweaks completed after end-to-end audit (2026-04-29)
+
+- Finished the GMFN-only end-to-end pilot-readiness audit across the live entry, join, activation, and finance/support chains, then closed the last route-local wording gaps that still made some surfaces feel more generic than their real destination.
+- Route-local updates:
+  - `frontend/src/pages/LoanSuggestionsPage.tsx`
+    - changed the fallback CTA from `Start Support Request` to `Open Support Start Page` so the support-chain language stays consistent with Loan Readiness and Loan Workbench
+  - `frontend/src/pages/JoinRequestPendingPage.tsx`
+    - changed `Check approval status` to `Open approval status`
+    - changed `Welcome` to `Open Welcome`
+  - `frontend/src/pages/LoginPage.tsx`
+    - changed the sign-in guide step heading from `Continue safely` to `Use activation first if needed`
+  - `frontend/src/pages/CreateEntryPage.tsx`
+    - changed existing-member route guidance to `Open sign in` / `Open sign in instead`
+    - changed generic helper toggles to route-specific labels such as `Open sign-in help`
+  - `frontend/src/pages/WelcomePage.tsx`
+    - changed general route CTAs and headlines to more route-truthful language like `Open sign in`, `Open create path`, `Open join path`, and `Open your invitation path`
+  - `frontend/src/pages/MemberActivationPage.tsx`
+    - changed the submit CTA to `Finish activation`
+    - changed post-activation destination labels to `Open Trust Passport` and `Open Action Inbox`
+  - `frontend/src/pages/FinancePage.tsx`
+    - changed several route labels to explicit destination language such as `Open Loans & Support`, `Open Payment Rails`, `Open Payout Details`, `Open Payment Reconciliation`, `Open Loan Readiness`, and `Open Action Inbox`
+  - `frontend/src/pages/LoansPage.tsx`
+    - changed support-route labels to destination-truthful names such as `Open Loan Readiness`, `Open Loan Suggestions`, `Open Loan Workbench`, `Open Guarantor Earnings`, `Open Finance`, and `Open Action Inbox`
+  - `frontend/src/pages/LoanReadinessPage.tsx`
+    - normalized the fallback CTA to `Open Support Start Page`
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - changed follow-through actions to explicit route openings like `Open Finance`, `Open Loan Readiness`, `Open Loan Suggestions`, `Open Loan Workbench`, `Open Payment Rails`, `Open Payout Details`, and `Open Loans & Support`
+  - `frontend/src/pages/NotificationsPage.tsx`
+    - normalized live CTA labels so focus-commitment links show `Open Focus Commitments` and guide links show `Open My GSN and I`
+- Verification:
+  - `npm exec -- eslint src/pages/LoanSuggestionsPage.tsx src/pages/JoinRequestPendingPage.tsx`
+    -> passed with one pre-existing warning in `LoanSuggestionsPage.tsx`:
+       `react-hooks/exhaustive-deps` on `loadSuggestionsForLoan`
+  - earlier in the same audit chain, all other touched live-route files also passed targeted eslint with only the previously known hook warnings
+  - `npm run build`
+    -> passed after each batch and after this final pass
+- Routes impacted across the final audit:
+  - `/cover`
+  - `/welcome`
+  - `/create`
+  - `/login`
+  - `/join`
+  - `/join/:code`
+  - `/join/community/:clanId`
+  - `/join-by-invite/:code`
+  - `/join-approval/:requestId`
+  - `/pending-approval`
+  - `/join-request/pending`
+  - `/activate-membership`
+  - `/app/notifications`
+  - `/app/trust`
+  - `/app/finance`
+  - `/app/loans`
+  - `/app/loan-readiness`
+  - `/app/withdrawal-instructions`
+- Frozen-area note:
+  - `/app/dashboard` Market Wisdom remained untouched
+- Shared logic impact:
+  - no auth, backend, or route-contract behavior changed
+  - this work stayed route-local and focused on pilot-facing route truth / continuity only

@@ -43,7 +43,7 @@ const GUIDE_SUMMARY_ITEMS = [
   "Trust-Based Hiring",
   "Demand Box",
   "Community Economic Power",
-  "Commitment Builder",
+  "Focus Commitments",
 ] as const;
 
 function pageShell(): React.CSSProperties {
@@ -54,7 +54,7 @@ function pageShell(): React.CSSProperties {
     alignItems: "center",
     justifyContent: "center",
     background:
-      "radial-gradient(circle at 12% 0%, rgba(201,154,39,0.08) 0%, rgba(201,154,39,0.00) 22%), radial-gradient(circle at 84% 8%, rgba(84,123,169,0.10) 0%, rgba(84,123,169,0.00) 28%), linear-gradient(180deg, #06111C 0%, #0A1B2B 50%, #123149 100%)",
+      "radial-gradient(circle at 84% 8%, rgba(84,123,169,0.12) 0%, rgba(84,123,169,0.00) 28%), radial-gradient(circle at 18% 88%, rgba(58,92,134,0.12) 0%, rgba(58,92,134,0.00) 28%), linear-gradient(180deg, #06111C 0%, #0A1B2B 46%, #102A43 100%)",
     color: "#FFFFFF",
     fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
     padding: "18px",
@@ -69,9 +69,9 @@ function heroCard(): React.CSSProperties {
     borderRadius: 34,
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
-    border: "1px solid rgba(229,236,244,0.16)",
+    border: "1px solid rgba(220,231,243,0.18)",
     boxShadow:
-      "0 34px 82px rgba(0,8,18,0.34), inset 0 1px 0 rgba(255,255,255,0.08)",
+      "0 36px 84px rgba(0,8,18,0.36), inset 0 1px 0 rgba(255,255,255,0.08)",
     padding: 18,
     backdropFilter: "blur(10px)",
     position: "relative",
@@ -95,9 +95,9 @@ function routeCard(): React.CSSProperties {
     justifySelf: "center",
     borderRadius: 24,
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
-    border: "1px solid rgba(229,236,244,0.14)",
-    boxShadow: "0 20px 38px rgba(0,8,18,0.22), inset 0 1px 0 rgba(255,255,255,0.08)",
+      "linear-gradient(180deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.04) 100%)",
+    border: "1px solid rgba(220,231,243,0.16)",
+    boxShadow: "0 22px 40px rgba(0,8,18,0.24), inset 0 1px 0 rgba(255,255,255,0.09)",
     padding: 9,
     display: "grid",
     gap: 6,
@@ -110,8 +110,8 @@ function infoCard(): React.CSSProperties {
   return {
     borderRadius: 18,
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
-    border: "1px solid rgba(229,236,244,0.12)",
+      "linear-gradient(180deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.04) 100%)",
+    border: "1px solid rgba(220,231,243,0.14)",
     padding: 16,
   };
 }
@@ -236,28 +236,32 @@ export default function WelcomePage() {
     navigate(activationTo);
   }
 
+  function openGuideRoute() {
+    navigate("/guide");
+  }
+
   const headline =
     entryMode === "invite"
-      ? "Continue your invitation."
+      ? "Open your invitation path."
       : entryMode === "create"
-      ? "Continue creating your community."
+      ? "Open your community setup."
       : entryMode === "approved"
-      ? "Complete your activation."
+      ? "Open your activation path."
       : entryMode === "existing"
-      ? "Sign in to continue."
+      ? "Open sign in."
       : step === "choose_new_lane"
       ? ""
       : "Welcome";
 
   const subtext =
     entryMode === "invite"
-      ? "Your invitation has already been recognised. Continue below."
+      ? "Your invitation has already been recognised. Open the guided join path below."
       : entryMode === "create"
       ? ""
       : entryMode === "approved"
-      ? "Your approval has already been confirmed. Finish activation below."
+      ? "Your approval has already been confirmed. Open activation below."
       : entryMode === "existing"
-      ? "Choose this only if you already have an active account."
+      ? "Choose this only if you already have an active account and want to reopen it now."
       : step === "choose_new_lane"
       ? "Choose how you want to continue."
       : "Choose how you want to continue.";
@@ -529,7 +533,7 @@ export default function WelcomePage() {
                 }}
               >
                 <EntryActionButton type="button" onClick={openCreate}>
-                  Continue
+                  Start community setup
                 </EntryActionButton>
               </div>
             </div>
@@ -547,7 +551,7 @@ export default function WelcomePage() {
 
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <EntryActionButton type="button" onClick={openJoin}>
-                  Continue
+                  Open join path
                 </EntryActionButton>
               </div>
             </div>
@@ -565,7 +569,7 @@ export default function WelcomePage() {
 
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <EntryActionButton type="button" onClick={openActivation}>
-                  Continue
+                  Finish activation
                 </EntryActionButton>
               </div>
             </div>
@@ -583,7 +587,7 @@ export default function WelcomePage() {
 
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <EntryActionButton type="button" onClick={openExisting}>
-                  Continue to Login
+                  Open sign in
                 </EntryActionButton>
               </div>
             </div>
@@ -608,7 +612,7 @@ export default function WelcomePage() {
                     type="button"
                     onClick={() => setStep("choose_new_lane")}
                   >
-                    Continue
+                    Choose create or join
                   </EntryActionButton>
                 </div>
               </div>
@@ -624,7 +628,7 @@ export default function WelcomePage() {
                     onClick={openActivation}
                     variant="secondary"
                   >
-                    Activate
+                    Open activation
                   </EntryActionButton>
                 </div>
               </div>
@@ -638,7 +642,7 @@ export default function WelcomePage() {
                     onClick={openExisting}
                     variant="secondary"
                   >
-                    Login
+                    Open sign in
                   </EntryActionButton>
                 </div>
               </div>
@@ -683,7 +687,7 @@ export default function WelcomePage() {
 
                   <div style={{ display: "flex", justifyContent: "center" }}>
                     <EntryActionButton type="button" onClick={openCreate}>
-                      Create
+                      Open create path
                     </EntryActionButton>
                   </div>
                 </div>
@@ -703,7 +707,7 @@ export default function WelcomePage() {
 
                   <div style={{ display: "flex", justifyContent: "center" }}>
                     <EntryActionButton type="button" onClick={openJoin}>
-                      Join
+                      Open join path
                     </EntryActionButton>
                   </div>
                 </div>
@@ -756,6 +760,21 @@ export default function WelcomePage() {
                 }}
               >
                 Choose the path that matches you now, then continue.
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  marginTop: 6,
+                }}
+              >
+                <EntryActionButton
+                  type="button"
+                  onClick={openGuideRoute}
+                  variant="secondary"
+                >
+                  Open full GSN guide
+                </EntryActionButton>
               </div>
             </div>
           ) : null}

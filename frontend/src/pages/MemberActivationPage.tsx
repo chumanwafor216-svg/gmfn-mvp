@@ -16,7 +16,7 @@ function pageShell(): React.CSSProperties {
     alignItems: "center",
     justifyContent: "center",
     background:
-      "radial-gradient(circle at top, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0) 24%), radial-gradient(circle at top right, rgba(74,132,214,0.18) 0%, rgba(74,132,214,0) 30%), radial-gradient(circle at bottom left, rgba(39,91,156,0.20) 0%, rgba(39,91,156,0) 32%), linear-gradient(180deg, #07101C 0%, #0B1F33 36%, #173654 70%, #26527C 100%)",
+      "radial-gradient(circle at top right, rgba(74,132,214,0.18) 0%, rgba(74,132,214,0) 30%), radial-gradient(circle at bottom left, rgba(39,91,156,0.20) 0%, rgba(39,91,156,0) 32%), linear-gradient(180deg, #06111C 0%, #0A1B2B 34%, #102A43 72%, #173654 100%)",
     color: "#FFFFFF",
     fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
     padding: "22px",
@@ -27,11 +27,11 @@ function pageShell(): React.CSSProperties {
 function whiteCard(): React.CSSProperties {
   return {
     borderRadius: 24,
-    border: "1px solid rgba(255,255,255,0.34)",
+    border: "1px solid rgba(123,161,204,0.24)",
     background:
-      "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(230,239,252,0.96) 58%, rgba(212,226,246,0.92) 100%)",
+      "linear-gradient(180deg, rgba(8,17,31,0.98) 0%, rgba(11,31,51,0.97) 54%, rgba(23,54,84,0.95) 100%)",
     boxShadow:
-      "0 22px 56px rgba(5,16,38,0.26), inset 0 1px 0 rgba(255,255,255,0.82)",
+      "0 28px 64px rgba(5,16,38,0.34), inset 0 1px 0 rgba(255,255,255,0.10)",
     padding: 22,
     overflow: "hidden",
   };
@@ -40,11 +40,11 @@ function whiteCard(): React.CSSProperties {
 function innerPanel(): React.CSSProperties {
   return {
     borderRadius: 16,
-    border: "1px solid rgba(16,37,59,0.10)",
+    border: "1px solid rgba(123,161,204,0.16)",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(245,249,253,0.68) 100%)",
+      "linear-gradient(180deg, rgba(13,28,45,0.96) 0%, rgba(18,40,64,0.94) 100%)",
     boxShadow:
-      "inset 0 1px 0 rgba(255,255,255,0.82), 0 8px 20px rgba(10,24,49,0.06)",
+      "inset 0 1px 0 rgba(255,255,255,0.06), 0 8px 20px rgba(10,24,49,0.16)",
     padding: 18,
   };
 }
@@ -53,10 +53,10 @@ function topRailCard(): React.CSSProperties {
   return {
     borderRadius: 22,
     background:
-      "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)",
+      "linear-gradient(180deg, #07101C 0%, #0A1B2B 52%, #10253B 100%)",
     border: "1px solid rgba(16,37,59,0.16)",
     boxShadow:
-      "0 18px 34px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
+      "0 20px 36px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.08)",
     padding: 18,
     position: "relative",
     overflow: "hidden",
@@ -81,20 +81,20 @@ function guideAboutBtn(): React.CSSProperties {
     minWidth: 36,
     padding: "0 14px",
     borderRadius: 999,
-    border: "1px solid rgba(243,208,106,0.32)",
+    border: "1px solid rgba(214,226,239,0.28)",
     background:
-      "linear-gradient(180deg, rgba(249,219,130,0.88) 0%, rgba(243,208,106,0.76) 58%, rgba(231,184,77,0.70) 100%)",
+      "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(228,236,246,0.94) 58%, rgba(211,223,237,0.92) 100%)",
     boxShadow:
-      "0 14px 24px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.34), inset 0 -6px 10px rgba(125,85,10,0.10)",
+      "0 14px 24px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.58), inset 0 -6px 10px rgba(77,96,118,0.10)",
     fontSize: 10.5,
     fontWeight: 900,
     lineHeight: 1,
     letterSpacing: 0.8,
-    color: "#10253B",
+    color: "#123055",
     textAlign: "center",
     textTransform: "uppercase",
     cursor: "pointer",
-    textShadow: "0 1px 0 rgba(255,255,255,0.32)",
+    textShadow: "0 1px 0 rgba(255,255,255,0.56)",
   };
 }
 
@@ -107,18 +107,18 @@ function guideMainBtn(): React.CSSProperties {
     minHeight: 46,
     borderRadius: 999,
     padding: "12px 20px",
-    border: "1px solid rgba(243,208,106,0.32)",
+    border: "1px solid rgba(73,118,171,0.56)",
     background:
-      "linear-gradient(180deg, #F9DB82 0%, #F3D06A 52%, #E7B84D 100%)",
+      "linear-gradient(180deg, #2D6AA3 0%, #235784 52%, #173E63 100%)",
     boxShadow:
-      "0 18px 30px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.38), inset 0 -8px 14px rgba(125,85,10,0.12)",
+      "0 18px 30px rgba(0,0,0,0.24), inset 0 1px 0 rgba(196,222,247,0.34), inset 0 -8px 14px rgba(8,25,43,0.16)",
     whiteSpace: "nowrap",
-    color: "#10253B",
+    color: "#FFFFFF",
     fontSize: 14.5,
     fontWeight: 900,
     textAlign: "center",
     cursor: "pointer",
-    textShadow: "0 1px 0 rgba(255,255,255,0.34)",
+    textShadow: "none",
   };
 }
 
@@ -161,11 +161,13 @@ function primaryBtn(disabled = false): React.CSSProperties {
     width: "min(100%, 60%)",
     padding: "14px 18px",
     borderRadius: 16,
-    border: "none",
+    border: disabled
+      ? "1px solid rgba(161,179,199,0.48)"
+      : "1px solid rgba(82,128,186,0.62)",
     background: disabled
       ? "linear-gradient(180deg, #D7DEE8 0%, #C8D2DF 100%)"
-      : "linear-gradient(180deg, #F6D77D 0%, #F3D06A 52%, #D9A941 100%)",
-    color: disabled ? "#6B7B8D" : "#10253B",
+      : "linear-gradient(180deg, #2D6AA3 0%, #235784 52%, #173E63 100%)",
+    color: disabled ? "#6B7B8D" : "#FFFFFF",
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 15,
@@ -173,8 +175,8 @@ function primaryBtn(disabled = false): React.CSSProperties {
     textAlign: "center",
     boxShadow: disabled
       ? "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.52)"
-      : "0 18px 32px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.58), inset 0 -8px 14px rgba(125,85,10,0.12)",
-    textShadow: disabled ? "none" : "0 1px 0 rgba(255,255,255,0.36)",
+      : "0 20px 36px rgba(1,13,32,0.28), inset 0 1px 0 rgba(196,222,247,0.34), inset 0 -8px 12px rgba(8,25,43,0.20)",
+    textShadow: "none",
   };
 }
 
@@ -240,7 +242,7 @@ function noticeStyle(kind: "success" | "error" | "warning"): React.CSSProperties
 function labelText(gold = false): React.CSSProperties {
   return {
     fontSize: 12,
-    color: gold ? "#F3D06A" : "#64748B",
+    color: gold ? "#F3D06A" : "#9CB4CF",
     fontWeight: 1000,
     letterSpacing: gold ? 3.6 : 0.2,
     textTransform: "uppercase",
@@ -249,7 +251,7 @@ function labelText(gold = false): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#5F768D",
+    color: "#C8D8EA",
     lineHeight: 1.75,
     fontSize: 14,
   };
@@ -428,7 +430,7 @@ export default function MemberActivationPage() {
                 <div
                   style={{
                     marginBottom: 8,
-                    color: "#10253B",
+                    color: "#F8FBFF",
                     fontWeight: 1000,
                     fontSize: 22,
                   }}
@@ -462,7 +464,7 @@ export default function MemberActivationPage() {
                 <div
                   style={{
                     marginBottom: 10,
-                    color: "#0B1F33",
+                    color: "#F8FBFF",
                     fontWeight: 1000,
                     fontSize: 22,
                   }}
@@ -543,7 +545,7 @@ export default function MemberActivationPage() {
                     {...buttonGuardProps()}
                     style={primaryBtn(busy || activated)}
                   >
-                    {busy ? "Activating..." : "Activate Membership"}
+                    {busy ? "Finishing activation..." : "Finish activation"}
                   </button>
                 </div>
               </div>
@@ -551,14 +553,14 @@ export default function MemberActivationPage() {
 
             {activated ? (
               <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <OriginLink to="/app/notifications" style={secondaryBtn()}>
-                  Review Notifications
+                <OriginLink to="/app/build-first-circle" style={secondaryBtn()}>
+                  Build first circle
                 </OriginLink>
                 <OriginLink to="/app/trust" style={secondaryBtn()}>
-                  Review Trust
+                  Open Trust Passport
                 </OriginLink>
-                <OriginLink to="/app/build-first-circle" style={secondaryBtn()}>
-                  Continue
+                <OriginLink to="/app/notifications" style={secondaryBtn()}>
+                  Open Action Inbox
                 </OriginLink>
               </div>
             ) : null}

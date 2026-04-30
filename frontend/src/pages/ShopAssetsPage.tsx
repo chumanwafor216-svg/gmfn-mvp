@@ -3,6 +3,12 @@ import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
+  institutionalInnerCard,
+  institutionalPageCard,
+  institutionalSoftCard,
+  institutionalStatTile,
+} from "../lib/institutionalSurface";
+import {
   getMe,
   getSelectedClanId,
   uploadMarketplaceImageFile as uploadMarketplaceImageFileApi,
@@ -73,47 +79,38 @@ function firstTruthy(...values: unknown[]): string {
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 20,
+    ...institutionalPageCard(bg),
+    border: "1px solid rgba(20,52,83,0.24)",
     boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
-    overflow: "hidden",
+      "0 30px 62px rgba(7,20,36,0.12), 0 8px 18px rgba(7,20,36,0.045), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -14px 28px rgba(18,52,86,0.06)",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
-    borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 16,
+    ...institutionalSoftCard(bg),
+    border: "1px solid rgba(20,52,83,0.20)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 14,
+    ...institutionalInnerCard(bg),
+    border: "1px solid rgba(20,52,83,0.18)",
   };
 }
 
 function statTile(): React.CSSProperties {
   return {
-    borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: "#FFFFFF",
-    padding: 14,
+    ...institutionalStatTile(),
+    border: "1px solid rgba(20,52,83,0.16)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#5D7389",
+    color: "#4E6680",
     fontWeight: 900,
     letterSpacing: 0.35,
     textTransform: "uppercase",
@@ -122,7 +119,7 @@ function sectionLabel(): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#5F7287",
+    color: "#4E6680",
     fontSize: 14,
     lineHeight: 1.75,
   };
@@ -136,8 +133,8 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
+    background: primary ? "rgba(29,95,212,0.12)" : "rgba(160,178,201,0.18)",
+    color: primary ? "#0B63D1" : "#31506D",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
@@ -211,8 +208,8 @@ function actionBtn(
       minHeight: 48,
       padding: "8px 12px",
       borderRadius: 12,
-      border: "1px solid rgba(11,31,51,0.08)",
-      background: "#F8FBFF",
+      border: "1px solid rgba(122,152,195,0.18)",
+      background: "linear-gradient(180deg, #F4F8FF 0%, #E2ECFB 100%)",
       color: disabled ? "#94A3B8" : "#24415C",
       fontWeight: 800,
       fontSize: 13,
@@ -234,8 +231,8 @@ function actionBtn(
     minHeight: 48,
     padding: "10px 14px",
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(122,152,195,0.20)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 800,
     fontSize: 14,
@@ -254,8 +251,8 @@ function inputStyle(): React.CSSProperties {
     width: "100%",
     minHeight: 44,
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(122,152,195,0.20)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
     padding: "11px 12px",
     fontSize: 14,
     color: "#0B1F33",
@@ -309,8 +306,8 @@ function collapseToggle(): React.CSSProperties {
     minHeight: 48,
     padding: "8px 12px",
     borderRadius: 12,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(122,152,195,0.20)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
     color: "#24415C",
     fontWeight: 800,
     fontSize: 13,

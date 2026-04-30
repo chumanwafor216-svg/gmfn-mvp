@@ -70,7 +70,7 @@ function pageShell(): React.CSSProperties {
   return {
     minHeight: "100vh",
     background:
-      "radial-gradient(circle at top, rgba(47,103,196,0.12) 0%, rgba(16,37,59,0.00) 34%), linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 55%, #FFFFFF 100%)",
+      "radial-gradient(circle at top, rgba(94,146,214,0.12) 0%, rgba(11,31,51,0.00) 28%), radial-gradient(circle at top right, rgba(214,173,82,0.08) 0%, rgba(11,31,51,0.00) 24%), linear-gradient(180deg, #07101C 0%, #0B1F33 38%, #173654 72%, #24496E 100%)",
     padding: "32px 16px",
     boxSizing: "border-box",
   };
@@ -79,19 +79,20 @@ function pageShell(): React.CSSProperties {
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     background: bg,
-    border: "1px solid rgba(11,31,51,0.08)",
+    border: "1px solid rgba(196,210,226,0.18)",
     borderRadius: 24,
     padding: 24,
-    boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)",
+    boxShadow: "0 20px 46px rgba(2, 6, 23, 0.24)",
   };
 }
 
-function softCard(bg = "#F8FBFF"): React.CSSProperties {
+function softCard(bg = "#F4F8FC"): React.CSSProperties {
   return {
-    border: "1px solid rgba(11,31,51,0.08)",
+    border: "1px solid rgba(148,163,184,0.18)",
     borderRadius: 16,
     background: bg,
     padding: 14,
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.78)",
   };
 }
 
@@ -107,7 +108,7 @@ function sectionLabel(): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#475569",
+    color: "#5C7186",
     fontSize: 14,
     lineHeight: 1.75,
   };
@@ -170,9 +171,13 @@ function actionBtn(primary = false, disabled = false): React.CSSProperties {
     padding: "14px 18px",
     borderRadius: 14,
     border: primary
-      ? "1px solid rgba(29,78,216,0.18)"
-      : "1px solid rgba(11,31,51,0.12)",
-    background: disabled ? "#CBD5E1" : primary ? "#1D4ED8" : "#FFFFFF",
+      ? "1px solid rgba(11,80,170,0.22)"
+      : "1px solid rgba(37,78,119,0.20)",
+    background: disabled
+      ? "linear-gradient(180deg, #CBD5E1 0%, #B8C4D4 100%)"
+      : primary
+      ? "linear-gradient(180deg, #1A6BE1 0%, #0B63D1 58%, #09479C 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(241,247,253,0.98) 62%, rgba(224,234,244,0.98) 100%)",
     color: primary ? "#FFFFFF" : "#0B1F33",
     fontWeight: 900,
     cursor: disabled ? "not-allowed" : "pointer",
@@ -181,6 +186,11 @@ function actionBtn(primary = false, disabled = false): React.CSSProperties {
     minHeight: 46,
     whiteSpace: "normal",
     textAlign: "center",
+    boxShadow: disabled
+      ? "none"
+      : primary
+      ? "0 16px 30px rgba(11,99,209,0.22), inset 0 1px 0 rgba(255,255,255,0.24)"
+      : "0 12px 24px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.84)",
   };
 }
 
@@ -304,7 +314,7 @@ export default function InviteLandingPage() {
   return (
     <div style={pageShell()}>
       <div style={{ maxWidth: 960, margin: "0 auto", display: "grid", gap: 18 }}>
-        <div style={pageCard("linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)")}>
+        <div style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 54%, #173654 100%)")}>
           <div
             style={{
               display: "flex",
@@ -526,7 +536,7 @@ export default function InviteLandingPage() {
                   color: "#1D4ED8",
                 }}
               >
-                This invitation is valid. Continue into the guided founder route.
+                This invitation is valid. Open the guided founder entry route.
               </div>
             )}
 
@@ -534,13 +544,14 @@ export default function InviteLandingPage() {
               <div style={sectionLabel()}>Next step</div>
 
               <div style={{ marginTop: 10, ...helperText(), maxWidth: 780 }}>
-                Continue into the public founder flow. The app will then guide
+                Open the public founder flow. The app will then guide
                 you from Cover to Welcome and from Welcome to Create Entry.
               </div>
 
               <div style={{ marginTop: 10, ...helperText(), maxWidth: 780 }}>
-                Once you are inside the workspace, GSN also supports steadier
-                follow-through through Commitment Builder.
+                Focus Commitments opens from Dashboard after workspace entry. If
+                you want to understand that discipline path first, open the full
+                guide before you continue.
               </div>
 
               <div
@@ -557,15 +568,15 @@ export default function InviteLandingPage() {
                   disabled={!canContinue || continuing}
                   style={actionBtn(true, !canContinue || continuing)}
                 >
-                  {continuing ? "Continuing..." : "Continue founder route"}
+                  {continuing ? "Opening..." : "Open founder entry"}
                 </button>
 
                 <OriginLink to="/guide" style={actionBtn(false)}>
-                  Open My GSN and I
+                  Open full GSN guide
                 </OriginLink>
 
-                <OriginLink to="/app/dashboard#focus-commitments" style={actionBtn(false)}>
-                  Open Commitment Builder
+                <OriginLink to="/guide" style={actionBtn(false)}>
+                  Read about Focus Commitments first
                 </OriginLink>
 
                 <OriginLink to="/welcome" style={actionBtn(false)}>

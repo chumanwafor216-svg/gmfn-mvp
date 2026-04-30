@@ -278,8 +278,8 @@ function routeTile(primary = false): React.CSSProperties {
       ? "1px solid rgba(29,95,212,0.22)"
       : "1px solid rgba(122,152,195,0.18)",
     background: primary
-      ? "linear-gradient(180deg, #F7FBFF 0%, #E9F2FF 100%)"
-      : "linear-gradient(180deg, #FFFDF9 0%, #F3F8FF 100%)",
+      ? "radial-gradient(circle at 14% 10%, rgba(201,154,39,0.12) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 86% 14%, rgba(38,96,171,0.16) 0%, rgba(38,96,171,0) 28%), linear-gradient(180deg, rgba(248,252,255,0.998) 0%, rgba(226,237,250,0.986) 100%)"
+      : "radial-gradient(circle at 14% 10%, rgba(201,154,39,0.10) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 86% 14%, rgba(38,96,171,0.12) 0%, rgba(38,96,171,0) 28%), linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(234,243,251,0.986) 100%)",
     padding: 16,
     textDecoration: "none",
     boxShadow: primary
@@ -325,8 +325,8 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     minWidth: 132,
     padding: "12px 16px",
     borderRadius: 15,
-    border: "1px solid rgba(124,154,196,0.18)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #F1F7FF 100%)",
+    border: "1px solid rgba(20,52,83,0.18)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #E8F1FB 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 1000,
     fontSize: 14,
@@ -350,9 +350,9 @@ function collapseToggle(): React.CSSProperties {
     minWidth: 120,
     padding: "9px 13px",
     borderRadius: 12,
-    border: "1px solid rgba(124,154,196,0.18)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #F1F7FF 100%)",
-    color: "#24415C",
+    border: "1px solid rgba(20,52,83,0.18)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #E8F1FB 100%)",
+    color: "#213D59",
     fontWeight: 800,
     fontSize: 13,
     textAlign: "center",
@@ -366,7 +366,7 @@ function collapseToggle(): React.CSSProperties {
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#39526C",
+    color: "#4A627A",
     fontWeight: 1000,
     letterSpacing: 0.45,
     textTransform: "uppercase",
@@ -382,11 +382,11 @@ function badge(primary = false): React.CSSProperties {
     padding: "7px 12px",
     background: primary
       ? "linear-gradient(180deg, rgba(29,95,212,0.14) 0%, rgba(29,95,212,0.09) 100%)"
-      : "linear-gradient(180deg, rgba(130,146,172,0.16) 0%, rgba(130,146,172,0.10) 100%)",
+      : "linear-gradient(180deg, rgba(247,250,254,0.98) 0%, rgba(228,238,248,0.80) 100%)",
     border: primary
       ? "1px solid rgba(29,95,212,0.16)"
-      : "1px solid rgba(130,146,172,0.14)",
-    color: primary ? "#164AAE" : "#445C75",
+      : "1px solid rgba(20,52,83,0.16)",
+    color: primary ? "#164AAE" : "#496178",
     fontSize: 12,
     fontWeight: 1000,
     whiteSpace: "normal",
@@ -395,7 +395,7 @@ function badge(primary = false): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#4F657B",
+    color: "#405A72",
     fontSize: 14.5,
     lineHeight: 1.75,
   };

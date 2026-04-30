@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
+import {
+  institutionalInnerCard,
+  institutionalPageCard,
+} from "../lib/institutionalSurface";
 import { getAdminIdentityRisk } from "../lib/api";
 
 function safeStr(x: any): string {
@@ -14,10 +18,10 @@ function toNum(x: any): number {
 
 function card(): React.CSSProperties {
   return {
-    borderRadius: 22,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: "#FFFFFF",
-    boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
+    ...institutionalPageCard(),
+    border: "1px solid rgba(20,52,83,0.24)",
+    boxShadow:
+      "0 30px 62px rgba(7,20,36,0.12), 0 8px 18px rgba(7,20,36,0.045), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -14px 28px rgba(18,52,86,0.06)",
     padding: 22,
   };
 }
@@ -49,10 +53,10 @@ function summaryToggle(): React.CSSProperties {
     minHeight: 40,
     padding: "8px 14px",
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
+    border: "1px solid rgba(122,152,195,0.20)",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(241,246,252,0.98) 100%)",
-    boxShadow: "0 10px 24px rgba(15,23,42,0.08)",
+      "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
+    boxShadow: "0 14px 30px rgba(15,23,42,0.09)",
     ...stableTapStyle(),
   };
 }
@@ -215,10 +219,8 @@ export default function AdminIdentityRiskPage() {
                 <div
                   key={row.id}
                   style={{
-                    borderRadius: 14,
-                    border: "1px solid rgba(11,31,51,0.08)",
-                    background: "#F8FAFC",
-                    padding: 14,
+                    ...institutionalInnerCard("#F8FBFF"),
+                    border: "1px solid rgba(20,52,83,0.18)",
                   }}
                 >
                   <div style={{ fontWeight: 1000, color: "#0B1F33" }}>

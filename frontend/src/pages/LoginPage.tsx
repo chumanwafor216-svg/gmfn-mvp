@@ -11,7 +11,7 @@ function pageShell(compact = false): React.CSSProperties {
     alignItems: "center",
     justifyContent: "center",
     background:
-      "radial-gradient(circle at 12% 0%, rgba(201,154,39,0.08) 0%, rgba(201,154,39,0.00) 22%), radial-gradient(circle at 86% 6%, rgba(84,123,169,0.10) 0%, rgba(84,123,169,0.00) 28%), linear-gradient(180deg, #06111C 0%, #0A1B2B 50%, #123149 100%)",
+      "radial-gradient(circle at 86% 6%, rgba(84,123,169,0.12) 0%, rgba(84,123,169,0.00) 28%), radial-gradient(circle at 18% 88%, rgba(58,92,134,0.12) 0%, rgba(58,92,134,0.00) 28%), linear-gradient(180deg, #06111C 0%, #0A1B2B 46%, #102A43 100%)",
     color: "#FFFFFF",
     fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
     padding: compact ? "16px 18px" : "22px",
@@ -26,9 +26,9 @@ function heroCard(): React.CSSProperties {
     borderRadius: 36,
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
-    border: "1px solid rgba(229,236,244,0.16)",
+    border: "1px solid rgba(220,231,243,0.18)",
     boxShadow:
-      "0 34px 82px rgba(0,8,18,0.34), inset 0 1px 0 rgba(255,255,255,0.08)",
+      "0 36px 84px rgba(0,8,18,0.36), inset 0 1px 0 rgba(255,255,255,0.08)",
     padding: 22,
     backdropFilter: "blur(10px)",
     position: "relative",
@@ -41,12 +41,12 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
     borderRadius: 18,
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, rgba(247,250,253,0.98) 0%, rgba(232,239,246,0.96) 100%)"
+        ? "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(232,239,247,0.96) 100%)"
         : bg,
-    border: "1px solid rgba(17,37,58,0.10)",
+    border: "1px solid rgba(17,37,58,0.11)",
     padding: 18,
     boxShadow:
-      "0 14px 30px rgba(8,18,34,0.07), inset 0 1px 0 rgba(255,255,255,0.74)",
+      "0 16px 32px rgba(8,18,34,0.08), inset 0 1px 0 rgba(255,255,255,0.76)",
   };
 }
 
@@ -88,11 +88,13 @@ function primaryBtn(disabled = false): React.CSSProperties {
     width: "min(100%, 60%)",
     padding: "14px 18px",
     borderRadius: 16,
-    border: disabled ? "1px solid rgba(161,179,199,0.48)" : "1px solid rgba(205,220,236,0.92)",
+    border: disabled
+      ? "1px solid rgba(161,179,199,0.48)"
+      : "1px solid rgba(82,128,186,0.62)",
     background: disabled
       ? "linear-gradient(180deg, #D7DEE8 0%, #C8D2DF 100%)"
-      : "linear-gradient(180deg, #FFFFFF 0%, #F3F7FB 52%, #E2EAF3 100%)",
-    color: disabled ? "#6B7B8D" : "#0A233B",
+      : "linear-gradient(180deg, #2D6AA3 0%, #235784 52%, #173E63 100%)",
+    color: disabled ? "#6B7B8D" : "#FFFFFF",
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 15,
@@ -100,7 +102,7 @@ function primaryBtn(disabled = false): React.CSSProperties {
     textAlign: "center",
     boxShadow: disabled
       ? "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.52)"
-      : "0 18px 34px rgba(1,13,32,0.24), inset 0 1px 0 rgba(255,255,255,0.96), inset 0 -2px 0 rgba(108,129,154,0.26)",
+      : "0 20px 36px rgba(1,13,32,0.28), inset 0 1px 0 rgba(196,222,247,0.34), inset 0 -8px 12px rgba(8,25,43,0.20)",
     textShadow: "none",
   };
 }
@@ -112,7 +114,7 @@ function secondaryBtn(): React.CSSProperties {
     padding: "14px 18px",
     borderRadius: 16,
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(234,241,248,0.98) 100%)",
+      "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(229,237,249,0.98) 100%)",
     color: "#123055",
     fontWeight: 1000,
     border: "1px solid rgba(16,37,59,0.12)",
@@ -120,7 +122,7 @@ function secondaryBtn(): React.CSSProperties {
     fontSize: 15,
     textAlign: "center",
     boxShadow:
-      "0 10px 24px rgba(10,24,49,0.14), inset 0 1px 0 rgba(255,255,255,0.78)",
+      "0 14px 28px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.82), inset 0 -6px 10px rgba(120,142,170,0.10)",
   };
 }
 
@@ -589,7 +591,7 @@ export default function LoginPage() {
                       padding: "13px 14px",
                     }}
                   >
-                    <strong style={{ color: "#10253B" }}>3. Continue safely.</strong>{" "}
+                    <strong style={{ color: "#10253B" }}>3. Use activation first if needed.</strong>{" "}
                     If your account is not yet active, use Activate Membership first instead of forcing sign-in through the wrong route.
                   </div>
                 </div>

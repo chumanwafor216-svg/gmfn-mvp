@@ -101,15 +101,15 @@ type ActiveCommunitySpotlight = {
 
 const COMMUNITY_HOME_COLLAPSE_KEY = "gmfn.communityHome.sections.v3";
 const COMMUNITY_BRAND = {
-  ink: "#071827",
+  ink: "#F8FBFF",
   navy: "#081E32",
   deep: "#0B2942",
-  blue: "#0D5FA8",
+  blue: "#CFE3FF",
   lightBlue: "#EAF4FF",
-  gold: "#C9A13A",
-  goldSoft: "rgba(212,175,55,0.12)",
-  panel: "rgba(255,255,255,0.94)",
-  border: "rgba(21,64,103,0.14)",
+  gold: "#E7CA7C",
+  goldSoft: "rgba(212,175,55,0.16)",
+  panel: "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+  border: "rgba(123,161,204,0.18)",
 };
 
 function safeStr(x: any): string {
@@ -434,24 +434,24 @@ function communityBlockCard(tone: CommunitySurfaceTone): React.CSSProperties {
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   const resolvedBg =
     bg === "#FFFFFF"
-      ? "radial-gradient(circle at top left, rgba(11,99,209,0.07) 0%, rgba(11,99,209,0.00) 38%), linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,249,255,0.96) 100%)"
+      ? "linear-gradient(180deg, rgba(8,17,31,0.98) 0%, rgba(11,31,51,0.97) 56%, rgba(23,54,84,0.95) 100%)"
       : bg;
 
   return {
     borderRadius: "clamp(18px, 4vw, 24px)",
-    border: "1px solid rgba(16,37,59,0.14)",
+    border: "1px solid rgba(123,161,204,0.20)",
     background: resolvedBg,
     padding: "clamp(12px, 3.6vw, 20px)",
     boxShadow:
-      "0 20px 44px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.72)",
+      "0 22px 48px rgba(2,6,23,0.22), inset 0 1px 0 rgba(255,255,255,0.06)",
     overflow: "hidden",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   const resolvedBg =
-    bg === "#F8FBFF"
-      ? "linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%)"
+    bg === "#F8FBFF" || bg === "#FFFFFF"
+      ? "linear-gradient(180deg, rgba(13,28,45,0.96) 0%, rgba(18,40,64,0.94) 100%)"
       : bg;
 
   return {
@@ -460,30 +460,30 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
     background: resolvedBg,
     padding: "clamp(12px, 3vw, 16px)",
     boxShadow:
-      "inset 0 1px 0 rgba(255,255,255,0.86), 0 12px 26px rgba(10,24,49,0.05)",
+      "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   const resolvedBg =
-    bg === "#FFFFFF"
-      ? "linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)"
+    bg === "#FFFFFF" || bg === "#FCFEFF"
+      ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
       : bg;
 
   return {
     borderRadius: 16,
-    border: "1px solid rgba(16,37,59,0.14)",
+    border: "1px solid rgba(123,161,204,0.14)",
     background: resolvedBg,
     padding: "clamp(9px, 2.6vw, 12px)",
     boxShadow:
-      "inset 0 1px 0 rgba(255,255,255,0.84), 0 14px 28px rgba(10,24,49,0.05)",
+      "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
 function sectionLabel(align: "left" | "center" = "left"): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#244B72",
+    color: "#9CB4CF",
     fontWeight: 900,
     letterSpacing: 1.8,
     textTransform: "uppercase",
@@ -501,11 +501,11 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 26,
     borderRadius: 999,
     padding: "5px 8px",
-    background: primary ? "rgba(29,78,216,0.08)" : "rgba(13,95,168,0.08)",
-    color: primary ? "#173654" : "#1E4063",
+    background: primary ? "rgba(32,76,133,0.36)" : "rgba(255,255,255,0.08)",
+    color: primary ? "#CFE3FF" : "#E6EEF8",
     border: primary
-      ? "1px solid rgba(29,78,216,0.14)"
-      : "1px solid rgba(13,95,168,0.12)",
+      ? "1px solid rgba(123,161,204,0.26)"
+      : "1px solid rgba(123,161,204,0.16)",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
@@ -531,25 +531,24 @@ function compactSignal(primary = false): React.CSSProperties {
     minHeight: 24,
     borderRadius: 999,
     padding: "4px 8px",
-    background: primary ? "rgba(29,78,216,0.08)" : "rgba(13,95,168,0.08)",
-    color: primary ? "#173654" : "#1E4063",
+    background: primary ? "rgba(32,76,133,0.36)" : "rgba(255,255,255,0.08)",
+    color: primary ? "#CFE3FF" : "#E6EEF8",
     border: primary
-      ? "1px solid rgba(29,78,216,0.14)"
-      : "1px solid rgba(13,95,168,0.10)",
+      ? "1px solid rgba(123,161,204,0.26)"
+      : "1px solid rgba(123,161,204,0.14)",
     fontSize: 11.5,
     fontWeight: 900,
     lineHeight: 1.15,
     whiteSpace: "nowrap",
     textAlign: "center",
-    boxShadow: primary
-      ? "0 6px 12px rgba(29,78,216,0.08), inset 0 1px 0 rgba(255,255,255,0.7)"
-      : "inset 0 1px 0 rgba(255,255,255,0.72)",
+    boxShadow:
+      "0 10px 20px rgba(2,6,23,0.14), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
 function metricLabel(): React.CSSProperties {
   return {
-    color: "#315A80",
+    color: "#9CB4CF",
     fontSize: 9.4,
     fontWeight: 950,
     letterSpacing: 0.72,
@@ -574,11 +573,11 @@ function metricValue(): React.CSSProperties {
 function metricCard(bg: "blue" | "gold" | "white" = "white"): React.CSSProperties {
   const backgrounds = {
     blue:
-      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(234,244,255,0.98) 62%, rgba(220,235,250,0.98) 100%)",
+      "linear-gradient(180deg, rgba(15,33,54,0.96) 0%, rgba(21,45,71,0.94) 100%)",
     gold:
-      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(249,252,255,0.98) 62%, rgba(235,243,251,0.96) 100%)",
+      "linear-gradient(180deg, rgba(30,27,18,0.96) 0%, rgba(47,38,22,0.94) 100%)",
     white:
-      "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 60%, #EEF6FF 100%)",
+      "linear-gradient(180deg, rgba(15,33,54,0.96) 0%, rgba(21,45,71,0.94) 100%)",
   };
 
   return {
@@ -586,8 +585,8 @@ function metricCard(bg: "blue" | "gold" | "white" = "white"): React.CSSPropertie
     borderRadius: 15,
     border:
       bg === "gold"
-        ? "1px solid rgba(16,36,58,0.12)"
-        : "1px solid rgba(13,95,168,0.16)",
+        ? "1px solid rgba(212,175,55,0.22)"
+        : "1px solid rgba(123,161,204,0.16)",
     background: backgrounds[bg],
     padding: 8,
     display: "grid",
@@ -595,7 +594,7 @@ function metricCard(bg: "blue" | "gold" | "white" = "white"): React.CSSPropertie
     justifyItems: "center",
     textAlign: "center",
     boxShadow:
-      "0 8px 18px rgba(7,24,39,0.07), inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -2px 0 rgba(8,40,72,0.05)",
+      "0 12px 24px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -665,10 +664,10 @@ function actionBtn(
       minHeight: 46,
       padding: "11px 14px",
       borderRadius: 12,
-      border: "1px solid rgba(13,95,168,0.12)",
+      border: "1px solid rgba(123,161,204,0.16)",
       background:
-        "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(229,237,249,0.96) 100%)",
-      color: disabled ? "#94A3B8" : "#1E4063",
+        "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+      color: disabled ? "#94A3B8" : "#E6EEF8",
       fontWeight: 800,
       fontSize: 13,
       textAlign: "center",
@@ -679,7 +678,7 @@ function actionBtn(
       overflowWrap: "anywhere",
       opacity: disabled ? 0.86 : 1,
       boxShadow:
-        "0 4px 0 rgba(79,97,120,0.14), 0 10px 20px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -8px 14px rgba(15,59,116,0.08)",
+        "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
       touchAction: "manipulation",
       lineHeight: 1.18,
       userSelect: "none",
@@ -697,10 +696,10 @@ function actionBtn(
     minHeight: 46,
     padding: "11px 14px",
     borderRadius: 14,
-    border: "1px solid rgba(16,37,59,0.14)",
+    border: "1px solid rgba(123,161,204,0.16)",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(229,237,249,0.96) 100%)",
-    color: disabled ? "#94A3B8" : "#0B1F33",
+      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+    color: disabled ? "#94A3B8" : "#E6EEF8",
     fontWeight: 800,
     fontSize: 14,
     textAlign: "center",
@@ -712,7 +711,7 @@ function actionBtn(
     opacity: disabled ? 0.86 : 1,
     boxShadow: disabled
       ? "none"
-      : "0 4px 0 rgba(79,97,120,0.16), 0 12px 24px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -8px 14px rgba(15,59,116,0.08)",
+      : "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
     touchAction: "manipulation",
     lineHeight: 1.18,
     userSelect: "none",
@@ -733,10 +732,10 @@ function collapseToggle(): React.CSSProperties {
     minHeight: 50,
     padding: "12px 16px",
     borderRadius: 16,
-    border: "1px solid rgba(16,37,59,0.14)",
+    border: "1px solid rgba(123,161,204,0.16)",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(229,237,249,0.96) 100%)",
-    color: "#0B1F33",
+      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+    color: "#E6EEF8",
     fontWeight: 800,
     fontSize: 13,
     cursor: "pointer",
@@ -745,7 +744,7 @@ function collapseToggle(): React.CSSProperties {
     whiteSpace: "normal",
     overflowWrap: "anywhere",
     boxShadow:
-      "0 5px 0 rgba(79,97,120,0.16), 0 13px 26px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -9px 16px rgba(15,59,116,0.08)",
+      "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
     touchAction: "manipulation",
     lineHeight: 1.18,
     outline: "none",
@@ -2235,7 +2234,7 @@ function communityButtonGuardProps(): Pick<
             <div
               style={{
                 marginTop: 12,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontSize: 28,
                 fontWeight: 900,
                 lineHeight: 1.15,
@@ -2517,7 +2516,7 @@ function communityButtonGuardProps(): Pick<
           <div
             style={{
               marginTop: 10,
-              color: "#0B1F33",
+              color: "#F8FBFF",
               fontSize: isCompact ? 24 : 28,
               fontWeight: 900,
               lineHeight: 1.15,
@@ -2813,7 +2812,7 @@ function communityButtonGuardProps(): Pick<
               <div
                 style={{
                   marginTop: 10,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 20,
                   fontWeight: 900,
                   lineHeight: 1.35,
@@ -2930,7 +2929,7 @@ function communityButtonGuardProps(): Pick<
                           flexWrap: "wrap",
                         }}
                       >
-                        <div style={{ color: "#0B1F33", fontWeight: 900 }}>
+                        <div style={{ color: "#F8FBFF", fontWeight: 900 }}>
                           {safeStr(item.name || "Contact")}
                         </div>
 
@@ -3103,7 +3102,7 @@ function communityButtonGuardProps(): Pick<
                   <div
                     style={{
                       marginTop: 10,
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                       fontSize: 16,
                       fontWeight: 900,
                       lineHeight: 1.4,
@@ -3177,7 +3176,7 @@ function communityButtonGuardProps(): Pick<
               <div
                 style={{
                   marginTop: 10,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 18,
                   fontWeight: 900,
                   lineHeight: 1.35,
@@ -3382,7 +3381,7 @@ function communityButtonGuardProps(): Pick<
                     <div style={{ gridColumn: isCompact ? "1 / -1" : "auto" }}>
                       <div
                         style={{
-                          color: "#0B1F33",
+                          color: "#F8FBFF",
                           fontSize: isCompact ? 15 : 17,
                           fontWeight: 900,
                           lineHeight: 1.35,
@@ -3463,7 +3462,7 @@ function communityButtonGuardProps(): Pick<
                       <>
                         <div
                           style={{
-                            ...innerCard("#FFFFFF"),
+                            ...innerCard(),
                             padding: 12,
                           }}
                         >
@@ -3471,7 +3470,7 @@ function communityButtonGuardProps(): Pick<
                           <div
                             style={{
                               marginTop: 8,
-                              color: "#0B1F33",
+                              color: "#F8FBFF",
                               fontSize: 19,
                               fontWeight: 950,
                               lineHeight: 1.2,
@@ -3483,7 +3482,7 @@ function communityButtonGuardProps(): Pick<
 
                         <div
                           style={{
-                            ...innerCard("#FFFFFF"),
+                            ...innerCard(),
                             padding: 12,
                           }}
                         >
@@ -3553,5 +3552,3 @@ function communityButtonGuardProps(): Pick<
     </div>
   );
 }
-
-

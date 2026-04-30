@@ -125,10 +125,10 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
     padding: 22,
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F3F8FF 100%)"
+        ? "linear-gradient(180deg, rgba(8,17,31,0.98) 0%, rgba(11,31,51,0.97) 56%, rgba(23,54,84,0.95) 100%)"
         : bg,
-    border: "1px solid rgba(108,138,184,0.18)",
-    boxShadow: "0 24px 52px rgba(15,23,42,0.08)",
+    border: "1px solid rgba(123,161,204,0.20)",
+    boxShadow: "0 22px 48px rgba(2,6,23,0.22), 0 6px 14px rgba(15,23,42,0.05)",
   };
 }
 
@@ -137,10 +137,10 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
     ...institutionalSoftCard(bg),
     background:
       bg === "#F8FBFF"
-        ? "linear-gradient(180deg, #FCFEFF 0%, #EDF5FF 100%)"
+        ? "linear-gradient(180deg, rgba(13,28,45,0.96) 0%, rgba(18,40,64,0.94) 100%)"
         : bg,
-    border: "1px solid rgba(123,153,197,0.18)",
-    boxShadow: "0 18px 40px rgba(15,23,42,0.06)",
+    border: "1px solid rgba(123,161,204,0.16)",
+    boxShadow: "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -149,10 +149,10 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
     ...institutionalInnerCard(bg),
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"
+        ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
         : bg,
-    border: "1px solid rgba(125,154,196,0.18)",
-    boxShadow: "0 16px 34px rgba(15,23,42,0.05)",
+    border: "1px solid rgba(123,161,204,0.14)",
+    boxShadow: "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -161,10 +161,10 @@ function statTile(bg = "#FFFFFF"): React.CSSProperties {
     ...institutionalStatTile(bg),
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)"
+        ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
         : bg,
-    border: "1px solid rgba(122,152,195,0.18)",
-    boxShadow: "0 14px 30px rgba(15,23,42,0.05)",
+    border: "1px solid rgba(123,161,204,0.14)",
+    boxShadow: "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -214,13 +214,13 @@ function routeTile(primary = false): React.CSSProperties {
       ? "1px solid rgba(29,95,212,0.22)"
       : "1px solid rgba(122,152,195,0.18)",
     background: primary
-      ? "linear-gradient(180deg, #F7FBFF 0%, #E9F2FF 100%)"
-      : "linear-gradient(180deg, #FFFDF9 0%, #F3F8FF 100%)",
+      ? "linear-gradient(180deg, #184A96 0%, #133A74 100%)"
+      : "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
     padding: 16,
     textDecoration: "none",
     boxShadow: primary
-      ? "0 16px 34px rgba(29,95,212,0.10)"
-      : "0 14px 30px rgba(15,23,42,0.05)",
+      ? "0 16px 34px rgba(19,79,191,0.24), inset 0 1px 0 rgba(255,255,255,0.10)"
+      : "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -262,8 +262,9 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     minWidth: 120,
     borderRadius: 14,
     border: "1px solid rgba(124,154,196,0.18)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #F1F7FF 100%)",
-    color: disabled ? "#94A3B8" : "#0B1F33",
+    background:
+      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+    color: disabled ? "#94A3B8" : "#E6EEF8",
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
@@ -272,7 +273,7 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     opacity: disabled ? 0.72 : 1,
     whiteSpace: "normal",
     overflowWrap: "anywhere",
-    boxShadow: "0 12px 24px rgba(15,23,42,0.06)",
+    boxShadow: "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -285,9 +286,9 @@ function filterBtn(active: boolean): React.CSSProperties {
     borderRadius: 14,
     border: active ? "1px solid #BFDBFE" : "1px solid rgba(148,163,184,0.16)",
     background: active
-      ? "linear-gradient(180deg, #EFF6FF 0%, #DBEAFE 100%)"
-      : "linear-gradient(180deg, #FFFFFF 0%, #F7FAFE 100%)",
-    color: active ? "#1D4ED8" : "#0B1F33",
+      ? "linear-gradient(180deg, #184A96 0%, #133A74 100%)"
+      : "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+    color: active ? "#FFFFFF" : "#E6EEF8",
     fontWeight: 1000,
     cursor: "pointer",
     fontSize: 14,
@@ -311,8 +312,9 @@ function collapseToggle(): React.CSSProperties {
     padding: "9px 13px",
     borderRadius: 12,
     border: "1px solid rgba(124,154,196,0.18)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #F1F7FF 100%)",
-    color: "#24415C",
+    background:
+      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+    color: "#E6EEF8",
     fontWeight: 800,
     fontSize: 13,
     textAlign: "center",
@@ -339,7 +341,7 @@ function noticeCard(tone: Notice["tone"]): React.CSSProperties {
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#39526C",
+    color: "#9CB4CF",
     fontWeight: 1000,
     letterSpacing: 0.45,
     textTransform: "uppercase",
@@ -353,13 +355,11 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 32,
     padding: "7px 12px",
     borderRadius: 999,
-    background: primary
-      ? "linear-gradient(180deg, rgba(29,95,212,0.14) 0%, rgba(29,95,212,0.09) 100%)"
-      : "linear-gradient(180deg, rgba(130,146,172,0.16) 0%, rgba(130,146,172,0.10) 100%)",
+    background: primary ? "rgba(32,76,133,0.36)" : "rgba(255,255,255,0.08)",
     border: primary
-      ? "1px solid rgba(29,95,212,0.16)"
-      : "1px solid rgba(130,146,172,0.14)",
-    color: primary ? "#164AAE" : "#445C75",
+      ? "1px solid rgba(123,161,204,0.24)"
+      : "1px solid rgba(123,161,204,0.14)",
+    color: primary ? "#CFE3FF" : "#E6EEF8",
     fontSize: 12,
     fontWeight: 1000,
     whiteSpace: "normal",
@@ -368,7 +368,7 @@ function badge(primary = false): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#4F657B",
+    color: "#C8D8EA",
     fontSize: 14.5,
     lineHeight: 1.75,
   };
@@ -862,7 +862,7 @@ export default function GuarantorInboxPage() {
                 <div
                   style={{
                     marginTop: 8,
-                    color: "#0B1F33",
+                    color: "#F8FBFF",
                     fontWeight: 900,
                     fontSize: 15,
                     lineHeight: 1.3,
@@ -877,7 +877,7 @@ export default function GuarantorInboxPage() {
                 <div
                   style={{
                     marginTop: 8,
-                    color: "#0B1F33",
+                    color: "#F8FBFF",
                     fontWeight: 900,
                     fontSize: 15,
                     lineHeight: 1.3,
@@ -893,7 +893,7 @@ export default function GuarantorInboxPage() {
                 <div
                   style={{
                     marginTop: 8,
-                    color: "#0B1F33",
+                    color: "#F8FBFF",
                     fontWeight: 900,
                     fontSize: 15,
                     lineHeight: 1.3,
@@ -909,7 +909,7 @@ export default function GuarantorInboxPage() {
                 <div
                   style={{
                     marginTop: 8,
-                    color: "#0B1F33",
+                    color: "#F8FBFF",
                     fontWeight: 900,
                     fontSize: 15,
                     lineHeight: 1.3,
@@ -955,7 +955,7 @@ export default function GuarantorInboxPage() {
             <div style={{ marginTop: 12 }}>
               <div style={innerCard("#F8FBFF")}>
                 <div style={sectionLabel()}>Use next routes below</div>
-                <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                   Keep this top area focused on the current queue reading. Use
                   the next-routes section below when you are ready to continue
                   into the deeper support page.
@@ -970,7 +970,7 @@ export default function GuarantorInboxPage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: 18,
                 lineHeight: 1.35,
@@ -1036,7 +1036,7 @@ export default function GuarantorInboxPage() {
                   marginTop: 8,
                   fontWeight: 1000,
                   fontSize: 28,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                 }}
               >
                 {counts.pending}
@@ -1050,7 +1050,7 @@ export default function GuarantorInboxPage() {
                   marginTop: 8,
                   fontWeight: 1000,
                   fontSize: 28,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                 }}
               >
                 {counts.approved}
@@ -1064,7 +1064,7 @@ export default function GuarantorInboxPage() {
                   marginTop: 8,
                   fontWeight: 1000,
                   fontSize: 28,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                 }}
               >
                 {counts.declined}
@@ -1078,7 +1078,7 @@ export default function GuarantorInboxPage() {
                   marginTop: 8,
                   fontWeight: 1000,
                   fontSize: 28,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                 }}
               >
                 {counts.all}
@@ -1131,7 +1131,7 @@ export default function GuarantorInboxPage() {
 
             <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
               {loading ? (
-                <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+                <div style={{ color: "rgba(230,238,248,0.76)", lineHeight: 1.8 }}>
                   Loading queue...
                 </div>
               ) : visibleRows.length === 0 ? (
@@ -1165,7 +1165,7 @@ export default function GuarantorInboxPage() {
                           <div
                             style={{
                               fontWeight: 1000,
-                              color: "#0B1F33",
+                              color: "#F8FBFF",
                               fontSize: 18,
                             }}
                           >
@@ -1312,7 +1312,7 @@ export default function GuarantorInboxPage() {
             <div style={innerCard("#FFFFFF")}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 1000,
                   fontSize: 18,
                 }}
@@ -1329,7 +1329,7 @@ export default function GuarantorInboxPage() {
             <div style={innerCard("#FFFFFF")}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 1000,
                   fontSize: 18,
                 }}
@@ -1384,7 +1384,7 @@ export default function GuarantorInboxPage() {
             <OriginLink to={nextStep.ctaTo} style={routeTile(true)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,
@@ -1400,7 +1400,7 @@ export default function GuarantorInboxPage() {
             <OriginLink to="/app/loan-workbench" style={routeTile(false)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,
@@ -1416,7 +1416,7 @@ export default function GuarantorInboxPage() {
             <OriginLink to="/app/loan-suggestions" style={routeTile(false)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,
@@ -1432,7 +1432,7 @@ export default function GuarantorInboxPage() {
             <OriginLink to="/app/loans" style={routeTile(false)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,
@@ -1448,7 +1448,7 @@ export default function GuarantorInboxPage() {
             <OriginLink to="/app/marketplace" style={routeTile(false)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,
@@ -1464,7 +1464,7 @@ export default function GuarantorInboxPage() {
             <OriginLink to="/app/notifications" style={routeTile(false)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,

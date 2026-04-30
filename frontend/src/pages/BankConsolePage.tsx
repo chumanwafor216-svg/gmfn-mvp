@@ -3,6 +3,11 @@ import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
+  institutionalInnerCard,
+  institutionalPageCard,
+  institutionalSoftCard,
+} from "../lib/institutionalSurface";
+import {
   bankIngestEvent,
   getCurrentClan,
   getPublicConfig,
@@ -58,7 +63,7 @@ function firstTruthy(...values: any[]): string {
 
 function safeDateTime(x: any): string {
   const raw = safeStr(x);
-  if (!raw) return "—";
+  if (!raw) return "Not stated";
   const d = new Date(raw);
   if (Number.isNaN(d.getTime())) return raw;
   return d.toLocaleString();
@@ -66,28 +71,25 @@ function safeDateTime(x: any): string {
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
+    ...institutionalPageCard(bg),
+    border: "1px solid rgba(20,52,83,0.24)",
+    boxShadow:
+      "0 30px 62px rgba(7,20,36,0.12), 0 8px 18px rgba(7,20,36,0.045), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -14px 28px rgba(18,52,86,0.06)",
     padding: 22,
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
-    borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
-    padding: 16,
+    ...institutionalSoftCard(bg),
+    border: "1px solid rgba(20,52,83,0.20)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    ...institutionalInnerCard(bg),
+    border: "1px solid rgba(20,52,83,0.18)",
     padding: 16,
   };
 }
@@ -147,8 +149,8 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     padding: "11px 14px",
     minHeight: 42,
     borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(122,152,195,0.20)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
     color: disabled ? "#94A3B8" : "#0B1F33",
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
@@ -177,7 +179,7 @@ function inputStyle(): React.CSSProperties {
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#4F6B8A",
+    color: "#5D7389",
     fontWeight: 1000,
     letterSpacing: 0.45,
     textTransform: "uppercase",
@@ -191,8 +193,8 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     padding: "6px 10px",
     borderRadius: 999,
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#475569",
+    background: primary ? "rgba(29,95,212,0.12)" : "rgba(160,178,201,0.18)",
+    color: primary ? "#0B63D1" : "#31506D",
     fontSize: 12,
     fontWeight: 1000,
     whiteSpace: "normal",
@@ -236,7 +238,7 @@ function normalizeRow(raw: any): BankConsoleRow | null {
     bank_txn_id: firstTruthy(src?.bank_txn_id, src?.transaction_id) || null,
     amount: src?.amount ?? src?.expected_amount ?? null,
     currency: firstTruthy(src?.currency, src?.currency_code) || null,
-    status: firstTruthy(src?.status, src?.state, "—") || null,
+    status: firstTruthy(src?.status, src?.state, "Not stated") || null,
     description: firstTruthy(src?.description, src?.detail, src?.note) || null,
     direction: firstTruthy(src?.direction, src?.flow) || null,
     created_at:
@@ -652,7 +654,7 @@ export default function BankConsolePage() {
                       textAlign: "center",
                     }}
                   >
-                    {safeStr(row.status || "—")}
+                    {safeStr(row.status || "Not stated")}
                   </div>
                 </div>
 
@@ -675,7 +677,7 @@ export default function BankConsolePage() {
                     >
                       {safeStr(row.amount)
                         ? `${safeStr(row.amount)} ${safeStr(row.currency)}`
-                        : "—"}
+                        : "Not stated"}
                     </div>
                   </div>
 
@@ -688,7 +690,7 @@ export default function BankConsolePage() {
                         fontWeight: 900,
                       }}
                     >
-                      {safeStr(row.direction || "—")}
+                      {safeStr(row.direction || "Not stated")}
                     </div>
                   </div>
 
@@ -719,11 +721,11 @@ export default function BankConsolePage() {
                       safeCopy(
                         [
                           `Reference: ${displayReference}`,
-                          `Amount: ${safeStr(row.amount || "—")} ${safeStr(
+                          `Amount: ${safeStr(row.amount || "Not stated")} ${safeStr(
                             row.currency || ""
                           )}`.trim(),
-                          `Status: ${safeStr(row.status || "—")}`,
-                          `Direction: ${safeStr(row.direction || "—")}`,
+                          `Status: ${safeStr(row.status || "Not stated")}`,
+                          `Direction: ${safeStr(row.direction || "Not stated")}`,
                         ].join(" | ")
                       )
                     }
@@ -845,7 +847,7 @@ export default function BankConsolePage() {
                 style={secondaryBtn(loading)}
                 {...bankButtonGuardProps()}
               >
-                {loading ? "Refreshing..." : "Refresh"}
+                {loading ? "Refreshing..." : "Refresh now"}
               </button>
             </div>
           </div>
@@ -912,7 +914,7 @@ export default function BankConsolePage() {
               color: "#0B1F33",
             }}
           >
-            {loading ? "…" : recent.length}
+            {loading ? "..." : recent.length}
           </div>
         </div>
 
@@ -926,7 +928,7 @@ export default function BankConsolePage() {
               color: "#0B1F33",
             }}
           >
-            {loading ? "…" : unmatched.length}
+            {loading ? "..." : unmatched.length}
           </div>
         </div>
 
@@ -940,7 +942,7 @@ export default function BankConsolePage() {
               color: "#0B1F33",
             }}
           >
-            {loading ? "…" : credits.length}
+            {loading ? "..." : credits.length}
           </div>
         </div>
 
@@ -954,7 +956,7 @@ export default function BankConsolePage() {
               color: "#0B1F33",
             }}
           >
-            {loading ? "…" : expected.length}
+            {loading ? "..." : expected.length}
           </div>
         </div>
       </section>
@@ -1043,7 +1045,7 @@ export default function BankConsolePage() {
             style={primaryBtn(busyIngest)}
             {...bankButtonGuardProps()}
           >
-            {busyIngest ? "Ingesting..." : "Ingest Event"}
+            {busyIngest ? "Ingesting..." : "Ingest event"}
           </button>
 
           <button
@@ -1052,7 +1054,7 @@ export default function BankConsolePage() {
             style={secondaryBtn(busyReconcile)}
             {...bankButtonGuardProps()}
           >
-            {busyReconcile ? "Reconciling..." : "Run Reconciliation"}
+            {busyReconcile ? "Reconciling..." : "Run reconciliation"}
           </button>
         </div>
       </section>
@@ -1111,7 +1113,7 @@ export default function BankConsolePage() {
             <span style={badge(false)}>
               {expected.length > 0
                 ? `${expected.length} records`
-                : "Config / placeholder"}
+                : "Not stated"}
             </span>
           </div>
 
@@ -1180,7 +1182,7 @@ export default function BankConsolePage() {
                           textAlign: "center",
                         }}
                       >
-                        {safeStr(row.status || "—")}
+                        {safeStr(row.status || "Not stated")}
                       </div>
                     </div>
 
@@ -1203,7 +1205,7 @@ export default function BankConsolePage() {
                         >
                           {safeStr(row.amount)
                             ? `${safeStr(row.amount)} ${safeStr(row.currency)}`
-                            : "—"}
+                            : "Not stated"}
                         </div>
                       </div>
 

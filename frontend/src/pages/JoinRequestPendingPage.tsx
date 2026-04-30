@@ -24,17 +24,28 @@ function safeStr(x: any, fallback = ""): string {
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    ...institutionalPageCard(bg),
-    border: "1px solid rgba(11,31,51,0.08)",
+    ...institutionalPageCard(
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, rgba(8,17,31,0.98) 0%, rgba(11,31,51,0.97) 56%, rgba(23,54,84,0.95) 100%)"
+        : bg
+    ),
+    border: "1px solid rgba(123,161,204,0.20)",
     padding: 18,
+    boxShadow: "0 24px 54px rgba(2,6,23,0.26)",
   };
 }
 
-function softCard(bg = "#F8FBFF"): React.CSSProperties {
+function softCard(bg = "#F4F8FC"): React.CSSProperties {
   return {
-    ...institutionalSoftCard(bg),
-    border: "1px solid rgba(11,31,51,0.08)",
+    ...institutionalSoftCard(
+      bg === "#F4F8FC"
+        ? "linear-gradient(180deg, rgba(12,26,43,0.96) 0%, rgba(17,39,62,0.94) 100%)"
+        : bg
+    ),
+    border: "1px solid rgba(123,161,204,0.16)",
     padding: 14,
+    boxShadow:
+      "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -71,7 +82,7 @@ function actionBtn(primary = false): React.CSSProperties {
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#4F6B8A",
+    color: "#9CB4CF",
     fontWeight: 1000,
     letterSpacing: 0.45,
     textTransform: "uppercase",
@@ -80,7 +91,7 @@ function sectionLabel(): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#64748B",
+    color: "#C8D8EA",
     lineHeight: 1.8,
     fontSize: 14,
   };
@@ -93,11 +104,13 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     padding: "6px 10px",
     borderRadius: 999,
-    background: primary ? "#EAF2FF" : "#F8FAFC",
+    background: primary
+      ? "rgba(32,76,133,0.36)"
+      : "rgba(255,255,255,0.08)",
     border: primary
-      ? "1px solid rgba(29,78,216,0.16)"
-      : "1px solid rgba(11,31,51,0.08)",
-    color: primary ? "#1D4ED8" : "#475569",
+      ? "1px solid rgba(123,181,255,0.28)"
+      : "1px solid rgba(214,226,239,0.18)",
+    color: primary ? "#CFE3FF" : "#E6EEF8",
     fontWeight: 900,
     fontSize: 12,
     whiteSpace: "normal",
@@ -106,11 +119,14 @@ function badge(primary = false): React.CSSProperties {
 
 function pendingNotice(): React.CSSProperties {
   return {
-    ...institutionalInnerCard("#F8FBFF"),
+    ...institutionalInnerCard(
+      "linear-gradient(180deg, rgba(13,28,45,0.94) 0%, rgba(18,40,64,0.92) 100%)"
+    ),
     borderRadius: 16,
-    background: "#F8FBFF",
-    border: "1px solid rgba(11,31,51,0.08)",
-    color: "#35516B",
+    background:
+      "linear-gradient(180deg, rgba(13,28,45,0.94) 0%, rgba(18,40,64,0.92) 100%)",
+    border: "1px solid rgba(123,161,204,0.14)",
+    color: "#D9E6F5",
     padding: 16,
     lineHeight: 1.75,
     fontSize: 14,
@@ -119,10 +135,13 @@ function pendingNotice(): React.CSSProperties {
 
 function infoTile(): React.CSSProperties {
   return {
-    ...institutionalInnerCard("#FFFFFF"),
+    ...institutionalInnerCard(
+      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
+    ),
     borderRadius: 16,
-    background: "#FFFFFF",
-    border: "1px solid rgba(11,31,51,0.08)",
+    background:
+      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+    border: "1px solid rgba(123,161,204,0.14)",
     padding: 14,
   };
 }
@@ -362,10 +381,13 @@ export default function JoinRequestPendingPage() {
   return (
     <div
       style={{
+        minHeight: "100vh",
         padding: 20,
         maxWidth: 960,
         margin: "0 auto",
         paddingBottom: 30,
+        background:
+          "radial-gradient(circle at top, rgba(94,146,214,0.10) 0%, rgba(11,31,51,0.00) 24%), linear-gradient(180deg, #07101C 0%, #0B1F33 34%, #173654 70%, #24496E 100%)",
       }}
     >
       <PageTopNav
@@ -386,7 +408,7 @@ export default function JoinRequestPendingPage() {
       <div
         style={{
           ...pageCard(
-            "linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)"
+            "linear-gradient(180deg, #08111F 0%, #0B1F33 54%, #173654 100%)"
           ),
           marginTop: 18,
         }}
@@ -462,7 +484,7 @@ export default function JoinRequestPendingPage() {
             <div style={softCard()}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 1000,
                   fontSize: 18,
                 }}
@@ -484,7 +506,7 @@ export default function JoinRequestPendingPage() {
             <div style={softCard()}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 1000,
                   fontSize: 18,
                 }}
@@ -505,25 +527,25 @@ export default function JoinRequestPendingPage() {
               >
                 <div style={infoTile()}>
                   <div style={sectionLabel()}>Approvals</div>
-                  <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 1000, fontSize: 24 }}>
+                  <div style={{ marginTop: 8, color: "#F8FBFF", fontWeight: 1000, fontSize: 24 }}>
                     {approvals}
                   </div>
                 </div>
                 <div style={infoTile()}>
                   <div style={sectionLabel()}>Rejects</div>
-                  <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 1000, fontSize: 24 }}>
+                  <div style={{ marginTop: 8, color: "#F8FBFF", fontWeight: 1000, fontSize: 24 }}>
                     {rejects}
                   </div>
                 </div>
                 <div style={infoTile()}>
                   <div style={sectionLabel()}>Total votes</div>
-                  <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 1000, fontSize: 24 }}>
+                  <div style={{ marginTop: 8, color: "#F8FBFF", fontWeight: 1000, fontSize: 24 }}>
                     {totalVotes}
                   </div>
                 </div>
                 <div style={infoTile()}>
                   <div style={sectionLabel()}>Required approvals</div>
-                  <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 1000, fontSize: 24 }}>
+                  <div style={{ marginTop: 8, color: "#F8FBFF", fontWeight: 1000, fontSize: 24 }}>
                     {requiredApprovals}
                   </div>
                 </div>
@@ -537,7 +559,7 @@ export default function JoinRequestPendingPage() {
             <div style={softCard()}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 1000,
                   fontSize: 18,
                 }}
@@ -554,12 +576,12 @@ export default function JoinRequestPendingPage() {
                     <div key={`${reviewer.gmfnId || reviewer.display}-${index}`} style={infoTile()}>
                       <div style={sectionLabel()}>
                         Reviewer {index + 1}
-                        {reviewer.role ? ` • ${reviewer.role}` : ""}
+                        {reviewer.role ? ` - ${reviewer.role}` : ""}
                       </div>
                       <div
                         style={{
                           marginTop: 8,
-                          color: "#0B1F33",
+                          color: "#F8FBFF",
                           fontWeight: 900,
                           lineHeight: 1.55,
                         }}
@@ -589,7 +611,7 @@ export default function JoinRequestPendingPage() {
             <div style={softCard()}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 1000,
                   fontSize: 18,
                 }}
@@ -605,7 +627,7 @@ export default function JoinRequestPendingPage() {
             <div style={softCard()}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 1000,
                   fontSize: 18,
                 }}
@@ -643,7 +665,7 @@ export default function JoinRequestPendingPage() {
                 <div
                   style={{
                     marginTop: 8,
-                    color: "#0B1F33",
+                    color: "#F8FBFF",
                     fontWeight: 1000,
                     fontSize: 22,
                     lineHeight: 1.25,
@@ -663,7 +685,7 @@ export default function JoinRequestPendingPage() {
                     <div
                       style={{
                         marginTop: 8,
-                        color: "#0B1F33",
+                        color: "#F8FBFF",
                         fontWeight: 900,
                         lineHeight: 1.55,
                       }}
@@ -679,7 +701,7 @@ export default function JoinRequestPendingPage() {
                     <div
                       style={{
                         marginTop: 8,
-                        color: "#0B1F33",
+                        color: "#F8FBFF",
                         fontWeight: 900,
                         lineHeight: 1.55,
                         wordBreak: "break-word",
@@ -696,7 +718,7 @@ export default function JoinRequestPendingPage() {
                     <div
                       style={{
                         marginTop: 8,
-                        color: "#0B1F33",
+                        color: "#F8FBFF",
                         fontWeight: 900,
                         lineHeight: 1.55,
                         wordBreak: "break-word",
@@ -716,7 +738,7 @@ export default function JoinRequestPendingPage() {
                   }}
                 >
                   <OriginLink to={approvalTo} style={actionBtn(true)}>
-                    Check approval status
+                    Open approval status
                   </OriginLink>
                 </div>
               </>
@@ -746,15 +768,15 @@ export default function JoinRequestPendingPage() {
               }}
             >
               <OriginLink to="/guide" style={actionBtn(false)}>
-                Open My GSN and I
+                Open full GSN guide
               </OriginLink>
 
-              <OriginLink to="/app/dashboard#focus-commitments" style={actionBtn(false)}>
-                Open Commitment Builder
+              <OriginLink to="/guide" style={actionBtn(false)}>
+                Read about Focus Commitments first
               </OriginLink>
 
               <OriginLink to="/welcome" style={actionBtn(false)}>
-                Welcome
+                Open Welcome
               </OriginLink>
             </div>
           </div>
@@ -763,6 +785,7 @@ export default function JoinRequestPendingPage() {
     </div>
   );
 }
+
 
 
 

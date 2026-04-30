@@ -347,10 +347,10 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
     ...institutionalPageCard(bg),
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F3F8FF 100%)"
+        ? "linear-gradient(180deg, rgba(8,17,31,0.98) 0%, rgba(11,31,51,0.97) 56%, rgba(23,54,84,0.95) 100%)"
         : bg,
-    border: "1px solid rgba(108,138,184,0.18)",
-    boxShadow: "0 24px 52px rgba(15,23,42,0.08)",
+    border: "1px solid rgba(123,161,204,0.20)",
+    boxShadow: "0 22px 48px rgba(2,6,23,0.22), 0 6px 14px rgba(15,23,42,0.05)",
   };
 }
 
@@ -359,10 +359,10 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
     ...institutionalSoftCard(bg),
     background:
       bg === "#F8FBFF"
-        ? "linear-gradient(180deg, #FCFEFF 0%, #EDF5FF 100%)"
+        ? "linear-gradient(180deg, rgba(13,28,45,0.96) 0%, rgba(18,40,64,0.94) 100%)"
         : bg,
-    border: "1px solid rgba(123,153,197,0.18)",
-    boxShadow: "0 18px 40px rgba(15,23,42,0.06)",
+    border: "1px solid rgba(123,161,204,0.16)",
+    boxShadow: "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -371,10 +371,10 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
     ...institutionalInnerCard(bg),
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"
+        ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
         : bg,
-    border: "1px solid rgba(125,154,196,0.18)",
-    boxShadow: "0 16px 34px rgba(15,23,42,0.05)",
+    border: "1px solid rgba(123,161,204,0.14)",
+    boxShadow: "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -383,10 +383,10 @@ function statTile(bg = "#FFFFFF"): React.CSSProperties {
     ...institutionalStatTile(bg),
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)"
+        ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
         : bg,
-    border: "1px solid rgba(122,152,195,0.18)",
-    boxShadow: "0 14px 30px rgba(15,23,42,0.05)",
+    border: "1px solid rgba(123,161,204,0.14)",
+    boxShadow: "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -436,20 +436,20 @@ function routeTile(primary = false): React.CSSProperties {
       ? "1px solid rgba(29,95,212,0.22)"
       : "1px solid rgba(122,152,195,0.18)",
     background: primary
-      ? "linear-gradient(180deg, #F7FBFF 0%, #E9F2FF 100%)"
-      : "linear-gradient(180deg, #FFFDF9 0%, #F3F8FF 100%)",
+      ? "linear-gradient(180deg, #184A96 0%, #133A74 100%)"
+      : "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
     padding: 16,
     textDecoration: "none",
     boxShadow: primary
-      ? "0 16px 34px rgba(29,95,212,0.10)"
-      : "0 14px 30px rgba(15,23,42,0.05)",
+      ? "0 16px 34px rgba(19,79,191,0.24), inset 0 1px 0 rgba(255,255,255,0.10)"
+      : "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#39526C",
+    color: "#9CB4CF",
     fontWeight: 900,
     letterSpacing: 0.35,
     textTransform: "uppercase",
@@ -464,13 +464,11 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 32,
     borderRadius: 999,
     padding: "7px 12px",
-    background: primary
-      ? "linear-gradient(180deg, rgba(29,95,212,0.14) 0%, rgba(29,95,212,0.09) 100%)"
-      : "linear-gradient(180deg, rgba(130,146,172,0.16) 0%, rgba(130,146,172,0.10) 100%)",
+    background: primary ? "rgba(32,76,133,0.36)" : "rgba(255,255,255,0.08)",
     border: primary
-      ? "1px solid rgba(29,95,212,0.16)"
-      : "1px solid rgba(130,146,172,0.14)",
-    color: primary ? "#164AAE" : "#445C75",
+      ? "1px solid rgba(123,161,204,0.24)"
+      : "1px solid rgba(123,161,204,0.14)",
+    color: primary ? "#CFE3FF" : "#E6EEF8",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
@@ -520,7 +518,7 @@ function actionBtn(
       borderRadius: 12,
       border: "1px solid rgba(124,154,196,0.18)",
       background: "linear-gradient(180deg, #FEFFFF 0%, #EEF5FF 100%)",
-      color: disabled ? "#94A3B8" : "#24415C",
+      color: disabled ? "#94A3B8" : "#E6EEF8",
       fontWeight: 800,
       fontSize: 13,
       textAlign: "center",
@@ -542,9 +540,10 @@ function actionBtn(
     minWidth: 132,
     padding: "12px 17px",
     borderRadius: 14,
-    border: "1px solid rgba(124,154,196,0.18)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #F1F7FF 100%)",
-    color: disabled ? "#94A3B8" : "#0B1F33",
+    border: "1px solid rgba(121,149,190,0.20)",
+    background:
+      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+    color: disabled ? "#94A3B8" : "#E6EEF8",
     fontWeight: 800,
     fontSize: 14,
     textAlign: "center",
@@ -553,7 +552,8 @@ function actionBtn(
     whiteSpace: "normal",
     overflowWrap: "anywhere",
     opacity: disabled ? 0.86 : 1,
-    boxShadow: "0 12px 24px rgba(15,23,42,0.06)",
+    boxShadow:
+      "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -568,8 +568,9 @@ function collapseToggle(): React.CSSProperties {
     padding: "11px 15px",
     borderRadius: 12,
     border: "1px solid rgba(124,154,196,0.18)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #F1F7FF 100%)",
-    color: "#24415C",
+    background:
+      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+    color: "#E6EEF8",
     fontWeight: 800,
     fontSize: 13,
     textAlign: "center",
@@ -582,7 +583,7 @@ function collapseToggle(): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#4F657B",
+    color: "#C8D8EA",
     fontSize: 14.5,
     lineHeight: 1.75,
   };
@@ -1019,7 +1020,7 @@ export default function LoanSuggestionsPage() {
         detail:
           "This becomes useful only after the borrower-side support item exists.",
         ctaTo: "/app/marketplace#marketplace-loans-support",
-        ctaLabel: "Start Support Request",
+        ctaLabel: "Open Support Start Page",
       };
     }
 
@@ -1074,7 +1075,7 @@ export default function LoanSuggestionsPage() {
         />
 
         <section style={pageCard("#FFFFFF")}>
-          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+          <div style={{ color: "rgba(230,238,248,0.76)", lineHeight: 1.8 }}>
             Loading loan suggestions...
           </div>
         </section>
@@ -1222,7 +1223,7 @@ export default function LoanSuggestionsPage() {
               {fitReading.title}
             </div>
 
-            <div style={{ marginTop: 10, ...helperText(), color: "#0B1F33" }}>
+            <div style={{ marginTop: 10, ...helperText(), color: "#F8FBFF" }}>
               {fitReading.detail}
             </div>
 
@@ -1285,7 +1286,7 @@ export default function LoanSuggestionsPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 16,
                   fontWeight: 900,
                   lineHeight: 1.25,
@@ -1300,7 +1301,7 @@ export default function LoanSuggestionsPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 18,
                   fontWeight: 900,
                   lineHeight: 1.25,
@@ -1343,7 +1344,7 @@ export default function LoanSuggestionsPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 18,
                   fontWeight: 900,
                   lineHeight: 1.25,
@@ -1358,7 +1359,7 @@ export default function LoanSuggestionsPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 16,
                   fontWeight: 900,
                   lineHeight: 1.25,
@@ -1373,7 +1374,7 @@ export default function LoanSuggestionsPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 14,
                   fontWeight: 900,
                   lineHeight: 1.35,
@@ -1388,7 +1389,7 @@ export default function LoanSuggestionsPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 14,
                   fontWeight: 900,
                   lineHeight: 1.35,
@@ -1482,7 +1483,7 @@ export default function LoanSuggestionsPage() {
             <div style={innerCard("#F8FBFF")}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 15,
                 }}
@@ -1503,7 +1504,7 @@ export default function LoanSuggestionsPage() {
             <div style={innerCard("#FFFFFF")}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 15,
                 }}
@@ -1521,7 +1522,7 @@ export default function LoanSuggestionsPage() {
               <div style={innerCard("#FFFBEF")}>
                 <div
                   style={{
-                    color: "#0B1F33",
+                    color: "#F8FBFF",
                     fontWeight: 900,
                     fontSize: 15,
                   }}
@@ -1586,7 +1587,7 @@ export default function LoanSuggestionsPage() {
         {!collapsed.supporters ? (
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             {suggestedSupporters.length === 0 ? (
-              <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+              <div style={{ color: "rgba(230,238,248,0.76)", lineHeight: 1.8 }}>
                 No fit suggestion is available for this support item right now.
               </div>
             ) : (
@@ -1605,7 +1606,7 @@ export default function LoanSuggestionsPage() {
                     <div>
                       <div
                         style={{
-                          color: "#0B1F33",
+                          color: "#F8FBFF",
                           fontWeight: 900,
                           fontSize: 16,
                           lineHeight: 1.35,
@@ -1708,7 +1709,7 @@ export default function LoanSuggestionsPage() {
             <OriginLink to={nextRoute.ctaTo} style={routeTile(true)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,
@@ -1727,7 +1728,7 @@ export default function LoanSuggestionsPage() {
             <OriginLink to="/app/loan-readiness" style={routeTile(false)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,
@@ -1743,7 +1744,7 @@ export default function LoanSuggestionsPage() {
             <OriginLink to="/app/loan-workbench" style={routeTile(false)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,
@@ -1760,7 +1761,7 @@ export default function LoanSuggestionsPage() {
               <OriginLink to="/app/loans" style={routeTile(false)}>
                 <div
                   style={{
-                    color: "#0B1F33",
+                    color: "#F8FBFF",
                     fontWeight: 900,
                     fontSize: 17,
                     lineHeight: 1.3,
@@ -1777,7 +1778,7 @@ export default function LoanSuggestionsPage() {
             <OriginLink to="/app/guarantor-inbox" style={routeTile(false)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,
@@ -1795,7 +1796,7 @@ export default function LoanSuggestionsPage() {
                 <OriginLink to="/app/withdrawal-instructions" style={routeTile(false)}>
                   <div
                     style={{
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                       fontWeight: 900,
                       fontSize: 17,
                       lineHeight: 1.3,
@@ -1811,7 +1812,7 @@ export default function LoanSuggestionsPage() {
                 <OriginLink to="/app/notifications" style={routeTile(false)}>
                   <div
                     style={{
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                       fontWeight: 900,
                       fontSize: 17,
                       lineHeight: 1.3,

@@ -85,8 +85,8 @@ function primaryBtn(disabled = false): React.CSSProperties {
     borderRadius: 16,
     background: disabled
       ? "linear-gradient(180deg, #D7DEE8 0%, #C8D2DF 100%)"
-      : "linear-gradient(180deg, #F6D77D 0%, #F3D06A 52%, #D9A941 100%)",
-    color: disabled ? "#6B7B8D" : "#10253B",
+      : "linear-gradient(180deg, #1A6BE1 0%, #0B63D1 58%, #09479C 100%)",
+    color: disabled ? "#6B7B8D" : "#FFFFFF",
     textDecoration: "none",
     fontWeight: 1000,
     border: "none",
@@ -96,8 +96,8 @@ function primaryBtn(disabled = false): React.CSSProperties {
     textAlign: "center",
     boxShadow: disabled
       ? "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.52)"
-      : "0 18px 32px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.58), inset 0 -8px 14px rgba(125,85,10,0.12)",
-    textShadow: disabled ? "none" : "0 1px 0 rgba(255,255,255,0.36)",
+      : "0 18px 32px rgba(11,99,209,0.24), inset 0 1px 0 rgba(255,255,255,0.24)",
+    textShadow: "none",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
@@ -120,14 +120,14 @@ function secondaryLink(): React.CSSProperties {
     padding: "12px 16px",
     borderRadius: 999,
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(229,237,249,0.96) 100%)",
+      "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(241,247,253,0.98) 62%, rgba(224,234,244,0.98) 100%)",
     color: "#123055",
     textDecoration: "none",
     fontWeight: 900,
     border: "1px solid rgba(16,37,59,0.12)",
     fontSize: 14,
     boxShadow:
-      "0 14px 24px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.82), inset 0 -6px 10px rgba(120,142,170,0.10)",
+      "0 12px 24px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.84)",
     textShadow: "0 1px 0 rgba(255,255,255,0.52)",
     cursor: "pointer",
     touchAction: "manipulation",
@@ -1336,7 +1336,7 @@ export default function JoinEntryPage() {
       style={{
         minHeight: "100vh",
         background:
-          "radial-gradient(circle at top, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0) 24%), radial-gradient(circle at top right, rgba(74,132,214,0.18) 0%, rgba(74,132,214,0) 28%), radial-gradient(circle at bottom left, rgba(39,91,156,0.20) 0%, rgba(39,91,156,0) 30%), linear-gradient(180deg, #07101C 0%, #0B1F33 36%, #173654 70%, #26527C 100%)",
+          "radial-gradient(circle at top, rgba(94,146,214,0.14) 0%, rgba(11,31,51,0) 24%), radial-gradient(circle at top right, rgba(214,173,82,0.08) 0%, rgba(11,31,51,0) 22%), radial-gradient(circle at bottom left, rgba(54,98,156,0.18) 0%, rgba(54,98,156,0) 26%), linear-gradient(180deg, #07101C 0%, #0B1F33 38%, #173654 74%, #24496E 100%)",
         padding: "22px",
         boxSizing: "border-box",
       }}
@@ -1345,11 +1345,11 @@ export default function JoinEntryPage() {
         <div
           style={{
             borderRadius: 26,
-            border: "1px solid rgba(255,255,255,0.30)",
+            border: "1px solid rgba(196,210,226,0.18)",
             background:
-              "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(230,239,252,0.96) 58%, rgba(212,226,246,0.92) 100%)",
+              "linear-gradient(180deg, rgba(246,250,255,0.98) 0%, rgba(232,240,250,0.96) 58%, rgba(217,228,242,0.93) 100%)",
             boxShadow:
-              "0 22px 56px rgba(5,16,38,0.26), inset 0 1px 0 rgba(255,255,255,0.82)",
+              "0 24px 58px rgba(5,16,38,0.28), inset 0 1px 0 rgba(255,255,255,0.80)",
             padding: 20,
             overflow: "hidden",
           }}
@@ -1474,7 +1474,7 @@ export default function JoinEntryPage() {
                       {...buttonGuardProps()}
                       onClick={resumeStoredRequest}
                     >
-                      {resumeBusy ? "Opening saved request..." : "Continue previous request"}
+                      {resumeBusy ? "Opening saved request..." : "Reopen saved request"}
                     </button>
                     <button
                       type="button"
@@ -1587,7 +1587,11 @@ export default function JoinEntryPage() {
                     cursor: canOpenForm ? "pointer" : "not-allowed",
                   }}
                 >
-                  {inviteChecking ? "Checking" : formOpen ? "Collapse" : "Open"}
+                  {inviteChecking
+                    ? "Checking"
+                    : formOpen
+                    ? "Collapse form"
+                    : "Open request form"}
                 </button>
               </div>
             ) : null}

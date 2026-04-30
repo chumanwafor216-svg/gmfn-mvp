@@ -66,28 +66,29 @@ function pageShell(): React.CSSProperties {
   return {
     minHeight: "100vh",
     background:
-      "radial-gradient(circle at top, rgba(47,103,196,0.12) 0%, rgba(16,37,59,0.00) 34%), linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 55%, #FFFFFF 100%)",
+      "radial-gradient(circle at top, rgba(94,146,214,0.12) 0%, rgba(11,31,51,0.00) 28%), radial-gradient(circle at top right, rgba(214,173,82,0.06) 0%, rgba(11,31,51,0.00) 22%), linear-gradient(180deg, #07101C 0%, #0B1F33 40%, #173654 74%, #24496E 100%)",
     padding: "32px 16px",
     boxSizing: "border-box",
   };
 }
 
-function pageCard(bg = "#FFFFFF"): React.CSSProperties {
+function pageCard(bg = "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(232,240,250,0.96) 58%, rgba(216,228,243,0.93) 100%)"): React.CSSProperties {
   return {
-    border: "1px solid rgba(11,31,51,0.10)",
-    borderRadius: 18,
-    padding: 18,
+    border: "1px solid rgba(196,210,226,0.18)",
+    borderRadius: 22,
+    padding: 20,
     background: bg,
-    boxShadow: "0 18px 60px rgba(2,6,23,0.06)",
+    boxShadow: "0 22px 56px rgba(2,6,23,0.22)",
   };
 }
 
-function softCard(bg = "#F8FBFF"): React.CSSProperties {
+function softCard(bg = "#F4F8FC"): React.CSSProperties {
   return {
-    border: "1px solid rgba(11,31,51,0.08)",
+    border: "1px solid rgba(148,163,184,0.18)",
     borderRadius: 16,
     background: bg,
     padding: 14,
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.78)",
   };
 }
 
@@ -145,9 +146,13 @@ function btn(primary = false, disabled = false): React.CSSProperties {
     padding: "12px 14px",
     borderRadius: 14,
     border: primary
-      ? "1px solid rgba(29,78,216,0.18)"
-      : "1px solid rgba(11,31,51,0.12)",
-    background: disabled ? "#CBD5E1" : primary ? "#1D4ED8" : "#fff",
+      ? "1px solid rgba(11,80,170,0.22)"
+      : "1px solid rgba(37,78,119,0.20)",
+    background: disabled
+      ? "linear-gradient(180deg, #CBD5E1 0%, #B8C4D4 100%)"
+      : primary
+      ? "linear-gradient(180deg, #1A6BE1 0%, #0B63D1 58%, #09479C 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(241,247,253,0.98) 62%, rgba(224,234,244,0.98) 100%)",
     color: primary ? "#fff" : "#0B1F33",
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
@@ -159,6 +164,11 @@ function btn(primary = false, disabled = false): React.CSSProperties {
     justifyContent: "center",
     whiteSpace: "normal",
     textAlign: "center",
+    boxShadow: disabled
+      ? "none"
+      : primary
+      ? "0 16px 30px rgba(11,99,209,0.22), inset 0 1px 0 rgba(255,255,255,0.24)"
+      : "0 12px 24px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.84)",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
   };
@@ -190,7 +200,7 @@ function buttonGuardProps() {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#64748B",
+    color: "#5C7186",
     lineHeight: 1.75,
     fontSize: 14,
   };
@@ -328,7 +338,7 @@ export default function JoinByInvitePage() {
   return (
     <div style={pageShell()}>
       <div style={{ maxWidth: 860, margin: "0 auto" }}>
-        <div style={pageCard()}>
+        <div style={pageCard("linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(232,240,250,0.96) 58%, rgba(216,228,243,0.93) 100%)")}>
           <div
             style={{
               display: "flex",
@@ -554,7 +564,7 @@ export default function JoinByInvitePage() {
                     lineHeight: 1.7,
                   }}
                 >
-                  This invite is valid. Continue into the guided invited entry.
+                  This invite is valid. Open the guided invited entry route.
                 </div>
               )}
 
@@ -576,15 +586,15 @@ export default function JoinByInvitePage() {
                     ...stableTapStyle(),
                   }}
                 >
-                  {continuing ? "Continuing..." : "Continue invited route"}
+                  {continuing ? "Opening..." : "Open invited entry"}
                 </button>
 
                 <OriginLink to="/guide" style={btn(false)}>
-                  Open My GSN and I
+                  Open full GSN guide
                 </OriginLink>
 
-                <OriginLink to="/app/dashboard#focus-commitments" style={btn(false)}>
-                  Open Commitment Builder
+                <OriginLink to="/guide" style={btn(false)}>
+                  Read about Focus Commitments first
                 </OriginLink>
 
                 <OriginLink to="/welcome" style={btn(false)}>
@@ -599,8 +609,9 @@ export default function JoinByInvitePage() {
               </div>
 
               <div style={{ marginTop: 10, ...helperText() }}>
-                After entry, GSN can also help you build steadier
-                follow-through around savings, repayment, and business targets.
+                Focus Commitments opens from Dashboard after workspace entry. If
+                you want to understand that discipline path first, read the full
+                guide before you continue.
               </div>
             </>
           ) : null}

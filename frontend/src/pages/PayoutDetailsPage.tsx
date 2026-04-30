@@ -52,13 +52,13 @@ const LOCAL_PAYOUT_KEY = "gmfn_payout_account";
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
-    border: "1px solid rgba(108,138,184,0.22)",
+    border: "1px solid rgba(123,161,204,0.20)",
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F3F8FF 100%)"
+        ? "linear-gradient(180deg, rgba(8,17,31,0.98) 0%, rgba(11,31,51,0.97) 56%, rgba(23,54,84,0.95) 100%)"
         : bg,
     boxShadow:
-      "0 28px 58px rgba(15,23,42,0.09), 0 6px 14px rgba(15,23,42,0.04)",
+      "0 22px 48px rgba(2,6,23,0.22), 0 6px 14px rgba(15,23,42,0.05)",
     padding: 22,
   };
 }
@@ -66,14 +66,14 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     borderRadius: 18,
-    border: "1px solid rgba(123,153,197,0.21)",
+    border: "1px solid rgba(123,161,204,0.16)",
     background:
-      bg === "#F8FBFF"
-        ? "linear-gradient(180deg, #FCFEFF 0%, #EDF5FF 100%)"
+      bg === "#F8FBFF" || bg === "#FFFFFF"
+        ? "linear-gradient(180deg, rgba(13,28,45,0.96) 0%, rgba(18,40,64,0.94) 100%)"
         : bg,
     padding: 16,
     boxShadow:
-      "0 22px 44px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.58)",
+      "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -150,11 +150,12 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     minHeight: 48,
     borderRadius: 15,
     border: "1px solid rgba(121,149,190,0.20)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #EDF5FF 100%)",
-    color: disabled ? "#94A3B8" : "#0B1F33",
+    background:
+      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+    color: disabled ? "#94A3B8" : "#E6EEF8",
     boxShadow: disabled
       ? "none"
-      : "0 16px 30px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.68)",
+      : "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
@@ -185,7 +186,7 @@ function inputStyle(): React.CSSProperties {
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#334F69",
+    color: "#9CB4CF",
     fontWeight: 1000,
     letterSpacing: 0.45,
     textTransform: "uppercase",
@@ -199,17 +200,15 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 32,
     padding: "7px 12px",
     borderRadius: 999,
-    background: primary
-      ? "linear-gradient(180deg, rgba(29,95,212,0.14) 0%, rgba(29,95,212,0.09) 100%)"
-      : "linear-gradient(180deg, rgba(130,146,172,0.16) 0%, rgba(130,146,172,0.10) 100%)",
+    background: primary ? "rgba(32,76,133,0.36)" : "rgba(255,255,255,0.08)",
     border: primary
-      ? "1px solid rgba(29,95,212,0.16)"
-      : "1px solid rgba(130,146,172,0.14)",
-    color: primary ? "#164AAE" : "#445C75",
+      ? "1px solid rgba(123,161,204,0.24)"
+      : "1px solid rgba(123,161,204,0.14)",
+    color: primary ? "#CFE3FF" : "#E6EEF8",
     fontSize: 12,
     fontWeight: 1000,
     whiteSpace: "normal",
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.52)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -652,7 +651,7 @@ export default function PayoutDetailsPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 15,
                   fontWeight: 900,
                   lineHeight: 1.65,
@@ -667,7 +666,7 @@ export default function PayoutDetailsPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 15,
                   fontWeight: 900,
                   lineHeight: 1.65,
@@ -681,7 +680,7 @@ export default function PayoutDetailsPage() {
       </section>
 
       <section style={{ ...pageCard(), marginTop: 18 }}>
-        <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+        <div style={{ fontSize: 18, fontWeight: 1000, color: "#F8FBFF" }}>
           Why this matters
         </div>
 
@@ -694,7 +693,7 @@ export default function PayoutDetailsPage() {
       </section>
 
       <section style={{ ...pageCard(), marginTop: 18 }}>
-        <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+        <div style={{ fontSize: 18, fontWeight: 1000, color: "#F8FBFF" }}>
           Payout Account Details
         </div>
 
@@ -816,7 +815,7 @@ export default function PayoutDetailsPage() {
           <div
             style={{
               marginTop: 10,
-              color: "#0B1F33",
+              color: "#F8FBFF",
               fontSize: 24,
               fontWeight: 1000,
             }}
@@ -853,7 +852,7 @@ export default function PayoutDetailsPage() {
       </section>
 
       <section style={{ ...pageCard(), marginTop: 18 }}>
-        <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+        <div style={{ fontSize: 18, fontWeight: 1000, color: "#F8FBFF" }}>
           What happens next
         </div>
 
@@ -882,4 +881,3 @@ export default function PayoutDetailsPage() {
     </div>
   );
 }
-

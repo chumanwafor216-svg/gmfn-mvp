@@ -64,11 +64,14 @@ function firstTruthy(...values: any[]): string {
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: "1px solid rgba(123,161,204,0.20)",
+    background:
+      bg === "#FFFFFF"
+        ? "linear-gradient(180deg, rgba(8,17,31,0.98) 0%, rgba(11,31,51,0.97) 56%, rgba(23,54,84,0.95) 100%)"
+        : bg,
     padding: 20,
     boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
+      "0 22px 48px rgba(2,6,23,0.22), 0 2px 8px rgba(15,23,42,0.04)",
     overflow: "hidden",
   };
 }
@@ -76,34 +79,47 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     borderRadius: 18,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: "1px solid rgba(123,161,204,0.16)",
+    background:
+      bg === "#F8FBFF" || bg === "#FFFFFF"
+        ? "linear-gradient(180deg, rgba(13,28,45,0.96) 0%, rgba(18,40,64,0.94) 100%)"
+        : bg,
     padding: 16,
+    boxShadow:
+      "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: bg,
+    border: "1px solid rgba(123,161,204,0.14)",
+    background:
+      bg === "#FFFFFF" || bg === "#F8FBFF" || bg === "#FCFEFF"
+        ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
+        : bg,
     padding: 14,
+    boxShadow:
+      "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
 function statTile(): React.CSSProperties {
   return {
     borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(123,161,204,0.14)",
+    background:
+      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
     padding: 14,
+    boxShadow:
+      "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#5D7389",
+    color: "#9CB4CF",
     fontWeight: 900,
     letterSpacing: 0.35,
     textTransform: "uppercase",
@@ -118,8 +134,10 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
+    background: primary
+      ? "rgba(32,76,133,0.36)"
+      : "rgba(255,255,255,0.08)",
+    color: primary ? "#CFE3FF" : "#E6EEF8",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
@@ -283,7 +301,7 @@ function textAreaStyle(): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#5F7287",
+    color: "#C8D8EA",
     fontSize: 14,
     lineHeight: 1.75,
   };
@@ -562,9 +580,9 @@ function inviteBundleText(params: {
     .join("\n");
 
   const lines = readyContacts.map((item, index) => {
-    return `${index + 1}. ${item.name} — ${relationshipText(item.relationship)}${
-      item.phone ? ` — ${item.phone}` : ""
-    }${item.email ? ` — ${item.email}` : ""}`;
+    return `${index + 1}. ${item.name} - ${relationshipText(item.relationship)}${
+      item.phone ? ` - ${item.phone}` : ""
+    }${item.email ? ` - ${item.email}` : ""}`;
   });
 
   return [header, ...lines].join("\n");
@@ -768,7 +786,7 @@ export default function BuildFirstCirclePage() {
     const email = safeStr(manualForm.email);
 
     if (!name) {
-      showNotice("error", "Add the person’s name first.");
+      showNotice("error", "Add the person's name first.");
       return;
     }
 
@@ -932,7 +950,7 @@ export default function BuildFirstCirclePage() {
           backLabel="Community Home"
         />
 
-        <section style={pageCard("#FFFFFF")}>
+        <section style={pageCard()}>
           <div style={{ color: "#64748B", lineHeight: 1.8 }}>
             Loading first-circle workspace...
           </div>
@@ -1017,7 +1035,7 @@ export default function BuildFirstCirclePage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: 20,
                 lineHeight: 1.25,
@@ -1069,7 +1087,7 @@ export default function BuildFirstCirclePage() {
         </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section style={pageCard()}>
         <div
           style={{
             display: "flex",
@@ -1157,7 +1175,7 @@ export default function BuildFirstCirclePage() {
         </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section style={pageCard()}>
         <div
           style={{
             display: "flex",
@@ -1273,7 +1291,7 @@ export default function BuildFirstCirclePage() {
                     display: "flex",
                     gap: 10,
                     alignItems: "flex-start",
-                    color: "#0B1F33",
+                    color: "#E6EEF8",
                     fontSize: 14,
                     lineHeight: 1.6,
                   }}
@@ -1353,7 +1371,7 @@ export default function BuildFirstCirclePage() {
           <div style={{ marginTop: 16, ...innerCard("#F8FBFF") }}>
             <div
               style={{
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: 16,
                 lineHeight: 1.35,
@@ -1369,7 +1387,7 @@ export default function BuildFirstCirclePage() {
         )}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section style={pageCard()}>
         <div
           style={{
             display: "flex",
@@ -1422,7 +1440,7 @@ export default function BuildFirstCirclePage() {
                     <div>
                       <div
                         style={{
-                          color: "#0B1F33",
+                          color: "#F8FBFF",
                           fontSize: 17,
                           fontWeight: 900,
                           lineHeight: 1.35,
@@ -1495,7 +1513,7 @@ export default function BuildFirstCirclePage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section style={pageCard()}>
         <div
           style={{
             display: "flex",
@@ -1541,9 +1559,10 @@ export default function BuildFirstCirclePage() {
                   marginTop: 12,
                   borderRadius: 14,
                   border: "1px solid rgba(11,31,51,0.08)",
-                  background: "#FFFFFF",
+                  background:
+                    "linear-gradient(180deg, rgba(10,22,36,0.94) 0%, rgba(14,31,50,0.92) 100%)",
                   padding: 14,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 13,
                   lineHeight: 1.65,
                   whiteSpace: "pre-wrap",
@@ -1607,5 +1626,3 @@ export default function BuildFirstCirclePage() {
     </div>
   );
 }
-
-

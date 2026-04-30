@@ -1159,6 +1159,30 @@ export default function ShopGalleryPage() {
   const isShopOwner =
     Boolean(viewerGmfnText && shopGmfnText) &&
     viewerGmfnText === shopGmfnText.toUpperCase();
+  const nextStepCards = [
+    {
+      label: "Stay on the public shelf when",
+      title: "You want open products you can browse or share now",
+      body:
+        "The public shop face is for visible shelf items only. It is the right place for quick browsing, safe sharing, and first contact.",
+    },
+    {
+      label: "Ask for Private Vault when",
+      title: "You need selected items the owner has not opened publicly",
+      body:
+        "Private Vault access stays separate on purpose. Ask the owner privately when you need the hidden offer path rather than the open shelf.",
+    },
+    {
+      label: isSignedInViewer ? "Return into GSN when" : "Open GSN when",
+      title: isSignedInViewer
+        ? "You need protected member tools instead of the public shop face"
+        : "You want protected member tools beyond the public shelf",
+      body: isSignedInViewer
+        ? "Go back into your signed-in GSN routes for community work, marketplace actions, or dashboard-only tools."
+        : "Sign in before using protected community, marketplace, or dashboard routes. The public shop face stays open even without that access.",
+    },
+  ];
+
   const protectedNavItems = [
     { label: "Dashboard", to: "/app/dashboard", primary: true },
     { label: "Community Home", to: "/app/community", primary: false },
@@ -1888,6 +1912,59 @@ export default function ShopGalleryPage() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section
+        style={{
+          ...pageCard(),
+          padding: isCompact ? 14 : 18,
+          border: "1px solid rgba(13,95,168,0.16)",
+          background:
+            "radial-gradient(circle at 6% 0%, rgba(11,99,209,0.13) 0%, transparent 30%), radial-gradient(circle at 94% 12%, rgba(212,175,55,0.09) 0%, transparent 24%), linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(238,247,253,0.96) 100%)",
+        }}
+      >
+        <div style={sectionLabel()}>What to do next</div>
+        <div
+          style={{
+            marginTop: 10,
+            color: "#0B1F33",
+            fontSize: isCompact ? 24 : 30,
+            fontWeight: 900,
+            lineHeight: 1.14,
+          }}
+        >
+          Use the public shelf, the Private Vault path, and GSN entry for different jobs
+        </div>
+        <div style={{ marginTop: 8, ...helperText(), maxWidth: 860 }}>
+          This page is the public shop face. It should stay clear about what is openly browseable, what still needs a private owner link, and when the next step belongs back inside GSN.
+        </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+            gap: 12,
+          }}
+        >
+          {nextStepCards.map((item) => (
+            <div key={item.title} style={innerCard()}>
+              <div style={sectionLabel()}>{item.label}</div>
+              <div
+                style={{
+                  marginTop: 10,
+                  color: "#0B1F33",
+                  fontSize: 18,
+                  fontWeight: 900,
+                  lineHeight: 1.25,
+                }}
+              >
+                {item.title}
+              </div>
+              <div style={{ marginTop: 10, ...helperText() }}>{item.body}</div>
+            </div>
+          ))}
         </div>
       </section>
 

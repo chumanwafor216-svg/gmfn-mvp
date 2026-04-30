@@ -217,10 +217,10 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
     ...base,
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)"
+        ? "linear-gradient(180deg, rgba(8,17,31,0.98) 0%, rgba(11,31,51,0.97) 56%, rgba(23,54,84,0.95) 100%)"
         : bg,
-    border: "1px solid rgba(88,116,148,0.18)",
-    boxShadow: "0 20px 46px rgba(15,23,42,0.08)",
+    border: "1px solid rgba(123,161,204,0.20)",
+    boxShadow: "0 22px 48px rgba(2,6,23,0.22), 0 6px 14px rgba(15,23,42,0.05)",
   };
 }
 
@@ -230,10 +230,10 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
     ...base,
     background:
       bg === "#F8FBFF"
-        ? "linear-gradient(180deg, #F8FBFF 0%, #EDF6FF 100%)"
+        ? "linear-gradient(180deg, rgba(13,28,45,0.96) 0%, rgba(18,40,64,0.94) 100%)"
         : bg,
-    border: "1px solid rgba(88,116,148,0.18)",
-    boxShadow: "0 16px 36px rgba(15,23,42,0.08)",
+    border: "1px solid rgba(123,161,204,0.20)",
+    boxShadow: "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -243,10 +243,10 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
     ...base,
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"
+        ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
         : bg,
-    border: "1px solid rgba(88,116,148,0.17)",
-    boxShadow: "0 14px 28px rgba(15,23,42,0.07)",
+    border: "1px solid rgba(123,161,204,0.14)",
+    boxShadow: "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -256,10 +256,10 @@ function statTile(bg = "#FFFFFF"): React.CSSProperties {
     ...base,
     background:
       bg === "#FFFFFF"
-        ? "linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)"
+        ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
         : bg,
-    border: "1px solid rgba(88,116,148,0.17)",
-    boxShadow: "0 12px 24px rgba(15,23,42,0.07)",
+    border: "1px solid rgba(123,161,204,0.14)",
+    boxShadow: "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -294,20 +294,20 @@ function routeTile(primary = false): React.CSSProperties {
       ? "1px solid rgba(29,95,212,0.24)"
       : "1px solid rgba(88,116,148,0.18)",
     background: primary
-      ? "linear-gradient(180deg, #F5FAFF 0%, #E4F0FF 100%)"
-      : "linear-gradient(180deg, #FFFDF9 0%, #F1F7FF 100%)",
+      ? "linear-gradient(180deg, #184A96 0%, #133A74 100%)"
+      : "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
     padding: 16,
     textDecoration: "none",
     boxShadow: primary
-      ? "0 16px 34px rgba(29,95,212,0.12)"
-      : "0 14px 30px rgba(15,23,42,0.07)",
+      ? "0 16px 34px rgba(19,79,191,0.24), inset 0 1px 0 rgba(255,255,255,0.10)"
+      : "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#38516B",
+    color: "#9CB4CF",
     fontWeight: 900,
     letterSpacing: 0.35,
     textTransform: "uppercase",
@@ -322,13 +322,11 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 32,
     borderRadius: 999,
     padding: "7px 12px",
-    background: primary
-      ? "linear-gradient(180deg, rgba(29,95,212,0.16) 0%, rgba(29,95,212,0.10) 100%)"
-      : "linear-gradient(180deg, rgba(92,114,138,0.16) 0%, rgba(92,114,138,0.10) 100%)",
+    background: primary ? "rgba(32,76,133,0.36)" : "rgba(255,255,255,0.08)",
     border: primary
-      ? "1px solid rgba(29,95,212,0.14)"
-      : "1px solid rgba(88,116,148,0.14)",
-    color: primary ? "#0F56BF" : "#44596F",
+      ? "1px solid rgba(123,161,204,0.24)"
+      : "1px solid rgba(123,161,204,0.14)",
+    color: primary ? "#CFE3FF" : "#E6EEF8",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
@@ -345,22 +343,24 @@ function collapseToggle(): React.CSSProperties {
     minWidth: 114,
     padding: "9px 13px",
     borderRadius: 12,
-    border: "1px solid rgba(88,116,148,0.18)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
-    color: "#173A60",
+    border: "1px solid rgba(121,149,190,0.20)",
+    background:
+      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+    color: "#E6EEF8",
     fontWeight: 800,
     fontSize: 13,
     textAlign: "center",
     cursor: "pointer",
     whiteSpace: "normal",
     overflowWrap: "anywhere",
-    boxShadow: "0 10px 22px rgba(15,23,42,0.08)",
+    boxShadow:
+      "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#4F647A",
+    color: "#C8D8EA",
     fontSize: 14.5,
     lineHeight: 1.75,
   };
@@ -686,7 +686,7 @@ export default function LoansPage() {
       },
       {
         id: "readiness",
-        label: "Check readiness",
+        label: "Open Loan Readiness",
         detail:
           "Check whether the support flow looks ready enough for the next step.",
         technical: "Loan readiness",
@@ -695,7 +695,7 @@ export default function LoansPage() {
       },
       {
         id: "suggestions",
-        label: "Get suggestions",
+        label: "Open Loan Suggestions",
         detail:
           "Open suggested next steps around the active support or loan flow.",
         technical: "Loan suggestions",
@@ -704,7 +704,7 @@ export default function LoansPage() {
       },
       {
         id: "workbench",
-        label: "Open workbench",
+        label: "Open Loan Workbench",
         detail: "Use the deeper workbench for support handling and review.",
         technical: "Loan workbench",
         to: "/app/loan-workbench",
@@ -728,7 +728,7 @@ export default function LoansPage() {
       },
       {
         id: "earnings",
-        label: "Guarantor earnings",
+        label: "Open Guarantor Earnings",
         detail: "Read the reward side of guarantor participation.",
         technical: "Guarantor earnings",
         to: "/app/guarantor-earnings",
@@ -736,7 +736,7 @@ export default function LoansPage() {
       },
       {
         id: "finance",
-        label: "See this in Finance",
+        label: "Open Finance",
         detail: "Open the wider finance record across communities.",
         technical: "Finance record",
         to: "/app/finance",
@@ -767,7 +767,7 @@ export default function LoansPage() {
       },
       {
         id: "notifications",
-        label: "See what is waiting",
+        label: "Open Action Inbox",
         detail: "Open notifications when someone is waiting directly on you.",
         technical: "Notifications",
         to: "/app/notifications",
@@ -863,7 +863,7 @@ export default function LoansPage() {
         />
 
         <section style={pageCard("#FFFFFF")}>
-          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+          <div style={{ color: "rgba(230,238,248,0.76)", lineHeight: 1.8 }}>
             Loading loans and support...
           </div>
         </section>
@@ -961,7 +961,7 @@ export default function LoansPage() {
             <div
               style={{
                 marginTop: 10,
-                color: "#0B1F33",
+                color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: 24,
                 lineHeight: 1.2,
@@ -1028,7 +1028,7 @@ export default function LoansPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 24,
                   fontWeight: 900,
                 }}
@@ -1084,7 +1084,7 @@ export default function LoansPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: 18,
                   fontWeight: 900,
                   lineHeight: 1.25,
@@ -1136,7 +1136,7 @@ export default function LoansPage() {
             <div style={innerCard("#FCFEFF")}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: isCompact ? 22 : 28,
                   lineHeight: 1.15,
@@ -1207,7 +1207,7 @@ export default function LoansPage() {
         {!collapsed.borrower ? (
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             {borrowerLoans.length === 0 ? (
-              <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+              <div style={{ color: "rgba(230,238,248,0.76)", lineHeight: 1.8 }}>
                 No borrower-side support flow is active right now.
               </div>
             ) : (
@@ -1226,7 +1226,7 @@ export default function LoansPage() {
                     <div>
                       <div
                         style={{
-                          color: "#0B1F33",
+                          color: "#F8FBFF",
                           fontSize: 17,
                           fontWeight: 900,
                           lineHeight: 1.35,
@@ -1311,7 +1311,7 @@ export default function LoansPage() {
             <div style={innerCard("#FFFBEF")}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 15,
                 }}
@@ -1329,7 +1329,7 @@ export default function LoansPage() {
                     <div key={`${row.id}-${index}`} style={innerCard("#FFFFFF")}>
                       <div
                         style={{
-                          color: "#0B1F33",
+                          color: "#F8FBFF",
                           fontWeight: 900,
                           lineHeight: 1.35,
                         }}
@@ -1357,7 +1357,7 @@ export default function LoansPage() {
             <div style={innerCard("#F8FBFF")}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 15,
                 }}
@@ -1375,7 +1375,7 @@ export default function LoansPage() {
                     <div key={`${row.id || index}`} style={innerCard("#FFFFFF")}>
                       <div
                         style={{
-                          color: "#0B1F33",
+                          color: "#F8FBFF",
                           fontWeight: 900,
                           lineHeight: 1.35,
                         }}
@@ -1445,7 +1445,7 @@ export default function LoansPage() {
             <OriginLink to="/app/marketplace#marketplace-loans-support" style={routeTile(true)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,
@@ -1463,7 +1463,7 @@ export default function LoansPage() {
                 <OriginLink to="/app/payment/pool" style={routeTile(false)}>
                   <div
                     style={{
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                       fontWeight: 900,
                       fontSize: 17,
                       lineHeight: 1.3,
@@ -1479,7 +1479,7 @@ export default function LoansPage() {
                 <OriginLink to="/app/withdrawal-instructions" style={routeTile(false)}>
                   <div
                     style={{
-                      color: "#0B1F33",
+                      color: "#F8FBFF",
                       fontWeight: 900,
                       fontSize: 17,
                       lineHeight: 1.3,
@@ -1497,7 +1497,7 @@ export default function LoansPage() {
             <OriginLink to="/app/loan-readiness" style={routeTile(false)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,
@@ -1513,24 +1513,24 @@ export default function LoansPage() {
             <OriginLink to="/app/dashboard#focus-commitments" style={routeTile(false)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,
                 }}
               >
-                Commitment Builder
+                Open Focus Commitments
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Open this when savings discipline, repayment follow-through, or a
-                business target needs a steadier visible plan.
+                Open the Dashboard focus section when savings discipline, repayment
+                follow-through, or a business target needs a steadier visible plan.
               </div>
             </OriginLink>
 
             <OriginLink to="/app/loan-suggestions" style={routeTile(false)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,
@@ -1546,7 +1546,7 @@ export default function LoansPage() {
             <OriginLink to="/app/loan-workbench" style={routeTile(false)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,
@@ -1562,7 +1562,7 @@ export default function LoansPage() {
             <OriginLink to="/app/guarantor-earnings" style={routeTile(false)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,
@@ -1578,7 +1578,7 @@ export default function LoansPage() {
             <OriginLink to="/app/guarantor-inbox" style={routeTile(false)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,
@@ -1594,7 +1594,7 @@ export default function LoansPage() {
             <OriginLink to="/app/notifications" style={routeTile(false)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,
@@ -1610,7 +1610,7 @@ export default function LoansPage() {
             <OriginLink to="/app/marketplace" style={routeTile(false)}>
               <div
                 style={{
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontWeight: 900,
                   fontSize: 17,
                   lineHeight: 1.3,

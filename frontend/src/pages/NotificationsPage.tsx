@@ -50,15 +50,15 @@ const DEFAULT_SETTINGS: SettingsState = {
 const NOTIFICATIONS_UI_STORAGE_KEY = "gmfn.notifications.ui.v1";
 
 const GSN_ACTION_BRAND = {
-  ink: "#0B1F33",
-  muted: "#557089",
-  label: "#2D587F",
-  blue: "#174A78",
-  blueSoft: "#EAF3FA",
+  ink: "#F8FBFF",
+  muted: "#C8D8EA",
+  label: "#9CB4CF",
+  blue: "#CFE3FF",
+  blueSoft: "rgba(32,76,133,0.36)",
   gold: "#A9791F",
-  goldSoft: "#F8EDD0",
-  cardBorder: "rgba(22, 66, 102, 0.16)",
-  cardBorderStrong: "rgba(13, 47, 78, 0.28)",
+  goldSoft: "rgba(243,208,106,0.18)",
+  cardBorder: "rgba(123,161,204,0.18)",
+  cardBorderStrong: "rgba(123,161,204,0.26)",
   hero:
     "linear-gradient(145deg, #071F35 0%, #103657 46%, #1D5B86 100%)",
   heroPanel:
@@ -246,10 +246,13 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 28,
     border: `1px solid ${GSN_ACTION_BRAND.cardBorder}`,
-    background: bg,
+    background:
+      bg === "#FFFFFF" || bg === "#F8FBFF"
+        ? "linear-gradient(180deg, rgba(8,17,31,0.98) 0%, rgba(11,31,51,0.97) 56%, rgba(23,54,84,0.95) 100%)"
+        : bg,
     padding: 20,
     boxShadow:
-      "0 18px 42px rgba(12,35,58,0.075), 0 2px 10px rgba(12,35,58,0.035)",
+      "0 22px 48px rgba(2,6,23,0.22), 0 2px 10px rgba(12,35,58,0.05)",
     overflow: "hidden",
   };
 }
@@ -258,9 +261,13 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     borderRadius: 22,
     border: `1px solid ${GSN_ACTION_BRAND.cardBorder}`,
-    background: bg,
+    background:
+      bg === "#F8FBFF" || bg === "#FFFFFF"
+        ? "linear-gradient(180deg, rgba(13,28,45,0.96) 0%, rgba(18,40,64,0.94) 100%)"
+        : bg,
     padding: 16,
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.82)",
+    boxShadow:
+      "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -268,9 +275,13 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 20,
     border: `1px solid ${GSN_ACTION_BRAND.cardBorder}`,
-    background: bg,
+    background:
+      bg === "#FFFFFF" || bg === "#F8FBFF"
+        ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
+        : bg,
     padding: 14,
-    boxShadow: "0 8px 20px rgba(12,35,58,0.035)",
+    boxShadow:
+      "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -357,9 +368,11 @@ function actionBtn(
     return {
       ...base,
       border: `1px solid ${GSN_ACTION_BRAND.cardBorder}`,
-      background: "#F8FBFF",
+      background:
+        "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
       color: disabled ? "#94A3B8" : GSN_ACTION_BRAND.blue,
-      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.84)",
+      boxShadow:
+        "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
     };
   }
 
@@ -384,7 +397,8 @@ function collapseToggle(): React.CSSProperties {
     padding: "10px 16px",
     borderRadius: 18,
     border: `1px solid ${GSN_ACTION_BRAND.cardBorderStrong}`,
-    background: GSN_ACTION_BRAND.whiteButton,
+    background:
+      "linear-gradient(180deg, rgba(16,36,58,0.96) 0%, rgba(21,48,74,0.94) 100%)",
     color: GSN_ACTION_BRAND.blue,
     fontWeight: 900,
     fontSize: 13,
@@ -416,9 +430,11 @@ function statTile(): React.CSSProperties {
   return {
     borderRadius: 20,
     border: `1px solid ${GSN_ACTION_BRAND.cardBorder}`,
-    background: "linear-gradient(180deg, #FFFFFF 0%, #F6FAFD 100%)",
+    background:
+      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
     padding: 14,
-    boxShadow: "0 10px 20px rgba(12,35,58,0.045)",
+    boxShadow:
+      "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -643,6 +659,31 @@ function resolveNoticeTarget(raw: any): string {
   return NOTIFICATION_TARGETS.NOTIFICATIONS;
 }
 
+function normalizeNotificationCtaLabel(
+  ctaTo: string,
+  rawLabel: any,
+  fallback: string
+): string {
+  const direct = safeStr(rawLabel);
+  const normalizedTarget = normalizeActionTargetPath(ctaTo);
+
+  if (normalizedTarget === NOTIFICATION_TARGETS.COMMITMENT_BUILDER) {
+    return "Open Focus Commitments";
+  }
+
+  if (normalizedTarget === NOTIFICATION_TARGETS.GUIDE) {
+    if (
+      !direct ||
+      /^(open|continue|review first)$/i.test(direct) ||
+      /my gmfn and i/i.test(direct)
+    ) {
+      return "Open My GSN and I";
+    }
+  }
+
+  return direct || fallback;
+}
+
 function normalizeSettings(raw: any): SettingsState {
   return {
     notificationsMode:
@@ -717,6 +758,7 @@ function normalizeRawNotificationRow(raw: any): RawNotificationRow {
   if (isJoinReviewNotification(raw)) {
     const isReview = isJoinReviewRequestNotification(raw);
     const isRejected = isJoinReviewRejectedNotification(raw);
+    const ctaTo = resolveNoticeTarget(raw);
 
     return {
       id: firstTruthy(raw?.id, raw?.notification_id, raw?.title, raw?.message),
@@ -739,15 +781,18 @@ function normalizeRawNotificationRow(raw: any): RawNotificationRow {
           ? "This request was not approved. Open the decision page to review the outcome."
           : "Open the join review lane to continue with the correct next step."
       ),
-      ctaLabel: firstTruthy(
+      ctaLabel: normalizeNotificationCtaLabel(
+        ctaTo,
         raw?.action_label,
         isReview ? "Open join review" : "Open decision"
       ),
-      ctaTo: resolveNoticeTarget(raw),
+      ctaTo,
       unread: !raw?.is_read,
       createdAt: firstTruthy(raw?.created_at),
     };
   }
+
+  const ctaTo = resolveNoticeTarget(raw);
 
   return {
     id: firstTruthy(raw?.id, raw?.notification_id, raw?.title, raw?.message),
@@ -759,8 +804,8 @@ function normalizeRawNotificationRow(raw: any): RawNotificationRow {
       raw?.detail,
       "Review this update and continue from the right page."
     ),
-    ctaLabel: firstTruthy(raw?.action_label, "Open"),
-    ctaTo: resolveNoticeTarget(raw),
+    ctaLabel: normalizeNotificationCtaLabel(ctaTo, raw?.action_label, "Open"),
+    ctaTo,
     unread: !raw?.is_read,
     createdAt: firstTruthy(raw?.created_at),
   };
@@ -866,7 +911,7 @@ function bucketTone(
 
 function truncateText(text: string, limit: number): string {
   if (text.length <= limit) return text;
-  return `${text.slice(0, limit).trim()}…`;
+  return `${text.slice(0, limit).trim()}...`;
 }
 
 function sortGuidanceNotices(
@@ -1145,7 +1190,7 @@ export default function NotificationsPage() {
         detail:
           safeStr(onboardingTrustNotice.detail) ||
           "Your starter trust record was saved and your trust page is ready to review.",
-        ctaLabel: safeStr(onboardingTrustNotice.ctaLabel) || "Review Trust",
+        ctaLabel: safeStr(onboardingTrustNotice.ctaLabel) || "Open Trust Passport",
         ctaTo: safeStr(onboardingTrustNotice.ctaTo) || NOTIFICATION_TARGETS.TRUST,
         bucket: "actNow" as GuidanceInboxBucketKey,
         unread: Boolean(onboardingTrustNotice.unread),
@@ -1371,7 +1416,11 @@ export default function NotificationsPage() {
       </section>
 
       {onboardingTrustNotice ? (
-        <section style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)")}>
+        <section
+          style={pageCard(
+            "linear-gradient(180deg, rgba(10,22,36,0.96) 0%, rgba(14,31,50,0.94) 100%)"
+          )}
+        >
           <div
             style={{
               display: "flex",
@@ -1386,7 +1435,7 @@ export default function NotificationsPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                   fontSize: isCompact ? 22 : 28,
                   fontWeight: 900,
                   lineHeight: 1.15,
@@ -1426,7 +1475,7 @@ export default function NotificationsPage() {
 
           <div style={{ marginTop: 16, ...actionRow(isPhone) }}>
             <OriginLink to="/app/trust" style={actionBtn("primary")}>
-              Review Trust
+              Open Trust Passport
             </OriginLink>
 
             <OriginLink to="/app/dashboard" style={actionBtn("secondary")}>
@@ -1447,7 +1496,7 @@ export default function NotificationsPage() {
         </section>
       ) : null}
 
-      <section style={pageCard("#FFFFFF")}>
+      <section style={pageCard()}>
         <div
           style={{
             display: "flex",
@@ -1505,7 +1554,7 @@ export default function NotificationsPage() {
                 <div
                   style={{
                     marginTop: 12,
-                    color: "#0B1F33",
+                    color: "#F8FBFF",
                     fontSize: isCompact ? 22 : 28,
                     fontWeight: 900,
                     lineHeight: 1.15,
@@ -1562,7 +1611,7 @@ export default function NotificationsPage() {
       </section>
 
       {selectedNotice ? (
-        <section style={pageCard("#FFFFFF")}>
+        <section style={pageCard()}>
           <div style={sectionLabel()}>Review this item</div>
 
           <div
@@ -1584,7 +1633,7 @@ export default function NotificationsPage() {
               >
                 <div
                   style={{
-                    color: "#0B1F33",
+                    color: "#F8FBFF",
                     fontSize: isCompact ? 22 : 26,
                     fontWeight: 900,
                     lineHeight: 1.2,
@@ -1607,7 +1656,7 @@ export default function NotificationsPage() {
                 style={{
                   marginTop: 12,
                   ...helperText(),
-                  color: "#0B1F33",
+                  color: "#F8FBFF",
                 }}
               >
                 {selectedNotice.detail}
@@ -1643,7 +1692,7 @@ export default function NotificationsPage() {
         </section>
       ) : null}
 
-      <section style={pageCard("#FFFFFF")}>
+      <section style={pageCard()}>
         <div
           style={{
             display: "flex",
@@ -1739,7 +1788,7 @@ export default function NotificationsPage() {
                             >
                               <div
                                 style={{
-                                  color: "#0B1F33",
+                                  color: "#F8FBFF",
                                   fontWeight: 900,
                                   lineHeight: 1.35,
                                 }}
@@ -1809,7 +1858,7 @@ export default function NotificationsPage() {
           alignItems: "start",
         }}
       >
-        <section style={pageCard("#FFFFFF")}>
+        <section style={pageCard()}>
           <div
             style={{
               display: "flex",
@@ -1867,7 +1916,7 @@ export default function NotificationsPage() {
                     >
                       <div
                         style={{
-                          color: "#0B1F33",
+                          color: "#F8FBFF",
                           fontWeight: 900,
                           lineHeight: 1.35,
                         }}
@@ -1908,7 +1957,7 @@ export default function NotificationsPage() {
           ) : null}
         </section>
 
-        <section style={pageCard("#F8FBFF")}>
+        <section style={pageCard()}>
           <div
             style={{
               display: "flex",
@@ -1940,7 +1989,7 @@ export default function NotificationsPage() {
               <div style={softCard("#FFFFFF")}>
                 <div
                   style={{
-                    color: "#0B1F33",
+                    color: "#F8FBFF",
                     fontSize: 15,
                     fontWeight: 900,
                   }}
@@ -1955,7 +2004,7 @@ export default function NotificationsPage() {
               <div style={softCard("#FFFFFF")}>
                 <div
                   style={{
-                    color: "#0B1F33",
+                    color: "#F8FBFF",
                     fontSize: 15,
                     fontWeight: 900,
                   }}
@@ -1970,7 +2019,7 @@ export default function NotificationsPage() {
               <div style={softCard("#FFFFFF")}>
                 <div
                   style={{
-                    color: "#0B1F33",
+                    color: "#F8FBFF",
                     fontSize: 15,
                     fontWeight: 900,
                   }}
@@ -1985,7 +2034,7 @@ export default function NotificationsPage() {
               <div style={softCard("#FFFFFF")}>
                 <div
                   style={{
-                    color: "#0B1F33",
+                    color: "#F8FBFF",
                     fontSize: 15,
                     fontWeight: 900,
                   }}
@@ -2003,5 +2052,3 @@ export default function NotificationsPage() {
     </div>
   );
 }
-
-

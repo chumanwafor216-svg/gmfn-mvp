@@ -23,14 +23,24 @@ function firstTruthy(...values: unknown[]): string {
   return "";
 }
 
+function pageShell(): React.CSSProperties {
+  return {
+    minHeight: "100vh",
+    background:
+      "radial-gradient(circle at 84% 8%, rgba(84,123,169,0.12) 0%, rgba(84,123,169,0.00) 28%), radial-gradient(circle at 18% 88%, rgba(58,92,134,0.12) 0%, rgba(58,92,134,0.00) 28%), linear-gradient(180deg, #06111C 0%, #0A1B2B 46%, #102A43 100%)",
+    padding: "34px 22px",
+    boxSizing: "border-box",
+  };
+}
+
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
-    border: "1px solid rgba(11,31,51,0.08)",
+    border: "1px solid rgba(17,37,58,0.11)",
     background: bg,
     padding: 20,
     boxShadow:
-      "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
+      "0 24px 56px rgba(8,18,34,0.10), inset 0 1px 0 rgba(255,255,255,0.72)",
     overflow: "hidden",
   };
 }
@@ -38,9 +48,10 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 16,
-    border: "1px solid rgba(11,31,51,0.08)",
+    border: "1px solid rgba(17,37,58,0.10)",
     background: bg,
     padding: 14,
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.72)",
   };
 }
 
@@ -70,11 +81,14 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
+    background: primary
+      ? "linear-gradient(180deg, rgba(235,244,255,0.98) 0%, rgba(218,233,249,0.88) 100%)"
+      : "linear-gradient(180deg, rgba(248,251,254,0.96) 0%, rgba(232,239,247,0.86) 100%)",
+    color: primary ? "#1D4ED8" : "#51657A",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.74)",
   };
 }
 
@@ -86,6 +100,31 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
         ? "1px solid rgba(239,68,68,0.16)"
         : "1px solid rgba(11,31,51,0.08)",
     color: tone === "error" ? "#991B1B" : "#24415C",
+  };
+}
+
+function actionBtn(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 44,
+    padding: "10px 16px",
+    borderRadius: 14,
+    border: primary
+      ? "1px solid rgba(82,128,186,0.62)"
+      : "1px solid rgba(16,37,59,0.12)",
+    background: primary
+      ? "linear-gradient(180deg, #2D6AA3 0%, #235784 52%, #173E63 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(229,237,249,0.98) 100%)",
+    color: primary ? "#FFFFFF" : "#123055",
+    textDecoration: "none",
+    fontWeight: 900,
+    fontSize: 14,
+    textAlign: "center",
+    boxShadow: primary
+      ? "0 18px 32px rgba(1,13,32,0.24), inset 0 1px 0 rgba(196,222,247,0.34), inset 0 -8px 12px rgba(8,25,43,0.20)"
+      : "0 14px 28px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.82), inset 0 -6px 10px rgba(120,142,170,0.10)",
   };
 }
 
@@ -187,6 +226,11 @@ export default function ShopAccessPage() {
     [view]
   );
 
+  const publicShopRoute = useMemo(() => {
+    const gmfnId = safeStr(view?.gmfn_id);
+    return gmfnId ? `/shop/${encodeURIComponent(gmfnId)}` : "";
+  }, [view]);
+
   const restrictionBadges = useMemo(() => {
     const policy = view?.policy || {};
     return [
@@ -199,14 +243,7 @@ export default function ShopAccessPage() {
 
   if (loading) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background: "#F5FAFE",
-          padding: "34px 22px",
-          boxSizing: "border-box",
-        }}
-      >
+      <div style={pageShell()}>
         <div style={{ maxWidth: 1040, margin: "0 auto", display: "grid", gap: 18 }}>
           <section style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}>
             <div style={sectionLabel()}>Vault access</div>
@@ -224,14 +261,7 @@ export default function ShopAccessPage() {
 
   if (status !== "active") {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background: "#F5FAFE",
-          padding: "34px 22px",
-          boxSizing: "border-box",
-        }}
-      >
+      <div style={pageShell()}>
         <div style={{ maxWidth: 1040, margin: "0 auto", display: "grid", gap: 18 }}>
           <section style={noticeCard("error")}>
             <div style={sectionLabel()}>Vault access</div>
@@ -261,25 +291,16 @@ export default function ShopAccessPage() {
               </span>
             </div>
             <div style={{ marginTop: 16 }}>
-              <OriginLink
-                to="/welcome"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  minHeight: 42,
-                  padding: "10px 14px",
-                  borderRadius: 14,
-                  border: "1px solid rgba(11,31,51,0.10)",
-                  background: "#FFFFFF",
-                  color: "#0B1F33",
-                  fontWeight: 800,
-                  fontSize: 14,
-                  textDecoration: "none",
-                }}
-              >
-                Back to Welcome
-              </OriginLink>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <OriginLink to="/welcome" style={actionBtn(false)}>
+                  Back to Welcome
+                </OriginLink>
+                {publicShopRoute ? (
+                  <OriginLink to={publicShopRoute} style={actionBtn(true)}>
+                    Open public shop face
+                  </OriginLink>
+                ) : null}
+              </div>
             </div>
           </section>
         </div>
@@ -288,14 +309,7 @@ export default function ShopAccessPage() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#F5FAFE",
-        padding: "34px 22px",
-        boxSizing: "border-box",
-      }}
-    >
+    <div style={pageShell()}>
       <div style={{ maxWidth: 1040, margin: "0 auto", display: "grid", gap: 18 }}>
         <ExplainToggle
           label="What this screen does"
@@ -331,6 +345,17 @@ export default function ShopAccessPage() {
             </span>
             <span style={badge(false)}>Current page: Vault access</span>
             <span style={badge(false)}>Current step: Private access</span>
+          </div>
+
+          <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {publicShopRoute ? (
+              <OriginLink to={publicShopRoute} style={actionBtn(false)}>
+                Open public shop face
+              </OriginLink>
+            ) : null}
+            <OriginLink to="/welcome" style={actionBtn(true)}>
+              Return to entry
+            </OriginLink>
           </div>
         </section>
 
@@ -486,6 +511,42 @@ export default function ShopAccessPage() {
                 ))}
               </div>
             </div>
+          </div>
+        </section>
+
+        <section style={pageCard("#FFFFFF")}>
+          <div style={sectionLabel()}>What to do next</div>
+          <div style={{ marginTop: 10, ...helperText(), maxWidth: 860 }}>
+            Use this route only for the private offers that were intentionally shared with you.
+            If you need the wider storefront, return to the public shop face. If this link no
+            longer serves the purpose you were given, go back to entry and wait for a fresh access
+            path.
+          </div>
+          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+            <div style={innerCard("rgba(248,251,255,0.98)")}>
+              <div style={sectionLabel()}>Stay here when</div>
+              <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                You are reviewing the selected private offers that were shared through this Vault
+                link.
+              </div>
+            </div>
+            <div style={innerCard("rgba(248,251,255,0.98)")}>
+              <div style={sectionLabel()}>Leave this route when</div>
+              <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                You want the normal public shop view, you need a different access path, or the
+                sender told you to continue somewhere else.
+              </div>
+            </div>
+          </div>
+          <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {publicShopRoute ? (
+              <OriginLink to={publicShopRoute} style={actionBtn(false)}>
+                Open public shop face
+              </OriginLink>
+            ) : null}
+            <OriginLink to="/welcome" style={actionBtn(true)}>
+              Back to Welcome
+            </OriginLink>
           </div>
         </section>
 
