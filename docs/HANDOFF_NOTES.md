@@ -19745,3 +19745,38 @@ GSN-branded invite composer and invite-entry continuity.
   - `/app/shop-control`
   - shared frontend link/button/top-nav/bottom-nav chrome
   - no backend/auth/schema changes
+
+### Community Home cumulative trust passport block (2026-05-03)
+
+- Owner request: replace the first Community Home metric block with a clearer all-communities summary inspired by the community-dashboard reference, and do not invent backend business logic if usable cumulative signals already exist.
+- Backend/frontend mapping confirmed:
+  - cumulative community money uses `GET /pool/me/summary` through `getPoolMeSummary("NGN")`; backend tests confirm this combines member communities.
+  - CCI / trust score uses `GET /trust-slips/me` through `getMyTrustSlip()`.
+  - support request and trusted trade counts currently use visible marketplace request rows from `listMarketplaceRequests({ status: "all", clan_id: null, limit: 200 })`.
+- Updated `frontend/src/pages/CommunityHomePage.tsx`:
+  - replaced the hero's previous Holder / GSN ID / Communities / Money metrics with `Your GSN Trust Passport` and `All communities summary`.
+  - added four compact summary cards: `Dues & Contributions`, `Support Requests`, `Trusted Trade`, and `Trust Score`.
+  - added a trust row that opens `/app/trust`: `Built on trust. Driven by community.`
+  - kept this as frontend aggregation only; no backend, schema, auth, or permission logic changed.
+- Devil's-advocate caveat:
+  - finance and CCI are real existing sources.
+  - support/trade are honest visible-marketplace proxies, not yet a dedicated bank-grade aggregate ledger. A future backend endpoint should expose official cumulative support/trade totals if these numbers become compliance-critical.
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityHomePage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+
+### Community Home global icon and contrast correction (2026-05-03)
+
+- Owner feedback: Community Home must read as an international GSN surface, not a local currency surface, and the color blend still needed stronger front-page-style navy/gold authority.
+- Updated `frontend/src/pages/CommunityHomePage.tsx`:
+  - removed the route-local hard-coded `NGN` request/display from the Community Home summary block.
+  - replaced text markers like `NGN`, `+`, `OK`, and `CCI` with global visual markers for the four cards: world, support, trade, and shield.
+  - changed the trust-passport inner panel from pale blue to a darker navy/gold institutional panel.
+  - strengthened the Community Home shell/hero contrast with front-page-aligned navy/gold treatment.
+- Caveat:
+  - the shared API client still defaults `getPoolMeSummary()` to `NGN` because that is the current backend/API default; this route no longer hard-codes or presents the summary as a local-currency identity.
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityHomePage.tsx`
+    -> passed

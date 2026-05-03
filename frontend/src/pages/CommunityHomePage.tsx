@@ -13,8 +13,10 @@ import {
   getMarketplaceBroadcasts,
   getMarketplaceShopByGmfnId,
   getMe,
+  getMyTrustSlip,
   getPoolMeSummary,
   getSelectedClanId,
+  listMarketplaceRequests,
   listMyClans,
   safeCopy,
   selectClan,
@@ -216,12 +218,12 @@ function communityShellStyle(isCompact: boolean): React.CSSProperties {
     display: "grid",
     gap: isCompact ? 14 : 18,
     borderRadius: isCompact ? 24 : 34,
-    border: "1px solid rgba(121,145,171,0.22)",
+    border: "1px solid rgba(8,35,58,0.12)",
     isolation: "isolate",
     background:
-      "linear-gradient(180deg, #FFFFFF 0%, #F7FAFE 46%, #EEF5FC 100%)",
+      "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 42%, #EEF5FB 100%)",
     boxShadow:
-      "0 18px 42px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.92)",
+      "0 20px 44px rgba(6,24,39,0.10), inset 0 1px 0 rgba(255,255,255,0.96)",
     overflow: "hidden",
   };
 }
@@ -332,12 +334,12 @@ function CommunityShellLayers({ isCompact }: { isCompact: boolean }) {
 function communityHeroStyle(isCompact: boolean): React.CSSProperties {
   return {
     borderRadius: isCompact ? 22 : 30,
-    border: "1px solid rgba(214,170,69,0.18)",
+    border: "1px solid rgba(226,192,106,0.26)",
     background:
-      "radial-gradient(circle at 14% 0%, rgba(52,117,170,0.28) 0%, rgba(52,117,170,0.00) 38%), linear-gradient(180deg, #08233A 0%, #071C30 54%, #061827 100%)",
+      "radial-gradient(circle at 14% -10%, rgba(214,170,69,0.18) 0%, rgba(214,170,69,0.00) 26%), radial-gradient(circle at 88% 4%, rgba(54,105,151,0.18) 0%, rgba(54,105,151,0.00) 34%), linear-gradient(180deg, #06101A 0%, #08233A 48%, #061827 100%)",
     padding: isCompact ? 12 : 20,
     boxShadow:
-      "0 22px 44px rgba(6,24,39,0.22), inset 0 1px 0 rgba(255,255,255,0.08)",
+      "0 24px 50px rgba(6,24,39,0.26), inset 0 1px 0 rgba(255,255,255,0.10)",
     overflow: "hidden",
   };
 }
@@ -452,23 +454,6 @@ function badge(primary = false): React.CSSProperties {
     fontWeight: 900,
     whiteSpace: "normal",
     textAlign: "center",
-  };
-}
-
-function heroStatCard(): React.CSSProperties {
-  return {
-    ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"),
-    minHeight: 78,
-    gridTemplateColumns: "auto minmax(0, 1fr)",
-    gap: 10,
-    border: "1px solid rgba(255,255,255,0.84)",
-    boxShadow:
-      "0 12px 24px rgba(2,12,27,0.16), inset 0 1px 0 rgba(255,255,255,0.94)",
-    display: "grid",
-    alignContent: "center",
-    justifyItems: "start",
-    alignItems: "center",
-    textAlign: "left",
   };
 }
 
@@ -736,14 +721,45 @@ function getSummaryTotal(payload: any, key: string, fallback = "0.00"): string {
   return firstTruthy(payload?.totals?.[key], payload?.summary?.totals?.[key], fallback);
 }
 
+function getTrustSummaryValue(payload: any, key: string, fallback = ""): string {
+  return firstTruthy(
+    payload?.[key],
+    payload?.summary?.[key],
+    payload?.trust?.[key],
+    payload?.merchant_summary?.[key],
+    fallback
+  );
+}
+
 function moneyNumber(value: any): number {
   const raw = safeStr(value).replace(/,/g, "");
   const parsed = Number(raw);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function standingLabel(amount: number): string {
-  return amount < 0 ? "Negative" : "Positive";
+function formatGlobalAmount(value: any): string {
+  const amount = moneyNumber(value);
+
+  if (!Number.isFinite(amount)) return "0";
+
+  return Math.round(amount).toLocaleString();
+}
+
+function countRows(rows: any[]): number {
+  return Array.isArray(rows) ? rows.length : 0;
+}
+
+function trustScoreDisplay(value: any): string {
+  const raw = safeStr(value);
+  if (!raw) return "Preparing";
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) return raw;
+  return `${Math.round(parsed)}%`;
+}
+
+function countRequestRowsByStatus(rows: any[], statuses: string[]): number {
+  const wanted = new Set(statuses.map((item) => item.toLowerCase()));
+  return rows.filter((row) => wanted.has(safeStr(row?.status).toLowerCase())).length;
 }
 
 function readLocalJSON<T>(key: string, fallback: T): T {
@@ -799,6 +815,8 @@ export default function CommunityHomePage() {
   const [clans, setClans] = useState<ClanItem[]>([]);
   const [selectedClan, setSelectedClan] = useState<ClanItem | null>(null);
   const [poolSummary, setPoolSummary] = useState<any>(null);
+  const [trustSlipSummary, setTrustSlipSummary] = useState<any>(null);
+  const [marketplaceRequestRows, setMarketplaceRequestRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [changingClanId, setChangingClanId] = useState<number>(0);
 
@@ -1000,21 +1018,34 @@ export default function CommunityHomePage() {
 
     if (!clanId) {
       setPoolSummary(null);
+      setTrustSlipSummary(null);
+      setMarketplaceRequestRows([]);
       return;
     }
 
     (async () => {
-      const summaryRes = await getPoolMeSummary("NGN").catch((err) => ({
-        __failed: String(
-          err?.message || err || "Your full finance summary is not ready yet."
-        ),
-      }));
+      const [summaryRes, trustSlipRes, requestsRes] = await Promise.all([
+        getPoolMeSummary().catch((err) => ({
+          __failed: String(
+            err?.message || err || "Your full finance summary is not ready yet."
+          ),
+        })),
+        getMyTrustSlip().catch(() => null),
+        listMarketplaceRequests({
+          status: "all",
+          mine_only: false,
+          clan_id: null,
+          limit: 200,
+        }).catch(() => []),
+      ]);
 
       if (!alive) return;
 
       setPoolSummary(
         summaryRes && !(summaryRes as any).__failed ? summaryRes : null
       );
+      setTrustSlipSummary(trustSlipRes || null);
+      setMarketplaceRequestRows(Array.isArray(requestsRes) ? requestsRes : []);
     })();
 
     return () => {
@@ -1051,31 +1082,36 @@ export default function CommunityHomePage() {
     );
   }, [location.pathname, location.search, navigate, openGuidedSpotlightFamily]);
 
-  const cumulativeAvailable = getSummaryTotal(
+  const cumulativePoolBalance = getSummaryTotal(
     poolSummary,
-    "effective_available",
+    "membership_pool_balance",
     getSummaryTotal(poolSummary, "available_balance", "0.00")
-  );
-  const cumulativeGuarantorEarned = getSummaryTotal(
-    poolSummary,
-    "guarantor_earned_total",
-    "0.00"
-  );
-  const cumulativeBorrowerOutstanding = getSummaryTotal(
-    poolSummary,
-    "borrower_outstanding_total",
-    "0.00"
   );
   const cumulativeGuaranteeLocked = getSummaryTotal(
     poolSummary,
     "guarantee_locked_as_guarantor",
     "0.00"
   );
-  const cumulativeStandingAmount =
-    moneyNumber(cumulativeAvailable) +
-    moneyNumber(cumulativeGuarantorEarned) -
-    moneyNumber(cumulativeBorrowerOutstanding) -
-    moneyNumber(cumulativeGuaranteeLocked);
+  const trustScore = trustScoreDisplay(
+    getTrustSummaryValue(
+      trustSlipSummary,
+      "cci_score",
+      getTrustSummaryValue(trustSlipSummary, "trust_score", "")
+    )
+  );
+  const trustBand = firstTruthy(
+    getTrustSummaryValue(trustSlipSummary, "cci_band"),
+    getTrustSummaryValue(trustSlipSummary, "band"),
+    "Trust record"
+  );
+  const activeSupportCount = countRequestRowsByStatus(marketplaceRequestRows, [
+    "open",
+  ]);
+  const trustedTradeCount = countRequestRowsByStatus(marketplaceRequestRows, [
+    "fulfilled",
+    "completed",
+    "closed",
+  ]);
   const communityHomeOwnerName = resolveMemberName(me);
   const communityCountFromSummary = Number(poolSummary?.communities_count || clans.length || 0);
 
@@ -2357,91 +2393,220 @@ function communityButtonGuardProps(): Pick<
 
             <div
               style={{
-                marginTop: isCompact ? 8 : 14,
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "repeat(2, minmax(0, 1fr))"
-                  : "repeat(auto-fit, minmax(142px, 1fr))",
-                gap: isCompact ? 6 : 8,
+                marginTop: isCompact ? 10 : 16,
+                ...innerCard(
+                  "linear-gradient(180deg, rgba(9,31,51,0.96) 0%, rgba(6,24,39,0.98) 100%)"
+                ),
+                padding: isCompact ? 11 : 16,
+                border: "1px solid rgba(226,192,106,0.26)",
+                boxShadow:
+                  "0 18px 34px rgba(2,12,27,0.28), inset 0 1px 0 rgba(255,255,255,0.08)",
               }}
             >
-              <div style={heroStatCard()}>
-                <span style={communityActionIcon(false)}>👤</span>
-                <span>
-                  <span style={{ ...sectionLabel(), color: "#5D768F" }}>Holder</span>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div>
+                  <div style={{ ...sectionLabel(), color: "#E0B95D" }}>
+                    Your GSN Trust Passport
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 5,
+                      color: "#F8FBFF",
+                      fontSize: isCompact ? 17 : 20,
+                      fontWeight: 950,
+                      lineHeight: 1.18,
+                    }}
+                  >
+                    All communities summary
+                  </div>
+                </div>
+                <span
+                  style={{
+                    ...badge(true),
+                    background: "rgba(255,255,255,0.10)",
+                    color: "#F8FBFF",
+                    border: "1px solid rgba(226,192,106,0.24)",
+                  }}
+                >
+                  {communityCountFromSummary}{" "}
+                  {communityCountFromSummary === 1 ? "community" : "communities"}
+                </span>
+              </div>
+
+              <div
+                style={{
+                  marginTop: isCompact ? 10 : 14,
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  gap: isCompact ? 8 : 10,
+                }}
+              >
+                {[
+                  {
+                    symbol: "🌐",
+                    title: "Dues & Contributions",
+                    value: formatGlobalAmount(cumulativePoolBalance),
+                    detail:
+                      moneyNumber(cumulativeGuaranteeLocked) > 0
+                        ? `${formatGlobalAmount(cumulativeGuaranteeLocked)} held as guarantee`
+                        : "Across visible community pools",
+                    tone: "#1F5D9F",
+                  },
+                  {
+                    symbol: "🤝",
+                    title: "Support Requests",
+                    value: `${activeSupportCount} active`,
+                    detail: "People asking for support",
+                    tone: "#2E8A58",
+                  },
+                  {
+                    symbol: "🛒",
+                    title: "Trusted Trade",
+                    value: `${trustedTradeCount} completed`,
+                    detail:
+                      countRows(marketplaceRequestRows) > 0
+                        ? "From visible marketplace records"
+                        : "No trade record yet",
+                    tone: "#4230A3",
+                  },
+                  {
+                    symbol: "🛡️",
+                    title: "Trust Score",
+                    value: trustScore,
+                    detail: trustBand,
+                    tone: "#A27518",
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.title}
+                    style={{
+                      ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"),
+                      minHeight: isCompact ? 136 : 150,
+                      display: "grid",
+                      justifyItems: "center",
+                      alignContent: "start",
+                      gap: 7,
+                      textAlign: "center",
+                      padding: isCompact ? 10 : 14,
+                    }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: isCompact ? 42 : 50,
+                        height: isCompact ? 42 : 50,
+                        borderRadius: 999,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: `linear-gradient(180deg, ${item.tone} 0%, #08233A 100%)`,
+                        color: "#FFFFFF",
+                        fontSize: isCompact ? 22 : 26,
+                        fontWeight: 950,
+                        lineHeight: 1,
+                        boxShadow:
+                          "0 10px 20px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.18)",
+                      }}
+                    >
+                      {item.symbol}
+                    </span>
+                    <span
+                      style={{
+                        color: "#07172C",
+                        fontSize: isCompact ? 12.5 : 14,
+                        fontWeight: 950,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {item.title}
+                    </span>
+                    <span
+                      style={{
+                        color: item.tone,
+                        fontSize: isCompact ? 18 : 22,
+                        fontWeight: 950,
+                        lineHeight: 1.12,
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {item.value}
+                    </span>
+                    <span
+                      style={{
+                        color: "#5F7287",
+                        fontSize: isCompact ? 11.5 : 12.5,
+                        fontWeight: 760,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      {item.detail}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                {...communityButtonGuardProps()}
+                onClick={(event) => openCommunityRoute(event, "/app/trust")}
+                style={{
+                  ...communityToolRowStyle(),
+                  marginTop: isCompact ? 10 : 14,
+                  borderRadius: 18,
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(237,245,255,0.94) 100%)",
+                  border: "1px solid rgba(226,192,106,0.18)",
+                  boxShadow:
+                    "0 12px 22px rgba(2,12,27,0.18), inset 0 1px 0 rgba(255,255,255,0.92)",
+                }}
+              >
+                <span
+                  style={{
+                    ...communityActionIcon(true),
+                    background:
+                      "linear-gradient(180deg, #10243A 0%, #0B2D4A 100%)",
+                    color: "#FFFFFF",
+                  }}
+                >
+                  🛡️
+                </span>
+                <span style={{ minWidth: 0 }}>
                   <span
                     style={{
                       display: "block",
-                      marginTop: 4,
                       color: "#07172C",
-                      fontSize: isCompact ? 16 : 19,
+                      fontSize: isCompact ? 14.5 : 16,
                       fontWeight: 950,
-                      lineHeight: 1.15,
-                      wordBreak: "break-word",
+                      lineHeight: 1.2,
                     }}
                   >
-                    {communityHomeOwnerName}
-                  </span>
-                </span>
-              </div>
-              <div style={heroStatCard()}>
-                <span style={communityActionIcon(false)}>🪪</span>
-                <span>
-                  <span style={{ ...sectionLabel(), color: "#5D768F" }}>GSN ID</span>
-                  <span
-                    style={{
-                      display: "block",
-                      marginTop: 4,
-                      color: "#07172C",
-                      fontSize: isCompact ? 16 : 19,
-                      fontWeight: 950,
-                      lineHeight: 1.15,
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {memberGlobalId}
-                  </span>
-                </span>
-              </div>
-              <div style={heroStatCard()}>
-                <span style={communityActionIcon(false)}>👥</span>
-                <span>
-                  <span style={{ ...sectionLabel(), color: "#5D768F" }}>Communities</span>
-                  <span
-                    style={{
-                      display: "block",
-                      marginTop: 4,
-                      color: "#07172C",
-                      fontSize: isCompact ? 18 : 21,
-                      fontWeight: 950,
-                    }}
-                  >
-                    {communityCountFromSummary}
-                  </span>
-                </span>
-              </div>
-              <div style={heroStatCard()}>
-                <span style={communityActionIcon(false)}>💱</span>
-                <span>
-                  <span style={{ ...sectionLabel(), color: "#5D768F" }}>
-                    Money across communities
+                    Built on trust. Driven by community.
                   </span>
                   <span
                     style={{
                       display: "block",
                       marginTop: 4,
-                      color:
-                        cumulativeStandingAmount < 0 ? "#B42318" : "#2E7D4F",
-                      fontSize: isCompact ? 16 : 19,
-                      fontWeight: 950,
-                      lineHeight: 1.15,
-                      wordBreak: "break-word",
+                      color: "#617085",
+                      fontSize: isCompact ? 12 : 13,
+                      fontWeight: 720,
+                      lineHeight: 1.35,
                     }}
                   >
-                    {standingLabel(cumulativeStandingAmount)}
+                    Records, accountability, and support in one place.
                   </span>
                 </span>
-              </div>
+                <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>
+                  ›
+                </span>
+              </button>
             </div>
           </div>
         </div>
