@@ -19829,3 +19829,26 @@ GSN-branded invite composer and invite-entry continuity.
   - `/app/shop-control#shop-control-vault`
   - `/app/shop-control#shop-control-vault-subscription`
   - no backend/auth/schema/payment logic changes
+
+### Shop Control public shop face inner-page audit and simplification (2026-05-03)
+
+- Owner request continued: audit owner-side inner pages one by one after Spotlight and Vault, keeping each surface simple, institutional, and useful without fake-looking custom icons.
+- Code mapping confirmed:
+  - Public shop face / picture gallery lives inside `frontend/src/pages/ShopControlPage.tsx`.
+  - Public products are managed through `/app/shop-assets`.
+  - The public-facing shop opens through the existing `publicShopLink` logic; no backend or route contract changes were made.
+- Updated `frontend/src/pages/ShopControlPage.tsx`:
+  - simplified `/app/shop-control#shop-control-picture-gallery` into a summary-first public shop face surface.
+  - added clear status chips for picture readiness, public-link readiness, and product count.
+  - moved `Open public shop` and `Copy public link` directly under the visual preview where they make contextual sense.
+  - changed the upload/edit block into `Picture control`, focused on one strong public image.
+  - changed the old links block into a compact `Products` block that points to `/app/shop-assets`.
+  - removed duplicate public-link buttons from the product block.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopControlPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Scope:
+  - `/app/shop-control#shop-control-picture-gallery`
+  - no backend/auth/schema/payment logic changes

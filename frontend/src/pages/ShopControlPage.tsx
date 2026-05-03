@@ -3130,15 +3130,70 @@ export default function ShopControlPage() {
 
       <section
         id="shop-control-picture-gallery"
-        style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 82%, #FFF7D8 100%)")}
+        style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 55%, #EAF3FF 100%)")}
       >
-        <div style={sectionLabel()}>Public shop face</div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "72px minmax(0, 1fr)",
+            gap: 14,
+            alignItems: "center",
+          }}
+        >
+          <div
+            aria-hidden="true"
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 22,
+              display: "grid",
+              placeItems: "center",
+              background: "linear-gradient(180deg, #102D4C 0%, #061827 100%)",
+              color: "#F8D876",
+              fontSize: 30,
+              boxShadow:
+                "0 18px 34px rgba(6,24,39,0.22), inset 0 1px 0 rgba(255,255,255,0.10)",
+            }}
+          >
+            🖼️
+          </div>
+
+          <div>
+            <div style={sectionLabel()}>Public shop face</div>
+            <div
+              style={{
+                marginTop: 8,
+                color: "#07172C",
+                fontSize: isCompact ? 23 : 28,
+                fontWeight: 950,
+                lineHeight: 1.08,
+              }}
+            >
+              What people see first.
+            </div>
+            <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
+              Keep one clear picture, then open or share the public shop link.
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <span style={badge(Boolean(safeStr(imageUrlInput)))}>
+            🖼️ Picture: {safeStr(imageUrlInput) ? "Ready" : "Needed"}
+          </span>
+          <span style={badge(Boolean(publicShopLink))}>
+            🔗 Public link: {publicShopLink ? "Ready" : "Waiting"}
+          </span>
+          <span style={badge(publicProducts.length > 0)}>
+            🛍️ Products: {publicProducts.length}
+          </span>
+        </div>
 
         <div
           style={{
             marginTop: 14,
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "300px minmax(0, 1fr)",
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(260px, 0.9fr) minmax(0, 1.1fr)",
             gap: 18,
             alignItems: "start",
           }}
@@ -3223,7 +3278,7 @@ export default function ShopControlPage() {
                       lineHeight: 1.35,
                     }}
                   >
-                    <div>Add your shop picture</div>
+                    <div>🖼️ Add your shop picture</div>
                     <div
                       style={{
                         marginTop: 8,
@@ -3239,20 +3294,45 @@ export default function ShopControlPage() {
                 )}
               </div>
             </div>
+
+            <div style={{ marginTop: 12, ...controlGrid(isCompact, 132) }}>
+              <button
+                type="button"
+                {...buttonGuardProps()}
+                onClick={() => openPublicShopFace()}
+                style={fullButton(actionBtn("primary", !publicShopLink))}
+                disabled={!publicShopLink}
+              >
+                Open public shop
+              </button>
+
+              <button
+                type="button"
+                {...buttonGuardProps()}
+                onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
+                style={fullButton(actionBtn("secondary", !publicShopLink))}
+                disabled={!publicShopLink}
+              >
+                Copy public link
+              </button>
+            </div>
           </div>
 
           <div style={{ display: "grid", gap: 14 }}>
             <div
               style={{
-                ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #FFF9E7 100%)"),
+                ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
                 border: "1px solid rgba(212,175,55,0.12)",
                 boxShadow: "0 16px 34px rgba(2,12,27,0.10)",
               }}
             >
-              <div style={sectionLabel()}>Upload picture</div>
+              <div style={sectionLabel()}>🖼️ Picture control</div>
 
-              <div style={{ marginTop: 10, ...helperText() }}>
-                Use a simple shop picture here. Save it when it looks right.
+              <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 18, fontWeight: 950 }}>
+                Add one strong public image.
+              </div>
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                Use a clear product, shop, or service picture. This is the first trust signal people see.
               </div>
 
               <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
@@ -3265,7 +3345,7 @@ export default function ShopControlPage() {
                 />
 
                 <div style={{ display: "grid", gap: 8 }}>
-                  <div style={sectionLabel()}>Use a web image instead</div>
+                  <div style={sectionLabel()}>Or paste image link</div>
                   <input
                     value={imageUrlInput}
                     onChange={(e) => setImageUrlInput(e.target.value)}
@@ -3315,32 +3395,18 @@ export default function ShopControlPage() {
             </div>
 
             <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
-              <div style={sectionLabel()}>Public shop links</div>
+              <div style={sectionLabel()}>🛍️ Products</div>
+              <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 18, fontWeight: 950 }}>
+                {publicProducts.length} public item{publicProducts.length === 1 ? "" : "s"}
+              </div>
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                Add public products here. Private offers belong inside Vault.
+              </div>
 
               <div style={{ marginTop: 12, ...controlGrid(isCompact, 132) }}>
                 <OriginLink to="/app/shop-assets" style={fullButton(actionBtn("secondary"))}>
-                  Manage Products
+                  Manage products
                 </OriginLink>
-
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
-                  onClick={() => openPublicShopFace()}
-                  style={fullButton(actionBtn("secondary", !publicShopLink))}
-                  disabled={!publicShopLink}
-                >
-                    Open Public Shop
-                  </button>
-
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
-                  onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
-                  style={fullButton(actionBtn("soft", !publicShopLink))}
-                  disabled={!publicShopLink}
-                >
-                    Copy Public Link
-                </button>
               </div>
             </div>
           </div>
