@@ -19898,3 +19898,22 @@ GSN-branded invite composer and invite-entry continuity.
 - Scope:
   - `/shop/:gmfnId`
   - no backend/auth/schema/public-shop/product-loading/share/Vault-request logic changes
+
+### Public Shop Gallery support strip compression (2026-05-03)
+
+- Owner request continued after the first public shop/gallery simplification: the Vault and Spotlight panel was still too tall before the public product shelf.
+- Updated `frontend/src/pages/ShopGalleryPage.tsx` route-locally:
+  - compressed the pre-shelf Vault/Spotlight support area into a shorter two-column strip on wider screens and a tighter stacked strip on compact screens.
+  - reduced the Spotlight preview frame height so it no longer competes with the actual public items.
+  - shortened the Vault title and explanatory copy to one practical message: private offers need an owner trust link.
+  - kept existing actions intact: ask for Vault link, copy public shop link, and linked Spotlight origin shortcuts.
+- Verification:
+  - `git diff --check`
+    -> passed
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Scope:
+  - `/shop/:gmfnId`
+  - no backend/auth/schema/public-shop/product-loading/share/Vault-request/Spotlight logic changes

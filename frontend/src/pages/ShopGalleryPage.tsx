@@ -1899,13 +1899,14 @@ export default function ShopGalleryPage() {
             "radial-gradient(circle at 6% 0%, rgba(11,99,209,0.16) 0%, transparent 32%), radial-gradient(circle at 92% 8%, rgba(244,114,182,0.08) 0%, transparent 28%), radial-gradient(circle at 84% 92%, rgba(212,175,55,0.08) 0%, transparent 30%), linear-gradient(180deg, rgba(255,255,255,0.985) 0%, rgba(235,247,253,0.96) 100%)",
           boxShadow:
             "0 26px 62px rgba(8,38,67,0.11), inset 0 1px 0 rgba(255,255,255,0.82)",
+          padding: isCompact ? 12 : 14,
         }}
       >
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.12fr) minmax(320px, 336px)",
-            gap: 8,
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
+            gap: 10,
             alignItems: "stretch",
           }}
         >
@@ -1918,7 +1919,7 @@ export default function ShopGalleryPage() {
               border: "1px solid rgba(212,175,55,0.26)",
               boxShadow:
                 "0 22px 48px rgba(2,12,27,0.21), inset 0 1px 0 rgba(255,255,255,0.17)",
-              padding: isCompact ? 14 : 16,
+              padding: isCompact ? 12 : 14,
               display: "grid",
               alignContent: "center",
               overflow: "hidden",
@@ -1973,48 +1974,48 @@ export default function ShopGalleryPage() {
                 textTransform: "uppercase",
               }}
             >
-              Vault
+              Private Vault
             </div>
             <div
               style={{
                 position: "relative",
                 marginTop: 6,
                 color: "#FFFFFF",
-                fontSize: isCompact ? 19 : 22,
+                fontSize: isCompact ? 17 : 19,
                 fontWeight: 950,
                 lineHeight: 1.18,
                 letterSpacing: 0.1,
                 textShadow: "0 2px 14px rgba(0,0,0,0.24)",
               }}
             >
-              Private viewing by trust link
+              Private offers need a trust link.
+            </div>
+            <div
+              style={{
+                position: "relative",
+                marginTop: 7,
+                color: "rgba(235,245,255,0.88)",
+                fontSize: isCompact ? 12 : 12.5,
+                lineHeight: 1.45,
+              }}
+            >
+              Ask the owner when you need selected offers that are not public.
+            </div>
+            <div
+              style={{
+                position: "relative",
+                marginTop: 3,
+                color: "rgba(235,245,255,0.78)",
+                fontSize: isCompact ? 12 : 12.5,
+                lineHeight: 1.45,
+              }}
+            >
+              Public items stay below. Vault items stay separate.
             </div>
             <div
               style={{
                 position: "relative",
                 marginTop: 9,
-                color: "rgba(235,245,255,0.88)",
-                fontSize: isCompact ? 12.5 : 13.5,
-                lineHeight: 1.56,
-              }}
-            >
-              Some offers are not public. Ask the owner for a private Vault link when you need them.
-            </div>
-            <div
-              style={{
-                position: "relative",
-                marginTop: 5,
-                color: "rgba(235,245,255,0.78)",
-                fontSize: isCompact ? 12.5 : 13.5,
-                lineHeight: 1.56,
-              }}
-            >
-              Public items stay below. Private offers stay separate.
-            </div>
-            <div
-              style={{
-                position: "relative",
-                marginTop: 11,
                 display: "grid",
                 gridTemplateColumns: isCompact ? "repeat(3, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))",
                 gap: 6,
@@ -2023,9 +2024,9 @@ export default function ShopGalleryPage() {
               <span
                 style={{
                   ...badge(true),
-                  minHeight: 34,
-                  padding: "5px 8px",
-                  fontSize: 10.5,
+                  minHeight: 28,
+                  padding: "4px 7px",
+                  fontSize: 10,
                   border: "1px solid rgba(255,255,255,0.24)",
                   background:
                     "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(220,235,250,0.86) 100%)",
@@ -2036,9 +2037,9 @@ export default function ShopGalleryPage() {
               <span
                 style={{
                   ...badge(false),
-                  minHeight: 34,
-                  padding: "5px 8px",
-                  fontSize: 10.5,
+                  minHeight: 28,
+                  padding: "4px 7px",
+                  fontSize: 10,
                   border: "1px solid rgba(255,255,255,0.20)",
                   background:
                     "linear-gradient(180deg, rgba(255,255,255,0.88) 0%, rgba(232,242,249,0.74) 100%)",
@@ -2049,9 +2050,9 @@ export default function ShopGalleryPage() {
               <span
                 style={{
                   ...badge(false),
-                  minHeight: 34,
-                  padding: "5px 8px",
-                  fontSize: 10.5,
+                  minHeight: 28,
+                  padding: "4px 7px",
+                  fontSize: 10,
                   border: "1px solid rgba(255,255,255,0.20)",
                   background:
                     "linear-gradient(180deg, rgba(255,255,255,0.88) 0%, rgba(232,242,249,0.74) 100%)",
@@ -2063,7 +2064,7 @@ export default function ShopGalleryPage() {
             <div
               style={{
                 position: "relative",
-                marginTop: 12,
+                marginTop: 10,
                 display: "flex",
                 gap: 8,
                 flexWrap: "wrap",
@@ -2075,8 +2076,8 @@ export default function ShopGalleryPage() {
                 onClick={askForVaultAccess}
                 style={{
                   ...primaryBtn(false),
-                  padding: "10px 12px",
-                  fontSize: 12.5,
+                  padding: "9px 11px",
+                  fontSize: 12,
                   flex: isCompact ? "1 1 132px" : undefined,
                 }}
               >
@@ -2088,8 +2089,8 @@ export default function ShopGalleryPage() {
                   onClick={copyShopLink}
                   style={{
                     ...secondaryBtn(false),
-                  padding: "10px 12px",
-                  fontSize: 12.5,
+                  padding: "9px 11px",
+                  fontSize: 12,
                   flex: isCompact ? "1 1 132px" : undefined,
                 }}
               >
@@ -2143,7 +2144,7 @@ export default function ShopGalleryPage() {
                     color: "#F8E7AE",
                   }}
                 >
-                  Community Spotlight
+                  Spotlight
                 </div>
                 <span
                   style={{
@@ -2159,14 +2160,14 @@ export default function ShopGalleryPage() {
                     color: "#1C2C34",
                   }}
                 >
-                  Live community promo
+                  {miniSpotlight ? "Live" : "Quiet"}
                 </span>
               </div>
 
               <div
                 style={{
                   marginTop: 4,
-                  minHeight: isCompact ? 284 : 310,
+                  minHeight: isCompact ? 118 : 132,
                   position: "relative",
                 }}
               >
@@ -2179,9 +2180,9 @@ export default function ShopGalleryPage() {
                       alt={miniSpotlightView.title}
                       contentPadding={2}
                       frameStyle={{
-                        minHeight: isCompact ? 284 : 310,
-                        height: isCompact ? 284 : 310,
-                        borderRadius: 16,
+                        minHeight: isCompact ? 118 : 132,
+                        height: isCompact ? 118 : 132,
+                        borderRadius: 14,
                         border: "1px solid rgba(255,226,160,0.32)",
                         background:
                           "radial-gradient(circle at 0% 0%, rgba(246,196,83,0.20) 0%, transparent 34%), linear-gradient(180deg, rgba(7,22,33,0.99) 0%, rgba(21,56,76,0.98) 100%)",
