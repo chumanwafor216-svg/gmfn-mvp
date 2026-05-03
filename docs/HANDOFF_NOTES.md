@@ -19700,3 +19700,17 @@ GSN-branded invite composer and invite-entry continuity.
 - Scope:
   - `/app/community`
   - no backend/auth/schema changes
+
+### Community Home separate vault and spotlight controls (2026-05-03)
+
+- Owner feedback: Vault, free spotlight, and paid/subscription spotlight should not be merged into one generic spotlight/shop-control row during pilot testing. Each paid or free lane must be obvious and separately controlled.
+- Updated `frontend/src/pages/CommunityHomePage.tsx`:
+  - kept Owner Shop Control as the public shop/products/links row.
+  - added a separate `Vault Control` row that opens `/app/shop-control#shop-control-vault`.
+  - added a separate `Free Spotlight` row that opens `/app/shop-control#shop-control-spotlight`.
+  - added a separate `Spotlight Subscription` row that opens `/app/shop-control#shop-control-paid-spotlight`.
+  - kept `Owner Spotlight Status` as status-only, rather than hiding all spotlight work behind it.
+- Updated `docs/SCREEN_SPECS.md` to record the separate compact rows.
+- Scope:
+  - `/app/community`
+  - no backend/auth/schema changes

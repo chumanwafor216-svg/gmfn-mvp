@@ -2819,9 +2819,36 @@ function communityButtonGuardProps(): Pick<
               icon: "🏪",
               title: "Owner Shop Control",
               detail:
-                "Manage shop face, products, links, and vault",
+                "Manage shop face, products, and public links",
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                 openCommunityShopControl(event),
+            },
+            {
+              icon: "🔐",
+              title: "Vault Control",
+              detail:
+                "Manage paid private access and vault links",
+              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                openCommunityRoute(event, "/app/shop-control#shop-control-vault"),
+            },
+            {
+              icon: "🌟",
+              title: "Free Spotlight",
+              detail:
+                "Publish the normal community spotlight lane",
+              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                openCommunityRoute(event, "/app/shop-control#shop-control-spotlight"),
+            },
+            {
+              icon: "💳",
+              title: "Spotlight Subscription",
+              detail:
+                "Control the paid priority spotlight lane",
+              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                openCommunityRoute(
+                  event,
+                  "/app/shop-control#shop-control-paid-spotlight"
+                ),
             },
             {
               icon: "🤝",

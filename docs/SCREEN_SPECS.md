@@ -193,6 +193,9 @@ Must show:
 - compact rows:
   - Owner Actions
   - Owner Shop Control
+  - Vault Control
+  - Free Spotlight
+  - Spotlight Subscription
   - Grow Trusted Circle
   - Owner Spotlight Status
 
@@ -220,6 +223,9 @@ Role states to support:
 Owner-only rows:
 - Owner Actions
 - Owner Shop Control
+- Vault Control
+- Free Spotlight
+- Spotlight Subscription
 - Grow Trusted Circle
 - Owner Spotlight Status
 
