@@ -19804,3 +19804,28 @@ GSN-branded invite composer and invite-entry continuity.
   - `/app/shop-control#shop-control-spotlight`
   - `/app/shop-control#shop-control-paid-spotlight`
   - no backend/auth/schema/payment logic changes
+
+### Shop Control Vault inner-page audit and simplification (2026-05-03)
+
+- Owner request continued: audit the owner-side inner pages one by one and make them simple enough for underbanked/unbanked users while keeping the institutional GSN tone.
+- Code mapping confirmed:
+  - Vault subscription and Vault access management both live inside `frontend/src/pages/ShopControlPage.tsx`.
+  - Community Home opens Vault through `/app/shop-control#shop-control-vault`.
+  - Backend already owns Vault entitlement, private-product capacity, and access-link rules through payment instructions, marketplace visibility, and vault access routes.
+- Updated `frontend/src/pages/ShopControlPage.tsx`:
+  - simplified the optional paid Vault card into `Vault Control`: private offers, controlled access.
+  - kept the two paid quantities separate: one private slot or six private slots.
+  - changed the full Vault section from a mixed public/private product view into a dedicated private-offer and access-link surface.
+  - added a simple three-step explanation: activate slots, add private offers, share access.
+  - moved public shelf products out of the Vault mental model.
+  - simplified link cards by removing extra subheadings and keeping copy/open/extend/revoke actions together.
+  - used native symbols for Vault, private offers, access links, payment, bank check, and views.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopControlPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Scope:
+  - `/app/shop-control#shop-control-vault`
+  - `/app/shop-control#shop-control-vault-subscription`
+  - no backend/auth/schema/payment logic changes

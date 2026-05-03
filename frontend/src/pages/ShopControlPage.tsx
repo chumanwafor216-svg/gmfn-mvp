@@ -2835,44 +2835,49 @@ export default function ShopControlPage() {
               boxShadow: "0 16px 34px rgba(2,12,27,0.10)",
             }}
           >
-            <div style={sectionLabel()}>Vault</div>
-            <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 18, fontWeight: 900 }}>
-              Private viewing by trust link
+            <div style={sectionLabel()}>🗄️ Vault Control</div>
+            <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 20, fontWeight: 950 }}>
+              Private offers, controlled access.
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-              Use Vault only when you want selected people to see private offers.
+              Pay for private slots, add private offers, then share one secure viewing link.
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span style={badge(true)}>Vault items: {vaultProducts.length} / 6</span>
-              <span style={badge(false)}>Vault links: {vaultLinks.length}</span>
-              <span style={badge(false)}>State: {vaultStateLabel}</span>
+              <span style={badge(vaultProducts.length > 0)}>🗄️ Offers: {vaultProducts.length} / 6</span>
+              <span style={badge(vaultLinks.length > 0)}>🔐 Links: {vaultLinks.length}</span>
+              <span style={badge(false)}>✅ {vaultStateLabel}</span>
               <span style={badge(false)}>
-                Payment: {firstTruthy(latestVaultPayment?.status, "Not started")}
+                💳 Payment: {firstTruthy(latestVaultPayment?.status, "Not started")}
               </span>
             </div>
             {latestVaultPayment ? (
-              <div style={{ marginTop: 12, display: "grid", gap: 6 }}>
-                <div style={helperText()}>
-                  Reference: {firstTruthy(latestVaultPayment.reference_display, "Awaiting reference")}
+              <div
+                style={{
+                  marginTop: 12,
+                  ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
+                  border: "1px solid rgba(13,95,168,0.10)",
+                }}
+              >
+                <div style={sectionLabel()}>Payment reference</div>
+                <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 17, fontWeight: 950 }}>
+                  {firstTruthy(latestVaultPayment.reference_display, "Awaiting reference")}
                 </div>
-                <div style={helperText()}>
-                  Amount: {firstTruthy(latestVaultPayment.amount, "0.00")}{" "}
-                  {firstTruthy(latestVaultPayment.currency, "GBP")}
-                </div>
-                <div style={helperText()}>
-                  Confirmation:
-                  {" "}
+                <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                   {safeStr(latestVaultPayment.confirmed_at)
                     ? `Confirmed ${safeDateTime(latestVaultPayment.confirmed_at)}`
                     : firstTruthy(latestVaultPayment.status, "Expected")}
                 </div>
-                <div style={helperText()}>
-                  Bank check: {latestVaultPayment.matched_bank_event_id ? "Matched" : "Waiting"}
+                <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <span style={badge(false)}>
+                    🌐 {firstTruthy(latestVaultPayment.amount, "0.00")}{" "}
+                    {firstTruthy(latestVaultPayment.currency, "GBP")}
+                  </span>
+                  <span style={badge(Boolean(latestVaultPayment.matched_bank_event_id))}>
+                    🏦 Bank check: {latestVaultPayment.matched_bank_event_id ? "Matched" : "Waiting"}
+                  </span>
                 </div>
               </div>
             ) : null}
-            <div style={{ marginTop: 10, ...helperText() }}>{vaultProofText}</div>
-            <div style={{ marginTop: 12, ...helperText() }}>Start or renew Vault access</div>
             <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
               <button
                 type="button"
@@ -2902,11 +2907,8 @@ export default function ShopControlPage() {
                   busyText: "Preparing...",
                 })}
               </button>
-            </div>
-            <div style={{ marginTop: 10, ...helperText() }}>Continue with Vault work</div>
-            <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
               <OriginLink to="/app/shop-assets" style={fullButton(actionBtn("secondary"))}>
-                Manage Products
+                Manage private offers
               </OriginLink>
               <button
                 type="button"
@@ -2929,6 +2931,9 @@ export default function ShopControlPage() {
                   busyText: "Creating link...",
                 })}
               </button>
+            </div>
+            <div style={{ marginTop: 10, ...helperText(), fontSize: 12 }}>
+              {vaultProofText}
             </div>
           </div>
 
@@ -3838,72 +3843,148 @@ export default function ShopControlPage() {
 
       <section
         id="shop-control-vault"
-        style={pageCard(
-          "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 82%, #FFF7D8 100%)"
-        )}
+        style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 55%, #EAF3FF 100%)")}
       >
-        <div style={sectionLabel()}>Private Vault access</div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "72px minmax(0, 1fr)",
+            gap: 14,
+            alignItems: "center",
+          }}
+        >
+          <div
+            aria-hidden="true"
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 22,
+              display: "grid",
+              placeItems: "center",
+              background: "linear-gradient(180deg, #102D4C 0%, #061827 100%)",
+              color: "#F8D876",
+              fontSize: 30,
+              boxShadow:
+                "0 18px 34px rgba(6,24,39,0.22), inset 0 1px 0 rgba(255,255,255,0.10)",
+            }}
+          >
+            🗄️
+          </div>
+
+          <div>
+            <div style={sectionLabel()}>Vault Control</div>
+            <div
+              style={{
+                marginTop: 8,
+                color: "#07172C",
+                fontSize: isCompact ? 23 : 28,
+                fontWeight: 950,
+                lineHeight: 1.08,
+              }}
+            >
+              Private offers and secure links.
+            </div>
+            <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
+              Vault is for selected people only. Add private offers, then create a link for the right viewer.
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <span style={badge(vaultProducts.length > 0)}>🗄️ Offers: {vaultProducts.length}</span>
+          <span style={badge(vaultLinks.length > 0)}>🔐 Links: {vaultLinks.length}</span>
+          <span style={badge(false)}>✅ {vaultStateLabel}</span>
+        </div>
 
         <div
           style={{
             marginTop: 14,
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+            gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+            gap: 12,
+          }}
+        >
+          {[
+            ["💳", "1. Activate slots", "Pay for one slot or six private slots."],
+            ["🗄️", "2. Add private offers", "Put only private products inside Vault."],
+            ["🔐", "3. Share access", "Create a link only for the person who should see it."],
+          ].map(([icon, title, text]) => (
+            <div key={title} style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
+              <div style={{ fontSize: 24, lineHeight: 1 }}>{icon}</div>
+              <div style={{ marginTop: 10, color: "#0B1F33", fontWeight: 950, fontSize: 16 }}>
+                {title}
+              </div>
+              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                {text}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "1fr 1.2fr",
             gap: 12,
           }}
         >
           <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 60%, #FFF9E7 100%)")}>
-            <div
-              style={{
-                color: "#0B1F33",
-                fontWeight: 900,
-                fontSize: 16,
-              }}
-            >
-              Public shelf products
+            <div style={sectionLabel()}>🗄️ Private offers</div>
+            <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 18, fontWeight: 950 }}>
+              {vaultProducts.length} offer{vaultProducts.length === 1 ? "" : "s"} ready
             </div>
 
             <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-              {publicProducts.length > 0 ? (
-                publicProducts.slice(0, 5).map((item) => (
-                  <div key={item.id} style={helperText()}>
-                    {firstTruthy(item?.name, "Product")}
+              {vaultProducts.length > 0 ? (
+                vaultProducts.slice(0, 5).map((item) => (
+                  <div key={item.id} style={{ ...helperText(), fontWeight: 800 }}>
+                    {firstTruthy(item?.name, "Private offer")}
                   </div>
                 ))
               ) : (
                 <div style={helperText()}>
-                  Public products have not been released yet.
+                  No private offer is ready yet. Add one before creating a viewing link.
                 </div>
               )}
             </div>
+
+            <div style={{ marginTop: 12, ...controlGrid(isCompact, 160) }}>
+              <OriginLink to="/app/shop-assets" style={fullButton(actionBtn("secondary"))}>
+                Manage private offers
+              </OriginLink>
+              <button
+                type="button"
+                {...buttonGuardProps()}
+                onClick={() => void createVaultViewingLink()}
+                disabled={
+                  shopActionsLocked ||
+                  creatingVaultLink ||
+                  vaultProducts.length === 0
+                }
+                style={fullButton(actionBtn(
+                  "primary",
+                  shopActionsLocked || creatingVaultLink || vaultProducts.length === 0
+                ))}
+              >
+                {shopActionsLocked
+                  ? "Review Identity First"
+                  : creatingVaultLink
+                  ? "Creating..."
+                  : vaultProducts.length === 0
+                    ? "Add private offer first"
+                    : "Create viewing link"}
+              </button>
+            </div>
           </div>
 
-          <div
-            style={{
-              ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
-              border: "1px solid rgba(13,95,168,0.14)",
-              boxShadow:
-                "0 16px 34px rgba(7,24,39,0.09), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -2px 0 rgba(8,40,72,0.06)",
-            }}
-          >
-            <div
-              style={{
-                color: "#0B1F33",
-                fontWeight: 900,
-                fontSize: 16,
-              }}
-            >
-              Private Vault offers
+          <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
+            <div style={sectionLabel()}>🔐 Access links</div>
+            <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 18, fontWeight: 950 }}>
+              {vaultLinks.length} link{vaultLinks.length === 1 ? "" : "s"} ready
             </div>
 
             <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-              <div style={helperText()}>
-                Private offers ready: {vaultProducts.length}
-              </div>
-              <div style={helperText()}>
-                Access links ready: {vaultLinks.length}
-              </div>
-
               {vaultLinks.slice(0, 3).map((item) => (
                 <div
                   key={item.id}
@@ -3914,7 +3995,7 @@ export default function ShopControlPage() {
                   }}
                 >
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <span style={badge(true)}>Link #{item.id}</span>
+                    <span style={badge(true)}>🔐 Link #{item.id}</span>
                     <span
                       style={{
                         ...badge(false),
@@ -3924,11 +4005,13 @@ export default function ShopControlPage() {
                     >
                       {firstTruthy(item?.status, "active")}
                     </span>
+                    <span style={badge(false)}>
+                      👁️ {Number(item.views_used || 0)} / {Number(item.max_views || 0) || "∞"}
+                    </span>
                   </div>
                   <div style={{ marginTop: 8, ...helperText() }}>
                     Access ends: {safeDateTime(item?.expires_at) || "No expiry set"}
                   </div>
-                  <div style={{ marginTop: 10, ...helperText() }}>Use this link</div>
                   <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
                     <button
                       type="button"
@@ -3950,9 +4033,6 @@ export default function ShopControlPage() {
                     >
                       Open link
                     </button>
-                  </div>
-                  <div style={{ marginTop: 10, ...helperText() }}>Manage this link</div>
-                  <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
                     <button
                       type="button"
                       {...buttonGuardProps()}
@@ -3993,35 +4073,11 @@ export default function ShopControlPage() {
                 </div>
               ))}
 
-              {vaultProducts.length === 0 && vaultLinks.length === 0 ? (
+              {vaultLinks.length === 0 ? (
                 <div style={helperText()}>
-                  Private Vault is not open yet. Private offers and permission-based
-                  access links will show here after you activate Vault and release
-                  access.
+                  No access link is ready yet. Create a link after at least one private offer is ready.
                 </div>
               ) : null}
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={() => void createVaultViewingLink()}
-                disabled={
-                  shopActionsLocked ||
-                  creatingVaultLink ||
-                  vaultProducts.length === 0
-                }
-                style={fullButton(actionBtn(
-                  "primary",
-                  shopActionsLocked || creatingVaultLink || vaultProducts.length === 0
-                ))}
-              >
-                {shopActionsLocked
-                  ? "Review Identity First"
-                  : creatingVaultLink
-                  ? "Creating..."
-                  : vaultProducts.length === 0
-                    ? "Add Vault product first"
-                    : "Create private viewing link"}
-              </button>
             </div>
           </div>
         </div>
