@@ -213,30 +213,6 @@ export default function GSNBrandMonument({
             repeatCount="indefinite"
           />
         </path>
-        <path
-          d="
-            M450 268
-            L545 785
-            L450 948
-            L355 785
-            Z
-          "
-          fill="rgba(14,43,118,0.18)"
-        />
-
-        <g stroke="#F7FBFF" strokeWidth="6" fill="none" strokeLinecap="round">
-          <path d="M450 425 L565 565" />
-          <path d="M450 425 L360 632" />
-          <path d="M450 425 L450 724" />
-          <path d="M360 632 L384 815" />
-          <path d="M384 815 L542 796" />
-          <path d="M542 796 L565 565" />
-          <path d="M450 724 L565 565" />
-          <path d="M450 724 L542 796" />
-          <path d="M450 724 L384 815" />
-          <path d="M360 632 L565 565" />
-        </g>
-
         <g>
           <text
             x="452"
@@ -328,11 +304,6 @@ export default function GSNBrandMonument({
               filter={`url(#${starInnerSparkId})`}
             />
           </g>
-
-          <circle cx="565" cy="565" r="15" fill="#F4F7FA" />
-          <circle cx="360" cy="632" r="15" fill="#F4F7FA" />
-          <circle cx="384" cy="815" r="15" fill="#F4F7FA" />
-          <circle cx="542" cy="796" r="15" fill="#F4F7FA" />
         </g>
       </g>
 

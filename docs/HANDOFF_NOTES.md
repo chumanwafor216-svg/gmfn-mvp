@@ -19474,3 +19474,37 @@ GSN-branded invite composer and invite-entry continuity.
 - Scope:
   - `/app/dashboard`
   - no backend/auth/schema changes
+
+### Dashboard passport/logo compact polish (2026-05-03)
+
+- Owner feedback from phone screenshots:
+  - the dashboard had a duplicated `Menu / Main Movement / Dashboard / Tools` header row.
+  - `Your Identity Passport` should be tighter, clearer, and less wordy.
+  - the visible shield mark should match the cleaner cover-page brand mark and stop carrying the old internal lattice.
+  - demand empty-state language should not name one marketplace because a user may belong to more than one community or marketplace.
+- Updated shared frontend brand marks:
+  - `frontend/src/components/GSNBrandMark.tsx`
+  - `frontend/src/components/GSNBrandMonument.tsx`
+  - removed the old internal lattice/node artwork from the shield SVG so shared mark usage aligns with the cleaner cover-page direction.
+  - no database logo row was changed; inspected logo usage here is frontend SVG/component driven.
+- Updated `frontend/src/pages/DashboardPage.tsx`:
+  - removed the duplicate inner dashboard header row.
+  - changed `Your Identity Passport` to `Identity Passport`.
+  - removed the extra section emoji beside the identity title.
+  - compacted/centered the identity image area and GSN ID row.
+  - removed the `View Identity` button from the identity passport card.
+  - generalized Demand Box empty-state copy so it tells the user to choose the community or marketplace when creating demand.
+  - changed the empty demand action to `Create your demand`.
+  - removed empty-state community/GSN ID chips from the Demand Box explanation.
+  - strengthened alert chips with clear emoji/status signals for act-now, unread, waiting, and clear states.
+- Verification:
+  - `npm exec -- eslint src/pages/DashboardPage.tsx src/components/GSNBrandMark.tsx src/components/GSNBrandMonument.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Important caveat:
+  - `DashboardPage.tsx` still has pre-existing local dirty UI-state changes unrelated to this task: storage key v5, default collapsed dashboard sections, and disabled attention auto-open. Do not commit or revert them unless the owner asks.
+- Scope:
+  - `/app/dashboard`
+  - shared GSN SVG mark components
+  - no backend/auth/schema/database changes

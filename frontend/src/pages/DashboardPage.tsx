@@ -3906,10 +3906,7 @@ export default function DashboardPage() {
       )}${safeDateTime(currentDemandItem.created_at) ? `, ${safeDateTime(currentDemandItem.created_at)}` : ""}`;
     }
 
-    return `${currentCommunityName(
-      currentClan,
-      selectedClanId
-    )}. Ready for your next request.`;
+    return "Choose the community or marketplace this demand should come from before you create it.";
   }, [currentClan, currentDemandItem, selectedClanId]);
   const currentDemandIsUrgent =
     safeStr(currentDemandItem?.urgency).toLowerCase() === "high";
@@ -3920,7 +3917,7 @@ export default function DashboardPage() {
       : DASHBOARD_TARGETS.DEMAND_BOX;
   const demandPrimaryActionLabel =
     demandItems.length === 0
-      ? "Create demand"
+      ? "Create your demand"
       : urgentDemandItems.length > 0
       ? "Open urgent demand"
       : "Open your Demand Box";
@@ -3933,7 +3930,7 @@ export default function DashboardPage() {
   const demandArea = safeStr(currentDemandItem?.area || "");
   const demandGuideTitle = demandItems.length
     ? "A person's request is live in your community."
-    : "Create demand when you personally need help.";
+    : "Create your demand when you need help.";
   const demandGuideBody =
     "Your Demand Box is personal: you say what you need, and your GSN trust signal shows who is asking. Your community name shows where you are sending it from. Payment terms and TrustSlip expectations help both sides agree before work starts.";
 
@@ -4105,7 +4102,7 @@ export default function DashboardPage() {
     }
 
     if (demandItems.length > 0) {
-      return "Demand Box is active. Read the current need before you act.";
+      return "Your Demand Box is active. Read the current need before you act.";
     }
 
     if (pendingRequests.length > 0) {
@@ -5928,148 +5925,6 @@ export default function DashboardPage() {
           gap: isPhone ? 8 : 18,
         }}
       >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: isPhone
-              ? "auto minmax(0, 1fr) auto"
-              : "auto minmax(0, 1fr) auto",
-            gap: isPhone ? 10 : 18,
-            alignItems: "center",
-          }}
-        >
-          <button
-            type="button"
-            onClick={(event) => openDashboardRoute(event, DASHBOARD_TARGETS.COMMUNITY)}
-            onPointerDown={consumeDashboardPointerEvent}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: isPhone ? 7 : 9,
-              minHeight: isPhone ? 42 : 52,
-              padding: isPhone ? "8px 12px" : "10px 18px",
-              borderRadius: isPhone ? 14 : 18,
-              border: "1px solid rgba(16,37,59,0.10)",
-              background: "#FFFFFF",
-              color: DASHBOARD_BRAND.ink,
-              boxShadow:
-                "0 12px 24px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.88)",
-              fontWeight: 950,
-              fontSize: isPhone ? 12.5 : 15,
-              cursor: "pointer",
-              touchAction: "manipulation",
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                display: "grid",
-                gap: 3,
-                width: isPhone ? 15 : 18,
-              }}
-            >
-              {[0, 1, 2].map((bar) => (
-                <span
-                  key={bar}
-                  style={{
-                    display: "block",
-                    height: 2,
-                    borderRadius: 999,
-                    background: DASHBOARD_BRAND.ink,
-                  }}
-                />
-              ))}
-            </span>
-            <span>Menu</span>
-          </button>
-
-          <div style={{ minWidth: 0 }}>
-            <div
-              style={{
-                color: DASHBOARD_BRAND.label,
-                fontSize: isPhone ? 10 : 12,
-                fontWeight: 1000,
-                letterSpacing: 1.7,
-                textTransform: "uppercase",
-                lineHeight: 1,
-              }}
-            >
-              Main Movement
-            </div>
-            <div
-              style={{
-                marginTop: 4,
-                color: DASHBOARD_BRAND.ink,
-                fontSize: isPhone ? 25 : 34,
-                fontWeight: 1000,
-                lineHeight: 1,
-              }}
-            >
-              Dashboard
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={(event) =>
-              runDashboardUiMutation(event, () => setAttentionPopupVisible(true), 260)
-            }
-            onPointerDown={consumeDashboardPointerEvent}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: isPhone ? 7 : 10,
-              minHeight: isPhone ? 42 : 52,
-              justifyContent: "center",
-              minWidth: isPhone ? 92 : undefined,
-              padding: isPhone ? "8px 12px" : "10px 18px",
-              borderRadius: isPhone ? 14 : 18,
-              border: "1px solid rgba(220,38,38,0.14)",
-              background:
-                "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,245,245,0.96) 100%)",
-              color: "#7F1D1D",
-              boxShadow:
-                "0 12px 24px rgba(220,38,38,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
-              fontWeight: 1000,
-              cursor: "pointer",
-              touchAction: "manipulation",
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                width: 9,
-                height: 9,
-                borderRadius: 999,
-                background: "#DC2626",
-                flexShrink: 0,
-              }}
-            />
-            <span
-              style={{
-                display: "grid",
-                gap: 2,
-                textAlign: "left",
-                lineHeight: 1.05,
-                fontSize: isPhone ? 11.5 : 13,
-                whiteSpace: "nowrap",
-              }}
-            >
-              {isPhone ? (
-                <span style={{ fontSize: 14, fontWeight: 1000 }}>Tools</span>
-              ) : (
-                <>
-                  <span style={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
-                    Attention Guide
-                  </span>
-                  <span>{attentionStageLabel}</span>
-                </>
-              )}
-            </span>
-          </button>
-        </div>
-
         <section
           style={{
             ...pageCard(
@@ -6086,9 +5941,9 @@ export default function DashboardPage() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: isPhone ? "minmax(0, 1fr) 92px" : "minmax(0, 1fr) 220px",
-              gap: isPhone ? 12 : 22,
-              alignItems: "start",
+              gridTemplateColumns: isPhone ? "minmax(0, 1fr) 78px" : "minmax(0, 1fr) 180px",
+              gap: isPhone ? 10 : 18,
+              alignItems: "center",
             }}
           >
             <div style={{ minWidth: 0 }}>
@@ -6105,8 +5960,7 @@ export default function DashboardPage() {
                 }}
               >
                 <GSNBrandMark width={isPhone ? 22 : 28} height={isPhone ? 28 : 36} />
-                <span>{dashboardSectionSignal("Your Identity Passport")}</span>
-                <span>Your Identity Passport</span>
+                <span>Identity Passport</span>
               </div>
               <div
                 style={{
@@ -6169,6 +6023,7 @@ export default function DashboardPage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                alignSelf: "center",
               }}
             >
               {avatarSrc ? (
@@ -6274,9 +6129,8 @@ export default function DashboardPage() {
           <div
             style={{
               marginTop: 12,
-              display: "grid",
-              gridTemplateColumns: isPhone ? "minmax(0, 1fr)" : "minmax(0, 1fr) auto",
-              gap: 10,
+              display: "flex",
+              justifyContent: "center",
               alignItems: "center",
               padding: isPhone ? "10px 12px" : "12px 16px",
               borderRadius: isPhone ? 14 : 18,
@@ -6289,10 +6143,12 @@ export default function DashboardPage() {
                 display: "flex",
                 gap: 8,
                 alignItems: "baseline",
+                justifyContent: "center",
                 minWidth: 0,
                 color: DASHBOARD_BRAND.label,
                 fontSize: isPhone ? 12.5 : 14,
                 fontWeight: 900,
+                textAlign: "center",
               }}
             >
               <span>GSN ID</span>
@@ -6305,19 +6161,6 @@ export default function DashboardPage() {
                 {visibleGsnId}
               </span>
             </div>
-            <button
-              type="button"
-              onClick={(event) => openDashboardRoute(event, DASHBOARD_TARGETS.CCI)}
-              onPointerDown={consumeDashboardPointerEvent}
-              style={{
-                ...spotlightWhiteButton({
-                  minHeight: isPhone ? 42 : 40,
-                  width: isPhone ? "100%" : 160,
-                }),
-              }}
-            >
-              View Identity
-            </button>
           </div>
         </section>
 
@@ -9046,22 +8889,8 @@ export default function DashboardPage() {
                     lineHeight: isPhone ? 1.42 : 1.75,
                   }}
                 >
-                  Create demand when you need goods, service, support, or
-                  follow-up. Your GSN ID stays attached.
-                </div>
-                <div
-                  style={{
-                    marginTop: 7,
-                    display: "flex",
-                    gap: 8,
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                  }}
-                >
-                  <span style={badge(false)}>{demandCommunityLabel}</span>
-                  {safeStr(me?.gmfn_id) ? (
-                    <span style={badge(false)}>GSN ID {safeStr(me?.gmfn_id)}</span>
-                  ) : null}
+                  Create your demand, then choose the community or marketplace
+                  it should come from.
                 </div>
               </div>
             )}
@@ -9158,6 +8987,9 @@ export default function DashboardPage() {
                 flex: isPhone ? "1 1 0" : "0 0 auto",
               }}
             >
+              <span aria-hidden="true" style={{ marginRight: 5 }}>
+                {dashboardSectionSignal("What needs your attention")}
+              </span>
               Your alerts
             </span>
             <span
@@ -9187,12 +9019,12 @@ export default function DashboardPage() {
               }}
             >
               {dashboardNoticeSummary.counts.actNow > 0
-                ? `Act now ${dashboardNoticeSummary.counts.actNow}`
+                ? `\u26A0\uFE0F Act now ${dashboardNoticeSummary.counts.actNow}`
                 : dashboardNoticeSummary.counts.unread > 0
-                ? `Unread ${dashboardNoticeSummary.counts.unread}`
+                ? `\uD83D\uDC41\uFE0F Unread ${dashboardNoticeSummary.counts.unread}`
                 : dashboardNoticeTotalCount > 0
-                ? "Waiting"
-                : "Clear"}
+                ? "\u23F3 Waiting"
+                : "\u2705 Clear"}
             </span>
           </div>
         </div>
